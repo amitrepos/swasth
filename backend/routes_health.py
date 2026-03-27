@@ -6,7 +6,7 @@ from datetime import datetime
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user
+from dependencies import get_current_user, get_profile_access_or_403
 
 router = APIRouter()
 
@@ -19,7 +19,10 @@ def save_reading(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Save a new health reading (glucose or blood pressure)."""
+    """Save a new health reading (glucose or blood pressure) for a specific profile."""
+    # Verify profile access
+    get_profile_access_or_403(reading.profile_id, user, db)
+
     if reading.reading_type not in _VALID_READING_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -27,7 +30,8 @@ def save_reading(
         )
 
     db_reading = models.HealthReading(
-        user_id=user.id,
+        profile_id=reading.profile_id,
+        logged_by=user.id,
         reading_type=reading.reading_type,
         glucose_value=reading.glucose_value,
         glucose_unit=reading.glucose_unit,
@@ -52,14 +56,17 @@ def save_reading(
 
 @router.get("/readings", response_model=List[schemas.HealthReadingResponse])
 def get_readings(
+    profile_id: int,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
     reading_type: Optional[str] = None,
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ):
-    """Get user's health readings with optional filtering."""
-    query = db.query(models.HealthReading).filter(models.HealthReading.user_id == user.id)
+    """Get health readings for a specific profile."""
+    get_profile_access_or_403(profile_id, user, db)
+
+    query = db.query(models.HealthReading).filter(models.HealthReading.profile_id == profile_id)
 
     if reading_type:
         if reading_type not in _VALID_READING_TYPES:
@@ -74,26 +81,29 @@ def get_readings(
 
 @router.get("/readings/stats/summary")
 def get_readings_summary(
+    profile_id: int,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Get summary statistics for user's readings."""
+    """Get summary statistics for readings of a specific profile."""
+    get_profile_access_or_403(profile_id, user, db)
+
     total_readings = db.query(models.HealthReading).filter(
-        models.HealthReading.user_id == user.id
+        models.HealthReading.profile_id == profile_id
     ).count()
 
     glucose_count = db.query(models.HealthReading).filter(
-        models.HealthReading.user_id == user.id,
+        models.HealthReading.profile_id == profile_id,
         models.HealthReading.reading_type == 'glucose',
     ).count()
 
     bp_count = db.query(models.HealthReading).filter(
-        models.HealthReading.user_id == user.id,
+        models.HealthReading.profile_id == profile_id,
         models.HealthReading.reading_type == 'blood_pressure',
     ).count()
 
     latest_reading = db.query(models.HealthReading).filter(
-        models.HealthReading.user_id == user.id
+        models.HealthReading.profile_id == profile_id
     ).order_by(models.HealthReading.reading_timestamp.desc()).first()
 
     return {
@@ -111,10 +121,14 @@ def get_reading(
     user: models.User = Depends(get_current_user),
 ):
     """Get a specific reading by ID."""
-    reading = _get_user_reading(db, reading_id, user.id)
-    if reading is None:
+    db_reading = db.query(models.HealthReading).filter(models.HealthReading.id == reading_id).first()
+    if not db_reading:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
-    return reading
+    
+    # Verify access to the profile this reading belongs to
+    get_profile_access_or_403(db_reading.profile_id, user, db)
+    
+    return db_reading
 
 
 @router.delete("/readings/{reading_id}")
@@ -124,21 +138,18 @@ def delete_reading(
     user: models.User = Depends(get_current_user),
 ):
     """Delete a reading."""
-    reading = _get_user_reading(db, reading_id, user.id)
-    if reading is None:
+    db_reading = db.query(models.HealthReading).filter(models.HealthReading.id == reading_id).first()
+    if not db_reading:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
-    db.delete(reading)
+    
+    # Verify access to the profile this reading belongs to
+    get_profile_access_or_403(db_reading.profile_id, user, db)
+    
+    db.delete(db_reading)
     db.commit()
     return {"message": "Reading deleted successfully"}
 
 
 # ---------------------------------------------------------------------------
-# Private helpers
+# Private helpers (removed or kept if needed elsewhere)
 # ---------------------------------------------------------------------------
-
-def _get_user_reading(db: Session, reading_id: int, user_id: int):
-    """Fetch a reading that belongs to the given user, or return None."""
-    return db.query(models.HealthReading).filter(
-        models.HealthReading.id == reading_id,
-        models.HealthReading.user_id == user_id,
-    ).first()

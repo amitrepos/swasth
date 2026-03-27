@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import 'registration_screen.dart';
-import 'home_screen.dart';
+import 'select_profile_screen.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -52,10 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
           try {
             final userData = await _apiService.getCurrentUser(token);
             await StorageService().saveUserData(userData);
-            print('Login - Saved user data: $userData');
-          } catch (e) {
-            print('Login - Failed to fetch user data: $e');
-          }
+          } catch (_) {}
         }
         
         if (mounted) {
@@ -68,11 +65,11 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
       
-      // Navigate to home screen
+      // Navigate to select profile screen
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const SelectProfileScreen()),
         );
       }
     } catch (e) {
@@ -85,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -94,7 +91,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

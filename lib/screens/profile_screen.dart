@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../services/profile_service.dart';
 import '../services/api_service.dart';
+import '../models/profile_model.dart';
+import 'manage_access_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final int profileId;
+  const ProfileScreen({super.key, required this.profileId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  ProfileModel? _profile;
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
+  final _profileService = ProfileService();
   final _apiService = ApiService();
 
   // Password change controllers
@@ -22,7 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _loadData();
   }
 
   @override
@@ -33,6 +39,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      final token = await StorageService().getToken();
+      if (token == null) throw Exception("Not authenticated");
+
+      final userData = await StorageService().getUserData();
+      final profile = await _profileService.getProfile(token, widget.profileId);
+
+      setState(() {
+        _userData = userData;
+        _profile = profile;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading profile: $e')),
+        );
+      }
+    }
+  }
+
   void _clearPasswordFields() {
     _currentPasswordController.clear();
     _newPasswordController.clear();
@@ -40,42 +70,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _changePassword() async {
-    // Validate passwords
     if (_currentPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your current password'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter current password'), backgroundColor: Colors.red));
       return;
     }
-
     if (_newPasswordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('New password must be at least 6 characters'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Min 6 characters'), backgroundColor: Colors.red));
       return;
     }
-
     if (_newPasswordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('New passwords do not match'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match'), backgroundColor: Colors.red));
       return;
     }
 
     try {
       final token = await StorageService().getToken();
-      if (token == null) {
-        throw Exception('Not authenticated');
-      }
+      if (token == null) throw Exception('Not authenticated');
 
       await _apiService.updateProfile(token, {
         'current_password': _currentPasswordController.text,
@@ -84,39 +94,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password changed successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Clear password fields
-        _currentPasswordController.clear();
-        _newPasswordController.clear();
-        _confirmPasswordController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password changed!'), backgroundColor: Colors.green));
+        _clearPasswordFields();
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
       }
     }
   }
 
   void _showChangePasswordDialog() {
-    // Reset password visibility states
     bool obscureCurrentPassword = true;
     bool obscureNewPassword = true;
     bool obscureConfirmPassword = true;
     
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent dismissing by tapping outside
+      barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
@@ -125,7 +121,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Current Password
                   TextFormField(
                     controller: _currentPasswordController,
                     obscureText: obscureCurrentPassword,
@@ -133,23 +128,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       labelText: 'Current Password',
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
-                        icon: Icon(
-                          obscureCurrentPassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setDialogState(() {
-                            obscureCurrentPassword = !obscureCurrentPassword;
-                          });
-                        },
+                        icon: Icon(obscureCurrentPassword ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () => setDialogState(() => obscureCurrentPassword = !obscureCurrentPassword),
                       ),
                     ),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Enter current password' : null,
                   ),
                   const SizedBox(height: 16),
-                  // New Password
                   TextFormField(
                     controller: _newPasswordController,
                     obscureText: obscureNewPassword,
@@ -157,22 +141,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       labelText: 'New Password',
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        icon: Icon(
-                          obscureNewPassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setDialogState(() {
-                            obscureNewPassword = !obscureNewPassword;
-                          });
-                        },
+                        icon: Icon(obscureNewPassword ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () => setDialogState(() => obscureNewPassword = !obscureNewPassword),
                       ),
                       helperText: 'Min. 6 characters',
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Confirm Password
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: obscureConfirmPassword,
@@ -180,16 +155,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       labelText: 'Confirm New Password',
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        icon: Icon(
-                          obscureConfirmPassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setDialogState(() {
-                            obscureConfirmPassword = !obscureConfirmPassword;
-                          });
-                        },
+                        icon: Icon(obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () => setDialogState(() => obscureConfirmPassword = !obscureConfirmPassword),
                       ),
                     ),
                   ),
@@ -197,17 +164,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () {
-                  _clearPasswordFields();
-                  Navigator.pop(dialogContext);
-                },
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: _changePassword,
-                child: const Text('Change Password'),
-              ),
+              TextButton(onPressed: () { _clearPasswordFields(); Navigator.pop(dialogContext); }, child: const Text('Cancel')),
+              ElevatedButton(onPressed: _changePassword, child: const Text('Change Password')),
             ],
           );
         },
@@ -215,50 +173,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _loadUserData() async {
-    try {
-      final userData = await StorageService().getUserData();
-      print('Profile - Loaded user data: $userData');
-      setState(() {
-        _userData = userData;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Profile - Error loading user data: $e');
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Profile')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      return Scaffold(appBar: AppBar(title: const Text('Profile')), body: const Center(child: CircularProgressIndicator()));
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isOwner = _profile?.accessLevel == 'owner';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Profile'),
+        title: const Text('Profile Details'),
+        actions: [
+          if (isOwner)
+            IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ManageAccessScreen(
+                      profileId: widget.profileId,
+                      profileName: _profile?.name ?? "Profile",
+                    ),
+                  ),
+                );
+              },
+              tooltip: 'Manage Access',
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Profile Header with Gradient
+            // Profile Header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.primary.withOpacity(0.7),
-                  ],
+                  colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withOpacity(0.7)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -268,26 +222,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    child: Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.primary),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _userData?['full_name'] ?? 'N/A',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                    _profile?.name ?? 'N/A',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600, color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _userData?['email'] ?? 'N/A',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                    ),
+                    isOwner ? 'Your Profile' : 'Shared by Someone',
+                    style: TextStyle(color: Colors.white.withOpacity(0.9)),
                   ),
                 ],
               ),
@@ -295,144 +240,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 24),
 
-            // Personal Information
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Personal Information',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoCard(
-                    icon: Icons.badge,
-                    label: 'Full Name',
-                    value: _userData?['full_name'] ?? 'N/A',
-                  ),
-                  _buildInfoCard(
-                    icon: Icons.email,
-                    label: 'Email Address',
-                    value: _userData?['email'] ?? 'N/A',
-                  ),
-                  _buildInfoCard(
-                    icon: Icons.phone,
-                    label: 'Phone Number',
-                    value: _userData?['phone_number'] ?? 'N/A',
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoCard(
-                          icon: Icons.cake,
-                          label: 'Age',
-                          value: _userData?['age']?.toString() ?? 'N/A',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInfoCard(
-                          icon: Icons.male,
-                          label: 'Gender',
-                          value: _userData?['gender'] ?? 'N/A',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoCard(
-                    icon: Icons.bloodtype,
-                    label: 'Blood Group',
-                    value: _userData?['blood_group'] ?? 'N/A',
-                  ),
-                ],
-              ),
-            ),
+            // Info Sections
+            _buildSection('Health Information', [
+              _buildInfoCard(icon: Icons.cake, label: 'Age', value: '${_profile?.age ?? "?"} years'),
+              _buildInfoCard(icon: Icons.male, label: 'Gender', value: _profile?.gender ?? 'Unknown'),
+              _buildInfoCard(icon: Icons.bloodtype, label: 'Blood Group', value: _profile?.bloodGroup ?? 'Unknown'),
+              _buildInfoCard(icon: Icons.straighten, label: 'Height', value: '${_profile?.height ?? "?"} cm'),
+            ]),
 
-            const SizedBox(height: 24),
+            if (_profile?.medicalConditions != null && _profile!.medicalConditions!.isNotEmpty)
+              _buildSection('Medical Conditions', [
+                _buildInfoCard(
+                  icon: Icons.medical_services, 
+                  label: 'Conditions', 
+                  value: _profile!.medicalConditions!.join(", ") + 
+                         (_profile!.otherMedicalCondition != null ? " (${_profile!.otherMedicalCondition})" : "")
+                ),
+              ]),
 
-            // Health Metrics
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Health Metrics',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+            if (isOwner)
+              _buildSection('Account Settings', [
+                _buildInfoCard(icon: Icons.email, label: 'Linked Email', value: _userData?['email'] ?? 'N/A'),
+                const SizedBox(height: 8),
+                Card(
+                  child: ListTile(
+                    leading: Icon(Icons.lock_outline, color: Theme.of(context).colorScheme.primary),
+                    title: const Text('Change Account Password'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: _showChangePasswordDialog,
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildMetricCard(
-                          icon: Icons.straighten,
-                          label: 'Height',
-                          value: _userData?['height'] != null
-                              ? '${_userData?['height']} cm'
-                              : 'N/A',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildMetricCard(
-                          icon: Icons.monitor_weight,
-                          label: 'Weight',
-                          value: _userData?['weight'] != null
-                              ? '${_userData?['weight']} kg'
-                              : 'N/A',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Account Info
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Account Information',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoCard(
-                    icon: Icons.calendar_today,
-                    label: 'Member Since',
-                    value: _formatDate(_userData?['created_at']),
-                  ),
-                  _buildInfoCard(
-                    icon: Icons.toggle_on,
-                    label: 'Account Status',
-                    value: (_userData?['is_active'] == true) ? 'Active' : 'Inactive',
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: ListTile(
-                      leading: Icon(Icons.lock_outline, color: Theme.of(context).colorScheme.primary),
-                      title: const Text('Change Password'),
-                      subtitle: const Text('Update your password'),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: _showChangePasswordDialog,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              ]),
 
             const SizedBox(height: 32),
           ],
@@ -441,90 +279,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoCard({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: Theme.of(context).colorScheme.primary),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+  Widget _buildSection(String title, List<Widget> children) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ...children,
+        ],
       ),
     );
   }
 
-  Widget _buildMetricCard({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
+  Widget _buildInfoCard({required IconData icon, required String label, required String value}) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        subtitle: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
       ),
     );
-  }
-
-  String _formatDate(String? dateString) {
-    if (dateString == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return 'N/A';
-    }
   }
 }

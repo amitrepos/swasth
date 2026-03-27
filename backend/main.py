@@ -4,6 +4,7 @@ from database import engine, Base
 import models
 import routes
 import routes_health
+import routes_profiles
 import os
 from dotenv import load_dotenv
 
@@ -44,6 +45,9 @@ app.include_router(routes.router, prefix="/api/auth", tags=["Authentication"])
 
 # Include health readings routes
 app.include_router(routes_health.router, prefix="/api", tags=["Health Readings"])
+
+# Include profile routes
+app.include_router(routes_profiles.router, prefix="/api", tags=["Profiles"])
 
 
 if __name__ == "__main__":

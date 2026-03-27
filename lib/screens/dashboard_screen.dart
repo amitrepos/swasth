@@ -12,12 +12,14 @@ class DashboardScreen extends StatefulWidget {
   final List<BluetoothService> services;
   final String deviceType;
   final bool autoConnect;
+  final int profileId;
 
   const DashboardScreen({
     super.key,
     required this.device,
     required this.services,
     required this.deviceType,
+    required this.profileId,
     this.autoConnect = false,
   });
 
@@ -921,13 +923,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       print('Converting reading to HealthReading format...');
       final healthReading = HealthReading.fromGlucoseOrBP(reading, deviceType);
+      healthReading.profileId = widget.profileId; // Set profile ID
       final readingTimestamp = reading.timestamp ?? DateTime.now();
-      print('Created HealthReading: ${healthReading.readingType}, value: ${healthReading.valueNumeric}, timestamp: $readingTimestamp');
+      print('Created HealthReading: ${healthReading.readingType}, value: ${healthReading.valueNumeric}, profile: ${healthReading.profileId}');
       
       // Check database for existing reading with same timestamp
       print('Checking database for existing readings...');
       final existingReadings = await HealthReadingService().getReadings(
         token: token,
+        profileId: widget.profileId,
         limit: 1000,
       );
       

@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
-    """Register a new user."""
+    """Register a new user and create their initial 'My Health' profile."""
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(
@@ -22,29 +22,47 @@ def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
 
-    if "Other" in user.medical_conditions and not user.other_medical_condition:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Please provide details for 'Other' medical condition"
-        )
-
+    # 1. Create User (auth only)
     db_user = models.User(
         email=user.email,
         password_hash=auth.get_password_hash(user.password),
         full_name=user.full_name,
         phone_number=user.phone_number,
+    )
+    db.add(db_user)
+    db.flush()  # Get db_user.id
+
+    # 2. Create Profile
+    db_profile = models.Profile(
+        name=user.profile_name or "My Health",
         age=user.age,
         gender=user.gender,
         height=user.height,
-        weight=user.weight,
         blood_group=user.blood_group,
-        current_medications=user.current_medications,
         medical_conditions=user.medical_conditions,
         other_medical_condition=user.other_medical_condition,
+        current_medications=user.current_medications,
     )
-    db.add(db_user)
+    db.add(db_profile)
+    db.flush()  # Get db_profile.id
+
+    # 3. Create ProfileAccess (owner)
+    db_access = models.ProfileAccess(
+        user_id=db_user.id,
+        profile_id=db_profile.id,
+        access_level="owner",
+    )
+    db.add(db_access)
+    
     db.commit()
     db.refresh(db_user)
+    
+    # 4. Send welcome email
+    try:
+        email_service.send_welcome_email(db_user.email, db_user.full_name)
+    except Exception as e:
+        print(f"Error sending welcome email: {e}")
+
     return db_user
 
 
@@ -122,38 +140,27 @@ def reset_password(request: schemas.ResetPasswordRequest, db: Session = Depends(
 
 @router.put("/profile", response_model=schemas.UserResponse)
 def update_profile(
-    profile_update: schemas.UpdateProfileRequest,
+    user_update: schemas.UpdateUserRequest,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Update user profile."""
-    if profile_update.new_password or profile_update.current_password or profile_update.confirm_password:
-        if not profile_update.current_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is required")
-        if not profile_update.new_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password is required")
-        if not profile_update.confirm_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Confirm password is required")
-        if not auth.verify_password(profile_update.current_password, user.password_hash):
+    """Update auth-level user information (name, phone, password)."""
+    if user_update.new_password:
+        if not user_update.current_password:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is required to change password")
+        
+        if not auth.verify_password(user_update.current_password, user.password_hash):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
-        user.password_hash = auth.get_password_hash(profile_update.new_password)
-        user.updated_at = datetime.utcnow()
+        
+        user.password_hash = auth.get_password_hash(user_update.new_password)
 
-    if profile_update.medical_conditions and "Other" in profile_update.medical_conditions:
-        if not profile_update.other_medical_condition:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Please provide details for 'Other' medical condition"
-            )
+    if user_update.full_name:
+        user.full_name = user_update.full_name
+    
+    if user_update.phone_number:
+        user.phone_number = user_update.phone_number
 
-    update_data = profile_update.model_dump(
-        exclude_unset=True,
-        exclude={'current_password', 'new_password', 'confirm_password'},
-    )
-    for field, value in update_data.items():
-        if value is not None:
-            setattr(user, field, value)
-
+    user.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(user)
     return user

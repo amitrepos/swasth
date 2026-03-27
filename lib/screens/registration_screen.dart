@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 // ignore_for_file: deprecated_member_use
 import '../services/api_service.dart';
 import 'login_screen.dart';
-import 'home_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -21,6 +20,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _profileNameController = TextEditingController(text: "My Health");
   final _ageController = TextEditingController();
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
@@ -66,6 +66,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _profileNameController.dispose();
     _ageController.dispose();
     _heightController.dispose();
     _weightController.dispose();
@@ -110,10 +111,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'confirm_password': _confirmPasswordController.text,
         'full_name': _fullNameController.text.trim(),
         'phone_number': _phoneController.text.trim(),
-        'age': int.parse(_ageController.text),
+        'profile_name': _profileNameController.text.trim(),
+        'age': int.tryParse(_ageController.text),
         'gender': _selectedGender,
-        'height': double.parse(_heightController.text),
-        'weight': double.parse(_weightController.text),
+        'height': double.tryParse(_heightController.text),
+        'weight': double.tryParse(_weightController.text),
         'blood_group': _selectedBloodGroup,
         'current_medications': _medicationsController.text.trim().isEmpty 
             ? null 
@@ -129,15 +131,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registration successful!'),
+            content: Text('Registration successful! Please login.'),
             backgroundColor: Colors.green,
           ),
         );
         
-        // Navigate to home screen
+        // Navigate to login screen
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       }
     } catch (e) {
@@ -167,6 +169,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _buildSectionTitle('Account Details'),
+              
               // Full Name
               TextFormField(
                 controller: _fullNameController,
@@ -310,6 +314,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 32),
+              
+              _buildSectionTitle('Initial Health Profile'),
+              
+              // Profile Name
+              TextFormField(
+                controller: _profileNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Profile Name',
+                  hintText: 'e.g. My Health, Papa, etc.',
+                  prefixIcon: Icon(Icons.badge_outlined),
+                ),
+                validator: (value) => (value == null || value.isEmpty) ? 'Enter a name' : null,
+              ),
               const SizedBox(height: 16),
 
               // Age
@@ -320,16 +338,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   labelText: 'Age',
                   prefixIcon: Icon(Icons.calendar_today),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your age';
-                  }
-                  final age = int.tryParse(value);
-                  if (age == null || age < 1 || age > 150) {
-                    return 'Please enter a valid age (1-150)';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
 
@@ -357,16 +365,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   labelText: 'Height (cm)',
                   prefixIcon: Icon(Icons.height),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your height';
-                  }
-                  final height = double.tryParse(value);
-                  if (height == null || height <= 0 || height > 300) {
-                    return 'Please enter a valid height (0-300 cm)';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
 
@@ -378,16 +376,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   labelText: 'Weight (kg)',
                   prefixIcon: Icon(Icons.monitor_weight),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your weight';
-                  }
-                  final weight = double.tryParse(value);
-                  if (weight == null || weight <= 0 || weight > 500) {
-                    return 'Please enter a valid weight (0-500 kg)';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
 
@@ -449,13 +437,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Please specify other condition',
                   ),
-                  validator: (value) {
-                    if (_selectedConditions.contains('Other') &&
-                        (value == null || value.trim().isEmpty)) {
-                      return 'Please provide details';
-                    }
-                    return null;
-                  },
                 ),
               ],
               const SizedBox(height: 24),
@@ -494,6 +475,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }
