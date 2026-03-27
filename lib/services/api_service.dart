@@ -1,29 +1,22 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import 'api_client.dart';
 
 class ApiService {
-  // Backend server URL - Now using AppConfig
-  // To find your IP: run 'ipconfig' in Command Prompt
-  // For mobile access, use your computer's IP (not localhost)
   static String baseUrl = AppConfig.apiBaseUrl;
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/register'),
-        headers: {'Content-Type': 'application/json'},
+        headers: ApiClient.headers(),
         body: jsonEncode(userData),
       );
-
-      if (response.statusCode == 201) {
-        return jsonDecode(response.body);
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Registration failed');
-      }
+      if (response.statusCode == 201) return jsonDecode(response.body);
+      throw Exception(ApiClient.errorDetail(response, 'Registration failed'));
     } catch (e) {
-      throw Exception('Failed to register: ${e.toString()}');
+      throw Exception('Failed to register: $e');
     }
   }
 
@@ -31,21 +24,13 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        headers: ApiClient.headers(),
+        body: jsonEncode({'email': email, 'password': password}),
       );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Login failed');
-      }
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      throw Exception(ApiClient.errorDetail(response, 'Login failed'));
     } catch (e) {
-      throw Exception('Failed to login: ${e.toString()}');
+      throw Exception('Failed to login: $e');
     }
   }
 
@@ -53,39 +38,27 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/me'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiClient.headers(token: token),
       );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Failed to get user data');
-      }
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      throw Exception(ApiClient.errorDetail(response, 'Failed to get user data'));
     } catch (e) {
-      throw Exception('Failed to get user data: ${e.toString()}');
+      throw Exception('Failed to get user data: $e');
     }
   }
 
-  // Forgot Password Methods
   Future<void> requestPasswordReset(String email) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/forgot-password'),
-        headers: {'Content-Type': 'application/json'},
+        headers: ApiClient.headers(),
         body: jsonEncode({'email': email}),
       );
-
-      if (response.statusCode == 200) {
-        return;
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Failed to send OTP');
+      if (response.statusCode != 200) {
+        throw Exception(ApiClient.errorDetail(response, 'Failed to send OTP'));
       }
     } catch (e) {
-      throw Exception('Failed to send OTP: ${e.toString()}');
+      throw Exception('Failed to send OTP: $e');
     }
   }
 
@@ -93,21 +66,14 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/verify-otp'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'otp': otp,
-        }),
+        headers: ApiClient.headers(),
+        body: jsonEncode({'email': email, 'otp': otp}),
       );
-
-      if (response.statusCode == 200) {
-        return;
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Invalid OTP');
+      if (response.statusCode != 200) {
+        throw Exception(ApiClient.errorDetail(response, 'Invalid OTP'));
       }
     } catch (e) {
-      throw Exception('Failed to verify OTP: ${e.toString()}');
+      throw Exception('Failed to verify OTP: $e');
     }
   }
 
@@ -120,7 +86,7 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/reset-password'),
-        headers: {'Content-Type': 'application/json'},
+        headers: ApiClient.headers(),
         body: jsonEncode({
           'email': email,
           'otp': otp,
@@ -128,15 +94,11 @@ class ApiService {
           'confirm_password': confirmPassword,
         }),
       );
-
-      if (response.statusCode == 200) {
-        return;
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Failed to reset password');
+      if (response.statusCode != 200) {
+        throw Exception(ApiClient.errorDetail(response, 'Failed to reset password'));
       }
     } catch (e) {
-      throw Exception('Failed to reset password: ${e.toString()}');
+      throw Exception('Failed to reset password: $e');
     }
   }
 
@@ -147,21 +109,13 @@ class ApiService {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/profile'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiClient.headers(token: token),
         body: jsonEncode(profileData),
       );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Failed to update profile');
-      }
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      throw Exception(ApiClient.errorDetail(response, 'Failed to update profile'));
     } catch (e) {
-      throw Exception('Failed to update profile: ${e.toString()}');
+      throw Exception('Failed to update profile: $e');
     }
   }
 }

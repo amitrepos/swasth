@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import 'api_client.dart';
 
 class HealthReading {
   final int id;
@@ -168,21 +169,13 @@ class HealthReadingService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/readings'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiClient.headers(token: token),
         body: jsonEncode(reading.toJson()),
       );
-
-      if (response.statusCode == 201) {
-        return HealthReading.fromJson(jsonDecode(response.body));
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Failed to save reading');
-      }
+      if (response.statusCode == 201) return HealthReading.fromJson(jsonDecode(response.body));
+      throw Exception(ApiClient.errorDetail(response, 'Failed to save reading'));
     } catch (e) {
-      throw Exception('Failed to save reading: ${e.toString()}');
+      throw Exception('Failed to save reading: $e');
     }
   }
 
@@ -195,26 +188,18 @@ class HealthReadingService {
   }) async {
     try {
       String url = '$baseUrl/readings?limit=$limit&offset=$offset';
-      if (readingType != null) {
-        url += '&reading_type=$readingType';
-      }
+      if (readingType != null) url += '&reading_type=$readingType';
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiClient.headers(token: token),
       );
-
       if (response.statusCode == 200) {
-        List<dynamic> readingsJson = jsonDecode(response.body);
-        return readingsJson.map((json) => HealthReading.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to get readings');
+        return (jsonDecode(response.body) as List).map((j) => HealthReading.fromJson(j)).toList();
       }
+      throw Exception(ApiClient.errorDetail(response, 'Failed to get readings'));
     } catch (e) {
-      throw Exception('Failed to get readings: ${e.toString()}');
+      throw Exception('Failed to get readings: $e');
     }
   }
 
@@ -223,20 +208,12 @@ class HealthReadingService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/readings/$readingId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiClient.headers(token: token),
       );
-
-      if (response.statusCode == 200) {
-        return HealthReading.fromJson(jsonDecode(response.body));
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Reading not found');
-      }
+      if (response.statusCode == 200) return HealthReading.fromJson(jsonDecode(response.body));
+      throw Exception(ApiClient.errorDetail(response, 'Reading not found'));
     } catch (e) {
-      throw Exception('Failed to get reading: ${e.toString()}');
+      throw Exception('Failed to get reading: $e');
     }
   }
 
@@ -245,18 +222,13 @@ class HealthReadingService {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/readings/$readingId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiClient.headers(token: token),
       );
-
       if (response.statusCode != 200) {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['detail'] ?? 'Failed to delete reading');
+        throw Exception(ApiClient.errorDetail(response, 'Failed to delete reading'));
       }
     } catch (e) {
-      throw Exception('Failed to delete reading: ${e.toString()}');
+      throw Exception('Failed to delete reading: $e');
     }
   }
 
@@ -265,19 +237,12 @@ class HealthReadingService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/readings/stats/summary'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: ApiClient.headers(token: token),
       );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Failed to get summary');
-      }
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      throw Exception(ApiClient.errorDetail(response, 'Failed to get summary'));
     } catch (e) {
-      throw Exception('Failed to get summary: ${e.toString()}');
+      throw Exception('Failed to get summary: $e');
     }
   }
 }
