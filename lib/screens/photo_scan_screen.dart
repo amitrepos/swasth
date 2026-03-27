@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/ocr_service.dart';
 import 'reading_confirmation_screen.dart';
 
@@ -171,7 +171,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text(l10n.scanTitle(device: deviceLabel)),
+        title: Text(l10n.scanTitle(deviceLabel)),
         actions: [
           IconButton(
             icon: Icon(
@@ -222,7 +222,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            l10n.placeDeviceInBox(device: deviceLabel),
+                            l10n.placeDeviceInBox(deviceLabel),
                             style: const TextStyle(color: Colors.white, fontSize: 14),
                             textAlign: TextAlign.center,
                           ),

@@ -2,7 +2,7 @@
 // Related: lib/services/profile_service.dart, lib/screens/home_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../models/profile_model.dart';
 import '../models/invite_model.dart';
 import '../services/profile_service.dart';
@@ -184,7 +184,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                l10n.pendingInvitesBanner(count: _pendingInvites.length),
+                l10n.pendingInvitesBanner(_pendingInvites.length),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w600,

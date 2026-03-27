@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/ocr_service.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
@@ -173,7 +173,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.saveFailed(error: e.toString()))),
+          SnackBar(content: Text(l10n.saveFailed(e.toString()))),
         );
       }
     } finally {

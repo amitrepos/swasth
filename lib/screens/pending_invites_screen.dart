@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../models/invite_model.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
@@ -65,8 +65,8 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(accept
-                ? l10n.acceptedInvite(profileName: invite.profileName)
-                : l10n.rejectedInvite(profileName: invite.profileName)),
+                ? l10n.acceptedInvite(invite.profileName)
+                : l10n.rejectedInvite(invite.profileName)),
             backgroundColor: accept ? Colors.green : Colors.grey,
           ),
         );
@@ -148,7 +148,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                               ),
                                               Text(
-                                                l10n.wantsToShare(profileName: invite.profileName),
+                                                l10n.wantsToShare(invite.profileName),
                                                 style: TextStyle(color: Colors.grey.shade700),
                                               ),
                                             ],
@@ -159,8 +159,8 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                                     const SizedBox(height: 12),
                                     Text(
                                       l10n.expiresInDays(
-                                        days: daysLeft,
-                                        date: DateFormat('MMM d, yyyy').format(invite.expiresAt),
+                                        daysLeft,
+                                        DateFormat('MMM d, yyyy').format(invite.expiresAt),
                                       ),
                                       style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                                     ),

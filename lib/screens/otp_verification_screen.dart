@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import 'reset_password_screen.dart';
 import 'login_screen.dart';
@@ -153,7 +153,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                l10n.otpSentTo(email: widget.email),
+                l10n.otpSentTo(widget.email),
                 style: const TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
@@ -217,7 +217,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   if (_resendCountdown > 0) ...[
                     const SizedBox(width: 8),
                     Text(
-                      l10n.resendIn(seconds: _resendCountdown),
+                      l10n.resendIn(_resendCountdown),
                       style: const TextStyle(color: Colors.grey),
                     ),
                   ] else ...[

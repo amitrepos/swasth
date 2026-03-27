@@ -163,3 +163,33 @@ Format: date, summary, file-level details.
   - 23:12:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
   - 23:12:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
   - 23:13:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 23:35:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/l10n.yaml
+  - 23:37:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+
+---
+
+## 2026-03-27 — A6 language toggle: compile fixes, import path correction, arg fixes
+
+### Root Cause Fixes
+- `l10n.yaml`: Added `synthetic-package: false` — gen-l10n was generating files in `lib/l10n/` but imports used `package:flutter_gen/gen_l10n/` (which requires the `.dart_tool/` synthetic package). Setting this flag aligns both paths.
+- `pubspec.yaml`: Updated `intl` from `^0.19.0` to `^0.20.2` — `flutter_localizations` SDK dep pins `intl` to `0.20.2`; old version caused version-solving failure on `flutter run`.
+
+### Import Path Fix (all 17 screen/main files)
+- Changed all l10n imports from `package:flutter_gen/gen_l10n/app_localizations.dart` → `package:swasth_app/l10n/app_localizations.dart` to match actual generated file location in `lib/l10n/`.
+- Affected: `lib/main.dart` and all 16 screen files.
+
+### Positional Arg Fixes (gen-l10n generates positional params, not named)
+- `lib/screens/profile_screen.dart`: `ageYears(age: ...)` → `ageYears(...)`, `heightCm(height: ...)` → `heightCm(...)`
+- `lib/screens/manage_access_screen.dart`: `revokeAccessConfirm(name: ...)` → positional
+- `lib/screens/photo_scan_screen.dart`: `scanTitle(device: ...)`, `placeDeviceInBox(device: ...)` → positional
+- `lib/screens/home_screen.dart`: `viewingProfile(name: ...)`, `logReading(device: ...)` → positional
+- `lib/screens/reading_confirmation_screen.dart`: `saveFailed(error: ...)` → positional
+- `lib/screens/select_profile_screen.dart`: `pendingInvitesBanner(count: ...)` → positional
+- `lib/screens/otp_verification_screen.dart`: `otpSentTo(email: ...)`, `resendIn(seconds: ...)` → positional
+- `lib/screens/pending_invites_screen.dart`: `acceptedInvite`, `rejectedInvite`, `wantsToShare`, `expiresInDays` → all positional
+
+### Generated Files (added to git)
+- `lib/l10n/app_localizations.dart` *(generated)*: main export + localizationsDelegates
+- `lib/l10n/app_localizations_en.dart` *(generated)*: English string implementations
+- `lib/l10n/app_localizations_hi.dart` *(generated)*: Hindi string implementations
+  - 23:41:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
