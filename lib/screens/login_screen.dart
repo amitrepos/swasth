@@ -112,11 +112,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Swasth Health App',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -129,7 +129,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -150,7 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   prefixIcon: const Icon(Icons.lock),
-                  border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -189,18 +187,13 @@ class _LoginScreenState extends State<LoginScreen> {
               // Login Button
               ElevatedButton(
                 onPressed: _isLoading ? null : _login,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
                 child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text(
-                        'Login',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Login'),
               ),
               const SizedBox(height: 16),
 

@@ -207,5 +207,98 @@ class BrevoEmailService:
             return False
 
 
+    def send_profile_invite_email(
+        self,
+        invitee_email: str,
+        inviter_name: str,
+        profile_name: str,
+        invite_id: int,
+    ) -> bool:
+        """Send an invite notification when a user shares their health profile.
+
+        Args:
+            invitee_email:  Email of the person being invited.
+            inviter_name:   Full name of the person sending the invite.
+            profile_name:   Name of the profile being shared (e.g. "Papa", "My Health").
+            invite_id:      DB id of the ProfileInvite row (for deep-link future use).
+
+        Returns:
+            True if the email was sent successfully, False otherwise.
+        """
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = f"{self.sender_name} <{self.sender_email}>"
+            msg['To'] = invitee_email
+            msg['Subject'] = f"{inviter_name} wants to share health data with you on Swasth"
+
+            body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }}
+        .invite-box {{ background-color: #fff; border: 2px solid #4CAF50; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center; }}
+        .profile-name {{ font-size: 22px; font-weight: bold; color: #4CAF50; }}
+        .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Swasth Health App</h1>
+            <p>Health Profile Invite</p>
+        </div>
+
+        <div class="content">
+            <p>Hello,</p>
+
+            <p><strong>{inviter_name}</strong> wants to share their health profile with you on Swasth Health App.</p>
+
+            <div class="invite-box">
+                <p>Profile:</p>
+                <div class="profile-name">{profile_name}</div>
+            </div>
+
+            <p>By accepting this invite, you will be able to view health readings (glucose, blood pressure) logged under this profile.</p>
+
+            <p>To accept or reject this invite:</p>
+            <ol>
+                <li>Open the Swasth Health App</li>
+                <li>Go to <strong>Pending Invites</strong></li>
+                <li>Accept or reject the invite from {inviter_name}</li>
+            </ol>
+
+            <p>This invite will expire in <strong>7 days</strong>. If you did not expect this invite, you can safely ignore this email.</p>
+
+            <p>Best regards,<br>
+            <strong>The Swasth Health Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>&copy; 2026 Swasth Health App. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+            """
+
+            msg.attach(MIMEText(body, 'html'))
+
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.smtp_login, self.sender_password)
+                server.send_message(msg)
+
+            return True
+
+        except Exception as e:
+            print(f"Error sending invite email: {e}")
+            return False
+
+
 # Create singleton instance
 email_service = BrevoEmailService()

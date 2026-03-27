@@ -1,12 +1,12 @@
 from pydantic import BaseModel, EmailStr, validator, Field
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 
 
-# Gender options
+# Options
 GENDER_OPTIONS = ["Male", "Female", "Other"]
-
-# Password special characters
+BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]
+MEDICAL_CONDITIONS = ["Diabetes T1", "Diabetes T2", "Hypertension", "Heart Disease", "None", "Other"]
 _SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?'
 
 
@@ -24,12 +24,10 @@ def _validate_password_strength(v: str) -> str:
         raise ValueError('Password must contain at least one special character')
     return v
 
-# Blood group options
-BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]
 
-# Medical conditions
-MEDICAL_CONDITIONS = ["Diabetes T1", "Diabetes T2", "Hypertension", "Heart Disease", "None", "Other"]
-
+# ---------------------------------------------------------------------------
+# Auth schemas
+# ---------------------------------------------------------------------------
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -37,13 +35,14 @@ class UserRegister(BaseModel):
     confirm_password: str
     full_name: str = Field(..., min_length=2, max_length=100)
     phone_number: str = Field(..., min_length=10, max_length=15)
-    age: int = Field(..., ge=1, le=150)
-    gender: str
-    height: float = Field(..., gt=0, le=300)  # in cm
-    weight: float = Field(..., gt=0, le=500)  # in kg
-    blood_group: str
+    # Optional first-profile fields — used to auto-create "My Health" profile on register
+    profile_name: Optional[str] = "My Health"
+    age: Optional[int] = Field(None, ge=1, le=150)
+    gender: Optional[str] = None
+    height: Optional[float] = Field(None, gt=0, le=300)   # cm
+    blood_group: Optional[str] = None
     current_medications: Optional[str] = None
-    medical_conditions: List[str]
+    medical_conditions: Optional[List[str]] = None
     other_medical_condition: Optional[str] = None
 
     @validator('password')
@@ -58,23 +57,22 @@ class UserRegister(BaseModel):
 
     @validator('gender')
     def validate_gender(cls, v):
-        if v not in GENDER_OPTIONS:
+        if v is not None and v not in GENDER_OPTIONS:
             raise ValueError(f'Gender must be one of: {", ".join(GENDER_OPTIONS)}')
         return v
 
     @validator('blood_group')
     def validate_blood_group(cls, v):
-        if v not in BLOOD_GROUP_OPTIONS:
+        if v is not None and v not in BLOOD_GROUP_OPTIONS:
             raise ValueError(f'Blood group must be one of: {", ".join(BLOOD_GROUP_OPTIONS)}')
         return v
 
     @validator('medical_conditions')
     def validate_medical_conditions(cls, v):
-        if not v:
-            raise ValueError('At least one medical condition must be selected')
-        for condition in v:
-            if condition not in MEDICAL_CONDITIONS:
-                raise ValueError(f'Invalid medical condition: {condition}')
+        if v is not None:
+            for condition in v:
+                if condition not in MEDICAL_CONDITIONS:
+                    raise ValueError(f'Invalid medical condition: {condition}')
         return v
 
 
@@ -97,14 +95,6 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     phone_number: str
-    age: int
-    gender: str
-    height: float
-    weight: float
-    blood_group: str
-    current_medications: Optional[str]
-    medical_conditions: List[str]
-    other_medical_condition: Optional[str]
     is_active: bool
     created_at: datetime
 
@@ -138,20 +128,46 @@ class ResetPasswordRequest(BaseModel):
         return v
 
 
-class UpdateProfileRequest(BaseModel):
+class UpdateUserRequest(BaseModel):
+    """Auth-level user fields only — name, phone, password change."""
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)
     phone_number: Optional[str] = Field(None, min_length=10, max_length=15)
-    age: Optional[int] = Field(None, ge=1, le=150)
-    height: Optional[float] = Field(None, gt=0, le=300)
-    weight: Optional[float] = Field(None, gt=0, le=500)
-    blood_group: Optional[str] = None
-    current_medications: Optional[str] = None
-    medical_conditions: Optional[List[str]] = None
-    other_medical_condition: Optional[str] = None
-    # Password change fields
     current_password: Optional[str] = None
     new_password: Optional[str] = None
     confirm_password: Optional[str] = None
+
+    @validator('new_password')
+    def validate_new_password(cls, v):
+        if v is not None:
+            return _validate_password_strength(v)
+        return v
+
+    @validator('confirm_password')
+    def passwords_match(cls, v, values):
+        if v is not None and 'new_password' in values and v != values['new_password']:
+            raise ValueError('Passwords do not match')
+        return v
+
+
+# ---------------------------------------------------------------------------
+# Profile schemas
+# ---------------------------------------------------------------------------
+
+class ProfileCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    age: Optional[int] = Field(None, ge=1, le=150)
+    gender: Optional[str] = None
+    height: Optional[float] = Field(None, gt=0, le=300)   # cm
+    blood_group: Optional[str] = None
+    medical_conditions: Optional[List[str]] = None
+    other_medical_condition: Optional[str] = None
+    current_medications: Optional[str] = None
+
+    @validator('gender')
+    def validate_gender(cls, v):
+        if v is not None and v not in GENDER_OPTIONS:
+            raise ValueError(f'Gender must be one of: {", ".join(GENDER_OPTIONS)}')
+        return v
 
     @validator('blood_group')
     def validate_blood_group(cls, v):
@@ -167,28 +183,94 @@ class UpdateProfileRequest(BaseModel):
                     raise ValueError(f'Invalid medical condition: {condition}')
         return v
 
-    @validator('new_password')
-    def validate_new_password(cls, v, values):
+
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    age: Optional[int] = Field(None, ge=1, le=150)
+    gender: Optional[str] = None
+    height: Optional[float] = Field(None, gt=0, le=300)
+    blood_group: Optional[str] = None
+    medical_conditions: Optional[List[str]] = None
+    other_medical_condition: Optional[str] = None
+    current_medications: Optional[str] = None
+
+    @validator('gender')
+    def validate_gender(cls, v):
+        if v is not None and v not in GENDER_OPTIONS:
+            raise ValueError(f'Gender must be one of: {", ".join(GENDER_OPTIONS)}')
+        return v
+
+    @validator('blood_group')
+    def validate_blood_group(cls, v):
+        if v is not None and v not in BLOOD_GROUP_OPTIONS:
+            raise ValueError(f'Blood group must be one of: {", ".join(BLOOD_GROUP_OPTIONS)}')
+        return v
+
+    @validator('medical_conditions')
+    def validate_medical_conditions(cls, v):
         if v is not None:
-            return _validate_password_strength(v)
-        return v
-
-    @validator('confirm_password')
-    def passwords_match(cls, v, values):
-        if v is not None and 'new_password' in values and v != values['new_password']:
-            raise ValueError('Passwords do not match')
+            for condition in v:
+                if condition not in MEDICAL_CONDITIONS:
+                    raise ValueError(f'Invalid medical condition: {condition}')
         return v
 
 
-# Health Reading Schemas
+class ProfileResponse(BaseModel):
+    id: int
+    name: str
+    age: Optional[int]
+    gender: Optional[str]
+    height: Optional[float]
+    blood_group: Optional[str]
+    medical_conditions: Optional[List[str]]
+    other_medical_condition: Optional[str]
+    current_medications: Optional[str]
+    access_level: str           # "owner" or "viewer" — injected per-user at query time
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------------------------------------------------------------------
+# Invite schemas
+# ---------------------------------------------------------------------------
+
+class InviteRequest(BaseModel):
+    email: EmailStr
+
+
+class InviteResponse(BaseModel):
+    id: int
+    profile_id: int
+    profile_name: str
+    invited_by_name: str
+    status: str
+    expires_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class InviteRespondRequest(BaseModel):
+    action: Literal["accept", "reject"]
+
+
+# ---------------------------------------------------------------------------
+# Health Reading schemas
+# ---------------------------------------------------------------------------
+
 class HealthReadingCreate(BaseModel):
-    reading_type: str  # 'glucose' or 'blood_pressure'
-    
+    profile_id: int
+    reading_type: str           # 'glucose' or 'blood_pressure'
+
     # Glucose fields
     glucose_value: Optional[float] = None
     glucose_unit: Optional[str] = None
     sample_type: Optional[str] = None
-    
+
     # BP fields
     systolic: Optional[float] = None
     diastolic: Optional[float] = None
@@ -196,7 +278,7 @@ class HealthReadingCreate(BaseModel):
     pulse_rate: Optional[float] = None
     bp_unit: Optional[str] = None
     bp_status: Optional[str] = None
-    
+
     # Common fields
     value_numeric: float
     unit_display: str
@@ -207,7 +289,8 @@ class HealthReadingCreate(BaseModel):
 
 class HealthReadingResponse(BaseModel):
     id: int
-    user_id: int
+    profile_id: int
+    logged_by: Optional[int]
     reading_type: str
     glucose_value: Optional[float]
     glucose_unit: Optional[str]

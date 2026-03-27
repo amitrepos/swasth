@@ -31,3 +31,52 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+def get_profile_access_or_403(
+    profile_id: int,
+    user: models.User,
+    db: Session,
+) -> models.ProfileAccess:
+    """Return the ProfileAccess row if the user has any access (owner or viewer).
+    Raises 403 if the user has no access to this profile.
+    """
+    access = (
+        db.query(models.ProfileAccess)
+        .filter(
+            models.ProfileAccess.profile_id == profile_id,
+            models.ProfileAccess.user_id == user.id,
+        )
+        .first()
+    )
+    if access is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this profile",
+        )
+    return access
+
+
+def get_profile_owner_or_403(
+    profile_id: int,
+    user: models.User,
+    db: Session,
+) -> models.ProfileAccess:
+    """Return the ProfileAccess row only if the user is the owner.
+    Raises 403 for viewers or users with no access.
+    """
+    access = (
+        db.query(models.ProfileAccess)
+        .filter(
+            models.ProfileAccess.profile_id == profile_id,
+            models.ProfileAccess.user_id == user.id,
+            models.ProfileAccess.access_level == "owner",
+        )
+        .first()
+    )
+    if access is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the profile owner can perform this action",
+        )
+    return access

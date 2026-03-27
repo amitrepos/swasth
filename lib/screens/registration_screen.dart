@@ -159,7 +159,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -174,7 +173,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Full Name',
                   prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -192,7 +190,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -213,7 +210,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Phone Number',
                   prefixIcon: Icon(Icons.phone),
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -234,7 +230,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Password',
                   prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -254,18 +249,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
               // Password requirements
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Password Requirements:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                     ),
+                    const SizedBox(height: 8),
                     _buildRequirementRow(
                       'At least 8 characters',
                       _passwordHasMinLength,
@@ -298,7 +295,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: InputDecoration(
                   labelText: 'Confirm Password',
                   prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
                   errorText: !_passwordsMatch &&
                           _confirmPasswordController.text.isNotEmpty
                       ? 'Passwords do not match'
@@ -323,7 +319,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Age',
                   prefixIcon: Icon(Icons.calendar_today),
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -344,7 +339,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Gender',
                   prefixIcon: Icon(Icons.people),
-                  border: OutlineInputBorder(),
                 ),
                 items: ['Male', 'Female', 'Other']
                     .map((g) => DropdownMenuItem(value: g, child: Text(g)))
@@ -362,7 +356,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Height (cm)',
                   prefixIcon: Icon(Icons.height),
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -384,7 +377,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Weight (kg)',
                   prefixIcon: Icon(Icons.monitor_weight),
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -405,7 +397,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Blood Group',
                   prefixIcon: Icon(Icons.bloodtype),
-                  border: OutlineInputBorder(),
                 ),
                 items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
                     .map((bg) => DropdownMenuItem(value: bg, child: Text(bg)))
@@ -424,15 +415,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   labelText: 'Current Medications (optional)',
                   hintText: 'Comma separated list',
                   prefixIcon: Icon(Icons.medication),
-                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
 
               // Medical Conditions
-              const Text(
+              Text(
                 'Medical Conditions',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               ..._medicalConditionsOptions.map((condition) {
@@ -458,7 +448,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _otherConditionController,
                   decoration: const InputDecoration(
                     labelText: 'Please specify other condition',
-                    border: OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (_selectedConditions.contains('Other') &&
@@ -474,18 +463,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               // Register Button
               ElevatedButton(
                 onPressed: _isLoading ? null : _register,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
                 child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text(
-                        'Register',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Register'),
               ),
               const SizedBox(height: 16),
 

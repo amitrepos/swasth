@@ -278,6 +278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required bool isConnected,
     required Color color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -293,23 +294,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Color.fromRGBO(
-                        (color.r * 255).round().clamp(0, 255),
-                        (color.g * 255).round().clamp(0, 255),
-                        (color.b * 255).round().clamp(0, 255),
-                        0.6,
-                      ),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                    BoxShadow(
-                      color: Color.fromRGBO(
-                        (color.r * 255).round().clamp(0, 255),
-                        (color.g * 255).round().clamp(0, 255),
-                        (color.b * 255).round().clamp(0, 255),
-                        0.4,
-                      ),
-                      blurRadius: 30,
+                      color: color.withOpacity(0.4),
+                      blurRadius: 15,
                       spreadRadius: 2,
                     ),
                   ],
@@ -321,16 +307,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
               height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isConnected ? color : Colors.grey.shade300,
+                color: isConnected ? color : (isDark ? Colors.grey.shade800 : Colors.grey.shade200),
                 border: Border.all(
-                  color: isConnected ? color : Colors.grey.shade400,
-                  width: 3,
+                  color: isConnected ? color : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                  width: 2,
                 ),
               ),
               child: Icon(
                 icon,
-                color: Colors.white,
-                size: 30,
+                color: isConnected ? Colors.white : (isDark ? Colors.grey.shade500 : Colors.grey.shade500),
+                size: 28,
               ),
             ),
           ],
@@ -338,10 +324,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 8),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
             fontWeight: FontWeight.w600,
-            color: isConnected ? color : Colors.grey.shade600,
+            color: isConnected ? color : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
           ),
           textAlign: TextAlign.center,
         ),
@@ -373,15 +358,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.1),
+          width: 0.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,10 +372,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.only(bottom: 12),
             child: Text(
               'Tap to connect a device',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -580,9 +561,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildReadingCard(GlucoseReading r) {
     final color = _flagColor(r.flag);
     return Card(
-      elevation: 4,
+      elevation: 1,
       margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -592,18 +572,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: color,
+                color: color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withOpacity(0.3), width: 0.5),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(_flagIcon(r.flag), color: Colors.white, size: 18),
+                  Icon(_flagIcon(r.flag), color: color, size: 18),
                   const SizedBox(width: 6),
                   Text(r.flag,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                      style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.w600,
                           fontSize: 14)),
                 ],
               ),
@@ -613,18 +594,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Main glucose value
             Text(
               r.mgdl.toStringAsFixed(1),
-              style: TextStyle(
-                  fontSize: 64, fontWeight: FontWeight.bold, color: color),
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            const Text('mg/dL',
-                style: TextStyle(fontSize: 18, color: Colors.grey)),
+            Text('mg/dL',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                )),
             const SizedBox(height: 4),
             Text(
               '${r.mmol.toStringAsFixed(2)} mmol/L',
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
             ),
 
-            const Divider(height: 32),
+            const Divider(height: 32, thickness: 0.5),
 
             // Details
             _detailRow(Icons.tag, 'Sequence', '#${r.sequenceNumber}'),
@@ -643,15 +630,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.grey),
+          Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
           const SizedBox(width: 8),
           Text('$label: ',
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 13)),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600)),
           Expanded(
             child: Text(value,
-                style: const TextStyle(fontSize: 13),
-                overflow: TextOverflow.ellipsis),
+                style: Theme.of(context).textTheme.bodySmall),
           ),
         ],
       ),
@@ -673,61 +659,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              const Text('All Records',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('All Records',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
               const Spacer(),
               Text(
                 '${sortedReadings.length} records',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),
         ),
         ...sortedReadings.skip(1).map((r) => Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: _flagColor(r.flag),
+              backgroundColor: _flagColor(r.flag).withOpacity(0.15),
               radius: 20,
               child: Icon(
                 _flagIcon(r.flag),
-                color: Colors.white,
+                color: _flagColor(r.flag),
                 size: 18,
               ),
             ),
             title: Text(
               '${r.mgdl.toStringAsFixed(1)} mg/dL',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
                 Text('${r.mmol.toStringAsFixed(2)} mmol/L',
-                    style: TextStyle(color: Colors.grey.shade600)),
+                    style: Theme.of(context).textTheme.bodySmall),
                 Text(r.timestamp.toString().substring(0, 16),
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-                Text('Sample: ${r.sampleType} | ${r.sampleLocation}',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),
               ],
             ),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text('#${r.sequenceNumber}',
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 11)),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Color.fromRGBO(
-                      (_flagColor(r.flag).r * 255).round().clamp(0, 255),
-                      (_flagColor(r.flag).g * 255).round().clamp(0, 255),
-                      (_flagColor(r.flag).b * 255).round().clamp(0, 255),
-                      0.1,
-                    ),
+                    color: _flagColor(r.flag).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: _flagColor(r.flag), width: 0.5),
+                    border: Border.all(color: _flagColor(r.flag).withOpacity(0.3), width: 0.5),
                   ),
                   child: Text(
                     r.flag,
@@ -754,8 +733,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     return Card(
       margin: const EdgeInsets.all(16),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -775,17 +752,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Text(
                         '$_connectedDeviceType History',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       Text(
                         '${_allReadings.length} total records',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
@@ -1109,12 +1080,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final deviceName = widget.device?.platformName.isNotEmpty == true
         ? widget.device!.platformName
         : 'Swasth Health Monitor';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(deviceName),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
         actions: [
           if (widget.device != null) ...[
             if (_allReadings.isNotEmpty)
@@ -1155,7 +1125,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Device disconnected'),
-                          backgroundColor: Colors.blue,
                         ),
                       );
                     });
@@ -1178,8 +1147,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Status bar
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              color: Colors.blue.shade50,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: isDark ? Colors.blue.withOpacity(0.1) : Colors.blue.withOpacity(0.05),
               child: Row(
                 children: [
                   if (_loading)
@@ -1191,21 +1160,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (_loading) const SizedBox(width: 8),
                   Expanded(
                       child: Text(_status,
-                          style: const TextStyle(fontSize: 13))),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w500,
+                          ))),
                 ],
               ),
             ),
 
             // Loading state
             if (_loading && _latestReading == null)
-              const Padding(
-                padding: EdgeInsets.all(48),
+              Padding(
+                padding: const EdgeInsets.all(48),
                 child: Column(
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
                     Text('Fetching glucose records...',
-                        style: TextStyle(color: Colors.grey)),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey)),
                   ],
                 ),
               ),
@@ -1220,10 +1192,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // RACP response
             if (_racpResponse.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text('Device response: $_racpResponse',
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.grey)),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey)),
               ),
 
             // History list (shown when not using the new panel)

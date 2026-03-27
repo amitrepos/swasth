@@ -36,6 +36,9 @@ dependencies:
   # Date formatting
   intl: ^0.19.0
 
+  # Typography — Inter as SF Pro web-safe fallback
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
