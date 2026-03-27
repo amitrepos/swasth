@@ -5,7 +5,7 @@ import 'api_client.dart';
 
 class HealthReading {
   final int id;
-  final int userId;
+  int profileId;
   final String readingType; // 'glucose' or 'blood_pressure'
   
   // Glucose fields
@@ -31,7 +31,7 @@ class HealthReading {
 
   HealthReading({
     required this.id,
-    required this.userId,
+    required this.profileId,
     required this.readingType,
     this.glucoseValue,
     this.glucoseUnit,
@@ -53,7 +53,7 @@ class HealthReading {
   factory HealthReading.fromJson(Map<String, dynamic> json) {
     return HealthReading(
       id: json['id'],
-      userId: json['user_id'],
+      profileId: json['profile_id'],
       readingType: json['reading_type'],
       glucoseValue: json['glucose_value']?.toDouble(),
       glucoseUnit: json['glucose_unit'],
@@ -75,6 +75,7 @@ class HealthReading {
 
   Map<String, dynamic> toJson() {
     return {
+      'profile_id': profileId,
       'reading_type': readingType,
       'glucose_value': glucoseValue,
       'glucose_unit': glucoseUnit,
@@ -124,7 +125,7 @@ class HealthReading {
       // It's a GlucoseReading
       return HealthReading(
         id: 0, // Will be assigned by database
-        userId: 0, // Will be set by backend
+        profileId: 0, // Will be set by caller
         readingType: 'glucose',
         glucoseValue: reading.mgdl,
         glucoseUnit: 'mg/dL', // GlucoseReading uses mg/dL by default
@@ -140,11 +141,11 @@ class HealthReading {
       // It's a BPReading
       return HealthReading(
         id: 0,
-        userId: 0,
+        profileId: 0,
         readingType: 'blood_pressure',
         systolic: reading.systolic,
         diastolic: reading.diastolic,
-        meanArterialPressure: reading.meanArterialPressure,
+        meanArterialPressure: reading.mean_arterial_pressure,
         pulseRate: reading.pulseRate,
         bpUnit: reading.unit ?? 'mmHg',
         bpStatus: reading.flag,
@@ -182,12 +183,13 @@ class HealthReadingService {
   /// Get user's readings with optional filtering
   Future<List<HealthReading>> getReadings({
     required String token,
+    required int profileId,
     String? readingType,
     int limit = 100,
     int offset = 0,
   }) async {
     try {
-      String url = '$baseUrl/readings?limit=$limit&offset=$offset';
+      String url = '$baseUrl/readings?profile_id=$profileId&limit=$limit&offset=$offset';
       if (readingType != null) url += '&reading_type=$readingType';
 
       final response = await http.get(
@@ -233,10 +235,10 @@ class HealthReadingService {
   }
 
   /// Get summary statistics
-  Future<Map<String, dynamic>> getSummary(String token) async {
+  Future<Map<String, dynamic>> getSummary(String token, int profileId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/readings/stats/summary'),
+        Uri.parse('$baseUrl/readings/stats/summary?profile_id=$profileId'),
         headers: ApiClient.headers(token: token),
       );
       if (response.statusCode == 200) return jsonDecode(response.body);

@@ -6,8 +6,9 @@ import 'dashboard_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   final String? deviceType; // 'Glucose', 'Blood Pressure', or 'Armband'
+  final int profileId;
   
-  const ScanScreen({super.key, this.deviceType});
+  const ScanScreen({super.key, this.deviceType, required this.profileId});
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -90,6 +91,7 @@ class _ScanScreenState extends State<ScanScreen> {
             device: result.device,
             services: services,
             deviceType: BleManager.deviceType(result),
+            profileId: widget.profileId,
           ),
         ),
       );
@@ -142,8 +144,6 @@ class _ScanScreenState extends State<ScanScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Swasth — Scan Devices'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
@@ -151,7 +151,7 @@ class _ScanScreenState extends State<ScanScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            color: Colors.blue.shade50,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
             child: Row(
               children: [
                 if (_isScanning)
@@ -202,7 +202,6 @@ class _ScanScreenState extends State<ScanScreen> {
       // Scan button
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isScanning ? null : _startScan,
-        backgroundColor: _isScanning ? Colors.grey : Colors.blue.shade700,
         icon: Icon(_isScanning ? Icons.hourglass_empty : Icons.search),
         label: Text(_isScanning ? 'Scanning...' : 'Scan'),
       ),

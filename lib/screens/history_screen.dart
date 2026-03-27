@@ -4,7 +4,8 @@ import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final int profileId;
+  const HistoryScreen({super.key, required this.profileId});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -33,6 +34,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       final readings = await _readingService.getReadings(
         token: token,
+        profileId: widget.profileId,
         readingType: _filterType,
         limit: 100,
       );
@@ -131,7 +133,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reading History'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           // Filter button
           PopupMenuButton<String>(
@@ -201,7 +202,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: _getStatusColor(reading.statusFlag)
-                                .withValues(alpha: 0.1),
+                                .withOpacity(0.1),
                             child: Icon(
                               _getTypeIcon(reading.readingType),
                               color: _getStatusColor(reading.statusFlag),

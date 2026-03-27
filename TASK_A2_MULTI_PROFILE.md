@@ -279,7 +279,7 @@ Owner-only screen, opened from profile settings:
 - List of pending sent invites with `[Cancel]` per row
 
 ### 9. `lib/screens/home_screen.dart`
-- Active profile banner at top: "Viewing: Papa's Health · [Switch]"
+- Active profile banner at top: "Viewing: Papa's Health · [Share icon] · [Switch]"\n- Share icon (`person_add_alt_1`) in banner → opens `ManageAccessScreen` for the active profile directly\n  - Rationale: sharing is a key discovery action; placing it in the always-visible banner is more prominent than burying it inside ProfileScreen settings
 - "Switch" → navigates to `SelectProfileScreen`
 - Pass active `profileId` to all downstream navigation (scan, history, dashboard)
 
@@ -332,9 +332,41 @@ Step 19 — lib/screens/dashboard_screen.dart        Accept profileId param
 Step 20 — lib/screens/history_screen.dart          Accept profileId param
 Step 21 — lib/screens/profile_screen.dart          Active profile data, owner-only controls
 Step 22 — lib/main.dart                            Post-login routing
+Step 23 — Edit-mode sharing subtask                Add `editor` access so shared users can log readings on behalf of profile owner.
 ```
 
 ---
+
+## New Subtask Added (Post-A2)
+
+### Subtask 23 — Edit-Mode Sharing (`editor` access)
+
+Goal: allow profile sharing in edit mode so invited users can log readings for that profile.
+
+Scope:
+- Add `editor` as a valid `profile_access.access_level` value (`owner`, `editor`, `viewer`).
+- Invite send flow accepts desired access level (`viewer` default, optional `editor`).
+- Invite accept flow creates `ProfileAccess(editor)` when invite was sent with edit mode.
+- Reading write permissions (`POST /api/readings`) allow `owner` + `editor`; `viewer` remains read-only.
+- Reading delete/update permissions for shared users remain owner-only unless explicitly expanded in a later subtask.
+- Flutter access badge and labels include `Editor` state in profile selection and profile details.
+- Manage Access screen allows owner to choose invite mode (`Can view` / `Can edit`).
+
+Acceptance:
+- Owner can invite user with edit mode.
+- Invitee accepting edit-mode invite can successfully create readings for that profile.
+- Invitee with viewer mode gets 403 on create reading for that profile.
+- Existing viewer-only sharing behavior remains unchanged.
+
+Impacted files (for Subtask 23):
+- `backend/models.py` (access level enum/value usage)
+- `backend/schemas.py` (invite request/response access level)
+- `backend/routes_profiles.py` (invite creation + accept logic)
+- `backend/routes_health.py` (write permission gate)
+- `lib/models/profile_model.dart` (accessLevel includes `editor`)
+- `lib/services/profile_service.dart` (invite payload with access level)
+- `lib/screens/manage_access_screen.dart` (invite mode selector)
+- `lib/screens/select_profile_screen.dart` (editor badge)
 
 ## What Is NOT in This Task
 
