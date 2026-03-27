@@ -1,3 +1,6 @@
+// Context: Manages multi-profile switching, local storage sync, and API calls.
+// Related: lib/models/profile_model.dart, backend/routes.py
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';

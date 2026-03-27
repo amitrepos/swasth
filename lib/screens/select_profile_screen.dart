@@ -1,3 +1,6 @@
+// Context: Primary UI for user profile selection and access management.
+// Related: lib/services/profile_service.dart, lib/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import '../models/profile_model.dart';
 import '../models/invite_model.dart';

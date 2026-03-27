@@ -1,3 +1,6 @@
+# Context: Handles health data processing and profile-specific metrics.
+# Related: backend/main.py, lib/services/health_reading_service.dart
+
 """Health Readings API Routes"""
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
