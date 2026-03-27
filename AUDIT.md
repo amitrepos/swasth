@@ -64,3 +64,102 @@ Format: date, summary, file-level details.
 - Created `Updates.md`: Logged timestamped change entry for the new subtask definition.
   - 18:17:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/Updates.md
   - 18:17:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 22:19:22 modified: /Users/amitkumarmishra/.claude/plans/giggly-sniffing-thompson.md
+  - 22:26:25 modified: /Users/amitkumarmishra/.claude/plans/giggly-sniffing-thompson.md
+  - 22:33:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/pubspec.yaml
+  - 22:33:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/android/app/src/main/AndroidManifest.xml
+  - 22:33:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/ios/Runner/Info.plist
+  - 22:34:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/ocr_service.dart
+  - 22:35:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 22:36:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 22:36:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 22:36:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 22:36:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+
+---
+
+## 2026-03-27 — B1/B2 Photo OCR Scan feature: camera + ML Kit OCR pipeline
+
+### New packages (pubspec.yaml)
+- `camera: ^0.10.5+9` — live camera preview with frame guide overlay
+- `image_picker: ^1.0.7` — image capture helper
+- `google_mlkit_text_recognition: ^0.13.0` — on-device OCR (free, offline, no API key)
+
+### Platform permissions
+- `android/app/src/main/AndroidManifest.xml`: added CAMERA permission + hardware features
+- `ios/Runner/Info.plist`: added NSCameraUsageDescription + NSPhotoLibraryUsageDescription
+
+### New Flutter files
+- `lib/services/ocr_service.dart` *(new)*: on-device OCR — extracts glucose value (2–3 digit number, HI/LO handling) or BP values (systolic/diastolic/pulse regex) from photo; returns OcrResult
+- `lib/screens/photo_scan_screen.dart` *(new)*: full-screen camera preview with dimmed overlay + guide rectangle + corner accents, flash toggle, capture button, blurry-photo detection (falls back to manual if OCR returns no text), navigates to ReadingConfirmationScreen
+- `lib/screens/reading_confirmation_screen.dart` *(new)*: shows OCR result ("We read 153 mg/dL — correct?") with edit option, meal context chips (Fasting/Before/After Meal) for glucose, timestamp picker, saves via existing POST /readings endpoint
+
+### Modified Flutter files
+- `lib/screens/home_screen.dart`: Glucometer and BP Meter buttons now show a bottom-sheet modal with two options — "Scan with Camera" (→ PhotoScanScreen) and "Connect via Bluetooth" (→ existing DashboardScreen BLE flow)
+
+### Backend
+- No changes needed — existing POST /readings accepts all required fields; meal_context stored in existing `notes` field
+  - 22:38:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 22:44:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 22:57:23 modified: /Users/amitkumarmishra/.claude/plans/giggly-sniffing-thompson.md
+  - 22:58:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/pubspec.yaml
+  - 22:58:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/pubspec.yaml
+  - 22:58:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/l10n.yaml
+
+---
+
+## 2026-03-27 — A6 Hindi/English language toggle: full gen-l10n implementation
+
+### Infrastructure (new files)
+- `l10n.yaml`: gen-l10n config pointing to `lib/l10n/`, template `app_en.arb`, output class `AppLocalizations`
+- `lib/l10n/app_en.arb`: ~90 string keys covering all 16 screens, with parametric keys for `viewingProfile(name)`, `pendingInvitesBanner(count)`, `logReading(device)`, `saveFailed(error)`, `ageYears(age)`, `heightCm(height)`, `revokeAccessConfirm(name)`, `wantsToShare(profileName)`, `expiresInDays(days, date)`, `acceptedInvite(profileName)`, `rejectedInvite(profileName)`, `otpSentTo(email)`, `resendIn(seconds)`
+- `lib/l10n/app_hi.arb`: Full Hindi (Devanagari) translations for all ~90 keys; Bihar-appropriate phrasing; medical condition API values left untranslated
+- `lib/providers/language_provider.dart`: `LanguageNotifier extends StateNotifier<Locale>` — saves to FlutterSecureStorage on change and emits new Locale; `languageProvider` StateNotifierProvider
+
+### Modified files
+- `pubspec.yaml`: Added `flutter_localizations: sdk: flutter` dependency; added `generate: true` under `flutter:` section
+- `lib/services/storage_service.dart`: Added `_languageKey`, `saveLanguage()`, `getLanguage()` — intentionally excluded from `clearAll()` so language preference survives logout
+- `lib/main.dart`: `main()` made async, loads saved language from storage before `runApp` (no startup flash); `ProviderScope.overrides` injects correct initial Locale; `SwasthApp` converted from `StatelessWidget` to `ConsumerWidget` watching `languageProvider`; `MaterialApp` gains `locale`, `localizationsDelegates`, `supportedLocales`
+- `lib/screens/profile_screen.dart`: Converted to `ConsumerStatefulWidget`; added `_buildLanguageToggle()` (animated segmented English/हिंदी chip row) in Account Settings; all hardcoded strings replaced with `AppLocalizations` keys
+
+### Screen localization (all 15 remaining screens)
+- `lib/screens/login_screen.dart`: All UI strings localized
+- `lib/screens/registration_screen.dart`: All UI strings localized; medical condition values kept as-is (API keys)
+- `lib/screens/select_profile_screen.dart`: All UI strings localized including `pendingInvitesBanner(count:)`
+- `lib/screens/home_screen.dart`: All UI strings localized; `_showInputModal()` uses `logReading(device:)` with localized device name
+- `lib/screens/history_screen.dart`: Added `_localizedStatus(String? flag, AppLocalizations l10n)` helper to translate status flags without requiring BuildContext in the model; all UI strings localized
+- `lib/screens/photo_scan_screen.dart`: Device label from `l10n.glucometer`/`l10n.bpMeter`; `scanTitle(device:)`, `placeDeviceInBox(device:)`, blurry error dialog localized; initState auto-capture (none here)
+- `lib/screens/reading_confirmation_screen.dart`: All UI strings localized including `_OcrResultBanner` and `_ManualEntryHint` sub-widgets; `saveFailed(error:)` parametric key used; `_inputField()` simplified (removed `(optional)` suffix — `pulseLabel` already includes it)
+- `lib/screens/create_profile_screen.dart`: All UI strings localized
+- `lib/screens/manage_access_screen.dart`: All UI strings localized including `revokeAccessConfirm(name:)`
+- `lib/screens/pending_invites_screen.dart`: All UI strings localized including `acceptedInvite(profileName:)`, `rejectedInvite(profileName:)`, `wantsToShare(profileName:)`, `expiresInDays(days:, date:)`
+- `lib/screens/scan_screen.dart`: All UI strings localized; initial `_status` changed to `''` with fallback to `l10n.pressScanToFind`; `initState` auto-scan wrapped in `addPostFrameCallback` so l10n is available; BLE device-name strings left untranslated (not in ARB)
+- `lib/screens/forgot_password_screen.dart`: All UI strings localized
+- `lib/screens/otp_verification_screen.dart`: All UI strings localized including `resendIn(seconds:)` and `otpSentTo(email:)`
+- `lib/screens/reset_password_screen.dart`: All UI strings localized
+- `lib/screens/dashboard_screen.dart`: Device labels (`glucometer`, `bpMeter`, `armband`) localized in device panel; BLE status strings left in English (technical, no ARB keys)
+  - 22:59:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 23:00:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 23:00:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/providers/language_provider.dart
+  - 23:00:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/storage_service.dart
+  - 23:00:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/storage_service.dart
+  - 23:01:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 23:01:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 23:01:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 23:07:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 23:07:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/forgot_password_screen.dart
+  - 23:07:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/otp_verification_screen.dart
+  - 23:07:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reset_password_screen.dart
+  - 23:08:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 23:08:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 23:08:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 23:09:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+  - 23:09:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 23:10:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 23:10:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 23:11:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 23:11:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/scan_screen.dart
+  - 23:12:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 23:12:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 23:12:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 23:13:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

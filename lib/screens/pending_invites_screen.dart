@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/invite_model.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
@@ -14,7 +15,7 @@ class PendingInvitesScreen extends StatefulWidget {
 class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
   final ProfileService _profileService = ProfileService();
   final StorageService _storageService = StorageService();
-  
+
   List<InviteModel> _invites = [];
   bool _isLoading = true;
   String? _error;
@@ -51,19 +52,21 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
 
   Future<void> _respond(InviteModel invite, bool accept) async {
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
+
     try {
       final token = await _storageService.getToken();
       if (token == null) throw Exception("Not authenticated");
 
       await _profileService.respondToInvite(token, invite.id, accept);
       _anyChange = true;
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(accept 
-              ? 'Accepted invite for ${invite.profileName}' 
-              : 'Rejected invite for ${invite.profileName}'),
+            content: Text(accept
+                ? l10n.acceptedInvite(profileName: invite.profileName)
+                : l10n.rejectedInvite(profileName: invite.profileName)),
             backgroundColor: accept ? Colors.green : Colors.grey,
           ),
         );
@@ -81,6 +84,8 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -88,7 +93,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Pending Invites'),
+          title: Text(l10n.pendingInvitesTitle),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context, _anyChange),
@@ -103,13 +108,13 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                       children: [
                         Text(_error!, style: const TextStyle(color: Colors.red)),
                         const SizedBox(height: 16),
-                        ElevatedButton(onPressed: _loadInvites, child: const Text('Retry')),
+                        ElevatedButton(onPressed: _loadInvites, child: Text(l10n.retry)),
                       ],
                     ),
                   )
                 : _invites.isEmpty
-                    ? const Center(
-                        child: Text('No pending invites.', style: TextStyle(color: Colors.grey)),
+                    ? Center(
+                        child: Text(l10n.noPendingInvites, style: const TextStyle(color: Colors.grey)),
                       )
                     : RefreshIndicator(
                         onRefresh: _loadInvites,
@@ -119,7 +124,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                           itemBuilder: (context, index) {
                             final invite = _invites[index];
                             final daysLeft = invite.expiresAt.difference(DateTime.now()).inDays;
-                            
+
                             return Card(
                               margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                               child: Padding(
@@ -143,7 +148,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                               ),
                                               Text(
-                                                'wants to share "${invite.profileName}"',
+                                                l10n.wantsToShare(profileName: invite.profileName),
                                                 style: TextStyle(color: Colors.grey.shade700),
                                               ),
                                             ],
@@ -153,7 +158,10 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
-                                      'Expires in $daysLeft days (${DateFormat('MMM d, yyyy').format(invite.expiresAt)})',
+                                      l10n.expiresInDays(
+                                        days: daysLeft,
+                                        date: DateFormat('MMM d, yyyy').format(invite.expiresAt),
+                                      ),
                                       style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                                     ),
                                     const SizedBox(height: 16),
@@ -162,14 +170,14 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                                         Expanded(
                                           child: OutlinedButton(
                                             onPressed: _isLoading ? null : () => _respond(invite, false),
-                                            child: const Text('Reject'),
+                                            child: Text(l10n.reject),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: ElevatedButton(
                                             onPressed: _isLoading ? null : () => _respond(invite, true),
-                                            child: const Text('Accept'),
+                                            child: Text(l10n.accept),
                                           ),
                                         ),
                                       ],

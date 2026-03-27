@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import 'registration_screen.dart';
@@ -15,10 +16,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
-  
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -35,6 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
 
     try {
       final response = await _apiService.login(
@@ -43,29 +45,26 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
-        // Store token and user data
         final token = response['access_token'];
         if (token != null) {
           await StorageService().saveToken(token);
-          
-          // Fetch user data using the token
+
           try {
             final userData = await _apiService.getCurrentUser(token);
             await StorageService().saveUserData(userData);
           } catch (_) {}
         }
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login successful!'),
+            SnackBar(
+              content: Text(l10n.loginSuccessful),
               backgroundColor: Colors.green,
             ),
           );
         }
       }
-      
-      // Navigate to select profile screen
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -88,9 +87,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        title: Text(l10n.loginTitle),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -100,8 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 32),
-              
-              // App Logo or Title
+
               Icon(
                 Icons.health_and_safety,
                 size: 80,
@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Swasth Health App',
+                l10n.appTitle,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurface,
@@ -122,16 +122,16 @@ class _LoginScreenState extends State<LoginScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
+                decoration: InputDecoration(
+                  labelText: l10n.emailLabel,
+                  prefixIcon: const Icon(Icons.email),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email';
+                    return l10n.emailValidationEmpty;
                   }
                   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'Please enter a valid email';
+                    return l10n.emailValidationInvalid;
                   }
                   return null;
                 },
@@ -143,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
-                  labelText: 'Password',
+                  labelText: l10n.passwordLabel,
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -156,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
+                    return l10n.passwordValidationEmpty;
                   }
                   return null;
                 },
@@ -175,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     );
                   },
-                  child: const Text('Forgot Password?'),
+                  child: Text(l10n.forgotPassword),
                 ),
               ),
               const SizedBox(height: 24),
@@ -189,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Login'),
+                    : Text(l10n.loginButton),
               ),
               const SizedBox(height: 16),
 
@@ -197,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("Don't have an account?"),
+                  Text(l10n.noAccount),
                   TextButton(
                     onPressed: () {
                       Navigator.push(
@@ -207,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       );
                     },
-                    child: const Text('Register'),
+                    child: Text(l10n.register),
                   ),
                 ],
               ),

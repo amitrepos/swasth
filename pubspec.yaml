@@ -10,10 +10,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.8
 
   # BLE
   flutter_blue_plus: ^1.32.0
+
+  # Camera + OCR (B1, B2 photo capture)
+  camera: ^0.10.5+9
+  image_picker: ^1.0.7
+  google_mlkit_text_recognition: ^0.13.0
 
   # Permissions
   permission_handler: ^11.0.0
@@ -46,3 +53,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true

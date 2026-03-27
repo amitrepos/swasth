@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 
@@ -21,12 +22,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _apiService = ApiService();
-  
+
   bool _isLoading = false;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
 
-  // Password validation
   bool _passwordHasMinLength = false;
   bool _passwordHasUppercase = false;
   bool _passwordHasLowercase = false;
@@ -68,6 +68,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     }
 
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
 
     try {
       await _apiService.resetPassword(
@@ -79,13 +80,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password reset successfully!'),
+          SnackBar(
+            content: Text(l10n.passwordResetSuccess),
             backgroundColor: Colors.green,
           ),
         );
 
-        // Navigate to login screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -107,9 +107,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reset Password'),
+        title: Text(l10n.resetPasswordTitle),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
@@ -120,26 +122,25 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 32),
-              
-              // Icon and Title
+
               Icon(
                 Icons.lock_outline,
                 size: 80,
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Create New Password',
-                style: TextStyle(
+              Text(
+                l10n.createNewPasswordHeadline,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Your new password must be different from your old password.',
-                style: TextStyle(fontSize: 16),
+              Text(
+                l10n.createNewPasswordSubtitle,
+                style: const TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),
@@ -149,7 +150,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 controller: _newPasswordController,
                 obscureText: _obscureNewPassword,
                 decoration: InputDecoration(
-                  labelText: 'New Password',
+                  labelText: l10n.newPasswordLabel,
                   prefixIcon: const Icon(Icons.lock),
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
@@ -187,30 +188,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Password Requirements:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      l10n.passwordRequirementsTitle,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    _buildRequirementRow(
-                      'At least 8 characters',
-                      _passwordHasMinLength,
-                    ),
-                    _buildRequirementRow(
-                      'One uppercase letter',
-                      _passwordHasUppercase,
-                    ),
-                    _buildRequirementRow(
-                      'One lowercase letter',
-                      _passwordHasLowercase,
-                    ),
-                    _buildRequirementRow(
-                      'One number',
-                      _passwordHasNumber,
-                    ),
-                    _buildRequirementRow(
-                      'One special character',
-                      _passwordHasSpecialChar,
-                    ),
+                    _buildRequirementRow(l10n.passwordReqLength, _passwordHasMinLength),
+                    _buildRequirementRow(l10n.passwordReqUppercase, _passwordHasUppercase),
+                    _buildRequirementRow(l10n.passwordReqLowercase, _passwordHasLowercase),
+                    _buildRequirementRow(l10n.passwordReqNumber, _passwordHasNumber),
+                    _buildRequirementRow(l10n.passwordReqSpecial, _passwordHasSpecialChar),
                   ],
                 ),
               ),
@@ -221,12 +207,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirmPassword,
                 decoration: InputDecoration(
-                  labelText: 'Confirm Password',
+                  labelText: l10n.confirmPasswordLabel,
                   prefixIcon: const Icon(Icons.lock_outline),
                   border: const OutlineInputBorder(),
                   errorText: !_passwordsMatch &&
                           _confirmPasswordController.text.isNotEmpty
-                      ? 'Passwords do not match'
+                      ? l10n.passwordsDoNotMatch
                       : null,
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -242,7 +228,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     return 'Please confirm your password';
                   }
                   if (!_passwordsMatch) {
-                    return 'Passwords do not match';
+                    return l10n.passwordsDoNotMatch;
                   }
                   return null;
                 },
@@ -260,9 +246,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator()
-                    : const Text(
-                        'Reset Password',
-                        style: TextStyle(fontSize: 16),
+                    : Text(
+                        l10n.resetPasswordButton,
+                        style: const TextStyle(fontSize: 16),
                       ),
               ),
             ],

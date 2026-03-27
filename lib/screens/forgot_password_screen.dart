@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import 'otp_verification_screen.dart';
 import 'login_screen.dart';
@@ -14,7 +15,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _apiService = ApiService();
-  
+
   bool _isLoading = false;
 
   @override
@@ -29,19 +30,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
 
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
 
     try {
       await _apiService.requestPasswordReset(_emailController.text.trim());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP sent successfully! Check your email.'),
+          SnackBar(
+            content: Text(l10n.otpSentSuccess),
             backgroundColor: Colors.green,
           ),
         );
 
-        // Navigate to OTP verification screen
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -67,9 +68,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Forgot Password'),
+        title: Text(l10n.forgotPasswordTitle),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
@@ -80,26 +83,25 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 32),
-              
-              // Icon and Title
+
               Icon(
                 Icons.lock_reset,
                 size: 80,
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Forgot Password?',
-                style: TextStyle(
+              Text(
+                l10n.forgotPasswordHeadline,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Enter your email address and we\'ll send you an OTP to reset your password.',
-                style: TextStyle(fontSize: 16),
+              Text(
+                l10n.forgotPasswordSubtitle,
+                style: const TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),
@@ -108,18 +110,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.emailLabel,
+                  prefixIcon: const Icon(Icons.email),
+                  border: const OutlineInputBorder(),
                   hintText: 'Enter your registered email',
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email';
+                    return l10n.emailValidationEmpty;
                   }
                   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'Please enter a valid email';
+                    return l10n.emailValidationInvalid;
                   }
                   return null;
                 },
@@ -137,9 +139,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator()
-                    : const Text(
-                        'Send OTP',
-                        style: TextStyle(fontSize: 16),
+                    : Text(
+                        l10n.sendOtp,
+                        style: const TextStyle(fontSize: 16),
                       ),
               ),
               const SizedBox(height: 16),
@@ -148,7 +150,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Remember your password?'),
+                  Text(l10n.rememberPassword),
                   TextButton(
                     onPressed: () {
                       Navigator.pushReplacement(
@@ -158,7 +160,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                       );
                     },
-                    child: const Text('Login'),
+                    child: Text(l10n.loginButton),
                   ),
                 ],
               ),

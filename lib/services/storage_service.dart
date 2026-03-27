@@ -12,6 +12,7 @@ class StorageService {
   static const String _userKey = 'user_data';
   static const String _activeProfileIdKey = 'active_profile_id';
   static const String _activeProfileNameKey = 'active_profile_name';
+  static const String _languageKey = 'language_code';
 
   // Save authentication token
   Future<void> saveToken(String token) async {
@@ -50,6 +51,16 @@ class StorageService {
   // Get active profile name
   Future<String?> getActiveProfileName() async {
     return await _storage.read(key: _activeProfileNameKey);
+  }
+
+  // Save language preference (survives logout)
+  Future<void> saveLanguage(String languageCode) async {
+    await _storage.write(key: _languageKey, value: languageCode);
+  }
+
+  // Get language preference
+  Future<String?> getLanguage() async {
+    return await _storage.read(key: _languageKey);
   }
 
   // Get user data

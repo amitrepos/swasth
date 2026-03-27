@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/profile_service.dart';
 import '../services/api_service.dart';
 import '../models/profile_model.dart';
+import '../providers/language_provider.dart';
 import 'manage_access_screen.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   final int profileId;
   const ProfileScreen({super.key, required this.profileId});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   ProfileModel? _profile;
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
@@ -70,16 +73,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _changePassword() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_currentPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter current password'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.enterCurrentPassword), backgroundColor: Colors.red));
       return;
     }
     if (_newPasswordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Min 6 characters'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordTooShort), backgroundColor: Colors.red));
       return;
     }
     if (_newPasswordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordsDoNotMatch), backgroundColor: Colors.red));
       return;
     }
 
@@ -94,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password changed!'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordChanged), backgroundColor: Colors.green));
         _clearPasswordFields();
         Navigator.pop(context);
       }
@@ -106,17 +110,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showChangePasswordDialog() {
+    final l10n = AppLocalizations.of(context)!;
     bool obscureCurrentPassword = true;
     bool obscureNewPassword = true;
     bool obscureConfirmPassword = true;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: const Text('Change Password'),
+            title: Text(l10n.changePasswordTitle),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -125,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _currentPasswordController,
                     obscureText: obscureCurrentPassword,
                     decoration: InputDecoration(
-                      labelText: 'Current Password',
+                      labelText: l10n.currentPasswordLabel,
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(obscureCurrentPassword ? Icons.visibility : Icons.visibility_off),
@@ -138,13 +143,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _newPasswordController,
                     obscureText: obscureNewPassword,
                     decoration: InputDecoration(
-                      labelText: 'New Password',
+                      labelText: l10n.newPasswordLabel,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(obscureNewPassword ? Icons.visibility : Icons.visibility_off),
                         onPressed: () => setDialogState(() => obscureNewPassword = !obscureNewPassword),
                       ),
-                      helperText: 'Min. 6 characters',
+                      helperText: l10n.passwordMinChars,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -152,7 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _confirmPasswordController,
                     obscureText: obscureConfirmPassword,
                     decoration: InputDecoration(
-                      labelText: 'Confirm New Password',
+                      labelText: l10n.confirmNewPasswordLabel,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
@@ -164,8 +169,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () { _clearPasswordFields(); Navigator.pop(dialogContext); }, child: const Text('Cancel')),
-              ElevatedButton(onPressed: _changePassword, child: const Text('Change Password')),
+              TextButton(
+                onPressed: () { _clearPasswordFields(); Navigator.pop(dialogContext); },
+                child: Text(l10n.cancel),
+              ),
+              ElevatedButton(
+                onPressed: _changePassword,
+                child: Text(l10n.changePasswordTitle),
+              ),
             ],
           );
         },
@@ -173,17 +184,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildLanguageToggle(AppLocalizations l10n) {
+    final isEnglish = ref.watch(languageProvider).languageCode == 'en';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(Icons.language, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                l10n.appLanguageSection,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _langChip(l10n.languageEnglish, isEnglish,
+                      () => ref.read(languageProvider.notifier).setLanguage('en')),
+                  _langChip(l10n.languageHindi, !isEnglish,
+                      () => ref.read(languageProvider.notifier).setLanguage('hi')),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _langChip(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : Theme.of(context).colorScheme.onSurface,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_isLoading) {
-      return Scaffold(appBar: AppBar(title: const Text('Profile')), body: const Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.profile)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     final isOwner = _profile?.accessLevel == 'owner';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile Details'),
+        title: Text(l10n.profileDetailsTitle),
         actions: [
           if (isOwner)
             IconButton(
@@ -199,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 );
               },
-              tooltip: 'Manage Access',
+              tooltip: l10n.manageAccess,
             ),
         ],
       ),
@@ -231,7 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isOwner ? 'Your Profile' : 'Shared by Someone',
+                    isOwner ? l10n.yourProfile : l10n.sharedBySomeone,
                     style: TextStyle(color: Colors.white.withOpacity(0.9)),
                   ),
                 ],
@@ -241,35 +316,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 24),
 
             // Info Sections
-            _buildSection('Health Information', [
-              _buildInfoCard(icon: Icons.cake, label: 'Age', value: '${_profile?.age ?? "?"} years'),
-              _buildInfoCard(icon: Icons.male, label: 'Gender', value: _profile?.gender ?? 'Unknown'),
-              _buildInfoCard(icon: Icons.bloodtype, label: 'Blood Group', value: _profile?.bloodGroup ?? 'Unknown'),
-              _buildInfoCard(icon: Icons.straighten, label: 'Height', value: '${_profile?.height ?? "?"} cm'),
+            _buildSection(l10n.healthInfoSection, [
+              _buildInfoCard(icon: Icons.cake, label: l10n.ageField, value: l10n.ageYears(age: '${_profile?.age ?? "?"}')),
+              _buildInfoCard(icon: Icons.male, label: l10n.genderField, value: _profile?.gender ?? 'Unknown'),
+              _buildInfoCard(icon: Icons.bloodtype, label: l10n.bloodGroupField, value: _profile?.bloodGroup ?? 'Unknown'),
+              _buildInfoCard(icon: Icons.straighten, label: l10n.heightField, value: l10n.heightCm(height: '${_profile?.height ?? "?"}')),
             ]),
 
             if (_profile?.medicalConditions != null && _profile!.medicalConditions!.isNotEmpty)
-              _buildSection('Medical Conditions', [
+              _buildSection(l10n.medicalConditionsField, [
                 _buildInfoCard(
-                  icon: Icons.medical_services, 
-                  label: 'Conditions', 
-                  value: _profile!.medicalConditions!.join(", ") + 
-                         (_profile!.otherMedicalCondition != null ? " (${_profile!.otherMedicalCondition})" : "")
+                  icon: Icons.medical_services,
+                  label: l10n.medicalConditionsField,
+                  value: _profile!.medicalConditions!.join(", ") +
+                      (_profile!.otherMedicalCondition != null ? " (${_profile!.otherMedicalCondition})" : ""),
                 ),
               ]),
 
             if (isOwner)
-              _buildSection('Account Settings', [
-                _buildInfoCard(icon: Icons.email, label: 'Linked Email', value: _userData?['email'] ?? 'N/A'),
+              _buildSection(l10n.accountSettingsSection, [
+                _buildInfoCard(icon: Icons.email, label: l10n.linkedEmail, value: _userData?['email'] ?? 'N/A'),
                 const SizedBox(height: 8),
                 Card(
                   child: ListTile(
                     leading: Icon(Icons.lock_outline, color: Theme.of(context).colorScheme.primary),
-                    title: const Text('Change Account Password'),
+                    title: Text(l10n.changePassword),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: _showChangePasswordDialog,
                   ),
                 ),
+                const SizedBox(height: 8),
+                _buildLanguageToggle(l10n),
               ]),
 
             const SizedBox(height: 32),

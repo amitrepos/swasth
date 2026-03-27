@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import 'reset_password_screen.dart';
 import 'login_screen.dart';
@@ -16,7 +17,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _otpController = TextEditingController();
   final _apiService = ApiService();
-  
+
   bool _isLoading = false;
   int _resendCountdown = 0;
 
@@ -34,7 +35,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   void _startResendTimer() {
     setState(() => _resendCountdown = 60);
-    
+
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted && _resendCountdown > 0) {
         setState(() => _resendCountdown--);
@@ -49,19 +50,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
 
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
 
     try {
       await _apiService.verifyOTP(widget.email, _otpController.text.trim());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP verified successfully!'),
+          SnackBar(
+            content: Text(l10n.otpVerifiedSuccess),
             backgroundColor: Colors.green,
           ),
         );
 
-        // Navigate to reset password screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -90,14 +91,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (_resendCountdown > 0) return;
 
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
 
     try {
       await _apiService.requestPasswordReset(widget.email);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP resent successfully! Check your email.'),
+          SnackBar(
+            content: Text(l10n.otpResent),
             backgroundColor: Colors.green,
           ),
         );
@@ -119,9 +121,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Verify OTP'),
+        title: Text(l10n.verifyOtpTitle),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
@@ -132,17 +136,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 32),
-              
-              // Icon and Title
+
               Icon(
                 Icons.security,
                 size: 80,
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 24),
-              const Text(
-                'Enter OTP',
-                style: TextStyle(
+              Text(
+                l10n.enterOtpHeadline,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
@@ -150,7 +153,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'We\'ve sent a 6-digit OTP to\n${widget.email}',
+                l10n.otpSentTo(email: widget.email),
                 style: const TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
@@ -167,9 +170,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   letterSpacing: 8,
                   fontWeight: FontWeight.bold,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'OTP',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.otpLabel,
+                  border: const OutlineInputBorder(),
                   hintText: '000000',
                   counterText: '',
                 ),
@@ -199,9 +202,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator()
-                    : const Text(
-                        'Verify OTP',
-                        style: TextStyle(fontSize: 16),
+                    : Text(
+                        l10n.verifyOtp,
+                        style: const TextStyle(fontSize: 16),
                       ),
               ),
               const SizedBox(height: 16),
@@ -210,17 +213,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("Didn't receive OTP?"),
+                  Text(l10n.didNotReceiveOtp),
                   if (_resendCountdown > 0) ...[
                     const SizedBox(width: 8),
                     Text(
-                      'Resend in ${_resendCountdown}s',
+                      l10n.resendIn(seconds: _resendCountdown),
                       style: const TextStyle(color: Colors.grey),
                     ),
                   ] else ...[
                     TextButton(
                       onPressed: _isLoading ? null : _resendOTP,
-                      child: const Text('Resend OTP'),
+                      child: Text(l10n.resendOtp),
                     ),
                   ],
                 ],
@@ -231,7 +234,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Want to go back?'),
+                  Text(l10n.wantToGoBack),
                   TextButton(
                     onPressed: () {
                       Navigator.pushReplacement(
@@ -241,7 +244,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         ),
                       );
                     },
-                    child: const Text('Login'),
+                    child: Text(l10n.loginButton),
                   ),
                 ],
               ),
