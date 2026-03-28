@@ -5,6 +5,13 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-28 — My Doctor card on dashboard (Plan 1)
+
+- Added `url_launcher: ^6.3.0` to `pubspec.yaml` for WhatsApp deep links.
+- Modified `lib/screens/home_screen.dart`: Added `ProfileService` + `ProfileModel` imports. Added `_activeProfile` state field. `_refreshHealthScore` now also fetches the active profile (for doctor details). Added `_MyDoctorCard` widget — green-bordered card with doctor name, specialty, and a WhatsApp tap-to-chat button (opens `wa.me/{number}` via `LaunchMode.externalApplication`). Card only renders when `doctor_name` is set. Inserted between AI Doctor card and Record New Metrics section.
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added `myDoctorTitle` and `contactOnWhatsApp` strings.
+- Fixed `backend/routes_profiles.py`: `_build_profile_response` was not including `doctor_name/specialty/whatsapp` — saved doctor details never appeared in the UI.
+
 ## 2026-03-28 — D14: Doctor details data model + profile screen UI
 
 - Modified `backend/models.py`: Added `doctor_name`, `doctor_specialty`, `doctor_whatsapp` columns (nullable String) to `Profile` model.
@@ -510,3 +517,13 @@ Format: date, summary, file-level details.
   - 23:26:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
   - 23:26:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
   - 23:26:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 23:32:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 23:35:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/pubspec.yaml
+  - 23:35:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 23:35:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 23:35:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 23:35:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 23:36:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 23:36:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 23:36:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 23:40:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
