@@ -8,6 +8,9 @@ class ProfileModel {
   final List<String>? medicalConditions;
   final String? otherMedicalCondition;
   final String? medications;
+  final String? doctorName;
+  final String? doctorSpecialty;
+  final String? doctorWhatsapp;
   final String accessLevel; // "owner" or "viewer"
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -22,6 +25,9 @@ class ProfileModel {
     this.medicalConditions,
     this.otherMedicalCondition,
     this.medications,
+    this.doctorName,
+    this.doctorSpecialty,
+    this.doctorWhatsapp,
     required this.accessLevel,
     required this.createdAt,
     this.updatedAt,
@@ -40,6 +46,9 @@ class ProfileModel {
           : null,
       otherMedicalCondition: json['other_medical_condition'],
       medications: json['current_medications'],
+      doctorName: json['doctor_name'] as String?,
+      doctorSpecialty: json['doctor_specialty'] as String?,
+      doctorWhatsapp: json['doctor_whatsapp'] as String?,
       accessLevel: json['access_level'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: json['updated_at'] != null

@@ -136,6 +136,9 @@ def get_health_score(
     """Compute a 0–100 health score, streak, and insight for the home screen dashboard."""
     get_profile_access_or_403(profile_id, user, db)
 
+    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
+    profile_age = profile.age if profile else None
+
     today = date.today()
     seven_days_ago = datetime.combine(today - timedelta(days=6), datetime.min.time())
 
@@ -251,6 +254,7 @@ def get_health_score(
         today_bp_systolic=today_bp.systolic if today_bp else None,
         today_bp_diastolic=today_bp.diastolic if today_bp else None,
         last_logged=last_logged,
+        profile_age=profile_age,
     )
 
 

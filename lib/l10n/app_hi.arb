@@ -68,6 +68,19 @@
   "welcomeTitle": "स्वस्थ में आपका स्वागत है!",
   "welcomeSubtitle": "आपका स्वास्थ्य साथी",
   "selectDevice": "डिवाइस चुनें",
+  "recordNewMetrics": "नई मेट्रिक्स रिकॉर्ड करें",
+  "flagFitFine": "स्वस्थ",
+  "flagCaution": "सावधानी",
+  "flagAtRisk": "जोखिम में",
+  "flagUrgent": "तत्काल",
+  "weeklyWinnersTitle": "इस सप्ताह शीर्ष",
+  "weeklyWinnersSoon": "जल्द आ रहा है",
+  "pointsLabel": "{pts} अंक",
+  "@pointsLabel": {
+    "placeholders": {
+      "pts": { "type": "int" }
+    }
+  },
   "glucometer": "ग्लूकोमीटर",
   "bpMeter": "बीपी मीटर",
   "armband": "आर्मबैंड",
@@ -189,6 +202,18 @@
   "appLanguageSection": "ऐप की भाषा",
   "languageEnglish": "English",
   "languageHindi": "हिंदी",
+
+  "myDoctorTitle": "मेरे डॉक्टर",
+  "contactOnWhatsApp": "व्हाट्सएप पर संपर्क करें",
+  "doctorDetailsSection": "डॉक्टर की जानकारी",
+  "doctorNameField": "डॉक्टर का नाम",
+  "doctorSpecialtyField": "विशेषज्ञता",
+  "doctorWhatsappField": "व्हाट्सएप नंबर",
+  "noDoctorLinked": "अभी तक कोई डॉक्टर नहीं जोड़ा गया।",
+  "addDoctor": "डॉक्टर जोड़ें",
+  "editDoctor": "डॉक्टर की जानकारी बदलें",
+  "editDoctorTitle": "डॉक्टर की जानकारी",
+  "doctorWhatsappHint": "जैसे +917001234567",
 
   "addHealthProfileTitle": "स्वास्थ्य प्रोफाइल जोड़ें",
   "createProfileSubtitle": "किसी की देखभाल के लिए प्रोफाइल बनाएं (जैसे माता-पिता, बच्चा)",

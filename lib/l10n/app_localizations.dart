@@ -476,6 +476,54 @@ abstract class AppLocalizations {
   /// **'Select Device'**
   String get selectDevice;
 
+  /// No description provided for @recordNewMetrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Record New Metrics'**
+  String get recordNewMetrics;
+
+  /// No description provided for @flagFitFine.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit & Fine'**
+  String get flagFitFine;
+
+  /// No description provided for @flagCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Caution'**
+  String get flagCaution;
+
+  /// No description provided for @flagAtRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'At Risk'**
+  String get flagAtRisk;
+
+  /// No description provided for @flagUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get flagUrgent;
+
+  /// No description provided for @weeklyWinnersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top this week'**
+  String get weeklyWinnersTitle;
+
+  /// No description provided for @weeklyWinnersSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'coming soon'**
+  String get weeklyWinnersSoon;
+
+  /// No description provided for @pointsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{pts} pts'**
+  String pointsLabel(int pts);
+
   /// No description provided for @glucometer.
   ///
   /// In en, this message translates to:
@@ -1105,6 +1153,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'हिंदी'**
   String get languageHindi;
+
+  /// No description provided for @myDoctorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Doctor'**
+  String get myDoctorTitle;
+
+  /// No description provided for @contactOnWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact on WhatsApp'**
+  String get contactOnWhatsApp;
+
+  /// No description provided for @doctorDetailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor Details'**
+  String get doctorDetailsSection;
+
+  /// No description provided for @doctorNameField.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor Name'**
+  String get doctorNameField;
+
+  /// No description provided for @doctorSpecialtyField.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialty'**
+  String get doctorSpecialtyField;
+
+  /// No description provided for @doctorWhatsappField.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp Number'**
+  String get doctorWhatsappField;
+
+  /// No description provided for @noDoctorLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'No doctor linked yet.'**
+  String get noDoctorLinked;
+
+  /// No description provided for @addDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Doctor'**
+  String get addDoctor;
+
+  /// No description provided for @editDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Doctor Details'**
+  String get editDoctor;
+
+  /// No description provided for @editDoctorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor Details'**
+  String get editDoctorTitle;
+
+  /// No description provided for @doctorWhatsappHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. +917001234567'**
+  String get doctorWhatsappHint;
 
   /// No description provided for @addHealthProfileTitle.
   ///

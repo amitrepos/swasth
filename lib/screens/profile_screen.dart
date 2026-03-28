@@ -29,6 +29,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  // Doctor detail controllers
+  final _doctorNameController = TextEditingController();
+  final _doctorSpecialtyController = TextEditingController();
+  final _doctorWhatsappController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +45,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _doctorNameController.dispose();
+    _doctorSpecialtyController.dispose();
+    _doctorWhatsappController.dispose();
     super.dispose();
   }
 
@@ -57,6 +65,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _profile = profile;
         _isLoading = false;
       });
+      _doctorNameController.text = profile.doctorName ?? '';
+      _doctorSpecialtyController.text = profile.doctorSpecialty ?? '';
+      _doctorWhatsappController.text = profile.doctorWhatsapp ?? '';
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -177,6 +188,99 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ElevatedButton(
                 onPressed: _changePassword,
                 child: Text(l10n.changePasswordTitle),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _saveDoctorDetails() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final token = await StorageService().getToken();
+      if (token == null) throw Exception('Not authenticated');
+
+      await _profileService.updateProfile(token, _profile!.id, {
+        'doctor_name': _doctorNameController.text.trim().isEmpty ? null : _doctorNameController.text.trim(),
+        'doctor_specialty': _doctorSpecialtyController.text.trim().isEmpty ? null : _doctorSpecialtyController.text.trim(),
+        'doctor_whatsapp': _doctorWhatsappController.text.trim().isEmpty ? null : _doctorWhatsappController.text.trim(),
+      });
+
+      if (mounted) {
+        Navigator.pop(context);
+        await _loadData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.save), backgroundColor: AppColors.statusNormal),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.statusCritical),
+        );
+      }
+    }
+  }
+
+  void _showEditDoctorDialog() {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(l10n.editDoctorTitle),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _doctorNameController,
+                    decoration: InputDecoration(
+                      labelText: l10n.doctorNameField,
+                      prefixIcon: const Icon(Icons.medical_services_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _doctorSpecialtyController,
+                    decoration: InputDecoration(
+                      labelText: l10n.doctorSpecialtyField,
+                      prefixIcon: const Icon(Icons.domain_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _doctorWhatsappController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: l10n.doctorWhatsappField,
+                      hintText: l10n.doctorWhatsappHint,
+                      prefixIcon: const Icon(Icons.phone_outlined),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  // Restore from current profile state on cancel
+                  _doctorNameController.text = _profile?.doctorName ?? '';
+                  _doctorSpecialtyController.text = _profile?.doctorSpecialty ?? '';
+                  _doctorWhatsappController.text = _profile?.doctorWhatsapp ?? '';
+                  Navigator.pop(dialogContext);
+                },
+                child: Text(l10n.cancel),
+              ),
+              ElevatedButton(
+                onPressed: _saveDoctorDetails,
+                child: Text(l10n.save),
               ),
             ],
           );
@@ -331,6 +435,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   label: l10n.medicalConditionsField,
                   value: _profile!.medicalConditions!.join(", ") +
                       (_profile!.otherMedicalCondition != null ? " (${_profile!.otherMedicalCondition})" : ""),
+                ),
+              ]),
+
+            if (isOwner)
+              _buildSection(l10n.doctorDetailsSection, [
+                if (_profile?.doctorName != null && _profile!.doctorName!.isNotEmpty) ...[
+                  _buildInfoCard(icon: Icons.medical_services_outlined, label: l10n.doctorNameField, value: _profile!.doctorName!),
+                  if (_profile?.doctorSpecialty?.isNotEmpty == true)
+                    _buildInfoCard(icon: Icons.domain_outlined, label: l10n.doctorSpecialtyField, value: _profile!.doctorSpecialty!),
+                  if (_profile?.doctorWhatsapp?.isNotEmpty == true)
+                    _buildInfoCard(icon: Icons.phone_outlined, label: l10n.doctorWhatsappField, value: _profile!.doctorWhatsapp!),
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(l10n.noDoctorLinked,
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  ),
+                Card(
+                  child: ListTile(
+                    leading: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary),
+                    title: Text(_profile?.doctorName?.isNotEmpty == true ? l10n.editDoctor : l10n.addDoctor),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: _showEditDoctorDialog,
+                  ),
                 ),
               ]),
 

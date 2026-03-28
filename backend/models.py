@@ -30,6 +30,9 @@ class Profile(Base):
     medical_conditions = Column(ARRAY(String), nullable=True)
     other_medical_condition = Column(Text, nullable=True)
     current_medications = Column(Text, nullable=True)
+    doctor_name = Column(String, nullable=True)
+    doctor_specialty = Column(String, nullable=True)
+    doctor_whatsapp = Column(String, nullable=True)             # full number e.g. +917001234567
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

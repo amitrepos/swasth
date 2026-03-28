@@ -13,8 +13,11 @@ import 'reading_confirmation_screen.dart';
 import 'trend_chart_screen.dart';
 import '../services/storage_service.dart';
 import '../services/health_reading_service.dart';
+import '../services/profile_service.dart';
+import '../models/profile_model.dart';
 import '../theme/app_theme.dart';
 import '../main.dart' show routeObserver;
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,10 +29,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final StorageService _storageService = StorageService();
   final HealthReadingService _readingService = HealthReadingService();
+  final ProfileService _profileService = ProfileService();
   String _activeProfileName = "Health";
   int? _activeProfileId;
   Future<Map<String, dynamic>>? _healthScoreFuture;
   Future<String>? _aiInsightFuture;
+  ProfileModel? _activeProfile;
 
   @override
   void initState() {
@@ -74,6 +79,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       _healthScoreFuture = _readingService.getHealthScore(token, profileId);
       _aiInsightFuture = _readingService.getAiInsight(token, profileId);
     });
+    // Fetch profile for doctor details (runs in parallel with above)
+    try {
+      final profile = await _profileService.getProfile(token, profileId);
+      if (mounted) setState(() => _activeProfile = profile);
+    } catch (_) {}
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -203,7 +213,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             if (_aiInsightFuture != null)
               _AIDoctorCard(insightFuture: _aiInsightFuture!),
 
-            // Device Selection Panel
+            // My Doctor Card
+            if (_activeProfile?.doctorName?.isNotEmpty == true)
+              _MyDoctorCard(profile: _activeProfile!),
+
+            // Section 3: Record New Metrics
             Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(20),
@@ -230,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
-                      l10n.selectDevice,
+                      l10n.recordNewMetrics,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -616,6 +630,101 @@ class _AIDoctorCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// My Doctor Card widget
+// ---------------------------------------------------------------------------
+
+class _MyDoctorCard extends StatelessWidget {
+  final ProfileModel profile;
+  const _MyDoctorCard({required this.profile});
+
+  Future<void> _openWhatsApp(String number) async {
+    // Strip non-digits except leading +
+    final cleaned = number.replaceAll(RegExp(r'[\s\-()]'), '');
+    final digits = cleaned.startsWith('+') ? cleaned.substring(1) : cleaned;
+    final uri = Uri.parse('https://wa.me/$digits');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final hasWhatsApp = profile.doctorWhatsapp?.isNotEmpty == true;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.statusNormal.withOpacity(0.35), width: 1),
+        boxShadow: Theme.of(context).brightness == Brightness.light
+            ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2))]
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.statusNormal.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.medical_services_outlined, color: AppColors.statusNormal, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.myDoctorTitle,
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  profile.doctorName!,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                if (profile.doctorSpecialty?.isNotEmpty == true)
+                  Text(
+                    profile.doctorSpecialty!,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+              ],
+            ),
+          ),
+          if (hasWhatsApp)
+            GestureDetector(
+              onTap: () => _openWhatsApp(profile.doctorWhatsapp!),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF25D366), // WhatsApp green
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.chat, color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.contactOnWhatsApp,
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Health Score Card widget
 // ---------------------------------------------------------------------------
 
@@ -698,7 +807,10 @@ class _HealthScoreCard extends StatelessWidget {
     final bpDiastolic = (data['today_bp_diastolic'] as num?)?.toDouble();
     final bpStatus = data['today_bp_status'] as String?;
     final lastLogged = _formatLastLogged(data['last_logged'] as String?);
+    final profileAge = (data['profile_age'] as num?)?.toInt();
     final scoreColor = _scoreColor(color);
+    final flagData = _computeFlag(score: score, bpStatus: bpStatus, glucoseStatus: glucoseStatus, age: profileAge);
+    final pts = _streakToPoints(streak);
 
     final card = Container(
       padding: const EdgeInsets.all(20),
@@ -713,7 +825,7 @@ class _HealthScoreCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row: title + streak
+          // Header row: title + status flag
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -721,18 +833,7 @@ class _HealthScoreCard extends StatelessWidget {
                 l10n.healthScore,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
-              if (streak > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '🔥 ${l10n.dayStreak(streak)}',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.accent),
-                  ),
-                ),
+              _StatusFlag(data: flagData, l10n: l10n),
             ],
           ),
           const SizedBox(height: 16),
@@ -782,6 +883,10 @@ class _HealthScoreCard extends StatelessWidget {
               ),
             ],
           ),
+
+          // Gamification: streak + points + weekly winners
+          const SizedBox(height: 16),
+          _GamificationPanel(streak: streak, pts: pts, l10n: l10n),
 
           // Today's readings
           if (glucoseValue != null || bpSystolic != null) ...[
@@ -903,6 +1008,254 @@ class _HealthScoreCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Status flag data + computation
+// ---------------------------------------------------------------------------
+
+class _StatusFlagData {
+  final String label;
+  final String? subLabel;
+  final Color color;
+  final String emoji;
+
+  const _StatusFlagData({
+    required this.label,
+    this.subLabel,
+    required this.color,
+    required this.emoji,
+  });
+}
+
+_StatusFlagData _computeFlag({
+  required int score,
+  required String? bpStatus,
+  required String? glucoseStatus,
+  required int? age,
+}) {
+  final isUnder30 = age != null && age < 30;
+  final isOver60 = age != null && age >= 60;
+
+  // CRITICAL glucose or score < 40 → always Urgent
+  if (glucoseStatus == 'CRITICAL' || score < 40) {
+    return const _StatusFlagData(
+      label: 'Urgent', emoji: '🚨', color: AppColors.statusCritical,
+    );
+  }
+
+  // Hypertensive crisis / STAGE 2 BP
+  if (bpStatus == 'HIGH - STAGE 2') {
+    if (isOver60) {
+      // Lenient threshold for 60+
+      return const _StatusFlagData(
+        label: 'At Risk', subLabel: 'Monitor Blood Pressure',
+        emoji: '🟠', color: AppColors.statusElevated,
+      );
+    }
+    return const _StatusFlagData(
+      label: 'Urgent', subLabel: 'Check Medication',
+      emoji: '🚨', color: AppColors.statusHigh,
+    );
+  }
+
+  // STAGE 1 BP — escalates to At Risk for under-30, else Caution
+  if (bpStatus == 'HIGH - STAGE 1' || bpStatus == 'ELEVATED') {
+    if (isUnder30) {
+      return const _StatusFlagData(
+        label: 'At Risk', subLabel: 'Monitor Blood Pressure',
+        emoji: '🟠', color: AppColors.statusElevated,
+      );
+    }
+    return const _StatusFlagData(
+      label: 'Caution', subLabel: 'Monitor Blood Pressure',
+      emoji: '🟡', color: AppColors.iosOrange,
+    );
+  }
+
+  // High glucose (not critical)
+  if (glucoseStatus != null && glucoseStatus.contains('HIGH')) {
+    return const _StatusFlagData(
+      label: 'Caution', subLabel: 'Monitor Glucose',
+      emoji: '🟡', color: AppColors.iosOrange,
+    );
+  }
+
+  // Score-based fallback
+  if (score >= 70) {
+    return const _StatusFlagData(
+      label: 'Fit & Fine', emoji: '🟢', color: AppColors.statusNormal,
+    );
+  }
+  if (score >= 55) {
+    return const _StatusFlagData(
+      label: 'Caution', emoji: '🟡', color: AppColors.iosOrange,
+    );
+  }
+  return const _StatusFlagData(
+    label: 'At Risk', emoji: '🟠', color: AppColors.statusElevated,
+  );
+}
+
+int _streakToPoints(int streak) {
+  if (streak >= 30) return 1500;
+  if (streak >= 14) return 700;
+  if (streak >= 7)  return 300;
+  if (streak >= 3)  return 100;
+  if (streak >= 1)  return 10;
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// _StatusFlag widget
+// ---------------------------------------------------------------------------
+
+class _StatusFlag extends StatelessWidget {
+  final _StatusFlagData data;
+  final AppLocalizations l10n;
+
+  const _StatusFlag({required this.data, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: data.color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: data.color.withOpacity(0.4), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(data.emoji, style: const TextStyle(fontSize: 12)),
+              const SizedBox(width: 4),
+              Text(
+                data.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: data.color,
+                ),
+              ),
+            ],
+          ),
+          if (data.subLabel != null)
+            Text(
+              data.subLabel!,
+              style: TextStyle(fontSize: 9, color: data.color.withOpacity(0.85)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _GamificationPanel widget
+// ---------------------------------------------------------------------------
+
+class _GamificationPanel extends StatelessWidget {
+  final int streak;
+  final int pts;
+  final AppLocalizations l10n;
+
+  const _GamificationPanel({required this.streak, required this.pts, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Streak + points row
+        Row(
+          children: [
+            if (streak > 0) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '🔥 ${l10n.dayStreak(streak)}',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (pts > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.iosOrange.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '🏆 ${l10n.pointsLabel(pts)}',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.iosOrange),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Weekly winners placeholder
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Text(
+                '🥇 ${l10n.weeklyWinnersTitle}',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '(${l10n.weeklyWinnersSoon})',
+                style: const TextStyle(fontSize: 10, color: AppColors.textTertiary, fontStyle: FontStyle.italic),
+              ),
+              const Spacer(),
+              const _PlaceholderAvatar(initials: 'AK'),
+              const SizedBox(width: 4),
+              const _PlaceholderAvatar(initials: 'RS'),
+              const SizedBox(width: 4),
+              const _PlaceholderAvatar(icon: Icons.person),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _PlaceholderAvatar widget
+// ---------------------------------------------------------------------------
+
+class _PlaceholderAvatar extends StatelessWidget {
+  final String? initials;
+  final IconData? icon;
+
+  const _PlaceholderAvatar({this.initials, this.icon})
+      : assert(initials != null || icon != null);
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: 14,
+      backgroundColor: AppColors.bgPill,
+      child: initials != null
+          ? Text(initials!, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.textSecondary))
+          : Icon(icon, size: 14, color: AppColors.textTertiary),
     );
   }
 }

@@ -202,6 +202,32 @@ class AppLocalizationsHi extends AppLocalizations {
   String get selectDevice => 'डिवाइस चुनें';
 
   @override
+  String get recordNewMetrics => 'नई मेट्रिक्स रिकॉर्ड करें';
+
+  @override
+  String get flagFitFine => 'स्वस्थ';
+
+  @override
+  String get flagCaution => 'सावधानी';
+
+  @override
+  String get flagAtRisk => 'जोखिम में';
+
+  @override
+  String get flagUrgent => 'तत्काल';
+
+  @override
+  String get weeklyWinnersTitle => 'इस सप्ताह शीर्ष';
+
+  @override
+  String get weeklyWinnersSoon => 'जल्द आ रहा है';
+
+  @override
+  String pointsLabel(int pts) {
+    return '$pts अंक';
+  }
+
+  @override
   String get glucometer => 'ग्लूकोमीटर';
 
   @override
@@ -535,6 +561,39 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get languageHindi => 'हिंदी';
+
+  @override
+  String get myDoctorTitle => 'मेरे डॉक्टर';
+
+  @override
+  String get contactOnWhatsApp => 'व्हाट्सएप पर संपर्क करें';
+
+  @override
+  String get doctorDetailsSection => 'डॉक्टर की जानकारी';
+
+  @override
+  String get doctorNameField => 'डॉक्टर का नाम';
+
+  @override
+  String get doctorSpecialtyField => 'विशेषज्ञता';
+
+  @override
+  String get doctorWhatsappField => 'व्हाट्सएप नंबर';
+
+  @override
+  String get noDoctorLinked => 'अभी तक कोई डॉक्टर नहीं जोड़ा गया।';
+
+  @override
+  String get addDoctor => 'डॉक्टर जोड़ें';
+
+  @override
+  String get editDoctor => 'डॉक्टर की जानकारी बदलें';
+
+  @override
+  String get editDoctorTitle => 'डॉक्टर की जानकारी';
+
+  @override
+  String get doctorWhatsappHint => 'जैसे +917001234567';
 
   @override
   String get addHealthProfileTitle => 'स्वास्थ्य प्रोफाइल जोड़ें';

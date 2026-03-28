@@ -162,6 +162,9 @@ class ProfileCreate(BaseModel):
     medical_conditions: Optional[List[str]] = None
     other_medical_condition: Optional[str] = None
     current_medications: Optional[str] = None
+    doctor_name: Optional[str] = None
+    doctor_specialty: Optional[str] = None
+    doctor_whatsapp: Optional[str] = None
 
     @validator('gender')
     def validate_gender(cls, v):
@@ -193,6 +196,9 @@ class ProfileUpdate(BaseModel):
     medical_conditions: Optional[List[str]] = None
     other_medical_condition: Optional[str] = None
     current_medications: Optional[str] = None
+    doctor_name: Optional[str] = None
+    doctor_specialty: Optional[str] = None
+    doctor_whatsapp: Optional[str] = None
 
     @validator('gender')
     def validate_gender(cls, v):
@@ -225,6 +231,9 @@ class ProfileResponse(BaseModel):
     medical_conditions: Optional[List[str]]
     other_medical_condition: Optional[str]
     current_medications: Optional[str]
+    doctor_name: Optional[str] = None
+    doctor_specialty: Optional[str] = None
+    doctor_whatsapp: Optional[str] = None
     access_level: str           # "owner" or "viewer" — injected per-user at query time
     created_at: datetime
     updated_at: Optional[datetime]
@@ -273,6 +282,7 @@ class HealthScoreResponse(BaseModel):
     today_bp_systolic: Optional[float] = None
     today_bp_diastolic: Optional[float] = None
     last_logged: Optional[datetime] = None
+    profile_age: Optional[int] = None
 
 
 class HealthReadingCreate(BaseModel):

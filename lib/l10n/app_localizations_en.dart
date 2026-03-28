@@ -202,6 +202,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectDevice => 'Select Device';
 
   @override
+  String get recordNewMetrics => 'Record New Metrics';
+
+  @override
+  String get flagFitFine => 'Fit & Fine';
+
+  @override
+  String get flagCaution => 'Caution';
+
+  @override
+  String get flagAtRisk => 'At Risk';
+
+  @override
+  String get flagUrgent => 'Urgent';
+
+  @override
+  String get weeklyWinnersTitle => 'Top this week';
+
+  @override
+  String get weeklyWinnersSoon => 'coming soon';
+
+  @override
+  String pointsLabel(int pts) {
+    return '$pts pts';
+  }
+
+  @override
   String get glucometer => 'Glucometer';
 
   @override
@@ -537,6 +563,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageHindi => 'हिंदी';
+
+  @override
+  String get myDoctorTitle => 'My Doctor';
+
+  @override
+  String get contactOnWhatsApp => 'Contact on WhatsApp';
+
+  @override
+  String get doctorDetailsSection => 'Doctor Details';
+
+  @override
+  String get doctorNameField => 'Doctor Name';
+
+  @override
+  String get doctorSpecialtyField => 'Specialty';
+
+  @override
+  String get doctorWhatsappField => 'WhatsApp Number';
+
+  @override
+  String get noDoctorLinked => 'No doctor linked yet.';
+
+  @override
+  String get addDoctor => 'Add Doctor';
+
+  @override
+  String get editDoctor => 'Edit Doctor Details';
+
+  @override
+  String get editDoctorTitle => 'Doctor Details';
+
+  @override
+  String get doctorWhatsappHint => 'e.g. +917001234567';
 
   @override
   String get addHealthProfileTitle => 'Add Health Profile';
