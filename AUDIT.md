@@ -5,6 +5,14 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-28 — 3-section dashboard redesign + task tracker audit
+
+- Modified `lib/screens/home_screen.dart`: Added `_StatusFlagData` + `_computeFlag()` with age-adjusted thresholds (Fit & Fine / Caution / At Risk / Urgent). Added `_GamificationPanel` (streak chip + points tiers: 1d=10, 3d=100, 7d=300, 14d=700, 30d=1500 + weekly winners placeholder with 3 avatar chips). Section 3 title changed to "Record New Metrics". Added `RouteAware.didPopNext` to refresh AI Doctor + health score on navigation return. Cache invalidated on every new reading save (server-side). Stage 2 BP now triggers urgent message in both rule engine and Gemini prompt.
+- Modified `backend/routes_health.py`: Cache invalidation on `save_reading`. Strengthened urgent messaging for Stage 2 BP (180/120 → explicit "dangerously high" prompt). Fixed route ordering (`/ai-insight` before `/{reading_id}`).
+- Modified `backend/schemas.py`: Added `profile_age: Optional[int]` to `HealthScoreResponse`.
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added `recordNewMetrics`, `flagFitFine`, `flagCaution`, `flagAtRisk`, `flagUrgent`, `weeklyWinnersTitle`, `weeklyWinnersSoon`, `pointsLabel` (with `{pts}` placeholder).
+- Updated `TASK_TRACKER.md`: Full codebase audit. Upgraded B16/B17 🔄→✅ (BLE fully implemented), C1 🔄→✅, C14 ❌→✅. Added C23 (status flag ✅), C24 (gamification ✅). D1/D3/D6 ❌→🔄. Final: 39✅ / 8🔄 / 26❌ = 73 total.
+
 ## 2026-03-28 — AI Doctor card: Gemini 1.5 Flash personalised health recommendation on home screen
 
 - Modified `backend/routes_health.py`: Added `_insight_cache` dict (daily per-profile cache). Added `GET /api/readings/ai-insight` endpoint — fetches profile (age/gender/conditions/medications) + last 7 days of readings, builds age-aware prompt, calls Gemini 1.5 Flash, caches result, falls back to `_rule_based_insight()` on any error. Added `_rule_based_insight()` private helper.
@@ -473,3 +481,4 @@ Format: date, summary, file-level details.
   - 22:55:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
   - 22:56:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
   - 23:10:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 23:18:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
