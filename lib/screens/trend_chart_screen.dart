@@ -72,7 +72,7 @@ class _TrendChartScreenState extends State<TrendChartScreen>
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+              ? Center(child: Text(_error!, style: const TextStyle(color: AppColors.statusCritical)))
               : TabBarView(
                   controller: _tabController,
                   children: [
@@ -112,9 +112,9 @@ class _TrendView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.show_chart, size: 64, color: Colors.grey.withOpacity(0.4)),
+            Icon(Icons.show_chart, size: 64, color: AppColors.textSecondary.withOpacity(0.4)),
             const SizedBox(height: 12),
-            Text(l10n.noChartData, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+            Text(l10n.noChartData, style: const TextStyle(color: AppColors.textSecondary, fontSize: 16)),
           ],
         ),
       );
@@ -261,13 +261,13 @@ class _CorrelationChart extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(width: 6),
-            Text('(last $days days)', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Text('(last $days days)', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           'Days where both were logged: $total',
-          style: const TextStyle(fontSize: 11, color: Colors.grey),
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 10),
 
@@ -325,7 +325,7 @@ class _CorrelationChart extends StatelessWidget {
                     reservedSize: 44,
                     getTitlesWidget: (v, _) => Text(
                       v.toStringAsFixed(0),
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                     ),
                   ),
                 ),
@@ -347,7 +347,7 @@ class _CorrelationChart extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           DateFormat('d MMM').format(dt),
-                          style: const TextStyle(fontSize: 9, color: Colors.grey),
+                          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
                         ),
                       );
                     },
@@ -358,7 +358,7 @@ class _CorrelationChart extends StatelessWidget {
                 show: true,
                 drawVerticalLine: false,
                 getDrawingHorizontalLine: (_) => FlLine(
-                  color: Colors.grey.withOpacity(0.15),
+                  color: AppColors.textSecondary.withOpacity(0.15),
                   strokeWidth: 1,
                 ),
               ),
@@ -488,7 +488,7 @@ class _GlucoseChart extends StatelessWidget {
                 reservedSize: 44,
                 getTitlesWidget: (v, _) => Text(
                   v.toStringAsFixed(0),
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                 ),
               ),
             ),
@@ -506,7 +506,7 @@ class _GlucoseChart extends StatelessWidget {
             drawVerticalLine: false,
             horizontalInterval: 30,
             getDrawingHorizontalLine: (v) => FlLine(
-              color: Colors.grey.withOpacity(0.15),
+              color: AppColors.textSecondary.withOpacity(0.15),
               strokeWidth: 1,
             ),
           ),
@@ -622,7 +622,7 @@ class _BpChart extends StatelessWidget {
                 reservedSize: 44,
                 getTitlesWidget: (v, _) => Text(
                   v.toStringAsFixed(0),
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                 ),
               ),
             ),
@@ -640,7 +640,7 @@ class _BpChart extends StatelessWidget {
             drawVerticalLine: false,
             horizontalInterval: 20,
             getDrawingHorizontalLine: (v) => FlLine(
-              color: Colors.grey.withOpacity(0.15),
+              color: AppColors.textSecondary.withOpacity(0.15),
               strokeWidth: 1,
             ),
           ),
@@ -679,7 +679,7 @@ Widget _xLabel(int index, List<HealthReading> readings) {
     padding: const EdgeInsets.only(top: 4),
     child: Text(
       DateFormat('d MMM').format(readings[index].readingTimestamp),
-      style: const TextStyle(fontSize: 9, color: Colors.grey),
+      style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
     ),
   );
 }
@@ -705,7 +705,7 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(width: 6),
-        Text('($unit)', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text('($unit)', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
       ],
     );
   }
@@ -733,7 +733,7 @@ class _StatsRow extends StatelessWidget {
         _StatCell(label: l10n.avgLabel, value: avg.toStringAsFixed(0)),
         _StatCell(label: l10n.minLabel, value: min.toStringAsFixed(0)),
         _StatCell(label: l10n.maxLabel, value: max.toStringAsFixed(0)),
-        _StatCell(label: l10n.normalPct, value: '$normalPct%', color: Colors.green),
+        _StatCell(label: l10n.normalPct, value: '$normalPct%', color: AppColors.statusNormal),
       ],
     );
   }
@@ -761,7 +761,7 @@ class _BpStatsRow extends StatelessWidget {
       children: [
         _StatCell(label: 'Avg Sys', value: avgSys.toStringAsFixed(0)),
         _StatCell(label: 'Avg Dia', value: avgDia.toStringAsFixed(0)),
-        _StatCell(label: l10n.normalPct, value: '$normalPct%', color: Colors.green),
+        _StatCell(label: l10n.normalPct, value: '$normalPct%', color: AppColors.statusNormal),
       ],
     );
   }
@@ -786,7 +786,7 @@ class _StatCell extends StatelessWidget {
             color: color ?? Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }
@@ -808,7 +808,7 @@ class _LegendDot extends StatelessWidget {
             ? Container(width: 16, height: 8, color: color)
             : Container(width: 10, height: 10, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../ble/ble_manager.dart';
+import '../theme/app_theme.dart';
 import '../ble/glucose_service.dart';
 import '../models/glucose_reading.dart';
 import '../services/health_reading_service.dart';
@@ -206,7 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('This appears to be a BP device, not a glucometer'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.statusElevated,
             duration: Duration(seconds: 3),
           ),
         );
@@ -214,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Device does not support glucose monitoring (0x1808)'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.statusElevated,
             duration: Duration(seconds: 4),
           ),
         );
@@ -262,15 +263,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Color _flagColor(String flag) {
     switch (flag) {
       case 'LOW':
-        return Colors.orange;
+        return AppColors.statusElevated;
       case 'NORMAL':
-        return Colors.green;
+        return AppColors.statusNormal;
       case 'HIGH':
-        return Colors.red.shade300;
+        return AppColors.statusHigh;
       case 'VERY HIGH':
-        return Colors.red.shade700;
+        return AppColors.statusCritical;
       default:
-        return Colors.grey;
+        return AppColors.statusLow;
     }
   }
 
@@ -310,15 +311,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isConnected ? color : (isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+                color: isConnected ? color : (isDark ? AppColors.bgPillDark : AppColors.bgPill),
                 border: Border.all(
-                  color: isConnected ? color : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                  color: isConnected ? color : (isDark ? AppColors.bgCard2Dark : AppColors.bgCard2),
                   width: 2,
                 ),
               ),
               child: Icon(
                 icon,
-                color: isConnected ? Colors.white : (isDark ? Colors.grey.shade500 : Colors.grey.shade500),
+                color: isConnected ? Colors.white : AppColors.textSecondary,
                 size: 28,
               ),
             ),
@@ -390,7 +391,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: Icons.water_drop,
                   label: AppLocalizations.of(context)!.glucometer,
                   isConnected: _glucometerConnected,
-                  color: Colors.blue,
+                  color: AppColors.glucose,
                 ),
               ),
               GestureDetector(
@@ -399,7 +400,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: Icons.favorite,
                   label: AppLocalizations.of(context)!.bpMeter,
                   isConnected: _bpMeterConnected,
-                  color: Colors.red,
+                  color: AppColors.bloodPressure,
                 ),
               ),
               GestureDetector(
@@ -408,7 +409,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: Icons.watch,
                   label: AppLocalizations.of(context)!.armband,
                   isConnected: _armbandConnected,
-                  color: Colors.green,
+                  color: AppColors.statusNormal,
                 ),
               ),
             ],
@@ -522,7 +523,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('No $deviceType found nearby'),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.statusElevated,
             ),
           );
         }
@@ -537,7 +538,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.statusCritical,
           ),
         );
       }
@@ -784,11 +785,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(Icons.history, size: 48, color: Colors.grey.shade300),
+                        Icon(Icons.history, size: 48, color: AppColors.textTertiary),
                         const SizedBox(height: 8),
                         Text(
                           'No historical data available',
-                          style: TextStyle(color: Colors.grey.shade500),
+                          style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -872,14 +873,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 2),
                 Text(
                   r.timestamp.toString().substring(0, 16),
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                 ),
               ],
             ),
           ),
           Text(
             '#${r.sequenceNumber}',
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
           ),
         ],
       ),
@@ -902,11 +903,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Color _getDeviceColor(String type) {
     switch (type) {
       case 'Glucose':
-        return Colors.blue;
+        return AppColors.glucose;
       case 'Blood Pressure':
-        return Colors.red;
+        return AppColors.bloodPressure;
       default:
-        return Colors.green;
+        return AppColors.statusNormal;
     }
   }
 
@@ -964,7 +965,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${deviceType == 'glucose' ? 'Glucose' : 'BP'} saved: ${healthReading.displayValue}'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.statusNormal,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -1035,16 +1036,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Text('${r.mmol.toStringAsFixed(2)} mmol/L'),
                           const SizedBox(height: 4),
                           Text(r.timestamp.toString().substring(0, 16),
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                              style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                           Text('Sample: ${r.sampleType} | Location: ${r.sampleLocation}',
-                              style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                              style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
                         ],
                       ),
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text('#${r.sequenceNumber}',
-                              style: TextStyle(color: Colors.grey.shade500)),
+                              style: TextStyle(color: AppColors.textSecondary)),
                           const SizedBox(height: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1153,7 +1154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: isDark ? Colors.blue.withOpacity(0.1) : Colors.blue.withOpacity(0.05),
+              color: isDark ? AppColors.insight.withOpacity(0.1) : AppColors.insight.withOpacity(0.05),
               child: Row(
                 children: [
                   if (_loading)
@@ -1166,7 +1167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                       child: Text(_status,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.blue.shade700,
+                            color: AppColors.insight,
                             fontWeight: FontWeight.w500,
                           ))),
                 ],
@@ -1182,7 +1183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     Text('Fetching glucose records...',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey)),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
                   ],
                 ),
               ),
@@ -1199,7 +1200,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text('Device response: $_racpResponse',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey)),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary)),
               ),
 
             // History list (shown when not using the new panel)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/profile_service.dart';
+import '../theme/app_theme.dart';
 import '../services/storage_service.dart';
 
 class CreateProfileScreen extends StatefulWidget {
@@ -73,7 +74,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.statusCritical),
         );
       }
     } finally {
@@ -100,7 +101,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                   children: [
                     Text(
                       l10n.createProfileSubtitle,
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
                     ),
                     const SizedBox(height: 24),
 

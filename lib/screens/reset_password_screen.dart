@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 import 'login_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
@@ -82,7 +83,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.passwordResetSuccess),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.statusNormal,
           ),
         );
 
@@ -96,7 +97,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.statusCritical,
           ),
         );
       }
@@ -182,7 +183,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: AppColors.bgGrouped,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -264,14 +265,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         Icon(
           isMet ? Icons.check_circle : Icons.cancel,
           size: 16,
-          color: isMet ? Colors.green : Colors.red,
+          color: isMet ? AppColors.statusNormal : AppColors.statusCritical,
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              color: isMet ? Colors.green : Colors.red,
+              color: isMet ? AppColors.statusNormal : AppColors.statusCritical,
               fontSize: 12,
             ),
           ),

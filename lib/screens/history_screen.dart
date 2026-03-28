@@ -70,7 +70,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.statusCritical,
               foregroundColor: Colors.white,
             ),
             child: Text(l10n.delete),
@@ -90,7 +90,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.readingDeleted),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.statusNormal,
             ),
           );
           _loadReadings();
@@ -194,14 +194,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       Icon(
                         Icons.history,
                         size: 80,
-                        color: Colors.grey.shade400,
+                        color: AppColors.textTertiary,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         l10n.noReadingsYet,
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.grey.shade600,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -210,7 +210,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey.shade500,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -266,14 +266,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     .format(reading.readingTimestamp),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey.shade600,
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                             ],
                           ),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete_outline),
-                            color: Colors.red.shade300,
+                            color: AppColors.statusCritical,
                             onPressed: () => _deleteReading(reading.id),
                             tooltip: l10n.delete,
                           ),

@@ -5,6 +5,29 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-28 — AI Doctor card: Gemini 1.5 Flash personalised health recommendation on home screen
+
+- Modified `backend/routes_health.py`: Added `_insight_cache` dict (daily per-profile cache). Added `GET /api/readings/ai-insight` endpoint — fetches profile (age/gender/conditions/medications) + last 7 days of readings, builds age-aware prompt, calls Gemini 1.5 Flash, caches result, falls back to `_rule_based_insight()` on any error. Added `_rule_based_insight()` private helper.
+- Modified `backend/requirements.txt`: Added `google-generativeai>=0.5.0`.
+- Modified `backend/.env`: Added `GEMINI_API_KEY=` placeholder (populate from https://aistudio.google.com/app/apikey).
+- Modified `lib/services/health_reading_service.dart`: Added `getAiInsight(token, profileId)` — calls new endpoint, returns empty string on error (silent fail).
+- Modified `lib/screens/home_screen.dart`: Added `_aiInsightFuture` state field. `_refreshHealthScore` now also sets `_aiInsightFuture` (both futures fire in parallel). Added `_AIDoctorCard` widget (FutureBuilder: shimmer while loading, hidden on empty/error, purple-bordered card with Gemini attribution when populated). Card inserted between Health Score card and Device Selection panel.
+
+## 2026-03-28 — Design3 theme migration (color palette + typography across all screens)
+
+- Rewrote `lib/theme/app_theme.dart`: Replaced iOS palette with Design3 tokens. glucose `#FF9F0A→#34D399` (emerald), bloodPressure `#FF2D55→#FB7185` (rose), primary `#007AFF→#7B61FF` (purple), bgPrimaryDark `#000000→#0E0E1A`. Added accent, accent2, insight, bgCard2, bgPill, dark variants, textPrimaryDark/SecondaryDark/TertiaryDark. All existing property names preserved.
+- Modified `lib/main.dart`: Seed color iOS blue → Design3 purple. Updated ColorScheme, scaffold backgrounds, card borders, input borders via AppColors tokens. Font weights w600→w700 for all display/headline/title. Added BottomNavigationBarThemeData (purple selected). Added AppColors import.
+- Modified `lib/screens/home_screen.dart`: Streak badge `iosOrange→accent`. All `Colors.grey` → `AppColors.textSecondary`.
+- Modified `lib/screens/trend_chart_screen.dart`: All `Colors.grey` → `AppColors.textSecondary`. `Colors.green` → `AppColors.statusNormal`. Error text → `AppColors.statusCritical`. `Colors.white` on chart dots kept.
+- Modified `lib/screens/history_screen.dart`: Delete/snackbar `Colors.red/green` → `statusCritical/statusNormal`. Grey shades → `textSecondary/textTertiary`.
+- Modified `lib/screens/reading_confirmation_screen.dart`: `Colors.grey` → `AppColors.textSecondary`.
+- Modified `lib/screens/dashboard_screen.dart`: Added AppColors import. Fixed `_flagColor()`, `_getDeviceColor()`, device icons, disconnected state, SnackBars, status bar (`Colors.blue→AppColors.insight`), all grey text.
+- Modified auth screens (`login`, `registration`, `forgot_password`, `reset_password`, `otp_verification`): Added AppColors import. SnackBar + password rule colors → statusNormal/statusCritical.
+- Modified `profile_screen`, `manage_access_screen`, `select_profile_screen`, `pending_invites_screen`, `scan_screen`, `create_profile_screen`: Added AppColors import. All semantic Colors.* → AppColors tokens. Access badges blue/green → accent/statusNormal. Invite icon orange → statusElevated.
+- Left unchanged: `photo_scan_screen.dart` (camera overlay — black/white correct by design).
+
+---
+
 ## 2026-03-28 — Apple Health-inspired visual theme (C22)
 
 - Created `lib/theme/app_theme.dart`: `AppColors` class with iOS exact system colors — `glucose=#FF9F0A` (iosOrange), `bloodPressure=#FF2D55` (iosRed), `statusNormal=#30D158` (iosGreen), `statusElevated=#FF9F0A`, `statusHigh=#FF2D55`, `iosPurple=#BF5AF2`. Surface/text/separator palettes for light and dark.
@@ -318,3 +341,123 @@ Format: date, summary, file-level details.
   - 11:52:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/design_preview.html
   - 11:56:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/design_preview2.html
   - 12:10:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/design_preview3.html
+  - 12:19:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 17:50:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/design_preview4.html
+  - 17:59:09 modified: /Users/amitkumarmishra/.claude/plans/purring-twirling-dijkstra.md
+  - 18:00:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/theme/app_theme.dart
+  - 18:00:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 18:00:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 18:01:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:01:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:01:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:01:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 18:01:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 18:02:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 18:02:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 18:02:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 18:02:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 18:02:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 18:02:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 18:02:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 18:02:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 18:02:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 18:02:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 18:02:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 18:03:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:03:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:03:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:03:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:04:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:04:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:04:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:04:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:04:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:04:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:05:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:05:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:05:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:05:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:05:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
+  - 18:05:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 18:05:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 18:05:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 18:05:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 18:05:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 18:05:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 18:06:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 18:06:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/forgot_password_screen.dart
+  - 18:06:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/forgot_password_screen.dart
+  - 18:06:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/forgot_password_screen.dart
+  - 18:06:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reset_password_screen.dart
+  - 18:06:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reset_password_screen.dart
+  - 18:06:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reset_password_screen.dart
+  - 18:06:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reset_password_screen.dart
+  - 18:06:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reset_password_screen.dart
+  - 18:06:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/otp_verification_screen.dart
+  - 18:06:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/otp_verification_screen.dart
+  - 18:07:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/otp_verification_screen.dart
+  - 18:07:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/otp_verification_screen.dart
+  - 18:07:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+  - 18:07:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+  - 18:07:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+  - 18:07:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+  - 18:07:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+  - 18:07:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+  - 18:07:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+  - 18:07:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+  - 18:08:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 18:08:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 18:08:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 18:08:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 18:08:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 18:08:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 18:08:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 18:08:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 18:08:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 18:08:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 18:08:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 18:09:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 18:09:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/scan_screen.dart
+  - 18:09:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/scan_screen.dart
+  - 18:09:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/scan_screen.dart
+  - 18:09:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/scan_screen.dart
+  - 18:09:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 18:09:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 18:09:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 18:09:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 18:10:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 18:10:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 18:10:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 18:11:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 18:25:19 modified: /Users/amitkumarmishra/.claude/plans/purring-twirling-dijkstra.md
+  - 18:29:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:29:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:29:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/requirements.txt
+  - 18:29:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 18:29:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:30:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:30:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:30:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:30:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/.env
+  - 18:30:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 18:32:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/.env
+  - 18:38:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:38:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:39:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 18:39:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:39:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:39:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:44:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:47:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:47:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:47:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:47:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:48:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:48:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:48:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 18:55:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 19:02:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 19:02:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 19:02:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 19:02:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 19:03:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart

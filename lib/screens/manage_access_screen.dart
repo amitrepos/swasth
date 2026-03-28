@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/profile_service.dart';
+import '../theme/app_theme.dart';
 import '../services/storage_service.dart';
 
 class ManageAccessScreen extends StatefulWidget {
@@ -76,7 +77,7 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.inviteSentSuccess), backgroundColor: Colors.green),
+          SnackBar(content: Text(l10n.inviteSentSuccess), backgroundColor: AppColors.statusNormal),
         );
         _emailController.clear();
       }
@@ -84,7 +85,7 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.statusCritical),
         );
         setState(() => _isLoading = false);
       }
@@ -102,7 +103,7 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.revoke, style: const TextStyle(color: Colors.red)),
+            child: Text(l10n.revoke, style: const TextStyle(color: AppColors.statusCritical)),
           ),
         ],
       ),
@@ -120,7 +121,7 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.statusCritical),
         );
         setState(() => _isLoading = false);
       }
@@ -190,12 +191,12 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
             child: _isLoading && _accesses.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+                    ? Center(child: Text(_error!, style: const TextStyle(color: AppColors.statusCritical)))
                     : _accesses.length <= 1
                         ? Center(
                             child: Text(
                               l10n.notSharedYet,
-                              style: const TextStyle(color: Colors.grey),
+                              style: const TextStyle(color: AppColors.textSecondary),
                             ),
                           )
                         : ListView.builder(
@@ -210,7 +211,7 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                                 subtitle: Text(access['email']),
                                 trailing: TextButton(
                                   onPressed: _isLoading ? null : () => _revokeAccess(access['user_id'], access['full_name']),
-                                  child: Text(l10n.revoke, style: const TextStyle(color: Colors.red)),
+                                  child: Text(l10n.revoke, style: const TextStyle(color: AppColors.statusCritical)),
                                 ),
                               );
                             },

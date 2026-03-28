@@ -1,6 +1,6 @@
 # Swasth App — Phase 1 Task Tracker
 
-**Last Updated:** 2026-03-27
+**Last Updated:** 2026-03-28
 **Sprint:** 4 weeks + buffer | **Target:** Bihar pilot
 
 Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
@@ -16,7 +16,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | A3 | Profile creation | ✅ Done | `create_profile_screen.dart` — name, age, gender, height, blood group, conditions, medications. |
 | A4 | Medication list | ✅ Done | Current medications text field in profile creation + edit. |
 | A5 | "Add person without smartphone" | ✅ Done | Create a profile for someone else → caller becomes "owner". `create_profile_screen.dart`. |
-| A6 | Language toggle (Hindi / English) | ❌ Not started | No `.arb` files, no i18n setup, no toggle UI. `intl` package used only for date formatting. |
+| A6 | Language toggle (Hindi / English) | ✅ Done | Full gen-l10n setup: `app_en.arb` + `app_hi.arb`, all UI strings via `AppLocalizations.of(context)`. Toggle chip in Profile screen → Settings section. Language persisted via `languageProvider` (Riverpod). |
 | A7 | Profile switcher | ✅ Done | `select_profile_screen.dart` — lists all accessible profiles, tap to switch active profile. |
 | A8 | Cloud sync | 🔄 Partial | PostgreSQL + FastAPI backend (cloud-deployable). No real-time Firestore/Supabase sync or offline queue. |
 | A9 | Local offline storage | ❌ Not started | No local caching, no sync queue. App requires network for all reads/writes. |
@@ -61,24 +61,24 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | C2 | Status badges (HIGH / NORMAL / LOW) | ✅ Done | `history_screen.dart` — color-coded badges. `_glucoseStatus()` and `_bpStatus()` helpers in confirmation screen. |
 | C3 | BMI display | ❌ Not started | Height stored in profile; no weight readings table; no BMI calculation shown anywhere. |
 | C4 | 7-day glucose trend chart | ✅ Done | `trend_chart_screen.dart` — LineChart with normal range band (70–130), color-coded dots by status, stats row. |
-| C5 | 7-day BP trend chart | ✅ Done | Same screen — systolic (red) + diastolic (blue) lines, normal range bands, avg/normal% stats. |
+| C5 | 7-day BP trend chart | ✅ Done | Same screen — systolic (rose) + diastolic (blue) lines, normal range bands, avg/normal% stats. |
 | C6 | 7-day steps chart | ❌ Not started | Depends on B10 (pedometer). |
-| C7 | 7-day heart rate chart | ❌ Not started | P1. Depends on B18 (health band). |
+| C7 | 7-day heart rate chart | ❌ Not started | Depends on B18 (health band). |
 | C8 | Weekly weight trend | ❌ Not started | Depends on B3/B6 (weight input). |
-| C9 | 30-day trend charts | ❌ Not started | P1. Depends on C4/C5. |
+| C9 | 30-day trend charts | ✅ Done | `trend_chart_screen.dart` — 7-day / 30-day tab toggle on both glucose and BP charts. |
 | C10 | Reading history | ✅ Done | `history_screen.dart` — scrollable list with timestamp, value, type filter, delete, status badges. |
-| C11 | Streak counter | ❌ Not started | No streak logic on backend or frontend. |
-| C12 | Empty states | 🔄 Partial | `history_screen.dart` has "No readings yet" empty state. Other screens may not. |
+| C11 | Streak counter | ✅ Done | Backend: consecutive-days logic in `GET /api/readings/health-score`. Displayed as 🔥 badge on home screen. |
+| C12 | Empty states | ✅ Done | Health score card has empty/no-profile state. History screen has "No readings yet." Home screen handles null profileId gracefully. |
 | C13 | Family view | ✅ Done | Profile switching gives any profile's dashboard/history. Shared profiles work via A2. |
 | C14 | "Everything is okay" green signal | ❌ Not started | No cross-reading summary logic for family home screen. |
-| C15 | Pull-to-refresh | 🔄 Partial | `history_screen.dart` may support it. No explicit RefreshIndicator confirmed across all screens. |
+| C15 | Pull-to-refresh | ✅ Done | `select_profile_screen.dart` — `RefreshIndicator` wraps profile list. Home screen has refresh button on health score card. |
 | C16 | Offline mode / "last synced" | ❌ Not started | Depends on A9. No cache layer. |
-| C17 | Large text accessibility | ❌ Not started | P1. No font scaling or settings screen. |
-| C18 | Health Score widget (home screen) | ✅ Done | 0–100 score, green/orange/red ring, computed from latest readings via rule engine. Replaces static welcome header. New backend endpoint `GET /api/readings/health-score`. |
-| C19 | Streak counter on home screen | ✅ Done | Consecutive days with ≥1 reading. Shown as "🔥 N-day streak" badge on home screen alongside score. |
-| C20 | AI insight text (rule-based) | ✅ Done | One plain-English tip/encouragement line derived from last 7 days of readings. No ML — pure rule engine. e.g. "BP stable 5 days — great job!" |
-| C21 | Glucose × BP correlation chart | ✅ Done |
-| C22 | Apple Health-inspired visual theme | ✅ Done | `lib/theme/app_theme.dart` — `AppColors` with iOS exact values (glucose=#FF9F0A, BP=#FF2D55, normal=#30D158). Updated home/trend/history/confirmation screens. Pill-shaped status badges. Score number 22→28px. | `trend_chart_screen.dart` — glucose and BP on same scrollable screen, 7/30-day tabs, correlation visible by comparing both charts side by side. Tappable from health score card. |
+| C17 | Large text accessibility | ❌ Not started | No font scaling or settings screen. |
+| C18 | Health Score widget (home screen) | ✅ Done | 0–100 score ring (green/orange/red), computed from 7-day readings via rule engine. Backend: `GET /api/readings/health-score`. Tappable → trend charts. |
+| C19 | Streak counter on home screen | ✅ Done | Consecutive days with ≥1 reading. Shown as "🔥 N-day streak" badge alongside health score. |
+| C20 | AI insight text (rule-based) | ✅ Done | One plain-English tip/encouragement line derived from last 7 days of readings. Pure rule engine on backend. |
+| C21 | Glucose × BP correlation chart | ✅ Done | `trend_chart_screen.dart` — glucose and BP on same scrollable screen, 7/30-day tabs, tappable from health score card. |
+| C22 | Design3 visual theme | ✅ Done | Full Design3 palette applied across all screens. `AppColors` rewritten: glucose=#34D399 (emerald), BP=#FB7185 (rose), accent=#7B61FF (purple), bgPrimaryDark=#0E0E1A. `ThemeMode.system` (light/dark follows OS). All 15 screen files migrated — zero hardcoded Colors.* for semantic UI elements. |
 
 ---
 
@@ -98,10 +98,11 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | D10 | Daily WhatsApp summary | ❌ Not started | Depends on D8. |
 | D11 | Weekly WhatsApp summary | ❌ Not started | Depends on D8. |
 | D12 | Alert WhatsApp message | ❌ Not started | Depends on D8. |
-| D13 | Push notifications (backup) | ❌ Not started | P1. No FCM setup. |
-| D14 | Doctor referral code | ❌ Not started | P1. |
-| D15 | Doctor weekly WhatsApp summary | ❌ Not started | P1. |
+| D13 | Push notifications (backup) | ❌ Not started | No FCM setup. |
+| D14 | Doctor referral code | ❌ Not started | |
+| D15 | Doctor weekly WhatsApp summary | ❌ Not started | |
 | D16 | Streak notifications | ❌ Not started | Depends on C11. |
+| D17 | AI Doctor card (LLM recommendation) | ✅ Done | `GET /api/readings/ai-insight` — aggregates last 7 days of readings + profile (age/gender/conditions/medications) → age-aware prompt → Gemini 1.5 Flash → 1-2 sentence personalised recommendation. Daily per-profile in-memory cache. Rule-based fallback on error. `_AIDoctorCard` widget on home screen (FutureBuilder, shimmer while loading, hidden if empty). |
 
 ---
 
@@ -109,32 +110,30 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 | Module | Done | Partial | Not Started | Total |
 |--------|------|---------|-------------|-------|
-| A — Auth + Profiles | 6 | 3 | 3 | 12 |
+| A — Auth + Profiles | 7 | 3 | 2 | 12 |
 | B — Data Input | 10 | 4 | 6 | 20 |
-| C — Dashboard | 11 | 4 | 7 | 22 |
-| D — AI + Notifications | 0 | 0 | 16 | 16 |
-| **Total** | **27** | **11** | **32** | **70** |
+| C — Dashboard | 15 | 2 | 5 | 22 |
+| D — AI + Notifications | 1 | 0 | 16 | 17 |
+| **Total** | **33** | **9** | **29** | **71** |
 
 ---
 
-## NEXT PRIORITIES (P0 items not yet started)
+## NEXT PRIORITIES (Bihar Pilot Blockers)
 
-### Short (< 1 day each)
-- **C18/C19/C20** — Health Score + Streak + AI Insight: home screen dashboard widget (in progress)
-- **C21** — Glucose × BP correlation chart: `fl_chart` installed, needs chart screen + tap navigation
-- **C3** — BMI display: height is in profile, add weight to readings + auto-calculate BMI
-- **C4/C5** — 7-day glucose + BP charts: `fl_chart` already installed, just needs chart screens
-- **C11** — Streak counter: backend count of consecutive days with readings
-- **C14** — "Everything is okay" signal: query today's readings, check all NORMAL
+### P0 — Safety Critical
+- **D7** — Abnormal value alert: when a reading is CRITICAL, notify family immediately (WhatsApp or push)
+- **D8** — WhatsApp Business API: needs Meta approval — start ASAP (2–5 day wait)
 
-### Medium (1–2 days each)
-- **A6** — Hindi/English toggle: add `.arb` files + `flutter_localizations`
-- **A12** — First-time onboarding: 3-4 welcome screens
-- **B10/B11** — Pedometer + reading reminders: add `pedometer` + `flutter_local_notifications` packages
-- **B3/B6** — Weight photo + manual entry
-- **A9** — Offline mode: add `hive` or `sqflite` local cache
+### P0 — Usability for Bihar
+- **A12** — First-time onboarding: welcome → create profile → how to photograph → invite family
+- **A9** — Offline mode: add `hive` or `sqflite` local cache + sync queue (Bihar has patchy connectivity)
 
-### Blockers for Bihar Pilot
-- **D7** — Abnormal value alert: critical safety feature — when a reading is CRITICAL, notify family
-- **D8** — WhatsApp Business API: needs Meta approval (start ASAP — 2–5 day wait)
-- **A6** — Language toggle: Hindi is essential for Bihar patients
+### P1 — Short (< 1 day each)
+- **C3** — BMI display: height is in profile, add weight to readings + auto-calculate
+- **C14** — "Everything is okay" green signal: query today's readings for all shared profiles, check all NORMAL
+- **B11** — Reading reminders: `flutter_local_notifications` package
+
+### P1 — Medium (1–2 days each)
+- **B10** — Phone pedometer: `pedometer` package
+- **B3/B6** — Weight photo capture + manual entry
+- **D2** — Daily morning tip: extend AI Doctor card to push a morning recommendation

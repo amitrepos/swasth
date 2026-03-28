@@ -248,6 +248,23 @@ class HealthReadingService {
     }
   }
 
+  /// Get AI Doctor recommendation from Gemini via backend
+  Future<String> getAiInsight(String token, int profileId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/readings/ai-insight?profile_id=$profileId'),
+        headers: ApiClient.headers(token: token),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return (data['insight'] as String?) ?? '';
+      }
+      return '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   /// Get computed health score, streak, and AI insight for the home screen
   Future<Map<String, dynamic>> getHealthScore(String token, int profileId) async {
     try {

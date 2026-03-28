@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // ignore_for_file: deprecated_member_use
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 
@@ -132,7 +133,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.registerSuccessful),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.statusNormal,
           ),
         );
 
@@ -146,7 +147,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.statusCritical,
           ),
         );
       }
@@ -480,14 +481,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         Icon(
           isMet ? Icons.check_circle : Icons.cancel,
           size: 16,
-          color: isMet ? Colors.green : Colors.red,
+          color: isMet ? AppColors.statusNormal : AppColors.statusCritical,
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              color: isMet ? Colors.green : Colors.red,
+              color: isMet ? AppColors.statusNormal : AppColors.statusCritical,
               fontSize: 12,
             ),
           ),

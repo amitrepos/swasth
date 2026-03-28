@@ -10,10 +10,14 @@ import models
 import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403
+from config import settings
 
 router = APIRouter()
 
 _VALID_READING_TYPES = {'glucose', 'blood_pressure'}
+
+# Cache: one Gemini call per (profile_id, date) — clears on server restart
+_insight_cache: dict[tuple[int, str], str] = {}
 
 
 @router.post("/readings", response_model=schemas.HealthReadingResponse, status_code=status.HTTP_201_CREATED)
@@ -54,6 +58,12 @@ def save_reading(
     db.add(db_reading)
     db.commit()
     db.refresh(db_reading)
+
+    # Invalidate AI insight cache so the next home screen load gets a fresh Gemini recommendation
+    stale = [k for k in _insight_cache if k[0] == reading.profile_id]
+    for k in stale:
+        del _insight_cache[k]
+
     return db_reading
 
 
@@ -210,11 +220,17 @@ def get_health_score(
             insight = "Log your first reading to start tracking your health."
     elif streak >= 7:
         insight = f"🔥 {streak}-day streak — you're building a great habit!"
+    elif 'HIGH - STAGE 2' in today_statuses_set:
+        stage2 = next((r for r in today_readings if r.status_flag == 'HIGH - STAGE 2'), None)
+        if stage2 and stage2.reading_type == 'blood_pressure' and stage2.systolic:
+            insight = f"⚠️ BP {stage2.systolic:.0f}/{stage2.diastolic:.0f} is dangerously high. Have you taken your medication? Please see a doctor today."
+        else:
+            insight = "⚠️ A reading is in Stage 2 range. Please check your medication and consult your doctor."
     elif any('HIGH' in (s or '') for s in today_statuses_set):
         high_type = next(
             (r.reading_type.replace('_', ' ') for r in today_readings if 'HIGH' in (r.status_flag or '')), 'reading'
         )
-        insight = f"Your {high_type} is a bit high. A 10-min walk often helps."
+        insight = f"Your {high_type} is a bit elevated. A 10-min walk and staying hydrated often helps."
     elif streak >= 3:
         insight = f"Great work! {streak} days of consistent monitoring. Keep it up!"
     elif today_statuses_set and all(s == 'NORMAL' for s in today_statuses_set):
@@ -236,6 +252,114 @@ def get_health_score(
         today_bp_diastolic=today_bp.diastolic if today_bp else None,
         last_logged=last_logged,
     )
+
+
+@router.get("/readings/ai-insight")
+def get_ai_insight(
+    profile_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Return a personalised 1-2 sentence AI health recommendation via Gemini 1.5 Flash.
+    Falls back to rule-based insight on any error — never returns 500."""
+    get_profile_access_or_403(profile_id, user, db)
+
+    today_str = date.today().isoformat()
+    cache_key = (profile_id, today_str)
+    if cache_key in _insight_cache:
+        return {"insight": _insight_cache[cache_key]}
+
+    # Fetch profile for age-aware context
+    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
+
+    # Fetch last 7 days of readings
+    seven_days_ago = datetime.combine(date.today() - timedelta(days=6), datetime.min.time())
+    recent = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_timestamp >= seven_days_ago,
+        )
+        .order_by(models.HealthReading.reading_timestamp.asc())
+        .all()
+    )
+
+    # Build reading lines for prompt
+    glucose_lines = []
+    bp_lines = []
+    for r in recent:
+        day = r.reading_timestamp.strftime("%b %d")
+        if r.reading_type == "glucose" and r.glucose_value:
+            glucose_lines.append(f"  - {day}: {r.glucose_value:.0f} mg/dL ({r.status_flag or 'unknown'})")
+        elif r.reading_type == "blood_pressure" and r.systolic and r.diastolic:
+            bp_lines.append(f"  - {day}: {r.systolic:.0f}/{r.diastolic:.0f} mmHg ({r.status_flag or 'unknown'})")
+
+    fallback = _rule_based_insight(recent)
+
+    if not glucose_lines and not bp_lines:
+        return {"insight": fallback}
+
+    age = profile.age if profile else None
+    gender = profile.gender if profile else "Unknown"
+    conditions = ", ".join(profile.medical_conditions) if (profile and profile.medical_conditions) else "None reported"
+    medications = profile.current_medications if (profile and profile.current_medications) else "None reported"
+
+    readings_section = ""
+    if glucose_lines:
+        readings_section += "Glucose readings:\n" + "\n".join(glucose_lines) + "\n"
+    if bp_lines:
+        readings_section += "Blood pressure readings:\n" + "\n".join(bp_lines) + "\n"
+
+    age_desc = f"{age} years" if age else "unknown age"
+    age_context = ""
+    if age:
+        if age >= 60:
+            age_context = f"For patients over 60, BP up to 140/90 mmHg may be acceptable. Glucose targets may be slightly more relaxed."
+        elif age < 30:
+            age_context = f"For patients under 30, even 125/80 mmHg BP warrants attention. Glucose should stay close to 80-100 mg/dL fasting."
+        else:
+            age_context = f"For a {age}-year-old, standard BP target is below 130/80 mmHg and fasting glucose below 100 mg/dL."
+
+    prompt = f"""You are a concise health assistant reviewing a patient's recent biometric data.
+
+Patient:
+- Age: {age_desc} | Gender: {gender}
+- Medical conditions: {conditions}
+- Current medications: {medications}
+
+Last 7 days of readings:
+{readings_section}
+Age context: {age_context}
+
+Critical thresholds that REQUIRE urgent language (do not soften these):
+- BP systolic ≥ 180 or diastolic ≥ 120: hypertensive crisis — ask if they took their medication and tell them to see a doctor today.
+- BP ≥ 140/90 (Stage 2): ask if they took their medication and recommend a doctor visit soon.
+- Glucose > 250 mg/dL: dangerously high — recommend immediate medical attention.
+- Glucose < 60 mg/dL: dangerously low — recommend immediate action (eat something + seek help).
+
+Task: Write exactly 1-2 sentences of personalised health advice based on the data above.
+For normal or mildly elevated readings: be encouraging and practical.
+For Stage 2 or critical readings: be direct and urgent — ask about medication, recommend seeing a doctor.
+Speak directly to the patient ("Your BP...", "Have you taken..."). Do not be vague for serious readings."""
+
+    try:
+        import google.generativeai as genai
+        if not settings.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY not set")
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                max_output_tokens=120,
+                temperature=0.4,
+            ),
+        )
+        insight = response.text.strip()
+        _insight_cache[cache_key] = insight
+        return {"insight": insight}
+    except Exception:
+        return {"insight": fallback}
 
 
 @router.get("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
@@ -274,6 +398,25 @@ def delete_reading(
     return {"message": "Reading deleted successfully"}
 
 
+def _rule_based_insight(recent: list) -> str:
+    """Simple rule-based fallback used when Gemini is unavailable."""
+    if not recent:
+        return "Log your first reading to start tracking your health."
+    statuses = {r.status_flag for r in recent if r.status_flag}
+    if "CRITICAL" in statuses:
+        return "⚠️ A recent reading was critical. Please seek medical attention immediately."
+    if "HIGH - STAGE 2" in statuses:
+        stage2 = next((r for r in reversed(recent) if r.status_flag == "HIGH - STAGE 2"), None)
+        if stage2 and stage2.reading_type == "blood_pressure" and stage2.systolic:
+            return f"⚠️ Your BP ({stage2.systolic:.0f}/{stage2.diastolic:.0f}) is dangerously high. Have you taken your medication? Please see a doctor today."
+        return "⚠️ A reading is in Stage 2 range. Have you taken your medication? Please consult your doctor."
+    if any("HIGH" in (s or "") for s in statuses):
+        return "Some readings were elevated this week. Stay hydrated and keep active."
+    if statuses and all(s == "NORMAL" for s in statuses):
+        return "All recent readings look healthy. Keep up the great work!"
+    return "Keep logging daily readings for the best health insights."
+
+
 # ---------------------------------------------------------------------------
-# Private helpers (removed or kept if needed elsewhere)
+# Private helpers
 # ---------------------------------------------------------------------------

@@ -294,7 +294,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(l10n.readingTime, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text(l10n.readingTime, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                         Text(
                           DateFormat('MMM d, yyyy  h:mm a').format(_readingTime),
                           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -302,7 +302,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
                       ],
                     ),
                     const Spacer(),
-                    const Icon(Icons.edit, size: 16, color: Colors.grey),
+                    const Icon(Icons.edit, size: 16, color: AppColors.textSecondary),
                   ],
                 ),
               ),
@@ -425,7 +425,7 @@ class _OcrResultBanner extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             l10n.ocrConfirmHint,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
             textAlign: TextAlign.center,
           ),
         ],

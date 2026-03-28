@@ -14,6 +14,7 @@ import 'trend_chart_screen.dart';
 import '../services/storage_service.dart';
 import '../services/health_reading_service.dart';
 import '../theme/app_theme.dart';
+import '../main.dart' show routeObserver;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,17 +23,36 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final StorageService _storageService = StorageService();
   final HealthReadingService _readingService = HealthReadingService();
   String _activeProfileName = "Health";
   int? _activeProfileId;
   Future<Map<String, dynamic>>? _healthScoreFuture;
+  Future<String>? _aiInsightFuture;
 
   @override
   void initState() {
     super.initState();
     _loadProfileInfo();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// Called when the user navigates back to this screen (e.g. from History or Profile).
+  @override
+  void didPopNext() {
+    if (_activeProfileId != null) _refreshHealthScore(_activeProfileId!);
   }
 
   Future<void> _loadProfileInfo() async {
@@ -52,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (token == null || !mounted) return;
     setState(() {
       _healthScoreFuture = _readingService.getHealthScore(token, profileId);
+      _aiInsightFuture = _readingService.getAiInsight(token, profileId);
     });
   }
 
@@ -177,6 +198,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(16),
                 child: _HealthScoreCard.empty(),
               ),
+
+            // AI Doctor Card
+            if (_aiInsightFuture != null)
+              _AIDoctorCard(insightFuture: _aiInsightFuture!),
 
             // Device Selection Panel
             Container(
@@ -383,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               Text(
                 l10n.howToLog,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -394,9 +419,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(context);
-                  Navigator.push(
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => PhotoScanScreen(
@@ -405,6 +430,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   );
+                  if (mounted && _activeProfileId != null) _refreshHealthScore(_activeProfileId!);
                 },
               ),
               const SizedBox(height: 12),
@@ -415,9 +441,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(context);
-                  Navigator.push(
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => DashboardScreen(
@@ -429,6 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   );
+                  if (mounted && _activeProfileId != null) _refreshHealthScore(_activeProfileId!);
                 },
               ),
               const SizedBox(height: 12),
@@ -439,9 +466,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(context);
-                  Navigator.push(
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ReadingConfirmationScreen(
@@ -451,6 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   );
+                  if (mounted && _activeProfileId != null) _refreshHealthScore(_activeProfileId!);
                 },
               ),
               const SizedBox(height: 8),
@@ -501,6 +529,88 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AI Doctor Card widget
+// ---------------------------------------------------------------------------
+
+class _AIDoctorCard extends StatelessWidget {
+  final Future<String> insightFuture;
+
+  const _AIDoctorCard({required this.insightFuture});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: insightFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            height: 80,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+            ),
+            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+        final text = snapshot.data ?? '';
+        if (text.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.accent.withOpacity(0.25), width: 1),
+            boxShadow: Theme.of(context).brightness == Brightness.light
+                ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2))]
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text('🩺', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'AI Doctor',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '— Powered by Gemini —',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textTertiary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -615,12 +725,12 @@ class _HealthScoreCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.iosOrange.withOpacity(0.12),
+                    color: AppColors.accent.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '🔥 ${l10n.dayStreak(streak)}',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.iosOrange),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.accent),
                   ),
                 ),
             ],
@@ -690,7 +800,7 @@ class _HealthScoreCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(l10n.todayGlucose,
-                                style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                             Text(
                               '${glucoseValue.toStringAsFixed(0)} mg/dL${_statusIcon(glucoseStatus)}',
                               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
@@ -710,7 +820,7 @@ class _HealthScoreCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(l10n.todayBP,
-                                style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                             Text(
                               '${bpSystolic.toStringAsFixed(0)}/${bpDiastolic.toStringAsFixed(0)}${_statusIcon(bpStatus)}',
                               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
@@ -728,7 +838,7 @@ class _HealthScoreCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               l10n.lastLogged(lastLogged),
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
+              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
             ),
           ],
 
@@ -788,7 +898,7 @@ class _HealthScoreCard extends StatelessWidget {
           Expanded(
             child: Text(
               l10n.noReadingsYetScore,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
           ),
         ],
