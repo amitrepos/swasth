@@ -1154,6 +1154,60 @@ abstract class AppLocalizations {
   /// **'हिंदी'**
   String get languageHindi;
 
+  /// No description provided for @doctorDetailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor Details'**
+  String get doctorDetailsSection;
+
+  /// No description provided for @doctorNameField.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor Name'**
+  String get doctorNameField;
+
+  /// No description provided for @doctorSpecialtyField.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialty'**
+  String get doctorSpecialtyField;
+
+  /// No description provided for @doctorWhatsappField.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp Number'**
+  String get doctorWhatsappField;
+
+  /// No description provided for @noDoctorLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'No doctor linked yet.'**
+  String get noDoctorLinked;
+
+  /// No description provided for @addDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Doctor'**
+  String get addDoctor;
+
+  /// No description provided for @editDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Doctor Details'**
+  String get editDoctor;
+
+  /// No description provided for @editDoctorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor Details'**
+  String get editDoctorTitle;
+
+  /// No description provided for @doctorWhatsappHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. +917001234567'**
+  String get doctorWhatsappHint;
+
   /// No description provided for @addHealthProfileTitle.
   ///
   /// In en, this message translates to:

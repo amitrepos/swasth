@@ -563,6 +563,33 @@ class AppLocalizationsHi extends AppLocalizations {
   String get languageHindi => 'हिंदी';
 
   @override
+  String get doctorDetailsSection => 'डॉक्टर की जानकारी';
+
+  @override
+  String get doctorNameField => 'डॉक्टर का नाम';
+
+  @override
+  String get doctorSpecialtyField => 'विशेषज्ञता';
+
+  @override
+  String get doctorWhatsappField => 'व्हाट्सएप नंबर';
+
+  @override
+  String get noDoctorLinked => 'अभी तक कोई डॉक्टर नहीं जोड़ा गया।';
+
+  @override
+  String get addDoctor => 'डॉक्टर जोड़ें';
+
+  @override
+  String get editDoctor => 'डॉक्टर की जानकारी बदलें';
+
+  @override
+  String get editDoctorTitle => 'डॉक्टर की जानकारी';
+
+  @override
+  String get doctorWhatsappHint => 'जैसे +917001234567';
+
+  @override
   String get addHealthProfileTitle => 'स्वास्थ्य प्रोफाइल जोड़ें';
 
   @override

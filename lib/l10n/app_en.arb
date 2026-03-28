@@ -243,6 +243,16 @@
   "languageEnglish": "English",
   "languageHindi": "हिंदी",
 
+  "doctorDetailsSection": "Doctor Details",
+  "doctorNameField": "Doctor Name",
+  "doctorSpecialtyField": "Specialty",
+  "doctorWhatsappField": "WhatsApp Number",
+  "noDoctorLinked": "No doctor linked yet.",
+  "addDoctor": "Add Doctor",
+  "editDoctor": "Edit Doctor Details",
+  "editDoctorTitle": "Doctor Details",
+  "doctorWhatsappHint": "e.g. +917001234567",
+
   "addHealthProfileTitle": "Add Health Profile",
   "createProfileSubtitle": "Create a profile for someone you care for (e.g. parents, child)",
   "profileNameHint": "e.g. Papa, Mummy",

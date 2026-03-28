@@ -5,6 +5,16 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-28 — D14: Doctor details data model + profile screen UI
+
+- Modified `backend/models.py`: Added `doctor_name`, `doctor_specialty`, `doctor_whatsapp` columns (nullable String) to `Profile` model.
+- Modified `backend/schemas.py`: Added 3 optional fields to `ProfileCreate`, `ProfileUpdate`, `ProfileResponse`. No route changes needed — existing PUT endpoint picks up new fields automatically.
+- DB migration: `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS doctor_name/specialty/whatsapp VARCHAR` run against local DB.
+- Modified `lib/models/profile_model.dart`: Added `doctorName`, `doctorSpecialty`, `doctorWhatsapp` nullable fields + fromJson mappings.
+- Modified `lib/screens/profile_screen.dart`: Added 3 TextEditingControllers (pre-filled from profile), `_saveDoctorDetails()` (calls existing `updateProfile`), `_showEditDoctorDialog()` (AlertDialog with 3 fields), "Doctor Details" section between Medical Conditions and Account Settings (owner-only, shows empty state + Add/Edit button).
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added 9 strings each (`doctorDetailsSection`, `doctorNameField`, `doctorSpecialtyField`, `doctorWhatsappField`, `noDoctorLinked`, `addDoctor`, `editDoctor`, `editDoctorTitle`, `doctorWhatsappHint`).
+- Updated `TASK_TRACKER.md`: D14 ❌→✅. Total: 40✅ / 8🔄 / 25❌.
+
 ## 2026-03-28 — 3-section dashboard redesign + task tracker audit
 
 - Modified `lib/screens/home_screen.dart`: Added `_StatusFlagData` + `_computeFlag()` with age-adjusted thresholds (Fit & Fine / Caution / At Risk / Urgent). Added `_GamificationPanel` (streak chip + points tiers: 1d=10, 3d=100, 7d=300, 14d=700, 30d=1500 + weekly winners placeholder with 3 avatar chips). Section 3 title changed to "Record New Metrics". Added `RouteAware.didPopNext` to refresh AI Doctor + health score on navigation return. Cache invalidated on every new reading save (server-side). Stage 2 BP now triggers urgent message in both rule engine and Gemini prompt.
@@ -482,3 +492,21 @@ Format: date, summary, file-level details.
   - 22:56:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
   - 23:10:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
   - 23:18:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 23:23:49 modified: /Users/amitkumarmishra/.claude/plans/purring-twirling-dijkstra.md
+  - 23:24:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 23:24:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 23:24:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 23:24:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 23:24:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/profile_model.dart
+  - 23:24:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/profile_model.dart
+  - 23:24:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 23:24:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 23:24:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 23:25:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 23:25:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 23:25:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 23:25:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 23:26:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 23:26:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 23:26:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 23:26:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

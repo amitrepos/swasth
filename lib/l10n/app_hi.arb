@@ -203,6 +203,16 @@
   "languageEnglish": "English",
   "languageHindi": "हिंदी",
 
+  "doctorDetailsSection": "डॉक्टर की जानकारी",
+  "doctorNameField": "डॉक्टर का नाम",
+  "doctorSpecialtyField": "विशेषज्ञता",
+  "doctorWhatsappField": "व्हाट्सएप नंबर",
+  "noDoctorLinked": "अभी तक कोई डॉक्टर नहीं जोड़ा गया।",
+  "addDoctor": "डॉक्टर जोड़ें",
+  "editDoctor": "डॉक्टर की जानकारी बदलें",
+  "editDoctorTitle": "डॉक्टर की जानकारी",
+  "doctorWhatsappHint": "जैसे +917001234567",
+
   "addHealthProfileTitle": "स्वास्थ्य प्रोफाइल जोड़ें",
   "createProfileSubtitle": "किसी की देखभाल के लिए प्रोफाइल बनाएं (जैसे माता-पिता, बच्चा)",
   "profileNameHint": "जैसे पापा, मम्मी",

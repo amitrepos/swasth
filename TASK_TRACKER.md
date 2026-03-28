@@ -101,7 +101,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | D11 | Weekly WhatsApp summary | ❌ Not started | Depends on D8. |
 | D12 | Alert WhatsApp message | ❌ Not started | Depends on D8. |
 | D13 | Push notifications (FCM backup) | ❌ Not started | `firebase_messaging` not in `pubspec.yaml`. No FCM config. |
-| D14 | Doctor referral code | ❌ Not started | No user role for doctor, no referral generation or assignment logic. |
+| D14 | Doctor referral code | ✅ Done | `doctor_name`, `doctor_specialty`, `doctor_whatsapp` columns on `profiles` table. "Doctor Details" section on profile screen (owner-only). Edit dialog with save via `updateProfile`. Ready for D15 WhatsApp sending. |
 | D15 | Doctor weekly WhatsApp summary | ❌ Not started | Depends on D8 + D14. |
 | D16 | Streak notifications | ❌ Not started | Streak calculated and shown visually. No push/WhatsApp alert when streak is broken or reached. |
 | D17 | AI Doctor card (Gemini 1.5 Flash) | ✅ Done | `GET /api/readings/ai-insight` — 7-day readings + profile → age-aware Gemini prompt → 1-2 sentence recommendation. Daily cache per profile, invalidated on new reading save. Urgent tone for Stage 2 BP / CRITICAL. Rule-based fallback. `_AIDoctorCard` widget with shimmer + `RouteAware` refresh. |
@@ -115,8 +115,8 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | A — Auth + Profiles | 7 | 3 | 2 | 12 |
 | B — Data Input | 12 | 2 | 6 | 20 |
 | C — Dashboard | 19 | 0 | 5 | 24 |
-| D — AI + Notifications | 1 | 3 | 13 | 17 |
-| **Total** | **39** | **8** | **26** | **73** |
+| D — AI + Notifications | 2 | 3 | 12 | 17 |
+| **Total** | **40** | **8** | **25** | **73** |
 
 ---
 
