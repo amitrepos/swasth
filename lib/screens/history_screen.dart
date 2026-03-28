@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 
@@ -25,7 +26,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _loadReadings() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final token = await StorageService().getToken();
       if (token == null) {
@@ -54,15 +55,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _deleteReading(int id) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Reading'),
-        content: const Text('Are you sure you want to delete this reading?'),
+        title: Text(l10n.deleteReading),
+        content: Text(l10n.deleteReadingConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -70,7 +72,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -82,11 +84,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         if (token == null) throw Exception('Not authenticated');
 
         await _readingService.deleteReading(id, token);
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Reading deleted'),
+            SnackBar(
+              content: Text(l10n.readingDeleted),
               backgroundColor: Colors.green,
             ),
           );
@@ -99,6 +101,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
           );
         }
       }
+    }
+  }
+
+  String _localizedStatus(String? flag, AppLocalizations l10n) {
+    switch (flag) {
+      case 'NORMAL':
+        return l10n.statusNormal;
+      case 'ELEVATED':
+        return l10n.statusElevated;
+      case 'HIGH - STAGE 1':
+        return l10n.statusHighStage1;
+      case 'HIGH - STAGE 2':
+        return l10n.statusHighStage2;
+      case 'LOW':
+        return l10n.statusLow;
+      case 'CRITICAL':
+        return l10n.statusCritical;
+      default:
+        return flag ?? '';
     }
   }
 
@@ -130,14 +151,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reading History'),
+        title: Text(l10n.historyTitle),
         actions: [
-          // Filter button
           PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list),
-            tooltip: 'Filter by type',
+            tooltip: l10n.filterByType,
             onSelected: (value) {
               setState(() {
                 _filterType = value == 'all' ? null : value;
@@ -145,16 +167,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
               });
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'all', child: Text('All Readings')),
-              const PopupMenuItem(value: 'glucose', child: Text('Glucose Only')),
-              const PopupMenuItem(value: 'blood_pressure', child: Text('BP Only')),
+              PopupMenuItem(value: 'all', child: Text(l10n.allReadings)),
+              PopupMenuItem(value: 'glucose', child: Text(l10n.glucoseOnly)),
+              PopupMenuItem(value: 'blood_pressure', child: Text(l10n.bpOnly)),
             ],
           ),
-          // Refresh button
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadReadings,
-            tooltip: 'Refresh',
+            tooltip: l10n.refresh,
           ),
         ],
       ),
@@ -172,7 +193,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'No readings yet',
+                        l10n.noReadingsYet,
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.grey.shade600,
@@ -180,7 +201,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Connect a device and take a measurement\nto see your reading history here',
+                        l10n.noReadingsSubtitle,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -220,7 +241,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             children: [
                               const SizedBox(height: 4),
                               Text(
-                                reading.statusDescription,
+                                _localizedStatus(reading.statusFlag, l10n),
                                 style: TextStyle(
                                   color: _getStatusColor(reading.statusFlag),
                                   fontWeight: FontWeight.w500,
@@ -241,7 +262,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             icon: const Icon(Icons.delete_outline),
                             color: Colors.red.shade300,
                             onPressed: () => _deleteReading(reading.id),
-                            tooltip: 'Delete',
+                            tooltip: l10n.delete,
                           ),
                           isThreeLine: true,
                         ),

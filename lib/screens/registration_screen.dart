@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 // ignore_for_file: deprecated_member_use
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 
@@ -14,7 +15,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
 
-  // Form controllers
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -27,12 +27,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _medicationsController = TextEditingController();
   final _otherConditionController = TextEditingController();
 
-  // Dropdown values
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'A+';
   final List<String> _selectedConditions = [];
-  
-  // Medical conditions options
+
+  // Medical condition values are API keys — do NOT translate
   final List<String> _medicalConditionsOptions = [
     'Diabetes T1',
     'Diabetes T2',
@@ -42,7 +41,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     'Other'
   ];
 
-  // Password validation
   bool _passwordHasMinLength = false;
   bool _passwordHasUppercase = false;
   bool _passwordHasLowercase = false;
@@ -94,10 +92,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       return;
     }
 
-    if (_selectedConditions.contains('Other') && 
+    final l10n = AppLocalizations.of(context)!;
+
+    if (_selectedConditions.contains('Other') &&
         _otherConditionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide details for Other medical condition')),
+        SnackBar(content: Text(l10n.specifyOtherCondition)),
       );
       return;
     }
@@ -117,8 +117,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'height': double.tryParse(_heightController.text),
         'weight': double.tryParse(_weightController.text),
         'blood_group': _selectedBloodGroup,
-        'current_medications': _medicationsController.text.trim().isEmpty 
-            ? null 
+        'current_medications': _medicationsController.text.trim().isEmpty
+            ? null
             : _medicationsController.text.trim(),
         'medical_conditions': _selectedConditions,
         'other_medical_condition': _selectedConditions.contains('Other')
@@ -130,13 +130,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration successful! Please login.'),
+          SnackBar(
+            content: Text(l10n.registerSuccessful),
             backgroundColor: Colors.green,
           ),
         );
-        
-        // Navigate to login screen
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -158,9 +157,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Register'),
+        title: Text(l10n.registerTitle),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -169,14 +170,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildSectionTitle('Account Details'),
-              
+              _buildSectionTitle(l10n.accountDetailsSection),
+
               // Full Name
               TextFormField(
                 controller: _fullNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  prefixIcon: Icon(Icons.person),
+                decoration: InputDecoration(
+                  labelText: l10n.fullNameLabel,
+                  prefixIcon: const Icon(Icons.person),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -191,16 +192,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
+                decoration: InputDecoration(
+                  labelText: l10n.emailLabel,
+                  prefixIcon: const Icon(Icons.email),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email';
+                    return l10n.emailValidationEmpty;
                   }
                   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'Please enter a valid email';
+                    return l10n.emailValidationInvalid;
                   }
                   return null;
                 },
@@ -211,9 +212,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  prefixIcon: Icon(Icons.phone),
+                decoration: InputDecoration(
+                  labelText: l10n.phoneLabel,
+                  prefixIcon: const Icon(Icons.phone),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -231,13 +232,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
+                decoration: InputDecoration(
+                  labelText: l10n.passwordLabel,
+                  prefixIcon: const Icon(Icons.lock),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a password';
+                    return l10n.passwordValidationEmpty;
                   }
                   if (!_passwordHasMinLength ||
                       !_passwordHasUppercase ||
@@ -263,30 +264,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Password Requirements:',
+                      l10n.passwordRequirementsTitle,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
-                    _buildRequirementRow(
-                      'At least 8 characters',
-                      _passwordHasMinLength,
-                    ),
-                    _buildRequirementRow(
-                      'One uppercase letter',
-                      _passwordHasUppercase,
-                    ),
-                    _buildRequirementRow(
-                      'One lowercase letter',
-                      _passwordHasLowercase,
-                    ),
-                    _buildRequirementRow(
-                      'One number',
-                      _passwordHasNumber,
-                    ),
-                    _buildRequirementRow(
-                      'One special character',
-                      _passwordHasSpecialChar,
-                    ),
+                    _buildRequirementRow(l10n.passwordReqLength, _passwordHasMinLength),
+                    _buildRequirementRow(l10n.passwordReqUppercase, _passwordHasUppercase),
+                    _buildRequirementRow(l10n.passwordReqLowercase, _passwordHasLowercase),
+                    _buildRequirementRow(l10n.passwordReqNumber, _passwordHasNumber),
+                    _buildRequirementRow(l10n.passwordReqSpecial, _passwordHasSpecialChar),
                   ],
                 ),
               ),
@@ -297,11 +283,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 controller: _confirmPasswordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Confirm Password',
+                  labelText: l10n.confirmPasswordLabel,
                   prefixIcon: const Icon(Icons.lock_outline),
                   errorText: !_passwordsMatch &&
                           _confirmPasswordController.text.isNotEmpty
-                      ? 'Passwords do not match'
+                      ? l10n.passwordsDoNotMatch
                       : null,
                 ),
                 validator: (value) {
@@ -309,22 +295,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     return 'Please confirm your password';
                   }
                   if (!_passwordsMatch) {
-                    return 'Passwords do not match';
+                    return l10n.passwordsDoNotMatch;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 32),
-              
-              _buildSectionTitle('Initial Health Profile'),
-              
+
+              _buildSectionTitle(l10n.healthProfileSection),
+
               // Profile Name
               TextFormField(
                 controller: _profileNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Profile Name',
-                  hintText: 'e.g. My Health, Papa, etc.',
-                  prefixIcon: Icon(Icons.badge_outlined),
+                decoration: InputDecoration(
+                  labelText: l10n.profileNameLabel,
+                  hintText: l10n.profileNameHint,
+                  prefixIcon: const Icon(Icons.badge_outlined),
                 ),
                 validator: (value) => (value == null || value.isEmpty) ? 'Enter a name' : null,
               ),
@@ -334,9 +320,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               TextFormField(
                 controller: _ageController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Age',
-                  prefixIcon: Icon(Icons.calendar_today),
+                decoration: InputDecoration(
+                  labelText: l10n.ageLabel,
+                  prefixIcon: const Icon(Icons.calendar_today),
                 ),
               ),
               const SizedBox(height: 16),
@@ -344,9 +330,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               // Gender
               DropdownButtonFormField<String>(
                 value: _selectedGender,
-                decoration: const InputDecoration(
-                  labelText: 'Gender',
-                  prefixIcon: Icon(Icons.people),
+                decoration: InputDecoration(
+                  labelText: l10n.genderLabel,
+                  prefixIcon: const Icon(Icons.people),
                 ),
                 items: ['Male', 'Female', 'Other']
                     .map((g) => DropdownMenuItem(value: g, child: Text(g)))
@@ -361,9 +347,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               TextFormField(
                 controller: _heightController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Height (cm)',
-                  prefixIcon: Icon(Icons.height),
+                decoration: InputDecoration(
+                  labelText: l10n.heightLabel,
+                  prefixIcon: const Icon(Icons.height),
                 ),
               ),
               const SizedBox(height: 16),
@@ -382,9 +368,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               // Blood Group
               DropdownButtonFormField<String>(
                 value: _selectedBloodGroup,
-                decoration: const InputDecoration(
-                  labelText: 'Blood Group',
-                  prefixIcon: Icon(Icons.bloodtype),
+                decoration: InputDecoration(
+                  labelText: l10n.bloodGroupLabel,
+                  prefixIcon: const Icon(Icons.bloodtype),
                 ),
                 items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
                     .map((bg) => DropdownMenuItem(value: bg, child: Text(bg)))
@@ -399,17 +385,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               TextFormField(
                 controller: _medicationsController,
                 maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Current Medications (optional)',
+                decoration: InputDecoration(
+                  labelText: l10n.medicationsLabel,
                   hintText: 'Comma separated list',
-                  prefixIcon: Icon(Icons.medication),
+                  prefixIcon: const Icon(Icons.medication),
                 ),
               ),
               const SizedBox(height: 16),
 
               // Medical Conditions
               Text(
-                'Medical Conditions',
+                l10n.medicalConditionsSection,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
@@ -428,14 +414,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   },
                 );
               }),
-              
-              // Other condition text field
+
               if (_selectedConditions.contains('Other')) ...[
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _otherConditionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Please specify other condition',
+                  decoration: InputDecoration(
+                    labelText: l10n.specifyOtherCondition,
                   ),
                 ),
               ],
@@ -450,7 +435,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Register'),
+                    : Text(l10n.register),
               ),
               const SizedBox(height: 16),
 
@@ -458,7 +443,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Already have an account?'),
+                  Text(l10n.alreadyHaveAccount),
                   TextButton(
                     onPressed: () {
                       Navigator.push(
@@ -468,7 +453,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         ),
                       );
                     },
-                    child: const Text('Login'),
+                    child: Text(l10n.loginButton),
                   ),
                 ],
               ),

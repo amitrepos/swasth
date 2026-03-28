@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
 
@@ -20,7 +21,7 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
   final ProfileService _profileService = ProfileService();
   final StorageService _storageService = StorageService();
   final _emailController = TextEditingController();
-  
+
   List<Map<String, dynamic>> _accesses = [];
   bool _isLoading = true;
   String? _error;
@@ -65,15 +66,17 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
     if (email.isEmpty) return;
 
     setState(() => _isLoading = true);
+    final l10n = AppLocalizations.of(context)!;
+
     try {
       final token = await _storageService.getToken();
       if (token == null) throw Exception("Not authenticated");
 
       await _profileService.sendInvite(token, widget.profileId, email);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invite sent successfully'), backgroundColor: Colors.green),
+          SnackBar(content: Text(l10n.inviteSentSuccess), backgroundColor: Colors.green),
         );
         _emailController.clear();
       }
@@ -89,14 +92,18 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
   }
 
   Future<void> _revokeAccess(int userId, String name) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Revoke Access?'),
-        content: Text('Are you sure you want to stop sharing this profile with $name?'),
+        title: Text(l10n.revokeAccessTitle),
+        content: Text(l10n.revokeAccessConfirm(name: name)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Revoke', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.revoke, style: const TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -122,9 +129,11 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Access'),
+        title: Text(l10n.manageAccessTitle),
       ),
       body: Column(
         children: [
@@ -143,9 +152,9 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Invite someone to view this profile',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      l10n.inviteSomeoneTitle,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -154,17 +163,17 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                           child: TextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter email address',
+                            decoration: InputDecoration(
+                              hintText: l10n.enterEmailHint,
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton(
                           onPressed: _isLoading ? null : _inviteUser,
-                          child: const Text('Invite'),
+                          child: Text(l10n.invite),
                         ),
                       ],
                     ),
@@ -182,11 +191,11 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
                     ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-                    : _accesses.length <= 1 // Only owner is present
-                        ? const Center(
+                    : _accesses.length <= 1
+                        ? Center(
                             child: Text(
-                              'Not shared with anyone yet.',
-                              style: TextStyle(color: Colors.grey),
+                              l10n.notSharedYet,
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           )
                         : ListView.builder(
@@ -201,7 +210,7 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                                 subtitle: Text(access['email']),
                                 trailing: TextButton(
                                   onPressed: _isLoading ? null : () => _revokeAccess(access['user_id'], access['full_name']),
-                                  child: const Text('Revoke', style: TextStyle(color: Colors.red)),
+                                  child: Text(l10n.revoke, style: const TextStyle(color: Colors.red)),
                                 ),
                               );
                             },

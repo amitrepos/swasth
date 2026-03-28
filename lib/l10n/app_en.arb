@@ -1,0 +1,290 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Swasth Health App",
+  "appName": "Swasth",
+  "loading": "Loading...",
+  "retry": "Retry",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "edit": "Edit",
+  "accept": "Accept",
+  "reject": "Reject",
+  "invite": "Invite",
+  "revoke": "Revoke",
+  "connect": "Connect",
+  "refresh": "Refresh",
+  "logout": "Logout",
+  "profile": "Profile",
+  "error": "Error",
+
+  "loginTitle": "Login",
+  "emailLabel": "Email",
+  "passwordLabel": "Password",
+  "forgotPassword": "Forgot Password?",
+  "loginButton": "Login",
+  "noAccount": "Don't have an account?",
+  "register": "Register",
+  "loginSuccessful": "Login successful!",
+  "emailValidationEmpty": "Please enter your email",
+  "emailValidationInvalid": "Please enter a valid email",
+  "passwordValidationEmpty": "Please enter your password",
+
+  "registerTitle": "Register",
+  "accountDetailsSection": "Account Details",
+  "healthProfileSection": "Initial Health Profile",
+  "fullNameLabel": "Full Name",
+  "phoneLabel": "Phone Number",
+  "confirmPasswordLabel": "Confirm Password",
+  "profileNameLabel": "Profile Name",
+  "ageLabel": "Age",
+  "genderLabel": "Gender",
+  "heightLabel": "Height (cm)",
+  "bloodGroupLabel": "Blood Group",
+  "medicationsLabel": "Current Medications (optional)",
+  "medicalConditionsSection": "Medical Conditions",
+  "passwordRequirementsTitle": "Password Requirements:",
+  "passwordReqLength": "At least 8 characters",
+  "passwordReqUppercase": "One uppercase letter",
+  "passwordReqLowercase": "One lowercase letter",
+  "passwordReqNumber": "One number",
+  "passwordReqSpecial": "One special character",
+  "alreadyHaveAccount": "Already have an account?",
+  "registerSuccessful": "Registration successful! Please login.",
+  "specifyOtherCondition": "Please specify other condition",
+
+  "selectProfileTitle": "Select Profile",
+  "myProfilesSection": "My Profiles",
+  "sharedWithMeSection": "Shared With Me",
+  "noSharedProfiles": "No shared profiles yet.",
+  "addProfile": "Add Profile",
+  "pendingInvitesBanner": "You have {count} pending invites",
+  "@pendingInvitesBanner": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "homeTitle": "Swasth Health App",
+  "viewingProfile": "Viewing: {name}'s Health",
+  "@viewingProfile": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "switchProfile": "Switch",
+  "shareProfile": "Share Profile",
+  "welcomeTitle": "Welcome to Swasth!",
+  "welcomeSubtitle": "Your health monitoring companion",
+  "selectDevice": "Select Device",
+  "glucometer": "Glucometer",
+  "bpMeter": "BP Meter",
+  "armband": "Armband",
+  "quickActions": "Quick Actions",
+  "connectNewDevice": "Connect New Device",
+  "connectNewDeviceSubtitle": "Scan and pair Bluetooth devices",
+  "viewHistory": "View History",
+  "viewHistorySubtitle": "Check your past readings",
+  "selectProfileFirst": "Please select a profile first",
+  "logReading": "Log {device} Reading",
+  "@logReading": {
+    "placeholders": {
+      "device": { "type": "String" }
+    }
+  },
+  "howToLog": "How would you like to log this reading?",
+  "scanWithCamera": "Scan with Camera",
+  "connectViaBluetooth": "Connect via Bluetooth",
+
+  "scanTitle": "Scan {device}",
+  "@scanTitle": {
+    "placeholders": {
+      "device": { "type": "String" }
+    }
+  },
+  "placeDeviceInBox": "Place {device} screen inside the box",
+  "@placeDeviceInBox": {
+    "placeholders": {
+      "device": { "type": "String" }
+    }
+  },
+  "toggleFlash": "Toggle Flash",
+  "photoBlurryTitle": "Photo is too blurry",
+  "photoBlurryMessage": "We couldn't read the display. Please retake the photo with:\n\n• Camera steady (no shake)\n• Device screen centered in the guide box\n• Good lighting or flash on",
+  "tryAgain": "Try Again",
+  "readingImage": "Reading the image...",
+
+  "glucoseReadingTitle": "Glucose Reading",
+  "bpReadingTitle": "BP Reading",
+  "glucoseValueLabel": "Glucose Value",
+  "systolicLabel": "Systolic",
+  "diastolicLabel": "Diastolic",
+  "pulseLabel": "Pulse (optional)",
+  "mealContextSection": "Meal Context",
+  "fasting": "Fasting",
+  "beforeMeal": "Before Meal",
+  "afterMeal": "After Meal",
+  "readingTime": "Reading Time",
+  "saveReading": "Save Reading",
+  "readingSavedSuccess": "Reading saved successfully",
+  "ocrSuccessPrefix": "We read:",
+  "ocrEditButton": "Edit",
+  "ocrConfirmHint": "Is this correct? You can edit above before saving.",
+  "ocrFailedMessage": "Couldn't read the value from the photo. Please enter it manually below.",
+  "manualEntryHint": "Enter the value shown on your device.",
+  "glucoseValidation": "Enter a valid glucose value (20–600 mg/dL)",
+  "systolicValidation": "Enter a valid systolic value (60–250 mmHg)",
+  "diastolicValidation": "Enter a valid diastolic value (40–150 mmHg)",
+  "saveFailed": "Failed to save: {error}",
+  "@saveFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "historyTitle": "Reading History",
+  "filterByType": "Filter by type",
+  "allReadings": "All Readings",
+  "glucoseOnly": "Glucose Only",
+  "bpOnly": "BP Only",
+  "noReadingsYet": "No readings yet",
+  "noReadingsSubtitle": "Connect a device and take a measurement\nto see your reading history here",
+  "deleteReading": "Delete Reading",
+  "deleteReadingConfirm": "Are you sure you want to delete this reading?",
+  "readingDeleted": "Reading deleted",
+  "statusNormal": "Normal",
+  "statusElevated": "Elevated",
+  "statusHighStage1": "High - Stage 1",
+  "statusHighStage2": "High - Stage 2",
+  "statusLow": "Low",
+  "statusCritical": "Critical",
+
+  "profileDetailsTitle": "Profile Details",
+  "manageAccess": "Manage Access",
+  "yourProfile": "Your Profile",
+  "sharedBySomeone": "Shared by Someone",
+  "healthInfoSection": "Health Information",
+  "ageField": "Age",
+  "ageYears": "{age} years",
+  "@ageYears": {
+    "placeholders": {
+      "age": { "type": "String" }
+    }
+  },
+  "genderField": "Gender",
+  "bloodGroupField": "Blood Group",
+  "heightField": "Height",
+  "heightCm": "{height} cm",
+  "@heightCm": {
+    "placeholders": {
+      "height": { "type": "String" }
+    }
+  },
+  "medicalConditionsField": "Conditions",
+  "accountSettingsSection": "Account Settings",
+  "linkedEmail": "Linked Email",
+  "changePassword": "Change Account Password",
+  "changePasswordTitle": "Change Password",
+  "currentPasswordLabel": "Current Password",
+  "newPasswordLabel": "New Password",
+  "confirmNewPasswordLabel": "Confirm New Password",
+  "passwordMinChars": "Min. 6 characters",
+  "passwordChanged": "Password changed!",
+  "enterCurrentPassword": "Enter current password",
+  "passwordTooShort": "Min 6 characters",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "appLanguageSection": "App Language",
+  "languageEnglish": "English",
+  "languageHindi": "हिंदी",
+
+  "addHealthProfileTitle": "Add Health Profile",
+  "createProfileSubtitle": "Create a profile for someone you care for (e.g. parents, child)",
+  "profileNameHint": "e.g. Papa, Mummy",
+  "createProfile": "Create Profile",
+
+  "manageAccessTitle": "Manage Access",
+  "inviteSomeoneTitle": "Invite someone to view this profile",
+  "enterEmailHint": "Enter email address",
+  "notSharedYet": "Not shared with anyone yet.",
+  "inviteSentSuccess": "Invite sent successfully",
+  "revokeAccessTitle": "Revoke Access?",
+  "revokeAccessConfirm": "Are you sure you want to stop sharing this profile with {name}?",
+  "@revokeAccessConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "pendingInvitesTitle": "Pending Invites",
+  "noPendingInvites": "No pending invites.",
+  "wantsToShare": "wants to share \"{profileName}\"",
+  "@wantsToShare": {
+    "placeholders": {
+      "profileName": { "type": "String" }
+    }
+  },
+  "expiresInDays": "Expires in {days} days ({date})",
+  "@expiresInDays": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "date": { "type": "String" }
+    }
+  },
+  "acceptedInvite": "Accepted invite for {profileName}",
+  "@acceptedInvite": {
+    "placeholders": {
+      "profileName": { "type": "String" }
+    }
+  },
+  "rejectedInvite": "Rejected invite for {profileName}",
+  "@rejectedInvite": {
+    "placeholders": {
+      "profileName": { "type": "String" }
+    }
+  },
+
+  "scanDevicesTitle": "Swasth — Scan Devices",
+  "pressScanToFind": "Press Scan to find your device",
+  "scanButton": "Scan",
+  "scanningButton": "Scanning...",
+  "noDevicesFound": "No devices found yet",
+  "lookingForDevices": "Looking for devices...",
+  "noDevicesFoundAfterScan": "No devices found. Make sure device is powered on.",
+  "connectButton": "Connect",
+
+  "forgotPasswordTitle": "Forgot Password",
+  "forgotPasswordHeadline": "Forgot Password?",
+  "forgotPasswordSubtitle": "Enter your email address and we'll send you an OTP to reset your password.",
+  "sendOtp": "Send OTP",
+  "otpSentSuccess": "OTP sent successfully! Check your email.",
+  "rememberPassword": "Remember your password?",
+
+  "verifyOtpTitle": "Verify OTP",
+  "enterOtpHeadline": "Enter OTP",
+  "otpSentTo": "We've sent a 6-digit OTP to\n{email}",
+  "@otpSentTo": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "otpLabel": "OTP",
+  "verifyOtp": "Verify OTP",
+  "otpVerifiedSuccess": "OTP verified successfully!",
+  "didNotReceiveOtp": "Didn't receive OTP?",
+  "resendIn": "Resend in {seconds}s",
+  "@resendIn": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "resendOtp": "Resend OTP",
+  "otpResent": "OTP resent successfully! Check your email.",
+  "wantToGoBack": "Want to go back?",
+
+  "resetPasswordTitle": "Reset Password",
+  "createNewPasswordHeadline": "Create New Password",
+  "createNewPasswordSubtitle": "Your new password must be different from your old password.",
+  "resetPasswordButton": "Reset Password",
+  "passwordResetSuccess": "Password reset successfully!"
+}

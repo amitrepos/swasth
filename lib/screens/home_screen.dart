@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'dashboard_screen.dart';
@@ -6,6 +7,7 @@ import 'history_screen.dart';
 import 'select_profile_screen.dart';
 import 'manage_access_screen.dart';
 import 'scan_screen.dart';
+import 'photo_scan_screen.dart';
 import '../services/storage_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -38,7 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _logout(BuildContext context) async {
-    // Clear stored tokens and user data
     await _storageService.clearAll();
     if (mounted) {
       Navigator.pushReplacement(
@@ -50,9 +51,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Swasth Health App'),
+        title: Text(l10n.homeTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -66,12 +69,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
             },
-            tooltip: 'Profile',
+            tooltip: l10n.profile,
           ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => _logout(context),
-            tooltip: 'Logout',
+            tooltip: l10n.logout,
           ),
         ],
       ),
@@ -89,18 +92,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "Viewing: $_activeProfileName's Health",
+                      l10n.viewingProfile(name: _activeProfileName),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
-                  // Share icon — opens manage access for the active profile
                   IconButton(
                     icon: Icon(Icons.person_add_alt_1,
                         size: 20, color: Theme.of(context).colorScheme.primary),
-                    tooltip: 'Share Profile',
+                    tooltip: l10n.shareProfile,
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     constraints: const BoxConstraints(),
                     onPressed: () {
@@ -129,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text("Switch"),
+                    child: Text(l10n.switchProfile),
                   ),
                 ],
               ),
@@ -147,14 +149,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Welcome to Swasth!',
+                    l10n.welcomeTitle,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Your health monitoring companion',
+                    l10n.welcomeSubtitle,
                     style: Theme.of(context).textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
@@ -173,15 +175,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Theme.of(context).dividerColor.withOpacity(0.1),
                   width: 0.5,
                 ),
-                boxShadow: Theme.of(context).brightness == Brightness.light 
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
+                boxShadow: Theme.of(context).brightness == Brightness.light
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
-                      'Select Device',
+                      l10n.selectDevice,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -201,51 +203,31 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildDeviceIcon(
                         context: context,
                         icon: Icons.water_drop,
-                        label: 'Glucometer',
+                        label: l10n.glucometer,
                         color: Colors.blue,
-                        onTap: () {
-                          if (_activeProfileId != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DashboardScreen(
-                                  device: null,
-                                  services: [],
-                                  deviceType: 'Glucose',
-                                  autoConnect: true,
-                                  profileId: _activeProfileId!,
-                                ),
-                              ),
-                            );
-                          }
-                        },
+                        onTap: () => _showInputModal(
+                          context,
+                          l10n: l10n,
+                          deviceType: 'glucose',
+                          btDeviceType: 'Glucose',
+                        ),
                       ),
                       _buildDeviceIcon(
                         context: context,
                         icon: Icons.favorite,
-                        label: 'BP Meter',
+                        label: l10n.bpMeter,
                         color: Colors.red,
-                        onTap: () {
-                          if (_activeProfileId != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DashboardScreen(
-                                  device: null,
-                                  services: [],
-                                  deviceType: 'Blood Pressure',
-                                  autoConnect: true,
-                                  profileId: _activeProfileId!,
-                                ),
-                              ),
-                            );
-                          }
-                        },
+                        onTap: () => _showInputModal(
+                          context,
+                          l10n: l10n,
+                          deviceType: 'blood_pressure',
+                          btDeviceType: 'Blood Pressure',
+                        ),
                       ),
                       _buildDeviceIcon(
                         context: context,
                         icon: Icons.watch,
-                        label: 'Armband',
+                        label: l10n.armband,
                         color: Colors.green,
                         onTap: () {
                           if (_activeProfileId != null) {
@@ -279,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
-                      'Quick Actions',
+                      l10n.quickActions,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -288,8 +270,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Card(
                     child: ListTile(
                       leading: Icon(Icons.bluetooth_searching, color: Theme.of(context).colorScheme.primary),
-                      title: const Text('Connect New Device'),
-                      subtitle: const Text('Scan and pair Bluetooth devices'),
+                      title: Text(l10n.connectNewDevice),
+                      subtitle: Text(l10n.connectNewDeviceSubtitle),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
                         if (_activeProfileId != null) {
@@ -301,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please select a profile first')),
+                            SnackBar(content: Text(l10n.selectProfileFirst)),
                           );
                         }
                       },
@@ -310,8 +292,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Card(
                     child: ListTile(
                       leading: Icon(Icons.history, color: Theme.of(context).colorScheme.primary),
-                      title: const Text('View History'),
-                      subtitle: const Text('Check your past readings'),
+                      title: Text(l10n.viewHistory),
+                      subtitle: Text(l10n.viewHistorySubtitle),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
                         if (_activeProfileId != null) {
@@ -329,6 +311,97 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showInputModal(
+    BuildContext context, {
+    required AppLocalizations l10n,
+    required String deviceType,
+    required String btDeviceType,
+  }) {
+    if (_activeProfileId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.selectProfileFirst)),
+      );
+      return;
+    }
+
+    final localizedLabel = deviceType == 'glucose' ? l10n.glucometer : l10n.bpMeter;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.logReading(device: localizedLabel),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.howToLog,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.camera_alt),
+                label: Text(l10n.scanWithCamera),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PhotoScanScreen(
+                        deviceType: deviceType,
+                        profileId: _activeProfileId!,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.bluetooth),
+                label: Text(l10n.connectViaBluetooth),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DashboardScreen(
+                        device: null,
+                        services: [],
+                        deviceType: btDeviceType,
+                        autoConnect: true,
+                        profileId: _activeProfileId!,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
@@ -376,5 +449,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 }

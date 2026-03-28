@@ -1,21 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/login_screen.dart';
+import 'providers/language_provider.dart';
+import 'services/storage_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final langCode = await StorageService().getLanguage() ?? 'en';
   runApp(
-    const ProviderScope(
-      child: SwasthApp(),
+    ProviderScope(
+      overrides: [
+        languageProvider.overrideWith(
+          (ref) => LanguageNotifier(Locale(langCode)),
+        ),
+      ],
+      child: const SwasthApp(),
     ),
   );
 }
 
-class SwasthApp extends StatelessWidget {
+class SwasthApp extends ConsumerWidget {
   const SwasthApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(languageProvider);
     const double borderRadiusValue = 16.0;
     const Color iosSystemBlue = Color(0xFF007AFF);
     
@@ -179,6 +191,9 @@ class SwasthApp extends StatelessWidget {
     return MaterialApp(
       title: 'Swasth',
       debugShowCheckedModeBanner: false,
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: ThemeMode.system,

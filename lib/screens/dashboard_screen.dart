@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../ble/ble_manager.dart';
 import '../ble/glucose_service.dart';
@@ -387,7 +388,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onTap: () => _handleDeviceTap('Glucose'),
                 child: _buildDeviceIcon(
                   icon: Icons.water_drop,
-                  label: 'Glucometer',
+                  label: AppLocalizations.of(context)!.glucometer,
                   isConnected: _glucometerConnected,
                   color: Colors.blue,
                 ),
@@ -396,7 +397,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onTap: () => _handleDeviceTap('Blood Pressure'),
                 child: _buildDeviceIcon(
                   icon: Icons.favorite,
-                  label: 'BP Meter',
+                  label: AppLocalizations.of(context)!.bpMeter,
                   isConnected: _bpMeterConnected,
                   color: Colors.red,
                 ),
@@ -405,7 +406,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onTap: () => _handleDeviceTap('Armband'),
                 child: _buildDeviceIcon(
                   icon: Icons.watch,
-                  label: 'Armband',
+                  label: AppLocalizations.of(context)!.armband,
                   isConnected: _armbandConnected,
                   color: Colors.green,
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../ble/ble_manager.dart';
 import 'dashboard_screen.dart';
@@ -7,7 +8,7 @@ import 'dashboard_screen.dart';
 class ScanScreen extends StatefulWidget {
   final String? deviceType; // 'Glucose', 'Blood Pressure', or 'Armband'
   final int profileId;
-  
+
   const ScanScreen({super.key, this.deviceType, required this.profileId});
 
   @override
@@ -17,20 +18,20 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   List<ScanResult> _devices = [];
   bool _isScanning = false;
-  String _status = 'Press Scan to find your device';
+  // '' means show the default "press scan" message from l10n
+  String _status = '';
 
   @override
   void initState() {
     super.initState();
-    // Auto-start scan if device type is specified
     if (widget.deviceType != null) {
-      _startScan();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startScan());
     }
   }
 
-  // ── Request BLE permissions then start scan ───────────────────────────────
   Future<void> _startScan() async {
-    // Request permissions first
+    final l10n = AppLocalizations.of(context)!;
+
     await Permission.bluetooth.request();
     await Permission.bluetoothScan.request();
     await Permission.bluetoothConnect.request();
@@ -39,13 +40,11 @@ class _ScanScreenState extends State<ScanScreen> {
     setState(() {
       _devices = [];
       _isScanning = true;
-      _status = 'Scanning for glucose & BP devices...';
+      _status = l10n.lookingForDevices;
     });
 
-    // Listen to scan results filtered by health service UUIDs
     BleManager.startScan().listen((results) {
       setState(() {
-        // Filter by device type if specified
         if (widget.deviceType != null) {
           _devices = results.where((r) {
             final type = BleManager.deviceType(r);
@@ -57,19 +56,18 @@ class _ScanScreenState extends State<ScanScreen> {
       });
     });
 
-    // Stop scanning after 10 seconds
     await Future.delayed(const Duration(seconds: 10));
     if (mounted) {
+      final l10nAfter = AppLocalizations.of(context)!;
       setState(() {
         _isScanning = false;
         _status = _devices.isEmpty
-            ? 'No devices found. Make sure device is powered on.'
+            ? l10nAfter.noDevicesFoundAfterScan
             : '${_devices.length} ${widget.deviceType ?? 'device'}(s) found';
       });
     }
   }
 
-  // ── Connect to selected device ────────────────────────────────────────────
   Future<void> _connectToDevice(ScanResult result) async {
     await BleManager.stopScan();
 
@@ -78,12 +76,10 @@ class _ScanScreenState extends State<ScanScreen> {
     });
 
     try {
-      final services =
-          await BleManager.connectAndDiscover(result.device);
+      final services = await BleManager.connectAndDiscover(result.device);
 
       if (!mounted) return;
 
-      // Navigate to dashboard with device + services
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -102,13 +98,13 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  // ── Build device list tile ────────────────────────────────────────────────
   Widget _buildDeviceTile(ScanResult result) {
     final name = result.device.platformName.isNotEmpty
         ? result.device.platformName
         : 'Unknown Device';
     final type = BleManager.deviceType(result);
     final rssi = result.rssi;
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -133,7 +129,7 @@ class _ScanScreenState extends State<ScanScreen> {
         ),
         trailing: ElevatedButton(
           onPressed: () => _connectToDevice(result),
-          child: const Text('Connect'),
+          child: Text(l10n.connectButton),
         ),
       ),
     );
@@ -141,9 +137,12 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final displayStatus = _status.isEmpty ? l10n.pressScanToFind : _status;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Swasth — Scan Devices'),
+        title: Text(l10n.scanDevicesTitle),
       ),
       body: Column(
         children: [
@@ -163,7 +162,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 if (_isScanning) const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _status,
+                    displayStatus,
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
@@ -183,8 +182,8 @@ class _ScanScreenState extends State<ScanScreen> {
                         const SizedBox(height: 16),
                         Text(
                           _isScanning
-                              ? 'Looking for devices...'
-                              : 'No devices found yet',
+                              ? l10n.lookingForDevices
+                              : l10n.noDevicesFound,
                           style: TextStyle(
                               color: Colors.grey.shade600, fontSize: 16),
                         ),
@@ -199,11 +198,10 @@ class _ScanScreenState extends State<ScanScreen> {
         ],
       ),
 
-      // Scan button
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isScanning ? null : _startScan,
         icon: Icon(_isScanning ? Icons.hourglass_empty : Icons.search),
-        label: Text(_isScanning ? 'Scanning...' : 'Scan'),
+        label: Text(_isScanning ? l10n.scanningButton : l10n.scanButton),
       ),
     );
   }

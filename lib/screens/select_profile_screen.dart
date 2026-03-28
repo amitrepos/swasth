@@ -2,6 +2,7 @@
 // Related: lib/services/profile_service.dart, lib/screens/home_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/profile_model.dart';
 import '../models/invite_model.dart';
 import '../services/profile_service.dart';
@@ -20,7 +21,7 @@ class SelectProfileScreen extends StatefulWidget {
 class _SelectProfileScreenState extends State<SelectProfileScreen> {
   final ProfileService _profileService = ProfileService();
   final StorageService _storageService = StorageService();
-  
+
   List<ProfileModel> _profiles = [];
   List<InviteModel> _pendingInvites = [];
   bool _isLoading = true;
@@ -64,7 +65,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   Future<void> _selectProfile(ProfileModel profile) async {
     await _storageService.saveActiveProfileId(profile.id);
     await _storageService.saveActiveProfileName(profile.name);
-    
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -75,13 +76,16 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Profile'),
+        title: Text(l10n.selectProfileTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,
+            tooltip: l10n.refresh,
           ),
         ],
       ),
@@ -96,7 +100,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadData,
-                        child: const Text('Retry'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
@@ -109,28 +113,28 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (_pendingInvites.isNotEmpty)
-                          _buildInvitesBanner(),
-                        
-                        _buildSectionHeader('My Profiles'),
+                          _buildInvitesBanner(l10n),
+
+                        _buildSectionHeader(l10n.myProfilesSection),
                         ..._profiles
                             .where((p) => p.accessLevel == 'owner')
                             .map((p) => _buildProfileCard(p)),
-                        
+
                         const SizedBox(height: 16),
-                        _buildSectionHeader('Shared With Me'),
+                        _buildSectionHeader(l10n.sharedWithMeSection),
                         ..._profiles
                             .where((p) => p.accessLevel == 'viewer')
                             .map((p) => _buildProfileCard(p)),
-                        
+
                         if (_profiles.where((p) => p.accessLevel == 'viewer').isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                             child: Text(
-                              'No shared profiles yet.',
-                              style: TextStyle(color: Colors.grey, fontSize: 14),
+                              l10n.noSharedProfiles,
+                              style: const TextStyle(color: Colors.grey, fontSize: 14),
                             ),
                           ),
-                        
+
                         const SizedBox(height: 32),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -143,7 +147,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                               if (result == true) _loadData();
                             },
                             icon: const Icon(Icons.add),
-                            label: const Text('Add Profile'),
+                            label: Text(l10n.addProfile),
                             style: ElevatedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 50),
                             ),
@@ -157,7 +161,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
     );
   }
 
-  Widget _buildInvitesBanner() {
+  Widget _buildInvitesBanner(AppLocalizations l10n) {
     return GestureDetector(
       onTap: () async {
         final result = await Navigator.push(
@@ -180,7 +184,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'You have ${_pendingInvites.length} pending invites',
+                l10n.pendingInvitesBanner(count: _pendingInvites.length),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w600,
@@ -230,9 +234,9 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: profile.accessLevel == 'owner' 
-              ? Colors.blue.withOpacity(0.1) 
-              : Colors.green.withOpacity(0.1),
+            color: profile.accessLevel == 'owner'
+                ? Colors.blue.withOpacity(0.1)
+                : Colors.green.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
