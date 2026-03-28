@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 import 'otp_verification_screen.dart';
 import 'login_screen.dart';
 
@@ -39,7 +40,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.otpSentSuccess),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.statusNormal,
           ),
         );
 
@@ -57,7 +58,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.statusCritical,
           ),
         );
       }

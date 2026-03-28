@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 import '../services/storage_service.dart';
 import 'registration_screen.dart';
 import 'select_profile_screen.dart';
@@ -59,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.loginSuccessful),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.statusNormal,
             ),
           );
         }
@@ -76,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.statusCritical,
           ),
         );
       }

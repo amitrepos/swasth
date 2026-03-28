@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     
     # OTP settings
     OTP_EXPIRE_MINUTES: int = 10
+
+    # Google Gemini AI
+    GEMINI_API_KEY: Optional[str] = None
     
     # CORS settings
     CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:8080"]

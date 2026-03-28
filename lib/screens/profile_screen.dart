@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 import '../services/profile_service.dart';
 import '../services/api_service.dart';
 import '../models/profile_model.dart';
@@ -75,15 +76,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _changePassword() async {
     final l10n = AppLocalizations.of(context)!;
     if (_currentPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.enterCurrentPassword), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.enterCurrentPassword), backgroundColor: AppColors.statusCritical));
       return;
     }
     if (_newPasswordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordTooShort), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordTooShort), backgroundColor: AppColors.statusCritical));
       return;
     }
     if (_newPasswordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordsDoNotMatch), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordsDoNotMatch), backgroundColor: AppColors.statusCritical));
       return;
     }
 
@@ -98,13 +99,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordChanged), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordChanged), backgroundColor: AppColors.statusNormal));
         _clearPasswordFields();
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppColors.statusCritical));
       }
     }
   }
@@ -375,7 +376,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        title: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
         subtitle: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
       ),
     );

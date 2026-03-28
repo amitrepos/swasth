@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../theme/app_theme.dart';
 import '../models/invite_model.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
@@ -67,7 +68,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
             content: Text(accept
                 ? l10n.acceptedInvite(invite.profileName)
                 : l10n.rejectedInvite(invite.profileName)),
-            backgroundColor: accept ? Colors.green : Colors.grey,
+            backgroundColor: accept ? AppColors.statusNormal : AppColors.statusLow,
           ),
         );
       }
@@ -75,7 +76,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.statusCritical),
         );
         setState(() => _isLoading = false);
       }
@@ -106,7 +107,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(_error!, style: const TextStyle(color: Colors.red)),
+                        Text(_error!, style: const TextStyle(color: AppColors.statusCritical)),
                         const SizedBox(height: 16),
                         ElevatedButton(onPressed: _loadInvites, child: Text(l10n.retry)),
                       ],
@@ -114,7 +115,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                   )
                 : _invites.isEmpty
                     ? Center(
-                        child: Text(l10n.noPendingInvites, style: const TextStyle(color: Colors.grey)),
+                        child: Text(l10n.noPendingInvites, style: const TextStyle(color: AppColors.textSecondary)),
                       )
                     : RefreshIndicator(
                         onRefresh: _loadInvites,
@@ -135,8 +136,8 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                                     Row(
                                       children: [
                                         CircleAvatar(
-                                          backgroundColor: Colors.orange.withOpacity(0.1),
-                                          child: const Icon(Icons.mail, color: Colors.orange),
+                                          backgroundColor: AppColors.statusElevated.withOpacity(0.1),
+                                          child: const Icon(Icons.mail, color: AppColors.statusElevated),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
@@ -149,7 +150,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                                               ),
                                               Text(
                                                 l10n.wantsToShare(invite.profileName),
-                                                style: TextStyle(color: Colors.grey.shade700),
+                                                style: TextStyle(color: AppColors.textSecondary),
                                               ),
                                             ],
                                           ),
@@ -162,7 +163,7 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                                         daysLeft,
                                         DateFormat('MMM d, yyyy').format(invite.expiresAt),
                                       ),
-                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                     ),
                                     const SizedBox(height: 16),
                                     Row(

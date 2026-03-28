@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 import 'reset_password_screen.dart';
 import 'login_screen.dart';
 
@@ -59,7 +60,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.otpVerifiedSuccess),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.statusNormal,
           ),
         );
 
@@ -78,7 +79,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.statusCritical,
           ),
         );
       }
@@ -100,7 +101,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.otpResent),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.statusNormal,
           ),
         );
         _startResendTimer();
@@ -110,7 +111,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.statusCritical,
           ),
         );
       }
@@ -218,7 +219,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     const SizedBox(width: 8),
                     Text(
                       l10n.resendIn(_resendCountdown),
-                      style: const TextStyle(color: Colors.grey),
+                      style: const TextStyle(color: AppColors.textSecondary),
                     ),
                   ] else ...[
                     TextButton(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../theme/app_theme.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../ble/ble_manager.dart';
 import 'dashboard_screen.dart';
@@ -110,7 +111,7 @@ class _ScanScreenState extends State<ScanScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: type == 'Glucose' ? Colors.blue : Colors.red,
+          backgroundColor: type == 'Glucose' ? AppColors.glucose : AppColors.bloodPressure,
           child: Icon(
             type == 'Glucose' ? Icons.water_drop : Icons.favorite,
             color: Colors.white,
@@ -178,14 +179,14 @@ class _ScanScreenState extends State<ScanScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.bluetooth_searching,
-                            size: 64, color: Colors.grey.shade400),
+                            size: 64, color: AppColors.textTertiary),
                         const SizedBox(height: 16),
                         Text(
                           _isScanning
                               ? l10n.lookingForDevices
                               : l10n.noDevicesFound,
                           style: TextStyle(
-                              color: Colors.grey.shade600, fontSize: 16),
+                              color: AppColors.textSecondary, fontSize: 16),
                         ),
                       ],
                     ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../models/profile_model.dart';
 import '../models/invite_model.dart';
+import '../theme/app_theme.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
 import 'home_screen.dart';
@@ -96,7 +97,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                      Text(_error!, style: const TextStyle(color: AppColors.statusCritical)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadData,
@@ -131,7 +132,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                             child: Text(
                               l10n.noSharedProfiles,
-                              style: const TextStyle(color: Colors.grey, fontSize: 14),
+                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
                             ),
                           ),
 
@@ -205,7 +206,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.bold,
-          color: Colors.grey.shade700,
+          color: AppColors.textSecondary,
         ),
       ),
     );
@@ -229,14 +230,14 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
         ),
         subtitle: Text(
           '${profile.age ?? "?"} yrs · ${profile.gender ?? "Unknown"}',
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: profile.accessLevel == 'owner'
-                ? Colors.blue.withOpacity(0.1)
-                : Colors.green.withOpacity(0.1),
+                ? AppColors.accent.withOpacity(0.1)
+                : AppColors.statusNormal.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -244,7 +245,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: profile.accessLevel == 'owner' ? Colors.blue : Colors.green,
+              color: profile.accessLevel == 'owner' ? AppColors.accent : AppColors.statusNormal,
             ),
           ),
         ),
