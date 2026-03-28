@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/profile_service.dart';
 import '../services/api_service.dart';
@@ -317,10 +317,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             // Info Sections
             _buildSection(l10n.healthInfoSection, [
-              _buildInfoCard(icon: Icons.cake, label: l10n.ageField, value: l10n.ageYears(age: '${_profile?.age ?? "?"}')),
+              _buildInfoCard(icon: Icons.cake, label: l10n.ageField, value: l10n.ageYears('${_profile?.age ?? "?"}')),
               _buildInfoCard(icon: Icons.male, label: l10n.genderField, value: _profile?.gender ?? 'Unknown'),
               _buildInfoCard(icon: Icons.bloodtype, label: l10n.bloodGroupField, value: _profile?.bloodGroup ?? 'Unknown'),
-              _buildInfoCard(icon: Icons.straighten, label: l10n.heightField, value: l10n.heightCm(height: '${_profile?.height ?? "?"}')),
+              _buildInfoCard(icon: Icons.straighten, label: l10n.heightField, value: l10n.heightCm('${_profile?.height ?? "?"}')),
             ]),
 
             if (_profile?.medicalConditions != null && _profile!.medicalConditions!.isNotEmpty)

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 // ignore_for_file: deprecated_member_use
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 

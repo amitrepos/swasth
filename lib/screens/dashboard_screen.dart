@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../ble/ble_manager.dart';
 import '../ble/glucose_service.dart';

@@ -5,6 +5,47 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-28 — Apple Health-inspired visual theme (C22)
+
+- Created `lib/theme/app_theme.dart`: `AppColors` class with iOS exact system colors — `glucose=#FF9F0A` (iosOrange), `bloodPressure=#FF2D55` (iosRed), `statusNormal=#30D158` (iosGreen), `statusElevated=#FF9F0A`, `statusHigh=#FF2D55`, `iosPurple=#BF5AF2`. Surface/text/separator palettes for light and dark.
+- Modified `lib/screens/home_screen.dart`: Glucometer icon `Colors.blue→AppColors.glucose`, BP icon `Colors.red→AppColors.bloodPressure`, armband `Colors.green→AppColors.iosGreen`. `_scoreColor()` uses `AppColors.statusNormal/statusElevated/statusHigh`. Streak badge `Colors.deepOrange→AppColors.iosOrange`. Score number 22→28px.
+- Modified `lib/screens/trend_chart_screen.dart`: Glucose line/dots/fill `Colors.blue→AppColors.glucose`. Systolic `Colors.red→AppColors.bloodPressure`. Diastolic `Colors.blue→AppColors.bloodPressure.withOpacity(0.5)`. Normal bands `Colors.green→AppColors.statusNormal`. Correlation header icon `Colors.purple→AppColors.iosPurple`. Insight/dot colors use semantic AppColors.
+- Modified `lib/screens/history_screen.dart`: `_getStatusColor()` uses AppColors semantics. Status text replaced with pill-shaped `Container` badges (colored background at 12% opacity, colored text, 20px border radius).
+- Modified `lib/screens/reading_confirmation_screen.dart`: OCR success banner `Colors.green→AppColors.statusNormal`. Manual hint `Colors.orange→AppColors.iosOrange`.
+- Updated `TASK_TRACKER.md`: C22 → ✅ Done; totals 27/70.
+
+---
+
+## 2026-03-28 — Trend Chart Screen (C4, C5, C21)
+
+- Created `lib/screens/trend_chart_screen.dart`: Full chart screen using `fl_chart`. 7-day/30-day tabs. Glucose LineChart with green normal band (70–130), color-coded status dots, stats row (avg/min/max/normal%). BP chart with systolic (red) + diastolic (blue) lines, normal range bands. Tappable from health score card and "View Trends" quick action.
+- Modified `lib/screens/home_screen.dart`: Added `onTap` to `_HealthScoreCard`, InkWell wrapper, "Tap to view trends" hint, "View Trends" quick action card.
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added 13 chart strings.
+- Updated `TASK_TRACKER.md`: C4, C5, C21 → ✅ Done; totals 26/69.
+
+---
+
+## 2026-03-28 — Health Score Dashboard (C18, C19, C20)
+
+- Added `backend/schemas.py`: `HealthScoreResponse` Pydantic model (score, color, streak, insight, today's glucose/BP).
+- Added `backend/routes_health.py`: `GET /api/readings/health-score` — rule-based 0–100 score engine, streak counter, 7 prioritised insight rules.
+- Added `lib/services/health_reading_service.dart`: `getHealthScore()` method.
+- Modified `lib/screens/home_screen.dart`: Replaced static welcome banner with live `_HealthScoreCard` widget — score ring, streak badge, AI insight, today's vitals, last-logged timestamp.
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added healthScore, dayStreak, lastLogged, noReadingsYetScore, todayGlucose, todayBP.
+- Updated `TASK_TRACKER.md`: C18, C19, C20 → ✅ Done; totals 23/69.
+
+---
+
+## 2026-03-28 — Added direct "Enter Manually" path for glucose and BP readings
+
+- Modified `lib/screens/home_screen.dart`: Added "Enter Manually" as a third option in the input modal (alongside Scan with Camera and Connect via Bluetooth). Navigates directly to `ReadingConfirmationScreen` with `ocrResult: null`.
+- Modified `lib/screens/reading_confirmation_screen.dart`: Updated `_ManualEntryHint` to use the theme's primary color (blue/teal) instead of orange when accessed via direct manual entry (as opposed to OCR failure).
+- Modified `lib/l10n/app_en.arb`: Added `enterManually` → "Enter Manually".
+- Modified `lib/l10n/app_hi.arb`: Added `enterManually` → "मैन्युअल दर्ज करें".
+- Modified `TASK_TRACKER.md`: Added B20 (Direct manual entry) as ✅ Done; updated progress totals.
+
+---
+
 ## 2026-03-27 — Initial setup, critical fixes, and refactoring
 
 ### Setup
@@ -163,3 +204,117 @@ Format: date, summary, file-level details.
   - 23:12:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
   - 23:12:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/dashboard_screen.dart
   - 23:13:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 23:35:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/l10n.yaml
+  - 23:37:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/pending_invites_screen.dart
+
+---
+
+## 2026-03-27 — A6 language toggle: compile fixes, import path correction, arg fixes
+
+### Root Cause Fixes
+- `l10n.yaml`: Added `synthetic-package: false` — gen-l10n was generating files in `lib/l10n/` but imports used `package:flutter_gen/gen_l10n/` (which requires the `.dart_tool/` synthetic package). Setting this flag aligns both paths.
+- `pubspec.yaml`: Updated `intl` from `^0.19.0` to `^0.20.2` — `flutter_localizations` SDK dep pins `intl` to `0.20.2`; old version caused version-solving failure on `flutter run`.
+
+### Import Path Fix (all 17 screen/main files)
+- Changed all l10n imports from `package:flutter_gen/gen_l10n/app_localizations.dart` → `package:swasth_app/l10n/app_localizations.dart` to match actual generated file location in `lib/l10n/`.
+- Affected: `lib/main.dart` and all 16 screen files.
+
+### Positional Arg Fixes (gen-l10n generates positional params, not named)
+- `lib/screens/profile_screen.dart`: `ageYears(age: ...)` → `ageYears(...)`, `heightCm(height: ...)` → `heightCm(...)`
+- `lib/screens/manage_access_screen.dart`: `revokeAccessConfirm(name: ...)` → positional
+- `lib/screens/photo_scan_screen.dart`: `scanTitle(device: ...)`, `placeDeviceInBox(device: ...)` → positional
+- `lib/screens/home_screen.dart`: `viewingProfile(name: ...)`, `logReading(device: ...)` → positional
+- `lib/screens/reading_confirmation_screen.dart`: `saveFailed(error: ...)` → positional
+- `lib/screens/select_profile_screen.dart`: `pendingInvitesBanner(count: ...)` → positional
+- `lib/screens/otp_verification_screen.dart`: `otpSentTo(email: ...)`, `resendIn(seconds: ...)` → positional
+- `lib/screens/pending_invites_screen.dart`: `acceptedInvite`, `rejectedInvite`, `wantsToShare`, `expiresInDays` → all positional
+
+### Generated Files (added to git)
+- `lib/l10n/app_localizations.dart` *(generated)*: main export + localizationsDelegates
+- `lib/l10n/app_localizations_en.dart` *(generated)*: English string implementations
+- `lib/l10n/app_localizations_hi.dart` *(generated)*: Hindi string implementations
+  - 23:41:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 10:42:33 modified: /Users/amitkumarmishra/.claude/plans/streamed-wiggling-shell.md
+  - 10:44:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 10:44:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 10:44:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 10:44:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 10:44:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 10:44:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 10:44:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 10:45:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 11:03:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:03:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:03:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:05:13 modified: /Users/amitkumarmishra/.claude/plans/streamed-wiggling-shell.md
+  - 11:06:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 11:06:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 11:06:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 11:06:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:06:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 11:06:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 11:07:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:07:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:07:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:07:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:11:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:11:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:11:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:11:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:11:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 11:20:09 modified: /Users/amitkumarmishra/.claude/plans/streamed-wiggling-shell.md
+  - 11:21:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:21:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 11:21:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 11:22:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:22:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:22:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:22:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:22:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:23:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:24:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:24:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:24:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:24:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 11:27:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:29:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:30:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:33:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:33:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:33:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:36:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:37:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:38:34 modified: /Users/amitkumarmishra/.claude/plans/streamed-wiggling-shell.md
+  - 11:42:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/theme/app_theme.dart
+  - 11:42:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:42:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:42:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:42:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:42:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:43:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:43:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:43:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:43:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:43:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:43:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:44:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 11:44:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 11:45:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 11:45:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 11:45:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 11:45:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 11:45:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:45:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:46:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 11:52:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/design_preview.html
+  - 11:56:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/design_preview2.html
+  - 12:10:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/design_preview3.html

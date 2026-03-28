@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 
 class HistoryScreen extends StatefulWidget {
   final int profileId;
@@ -126,15 +127,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Color _getStatusColor(String? status) {
     switch (status) {
       case 'NORMAL':
-        return Colors.green;
+        return AppColors.statusNormal;
       case 'ELEVATED':
-        return Colors.orange;
+        return AppColors.statusElevated;
       case 'HIGH':
       case 'HIGH - STAGE 1':
       case 'HIGH - STAGE 2':
-        return Colors.red;
+        return AppColors.statusHigh;
+      case 'CRITICAL':
+        return AppColors.statusCritical;
+      case 'LOW':
+        return AppColors.statusLow;
       default:
-        return Colors.grey;
+        return AppColors.statusLow;
     }
   }
 
@@ -239,15 +244,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const SizedBox(height: 4),
-                              Text(
-                                _localizedStatus(reading.statusFlag, l10n),
-                                style: TextStyle(
-                                  color: _getStatusColor(reading.statusFlag),
-                                  fontWeight: FontWeight.w500,
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(reading.statusFlag).withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  _localizedStatus(reading.statusFlag, l10n),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _getStatusColor(reading.statusFlag),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 4),
                               Text(
                                 DateFormat('MMM dd, yyyy • hh:mm a')
                                     .format(reading.readingTimestamp),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'dashboard_screen.dart';
@@ -8,7 +9,11 @@ import 'select_profile_screen.dart';
 import 'manage_access_screen.dart';
 import 'scan_screen.dart';
 import 'photo_scan_screen.dart';
+import 'reading_confirmation_screen.dart';
+import 'trend_chart_screen.dart';
 import '../services/storage_service.dart';
+import '../services/health_reading_service.dart';
+import '../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,8 +24,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final StorageService _storageService = StorageService();
+  final HealthReadingService _readingService = HealthReadingService();
   String _activeProfileName = "Health";
   int? _activeProfileId;
+  Future<Map<String, dynamic>>? _healthScoreFuture;
 
   @override
   void initState() {
@@ -35,8 +42,17 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         if (name != null) _activeProfileName = name;
         _activeProfileId = id;
+        if (id != null) _refreshHealthScore(id);
       });
     }
+  }
+
+  void _refreshHealthScore(int profileId) async {
+    final token = await _storageService.getToken();
+    if (token == null || !mounted) return;
+    setState(() {
+      _healthScoreFuture = _readingService.getHealthScore(token, profileId);
+    });
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -92,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      l10n.viewingProfile(name: _activeProfileName),
+                      l10n.viewingProfile(_activeProfileName),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.primary,
@@ -137,32 +153,30 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Welcome Header
-            Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.health_and_safety,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.welcomeTitle,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.welcomeSubtitle,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+            // Health Score Card
+            if (_healthScoreFuture != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: _HealthScoreCard(
+                  future: _healthScoreFuture!,
+                  onRefresh: () {
+                    if (_activeProfileId != null) _refreshHealthScore(_activeProfileId!);
+                  },
+                  onTap: _activeProfileId != null
+                      ? () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TrendChartScreen(profileId: _activeProfileId!),
+                            ),
+                          )
+                      : null,
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: _HealthScoreCard.empty(),
               ),
-            ),
 
             // Device Selection Panel
             Container(
@@ -204,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         context: context,
                         icon: Icons.water_drop,
                         label: l10n.glucometer,
-                        color: Colors.blue,
+                        color: AppColors.glucose,
                         onTap: () => _showInputModal(
                           context,
                           l10n: l10n,
@@ -216,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         context: context,
                         icon: Icons.favorite,
                         label: l10n.bpMeter,
-                        color: Colors.red,
+                        color: AppColors.bloodPressure,
                         onTap: () => _showInputModal(
                           context,
                           l10n: l10n,
@@ -228,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         context: context,
                         icon: Icons.watch,
                         label: l10n.armband,
-                        color: Colors.green,
+                        color: AppColors.iosGreen,
                         onTap: () {
                           if (_activeProfileId != null) {
                             Navigator.push(
@@ -307,6 +321,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ),
+                  Card(
+                    child: ListTile(
+                      leading: Icon(Icons.show_chart, color: Theme.of(context).colorScheme.primary),
+                      title: Text(l10n.viewTrends),
+                      subtitle: Text(l10n.viewTrendsSubtitle),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        if (_activeProfileId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TrendChartScreen(profileId: _activeProfileId!),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -344,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                l10n.logReading(device: localizedLabel),
+                l10n.logReading(localizedLabel),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center,
               ),
@@ -399,6 +431,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.edit_note),
+                label: Text(l10n.enterManually),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ReadingConfirmationScreen(
+                        ocrResult: null,
+                        deviceType: deviceType,
+                        profileId: _activeProfileId!,
+                      ),
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -444,6 +498,298 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
             textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Health Score Card widget
+// ---------------------------------------------------------------------------
+
+class _HealthScoreCard extends StatelessWidget {
+  final Future<Map<String, dynamic>>? future;
+  final VoidCallback? onRefresh;
+  final VoidCallback? onTap;
+
+  const _HealthScoreCard({
+    required Future<Map<String, dynamic>> future,
+    required VoidCallback onRefresh,
+    this.onTap,
+  })  : future = future,
+        onRefresh = onRefresh;
+
+  const _HealthScoreCard.empty()
+      : future = null,
+        onRefresh = null,
+        onTap = null;
+
+  static Color _scoreColor(String? color) {
+    switch (color) {
+      case 'green':  return AppColors.statusNormal;
+      case 'orange': return AppColors.statusElevated;
+      case 'red':    return AppColors.statusHigh;
+      default:       return AppColors.statusLow;
+    }
+  }
+
+  static String _formatLastLogged(String? isoString) {
+    if (isoString == null) return '';
+    try {
+      final dt = DateTime.parse(isoString).toLocal();
+      final now = DateTime.now();
+      if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+        return 'Today, ${DateFormat('h:mm a').format(dt)}';
+      }
+      return DateFormat('MMM d, h:mm a').format(dt);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static String _statusIcon(String? status) {
+    if (status == null) return '';
+    if (status == 'NORMAL') return ' ✅';
+    if (status.contains('HIGH') || status == 'CRITICAL') return ' ⚠️';
+    if (status == 'LOW') return ' 🔽';
+    return '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (future == null) return _buildEmpty(context, l10n);
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildShimmer(context);
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return _buildEmpty(context, l10n);
+        }
+        return _buildCard(context, l10n, snapshot.data!);
+      },
+    );
+  }
+
+  Widget _buildCard(BuildContext context, AppLocalizations l10n, Map<String, dynamic> data) {
+    final score = (data['score'] as num?)?.toInt() ?? 50;
+    final color = data['color'] as String? ?? 'orange';
+    final streak = (data['streak_days'] as num?)?.toInt() ?? 0;
+    final insight = data['insight'] as String? ?? '';
+    final glucoseValue = (data['today_glucose_value'] as num?)?.toDouble();
+    final glucoseStatus = data['today_glucose_status'] as String?;
+    final bpSystolic = (data['today_bp_systolic'] as num?)?.toDouble();
+    final bpDiastolic = (data['today_bp_diastolic'] as num?)?.toDouble();
+    final bpStatus = data['today_bp_status'] as String?;
+    final lastLogged = _formatLastLogged(data['last_logged'] as String?);
+    final scoreColor = _scoreColor(color);
+
+    final card = Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scoreColor.withOpacity(0.3), width: 1.5),
+        boxShadow: Theme.of(context).brightness == Brightness.light
+            ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))]
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row: title + streak
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                l10n.healthScore,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              if (streak > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.iosOrange.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '🔥 ${l10n.dayStreak(streak)}',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.iosOrange),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Score ring + insight
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: CircularProgressIndicator(
+                        value: score / 100,
+                        strokeWidth: 8,
+                        backgroundColor: scoreColor.withOpacity(0.15),
+                        valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$score',
+                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: scoreColor),
+                        ),
+                        Text('/100', style: TextStyle(fontSize: 10, color: scoreColor.withOpacity(0.7))),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  insight,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Today's readings
+          if (glucoseValue != null || bpSystolic != null) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (glucoseValue != null)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Text('🩸', style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 6),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l10n.todayGlucose,
+                                style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                            Text(
+                              '${glucoseValue.toStringAsFixed(0)} mg/dL${_statusIcon(glucoseStatus)}',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                if (bpSystolic != null && bpDiastolic != null)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Text('💓', style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 6),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l10n.todayBP,
+                                style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                            Text(
+                              '${bpSystolic.toStringAsFixed(0)}/${bpDiastolic.toStringAsFixed(0)}${_statusIcon(bpStatus)}',
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ],
+
+          if (lastLogged.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.lastLogged(lastLogged),
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+          ],
+
+          if (onTap != null) ...[
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+            const SizedBox(height: 6),
+            Center(
+              child: Text(
+                l10n.tapToViewTrends,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return onTap != null
+        ? InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: card,
+          )
+        : card;
+  }
+
+  Widget _buildShimmer(BuildContext context) {
+    return Container(
+      height: 140,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+      ),
+      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    );
+  }
+
+  Widget _buildEmpty(BuildContext context, AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.health_and_safety, size: 40, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              l10n.noReadingsYetScore,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            ),
           ),
         ],
       ),

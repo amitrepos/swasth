@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
 
@@ -97,7 +97,7 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.revokeAccessTitle),
-        content: Text(l10n.revokeAccessConfirm(name: name)),
+        content: Text(l10n.revokeAccessConfirm(name)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
           TextButton(

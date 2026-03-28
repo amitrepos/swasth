@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/ocr_service.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 import 'history_screen.dart';
 
 class ReadingConfirmationScreen extends StatefulWidget {
@@ -173,7 +174,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.saveFailed(error: e.toString()))),
+          SnackBar(content: Text(l10n.saveFailed(e.toString()))),
         );
       }
     } finally {
@@ -388,18 +389,18 @@ class _OcrResultBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.08),
+        color: AppColors.statusNormal.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        border: Border.all(color: AppColors.statusNormal.withOpacity(0.3)),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              const Icon(Icons.check_circle, color: Colors.green),
+              const Icon(Icons.check_circle, color: AppColors.statusNormal),
               const SizedBox(width: 8),
               Text(l10n.ocrSuccessPrefix,
-                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w500)),
+                  style: const TextStyle(color: AppColors.statusNormal, fontWeight: FontWeight.w500)),
               const Spacer(),
               TextButton.icon(
                 icon: const Icon(Icons.edit, size: 14),
@@ -442,17 +443,18 @@ class _ManualEntryHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final color = ocrFailed ? AppColors.iosOrange : Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.08),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline, color: Colors.orange),
+          Icon(Icons.info_outline, color: color),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
