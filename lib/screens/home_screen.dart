@@ -13,8 +13,11 @@ import 'reading_confirmation_screen.dart';
 import 'trend_chart_screen.dart';
 import '../services/storage_service.dart';
 import '../services/health_reading_service.dart';
+import '../services/profile_service.dart';
+import '../models/profile_model.dart';
 import '../theme/app_theme.dart';
 import '../main.dart' show routeObserver;
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,10 +29,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final StorageService _storageService = StorageService();
   final HealthReadingService _readingService = HealthReadingService();
+  final ProfileService _profileService = ProfileService();
   String _activeProfileName = "Health";
   int? _activeProfileId;
   Future<Map<String, dynamic>>? _healthScoreFuture;
   Future<String>? _aiInsightFuture;
+  ProfileModel? _activeProfile;
 
   @override
   void initState() {
@@ -74,6 +79,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       _healthScoreFuture = _readingService.getHealthScore(token, profileId);
       _aiInsightFuture = _readingService.getAiInsight(token, profileId);
     });
+    // Fetch profile for doctor details (runs in parallel with above)
+    try {
+      final profile = await _profileService.getProfile(token, profileId);
+      if (mounted) setState(() => _activeProfile = profile);
+    } catch (_) {}
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -202,6 +212,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             // AI Doctor Card
             if (_aiInsightFuture != null)
               _AIDoctorCard(insightFuture: _aiInsightFuture!),
+
+            // My Doctor Card
+            if (_activeProfile?.doctorName?.isNotEmpty == true)
+              _MyDoctorCard(profile: _activeProfile!),
 
             // Section 3: Record New Metrics
             Container(
@@ -611,6 +625,101 @@ class _AIDoctorCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// My Doctor Card widget
+// ---------------------------------------------------------------------------
+
+class _MyDoctorCard extends StatelessWidget {
+  final ProfileModel profile;
+  const _MyDoctorCard({required this.profile});
+
+  Future<void> _openWhatsApp(String number) async {
+    // Strip non-digits except leading +
+    final cleaned = number.replaceAll(RegExp(r'[\s\-()]'), '');
+    final digits = cleaned.startsWith('+') ? cleaned.substring(1) : cleaned;
+    final uri = Uri.parse('https://wa.me/$digits');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final hasWhatsApp = profile.doctorWhatsapp?.isNotEmpty == true;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.statusNormal.withOpacity(0.35), width: 1),
+        boxShadow: Theme.of(context).brightness == Brightness.light
+            ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2))]
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.statusNormal.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.medical_services_outlined, color: AppColors.statusNormal, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.myDoctorTitle,
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  profile.doctorName!,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                if (profile.doctorSpecialty?.isNotEmpty == true)
+                  Text(
+                    profile.doctorSpecialty!,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+              ],
+            ),
+          ),
+          if (hasWhatsApp)
+            GestureDetector(
+              onTap: () => _openWhatsApp(profile.doctorWhatsapp!),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF25D366), // WhatsApp green
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.chat, color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.contactOnWhatsApp,
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

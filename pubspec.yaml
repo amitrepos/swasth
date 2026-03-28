@@ -46,6 +46,9 @@ dependencies:
   # Typography — Inter as SF Pro web-safe fallback
   google_fonts: ^6.2.1
 
+  # Deep links — WhatsApp tap-to-chat, tel: links
+  url_launcher: ^6.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

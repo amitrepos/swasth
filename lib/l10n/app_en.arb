@@ -243,6 +243,8 @@
   "languageEnglish": "English",
   "languageHindi": "हिंदी",
 
+  "myDoctorTitle": "My Doctor",
+  "contactOnWhatsApp": "Contact on WhatsApp",
   "doctorDetailsSection": "Doctor Details",
   "doctorNameField": "Doctor Name",
   "doctorSpecialtyField": "Specialty",

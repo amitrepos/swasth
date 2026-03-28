@@ -203,6 +203,8 @@
   "languageEnglish": "English",
   "languageHindi": "हिंदी",
 
+  "myDoctorTitle": "मेरे डॉक्टर",
+  "contactOnWhatsApp": "व्हाट्सएप पर संपर्क करें",
   "doctorDetailsSection": "डॉक्टर की जानकारी",
   "doctorNameField": "डॉक्टर का नाम",
   "doctorSpecialtyField": "विशेषज्ञता",

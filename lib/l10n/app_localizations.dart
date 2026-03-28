@@ -1154,6 +1154,18 @@ abstract class AppLocalizations {
   /// **'हिंदी'**
   String get languageHindi;
 
+  /// No description provided for @myDoctorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Doctor'**
+  String get myDoctorTitle;
+
+  /// No description provided for @contactOnWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact on WhatsApp'**
+  String get contactOnWhatsApp;
+
   /// No description provided for @doctorDetailsSection.
   ///
   /// In en, this message translates to:

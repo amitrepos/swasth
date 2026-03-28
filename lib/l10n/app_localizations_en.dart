@@ -565,6 +565,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageHindi => 'हिंदी';
 
   @override
+  String get myDoctorTitle => 'My Doctor';
+
+  @override
+  String get contactOnWhatsApp => 'Contact on WhatsApp';
+
+  @override
   String get doctorDetailsSection => 'Doctor Details';
 
   @override
