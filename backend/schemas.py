@@ -273,6 +273,7 @@ class HealthScoreResponse(BaseModel):
     today_bp_systolic: Optional[float] = None
     today_bp_diastolic: Optional[float] = None
     last_logged: Optional[datetime] = None
+    profile_age: Optional[int] = None
 
 
 class HealthReadingCreate(BaseModel):

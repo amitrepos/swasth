@@ -78,6 +78,19 @@
   "welcomeTitle": "Welcome to Swasth!",
   "welcomeSubtitle": "Your health monitoring companion",
   "selectDevice": "Select Device",
+  "recordNewMetrics": "Record New Metrics",
+  "flagFitFine": "Fit & Fine",
+  "flagCaution": "Caution",
+  "flagAtRisk": "At Risk",
+  "flagUrgent": "Urgent",
+  "weeklyWinnersTitle": "Top this week",
+  "weeklyWinnersSoon": "coming soon",
+  "pointsLabel": "{pts} pts",
+  "@pointsLabel": {
+    "placeholders": {
+      "pts": { "type": "int" }
+    }
+  },
   "glucometer": "Glucometer",
   "bpMeter": "BP Meter",
   "armband": "Armband",

@@ -202,6 +202,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectDevice => 'Select Device';
 
   @override
+  String get recordNewMetrics => 'Record New Metrics';
+
+  @override
+  String get flagFitFine => 'Fit & Fine';
+
+  @override
+  String get flagCaution => 'Caution';
+
+  @override
+  String get flagAtRisk => 'At Risk';
+
+  @override
+  String get flagUrgent => 'Urgent';
+
+  @override
+  String get weeklyWinnersTitle => 'Top this week';
+
+  @override
+  String get weeklyWinnersSoon => 'coming soon';
+
+  @override
+  String pointsLabel(int pts) {
+    return '$pts pts';
+  }
+
+  @override
   String get glucometer => 'Glucometer';
 
   @override

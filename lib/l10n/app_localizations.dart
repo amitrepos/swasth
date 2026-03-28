@@ -476,6 +476,54 @@ abstract class AppLocalizations {
   /// **'Select Device'**
   String get selectDevice;
 
+  /// No description provided for @recordNewMetrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Record New Metrics'**
+  String get recordNewMetrics;
+
+  /// No description provided for @flagFitFine.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit & Fine'**
+  String get flagFitFine;
+
+  /// No description provided for @flagCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Caution'**
+  String get flagCaution;
+
+  /// No description provided for @flagAtRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'At Risk'**
+  String get flagAtRisk;
+
+  /// No description provided for @flagUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get flagUrgent;
+
+  /// No description provided for @weeklyWinnersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top this week'**
+  String get weeklyWinnersTitle;
+
+  /// No description provided for @weeklyWinnersSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'coming soon'**
+  String get weeklyWinnersSoon;
+
+  /// No description provided for @pointsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{pts} pts'**
+  String pointsLabel(int pts);
+
   /// No description provided for @glucometer.
   ///
   /// In en, this message translates to:

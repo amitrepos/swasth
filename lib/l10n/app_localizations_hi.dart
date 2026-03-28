@@ -202,6 +202,32 @@ class AppLocalizationsHi extends AppLocalizations {
   String get selectDevice => 'डिवाइस चुनें';
 
   @override
+  String get recordNewMetrics => 'नई मेट्रिक्स रिकॉर्ड करें';
+
+  @override
+  String get flagFitFine => 'स्वस्थ';
+
+  @override
+  String get flagCaution => 'सावधानी';
+
+  @override
+  String get flagAtRisk => 'जोखिम में';
+
+  @override
+  String get flagUrgent => 'तत्काल';
+
+  @override
+  String get weeklyWinnersTitle => 'इस सप्ताह शीर्ष';
+
+  @override
+  String get weeklyWinnersSoon => 'जल्द आ रहा है';
+
+  @override
+  String pointsLabel(int pts) {
+    return '$pts अंक';
+  }
+
+  @override
   String get glucometer => 'ग्लूकोमीटर';
 
   @override
