@@ -237,10 +237,75 @@ class AppLocalizationsHi extends AppLocalizations {
   String get howToLog => 'रीडिंग कैसे दर्ज करना चाहते हैं?';
 
   @override
+  String get healthTrends => 'स्वास्थ्य ट्रेंड';
+
+  @override
+  String get sevenDays => '7 दिन';
+
+  @override
+  String get thirtyDays => '30 दिन';
+
+  @override
+  String get glucoseTrend => 'ग्लूकोज ट्रेंड';
+
+  @override
+  String get bpTrend => 'रक्तचाप ट्रेंड';
+
+  @override
+  String get avgLabel => 'औसत';
+
+  @override
+  String get minLabel => 'न्यूनतम';
+
+  @override
+  String get maxLabel => 'अधिकतम';
+
+  @override
+  String get normalPct => 'सामान्य';
+
+  @override
+  String get noChartData => 'इस अवधि में कोई रीडिंग नहीं';
+
+  @override
+  String get tapToViewTrends => 'ट्रेंड देखने के लिए टैप करें →';
+
+  @override
+  String get viewTrends => 'ट्रेंड देखें';
+
+  @override
+  String get viewTrendsSubtitle => '7 और 30-दिन के ग्लूकोज और बीपी चार्ट';
+
+  @override
+  String get healthScore => 'स्वास्थ्य स्कोर';
+
+  @override
+  String dayStreak(int n) {
+    return '$n-दिन की स्ट्रीक';
+  }
+
+  @override
+  String lastLogged(String time) {
+    return 'अंतिम लॉग: $time';
+  }
+
+  @override
+  String get noReadingsYetScore =>
+      'अपना स्कोर देखने के लिए पहली रीडिंग दर्ज करें';
+
+  @override
+  String get todayGlucose => 'ग्लूकोज';
+
+  @override
+  String get todayBP => 'बीपी';
+
+  @override
   String get scanWithCamera => 'कैमरे से स्कैन करें';
 
   @override
   String get connectViaBluetooth => 'ब्लूटूथ से जोड़ें';
+
+  @override
+  String get enterManually => 'मैन्युअल दर्ज करें';
 
   @override
   String scanTitle(String device) {

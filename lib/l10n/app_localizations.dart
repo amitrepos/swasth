@@ -542,6 +542,120 @@ abstract class AppLocalizations {
   /// **'How would you like to log this reading?'**
   String get howToLog;
 
+  /// No description provided for @healthTrends.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Trends'**
+  String get healthTrends;
+
+  /// No description provided for @sevenDays.
+  ///
+  /// In en, this message translates to:
+  /// **'7 Days'**
+  String get sevenDays;
+
+  /// No description provided for @thirtyDays.
+  ///
+  /// In en, this message translates to:
+  /// **'30 Days'**
+  String get thirtyDays;
+
+  /// No description provided for @glucoseTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Glucose Trend'**
+  String get glucoseTrend;
+
+  /// No description provided for @bpTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Blood Pressure Trend'**
+  String get bpTrend;
+
+  /// No description provided for @avgLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg'**
+  String get avgLabel;
+
+  /// No description provided for @minLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Min'**
+  String get minLabel;
+
+  /// No description provided for @maxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Max'**
+  String get maxLabel;
+
+  /// No description provided for @normalPct.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get normalPct;
+
+  /// No description provided for @noChartData.
+  ///
+  /// In en, this message translates to:
+  /// **'No readings in this period'**
+  String get noChartData;
+
+  /// No description provided for @tapToViewTrends.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to view trends →'**
+  String get tapToViewTrends;
+
+  /// No description provided for @viewTrends.
+  ///
+  /// In en, this message translates to:
+  /// **'View Trends'**
+  String get viewTrends;
+
+  /// No description provided for @viewTrendsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'7 and 30-day glucose & BP charts'**
+  String get viewTrendsSubtitle;
+
+  /// No description provided for @healthScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Score'**
+  String get healthScore;
+
+  /// No description provided for @dayStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'{n}-day streak'**
+  String dayStreak(int n);
+
+  /// No description provided for @lastLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Last logged: {time}'**
+  String lastLogged(String time);
+
+  /// No description provided for @noReadingsYetScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Log your first reading to see your score'**
+  String get noReadingsYetScore;
+
+  /// No description provided for @todayGlucose.
+  ///
+  /// In en, this message translates to:
+  /// **'Glucose'**
+  String get todayGlucose;
+
+  /// No description provided for @todayBP.
+  ///
+  /// In en, this message translates to:
+  /// **'BP'**
+  String get todayBP;
+
   /// No description provided for @scanWithCamera.
   ///
   /// In en, this message translates to:
@@ -553,6 +667,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connect via Bluetooth'**
   String get connectViaBluetooth;
+
+  /// No description provided for @enterManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Manually'**
+  String get enterManually;
 
   /// No description provided for @scanTitle.
   ///

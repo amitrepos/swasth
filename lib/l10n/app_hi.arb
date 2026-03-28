@@ -79,8 +79,40 @@
   "selectProfileFirst": "पहले प्रोफाइल चुनें",
   "logReading": "{device} रीडिंग दर्ज करें",
   "howToLog": "रीडिंग कैसे दर्ज करना चाहते हैं?",
+  "healthTrends": "स्वास्थ्य ट्रेंड",
+  "sevenDays": "7 दिन",
+  "thirtyDays": "30 दिन",
+  "glucoseTrend": "ग्लूकोज ट्रेंड",
+  "bpTrend": "रक्तचाप ट्रेंड",
+  "avgLabel": "औसत",
+  "minLabel": "न्यूनतम",
+  "maxLabel": "अधिकतम",
+  "normalPct": "सामान्य",
+  "noChartData": "इस अवधि में कोई रीडिंग नहीं",
+  "tapToViewTrends": "ट्रेंड देखने के लिए टैप करें →",
+  "viewTrends": "ट्रेंड देखें",
+  "viewTrendsSubtitle": "7 और 30-दिन के ग्लूकोज और बीपी चार्ट",
+
+  "healthScore": "स्वास्थ्य स्कोर",
+  "dayStreak": "{n}-दिन की स्ट्रीक",
+  "@dayStreak": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "lastLogged": "अंतिम लॉग: {time}",
+  "@lastLogged": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "noReadingsYetScore": "अपना स्कोर देखने के लिए पहली रीडिंग दर्ज करें",
+  "todayGlucose": "ग्लूकोज",
+  "todayBP": "बीपी",
+
   "scanWithCamera": "कैमरे से स्कैन करें",
   "connectViaBluetooth": "ब्लूटूथ से जोड़ें",
+  "enterManually": "मैन्युअल दर्ज करें",
 
   "scanTitle": "{device} स्कैन करें",
   "placeDeviceInBox": "{device} की स्क्रीन बॉक्स में रखें",

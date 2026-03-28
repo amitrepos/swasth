@@ -247,4 +247,18 @@ class HealthReadingService {
       throw Exception('Failed to get summary: $e');
     }
   }
+
+  /// Get computed health score, streak, and AI insight for the home screen
+  Future<Map<String, dynamic>> getHealthScore(String token, int profileId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/readings/health-score?profile_id=$profileId'),
+        headers: ApiClient.headers(token: token),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      throw Exception(ApiClient.errorDetail(response, 'Failed to get health score'));
+    } catch (e) {
+      throw Exception('Failed to get health score: $e');
+    }
+  }
 }

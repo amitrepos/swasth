@@ -262,6 +262,19 @@ class InviteRespondRequest(BaseModel):
 # Health Reading schemas
 # ---------------------------------------------------------------------------
 
+class HealthScoreResponse(BaseModel):
+    score: int                          # 0–100
+    color: str                          # "green" | "orange" | "red"
+    streak_days: int                    # consecutive days with ≥1 reading
+    insight: str                        # plain-English encouragement/tip
+    today_glucose_status: Optional[str] = None   # NORMAL | HIGH | CRITICAL | LOW
+    today_bp_status: Optional[str] = None
+    today_glucose_value: Optional[float] = None
+    today_bp_systolic: Optional[float] = None
+    today_bp_diastolic: Optional[float] = None
+    last_logged: Optional[datetime] = None
+
+
 class HealthReadingCreate(BaseModel):
     profile_id: int
     reading_type: str           # 'glucose' or 'blood_pressure'

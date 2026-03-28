@@ -94,8 +94,40 @@
     }
   },
   "howToLog": "How would you like to log this reading?",
+  "healthTrends": "Health Trends",
+  "sevenDays": "7 Days",
+  "thirtyDays": "30 Days",
+  "glucoseTrend": "Glucose Trend",
+  "bpTrend": "Blood Pressure Trend",
+  "avgLabel": "Avg",
+  "minLabel": "Min",
+  "maxLabel": "Max",
+  "normalPct": "Normal",
+  "noChartData": "No readings in this period",
+  "tapToViewTrends": "Tap to view trends →",
+  "viewTrends": "View Trends",
+  "viewTrendsSubtitle": "7 and 30-day glucose & BP charts",
+
+  "healthScore": "Health Score",
+  "dayStreak": "{n}-day streak",
+  "@dayStreak": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "lastLogged": "Last logged: {time}",
+  "@lastLogged": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "noReadingsYetScore": "Log your first reading to see your score",
+  "todayGlucose": "Glucose",
+  "todayBP": "BP",
+
   "scanWithCamera": "Scan with Camera",
   "connectViaBluetooth": "Connect via Bluetooth",
+  "enterManually": "Enter Manually",
 
   "scanTitle": "Scan {device}",
   "@scanTitle": {

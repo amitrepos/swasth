@@ -237,10 +237,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String get howToLog => 'How would you like to log this reading?';
 
   @override
+  String get healthTrends => 'Health Trends';
+
+  @override
+  String get sevenDays => '7 Days';
+
+  @override
+  String get thirtyDays => '30 Days';
+
+  @override
+  String get glucoseTrend => 'Glucose Trend';
+
+  @override
+  String get bpTrend => 'Blood Pressure Trend';
+
+  @override
+  String get avgLabel => 'Avg';
+
+  @override
+  String get minLabel => 'Min';
+
+  @override
+  String get maxLabel => 'Max';
+
+  @override
+  String get normalPct => 'Normal';
+
+  @override
+  String get noChartData => 'No readings in this period';
+
+  @override
+  String get tapToViewTrends => 'Tap to view trends →';
+
+  @override
+  String get viewTrends => 'View Trends';
+
+  @override
+  String get viewTrendsSubtitle => '7 and 30-day glucose & BP charts';
+
+  @override
+  String get healthScore => 'Health Score';
+
+  @override
+  String dayStreak(int n) {
+    return '$n-day streak';
+  }
+
+  @override
+  String lastLogged(String time) {
+    return 'Last logged: $time';
+  }
+
+  @override
+  String get noReadingsYetScore => 'Log your first reading to see your score';
+
+  @override
+  String get todayGlucose => 'Glucose';
+
+  @override
+  String get todayBP => 'BP';
+
+  @override
   String get scanWithCamera => 'Scan with Camera';
 
   @override
   String get connectViaBluetooth => 'Connect via Bluetooth';
+
+  @override
+  String get enterManually => 'Enter Manually';
 
   @override
   String scanTitle(String device) {

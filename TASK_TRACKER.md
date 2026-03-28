@@ -49,6 +49,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | B17 | BLE auto-sync — BP monitor | 🔄 Partial | `lib/ble/bp_service.dart` — BLE scan + BP characteristic parsing exists. Untested end-to-end. |
 | B18 | BLE auto-sync — health band | 🔄 Partial | Armband device type in `scan_screen.dart`. No J-STYLE SDK integration. |
 | B19 | Device management screen | 🔄 Partial | `scan_screen.dart` lists discovered BLE devices. No persistent paired-device list or reconnect flow. |
+| B20 | Direct manual entry (no camera/BLE) | ✅ Done | "Enter Manually" option in home screen modal → `ReadingConfirmationScreen` with empty fields. Covers glucose + BP. |
 
 ---
 
@@ -59,8 +60,8 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | C1 | Today's summary card | 🔄 Partial | `dashboard_screen.dart` exists but shows BLE connection status. No health summary card (latest glucose, BP, steps). |
 | C2 | Status badges (HIGH / NORMAL / LOW) | ✅ Done | `history_screen.dart` — color-coded badges. `_glucoseStatus()` and `_bpStatus()` helpers in confirmation screen. |
 | C3 | BMI display | ❌ Not started | Height stored in profile; no weight readings table; no BMI calculation shown anywhere. |
-| C4 | 7-day glucose trend chart | ❌ Not started | `fl_chart` package is installed but not used anywhere yet. |
-| C5 | 7-day BP trend chart | ❌ Not started | Same — `fl_chart` ready, no chart screens built. |
+| C4 | 7-day glucose trend chart | ✅ Done | `trend_chart_screen.dart` — LineChart with normal range band (70–130), color-coded dots by status, stats row. |
+| C5 | 7-day BP trend chart | ✅ Done | Same screen — systolic (red) + diastolic (blue) lines, normal range bands, avg/normal% stats. |
 | C6 | 7-day steps chart | ❌ Not started | Depends on B10 (pedometer). |
 | C7 | 7-day heart rate chart | ❌ Not started | P1. Depends on B18 (health band). |
 | C8 | Weekly weight trend | ❌ Not started | Depends on B3/B6 (weight input). |
@@ -73,6 +74,11 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | C15 | Pull-to-refresh | 🔄 Partial | `history_screen.dart` may support it. No explicit RefreshIndicator confirmed across all screens. |
 | C16 | Offline mode / "last synced" | ❌ Not started | Depends on A9. No cache layer. |
 | C17 | Large text accessibility | ❌ Not started | P1. No font scaling or settings screen. |
+| C18 | Health Score widget (home screen) | ✅ Done | 0–100 score, green/orange/red ring, computed from latest readings via rule engine. Replaces static welcome header. New backend endpoint `GET /api/readings/health-score`. |
+| C19 | Streak counter on home screen | ✅ Done | Consecutive days with ≥1 reading. Shown as "🔥 N-day streak" badge on home screen alongside score. |
+| C20 | AI insight text (rule-based) | ✅ Done | One plain-English tip/encouragement line derived from last 7 days of readings. No ML — pure rule engine. e.g. "BP stable 5 days — great job!" |
+| C21 | Glucose × BP correlation chart | ✅ Done |
+| C22 | Apple Health-inspired visual theme | ✅ Done | `lib/theme/app_theme.dart` — `AppColors` with iOS exact values (glucose=#FF9F0A, BP=#FF2D55, normal=#30D158). Updated home/trend/history/confirmation screens. Pill-shaped status badges. Score number 22→28px. | `trend_chart_screen.dart` — glucose and BP on same scrollable screen, 7/30-day tabs, correlation visible by comparing both charts side by side. Tappable from health score card. |
 
 ---
 
@@ -104,16 +110,18 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | Module | Done | Partial | Not Started | Total |
 |--------|------|---------|-------------|-------|
 | A — Auth + Profiles | 6 | 3 | 3 | 12 |
-| B — Data Input | 9 | 4 | 6 | 19 |
-| C — Dashboard | 4 | 4 | 9 | 17 |
+| B — Data Input | 10 | 4 | 6 | 20 |
+| C — Dashboard | 11 | 4 | 7 | 22 |
 | D — AI + Notifications | 0 | 0 | 16 | 16 |
-| **Total** | **19** | **11** | **34** | **64** |
+| **Total** | **27** | **11** | **32** | **70** |
 
 ---
 
 ## NEXT PRIORITIES (P0 items not yet started)
 
 ### Short (< 1 day each)
+- **C18/C19/C20** — Health Score + Streak + AI Insight: home screen dashboard widget (in progress)
+- **C21** — Glucose × BP correlation chart: `fl_chart` installed, needs chart screen + tap navigation
 - **C3** — BMI display: height is in profile, add weight to readings + auto-calculate BMI
 - **C4/C5** — 7-day glucose + BP charts: `fl_chart` already installed, just needs chart screens
 - **C11** — Streak counter: backend count of consecutive days with readings
