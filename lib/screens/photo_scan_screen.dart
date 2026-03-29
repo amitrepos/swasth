@@ -110,8 +110,16 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
 
       if (!mounted) return;
 
-      if (result != null && result.rawText.trim().length < 2) {
+      // Blurry / nothing detected
+      if (result == null || result.rawText.trim().length < 2) {
         _showBlurryError(l10n);
+        setState(() => _isCapturing = false);
+        return;
+      }
+
+      // OCR read text but couldn't extract a valid reading
+      if (!result.hasValue) {
+        _showParseError(l10n, result.rawText);
         setState(() => _isCapturing = false);
         return;
       }
@@ -148,6 +156,54 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(l10n.tryAgain),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showParseError(AppLocalizations l10n, String rawText) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Couldn't Read the Display"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "The camera captured the image but couldn't detect the numbers clearly. Try:\n"
+              "  • Hold the phone steady and parallel to the display\n"
+              "  • Ensure the screen is lit and not at an angle\n"
+              "  • Turn on flash if the room is dark",
+            ),
+            if (rawText.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text("OCR read:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              Text(rawText.trim(), style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Try Again"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // close dialog
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReadingConfirmationScreen(
+                    ocrResult: null,
+                    deviceType: widget.deviceType,
+                    profileId: widget.profileId,
+                  ),
+                ),
+              );
+            },
+            child: const Text("Enter Manually"),
           ),
         ],
       ),
