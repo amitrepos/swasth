@@ -13,6 +13,8 @@ class StorageService {
   static const String _activeProfileIdKey = 'active_profile_id';
   static const String _activeProfileNameKey = 'active_profile_name';
   static const String _languageKey = 'language_code';
+  static const String _savedEmailKey = 'saved_email';
+  static const String _savedPasswordKey = 'saved_password';
 
   // Save authentication token
   Future<void> saveToken(String token) async {
@@ -70,11 +72,32 @@ class StorageService {
     return jsonDecode(jsonString);
   }
 
+  // Save credentials for "Remember me"
+  Future<void> saveCredentials(String email, String password) async {
+    await _storage.write(key: _savedEmailKey, value: email);
+    await _storage.write(key: _savedPasswordKey, value: password);
+  }
+
+  // Get saved credentials — returns null if none saved
+  Future<({String email, String password})?> getSavedCredentials() async {
+    final email = await _storage.read(key: _savedEmailKey);
+    final password = await _storage.read(key: _savedPasswordKey);
+    if (email == null || password == null) return null;
+    return (email: email, password: password);
+  }
+
+  // Clear saved credentials (called when user unticks "Remember me" or logs out)
+  Future<void> clearCredentials() async {
+    await _storage.delete(key: _savedEmailKey);
+    await _storage.delete(key: _savedPasswordKey);
+  }
+
   // Clear all stored data (logout)
   Future<void> clearAll() async {
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _userKey);
     await _storage.delete(key: _activeProfileIdKey);
     await _storage.delete(key: _activeProfileNameKey);
+    await clearCredentials();
   }
 }

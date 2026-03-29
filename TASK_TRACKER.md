@@ -23,6 +23,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | A10 | Invite family via WhatsApp | 🔄 Partial | Email-based invite works (`pending_invites_screen.dart`). No `share_plus`, no WhatsApp deep link or share-to-install flow. |
 | A11 | Access permissions | ✅ Done | owner / viewer / editor levels via `profile_access` table. `dependencies.py` enforces access. |
 | A12 | First-time onboarding | ❌ Not started | Registration screen collects health info during signup but there are no dedicated onboarding/welcome carousel screens (welcome → how to photograph → invite family flow). |
+| A13 | Remember me / saved credentials | ✅ Done | "Remember me" checkbox on login screen. Credentials stored in `flutter_secure_storage` (iOS Keychain). Pre-fills email + password on next open. Cleared on logout or when checkbox unticked. |
 
 ---
 
@@ -112,11 +113,11 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 | Module | Done | Partial | Not Started | Total |
 |--------|------|---------|-------------|-------|
-| A — Auth + Profiles | 7 | 3 | 2 | 12 |
+| A — Auth + Profiles | 8 | 3 | 2 | 13 |
 | B — Data Input | 12 | 2 | 6 | 20 |
 | C — Dashboard | 19 | 0 | 5 | 24 |
 | D — AI + Notifications | 2 | 3 | 12 | 17 |
-| **Total** | **40** | **8** | **25** | **73** |
+| **Total** | **41** | **8** | **25** | **74** |
 
 ---
 

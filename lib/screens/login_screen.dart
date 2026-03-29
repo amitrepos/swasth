@@ -23,6 +23,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final creds = await StorageService().getSavedCredentials();
+    if (creds != null && mounted) {
+      setState(() {
+        _emailController.text = creds.email;
+        _passwordController.text = creds.password;
+        _rememberMe = true;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -49,6 +67,15 @@ class _LoginScreenState extends State<LoginScreen> {
         final token = response['access_token'];
         if (token != null) {
           await StorageService().saveToken(token);
+
+          if (_rememberMe) {
+            await StorageService().saveCredentials(
+              _emailController.text.trim(),
+              _passwordController.text,
+            );
+          } else {
+            await StorageService().clearCredentials();
+          }
 
           try {
             final userData = await _apiService.getCurrentUser(token);
@@ -162,7 +189,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
+
+              // Remember me checkbox
+              Row(
+                children: [
+                  Checkbox(
+                    value: _rememberMe,
+                    onChanged: (v) => setState(() => _rememberMe = v ?? false),
+                    activeColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  Text(
+                    l10n.rememberMe,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
 
               // Forgot Password Link
               Align(

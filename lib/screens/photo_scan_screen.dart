@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
-import '../services/ocr_service.dart';
+import '../services/health_reading_service.dart';
+import '../services/ocr_service.dart' show OcrResult; // type only — not called directly
+import '../services/storage_service.dart';
 import 'reading_confirmation_screen.dart';
 
 class PhotoScanScreen extends StatefulWidget {
@@ -47,7 +49,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       );
       _controller = CameraController(
         back,
-        ResolutionPreset.high,
+        ResolutionPreset.medium, // 1080p — sufficient for Gemini, avoids OOM on device
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
@@ -99,25 +101,32 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         ),
       );
 
+      // Use Gemini Vision via backend
+      // ML Kit on-device OCR is NOT used here — it has arm64 incompatibilities
+      // on iOS 26 that crash the app. If Gemini fails, user is prompted to enter manually.
       OcrResult? result;
-      if (widget.deviceType == 'glucose') {
-        result = await OcrService.extractGlucose(file);
-      } else {
-        result = await OcrService.extractBloodPressure(file);
+      final token = await StorageService().getToken();
+      if (token != null) {
+        result = await HealthReadingService().parseImageWithGemini(
+          file,
+          widget.deviceType,
+          token,
+        );
       }
 
       if (mounted) Navigator.of(context).pop();
 
       if (!mounted) return;
 
-      // Blurry / nothing detected
-      if (result == null || result.rawText.trim().length < 2) {
-        _showBlurryError(l10n);
+      // Gemini failed to respond (network error, backend unreachable, no token)
+      // Don't say "blurry" — that's misleading. Offer manual entry instead.
+      if (result == null) {
+        _showServerError();
         setState(() => _isCapturing = false);
         return;
       }
 
-      // OCR read text but couldn't extract a valid reading
+      // Gemini responded but couldn't extract valid values from the image
       if (!result.hasValue) {
         _showParseError(l10n, result.rawText);
         setState(() => _isCapturing = false);
@@ -162,6 +171,44 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
     );
   }
 
+  void _showServerError() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Couldn't Reach Server"),
+        content: const Text(
+          "The photo was taken but the AI couldn't be reached to read the display.\n\n"
+          "Check that:\n"
+          "  • Your phone is on the same WiFi as the server\n"
+          "  • The backend is running\n\n"
+          "You can enter the reading manually instead.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Try Again"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReadingConfirmationScreen(
+                    ocrResult: null,
+                    deviceType: widget.deviceType,
+                    profileId: widget.profileId,
+                  ),
+                ),
+              );
+            },
+            child: const Text("Enter Manually"),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showParseError(AppLocalizations l10n, String rawText) {
     showDialog(
       context: context,
@@ -172,16 +219,12 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "The camera captured the image but couldn't detect the numbers clearly. Try:\n"
+              "The image was captured but the reading couldn't be extracted. Try:\n"
               "  • Hold the phone steady and parallel to the display\n"
-              "  • Ensure the screen is lit and not at an angle\n"
-              "  • Turn on flash if the room is dark",
+              "  • Make sure the screen is fully lit and numbers are visible\n"
+              "  • Turn on flash if the room is dark\n"
+              "  • Check your internet connection (needed for AI scanning)",
             ),
-            if (rawText.trim().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              const Text("OCR read:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-              Text(rawText.trim(), style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            ],
           ],
         ),
         actions: [

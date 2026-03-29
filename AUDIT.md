@@ -5,6 +5,28 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-29 — Fix parse-image: MIME type + token budget (BP and glucose scanning now working end-to-end)
+
+- Modified `backend/routes_health.py`: Fixed `application/octet-stream` MIME type — iOS camera files don't set content-type, now defaults to `image/jpeg`. Increased `max_output_tokens` from 200 → 1024 to prevent truncation of Gemini 2.5-flash thinking tokens. Both BP and glucose photo scanning confirmed working on device.
+
+## 2026-03-29 — Fix parse-image JSON extraction (regex replaces brittle code-fence strip)
+
+- Modified `backend/routes_health.py`: Replaced code-fence stripping logic in `parse-image` endpoint with `re.search(r"\{[^{}]+\}", all_text, re.DOTALL)`. Gemini 2.5-flash thinking tokens were causing `response.text` to be None and the `split("```")` strip to fail — the regex extracts the JSON object regardless of surrounding markdown or thinking token structure. Fixes `{"error":"Gemini returned an unexpected format"}` on every BP/glucose scan.
+
+## 2026-03-29 — Gemini Vision replaces local OCR for device photo parsing
+
+- Modified `backend/routes_health.py`: Added `POST /api/readings/parse-image`. Accepts multipart image + `device_type`. Sends to Gemini 1.5 Flash Vision (temperature=0). Validates ranges. Returns `{systolic, diastolic, pulse}` or `{glucose}`. Returns `{error}` on failure — never 500.
+- Modified `lib/services/health_reading_service.dart`: Added `parseImageWithGemini()` — multipart POST, parses response into `OcrResult`. Returns null on any failure.
+- Modified `lib/screens/photo_scan_screen.dart`: `_capture()` tries Gemini Vision first, falls back to on-device ML Kit OCR if Gemini returns null or no valid values.
+
+## 2026-03-29 — A13: Remember me / saved credentials on login screen
+
+- Modified `lib/services/storage_service.dart`: Added `_savedEmailKey` + `_savedPasswordKey` constants. Added `saveCredentials(email, password)`, `getSavedCredentials()` (returns named record `({email, password})?`), `clearCredentials()`. Updated `clearAll()` (logout) to also call `clearCredentials()` so saved login is wiped on logout.
+- Modified `lib/screens/login_screen.dart`: Added `_rememberMe` bool state. Added `_loadSavedCredentials()` called from `initState` — pre-fills email + password fields and sets checkbox to true if credentials are found. After successful login: saves credentials if checked, clears them if unchecked. Added "Remember me" checkbox row between password field and Forgot Password link.
+- Modified `lib/l10n/app_en.arb`: Added `rememberMe` string.
+- Modified `lib/l10n/app_hi.arb`: Added `rememberMe` string in Hindi.
+- Updated `TASK_TRACKER.md`: A13 ❌→✅. Total: 41✅ / 8🔄 / 25❌.
+
 ## 2026-03-29 — BP OCR: 4-pattern fallback parser + user feedback on parse failure
 
 - Rewrote `lib/services/ocr_service.dart` `extractBloodPressure()`: Added 4 parsing strategies in priority order: (1) slash format `128/82`, (2) SYS/DIA label-adjacent numbers, (3) two numbers on consecutive lines (covers Omron/Yuwell/A&D monitors), (4) all-numbers best-pair fallback. Added `_validBP()` helper (sys > dia, physiological range check). Added `_extractPulse()` with heart-rate label detection (PULSE/HR/♥) before falling back to any remaining valid number.
@@ -568,3 +590,46 @@ Format: date, summary, file-level details.
   - 16:43:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
   - 16:43:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
   - 16:44:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 16:51:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 16:51:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 16:51:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 16:52:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/storage_service.dart
+  - 16:52:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/storage_service.dart
+  - 16:53:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 16:53:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 16:53:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 16:53:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 16:53:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 16:53:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 16:53:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 16:53:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 16:54:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 17:11:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:11:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:11:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 17:12:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 17:12:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 17:12:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 17:12:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 17:17:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 17:17:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 17:17:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 17:17:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 17:17:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 17:26:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 17:26:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 17:28:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/requirements.txt
+  - 17:28:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:28:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:29:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:29:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:30:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:34:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:35:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 17:38:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:38:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:39:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:41:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:47:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:47:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:47:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

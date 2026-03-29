@@ -2,10 +2,11 @@
 # Related: backend/main.py, lib/services/health_reading_service.dart
 
 """Health Readings API Routes"""
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date, timedelta
+import json
 import models
 import schemas
 from database import get_db
@@ -347,19 +348,31 @@ For Stage 2 or critical readings: be direct and urgent — ask about medication,
 Speak directly to the patient ("Your BP...", "Have you taken..."). Do not be vague for serious readings."""
 
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types as genai_types
+
         if not settings.GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY not set")
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
                 max_output_tokens=120,
                 temperature=0.4,
             ),
         )
-        insight = response.text.strip()
+        # gemini-2.5-flash may include thinking tokens; extract text part explicitly
+        insight = None
+        for candidate in response.candidates:
+            for part in candidate.content.parts:
+                if hasattr(part, 'text') and part.text:
+                    insight = part.text.strip()
+                    break
+            if insight:
+                break
+        if not insight:
+            raise ValueError("Empty response from Gemini")
         _insight_cache[cache_key] = insight
         return {"insight": insight}
     except Exception:
@@ -400,6 +413,123 @@ def delete_reading(
     db.delete(db_reading)
     db.commit()
     return {"message": "Reading deleted successfully"}
+
+
+@router.post("/readings/parse-image")
+async def parse_image_with_gemini(
+    device_type: str,
+    file: UploadFile = File(...),
+    user: models.User = Depends(get_current_user),
+):
+    """Use Gemini Vision to extract glucose or BP values from a device photo.
+
+    Returns extracted values as JSON. Never raises 500 — returns
+    {"error": "..."} so the Flutter app can fall back to local OCR.
+    """
+    if device_type not in _VALID_READING_TYPES:
+        raise HTTPException(status_code=400, detail="device_type must be 'glucose' or 'blood_pressure'")
+
+    if not settings.GEMINI_API_KEY:
+        return {"error": "GEMINI_API_KEY not configured"}
+
+    try:
+        image_bytes = await file.read()
+        # iOS camera files often arrive as application/octet-stream — derive from extension
+        mime_type = file.content_type or "image/jpeg"
+        if mime_type == "application/octet-stream":
+            fname = (file.filename or "").lower()
+            if fname.endswith(".png"):
+                mime_type = "image/png"
+            else:
+                mime_type = "image/jpeg"  # default for camera captures
+
+        if device_type == "blood_pressure":
+            prompt = (
+                "You are reading a blood pressure monitor display in this photo.\n"
+                "Extract the systolic pressure, diastolic pressure, and pulse rate shown.\n\n"
+                "Rules:\n"
+                "- Systolic is the LARGER number (top or left), normal range 70–250 mmHg\n"
+                "- Diastolic is the SMALLER number (bottom or right), normal range 40–150 mmHg\n"
+                "- Pulse/heart rate is typically shown separately, range 30–200 bpm\n"
+                "- If a value is not visible or unreadable, use null\n"
+                "- Ignore any text labels (SYS, DIA, mmHg, PULSE, etc.) — extract numbers only\n\n"
+                "Respond with ONLY a JSON object, no explanation, no markdown:\n"
+                '{"systolic": <number or null>, "diastolic": <number or null>, "pulse": <number or null>}'
+            )
+        else:
+            prompt = (
+                "You are reading a blood glucose meter display in this photo.\n"
+                "Extract the glucose reading shown on the screen.\n\n"
+                "Rules:\n"
+                "- Glucose value is typically a 2–3 digit number, range 20–600 mg/dL\n"
+                "- If the display shows 'HI' or 'HIGH', return 600\n"
+                "- If the display shows 'LO' or 'LOW', return 20\n"
+                "- If the value is not visible or unreadable, use null\n"
+                "- Ignore units (mg/dL, mmol/L) — return the raw number only\n\n"
+                "Respond with ONLY a JSON object, no explanation, no markdown:\n"
+                '{"glucose": <number or null>}'
+            )
+
+        from google import genai
+        from google.genai import types as genai_types
+
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                genai_types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                prompt,
+            ],
+            config=genai_types.GenerateContentConfig(
+                max_output_tokens=1024,
+                temperature=0.0,
+            ),
+        )
+
+        # gemini-2.5-flash may include thinking tokens; collect all text parts then
+        # use regex to find the JSON object regardless of surrounding markdown.
+        import re
+        all_text = "".join(
+            part.text
+            for candidate in response.candidates
+            for part in candidate.content.parts
+            if hasattr(part, "text") and part.text
+        )
+        if not all_text:
+            return {"error": "Gemini returned an empty response"}
+
+        json_match = re.search(r"\{[^{}]+\}", all_text, re.DOTALL)
+        if not json_match:
+            return {"error": "No JSON found in Gemini response"}
+
+        parsed = json.loads(json_match.group())
+
+        # Validate ranges
+        if device_type == "blood_pressure":
+            sys = parsed.get("systolic")
+            dia = parsed.get("diastolic")
+            pulse = parsed.get("pulse")
+            if sys is not None and not (70 <= sys <= 250):
+                sys = None
+            if dia is not None and not (40 <= dia <= 150):
+                dia = None
+            if pulse is not None and not (30 <= pulse <= 200):
+                pulse = None
+            if sys is None or dia is None:
+                return {"error": "Could not extract valid BP values from image"}
+            return {"systolic": sys, "diastolic": dia, "pulse": pulse}
+        else:
+            glucose = parsed.get("glucose")
+            if glucose is not None and not (20 <= glucose <= 600):
+                glucose = None
+            if glucose is None:
+                return {"error": "Could not extract valid glucose value from image"}
+            return {"glucose": glucose}
+
+    except (json.JSONDecodeError, KeyError):
+        return {"error": "Gemini returned an unexpected format"}
+    except Exception as e:
+        return {"error": f"Gemini Vision failed: {str(e)}"}
 
 
 def _rule_based_insight(recent: list) -> str:
