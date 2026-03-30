@@ -18,7 +18,7 @@ void main() async {
     ProviderScope(
       overrides: [
         languageProvider.overrideWith(
-          (ref) => LanguageNotifier(Locale(langCode)),
+          () => LanguageNotifier(Locale(langCode)),
         ),
       ],
       child: const SwasthApp(),

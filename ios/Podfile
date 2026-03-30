@@ -1,0 +1,41 @@
+platform :ios, '15.5'
+
+# This is the "Magic Link" that connects your Dart code to iOS
+require File.expand_path(File.join('..', 'Flutter', 'generated_podhelper.rb'), __FILE__)
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  # This command installs the 92 plugins (camera, bluetooth, etc.)
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'
+      config.build_settings['SWIFT_VERSION'] = '5.0'
+    end
+  end
+
+  # Fix url_launcher_ios 6.4.x ViewPresenter.swift incompatibility with Xcode 26+
+  # FlutterPluginRegistrar.viewController was removed from the Flutter iOS embedding.
+  # Patches both the Pods copy and the pub cache source (which is referenced via :path).
+  search_paths = [
+    File.join(__dir__, 'Pods/**/ViewPresenter.swift'),
+    File.expand_path('~/.pub-cache/hosted/pub.dev/url_launcher_ios-*/ios/**/ViewPresenter.swift'),
+  ]
+  search_paths.each do |pattern|
+    Dir[pattern].each do |file|
+      content = File.read(file)
+      patched = content.gsub(
+        'registrar.viewController',
+        'UIApplication.shared.delegate?.window??.rootViewController'
+      )
+      File.write(file, patched) if content != patched
+    end
+  end
+end

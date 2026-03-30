@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swasth — Premium Health App Preview</title>
+<style>
+  /* ── THEME TOKENS ───────────────────────────────────────── */
+  [data-theme="dark"] {
+    --bg-page:       #0e0e1a;
+    --bg-phone:      #13131f;
+    --bg-card:       #1c1c2e;
+    --bg-card2:      #22223a;
+    --bg-pill:       #252540;
+    --border:        rgba(255,255,255,0.07);
+    --text-primary:  #ffffff;
+    --text-secondary:rgba(255,255,255,0.5);
+    --text-tertiary: rgba(255,255,255,0.28);
+    --nav-bg:        #1a1a2e;
+    --nav-border:    rgba(255,255,255,0.06);
+    --shimmer:       rgba(255,255,255,0.04);
+    --phone-bezel:   #0a0a14;
+    --phone-ring1:   #1a1a2e;
+    --phone-ring2:   #111120;
+    --shadow-phone:  0 40px 100px rgba(0,0,0,0.7), 0 0 0 8px #0a0a14, 0 0 0 10px #1a1a2e;
+    --card-shadow:   0 4px 20px rgba(0,0,0,0.4);
+    --btn-shadow:    0 8px 24px rgba(123,97,255,0.5);
+    --toggle-bg:     #1c1c2e;
+    --toggle-icon:   '☀️';
+  }
+  [data-theme="light"] {
+    --bg-page:       #e8eaf2;
+    --bg-phone:      #f2f3f8;
+    --bg-card:       #ffffff;
+    --bg-card2:      #f7f7fc;
+    --bg-pill:       #eeeef6;
+    --border:        rgba(0,0,0,0.07);
+    --text-primary:  #111127;
+    --text-secondary:rgba(17,17,39,0.5);
+    --text-tertiary: rgba(17,17,39,0.28);
+    --nav-bg:        #ffffff;
+    --nav-border:    rgba(0,0,0,0.07);
+    --shimmer:       rgba(0,0,0,0.03);
+    --phone-bezel:   #c8cad8;
+    --phone-ring1:   #d8dae8;
+    --phone-ring2:   #c0c2d0;
+    --shadow-phone:  0 40px 100px rgba(0,0,0,0.18), 0 0 0 8px #c8cad8, 0 0 0 10px #d8dae8;
+    --card-shadow:   0 4px 20px rgba(0,0,0,0.08);
+    --btn-shadow:    0 8px 24px rgba(123,97,255,0.35);
+    --toggle-bg:     #e0e0f0;
+    --toggle-icon:   '🌙';
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+    background: var(--bg-page);
+    padding: 40px 20px 60px;
+    min-height: 100vh;
+    transition: background 0.4s ease;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────── */
+  .page-header {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 28px; font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+    transition: color 0.3s;
+  }
+  .subtitle {
+    text-align: center; color: var(--text-secondary);
+    margin-bottom: 40px; font-size: 13px;
+    transition: color 0.3s;
+  }
+
+  /* ── THEME TOGGLE ────────────────────────────────────────── */
+  .toggle-btn {
+    background: var(--toggle-bg);
+    border: 1px solid var(--border);
+    border-radius: 30px; padding: 8px 16px;
+    font-size: 13px; font-weight: 700;
+    color: var(--text-primary); cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.3s;
+    box-shadow: var(--card-shadow);
+  }
+  .toggle-btn:hover { transform: scale(1.03); }
+
+  /* ── PHONE GRID ──────────────────────────────────────────── */
+  .phones-row {
+    display: flex; gap: 32px;
+    justify-content: center; flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .screen-label {
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-secondary);
+  }
+
+  /* ── PHONE SHELL ─────────────────────────────────────────── */
+  .phone {
+    width: 270px;
+    background: var(--bg-phone);
+    border-radius: 44px;
+    box-shadow: var(--shadow-phone);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: background 0.4s, box-shadow 0.4s;
+    position: relative;
+  }
+  .phone-notch {
+    width: 90px; height: 26px;
+    background: var(--phone-bezel);
+    border-radius: 0 0 18px 18px;
+    margin: 0 auto 0;
+    position: absolute; left: 50%; transform: translateX(-50%); top: 0;
+    z-index: 10;
+  }
+  .phone-status {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 20px 0; font-size: 11px; font-weight: 600;
+    color: var(--text-primary); margin-top: 8px;
+    transition: color 0.3s;
+  }
+  .status-icons { display: flex; gap: 4px; font-size: 10px; }
+
+  /* Phone content scroll area */
+  .phone-body { flex: 1; overflow: hidden; padding-bottom: 64px; }
+
+  /* ── BOTTOM NAV ──────────────────────────────────────────── */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 64px;
+    background: var(--nav-bg);
+    border-top: 0.5px solid var(--nav-border);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 10px;
+    transition: background 0.4s;
+  }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+  .nav-icon { font-size: 18px; opacity: 0.4; }
+  .nav-icon.active { opacity: 1; }
+  .nav-label { font-size: 8px; font-weight: 600; color: var(--text-secondary); transition: color 0.3s; }
+  .nav-label.active { color: #7b61ff; }
+  .nav-plus {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, #7b61ff, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #fff; font-weight: 300;
+    box-shadow: 0 4px 16px rgba(123,97,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+    cursor: pointer; margin-top: -14px;
+    transition: transform 0.15s;
+  }
+  .nav-plus:hover { transform: scale(1.1) translateY(-2px); }
+
+  /* ══════════════════════════════════════════════════════════
+     SCREEN 1 — HOME
+  ══════════════════════════════════════════════════════════ */
+  .s1-header { padding: 48px 20px 16px; }
+  .s1-greeting { font-size: 26px; font-weight: 800; color: var(--text-primary); line-height: 1; margin-bottom: 4px; transition: color 0.3s; }
+  .s1-date { font-size: 13px; color: var(--text-secondary); transition: color 0.3s; }
+
+  /* Multi-ring activity card */
+  .s1-rings-card {
+    margin: 0 16px 12px;
+    background: var(--bg-card);
+    border-radius: 22px; padding: 16px;
+    border: 0.5px solid var(--border);
+    box-shadow: var(--card-shadow);
+    display: flex; align-items: center; gap: 16px;
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+
+  /* SVG rings */
+  .rings-svg-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+  .rings-svg-wrap svg { width: 110px; height: 110px; }
+
+  .rings-legend { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .ring-legend-item { display: flex; align-items: center; gap: 8px; }
+  .ring-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .ring-metric { font-size: 11px; font-weight: 700; color: var(--text-primary); transition: color 0.3s; }
+  .ring-val { font-size: 11px; color: var(--text-secondary); transition: color 0.3s; }
+
+  /* Mini metric cards row */
+  .s1-mini-row { display: flex; gap: 10px; margin: 0 16px 12px; }
+  .s1-mini-card {
+    flex: 1; background: var(--bg-card); border-radius: 18px;
+    padding: 14px 12px; border: 0.5px solid var(--border);
+    box-shadow: var(--card-shadow);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .mini-card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .mini-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .mini-card-title { font-size: 11px; font-weight: 700; color: var(--text-primary); transition: color 0.3s; }
+
+  /* SVG mini sparkline */
+  .sparkline-wrap { height: 44px; }
+  .sparkline-wrap svg { width: 100%; height: 44px; }
+
+  /* Bar chart mini */
+  .barlet-wrap { height: 44px; display: flex; align-items: flex-end; gap: 3px; }
+  .barlet {
+    flex: 1; border-radius: 3px 3px 0 0;
+    transition: height 0.3s;
+  }
+
+  /* Big CTA button */
+  .s1-cta-wrap { padding: 0 16px 14px; }
+  .s1-cta {
+    width: 100%;
+    background: linear-gradient(135deg, #7b61ff 0%, #a855f7 100%);
+    color: #fff; font-size: 14px; font-weight: 700;
+    border: none; border-radius: 30px; padding: 15px;
+    cursor: pointer; letter-spacing: 0.3px;
+    box-shadow: var(--btn-shadow), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: block; text-align: center;
+  }
+  .s1-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(123,97,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2); }
+
+  /* ══════════════════════════════════════════════════════════
+     SCREEN 2 — SUMMARY / TRENDS
+  ══════════════════════════════════════════════════════════ */
+  .s2-header { padding: 48px 20px 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .s2-title { font-size: 24px; font-weight: 800; color: var(--text-primary); transition: color 0.3s; }
+  .s2-sub { font-size: 12px; color: var(--text-secondary); transition: color 0.3s; }
+  .s2-showall { font-size: 12px; font-weight: 700; color: #7b61ff; }
+
+  /* Weekly bar chart */
+  .s2-chart-card {
+    margin: 0 16px 12px;
+    background: var(--bg-card); border-radius: 22px; padding: 16px;
+    border: 0.5px solid var(--border); box-shadow: var(--card-shadow);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .s2-days { display: flex; justify-content: space-around; margin-top: 10px; }
+  .s2-day-label { font-size: 10px; color: var(--text-tertiary); font-weight: 600; transition: color 0.3s; }
+
+  /* Weekly bar chart bars */
+  .s2-bars { display: flex; justify-content: space-around; align-items: flex-end; height: 90px; }
+  .s2-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; width: 22px; }
+  .s2-bar {
+    width: 16px; border-radius: 5px 5px 0 0;
+    transition: height 0.4s;
+  }
+
+  /* Day detail rows */
+  .s2-day-row {
+    margin: 0 16px 8px;
+    background: var(--bg-card); border-radius: 16px;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+    border: 0.5px solid var(--border); box-shadow: var(--card-shadow);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .s2-day-name { font-size: 13px; font-weight: 700; color: var(--text-primary); width: 56px; flex-shrink: 0; transition: color 0.3s; }
+  .s2-day-val { font-size: 13px; font-weight: 600; color: var(--text-secondary); width: 64px; flex-shrink: 0; transition: color 0.3s; }
+  .s2-day-spark { flex: 1; height: 30px; }
+  .s2-day-spark svg { width: 100%; height: 30px; }
+
+  /* ══════════════════════════════════════════════════════════
+     SCREEN 3 — INSIGHTS
+  ══════════════════════════════════════════════════════════ */
+  .s3-header { padding: 48px 20px 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .s3-title { font-size: 24px; font-weight: 800; color: var(--text-primary); transition: color 0.3s; }
+  .s3-sub { font-size: 12px; color: var(--text-secondary); transition: color 0.3s; }
+  .s3-showall { font-size: 12px; font-weight: 700; color: #7b61ff; }
+
+  /* Body stats card */
+  .s3-body-card {
+    margin: 0 16px 12px;
+    background: var(--bg-card); border-radius: 22px; padding: 16px;
+    border: 0.5px solid var(--border); box-shadow: var(--card-shadow);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .s3-body-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; transition: color 0.3s; }
+  .s3-body-content { display: flex; align-items: center; gap: 12px; }
+  .s3-human { font-size: 52px; opacity: 0.25; flex-shrink: 0; }
+  .s3-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 1; }
+  .s3-stat { }
+  .s3-stat-val { font-size: 16px; font-weight: 800; color: var(--text-primary); transition: color 0.3s; }
+  .s3-stat-label { font-size: 10px; color: var(--text-secondary); font-weight: 500; transition: color 0.3s; }
+
+  /* Trending card */
+  .s3-trend-card {
+    margin: 0 16px 12px;
+    background: var(--bg-card); border-radius: 22px; padding: 16px;
+    border: 0.5px solid var(--border); box-shadow: var(--card-shadow);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .s3-trend-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; transition: color 0.3s; }
+  .s3-trend-chart { height: 100px; position: relative; }
+  .s3-trend-chart svg { width: 100%; height: 100px; }
+  .s3-day-labels { display: flex; justify-content: space-between; margin-top: 6px; padding: 0 4px; }
+  .s3-dl { font-size: 9px; color: var(--text-tertiary); font-weight: 600; transition: color 0.3s; }
+
+  /* Quick insight pills */
+  .s3-pills { display: flex; flex-direction: column; gap: 8px; margin: 0 16px; }
+  .s3-pill {
+    background: var(--bg-card); border-radius: 14px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    border: 0.5px solid var(--border); box-shadow: var(--card-shadow);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .s3-pill-dot { width: 36px; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .s3-pill-dot.g { background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); }
+  .s3-pill-dot.b { background: rgba(251,113,133,0.15); border: 1px solid rgba(251,113,133,0.3); }
+  .s3-pill-title { font-size: 12px; font-weight: 700; color: var(--text-primary); transition: color 0.3s; }
+  .s3-pill-sub { font-size: 10px; color: var(--text-secondary); transition: color 0.3s; }
+  .s3-pill-badge { margin-left: auto; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+  .s3-pill-badge.good { background: rgba(52,211,153,0.15); color: #34d399; }
+  .s3-pill-badge.warn { background: rgba(251,113,133,0.15); color: #fb7185; }
+
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Swasth Health App</h1>
+  <button class="toggle-btn" onclick="toggleTheme()" id="themeToggle">
+    <span id="themeIcon">☀️</span> Light Mode
+  </button>
+</div>
+<p class="subtitle">Dark &amp; Light Mode Preview · Inspired by your reference design</p>
+
+<div class="phones-row">
+
+  <!-- ══════ PHONE 1 — HOME ══════ -->
+  <div class="phone-wrap">
+    <div class="screen-label">Home</div>
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-status">
+        <span>9:41</span>
+        <div class="status-icons"><span>▲▲▲</span><span>WiFi</span><span>▮</span></div>
+      </div>
+
+      <div class="phone-body">
+        <!-- Greeting -->
+        <div class="s1-header">
+          <div class="s1-greeting">Hello, Amar 👋</div>
+          <div class="s1-date">Today · March 28</div>
+        </div>
+
+        <!-- Multi-ring card -->
+        <div class="s1-rings-card">
+          <div class="rings-svg-wrap">
+            <svg viewBox="0 0 110 110">
+              <!-- Outer ring track (glucose) -->
+              <circle cx="55" cy="55" r="48" fill="none" stroke="rgba(52,211,153,0.12)" stroke-width="9"/>
+              <!-- Outer ring fill — glucose 78% -->
+              <circle cx="55" cy="55" r="48" fill="none" stroke="#34d399" stroke-width="9"
+                stroke-dasharray="235.6" stroke-dashoffset="51.8"
+                stroke-linecap="round" transform="rotate(-90 55 55)"
+                style="filter:drop-shadow(0 0 6px rgba(52,211,153,0.6))"/>
+
+              <!-- Middle ring track (BP) -->
+              <circle cx="55" cy="55" r="36" fill="none" stroke="rgba(251,113,133,0.12)" stroke-width="9"/>
+              <!-- Middle ring fill — BP 55% -->
+              <circle cx="55" cy="55" r="36" fill="none" stroke="#fb7185" stroke-width="9"
+                stroke-dasharray="226.2" stroke-dashoffset="101.8"
+                stroke-linecap="round" transform="rotate(-90 55 55)"
+                style="filter:drop-shadow(0 0 6px rgba(251,113,133,0.6))"/>
+
+              <!-- Inner ring track (streak) -->
+              <circle cx="55" cy="55" r="22" fill="none" stroke="rgba(123,97,255,0.12)" stroke-width="8"/>
+              <!-- Inner ring fill — streak 40% -->
+              <circle cx="55" cy="55" r="22" fill="none" stroke="#7b61ff" stroke-width="8"
+                stroke-dasharray="138.2" stroke-dashoffset="82.9"
+                stroke-linecap="round" transform="rotate(-90 55 55)"
+                style="filter:drop-shadow(0 0 5px rgba(123,97,255,0.6))"/>
+            </svg>
+          </div>
+
+          <div class="rings-legend">
+            <div class="ring-legend-item">
+              <div class="ring-dot" style="background:#34d399; box-shadow:0 0 6px rgba(52,211,153,0.7)"></div>
+              <div>
+                <div class="ring-metric">Glucose</div>
+                <div class="ring-val">110 mg/dL</div>
+              </div>
+            </div>
+            <div class="ring-legend-item">
+              <div class="ring-dot" style="background:#fb7185; box-shadow:0 0 6px rgba(251,113,133,0.7)"></div>
+              <div>
+                <div class="ring-metric">Blood Pressure</div>
+                <div class="ring-val">130/80 mmHg</div>
+              </div>
+            </div>
+            <div class="ring-legend-item">
+              <div class="ring-dot" style="background:#7b61ff; box-shadow:0 0 6px rgba(123,97,255,0.7)"></div>
+              <div>
+                <div class="ring-metric">Streak</div>
+                <div class="ring-val">3-day streak 🔥</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini metric cards -->
+        <div class="s1-mini-row">
+          <div class="s1-mini-card">
+            <div class="mini-card-header">
+              <div class="mini-dot" style="background:#fb7185; box-shadow:0 0 5px rgba(251,113,133,0.6)"></div>
+              <div class="mini-card-title">Glucose Trend</div>
+            </div>
+            <div class="sparkline-wrap">
+              <svg viewBox="0 0 100 44" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#34d399" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0,30 C10,28 20,20 30,22 S50,14 60,18 S80,10 100,12 V44 H0Z"
+                  fill="url(#sg)"/>
+                <path d="M0,30 C10,28 20,20 30,22 S50,14 60,18 S80,10 100,12"
+                  fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round"
+                  style="filter:drop-shadow(0 0 4px rgba(52,211,153,0.7))"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="s1-mini-card">
+            <div class="mini-card-header">
+              <div class="mini-dot" style="background:#7b61ff; box-shadow:0 0 5px rgba(123,97,255,0.6)"></div>
+              <div class="mini-card-title">BP Readings</div>
+            </div>
+            <div class="barlet-wrap">
+              <div class="barlet" style="height:28px; background:rgba(123,97,255,0.35)"></div>
+              <div class="barlet" style="height:36px; background:#7b61ff; box-shadow:0 0 6px rgba(123,97,255,0.5)"></div>
+              <div class="barlet" style="height:22px; background:rgba(123,97,255,0.35)"></div>
+              <div class="barlet" style="height:40px; background:#7b61ff; box-shadow:0 0 6px rgba(123,97,255,0.5)"></div>
+              <div class="barlet" style="height:30px; background:rgba(123,97,255,0.35)"></div>
+              <div class="barlet" style="height:34px; background:#7b61ff; box-shadow:0 0 6px rgba(123,97,255,0.5)"></div>
+              <div class="barlet" style="height:26px; background:rgba(123,97,255,0.35)"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Score pill row -->
+        <div style="display:flex;gap:10px;margin:0 16px 14px;">
+          <div style="flex:1;background:var(--bg-card);border:0.5px solid var(--border);border-radius:18px;padding:12px;box-shadow:var(--card-shadow);text-align:center;transition:background 0.4s,box-shadow 0.4s;">
+            <div style="font-size:22px;font-weight:800;color:#34d399;text-shadow:0 0 10px rgba(52,211,153,0.5)">60</div>
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;transition:color 0.3s">Health Score</div>
+          </div>
+          <div style="flex:1;background:var(--bg-card);border:0.5px solid var(--border);border-radius:18px;padding:12px;box-shadow:var(--card-shadow);text-align:center;transition:background 0.4s,box-shadow 0.4s;">
+            <div style="font-size:22px;font-weight:800;color:#fb7185;text-shadow:0 0 10px rgba(251,113,133,0.5)">3</div>
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;transition:color 0.3s">Day Streak 🔥</div>
+          </div>
+          <div style="flex:1;background:var(--bg-card);border:0.5px solid var(--border);border-radius:18px;padding:12px;box-shadow:var(--card-shadow);text-align:center;transition:background 0.4s,box-shadow 0.4s;">
+            <div style="font-size:22px;font-weight:800;color:#7b61ff;text-shadow:0 0 10px rgba(123,97,255,0.5)">7</div>
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:2px;transition:color 0.3s">Readings</div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="s1-cta-wrap">
+          <button class="s1-cta">+ Log New Reading</button>
+        </div>
+      </div>
+
+      <!-- Bottom Nav -->
+      <div class="bottom-nav">
+        <div class="nav-item">
+          <div class="nav-icon active" style="color:#7b61ff">🏠</div>
+          <div class="nav-label active">Home</div>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">📊</div>
+          <div class="nav-label">History</div>
+        </div>
+        <div class="nav-plus">+</div>
+        <div class="nav-item">
+          <div class="nav-icon">📈</div>
+          <div class="nav-label">Trends</div>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">👤</div>
+          <div class="nav-label">Profile</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PHONE 2 — SUMMARY / TRENDS ══════ -->
+  <div class="phone-wrap">
+    <div class="screen-label">Trends</div>
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-status">
+        <span>9:41</span>
+        <div class="status-icons"><span>▲▲▲</span><span>WiFi</span><span>▮</span></div>
+      </div>
+
+      <div class="phone-body">
+        <div class="s2-header">
+          <div>
+            <div class="s2-title">Summary</div>
+            <div class="s2-sub">This week</div>
+          </div>
+          <div class="s2-showall">Show all</div>
+        </div>
+
+        <!-- Weekly bar chart -->
+        <div class="s2-chart-card">
+          <div style="font-size:10px;color:var(--text-tertiary);text-align:right;margin-bottom:4px;transition:color 0.3s">130 mg/dL</div>
+          <div class="s2-bars">
+            <div class="s2-bar-wrap"><div class="s2-bar" style="height:48px;background:rgba(52,211,153,0.3)"></div></div>
+            <div class="s2-bar-wrap"><div class="s2-bar" style="height:72px;background:#34d399;box-shadow:0 0 8px rgba(52,211,153,0.5)"></div></div>
+            <div class="s2-bar-wrap"><div class="s2-bar" style="height:55px;background:#34d399;box-shadow:0 0 8px rgba(52,211,153,0.5)"></div></div>
+            <div class="s2-bar-wrap"><div class="s2-bar" style="height:82px;background:#34d399;box-shadow:0 0 8px rgba(52,211,153,0.5)"></div></div>
+            <div class="s2-bar-wrap"><div class="s2-bar" style="height:60px;background:#34d399;box-shadow:0 0 8px rgba(52,211,153,0.5)"></div></div>
+            <div class="s2-bar-wrap"><div class="s2-bar" style="height:40px;background:rgba(52,211,153,0.3)"></div></div>
+            <div class="s2-bar-wrap"><div class="s2-bar" style="height:65px;background:#34d399;box-shadow:0 0 8px rgba(52,211,153,0.5)"></div></div>
+          </div>
+          <div class="s2-days">
+            <span class="s2-day-label">S</span><span class="s2-day-label">M</span>
+            <span class="s2-day-label">T</span><span class="s2-day-label">W</span>
+            <span class="s2-day-label">T</span><span class="s2-day-label">F</span>
+            <span class="s2-day-label">S</span>
+          </div>
+        </div>
+
+        <!-- Day detail rows -->
+        <div class="s2-day-row">
+          <div class="s2-day-name">Monday</div>
+          <div class="s2-day-val">108 mg/dL</div>
+          <div class="s2-day-spark">
+            <svg viewBox="0 0 80 30" preserveAspectRatio="none">
+              <path d="M0,20 C15,18 25,10 40,12 S65,8 80,10"
+                fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round"
+                style="filter:drop-shadow(0 0 3px rgba(52,211,153,0.6))"/>
+            </svg>
+          </div>
+        </div>
+        <div class="s2-day-row">
+          <div class="s2-day-name">Tuesday</div>
+          <div class="s2-day-val">125 mg/dL</div>
+          <div class="s2-day-spark">
+            <svg viewBox="0 0 80 30" preserveAspectRatio="none">
+              <path d="M0,22 C15,20 25,14 40,16 S60,12 80,8"
+                fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round"
+                style="filter:drop-shadow(0 0 3px rgba(52,211,153,0.6))"/>
+            </svg>
+          </div>
+        </div>
+        <div class="s2-day-row">
+          <div class="s2-day-name">Wednesday</div>
+          <div class="s2-day-val" style="color:#fb7185">145 mg/dL</div>
+          <div class="s2-day-spark">
+            <svg viewBox="0 0 80 30" preserveAspectRatio="none">
+              <path d="M0,18 C15,14 25,8 40,6 S60,10 80,16"
+                fill="none" stroke="#fb7185" stroke-width="2" stroke-linecap="round"
+                style="filter:drop-shadow(0 0 3px rgba(251,113,133,0.6))"/>
+            </svg>
+          </div>
+        </div>
+        <div class="s2-day-row">
+          <div class="s2-day-name">Thursday</div>
+          <div class="s2-day-val">115 mg/dL</div>
+          <div class="s2-day-spark">
+            <svg viewBox="0 0 80 30" preserveAspectRatio="none">
+              <path d="M0,22 C15,20 25,16 40,14 S65,12 80,14"
+                fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round"
+                style="filter:drop-shadow(0 0 3px rgba(52,211,153,0.6))"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Nav -->
+      <div class="bottom-nav">
+        <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+        <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">History</div></div>
+        <div class="nav-plus">+</div>
+        <div class="nav-item"><div class="nav-icon active" style="color:#7b61ff">📈</div><div class="nav-label active">Trends</div></div>
+        <div class="nav-item"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PHONE 3 — INSIGHTS ══════ -->
+  <div class="phone-wrap">
+    <div class="screen-label">Insights</div>
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-status">
+        <span>9:41</span>
+        <div class="status-icons"><span>▲▲▲</span><span>WiFi</span><span>▮</span></div>
+      </div>
+
+      <div class="phone-body">
+        <div class="s3-header">
+          <div>
+            <div class="s3-title">Insights</div>
+            <div class="s3-sub">This week</div>
+          </div>
+          <div class="s3-showall">Show all</div>
+        </div>
+
+        <!-- Body stats card -->
+        <div class="s3-body-card">
+          <div class="s3-body-title">Your Profile</div>
+          <div class="s3-body-content">
+            <div class="s3-human">🧍</div>
+            <div class="s3-stats-grid">
+              <div class="s3-stat">
+                <div class="s3-stat-val" style="color:#34d399;text-shadow:0 0 8px rgba(52,211,153,0.4)">165cm</div>
+                <div class="s3-stat-label">Height</div>
+              </div>
+              <div class="s3-stat">
+                <div class="s3-stat-val" style="color:#7b61ff;text-shadow:0 0 8px rgba(123,97,255,0.4)">70 kg</div>
+                <div class="s3-stat-label">Weight</div>
+              </div>
+              <div class="s3-stat">
+                <div class="s3-stat-val" style="color:#fb7185;text-shadow:0 0 8px rgba(251,113,133,0.4)">25.7</div>
+                <div class="s3-stat-label">BMI</div>
+              </div>
+              <div class="s3-stat">
+                <div class="s3-stat-val" style="color:#fbbf24;text-shadow:0 0 8px rgba(251,191,36,0.4)">3 🔥</div>
+                <div class="s3-stat-label">Day Streak</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trending chart card -->
+        <div class="s3-trend-card">
+          <div class="s3-trend-title">Glucose Trend</div>
+          <div class="s3-trend-chart">
+            <svg viewBox="0 0 238 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#7b61ff" stop-opacity="0.4"/>
+                  <stop offset="100%" stop-color="#7b61ff" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- Normal band -->
+              <rect x="0" y="30" width="238" height="35" fill="rgba(52,211,153,0.06)" rx="4"/>
+              <!-- Area fill -->
+              <path d="M0,70 C20,65 40,45 60,50 S100,30 120,25 S160,20 180,40 S210,60 238,35 V100 H0Z"
+                fill="url(#tg)"/>
+              <!-- Line -->
+              <path d="M0,70 C20,65 40,45 60,50 S100,30 120,25 S160,20 180,40 S210,60 238,35"
+                fill="none" stroke="#7b61ff" stroke-width="2.5" stroke-linecap="round"
+                style="filter:drop-shadow(0 0 5px rgba(123,97,255,0.7))"/>
+              <!-- Peak dot -->
+              <circle cx="120" cy="25" r="5" fill="#7b61ff" stroke="white" stroke-width="2"
+                style="filter:drop-shadow(0 0 6px rgba(123,97,255,0.8))"/>
+            </svg>
+          </div>
+          <div class="s3-day-labels">
+            <span class="s3-dl">Mon</span><span class="s3-dl">Tue</span>
+            <span class="s3-dl">Wed</span><span class="s3-dl">Thu</span>
+            <span class="s3-dl">Fri</span><span class="s3-dl">Sat</span>
+          </div>
+        </div>
+
+        <!-- Quick insight pills -->
+        <div class="s3-pills">
+          <div class="s3-pill">
+            <div class="s3-pill-dot g">🩸</div>
+            <div>
+              <div class="s3-pill-title">Glucose</div>
+              <div class="s3-pill-sub">Avg 115 mg/dL this week</div>
+            </div>
+            <div class="s3-pill-badge good">Normal</div>
+          </div>
+          <div class="s3-pill">
+            <div class="s3-pill-dot b">❤️</div>
+            <div>
+              <div class="s3-pill-title">Blood Pressure</div>
+              <div class="s3-pill-sub">Avg 132/82 this week</div>
+            </div>
+            <div class="s3-pill-badge warn">Elevated</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Nav -->
+      <div class="bottom-nav">
+        <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+        <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">History</div></div>
+        <div class="nav-plus">+</div>
+        <div class="nav-item"><div class="nav-icon">📈</div><div class="nav-label">Trends</div></div>
+        <div class="nav-item"><div class="nav-icon active" style="color:#7b61ff">👤</div><div class="nav-label active">Profile</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p style="text-align:center;margin-top:48px;font-size:12px;color:var(--text-secondary);transition:color 0.3s">
+  Toggle light/dark mode with the button above. Tell me which screens and elements you love — I'll build it in Flutter.
+</p>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeToggle');
+    const icon = document.getElementById('themeIcon');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      icon.textContent = '🌙';
+      btn.innerHTML = '<span id="themeIcon">🌙</span> Dark Mode';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.innerHTML = '<span id="themeIcon">☀️</span> Light Mode';
+    }
+  }
+</script>
+</body>
+</html>

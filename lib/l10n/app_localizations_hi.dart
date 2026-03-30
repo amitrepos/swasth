@@ -69,6 +69,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get passwordLabel => 'पासवर्ड';
 
   @override
+  String get rememberMe => 'मुझे याद रखें';
+
+  @override
   String get forgotPassword => 'पासवर्ड भूल गए?';
 
   @override

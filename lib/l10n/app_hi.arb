@@ -22,6 +22,7 @@
   "loginTitle": "लॉग इन",
   "emailLabel": "ईमेल",
   "passwordLabel": "पासवर्ड",
+  "rememberMe": "मुझे याद रखें",
   "forgotPassword": "पासवर्ड भूल गए?",
   "loginButton": "लॉग इन करें",
   "noAccount": "खाता नहीं है?",

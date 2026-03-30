@@ -35,7 +35,7 @@ class BleManager {
       BluetoothDevice device) async {
     print('BLE Manager: Connecting to device ${device.platformName} (${device.remoteId})');
     
-    await device.connect(autoConnect: false);
+    await device.connect(license: License.free, autoConnect: false);
     print('BLE Manager: Connected successfully');
     
     await Future.delayed(const Duration(milliseconds: 500));

@@ -22,6 +22,7 @@
   "loginTitle": "Login",
   "emailLabel": "Email",
   "passwordLabel": "Password",
+  "rememberMe": "Remember me",
   "forgotPassword": "Forgot Password?",
   "loginButton": "Login",
   "noAccount": "Don't have an account?",

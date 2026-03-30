@@ -30,7 +30,6 @@ class OcrService {
   static final _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
   /// Extract a glucose reading from a glucometer photo.
-  /// Returns null if no valid value could be parsed.
   static Future<OcrResult?> extractGlucose(File imageFile) async {
     final inputImage = InputImage.fromFile(imageFile);
     final recognized = await _textRecognizer.processImage(inputImage);
@@ -38,35 +37,19 @@ class OcrService {
 
     if (rawText.isEmpty) return null;
 
-    // Check for HI / LO special values
     final upperText = rawText.toUpperCase();
     if (upperText.contains(RegExp(r'\bHI\b'))) {
-      return OcrResult(
-        readingType: 'glucose',
-        glucoseValue: 600,
-        rawText: rawText,
-        isHiLo: true,
-      );
+      return OcrResult(readingType: 'glucose', glucoseValue: 600, rawText: rawText, isHiLo: true);
     }
     if (upperText.contains(RegExp(r'\bLO\b'))) {
-      return OcrResult(
-        readingType: 'glucose',
-        glucoseValue: 20,
-        rawText: rawText,
-        isHiLo: true,
-      );
+      return OcrResult(readingType: 'glucose', glucoseValue: 20, rawText: rawText, isHiLo: true);
     }
 
-    // Find all 2-3 digit numbers in the text
     final matches = RegExp(r'\b(\d{2,3})\b').allMatches(rawText);
     for (final match in matches) {
       final value = double.tryParse(match.group(1)!);
       if (value != null && value >= 20 && value <= 600) {
-        return OcrResult(
-          readingType: 'glucose',
-          glucoseValue: value,
-          rawText: rawText,
-        );
+        return OcrResult(readingType: 'glucose', glucoseValue: value, rawText: rawText);
       }
     }
 
@@ -74,7 +57,13 @@ class OcrService {
   }
 
   /// Extract systolic, diastolic, and pulse from a BP monitor photo.
-  /// Returns null if no valid values could be parsed.
+  ///
+  /// Tries multiple patterns because different BP monitors format readings
+  /// differently:
+  ///   - Pattern 1: "128/82"  (slash format — some monitors)
+  ///   - Pattern 2: Two numbers on separate lines (most Omron/Yuwell/A&D monitors)
+  ///   - Pattern 3: Numbers near SYS/DIA labels
+  ///   - Pattern 4: Pick the two most plausible numbers from all detected numbers
   static Future<OcrResult?> extractBloodPressure(File imageFile) async {
     final inputImage = InputImage.fromFile(imageFile);
     final recognized = await _textRecognizer.processImage(inputImage);
@@ -82,39 +71,125 @@ class OcrService {
 
     if (rawText.isEmpty) return null;
 
-    // Primary pattern: systolic/diastolic (e.g. "128/82" or "128 / 82")
-    final bpMatch = RegExp(r'(\d{2,3})\s*/\s*(\d{2,3})').firstMatch(rawText);
-    if (bpMatch != null) {
-      final systolic = double.tryParse(bpMatch.group(1)!);
-      final diastolic = double.tryParse(bpMatch.group(2)!);
-
-      if (systolic != null && diastolic != null &&
-          systolic >= 60 && systolic <= 250 &&
-          diastolic >= 40 && diastolic <= 150) {
-        // Try to find pulse: a 2-3 digit number NOT already used as systolic/diastolic
-        double? pulse;
-        final usedValues = {systolic.toInt(), diastolic.toInt()};
-        final allNumbers = RegExp(r'\b(\d{2,3})\b').allMatches(rawText);
-        for (final m in allNumbers) {
-          final v = double.tryParse(m.group(1)!);
-          if (v != null && !usedValues.contains(v.toInt()) &&
-              v >= 30 && v <= 200) {
-            pulse = v;
-            break;
-          }
-        }
-
+    // ── Pattern 1: "128/82" or "128 / 82" (slash separator) ─────────────────
+    final slashMatch = RegExp(r'(\d{2,3})\s*/\s*(\d{2,3})').firstMatch(rawText);
+    if (slashMatch != null) {
+      final sys = double.tryParse(slashMatch.group(1)!);
+      final dia = double.tryParse(slashMatch.group(2)!);
+      if (_validBP(sys, dia)) {
         return OcrResult(
           readingType: 'blood_pressure',
-          systolic: systolic,
-          diastolic: diastolic,
-          pulse: pulse,
+          systolic: sys,
+          diastolic: dia,
+          pulse: _extractPulse(rawText, sys!, dia!),
           rawText: rawText,
         );
       }
     }
 
+    // ── Pattern 2: SYS / DIA label-adjacent numbers ──────────────────────────
+    // Many monitors print "SYS 128  DIA 82" or "SYS\n128\nDIA\n82"
+    final upperText = rawText.toUpperCase();
+    final sysLabelMatch = RegExp(r'SYS[^\d]{0,6}(\d{2,3})').firstMatch(upperText);
+    final diaLabelMatch = RegExp(r'DIA[^\d]{0,6}(\d{2,3})').firstMatch(upperText);
+    if (sysLabelMatch != null && diaLabelMatch != null) {
+      final sys = double.tryParse(sysLabelMatch.group(1)!);
+      final dia = double.tryParse(diaLabelMatch.group(1)!);
+      if (_validBP(sys, dia)) {
+        return OcrResult(
+          readingType: 'blood_pressure',
+          systolic: sys,
+          diastolic: dia,
+          pulse: _extractPulse(rawText, sys!, dia!),
+          rawText: rawText,
+        );
+      }
+    }
+
+    // ── Pattern 3: Two numbers on separate lines ──────────────────────────────
+    // Most digital BP monitors show systolic on one line, diastolic on the next.
+    // e.g. Omron HEM-7140T:
+    //   128
+    //    82
+    //   ♥ 72
+    final lines = rawText.split(RegExp(r'[\n\r]+')).map((l) => l.trim()).toList();
+    final lineNumbers = <double>[];
+    for (final line in lines) {
+      final m = RegExp(r'\b(\d{2,3})\b').firstMatch(line);
+      if (m != null) {
+        final v = double.tryParse(m.group(1)!);
+        if (v != null) lineNumbers.add(v);
+      }
+    }
+
+    // Slide a window of 2 over line-numbers looking for a valid sys+dia pair
+    for (int i = 0; i < lineNumbers.length - 1; i++) {
+      final a = lineNumbers[i];
+      final b = lineNumbers[i + 1];
+      if (_validBP(a, b)) {
+        return OcrResult(
+          readingType: 'blood_pressure',
+          systolic: a,
+          diastolic: b,
+          pulse: _extractPulse(rawText, a, b),
+          rawText: rawText,
+        );
+      }
+    }
+
+    // ── Pattern 4: All numbers — pick best systolic + diastolic candidate ────
+    // Last resort: collect every 2-3 digit number and try all pairs
+    final allNums = RegExp(r'\b(\d{2,3})\b')
+        .allMatches(rawText)
+        .map((m) => double.tryParse(m.group(1)!))
+        .whereType<double>()
+        .toList();
+
+    final sysCandidates = allNums.where((v) => v >= 90 && v <= 200).toList();
+    final diaCandidates = allNums.where((v) => v >= 50 && v <= 130).toList();
+
+    for (final sys in sysCandidates) {
+      for (final dia in diaCandidates) {
+        if (sys != dia && sys > dia && _validBP(sys, dia)) {
+          return OcrResult(
+            readingType: 'blood_pressure',
+            systolic: sys,
+            diastolic: dia,
+            pulse: _extractPulse(rawText, sys, dia),
+            rawText: rawText,
+          );
+        }
+      }
+    }
+
+    // Nothing matched — return empty result so caller can show "try again"
     return OcrResult(readingType: 'blood_pressure', rawText: rawText);
+  }
+
+  /// Returns true when systolic and diastolic are physiologically plausible.
+  static bool _validBP(double? sys, double? dia) {
+    if (sys == null || dia == null) return false;
+    return sys >= 70 && sys <= 250 &&
+        dia >= 40 && dia <= 150 &&
+        sys > dia;
+  }
+
+  /// Finds a plausible pulse value from the raw text, excluding already-used numbers.
+  static double? _extractPulse(String rawText, double sys, double dia) {
+    final usedInts = {sys.toInt(), dia.toInt()};
+    // Check for pulse/heart-rate label first
+    final pulseLabel = RegExp(r'(?:PULSE|HEART|♥|HR)[^\d]{0,6}(\d{2,3})', caseSensitive: false)
+        .firstMatch(rawText);
+    if (pulseLabel != null) {
+      final v = double.tryParse(pulseLabel.group(1)!);
+      if (v != null && v >= 30 && v <= 200) return v;
+    }
+    // Fall back: first 2-3 digit number in valid pulse range not already used
+    for (final m in RegExp(r'\b(\d{2,3})\b').allMatches(rawText)) {
+      final v = double.tryParse(m.group(1)!);
+      if (v != null && !usedInts.contains(v.toInt()) && v >= 30 && v <= 200) return v;
+    }
+    return null;
   }
 
   static void dispose() {

@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../services/ocr_service.dart';
 import 'api_client.dart';
 
 class HealthReading {
@@ -262,6 +264,54 @@ class HealthReadingService {
       return '';
     } catch (_) {
       return '';
+    }
+  }
+
+  /// Send a device photo to the backend and use Gemini Vision to extract
+  /// the reading values. Returns an OcrResult on success, null on failure.
+  /// Caller should fall back to local OCR when null is returned.
+  Future<OcrResult?> parseImageWithGemini(
+    File imageFile,
+    String deviceType,
+    String token,
+  ) async {
+    try {
+      final uri = Uri.parse('$baseUrl/readings/parse-image?device_type=$deviceType');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll(ApiClient.headers(token: token))
+        ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+
+      final streamed = await request.send().timeout(const Duration(seconds: 20));
+      final response = await http.Response.fromStream(streamed);
+
+      if (response.statusCode != 200) return null;
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data.containsKey('error')) return null;
+
+      if (deviceType == 'blood_pressure') {
+        final sys = (data['systolic'] as num?)?.toDouble();
+        final dia = (data['diastolic'] as num?)?.toDouble();
+        final pulse = (data['pulse'] as num?)?.toDouble();
+        if (sys == null || dia == null) return null;
+        return OcrResult(
+          readingType: 'blood_pressure',
+          systolic: sys,
+          diastolic: dia,
+          pulse: pulse,
+          rawText: 'Gemini: $sys/$dia mmHg${pulse != null ? ' ♥$pulse' : ''}',
+        );
+      } else {
+        final glucose = (data['glucose'] as num?)?.toDouble();
+        if (glucose == null) return null;
+        return OcrResult(
+          readingType: 'glucose',
+          glucoseValue: glucose,
+          rawText: 'Gemini: $glucose mg/dL',
+        );
+      }
+    } catch (_) {
+      return null;
     }
   }
 

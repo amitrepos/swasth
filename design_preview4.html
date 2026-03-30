@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swasth — Current App in Design3 Theme</title>
+<style>
+/* ── DESIGN3 THEME TOKENS ───────────────────────────────── */
+[data-theme="dark"] {
+  --bg-page:        #0e0e1a;
+  --bg-phone:       #13131f;
+  --bg-card:        #1c1c2e;
+  --bg-card2:       #22223a;
+  --bg-pill:        #252540;
+  --border:         rgba(255,255,255,0.07);
+  --text-primary:   #ffffff;
+  --text-secondary: rgba(255,255,255,0.5);
+  --text-tertiary:  rgba(255,255,255,0.28);
+  --nav-bg:         #1a1a2e;
+  --nav-border:     rgba(255,255,255,0.06);
+  --card-shadow:    0 4px 20px rgba(0,0,0,0.4);
+  --btn-shadow:     0 8px 24px rgba(123,97,255,0.5);
+  --phone-bezel:    #0a0a14;
+  --shadow-phone:   0 40px 100px rgba(0,0,0,0.7), 0 0 0 8px #0a0a14, 0 0 0 10px #1a1a2e;
+  --toggle-bg:      #1c1c2e;
+  --appbar-bg:      #13131f;
+}
+[data-theme="light"] {
+  --bg-page:        #e8eaf2;
+  --bg-phone:       #f2f3f8;
+  --bg-card:        #ffffff;
+  --bg-card2:       #f7f7fc;
+  --bg-pill:        #eeeef6;
+  --border:         rgba(0,0,0,0.07);
+  --text-primary:   #111127;
+  --text-secondary: rgba(17,17,39,0.5);
+  --text-tertiary:  rgba(17,17,39,0.28);
+  --nav-bg:         #ffffff;
+  --nav-border:     rgba(0,0,0,0.07);
+  --card-shadow:    0 4px 20px rgba(0,0,0,0.08);
+  --btn-shadow:     0 8px 24px rgba(123,97,255,0.35);
+  --phone-bezel:    #c8cad8;
+  --shadow-phone:   0 40px 100px rgba(0,0,0,0.18), 0 0 0 8px #c8cad8, 0 0 0 10px #d8dae8;
+  --toggle-bg:      #e0e0f0;
+  --appbar-bg:      #f7f7fc;
+}
+
+/* ── DESIGN3 ACCENT PALETTE (replaces iOS AppColors) ────── */
+:root {
+  --accent:        #7b61ff;   /* primary purple (was iOS blue) */
+  --accent2:       #a855f7;   /* gradient end */
+  --glucose:       #34d399;   /* emerald (was #FF9F0A orange) */
+  --bp:            #fb7185;   /* rose (was #FF2D55 red) */
+  --normal:        #34d399;   /* good/normal green */
+  --elevated:      #fbbf24;   /* warning amber */
+  --critical:      #f87171;   /* danger red */
+  --streak:        #7b61ff;   /* purple streak */
+  --insight:       #60a5fa;   /* blue insight */
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+  background: var(--bg-page);
+  padding: 40px 20px 80px;
+  min-height: 100vh;
+  transition: background 0.4s;
+}
+
+/* ── PAGE HEADER ─────────────────────────────────────────── */
+.page-header {
+  display: flex; align-items: center; justify-content: center;
+  gap: 20px; margin-bottom: 6px;
+}
+h1 {
+  font-size: 28px; font-weight: 800;
+  color: var(--text-primary); letter-spacing: -0.5px;
+  transition: color 0.3s;
+}
+.subtitle {
+  text-align: center; color: var(--text-secondary);
+  margin-bottom: 10px; font-size: 13px; transition: color 0.3s;
+}
+.legend-row {
+  display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; color: var(--text-secondary);
+}
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.toggle-btn {
+  background: var(--toggle-bg); border: 1px solid var(--border);
+  border-radius: 30px; padding: 8px 16px; font-size: 13px; font-weight: 700;
+  color: var(--text-primary); cursor: pointer;
+  display: flex; align-items: center; gap: 8px; transition: all 0.3s;
+  box-shadow: var(--card-shadow);
+}
+.toggle-btn:hover { transform: scale(1.03); }
+
+/* ── PHONE GRID ──────────────────────────────────────────── */
+.phones-row {
+  display: flex; gap: 32px; justify-content: center;
+  flex-wrap: wrap; align-items: flex-start;
+}
+.phone-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
+.screen-label {
+  font-size: 12px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-secondary);
+}
+
+/* ── PHONE SHELL ─────────────────────────────────────────── */
+.phone {
+  width: 270px;
+  background: var(--bg-phone);
+  border-radius: 44px;
+  box-shadow: var(--shadow-phone);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: background 0.4s, box-shadow 0.4s;
+  position: relative;
+  height: 560px;
+}
+.phone-notch {
+  width: 90px; height: 26px;
+  background: var(--phone-bezel);
+  border-radius: 0 0 18px 18px;
+  position: absolute; left: 50%; transform: translateX(-50%); top: 0;
+  z-index: 10;
+}
+.phone-status {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 20px 0; font-size: 11px; font-weight: 600;
+  color: var(--text-primary); margin-top: 8px; transition: color 0.3s;
+}
+.status-icons { display: flex; gap: 4px; font-size: 10px; }
+.phone-body { flex: 1; overflow: hidden; padding-bottom: 64px; }
+
+/* ── APP BAR ─────────────────────────────────────────────── */
+.app-bar {
+  background: var(--appbar-bg);
+  border-bottom: 0.5px solid var(--border);
+  padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: background 0.4s;
+}
+.app-bar-title {
+  font-size: 16px; font-weight: 700;
+  color: var(--text-primary); transition: color 0.3s;
+}
+.app-bar-actions { display: flex; gap: 10px; }
+.app-bar-icon { font-size: 18px; opacity: 0.8; }
+
+/* ── BOTTOM NAV ──────────────────────────────────────────── */
+.bottom-nav {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 64px;
+  background: var(--nav-bg);
+  border-top: 0.5px solid var(--nav-border);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 10px; transition: background 0.4s;
+}
+.nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; }
+.nav-icon { font-size: 18px; opacity: 0.4; }
+.nav-icon.active { opacity: 1; }
+.nav-label { font-size: 8px; font-weight: 600; color: var(--text-secondary); }
+.nav-label.active { color: var(--accent); }
+.nav-fab {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #fff;
+  box-shadow: 0 4px 16px rgba(123,97,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+  margin-top: -14px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SCREEN 1 — HOME
+══════════════════════════════════════════════════════════ */
+.s1-greeting-row {
+  padding: 36px 16px 12px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.s1-name { font-size: 22px; font-weight: 800; color: var(--text-primary); line-height: 1.1; transition: color 0.3s; }
+.s1-date { font-size: 12px; color: var(--text-secondary); margin-top: 3px; transition: color 0.3s; }
+.s1-profile-badge {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: #fff; font-weight: 700;
+}
+
+/* Health Score Card */
+.score-card {
+  margin: 0 12px 10px;
+  background: var(--bg-card);
+  border-radius: 22px; padding: 16px;
+  border: 0.5px solid var(--border);
+  box-shadow: var(--card-shadow);
+  display: flex; align-items: center; gap: 14px;
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.score-ring-wrap { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
+.score-ring-wrap svg { width: 88px; height: 88px; }
+.score-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  text-align: center;
+}
+.score-number { font-size: 22px; font-weight: 800; color: var(--normal); line-height: 1; }
+.score-label { font-size: 9px; color: var(--text-tertiary); font-weight: 600; }
+.score-info { flex: 1; }
+.score-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; transition: color 0.3s; }
+.score-insight {
+  font-size: 10px; color: var(--insight);
+  background: rgba(96,165,250,0.1); border-radius: 8px;
+  padding: 5px 8px; margin-bottom: 8px; line-height: 1.4;
+}
+.streak-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(123,97,255,0.15); border: 1px solid rgba(123,97,255,0.3);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 10px; font-weight: 700; color: var(--accent);
+}
+.vitals-row {
+  display: flex; gap: 8px; margin-top: 8px;
+}
+.vital-chip {
+  flex: 1; background: rgba(255,255,255,0.05);
+  border: 0.5px solid var(--border); border-radius: 10px;
+  padding: 5px 6px; text-align: center;
+}
+.vital-chip-val { font-size: 11px; font-weight: 700; line-height: 1.2; }
+.vital-chip-label { font-size: 8px; color: var(--text-tertiary); font-weight: 600; }
+
+/* Quick actions */
+.section-label {
+  padding: 4px 16px 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  color: var(--text-secondary); text-transform: uppercase;
+  transition: color 0.3s;
+}
+.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 12px 10px; }
+.qa-card {
+  background: var(--bg-card); border-radius: 16px; padding: 12px;
+  border: 0.5px solid var(--border); box-shadow: var(--card-shadow);
+  display: flex; align-items: center; gap: 8px;
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.qa-icon {
+  width: 32px; height: 32px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.qa-title { font-size: 11px; font-weight: 700; color: var(--text-primary); line-height: 1.2; transition: color 0.3s; }
+.qa-sub { font-size: 9px; color: var(--text-secondary); transition: color 0.3s; }
+
+/* Log button */
+.log-btn {
+  margin: 0 12px 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; font-size: 13px; font-weight: 700;
+  border: none; border-radius: 28px; padding: 13px;
+  cursor: pointer; text-align: center;
+  box-shadow: var(--btn-shadow), inset 0 1px 0 rgba(255,255,255,0.2);
+  letter-spacing: 0.3px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SCREEN 2 — TREND CHARTS
+══════════════════════════════════════════════════════════ */
+.s2-tab-bar {
+  display: flex; margin: 8px 12px 10px;
+  background: var(--bg-pill); border-radius: 12px; padding: 3px;
+}
+.s2-tab {
+  flex: 1; text-align: center; padding: 6px;
+  font-size: 11px; font-weight: 700; border-radius: 10px;
+  color: var(--text-secondary); transition: all 0.2s;
+}
+.s2-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(123,97,255,0.4);
+}
+
+.s2-chart-card {
+  margin: 0 12px 10px;
+  background: var(--bg-card); border-radius: 20px; padding: 14px;
+  border: 0.5px solid var(--border); box-shadow: var(--card-shadow);
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.s2-chart-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+}
+.s2-chart-title { font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; transition: color 0.3s; }
+.s2-chart-dot { width: 9px; height: 9px; border-radius: 50%; }
+.s2-range-badge {
+  font-size: 9px; font-weight: 700; padding: 3px 8px;
+  border-radius: 20px; background: rgba(52,211,153,0.12);
+  color: var(--normal);
+}
+
+.s2-stats-row {
+  display: flex; gap: 8px; margin-top: 10px;
+}
+.s2-stat {
+  flex: 1; background: var(--bg-card2); border-radius: 10px;
+  padding: 6px 8px; text-align: center;
+}
+.s2-stat-val { font-size: 12px; font-weight: 800; color: var(--text-primary); transition: color 0.3s; }
+.s2-stat-label { font-size: 8px; color: var(--text-tertiary); font-weight: 600; }
+
+/* ══════════════════════════════════════════════════════════
+   SCREEN 3 — HISTORY
+══════════════════════════════════════════════════════════ */
+.s3-filter-row {
+  display: flex; gap: 6px; margin: 8px 12px 10px; overflow: hidden;
+}
+.filter-chip {
+  padding: 5px 12px; border-radius: 20px;
+  font-size: 10px; font-weight: 700; flex-shrink: 0;
+  border: 1px solid var(--border);
+  color: var(--text-secondary); background: var(--bg-pill);
+  transition: all 0.2s;
+}
+.filter-chip.active {
+  background: rgba(123,97,255,0.15);
+  border-color: rgba(123,97,255,0.4);
+  color: var(--accent);
+}
+
+.history-item {
+  margin: 0 12px 6px;
+  background: var(--bg-card); border-radius: 16px; padding: 12px 14px;
+  border: 0.5px solid var(--border); box-shadow: var(--card-shadow);
+  display: flex; align-items: center; gap: 10px;
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.history-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.history-main { flex: 1; }
+.history-type { font-size: 11px; font-weight: 700; color: var(--text-primary); transition: color 0.3s; }
+.history-meta { font-size: 10px; color: var(--text-secondary); margin-top: 1px; transition: color 0.3s; }
+.history-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.history-val { font-size: 13px; font-weight: 800; color: var(--text-primary); transition: color 0.3s; }
+.status-pill {
+  font-size: 9px; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px;
+}
+.pill-normal { background: rgba(52,211,153,0.12); color: var(--normal); }
+.pill-elevated { background: rgba(251,191,36,0.12); color: var(--elevated); }
+.pill-high { background: rgba(248,113,113,0.12); color: var(--critical); }
+
+/* ══════════════════════════════════════════════════════════
+   SCREEN 4 — LOG READING (Modal)
+══════════════════════════════════════════════════════════ */
+.modal-sheet {
+  background: var(--bg-card); border-radius: 24px 24px 0 0;
+  padding: 16px;
+  position: absolute; bottom: 64px; left: 0; right: 0;
+  border-top: 0.5px solid var(--border);
+  transition: background 0.4s;
+}
+.modal-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 0 auto 14px;
+}
+.modal-title { font-size: 15px; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; transition: color 0.3s; }
+.modal-option {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-card2); border-radius: 14px; padding: 12px;
+  margin-bottom: 8px; border: 0.5px solid var(--border);
+}
+.modal-opt-icon {
+  width: 36px; height: 36px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.modal-opt-title { font-size: 12px; font-weight: 700; color: var(--text-primary); transition: color 0.3s; }
+.modal-opt-sub { font-size: 10px; color: var(--text-secondary); transition: color 0.3s; }
+.modal-opt-arrow { margin-left: auto; font-size: 14px; color: var(--text-tertiary); }
+
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Swasth — Current App</h1>
+  <button class="toggle-btn" onclick="toggleTheme()" id="themeToggle">
+    <span id="themeIcon">☀️</span> Light Mode
+  </button>
+</div>
+<p class="subtitle">Current app screens · Restyled with Design3 color palette &amp; typography</p>
+
+<div class="legend-row">
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#34d399; box-shadow:0 0 5px rgba(52,211,153,0.6)"></div>
+    Glucose (was #FF9F0A orange)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#fb7185; box-shadow:0 0 5px rgba(251,113,133,0.6)"></div>
+    Blood Pressure (was #FF2D55 red)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#7b61ff; box-shadow:0 0 5px rgba(123,97,255,0.6)"></div>
+    Primary / Streak (was iOS blue)
+  </div>
+</div>
+
+<div class="phones-row">
+
+<!-- ══════ PHONE 1 — HOME SCREEN ══════ -->
+<div class="phone-wrap">
+  <div class="screen-label">Home Screen</div>
+  <div class="phone">
+    <div class="phone-notch"></div>
+    <div class="phone-status">
+      <span>9:41</span>
+      <div class="status-icons"><span>▲▲▲</span><span>WiFi</span><span>▮</span></div>
+    </div>
+
+    <div class="phone-body">
+      <!-- App Bar -->
+      <div class="app-bar">
+        <div class="app-bar-title">Swasth</div>
+        <div class="app-bar-actions">
+          <span class="app-bar-icon">👥</span>
+          <span class="app-bar-icon">👤</span>
+        </div>
+      </div>
+
+      <!-- Greeting -->
+      <div class="s1-greeting-row">
+        <div>
+          <div class="s1-name">Hello, Amar 👋</div>
+          <div class="s1-date">Saturday · March 28, 2026</div>
+        </div>
+        <div class="s1-profile-badge">A</div>
+      </div>
+
+      <!-- Health Score Card (C18 + C19 + C20) -->
+      <div class="score-card">
+        <!-- SVG score ring -->
+        <div class="score-ring-wrap">
+          <svg viewBox="0 0 88 88">
+            <!-- Track -->
+            <circle cx="44" cy="44" r="36" fill="none"
+              stroke="rgba(52,211,153,0.12)" stroke-width="8"/>
+            <!-- Fill — 72 score = 72% -->
+            <circle cx="44" cy="44" r="36" fill="none"
+              stroke="#34d399" stroke-width="8"
+              stroke-dasharray="226.2" stroke-dashoffset="63.3"
+              stroke-linecap="round" transform="rotate(-90 44 44)"
+              style="filter:drop-shadow(0 0 6px rgba(52,211,153,0.6))"/>
+          </svg>
+          <div class="score-center">
+            <div class="score-number">72</div>
+            <div class="score-label">SCORE</div>
+          </div>
+        </div>
+
+        <div class="score-info">
+          <div class="score-title">Health Score</div>
+          <div class="score-insight">💡 BP stable 5 days — great job! Keep logging daily.</div>
+          <div class="streak-badge">🔥 5-day streak</div>
+          <!-- Today's vitals -->
+          <div class="vitals-row">
+            <div class="vital-chip">
+              <div class="vital-chip-val" style="color:#34d399">110</div>
+              <div class="vital-chip-label">Glucose</div>
+            </div>
+            <div class="vital-chip">
+              <div class="vital-chip-val" style="color:#fb7185">128/82</div>
+              <div class="vital-chip-label">BP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions grid -->
+      <div class="section-label">Quick Actions</div>
+      <div class="quick-actions">
+        <div class="qa-card">
+          <div class="qa-icon" style="background:rgba(52,211,153,0.12)">📷</div>
+          <div>
+            <div class="qa-title">Scan with Camera</div>
+            <div class="qa-sub">Glucose · BP</div>
+          </div>
+        </div>
+        <div class="qa-card">
+          <div class="qa-icon" style="background:rgba(123,97,255,0.12)">📊</div>
+          <div>
+            <div class="qa-title">View Trends</div>
+            <div class="qa-sub">7 · 30 days</div>
+          </div>
+        </div>
+        <div class="qa-card">
+          <div class="qa-icon" style="background:rgba(251,113,133,0.12)">📶</div>
+          <div>
+            <div class="qa-title">Connect Device</div>
+            <div class="qa-sub">BLE glucometer</div>
+          </div>
+        </div>
+        <div class="qa-card">
+          <div class="qa-icon" style="background:rgba(251,191,36,0.12)">🕐</div>
+          <div>
+            <div class="qa-title">History</div>
+            <div class="qa-sub">All readings</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="log-btn">+ Log New Reading</div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+      <div class="nav-item">
+        <div class="nav-icon active" style="color:#7b61ff">🏠</div>
+        <div class="nav-label active">Home</div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">📋</div>
+        <div class="nav-label">History</div>
+      </div>
+      <div class="nav-fab">+</div>
+      <div class="nav-item">
+        <div class="nav-icon">📊</div>
+        <div class="nav-label">Trends</div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">⚙️</div>
+        <div class="nav-label">Settings</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PHONE 2 — TREND CHARTS ══════ -->
+<div class="phone-wrap">
+  <div class="screen-label">Trend Charts</div>
+  <div class="phone">
+    <div class="phone-notch"></div>
+    <div class="phone-status">
+      <span>9:41</span>
+      <div class="status-icons"><span>▲▲▲</span><span>WiFi</span><span>▮</span></div>
+    </div>
+
+    <div class="phone-body">
+      <div class="app-bar">
+        <div class="app-bar-title">Trends</div>
+        <span class="app-bar-icon">⬅</span>
+      </div>
+
+      <!-- 7 / 30 day tab -->
+      <div class="s2-tab-bar">
+        <div class="s2-tab active">7 Days</div>
+        <div class="s2-tab">30 Days</div>
+        <div class="s2-tab">Correlation</div>
+      </div>
+
+      <!-- Glucose chart card -->
+      <div class="s2-chart-card">
+        <div class="s2-chart-header">
+          <div class="s2-chart-title">
+            <div class="s2-chart-dot" style="background:#34d399; box-shadow:0 0 5px rgba(52,211,153,0.7)"></div>
+            Glucose
+          </div>
+          <div class="s2-range-badge">Target 70–130</div>
+        </div>
+        <!-- Glucose SVG line chart -->
+        <svg viewBox="0 0 238 80" style="width:100%;height:80px;">
+          <defs>
+            <linearGradient id="gGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#34d399" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Normal band 70-130 shaded area (approx y 30-60) -->
+          <rect x="0" y="28" width="238" height="32" fill="rgba(52,211,153,0.06)" rx="2"/>
+          <!-- Normal band border lines -->
+          <line x1="0" y1="28" x2="238" y2="28" stroke="rgba(52,211,153,0.2)" stroke-width="0.5" stroke-dasharray="3,3"/>
+          <line x1="0" y1="60" x2="238" y2="60" stroke="rgba(52,211,153,0.2)" stroke-width="0.5" stroke-dasharray="3,3"/>
+          <!-- Area fill -->
+          <path d="M4,52 C38,48 72,35 106,38 C140,41 174,30 208,25 L208,80 L4,80Z"
+            fill="url(#gGrad)"/>
+          <!-- Line -->
+          <path d="M4,52 C38,48 72,35 106,38 C140,41 174,30 208,25"
+            fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+            style="filter:drop-shadow(0 0 4px rgba(52,211,153,0.6))"/>
+          <!-- Data points -->
+          <circle cx="4" cy="52" r="3.5" fill="#34d399" style="filter:drop-shadow(0 0 4px rgba(52,211,153,0.8))"/>
+          <circle cx="38" cy="48" r="3.5" fill="#34d399" style="filter:drop-shadow(0 0 4px rgba(52,211,153,0.8))"/>
+          <circle cx="72" cy="35" r="3.5" fill="#fbbf24" style="filter:drop-shadow(0 0 4px rgba(251,191,36,0.8))"/>
+          <circle cx="106" cy="38" r="3.5" fill="#34d399" style="filter:drop-shadow(0 0 4px rgba(52,211,153,0.8))"/>
+          <circle cx="140" cy="41" r="3.5" fill="#34d399" style="filter:drop-shadow(0 0 4px rgba(52,211,153,0.8))"/>
+          <circle cx="174" cy="30" r="3.5" fill="#f87171" style="filter:drop-shadow(0 0 4px rgba(248,113,113,0.8))"/>
+          <circle cx="208" cy="25" r="3.5" fill="#34d399" style="filter:drop-shadow(0 0 4px rgba(52,211,153,0.8))"/>
+          <!-- Day labels -->
+          <text x="4"   y="76" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Mon</text>
+          <text x="38"  y="76" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Tue</text>
+          <text x="72"  y="76" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Wed</text>
+          <text x="106" y="76" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Thu</text>
+          <text x="140" y="76" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Fri</text>
+          <text x="174" y="76" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Sat</text>
+          <text x="208" y="76" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Sun</text>
+        </svg>
+        <!-- Stats -->
+        <div class="s2-stats-row">
+          <div class="s2-stat">
+            <div class="s2-stat-val" style="color:#34d399">108</div>
+            <div class="s2-stat-label">Avg mg/dL</div>
+          </div>
+          <div class="s2-stat">
+            <div class="s2-stat-val">89</div>
+            <div class="s2-stat-label">Min</div>
+          </div>
+          <div class="s2-stat">
+            <div class="s2-stat-val" style="color:#f87171">148</div>
+            <div class="s2-stat-label">Max</div>
+          </div>
+          <div class="s2-stat">
+            <div class="s2-stat-val" style="color:#34d399">71%</div>
+            <div class="s2-stat-label">In Range</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BP chart card -->
+      <div class="s2-chart-card">
+        <div class="s2-chart-header">
+          <div class="s2-chart-title">
+            <div class="s2-chart-dot" style="background:#fb7185; box-shadow:0 0 5px rgba(251,113,133,0.7)"></div>
+            Blood Pressure
+          </div>
+          <div style="display:flex;gap:6px;">
+            <span style="font-size:9px;font-weight:700;color:#fb7185">SYS</span>
+            <span style="font-size:9px;font-weight:700;color:rgba(251,113,133,0.5)">DIA</span>
+          </div>
+        </div>
+        <!-- BP SVG chart (systolic + diastolic) -->
+        <svg viewBox="0 0 238 72" style="width:100%;height:72px;">
+          <defs>
+            <linearGradient id="bpGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fb7185" stop-opacity="0.2"/>
+              <stop offset="100%" stop-color="#fb7185" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Normal band -->
+          <rect x="0" y="20" width="238" height="28" fill="rgba(52,211,153,0.04)" rx="2"/>
+          <line x1="0" y1="20" x2="238" y2="20" stroke="rgba(52,211,153,0.15)" stroke-width="0.5" stroke-dasharray="3,3"/>
+          <!-- Systolic area -->
+          <path d="M4,38 C38,34 72,28 106,32 C140,36 174,25 208,22 L208,68 L4,68Z" fill="url(#bpGrad)"/>
+          <!-- Systolic line -->
+          <path d="M4,38 C38,34 72,28 106,32 C140,36 174,25 208,22"
+            fill="none" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round"
+            style="filter:drop-shadow(0 0 4px rgba(251,113,133,0.5))"/>
+          <!-- Diastolic line -->
+          <path d="M4,50 C38,48 72,44 106,46 C140,48 174,42 208,40"
+            fill="none" stroke="rgba(251,113,133,0.45)" stroke-width="2" stroke-linecap="round" stroke-dasharray="5,2"/>
+          <!-- Systolic dots -->
+          <circle cx="4"   cy="38" r="3" fill="#fb7185"/>
+          <circle cx="72"  cy="28" r="3" fill="#fb7185"/>
+          <circle cx="140" cy="36" r="3" fill="#fb7185"/>
+          <circle cx="208" cy="22" r="3" fill="#f87171" style="filter:drop-shadow(0 0 5px rgba(248,113,113,0.9))"/>
+          <!-- Labels -->
+          <text x="4"   y="68" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Mon</text>
+          <text x="72"  y="68" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Wed</text>
+          <text x="140" y="68" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Fri</text>
+          <text x="208" y="68" fill="rgba(255,255,255,0.3)" font-size="8" font-weight="600" text-anchor="middle">Sun</text>
+        </svg>
+        <div class="s2-stats-row">
+          <div class="s2-stat">
+            <div class="s2-stat-val" style="color:#fb7185">126</div>
+            <div class="s2-stat-label">Avg SYS</div>
+          </div>
+          <div class="s2-stat">
+            <div class="s2-stat-val">80</div>
+            <div class="s2-stat-label">Avg DIA</div>
+          </div>
+          <div class="s2-stat">
+            <div class="s2-stat-val" style="color:#34d399">85%</div>
+            <div class="s2-stat-label">In Range</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+      <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">History</div></div>
+      <div class="nav-fab">+</div>
+      <div class="nav-item"><div class="nav-icon active" style="color:#7b61ff">📊</div><div class="nav-label active">Trends</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PHONE 3 — HISTORY SCREEN ══════ -->
+<div class="phone-wrap">
+  <div class="screen-label">Reading History</div>
+  <div class="phone">
+    <div class="phone-notch"></div>
+    <div class="phone-status">
+      <span>9:41</span>
+      <div class="status-icons"><span>▲▲▲</span><span>WiFi</span><span>▮</span></div>
+    </div>
+
+    <div class="phone-body">
+      <div class="app-bar">
+        <div class="app-bar-title">History</div>
+        <span class="app-bar-icon">🔍</span>
+      </div>
+
+      <!-- Filter chips -->
+      <div class="s3-filter-row">
+        <div class="filter-chip active">All</div>
+        <div class="filter-chip">Glucose</div>
+        <div class="filter-chip">Blood Pressure</div>
+      </div>
+
+      <!-- Reading rows -->
+      <div class="history-item">
+        <div class="history-icon" style="background:rgba(52,211,153,0.12)">🩸</div>
+        <div class="history-main">
+          <div class="history-type">Glucose</div>
+          <div class="history-meta">Today · 8:12 AM · Fasting</div>
+        </div>
+        <div class="history-right">
+          <div class="history-val" style="color:#34d399">110 mg/dL</div>
+          <div class="status-pill pill-normal">NORMAL</div>
+        </div>
+      </div>
+
+      <div class="history-item">
+        <div class="history-icon" style="background:rgba(251,113,133,0.12)">💓</div>
+        <div class="history-main">
+          <div class="history-type">Blood Pressure</div>
+          <div class="history-meta">Today · 8:14 AM</div>
+        </div>
+        <div class="history-right">
+          <div class="history-val" style="color:#fb7185">128/82</div>
+          <div class="status-pill pill-elevated">ELEVATED</div>
+        </div>
+      </div>
+
+      <div class="history-item">
+        <div class="history-icon" style="background:rgba(52,211,153,0.12)">🩸</div>
+        <div class="history-main">
+          <div class="history-type">Glucose</div>
+          <div class="history-meta">Yesterday · 7:55 AM · Fasting</div>
+        </div>
+        <div class="history-right">
+          <div class="history-val" style="color:#34d399">95 mg/dL</div>
+          <div class="status-pill pill-normal">NORMAL</div>
+        </div>
+      </div>
+
+      <div class="history-item">
+        <div class="history-icon" style="background:rgba(248,113,113,0.12)">🩸</div>
+        <div class="history-main">
+          <div class="history-type">Glucose</div>
+          <div class="history-meta">Mar 26 · 9:30 AM · After Meal</div>
+        </div>
+        <div class="history-right">
+          <div class="history-val" style="color:#f87171">186 mg/dL</div>
+          <div class="status-pill pill-high">HIGH</div>
+        </div>
+      </div>
+
+      <div class="history-item">
+        <div class="history-icon" style="background:rgba(251,113,133,0.12)">💓</div>
+        <div class="history-main">
+          <div class="history-type">Blood Pressure</div>
+          <div class="history-meta">Mar 26 · 9:32 AM</div>
+        </div>
+        <div class="history-right">
+          <div class="history-val" style="color:#fb7185">122/78</div>
+          <div class="status-pill pill-normal">NORMAL</div>
+        </div>
+      </div>
+
+      <div class="history-item">
+        <div class="history-icon" style="background:rgba(52,211,153,0.12)">🩸</div>
+        <div class="history-main">
+          <div class="history-type">Glucose</div>
+          <div class="history-meta">Mar 25 · 7:40 AM · Fasting</div>
+        </div>
+        <div class="history-right">
+          <div class="history-val" style="color:#34d399">102 mg/dL</div>
+          <div class="status-pill pill-normal">NORMAL</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+      <div class="nav-item"><div class="nav-icon active" style="color:#7b61ff">📋</div><div class="nav-label active">History</div></div>
+      <div class="nav-fab">+</div>
+      <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Trends</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PHONE 4 — LOG READING SHEET ══════ -->
+<div class="phone-wrap">
+  <div class="screen-label">Log Reading</div>
+  <div class="phone">
+    <div class="phone-notch"></div>
+    <div class="phone-status">
+      <span>9:41</span>
+      <div class="status-icons"><span>▲▲▲</span><span>WiFi</span><span>▮</span></div>
+    </div>
+
+    <div class="phone-body">
+      <div class="app-bar">
+        <div class="app-bar-title">Swasth</div>
+        <div class="app-bar-actions"><span class="app-bar-icon">👥</span><span class="app-bar-icon">👤</span></div>
+      </div>
+
+      <!-- Dimmed home content behind sheet -->
+      <div style="padding:12px;opacity:0.25;">
+        <div class="score-card">
+          <div style="width:88px;height:88px;border-radius:50%;background:rgba(52,211,153,0.1);flex-shrink:0"></div>
+          <div style="flex:1">
+            <div style="width:80%;height:10px;background:var(--bg-card2);border-radius:5px;margin-bottom:8px"></div>
+            <div style="width:60%;height:8px;background:var(--bg-card2);border-radius:4px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom sheet overlay -->
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">How would you like to log?</div>
+
+        <div class="modal-option">
+          <div class="modal-opt-icon" style="background:rgba(52,211,153,0.12)">📷</div>
+          <div>
+            <div class="modal-opt-title">Scan with Camera</div>
+            <div class="modal-opt-sub">Point at your glucometer or BP monitor</div>
+          </div>
+          <div class="modal-opt-arrow">›</div>
+        </div>
+
+        <div class="modal-option">
+          <div class="modal-opt-icon" style="background:rgba(123,97,255,0.12)">📶</div>
+          <div>
+            <div class="modal-opt-title">Connect via Bluetooth</div>
+            <div class="modal-opt-sub">Auto-sync from BLE device</div>
+          </div>
+          <div class="modal-opt-arrow">›</div>
+        </div>
+
+        <div class="modal-option" style="border:1px solid rgba(123,97,255,0.3);background:rgba(123,97,255,0.08)">
+          <div class="modal-opt-icon" style="background:rgba(123,97,255,0.15)">✏️</div>
+          <div>
+            <div class="modal-opt-title" style="color:#7b61ff">Enter Manually</div>
+            <div class="modal-opt-sub">Type the reading directly</div>
+          </div>
+          <div class="modal-opt-arrow" style="color:#7b61ff">›</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon active" style="color:#7b61ff">🏠</div><div class="nav-label active">Home</div></div>
+      <div class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">History</div></div>
+      <div class="nav-fab" style="box-shadow:0 0 0 4px rgba(123,97,255,0.3),0 4px 16px rgba(123,97,255,0.6)">×</div>
+      <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Trends</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /phones-row -->
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeToggle').innerHTML =
+    isDark
+      ? '<span>🌙</span> Dark Mode'
+      : '<span>☀️</span> Light Mode';
+  // Update day-label colors for charts
+  document.querySelectorAll('svg text').forEach(t => {
+    t.setAttribute('fill', isDark ? 'rgba(17,17,39,0.3)' : 'rgba(17,17,39,0.35)');
+  });
+}
+</script>
+</body>
+</html>
