@@ -562,88 +562,100 @@ class _HomeScreenState extends State<HomeScreen>
   // ── AI Health Insight ─────────────────────────────────────────────────────
 
   Widget _buildAiInsightCard(AppLocalizations l10n) {
-    return GlassCard(
-      borderRadius: 24,
-      padding: const EdgeInsets.all(20),
-      border: Border(
-        left: const BorderSide(color: AppColors.primary, width: 4),
-        top: BorderSide(color: AppColors.glassCardBorder),
-        right: BorderSide(color: AppColors.glassCardBorder),
-        bottom: BorderSide(color: AppColors.glassCardBorder),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    // Non-uniform borders can't use borderRadius — use Stack + Positioned left bar.
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Stack(
         children: [
-          Expanded(
-            child: Column(
+          GlassCard(
+            borderRadius: 24,
+            padding: const EdgeInsets.fromLTRB(24, 20, 20, 20),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      l10n.aiInsightSection.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 2,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            l10n.aiInsightSection.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, _) => Opacity(
+                              opacity: _pulseAnimation.value,
+                              child: const CircleAvatar(
+                                radius: 3,
+                                backgroundColor: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    AnimatedBuilder(
-                      animation: _pulseAnimation,
-                      builder: (context, _) => Opacity(
-                        opacity: _pulseAnimation.value,
-                        child: const CircleAvatar(
-                          radius: 3,
-                          backgroundColor: AppColors.primary,
-                        ),
+                      const SizedBox(height: 10),
+                      FutureBuilder<String>(
+                        future: _aiInsightFuture,
+                        builder: (context, snap) {
+                          if (snap.connectionState == ConnectionState.waiting) {
+                            return const SizedBox(
+                              height: 40,
+                              child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+                            );
+                          }
+                          final text = snap.data ?? '';
+                          return Text(
+                            text.isNotEmpty ? '"$text"' : '"Log daily readings for the best health insights."',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                              fontStyle: FontStyle.italic,
+                              height: 1.5,
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 10),
-                FutureBuilder<String>(
-                  future: _aiInsightFuture,
-                  builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return const SizedBox(
-                        height: 40,
-                        child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
-                      );
-                    }
-                    final text = snap.data ?? '';
-                    return Text(
-                      text.isNotEmpty ? '"$text"' : '"Log daily readings for the best health insights."',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
-                        fontStyle: FontStyle.italic,
-                        height: 1.5,
-                      ),
-                    );
-                  },
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () => setState(() => _insightSaved = !_insightSaved),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
+                    ),
+                    child: Icon(
+                      _insightSaved ? Icons.star : Icons.star_border,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: () => setState(() => _insightSaved = !_insightSaved),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
-              ),
-              child: Icon(
-                _insightSaved ? Icons.star : Icons.star_border,
-                color: Colors.white,
-                size: 18,
-              ),
+          // Left accent bar on top of GlassCard
+          const Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: SizedBox(
+              width: 4,
+              child: ColoredBox(color: AppColors.primary),
             ),
           ),
         ],
