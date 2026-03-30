@@ -5,6 +5,13 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — Auto-detect server host (no more hardcoded IPs)
+
+- Rewrote `lib/config/app_config.dart`: Server host is now resolved dynamically — web uses the browser's hostname (same host the app was served from), Android emulator defaults to 10.0.2.2, and `--dart-define=SERVER_HOST` overrides everything. No more stale hardcoded LAN IPs.
+- Updated `test/app_config_test.dart`: Test now validates URL format instead of enforcing a specific hardcoded IP.
+
+---
+
 ## 2026-03-30 — Fix wellness score "first time" bug + streak calculation
 
 - Modified `backend/routes_health.py`: Fixed streak calculation to count from yesterday when today has no reading (was always 0 for historical data). Added `total_reading_count` query to distinguish first-time users from returning users. Fixed insight messages: returning users see "Welcome back!" instead of "Log your first reading". Fixed generic fallback to acknowledge existing readings. Updated `_rule_based_insight()` to accept `total_count` param for same fix.
@@ -926,3 +933,6 @@ Format: date, summary, file-level details.
   - 19:01:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
   - 19:12:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/config/app_config.dart
   - 19:19:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/config/app_config.dart
+  - 19:21:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/config/app_config.dart
+  - 19:21:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/app_config_test.dart
+  - 19:21:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
