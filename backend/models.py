@@ -16,6 +16,8 @@ class User(Base):
     consent_timestamp = Column(DateTime(timezone=True), nullable=True)
     consent_app_version = Column(String, nullable=True)
     consent_language = Column(String, nullable=True)
+    ai_consent = Column(Boolean, default=False)
+    ai_consent_timestamp = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -26,6 +28,7 @@ class Profile(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)                        # "My Health", "Papa", "Mummy"
+    relationship = Column(String, nullable=True)                 # "myself", "father", "mother", etc.
     age = Column(Integer, nullable=True)
     gender = Column(String, nullable=True)                       # Male / Female / Other
     height = Column(Float, nullable=True)                        # cm
@@ -105,6 +108,13 @@ class HealthReading(Base):
     unit_display = Column(String, nullable=False)
     status_flag = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
+
+    # AES-256-GCM encrypted copies of sensitive health values (SPDI compliance)
+    glucose_value_enc = Column(Text, nullable=True)
+    systolic_enc = Column(Text, nullable=True)
+    diastolic_enc = Column(Text, nullable=True)
+    pulse_rate_enc = Column(Text, nullable=True)
+    notes_enc = Column(Text, nullable=True)
 
     reading_timestamp = Column(DateTime, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

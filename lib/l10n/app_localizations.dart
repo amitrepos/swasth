@@ -314,6 +314,12 @@ abstract class AppLocalizations {
   /// **'Profile Name'**
   String get profileNameLabel;
 
+  /// No description provided for @relationshipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship to patient'**
+  String get relationshipLabel;
+
   /// No description provided for @ageLabel.
   ///
   /// In en, this message translates to:
@@ -1100,6 +1106,30 @@ abstract class AppLocalizations {
   /// **'Change Account Password'**
   String get changePassword;
 
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @deleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete My Account'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete your account, all health readings, profiles, and AI insights. This action cannot be undone.'**
+  String get deleteAccountConfirmMessage;
+
+  /// No description provided for @deleteAccountConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Permanently'**
+  String get deleteAccountConfirm;
+
   /// No description provided for @changePasswordTitle.
   ///
   /// In en, this message translates to:
@@ -1640,12 +1670,6 @@ abstract class AppLocalizations {
   /// **'Live Steps'**
   String get liveSteps;
 
-  /// No description provided for @relationshipLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Relationship to patient'**
-  String get relationshipLabel;
-
   /// No description provided for @relationshipFather.
   ///
   /// In en, this message translates to:
@@ -1778,6 +1802,18 @@ abstract class AppLocalizations {
   /// **'I can withdraw my consent or ask to delete my data at any time through the app settings.'**
   String get consentRights;
 
+  /// No description provided for @consentAiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-Powered Insights'**
+  String get consentAiTitle;
+
+  /// No description provided for @consentAiBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Swasth uses third-party AI services (Google Gemini and DeepSeek) to generate personalised health recommendations. A summary of my health data (not raw readings) may be sent to these services. I can opt out at any time, and rule-based insights will be used instead.'**
+  String get consentAiBody;
+
   /// No description provided for @consentAccept.
   ///
   /// In en, this message translates to:
@@ -1813,6 +1849,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scroll down to read the full notice'**
   String get consentScrollToAccept;
+
+  /// No description provided for @ppDataCollectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data We Collect'**
+  String get ppDataCollectionTitle;
+
+  /// No description provided for @ppDataCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), and photos of medical devices for automated reading capture.'**
+  String get ppDataCollection;
+
+  /// No description provided for @ppPurposeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purpose of Collection'**
+  String get ppPurposeTitle;
+
+  /// No description provided for @ppPurpose.
+  ///
+  /// In en, this message translates to:
+  /// **'Your health data is used to: display trends and health scores, generate personalised health insights, share with your designated family members, and provide information to your doctor for treatment.'**
+  String get ppPurpose;
+
+  /// No description provided for @ppAiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Processing'**
+  String get ppAiTitle;
+
+  /// No description provided for @ppAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Swasth uses third-party AI services — Google Gemini and DeepSeek — to generate health recommendations. A summarised version of your data (averages and ranges, not individual readings) is sent to these services. You can opt out of AI processing at any time; rule-based insights will be used instead.'**
+  String get ppAi;
+
+  /// No description provided for @ppSharingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Sharing'**
+  String get ppSharingTitle;
+
+  /// No description provided for @ppSharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data is shared only with: family members you explicitly invite, AI services (Google Gemini, DeepSeek) for health insights if you consent, and your doctor if you choose to share. We do not sell or share your data with advertisers or any other third parties.'**
+  String get ppSharing;
+
+  /// No description provided for @ppSecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Security Measures'**
+  String get ppSecurityTitle;
+
+  /// No description provided for @ppSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'We protect your data with: AES-256 encryption for health readings stored in our database, bcrypt password hashing, JWT-based authentication with token expiration, TLS/HTTPS for all data in transit, and encrypted local storage on your device.'**
+  String get ppSecurity;
+
+  /// No description provided for @ppRetentionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Retention'**
+  String get ppRetentionTitle;
+
+  /// No description provided for @ppRetention.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data is stored as long as your account is active. You may request deletion of all your data at any time through the app settings. Upon account deletion, all readings, profiles, AI logs, and personal information are permanently removed.'**
+  String get ppRetention;
+
+  /// No description provided for @ppRightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Rights'**
+  String get ppRightsTitle;
+
+  /// No description provided for @ppRights.
+  ///
+  /// In en, this message translates to:
+  /// **'Under Indian data protection law (SPDI Rules 2011 and DPDP Act 2023), you have the right to: access your data, correct inaccuracies, withdraw consent, request deletion of your data, and file a grievance. To exercise these rights, use the in-app settings or contact us.'**
+  String get ppRights;
+
+  /// No description provided for @ppContactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get ppContactTitle;
+
+  /// No description provided for @ppContact.
+  ///
+  /// In en, this message translates to:
+  /// **'For privacy-related questions or grievances, contact: support@swasth.app'**
+  String get ppContact;
 
   /// No description provided for @offlineBanner.
   ///

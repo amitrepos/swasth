@@ -13,6 +13,8 @@ import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403
 from config import settings
+from encryption_service import encrypt, encrypt_float
+from health_utils import age_context_bp, age_context_glucose
 
 router = APIRouter()
 
@@ -57,6 +59,18 @@ def save_reading(
         notes=reading.notes,
         reading_timestamp=reading.reading_timestamp,
     )
+    # Populate AES-256-GCM encrypted copies for SPDI compliance
+    if reading.glucose_value is not None:
+        db_reading.glucose_value_enc = encrypt_float(reading.glucose_value)
+    if reading.systolic is not None:
+        db_reading.systolic_enc = encrypt_float(reading.systolic)
+    if reading.diastolic is not None:
+        db_reading.diastolic_enc = encrypt_float(reading.diastolic)
+    if reading.pulse_rate is not None:
+        db_reading.pulse_rate_enc = encrypt_float(reading.pulse_rate)
+    if reading.notes is not None:
+        db_reading.notes_enc = encrypt(reading.notes)
+
     db.add(db_reading)
     db.commit()
     db.refresh(db_reading)
@@ -343,6 +357,22 @@ def get_health_score(
         .first()
     )
 
+    # --- Age-contextual notes ---
+    _bp_for_context = today_bp or last_bp
+    _glucose_for_context = today_glucose or last_glucose
+    bp_age_note = None
+    glucose_age_note = None
+    if _bp_for_context and profile_age:
+        bp_age_note = age_context_bp(
+            _bp_for_context.systolic, _bp_for_context.diastolic,
+            _bp_for_context.status_flag or "", profile_age,
+        )
+    if _glucose_for_context and profile_age:
+        glucose_age_note = age_context_glucose(
+            _glucose_for_context.glucose_value, _glucose_for_context.status_flag or "",
+            profile_age, getattr(_glucose_for_context, "sample_type", None),
+        )
+
     return schemas.HealthScoreResponse(
         score=score,
         color=color,
@@ -355,6 +385,8 @@ def get_health_score(
         today_bp_diastolic=today_bp.diastolic if today_bp else None,
         last_logged=last_logged,
         profile_age=profile_age,
+        age_context_bp=bp_age_note,
+        age_context_glucose=glucose_age_note,
         avg_glucose_90d=float(avg_glucose_90d) if avg_glucose_90d is not None else None,
         prev_avg_glucose_90d=float(prev_avg_glucose_90d) if prev_avg_glucose_90d is not None else None,
         avg_systolic_90d=float(avg_systolic_90d) if avg_systolic_90d is not None else None,
@@ -379,6 +411,23 @@ def get_ai_insight(
     """Return a personalised 1-2 sentence AI health recommendation via Gemini 1.5 Flash.
     Falls back to rule-based insight on any error — never returns 500."""
     get_profile_access_or_403(profile_id, user, db)
+
+    # ── AI consent gate — return rule-based fallback if user hasn't consented ──
+    if not user.ai_consent:
+        thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time())
+        recent = (
+            db.query(models.HealthReading)
+            .filter(
+                models.HealthReading.profile_id == profile_id,
+                models.HealthReading.reading_timestamp >= thirty_days_ago,
+            )
+            .order_by(models.HealthReading.reading_timestamp.asc())
+            .all()
+        )
+        total_count = db.query(func.count(models.HealthReading.id)).filter(
+            models.HealthReading.profile_id == profile_id,
+        ).scalar() or 0
+        return {"insight": _rule_based_insight(recent, total_count=total_count), "ai_consent_required": True}
 
     # ── Smart cache: only call LLM when new readings exist ────────────
     latest_insight = (

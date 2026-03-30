@@ -117,6 +117,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileNameLabel => 'Profile Name';
 
   @override
+  String get relationshipLabel => 'Relationship to patient';
+
+  @override
   String get ageLabel => 'Age';
 
   @override
@@ -538,6 +541,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changePassword => 'Change Account Password';
 
   @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get deleteAccount => 'Delete My Account';
+
+  @override
+  String get deleteAccountConfirmMessage =>
+      'This will permanently delete your account, all health readings, profiles, and AI insights. This action cannot be undone.';
+
+  @override
+  String get deleteAccountConfirm => 'Delete Permanently';
+
+  @override
   String get changePasswordTitle => 'Change Password';
 
   @override
@@ -827,9 +843,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveSteps => 'Live Steps';
 
   @override
-  String get relationshipLabel => 'Relationship to patient';
-
-  @override
   String get relationshipFather => 'Father';
 
   @override
@@ -900,6 +913,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'I can withdraw my consent or ask to delete my data at any time through the app settings.';
 
   @override
+  String get consentAiTitle => 'AI-Powered Insights';
+
+  @override
+  String get consentAiBody =>
+      'Swasth uses third-party AI services (Google Gemini and DeepSeek) to generate personalised health recommendations. A summary of my health data (not raw readings) may be sent to these services. I can opt out at any time, and rule-based insights will be used instead.';
+
+  @override
   String get consentAccept => 'I Accept';
 
   @override
@@ -917,6 +937,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get consentScrollToAccept => 'Scroll down to read the full notice';
+
+  @override
+  String get ppDataCollectionTitle => 'Data We Collect';
+
+  @override
+  String get ppDataCollection =>
+      'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), and photos of medical devices for automated reading capture.';
+
+  @override
+  String get ppPurposeTitle => 'Purpose of Collection';
+
+  @override
+  String get ppPurpose =>
+      'Your health data is used to: display trends and health scores, generate personalised health insights, share with your designated family members, and provide information to your doctor for treatment.';
+
+  @override
+  String get ppAiTitle => 'AI Processing';
+
+  @override
+  String get ppAi =>
+      'Swasth uses third-party AI services — Google Gemini and DeepSeek — to generate health recommendations. A summarised version of your data (averages and ranges, not individual readings) is sent to these services. You can opt out of AI processing at any time; rule-based insights will be used instead.';
+
+  @override
+  String get ppSharingTitle => 'Data Sharing';
+
+  @override
+  String get ppSharing =>
+      'Your data is shared only with: family members you explicitly invite, AI services (Google Gemini, DeepSeek) for health insights if you consent, and your doctor if you choose to share. We do not sell or share your data with advertisers or any other third parties.';
+
+  @override
+  String get ppSecurityTitle => 'Security Measures';
+
+  @override
+  String get ppSecurity =>
+      'We protect your data with: AES-256 encryption for health readings stored in our database, bcrypt password hashing, JWT-based authentication with token expiration, TLS/HTTPS for all data in transit, and encrypted local storage on your device.';
+
+  @override
+  String get ppRetentionTitle => 'Data Retention';
+
+  @override
+  String get ppRetention =>
+      'Your data is stored as long as your account is active. You may request deletion of all your data at any time through the app settings. Upon account deletion, all readings, profiles, AI logs, and personal information are permanently removed.';
+
+  @override
+  String get ppRightsTitle => 'Your Rights';
+
+  @override
+  String get ppRights =>
+      'Under Indian data protection law (SPDI Rules 2011 and DPDP Act 2023), you have the right to: access your data, correct inaccuracies, withdraw consent, request deletion of your data, and file a grievance. To exercise these rights, use the in-app settings or contact us.';
+
+  @override
+  String get ppContactTitle => 'Contact';
+
+  @override
+  String get ppContact =>
+      'For privacy-related questions or grievances, contact: support@swasth.app';
 
   @override
   String get offlineBanner => 'You are offline. Some features may be limited.';

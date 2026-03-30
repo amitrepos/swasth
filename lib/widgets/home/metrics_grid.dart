@@ -28,6 +28,8 @@ class MetricsGrid extends StatelessWidget {
     final lastBpStatus = data?['last_bp_status'] as String?;
     final lastGlucose = (data?['last_glucose_value'] as num?)?.toDouble();
     final lastGlucoseStatus = data?['last_glucose_status'] as String?;
+    final ageContextBp = data?['age_context_bp'] as String?;
+    final ageContextGlucose = data?['age_context_glucose'] as String?;
 
     final bpValue = lastBpSys != null && lastBpDia != null
         ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'
@@ -69,6 +71,32 @@ class MetricsGrid extends StatelessWidget {
             ),
           ],
         ),
+        if (ageContextBp != null || ageContextGlucose != null) ...[
+          const SizedBox(height: 8),
+          ...[ ageContextBp, ageContextGlucose ].whereType<String>().map(
+            (note) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      note,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: AppColors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         Row(
           children: [

@@ -22,11 +22,16 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final _medicationsController = TextEditingController();
   final _otherConditionController = TextEditingController();
 
+  String? _selectedRelationship;
   String? _selectedGender;
   String? _selectedBloodGroup;
   final List<String> _selectedConditions = [];
   bool _isLoading = false;
 
+  final List<String> _relationshipOptions = [
+    "myself", "father", "mother", "spouse", "son", "daughter",
+    "brother", "sister", "uncle", "aunt", "friend", "other",
+  ];
   final List<String> _genderOptions = ["Male", "Female", "Other"];
   final List<String> _bloodGroupOptions = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
   // Medical condition values are API keys — do NOT translate
@@ -55,6 +60,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
 
       final data = {
         'name': _nameController.text,
+        'relationship': _selectedRelationship,
         'age': int.tryParse(_ageController.text),
         'gender': _selectedGender,
         'height': double.tryParse(_heightController.text),
@@ -113,6 +119,20 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                         prefixIcon: const Icon(Icons.person_outline),
                       ),
                       validator: (value) => (value == null || value.isEmpty) ? 'Enter a name' : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    DropdownButtonFormField<String>(
+                      value: _selectedRelationship,
+                      decoration: InputDecoration(
+                        labelText: l10n.relationshipLabel,
+                        prefixIcon: const Icon(Icons.family_restroom),
+                      ),
+                      items: _relationshipOptions.map((r) => DropdownMenuItem(
+                        value: r,
+                        child: Text(r[0].toUpperCase() + r.substring(1)),
+                      )).toList(),
+                      onChanged: (v) => setState(() => _selectedRelationship = v),
                     ),
                     const SizedBox(height: 16),
 

@@ -32,6 +32,8 @@ def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
         consent_timestamp=datetime.utcnow() if user.consent_app_version else None,
         consent_app_version=user.consent_app_version,
         consent_language=user.consent_language,
+        ai_consent=bool(user.ai_consent) if user.ai_consent else bool(user.consent_app_version),
+        ai_consent_timestamp=datetime.utcnow() if (user.ai_consent or user.consent_app_version) else None,
     )
     db.add(db_user)
     db.flush()  # Get db_user.id
@@ -168,6 +170,73 @@ def update_profile(
     db.commit()
     db.refresh(user)
     return user
+
+
+# ---------------------------------------------------------------------------
+# AI consent — for existing users who registered before AI disclosure was added
+# ---------------------------------------------------------------------------
+
+@router.post("/ai-consent")
+def grant_ai_consent(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Grant consent for AI-powered health insights (third-party processing)."""
+    user.ai_consent = True
+    user.ai_consent_timestamp = datetime.utcnow()
+    db.commit()
+    return {"message": "AI consent granted"}
+
+
+# ---------------------------------------------------------------------------
+# Account deletion — DPDP Act right to erasure
+# ---------------------------------------------------------------------------
+
+@router.delete("/account")
+def delete_account(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Delete the user's account and ALL associated data (DPDP Act compliance)."""
+    # 1. Find all profiles this user owns
+    owned_access = db.query(models.ProfileAccess).filter(
+        models.ProfileAccess.user_id == user.id,
+        models.ProfileAccess.access_level == "owner",
+    ).all()
+
+    for access in owned_access:
+        pid = access.profile_id
+        # Delete readings, AI logs, invites, access entries for owned profiles
+        db.query(models.HealthReading).filter(models.HealthReading.profile_id == pid).delete()
+        db.query(models.AiInsightLog).filter(models.AiInsightLog.profile_id == pid).delete()
+        db.query(models.ProfileInvite).filter(models.ProfileInvite.profile_id == pid).delete()
+        db.query(models.ProfileAccess).filter(models.ProfileAccess.profile_id == pid).delete()
+        db.query(models.Profile).filter(models.Profile.id == pid).delete()
+
+    # 2. Nullify logged_by on readings this user logged on other people's profiles
+    db.query(models.HealthReading).filter(
+        models.HealthReading.logged_by == user.id,
+    ).update({"logged_by": None})
+
+    # 3. Remove any remaining viewer access entries
+    db.query(models.ProfileAccess).filter(models.ProfileAccess.user_id == user.id).delete()
+
+    # 4. Nullify invited_by references in invites
+    db.query(models.ProfileInvite).filter(
+        models.ProfileInvite.invited_by_user_id == user.id,
+    ).delete()
+    db.query(models.ProfileInvite).filter(
+        models.ProfileInvite.invited_user_id == user.id,
+    ).update({"invited_user_id": None})
+
+    # 6. Delete password reset OTPs
+    db.query(models.PasswordResetOTP).filter(models.PasswordResetOTP.email == user.email).delete()
+
+    # 7. Delete the user
+    db.query(models.User).filter(models.User.id == user.id).delete()
+
+    db.commit()
+    return {"message": "Account and all associated data have been permanently deleted"}
 
 
 # ---------------------------------------------------------------------------

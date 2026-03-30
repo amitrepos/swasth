@@ -21,6 +21,9 @@ INVITE_TTL_DAYS = 7
 # ---------------------------------------------------------------------------
 
 def _build_profile_response(profile: models.Profile, access_level: str, relationship: str = None) -> schemas.ProfileResponse:
+    # Profile-level relationship (set at creation) takes precedence;
+    # fall back to access-level relationship (set when sharing/linking).
+    rel = profile.relationship or relationship
     return schemas.ProfileResponse(
         id=profile.id,
         name=profile.name,
@@ -35,7 +38,7 @@ def _build_profile_response(profile: models.Profile, access_level: str, relation
         doctor_specialty=profile.doctor_specialty,
         doctor_whatsapp=profile.doctor_whatsapp,
         access_level=access_level,
-        relationship=relationship,
+        relationship=rel,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
     )
@@ -73,6 +76,7 @@ def create_profile(
     """Create a new profile. The caller becomes the owner."""
     profile = models.Profile(
         name=data.name,
+        relationship=data.relationship,
         age=data.age,
         gender=data.gender,
         height=data.height,
