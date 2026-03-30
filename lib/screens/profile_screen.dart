@@ -9,6 +9,7 @@ import '../services/api_service.dart';
 import '../models/profile_model.dart';
 import '../providers/language_provider.dart';
 import 'manage_access_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final int profileId;
@@ -120,6 +121,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppColors.statusCritical));
       }
     }
+  }
+
+  void _confirmDeleteAccount() {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.deleteAccount),
+        content: Text(l10n.deleteAccountConfirmMessage),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final token = await StorageService().getToken();
+                if (token == null) return;
+                await ApiService().deleteAccount(token);
+                await StorageService().clearEverything();
+                if (!mounted) return;
+                Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString()), backgroundColor: AppColors.statusCritical),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusCritical, foregroundColor: Colors.white),
+            child: Text(l10n.deleteAccountConfirm),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showChangePasswordDialog() {
@@ -480,6 +516,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 _buildLanguageToggle(l10n),
+                const SizedBox(height: 8),
+                GlassCard(
+                  borderRadius: 16,
+                  child: ListTile(
+                    leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.primary),
+                    title: Text(l10n.privacyPolicy),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GlassCard(
+                  borderRadius: 16,
+                  child: ListTile(
+                    leading: const Icon(Icons.delete_forever, color: AppColors.statusCritical),
+                    title: Text(l10n.deleteAccount, style: const TextStyle(color: AppColors.statusCritical)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: _confirmDeleteAccount,
+                  ),
+                ),
               ]),
 
             const SizedBox(height: 32),

@@ -1,6 +1,9 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from database import engine, Base
+from config import settings
 import models
 import routes
 import routes_health
@@ -20,14 +23,43 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware
+# ---------------------------------------------------------------------------
+# HTTPS redirect (enable in production via REQUIRE_HTTPS=true in .env)
+# ---------------------------------------------------------------------------
+if settings.REQUIRE_HTTPS:
+    app.add_middleware(HTTPSRedirectMiddleware)
+
+# ---------------------------------------------------------------------------
+# CORS — restricted to configured origins
+# In dev (REQUIRE_HTTPS=False), also allow any localhost port for Flutter web
+# ---------------------------------------------------------------------------
+_cors_origins = list(settings.CORS_ORIGINS)
+if not settings.REQUIRE_HTTPS:
+    _cors_origins.append("http://localhost:*")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=_cors_origins,
+    allow_origin_regex=r"^http://localhost:\d+$" if not settings.REQUIRE_HTTPS else None,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Security headers
+# ---------------------------------------------------------------------------
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response: Response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if settings.REQUIRE_HTTPS:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 
 @app.get("/")

@@ -117,6 +117,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get profileNameLabel => 'प्रोफाइल नाम';
 
   @override
+  String get relationshipLabel => 'रोगी से संबंध';
+
+  @override
   String get ageLabel => 'उम्र';
 
   @override
@@ -536,6 +539,19 @@ class AppLocalizationsHi extends AppLocalizations {
   String get changePassword => 'पासवर्ड बदलें';
 
   @override
+  String get privacyPolicy => 'गोपनीयता नीति';
+
+  @override
+  String get deleteAccount => 'मेरा खाता हटाएं';
+
+  @override
+  String get deleteAccountConfirmMessage =>
+      'यह आपका खाता, सभी स्वास्थ्य रीडिंग, प्रोफाइल और AI सुझाव स्थायी रूप से हटा देगा। यह क्रिया पूर्ववत नहीं की जा सकती।';
+
+  @override
+  String get deleteAccountConfirm => 'स्थायी रूप से हटाएं';
+
+  @override
   String get changePasswordTitle => 'पासवर्ड बदलें';
 
   @override
@@ -825,9 +841,6 @@ class AppLocalizationsHi extends AppLocalizations {
   String get liveSteps => 'कदम';
 
   @override
-  String get relationshipLabel => 'रोगी से संबंध';
-
-  @override
   String get relationshipFather => 'पिता';
 
   @override
@@ -899,6 +912,13 @@ class AppLocalizationsHi extends AppLocalizations {
       'मैं किसी भी समय ऐप सेटिंग्स के माध्यम से अपनी सहमति वापस ले सकता/सकती हूँ या अपना डेटा हटाने के लिए कह सकता/सकती हूँ।';
 
   @override
+  String get consentAiTitle => 'AI-संचालित स्वास्थ्य सुझाव';
+
+  @override
+  String get consentAiBody =>
+      'स्वस्थ तीसरे पक्ष की AI सेवाओं (Google Gemini और DeepSeek) का उपयोग करके व्यक्तिगत स्वास्थ्य सुझाव तैयार करता है। मेरे स्वास्थ्य डेटा का सारांश (कच्चे रीडिंग नहीं) इन सेवाओं को भेजा जा सकता है। मैं किसी भी समय इसे बंद कर सकता/सकती हूँ, और इसके बजाय नियम-आधारित सुझाव दिए जाएँगे।';
+
+  @override
   String get consentAccept => 'मैं सहमत हूँ';
 
   @override
@@ -917,6 +937,62 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get consentScrollToAccept =>
       'पूरी सूचना पढ़ने के लिए नीचे स्क्रॉल करें';
+
+  @override
+  String get ppDataCollectionTitle => 'हम कौन सा डेटा एकत्र करते हैं';
+
+  @override
+  String get ppDataCollection =>
+      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), और स्वचालित रीडिंग कैप्चर के लिए चिकित्सा उपकरणों की तस्वीरें।';
+
+  @override
+  String get ppPurposeTitle => 'संग्रह का उद्देश्य';
+
+  @override
+  String get ppPurpose =>
+      'आपके स्वास्थ्य डेटा का उपयोग किया जाता है: रुझान और स्वास्थ्य स्कोर दिखाने, व्यक्तिगत स्वास्थ्य सुझाव तैयार करने, आपके निर्दिष्ट परिवार के सदस्यों के साथ साझा करने, और उपचार के लिए आपके डॉक्टर को जानकारी प्रदान करने के लिए।';
+
+  @override
+  String get ppAiTitle => 'AI प्रसंस्करण';
+
+  @override
+  String get ppAi =>
+      'स्वस्थ स्वास्थ्य सुझाव तैयार करने के लिए तीसरे पक्ष की AI सेवाओं — Google Gemini और DeepSeek — का उपयोग करता है। आपके डेटा का सारांश संस्करण (औसत और सीमाएँ, व्यक्तिगत रीडिंग नहीं) इन सेवाओं को भेजा जाता है। आप किसी भी समय AI प्रसंस्करण से बाहर हो सकते हैं।';
+
+  @override
+  String get ppSharingTitle => 'डेटा साझाकरण';
+
+  @override
+  String get ppSharing =>
+      'आपका डेटा केवल इनके साथ साझा किया जाता है: आपके द्वारा आमंत्रित परिवार के सदस्य, AI सेवाएँ (यदि आप सहमत हैं), और आपके डॉक्टर (यदि आप साझा करना चुनते हैं)। हम आपका डेटा विज्ञापनदाताओं या किसी अन्य तीसरे पक्ष को नहीं बेचते।';
+
+  @override
+  String get ppSecurityTitle => 'सुरक्षा उपाय';
+
+  @override
+  String get ppSecurity =>
+      'हम आपके डेटा की सुरक्षा करते हैं: डेटाबेस में AES-256 एन्क्रिप्शन, bcrypt पासवर्ड हैशिंग, JWT-आधारित प्रमाणीकरण, सभी डेटा ट्रांसमिशन के लिए TLS/HTTPS, और आपके डिवाइस पर एन्क्रिप्टेड स्थानीय संग्रहण।';
+
+  @override
+  String get ppRetentionTitle => 'डेटा प्रतिधारण';
+
+  @override
+  String get ppRetention =>
+      'आपका डेटा तब तक संग्रहीत रहता है जब तक आपका खाता सक्रिय है। आप ऐप सेटिंग्स के माध्यम से किसी भी समय अपने सभी डेटा को हटाने का अनुरोध कर सकते हैं।';
+
+  @override
+  String get ppRightsTitle => 'आपके अधिकार';
+
+  @override
+  String get ppRights =>
+      'भारतीय डेटा संरक्षण कानून (SPDI नियम 2011 और DPDP अधिनियम 2023) के तहत, आपको अधिकार है: अपना डेटा एक्सेस करने, गलतियाँ सुधारने, सहमति वापस लेने, डेटा हटाने का अनुरोध करने और शिकायत दर्ज करने का।';
+
+  @override
+  String get ppContactTitle => 'संपर्क';
+
+  @override
+  String get ppContact =>
+      'गोपनीयता संबंधी प्रश्नों या शिकायतों के लिए संपर्क करें: support@swasth.app';
 
   @override
   String get offlineBanner => 'आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।';

@@ -5,6 +5,24 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — Data privacy & encryption (SPDI/DPDP compliance for POC)
+
+- Modified `backend/main.py`: CORS locked to `settings.CORS_ORIGINS` (was `*`), restricted methods/headers. Added security headers middleware (X-Content-Type-Options, X-Frame-Options, XSS-Protection, Referrer-Policy, conditional HSTS). Added conditional HTTPSRedirectMiddleware.
+- Created `backend/encryption_service.py`: AES-256-GCM field-level encryption (encrypt/decrypt/encrypt_float/decrypt_float). Key from ENCRYPTION_KEY env var.
+- Modified `backend/config.py`: Added ENCRYPTION_KEY, REQUIRE_HTTPS settings.
+- Modified `backend/models.py`: Added `_enc` columns (glucose_value_enc, systolic_enc, diastolic_enc, pulse_rate_enc, notes_enc) to HealthReading. Added ai_consent, ai_consent_timestamp to User.
+- Modified `backend/routes_health.py`: Encrypts health values on save. AI consent gate in get_ai_insight() — returns rule-based fallback if user hasn't consented.
+- Modified `backend/routes.py`: Sets ai_consent=True on registration. Added POST /ai-consent endpoint. Added DELETE /account endpoint (DPDP right to erasure — deletes user + all profiles + readings + AI logs).
+- Modified `backend/schemas.py`: Added ai_consent to UserRegister and UserResponse.
+- Created `backend/migrate_encrypt_readings.py`: One-shot script to backfill _enc columns for existing readings.
+- Modified `lib/screens/consent_screen.dart`: Added 5th consent section "AI-Powered Insights" disclosing Gemini/DeepSeek. Added "Privacy Policy" link.
+- Created `lib/screens/privacy_policy_screen.dart`: Full privacy policy covering SPDI requirements (data collection, purpose, AI, sharing, security, retention, rights, contact).
+- Modified `lib/screens/profile_screen.dart`: Added "Privacy Policy" and "Delete My Account" buttons in account settings.
+- Modified `lib/services/api_service.dart`: Added deleteAccount() method.
+- Modified `lib/l10n/app_en.arb`, `lib/l10n/app_hi.arb`: Added AI consent, privacy policy, and delete account strings (English + Hindi).
+
+---
+
 ## 2026-03-30 — Auto-detect server host (no more hardcoded IPs)
 
 - Rewrote `lib/config/app_config.dart`: Server host is now resolved dynamically — web uses the browser's hostname (same host the app was served from), Android emulator defaults to 10.0.2.2, and `--dart-define=SERVER_HOST` overrides everything. No more stale hardcoded LAN IPs.
@@ -936,3 +954,54 @@ Format: date, summary, file-level details.
   - 19:21:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/config/app_config.dart
   - 19:21:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/app_config_test.dart
   - 19:21:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 19:30:53 modified: /Users/amitkumarmishra/.claude/plans/tidy-crafting-popcorn.md
+  - 19:46:57 modified: /Users/amitkumarmishra/.claude/plans/tidy-crafting-popcorn.md
+  - 19:48:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 19:48:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 19:48:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/encryption_service.py
+  - 19:49:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 19:50:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 19:50:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 19:50:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 19:51:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/migrate_encrypt_readings.py
+  - 19:51:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 19:51:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 19:51:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 19:51:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 19:52:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 19:52:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/consent_screen.dart
+  - 19:52:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 19:52:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 19:53:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 19:53:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 19:54:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/api_service.dart
+  - 19:54:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 19:54:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 19:55:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/privacy_policy_screen.dart
+  - 19:55:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 19:55:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 19:55:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 19:56:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 19:56:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/consent_screen.dart
+  - 19:56:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/consent_screen.dart
+  - 19:58:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 20:05:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 20:08:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 20:08:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 20:11:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 20:11:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 20:12:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 20:12:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 20:12:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 20:12:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 20:12:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 20:12:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 20:13:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 20:13:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 20:17:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/consent_screen.dart
+  - 20:26:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/health_utils.py
+  - 20:26:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 20:26:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 20:26:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 20:28:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 20:29:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart

@@ -7,7 +7,7 @@ from datetime import datetime
 GENDER_OPTIONS = ["Male", "Female", "Other"]
 BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]
 MEDICAL_CONDITIONS = ["Diabetes T1", "Diabetes T2", "Hypertension", "Heart Disease", "None", "Other"]
-RELATIONSHIP_OPTIONS = ["father", "mother", "spouse", "son", "daughter", "brother", "sister", "uncle", "aunt", "friend", "other"]
+RELATIONSHIP_OPTIONS = ["myself", "father", "mother", "spouse", "son", "daughter", "brother", "sister", "uncle", "aunt", "friend", "other"]
 _SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?'
 
 
@@ -48,6 +48,7 @@ class UserRegister(BaseModel):
     # Consent fields — set when user accepts privacy notice during registration
     consent_app_version: Optional[str] = None
     consent_language: Optional[str] = None
+    ai_consent: Optional[bool] = None
 
     @validator('password')
     def validate_password(cls, v):
@@ -103,6 +104,7 @@ class UserResponse(BaseModel):
     consent_timestamp: Optional[datetime] = None
     consent_app_version: Optional[str] = None
     consent_language: Optional[str] = None
+    ai_consent: Optional[bool] = None
     created_at: datetime
 
     class Config:
@@ -162,6 +164,7 @@ class UpdateUserRequest(BaseModel):
 
 class ProfileCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
+    relationship: Optional[str] = None   # "myself", "father", "mother", etc.
     age: Optional[int] = Field(None, ge=1, le=150)
     gender: Optional[str] = None
     height: Optional[float] = Field(None, gt=0, le=300)   # cm
@@ -172,6 +175,12 @@ class ProfileCreate(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
+
+    @validator('relationship')
+    def validate_relationship(cls, v):
+        if v is not None and v not in RELATIONSHIP_OPTIONS:
+            raise ValueError(f'Relationship must be one of: {", ".join(RELATIONSHIP_OPTIONS)}')
+        return v
 
     @validator('gender')
     def validate_gender(cls, v):
@@ -299,6 +308,8 @@ class HealthScoreResponse(BaseModel):
     today_bp_diastolic: Optional[float] = None
     last_logged: Optional[datetime] = None
     profile_age: Optional[int] = None
+    age_context_bp: Optional[str] = None      # age-specific note for BP reading
+    age_context_glucose: Optional[str] = None  # age-specific note for glucose reading
 
     # 90-day averages for Vital Summary card
     avg_glucose_90d: Optional[float] = None

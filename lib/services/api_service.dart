@@ -104,6 +104,20 @@ class ApiService {
     }
   }
 
+  Future<void> deleteAccount(String token) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/account'),
+        headers: ApiClient.headers(token: token),
+      ).timeout(_kTimeout);
+      if (response.statusCode != 200) {
+        throw Exception(ApiClient.errorDetail(response, 'Failed to delete account'));
+      }
+    } catch (e) {
+      throw Exception('Failed to delete account: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> updateProfile(
     String token,
     Map<String, dynamic> profileData,

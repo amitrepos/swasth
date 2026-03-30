@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     
     # CORS settings
     CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:8080"]
+
+    # Encryption — 64-char hex string = 32 bytes for AES-256-GCM
+    # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+    ENCRYPTION_KEY: Optional[str] = None
+
+    # HTTPS — enable in production behind TLS termination
+    REQUIRE_HTTPS: bool = False
     
     class Config:
         env_file = ".env"
