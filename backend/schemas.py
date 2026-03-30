@@ -298,6 +298,10 @@ class HealthScoreResponse(BaseModel):
     last_bp_diastolic: Optional[float] = None
     last_bp_status: Optional[str] = None
 
+    # Actual days with data in 90d window — drives dynamic "N-day avg" label
+    glucose_data_days: Optional[int] = None
+    bp_data_days: Optional[int] = None
+
 
 class HealthReadingCreate(BaseModel):
     profile_id: int

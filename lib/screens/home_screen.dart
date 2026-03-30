@@ -533,6 +533,12 @@ class _HomeScreenState extends State<HomeScreen>
     final avgGlucose = (data?['avg_glucose_90d'] as num?)?.toDouble();
     final prevAvgGlucose = (data?['prev_avg_glucose_90d'] as num?)?.toDouble();
 
+    // Dynamic day labels — show actual days with data, capped at 90
+    final bpDays = (data?['bp_data_days'] as num?)?.toInt() ?? 0;
+    final glucoseDays = (data?['glucose_data_days'] as num?)?.toInt() ?? 0;
+    final bpAvgLabel = bpDays > 0 ? '$bpDays-day avg' : l10n.ninetyDayAvg;
+    final glucoseAvgLabel = glucoseDays > 0 ? '$glucoseDays-day avg' : l10n.ninetyDayAvg;
+
     final bpLabel = avgSys != null && avgDia != null
         ? '${avgSys.toStringAsFixed(0)}/${avgDia.toStringAsFixed(0)}'
         : '—';
@@ -546,34 +552,23 @@ class _HomeScreenState extends State<HomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                l10n.vitalSummarySection.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '• ${l10n.ninetyDayAvg}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+          Text(
+            l10n.vitalSummarySection.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 2,
+            ),
           ),
+          const SizedBox(height: 16),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: _VitalTile(
                   label: 'BP',
+                  subLabel: bpAvgLabel,
                   value: bpLabel,
                   trendLabel: _trendLabel(avgSys, prevAvgSys, lowerIsBetter: true),
                   trendColor: _trendColor(avgSys, prevAvgSys, lowerIsBetter: true),
@@ -583,6 +578,7 @@ class _HomeScreenState extends State<HomeScreen>
               Expanded(
                 child: _VitalTile(
                   label: 'SUGAR',
+                  subLabel: glucoseAvgLabel,
                   value: glucoseLabel,
                   trendLabel: _trendLabel(avgGlucose, prevAvgGlucose, lowerIsBetter: true),
                   trendColor: _trendColor(avgGlucose, prevAvgGlucose, lowerIsBetter: true),
@@ -592,6 +588,7 @@ class _HomeScreenState extends State<HomeScreen>
               Expanded(
                 child: _VitalTile(
                   label: 'STEPS',
+                  subLabel: '—',
                   value: '—',
                   trendLabel: l10n.trendStable,
                   trendColor: AppColors.textSecondary,
@@ -1211,12 +1208,14 @@ class _PillButton extends StatelessWidget {
 
 class _VitalTile extends StatelessWidget {
   final String label;
+  final String subLabel;  // e.g. "3-day avg" or "90-day avg"
   final String value;
   final String trendLabel;
   final Color trendColor;
 
   const _VitalTile({
     required this.label,
+    required this.subLabel,
     required this.value,
     required this.trendLabel,
     required this.trendColor,
@@ -1239,6 +1238,14 @@ class _VitalTile extends StatelessWidget {
               fontWeight: FontWeight.w700,
               color: AppColors.textSecondary,
               letterSpacing: 1,
+            ),
+          ),
+          Text(
+            subLabel,
+            style: const TextStyle(
+              fontSize: 8,
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
