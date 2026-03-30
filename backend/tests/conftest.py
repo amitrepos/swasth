@@ -1,7 +1,8 @@
 """Shared pytest fixtures for the Swasth backend test suite.
 
 Uses an in-memory SQLite database so tests never touch the real PostgreSQL
-instance.
+instance.  We monkey-patch `database.engine` BEFORE importing `main` so that
+`Base.metadata.create_all(bind=engine)` in main.py targets SQLite, not PG.
 """
 import sys, os
 
@@ -9,33 +10,44 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, JSON
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
-from database import Base, get_db
-from auth import get_password_hash, create_access_token
-
 # ---------------------------------------------------------------------------
-# In-memory SQLite engine (per-test-session)
+# In-memory SQLite engine — must be set up BEFORE importing main/database
 # ---------------------------------------------------------------------------
 
 SQLALCHEMY_TEST_URL = "sqlite:///file::memory:?cache=shared&uri=true"
 
-engine = create_engine(
+_test_engine = create_engine(
     SQLALCHEMY_TEST_URL,
     connect_args={"check_same_thread": False},
 )
 
-# SQLite does not enforce FK constraints by default — enable them.
-@event.listens_for(engine, "connect")
+@event.listens_for(_test_engine, "connect")
 def _set_sqlite_pragma(dbapi_conn, _connection_record):
     cursor = dbapi_conn.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
 
-TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Monkey-patch database module BEFORE main.py is imported
+import database
+database.engine = _test_engine
+database.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_test_engine)
 
+# Now fix ARRAY columns for SQLite compatibility
+import models  # noqa: F401
+for table in database.Base.metadata.tables.values():
+    for col in table.columns:
+        if col.type.__class__.__name__ == 'ARRAY':
+            col.type = JSON()
+
+# Now safe to import — main.py's create_all will use SQLite
+from database import Base, get_db
+from auth import get_password_hash, create_access_token
+
+TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_test_engine)
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -44,28 +56,15 @@ TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 @pytest.fixture(scope="session", autouse=True)
 def _create_tables():
     """Create all tables once for the entire test session."""
-    import models  # noqa: F401 — ensures all models are registered on Base
-
-    # SQLite doesn't support PostgreSQL ARRAY — swap to JSON for tests
-    from sqlalchemy import JSON
-    for table in Base.metadata.tables.values():
-        for col in table.columns:
-            if hasattr(col.type, '__class__') and col.type.__class__.__name__ == 'ARRAY':
-                col.type = JSON()
-
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=_test_engine)
     yield
-    Base.metadata.drop_all(bind=engine)
+    Base.metadata.drop_all(bind=_test_engine)
 
 
 @pytest.fixture()
 def db():
-    """Provide a clean transactional DB session per test.
-
-    Each test runs inside a transaction that is rolled back at the end,
-    so tests are fully isolated.
-    """
-    connection = engine.connect()
+    """Provide a clean transactional DB session per test."""
+    connection = _test_engine.connect()
     transaction = connection.begin()
     session = TestSessionLocal(bind=connection)
 
