@@ -5,6 +5,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/ocr_service.dart' show OcrResult; // type only — not called directly
 import '../services/storage_service.dart';
+import '../services/connectivity_service.dart';
 import 'reading_confirmation_screen.dart';
 
 class PhotoScanScreen extends StatefulWidget {
@@ -69,6 +70,29 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
 
   Future<void> _capture() async {
     if (_controller == null || !_controller!.value.isInitialized || _isCapturing) return;
+
+    // Pre-flight: photo scan needs internet for Gemini Vision
+    final reachable = await ConnectivityService().isServerReachable();
+    if (!reachable && mounted) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('No Internet'),
+          content: const Text(
+            'Photo scan requires an internet connection to analyze the image. '
+            'Please try again when connected, or use manual entry.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() => _isCapturing = true);
 
     final l10n = AppLocalizations.of(context)!;

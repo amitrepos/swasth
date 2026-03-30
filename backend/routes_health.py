@@ -3,6 +3,7 @@
 
 """Health Readings API Routes"""
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date, timedelta
@@ -244,6 +245,86 @@ def get_health_score(
 
     last_logged = recent[0].reading_timestamp if recent else None
 
+    # --- 90-day averages for Vital Summary ---
+    ninety_days_ago = datetime.combine(today - timedelta(days=89), datetime.min.time())
+    prev_90_start = datetime.combine(today - timedelta(days=179), datetime.min.time())
+
+    avg_glucose_90d = db.query(func.avg(models.HealthReading.glucose_value)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'glucose',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.glucose_value.isnot(None),
+    ).scalar()
+
+    prev_avg_glucose_90d = db.query(func.avg(models.HealthReading.glucose_value)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'glucose',
+        models.HealthReading.reading_timestamp >= prev_90_start,
+        models.HealthReading.reading_timestamp < ninety_days_ago,
+        models.HealthReading.glucose_value.isnot(None),
+    ).scalar()
+
+    avg_systolic_90d = db.query(func.avg(models.HealthReading.systolic)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'blood_pressure',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.systolic.isnot(None),
+    ).scalar()
+
+    avg_diastolic_90d = db.query(func.avg(models.HealthReading.diastolic)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'blood_pressure',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.diastolic.isnot(None),
+    ).scalar()
+
+    prev_avg_systolic_90d = db.query(func.avg(models.HealthReading.systolic)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'blood_pressure',
+        models.HealthReading.reading_timestamp >= prev_90_start,
+        models.HealthReading.reading_timestamp < ninety_days_ago,
+        models.HealthReading.systolic.isnot(None),
+    ).scalar()
+
+    # --- Distinct calendar days with readings (for dynamic "N-day avg" label) ---
+    glucose_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'glucose',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.glucose_value.isnot(None),
+    ).scalar() or 0
+
+    bp_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'blood_pressure',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.systolic.isnot(None),
+    ).scalar() or 0
+
+    # --- Most recent readings (any date) for Individual Metrics grid ---
+    last_glucose = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'glucose',
+        )
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
+    last_bp = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'blood_pressure',
+        )
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
+
     return schemas.HealthScoreResponse(
         score=score,
         color=color,
@@ -256,6 +337,18 @@ def get_health_score(
         today_bp_diastolic=today_bp.diastolic if today_bp else None,
         last_logged=last_logged,
         profile_age=profile_age,
+        avg_glucose_90d=float(avg_glucose_90d) if avg_glucose_90d is not None else None,
+        prev_avg_glucose_90d=float(prev_avg_glucose_90d) if prev_avg_glucose_90d is not None else None,
+        avg_systolic_90d=float(avg_systolic_90d) if avg_systolic_90d is not None else None,
+        avg_diastolic_90d=float(avg_diastolic_90d) if avg_diastolic_90d is not None else None,
+        prev_avg_systolic_90d=float(prev_avg_systolic_90d) if prev_avg_systolic_90d is not None else None,
+        last_glucose_value=last_glucose.glucose_value if last_glucose else None,
+        last_glucose_status=last_glucose.status_flag if last_glucose else None,
+        last_bp_systolic=last_bp.systolic if last_bp else None,
+        last_bp_diastolic=last_bp.diastolic if last_bp else None,
+        last_bp_status=last_bp.status_flag if last_bp else None,
+        glucose_data_days=int(glucose_data_days),
+        bp_data_days=int(bp_data_days),
     )
 
 
@@ -277,13 +370,13 @@ def get_ai_insight(
     # Fetch profile for age-aware context
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
 
-    # Fetch last 7 days of readings
-    seven_days_ago = datetime.combine(date.today() - timedelta(days=6), datetime.min.time())
+    # Fetch last 30 days of readings (wider window = better context for sparse users)
+    thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time())
     recent = (
         db.query(models.HealthReading)
         .filter(
             models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_timestamp >= seven_days_ago,
+            models.HealthReading.reading_timestamp >= thirty_days_ago,
         )
         .order_by(models.HealthReading.reading_timestamp.asc())
         .all()
@@ -343,9 +436,13 @@ Critical thresholds that REQUIRE urgent language (do not soften these):
 - Glucose < 60 mg/dL: dangerously low — recommend immediate action (eat something + seek help).
 
 Task: Write exactly 1-2 sentences of personalised health advice based on the data above.
-For normal or mildly elevated readings: be encouraging and practical.
-For Stage 2 or critical readings: be direct and urgent — ask about medication, recommend seeing a doctor.
-Speak directly to the patient ("Your BP...", "Have you taken..."). Do not be vague for serious readings."""
+Rules:
+- Do NOT merely describe or repeat back the readings (e.g. do not write "Your BP on March 28 was 120/80").
+- Always give actionable advice: what the patient should do, watch for, or keep doing.
+- For normal/mildly elevated readings: be specific and encouraging (e.g. mention a habit, food, or activity).
+- For Stage 2 or critical readings: be direct and urgent — ask if they took their medication, recommend seeing a doctor today.
+- If data is limited (1-2 readings): give general advice relevant to their reading type and values.
+- Speak directly to the patient ("Your readings...", "Try to...", "Keep up..."). Never be vague for serious readings."""
 
     try:
         from google import genai

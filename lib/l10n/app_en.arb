@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "appTitle": "Swasth Health App",
   "appName": "Swasth",
   "loading": "Loading...",
@@ -18,7 +17,6 @@
   "logout": "Logout",
   "profile": "Profile",
   "error": "Error",
-
   "loginTitle": "Login",
   "emailLabel": "Email",
   "passwordLabel": "Password",
@@ -31,7 +29,6 @@
   "emailValidationEmpty": "Please enter your email",
   "emailValidationInvalid": "Please enter a valid email",
   "passwordValidationEmpty": "Please enter your password",
-
   "registerTitle": "Register",
   "accountDetailsSection": "Account Details",
   "healthProfileSection": "Initial Health Profile",
@@ -54,7 +51,6 @@
   "alreadyHaveAccount": "Already have an account?",
   "registerSuccessful": "Registration successful! Please login.",
   "specifyOtherCondition": "Please specify other condition",
-
   "selectProfileTitle": "Select Profile",
   "myProfilesSection": "My Profiles",
   "sharedWithMeSection": "Shared With Me",
@@ -63,15 +59,18 @@
   "pendingInvitesBanner": "You have {count} pending invites",
   "@pendingInvitesBanner": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "homeTitle": "Swasth Health App",
   "viewingProfile": "Viewing: {name}'s Health",
   "@viewingProfile": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "switchProfile": "Switch",
@@ -89,7 +88,9 @@
   "pointsLabel": "{pts} pts",
   "@pointsLabel": {
     "placeholders": {
-      "pts": { "type": "int" }
+      "pts": {
+        "type": "int"
+      }
     }
   },
   "glucometer": "Glucometer",
@@ -104,13 +105,17 @@
   "logReading": "Log {device} Reading",
   "@logReading": {
     "placeholders": {
-      "device": { "type": "String" }
+      "device": {
+        "type": "String"
+      }
     }
   },
   "howToLog": "How would you like to log this reading?",
   "healthTrends": "Health Trends",
   "sevenDays": "7 Days",
   "thirtyDays": "30 Days",
+  "ninetyDays": "90 Days",
+  "oneYear": "1 Year",
   "glucoseTrend": "Glucose Trend",
   "bpTrend": "Blood Pressure Trend",
   "avgLabel": "Avg",
@@ -121,38 +126,43 @@
   "tapToViewTrends": "Tap to view trends →",
   "viewTrends": "View Trends",
   "viewTrendsSubtitle": "7 and 30-day glucose & BP charts",
-
   "healthScore": "Health Score",
   "dayStreak": "{n}-day streak",
   "@dayStreak": {
     "placeholders": {
-      "n": { "type": "int" }
+      "n": {
+        "type": "int"
+      }
     }
   },
   "lastLogged": "Last logged: {time}",
   "@lastLogged": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "noReadingsYetScore": "Log your first reading to see your score",
   "todayGlucose": "Glucose",
   "todayBP": "BP",
-
   "scanWithCamera": "Scan with Camera",
   "connectViaBluetooth": "Connect via Bluetooth",
   "enterManually": "Enter Manually",
-
   "scanTitle": "Scan {device}",
   "@scanTitle": {
     "placeholders": {
-      "device": { "type": "String" }
+      "device": {
+        "type": "String"
+      }
     }
   },
   "placeDeviceInBox": "Place {device} screen inside the box",
   "@placeDeviceInBox": {
     "placeholders": {
-      "device": { "type": "String" }
+      "device": {
+        "type": "String"
+      }
     }
   },
   "toggleFlash": "Toggle Flash",
@@ -160,7 +170,6 @@
   "photoBlurryMessage": "We couldn't read the display. Please retake the photo with:\n\n• Camera steady (no shake)\n• Device screen centered in the guide box\n• Good lighting or flash on",
   "tryAgain": "Try Again",
   "readingImage": "Reading the image...",
-
   "glucoseReadingTitle": "Glucose Reading",
   "bpReadingTitle": "BP Reading",
   "glucoseValueLabel": "Glucose Value",
@@ -185,10 +194,11 @@
   "saveFailed": "Failed to save: {error}",
   "@saveFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
-
   "historyTitle": "Reading History",
   "filterByType": "Filter by type",
   "allReadings": "All Readings",
@@ -205,7 +215,6 @@
   "statusHighStage2": "High - Stage 2",
   "statusLow": "Low",
   "statusCritical": "Critical",
-
   "profileDetailsTitle": "Profile Details",
   "manageAccess": "Manage Access",
   "yourProfile": "Your Profile",
@@ -215,7 +224,9 @@
   "ageYears": "{age} years",
   "@ageYears": {
     "placeholders": {
-      "age": { "type": "String" }
+      "age": {
+        "type": "String"
+      }
     }
   },
   "genderField": "Gender",
@@ -224,7 +235,9 @@
   "heightCm": "{height} cm",
   "@heightCm": {
     "placeholders": {
-      "height": { "type": "String" }
+      "height": {
+        "type": "String"
+      }
     }
   },
   "medicalConditionsField": "Conditions",
@@ -243,7 +256,6 @@
   "appLanguageSection": "App Language",
   "languageEnglish": "English",
   "languageHindi": "हिंदी",
-
   "myDoctorTitle": "My Doctor",
   "contactOnWhatsApp": "Contact on WhatsApp",
   "doctorDetailsSection": "Doctor Details",
@@ -255,12 +267,10 @@
   "editDoctor": "Edit Doctor Details",
   "editDoctorTitle": "Doctor Details",
   "doctorWhatsappHint": "e.g. +917001234567",
-
   "addHealthProfileTitle": "Add Health Profile",
   "createProfileSubtitle": "Create a profile for someone you care for (e.g. parents, child)",
   "profileNameHint": "e.g. Papa, Mummy",
   "createProfile": "Create Profile",
-
   "manageAccessTitle": "Manage Access",
   "inviteSomeoneTitle": "Invite someone to view this profile",
   "enterEmailHint": "Enter email address",
@@ -270,38 +280,48 @@
   "revokeAccessConfirm": "Are you sure you want to stop sharing this profile with {name}?",
   "@revokeAccessConfirm": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
-
   "pendingInvitesTitle": "Pending Invites",
   "noPendingInvites": "No pending invites.",
   "wantsToShare": "wants to share \"{profileName}\"",
   "@wantsToShare": {
     "placeholders": {
-      "profileName": { "type": "String" }
+      "profileName": {
+        "type": "String"
+      }
     }
   },
   "expiresInDays": "Expires in {days} days ({date})",
   "@expiresInDays": {
     "placeholders": {
-      "days": { "type": "int" },
-      "date": { "type": "String" }
+      "days": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
     }
   },
   "acceptedInvite": "Accepted invite for {profileName}",
   "@acceptedInvite": {
     "placeholders": {
-      "profileName": { "type": "String" }
+      "profileName": {
+        "type": "String"
+      }
     }
   },
   "rejectedInvite": "Rejected invite for {profileName}",
   "@rejectedInvite": {
     "placeholders": {
-      "profileName": { "type": "String" }
+      "profileName": {
+        "type": "String"
+      }
     }
   },
-
   "scanDevicesTitle": "Swasth — Scan Devices",
   "pressScanToFind": "Press Scan to find your device",
   "scanButton": "Scan",
@@ -310,20 +330,20 @@
   "lookingForDevices": "Looking for devices...",
   "noDevicesFoundAfterScan": "No devices found. Make sure device is powered on.",
   "connectButton": "Connect",
-
   "forgotPasswordTitle": "Forgot Password",
   "forgotPasswordHeadline": "Forgot Password?",
   "forgotPasswordSubtitle": "Enter your email address and we'll send you an OTP to reset your password.",
   "sendOtp": "Send OTP",
   "otpSentSuccess": "OTP sent successfully! Check your email.",
   "rememberPassword": "Remember your password?",
-
   "verifyOtpTitle": "Verify OTP",
   "enterOtpHeadline": "Enter OTP",
   "otpSentTo": "We've sent a 6-digit OTP to\n{email}",
   "@otpSentTo": {
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "otpLabel": "OTP",
@@ -333,16 +353,43 @@
   "resendIn": "Resend in {seconds}s",
   "@resendIn": {
     "placeholders": {
-      "seconds": { "type": "int" }
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "resendOtp": "Resend OTP",
   "otpResent": "OTP resent successfully! Check your email.",
   "wantToGoBack": "Want to go back?",
-
   "resetPasswordTitle": "Reset Password",
   "createNewPasswordHeadline": "Create New Password",
   "createNewPasswordSubtitle": "Your new password must be different from your old password.",
   "resetPasswordButton": "Reset Password",
-  "passwordResetSuccess": "Password reset successfully!"
+  "passwordResetSuccess": "Password reset successfully!",
+  "wellnessScoreSection": "Wellness Score",
+  "vitalSummarySection": "Vital Summary",
+  "ninetyDayAvg": "90 Days Avg",
+  "aiInsightSection": "AI Health Insight",
+  "primaryPhysicianSection": "Primary Physician",
+  "individualMetricsSection": "Individual Metrics",
+  "footerDisclaimer": "Not a medical diagnosis. Consult your doctor for clinical advice. All AI insights are for informational purposes.",
+  "goodMorning": "Good morning,",
+  "goodAfternoon": "Good afternoon,",
+  "goodEvening": "Good evening,",
+  "hello": "Hello,",
+  "trendStable": "Stable",
+  "optimumRange": "Optimum Range",
+  "physicianConnected": "Connected",
+  "physicianNotLinked": "Not Linked",
+  "activeSync": "Active Sync",
+  "notConnected": "Not Connected",
+  "lastBP": "Last BP",
+  "lastSugar": "Last Sugar",
+  "liveSteps": "Live Steps",
+  "offlineBanner": "You are offline. Some features may be limited.",
+  "loggedInOffline": "Logged in offline",
+  "readingSavedOffline": "Reading saved offline. Will sync when connected.",
+  "syncComplete": "Synced {count} readings",
+  "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
+  "offlineLoginExpired": "Please connect to the internet to log in"
 }

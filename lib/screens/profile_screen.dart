@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_card.dart';
 import '../services/profile_service.dart';
 import '../services/api_service.dart';
 import '../models/profile_model.dart';
@@ -291,8 +292,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildLanguageToggle(AppLocalizations l10n) {
     final isEnglish = ref.watch(languageProvider).languageCode == 'en';
-    return Card(
+    return GlassCard(
       margin: const EdgeInsets.only(bottom: 8),
+      borderRadius: 16,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -391,8 +393,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withOpacity(0.7)],
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, Color(0xFF38BDF8)],  // sky-500 → sky-400
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -402,7 +404,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.primary),
+                    child: const Icon(Icons.person, size: 50, color: AppColors.primary),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -452,9 +454,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Text(l10n.noDoctorLinked,
                         style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                   ),
-                Card(
+                GlassCard(
+                  borderRadius: 16,
                   child: ListTile(
-                    leading: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.primary),
+                    leading: const Icon(Icons.edit_outlined, color: AppColors.primary),
                     title: Text(_profile?.doctorName?.isNotEmpty == true ? l10n.editDoctor : l10n.addDoctor),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: _showEditDoctorDialog,
@@ -466,9 +469,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               _buildSection(l10n.accountSettingsSection, [
                 _buildInfoCard(icon: Icons.email, label: l10n.linkedEmail, value: _userData?['email'] ?? 'N/A'),
                 const SizedBox(height: 8),
-                Card(
+                GlassCard(
+                  borderRadius: 16,
                   child: ListTile(
-                    leading: Icon(Icons.lock_outline, color: Theme.of(context).colorScheme.primary),
+                    leading: const Icon(Icons.lock_outline, color: AppColors.primary),
                     title: Text(l10n.changePassword),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: _showChangePasswordDialog,
@@ -500,10 +504,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildInfoCard({required IconData icon, required String label, required String value}) {
-    return Card(
+    return GlassCard(
       margin: const EdgeInsets.only(bottom: 8),
+      borderRadius: 16,
       child: ListTile(
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        leading: Icon(icon, color: AppColors.primary),
         title: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
         subtitle: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
       ),

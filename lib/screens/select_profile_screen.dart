@@ -8,9 +8,10 @@ import '../models/invite_model.dart';
 import '../theme/app_theme.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
-import 'home_screen.dart';
+import 'shell_screen.dart';
 import 'create_profile_screen.dart';
 import 'pending_invites_screen.dart';
+import '../widgets/offline_banner.dart';
 
 class SelectProfileScreen extends StatefulWidget {
   const SelectProfileScreen({super.key});
@@ -26,6 +27,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   List<ProfileModel> _profiles = [];
   List<InviteModel> _pendingInvites = [];
   bool _isLoading = true;
+  bool _isOffline = false;
   String? _error;
 
   @override
@@ -50,12 +52,28 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       final profiles = await _profileService.getProfiles(token);
       final invites = await _profileService.getPendingInvites(token);
 
+      // Cache profiles for offline use
+      await _storageService.saveProfiles(
+        profiles.map((p) => p.toJson()).toList(),
+      );
+
       setState(() {
         _profiles = profiles;
         _pendingInvites = invites;
         _isLoading = false;
+        _isOffline = false;
       });
     } catch (e) {
+      // Try loading cached profiles for offline use
+      final cached = await _storageService.getCachedProfiles();
+      if (cached != null && cached.isNotEmpty) {
+        setState(() {
+          _profiles = cached.map((j) => ProfileModel.fromJson(j)).toList();
+          _isLoading = false;
+          _isOffline = true;
+        });
+        return;
+      }
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
@@ -70,7 +88,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(builder: (context) => const ShellScreen()),
       );
     }
   }
@@ -113,6 +131,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (_isOffline) const OfflineBanner(),
                         if (_pendingInvites.isNotEmpty)
                           _buildInvitesBanner(l10n),
 
@@ -218,15 +237,15 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       child: ListTile(
         onTap: () => _selectProfile(profile),
         leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          backgroundColor: AppColors.primary,
           child: Text(
             profile.name[0].toUpperCase(),
-            style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
         title: Text(
           profile.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
         ),
         subtitle: Text(
           '${profile.age ?? "?"} yrs · ${profile.gender ?? "Unknown"}',
@@ -236,16 +255,16 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: profile.accessLevel == 'owner'
-                ? AppColors.accent.withOpacity(0.1)
-                : AppColors.statusNormal.withOpacity(0.1),
+                ? AppColors.primary
+                : AppColors.success,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             profile.accessLevel.toUpperCase(),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: profile.accessLevel == 'owner' ? AppColors.accent : AppColors.statusNormal,
+              color: Colors.white,
             ),
           ),
         ),

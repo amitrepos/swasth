@@ -275,6 +275,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thirtyDays => '30 Days';
 
   @override
+  String get ninetyDays => '90 Days';
+
+  @override
+  String get oneYear => '1 Year';
+
+  @override
   String get glucoseTrend => 'Glucose Trend';
 
   @override
@@ -758,4 +764,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordResetSuccess => 'Password reset successfully!';
+
+  @override
+  String get wellnessScoreSection => 'Wellness Score';
+
+  @override
+  String get vitalSummarySection => 'Vital Summary';
+
+  @override
+  String get ninetyDayAvg => '90 Days Avg';
+
+  @override
+  String get aiInsightSection => 'AI Health Insight';
+
+  @override
+  String get primaryPhysicianSection => 'Primary Physician';
+
+  @override
+  String get individualMetricsSection => 'Individual Metrics';
+
+  @override
+  String get footerDisclaimer =>
+      'Not a medical diagnosis. Consult your doctor for clinical advice. All AI insights are for informational purposes.';
+
+  @override
+  String get goodMorning => 'Good morning,';
+
+  @override
+  String get goodAfternoon => 'Good afternoon,';
+
+  @override
+  String get goodEvening => 'Good evening,';
+
+  @override
+  String get hello => 'Hello,';
+
+  @override
+  String get trendStable => 'Stable';
+
+  @override
+  String get optimumRange => 'Optimum Range';
+
+  @override
+  String get physicianConnected => 'Connected';
+
+  @override
+  String get physicianNotLinked => 'Not Linked';
+
+  @override
+  String get activeSync => 'Active Sync';
+
+  @override
+  String get notConnected => 'Not Connected';
+
+  @override
+  String get lastBP => 'Last BP';
+
+  @override
+  String get lastSugar => 'Last Sugar';
+
+  @override
+  String get liveSteps => 'Live Steps';
+
+  @override
+  String get offlineBanner => 'You are offline. Some features may be limited.';
+
+  @override
+  String get loggedInOffline => 'Logged in offline';
+
+  @override
+  String get readingSavedOffline =>
+      'Reading saved offline. Will sync when connected.';
+
+  @override
+  String syncComplete(int count) {
+    return 'Synced $count readings';
+  }
+
+  @override
+  String get offlineLoginExpired => 'Please connect to the internet to log in';
 }

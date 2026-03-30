@@ -1,60 +1,78 @@
 import 'package:flutter/material.dart';
 
-/// Design3 color palette for Swasth app.
-/// Dark-navy backgrounds, purple accent, emerald glucose, rose BP.
+/// Glassmorphism color palette for Swasth app.
+/// Sky-blue backgrounds, frosted-glass cards, emerald success, slate text.
+///
+/// CONTRAST RULE: Never use [primary] (sky-500) as text/icon color on [bgPage]
+/// (sky-50) — they share the same hue and produce < 2:1 contrast ratio.
+/// Use [textPrimary] (slate-800) or [textSecondary] (slate-500) for text.
+/// Use solid [primary]/[success]/[amber] backgrounds with [Colors.white] text
+/// for badges, chips, and avatars.
 abstract final class AppColors {
-  // ── Base accent colors ──────────────────────────────────────────────────
-  static const Color iosBlue    = Color(0xFF7B61FF);   // Design3 primary accent purple
-  static const Color iosRed     = Color(0xFFF87171);   // Design3 soft critical red
-  static const Color iosOrange  = Color(0xFFFBBF24);   // Design3 amber elevated
-  static const Color iosGreen   = Color(0xFF34D399);   // Design3 emerald normal
-  static const Color iosPurple  = Color(0xFFA855F7);   // Design3 accent gradient end
-  static const Color iosTeal    = Color(0xFF60A5FA);   // Design3 insight blue
+  // ── Primary accent ───────────────────────────────────────────────────────
+  static const Color primary    = Color(0xFF0EA5E9);  // sky-500 — buttons, rings, accents
+  static const Color success    = Color(0xFF10B981);  // emerald-500 — healthy states
+  static const Color amber      = Color(0xFFF59E0B);  // amber-500 — streak, points, caution
+  static const Color danger     = Color(0xFFEF4444);  // red-500 — critical states
 
-  // ── Semantic health metric colors ───────────────────────────────────────
-  static const Color glucose       = Color(0xFF34D399);  // emerald (was orange)
-  static const Color bloodPressure = Color(0xFFFB7185);  // rose (was hard red)
-  static const Color scoreHealthy  = Color(0xFF34D399);  // emerald
+  // ── Semantic health metric colors (clinically meaningful — do not change) ─
+  static const Color glucose       = Color(0xFF10B981);  // emerald
+  static const Color bloodPressure = Color(0xFFFB7185);  // rose
+  static const Color scoreHealthy  = Color(0xFF10B981);  // emerald
 
-  // ── Status badge colors ─────────────────────────────────────────────────
-  static const Color statusNormal   = Color(0xFF34D399);  // emerald
-  static const Color statusElevated = Color(0xFFFBBF24);  // amber
-  static const Color statusHigh     = Color(0xFFF87171);  // soft red
-  static const Color statusCritical = Color(0xFFF87171);  // soft red
-  static const Color statusLow      = Color(0xFF636366);  // neutral gray (unchanged)
+  // ── Status badge colors ──────────────────────────────────────────────────
+  static const Color statusNormal   = Color(0xFF10B981);  // emerald
+  static const Color statusElevated = Color(0xFFF59E0B);  // amber
+  static const Color statusHigh     = Color(0xFFEF4444);  // red
+  static const Color statusCritical = Color(0xFFEF4444);  // red
+  static const Color statusLow      = Color(0xFF64748B);  // slate-500
 
-  // ── Surfaces — light ────────────────────────────────────────────────────
-  static const Color bgPrimary  = Color(0xFFE8EAF2);  // Design3 bg-page light
-  static const Color bgCard     = Color(0xFFFFFFFF);  // unchanged
-  static const Color bgGrouped  = Color(0xFFF7F7FC);  // Design3 bg-card2 light
+  // ── Surfaces — light ─────────────────────────────────────────────────────
+  static const Color bgPage     = Color(0xFFF0F9FF);  // sky-50 — scaffold background
+  static const Color bgCard     = Color(0xCCFFFFFF);  // 80% white — glass card fill
+  static const Color bgGrouped  = Color(0xFFE0F2FE);  // sky-100 — grouped sections
 
-  // ── Surfaces — dark ─────────────────────────────────────────────────────
-  static const Color bgPrimaryDark = Color(0xFF0E0E1A);  // Design3 bg-page dark
-  static const Color bgCardDark    = Color(0xFF1C1C2E);  // Design3 bg-card dark
-  static const Color bgGroupedDark = Color(0xFF22223A);  // Design3 bg-card2 dark
+  // ── Surfaces — dark ──────────────────────────────────────────────────────
+  static const Color bgPageDark    = Color(0xFF0C1A2E);  // deep navy
+  static const Color bgCardDark    = Color(0x33FFFFFF);  // 20% white on dark
+  static const Color bgGroupedDark = Color(0xFF0F2540);  // dark grouped
 
-  // ── Text — light ────────────────────────────────────────────────────────
-  static const Color textPrimary   = Color(0xFF111127);  // dark navy (not pure black)
-  static const Color textSecondary = Color(0x80111127);  // 50% opacity of primary
-  static const Color textTertiary  = Color(0x47111127);  // 28% opacity of primary
+  // ── Glass card decorative ────────────────────────────────────────────────
+  static const Color glassCardBorder = Color(0xFFBAE6FD);  // sky-200 — visible border on sky-50 bg
+  static const Color glassShadow     = Color(0x1A1F2687);  // blue shadow — 12% opacity
 
-  // ── Text — dark ─────────────────────────────────────────────────────────
+  // ── Text — light ─────────────────────────────────────────────────────────
+  static const Color textPrimary   = Color(0xFF1E293B);  // slate-800
+  static const Color textSecondary = Color(0xFF64748B);  // slate-500
+  static const Color textTertiary  = Color(0xFFCBD5E1);  // slate-300
+
+  // ── Text — dark ──────────────────────────────────────────────────────────
   static const Color textPrimaryDark   = Color(0xFFFFFFFF);
-  static const Color textSecondaryDark = Color(0x80FFFFFF);  // white 50%
-  static const Color textTertiaryDark  = Color(0x47FFFFFF);  // white 28%
+  static const Color textSecondaryDark = Color(0xFF94A3B8);  // slate-400
+  static const Color textTertiaryDark  = Color(0xFF475569);  // slate-600
 
-  // ── Separators ──────────────────────────────────────────────────────────
-  static const Color separator     = Color(0x12000000);  // 7% black
-  static const Color separatorDark = Color(0x12FFFFFF);  // 7% white
+  // ── Separators ───────────────────────────────────────────────────────────
+  static const Color separator     = Color(0x1A000000);  // 10% black
+  static const Color separatorDark = Color(0x1AFFFFFF);  // 10% white
 
-  // ── New Design3 tokens ──────────────────────────────────────────────────
-  static const Color accent   = Color(0xFF7B61FF);  // primary accent purple
-  static const Color accent2  = Color(0xFFA855F7);  // gradient end
-  static const Color insight  = Color(0xFF60A5FA);  // insight blue
+  // ── Extended surfaces ────────────────────────────────────────────────────
+  static const Color bgPill     = Color(0xFFE0F2FE);  // sky-100 chip/pill bg light
+  static const Color bgPillDark = Color(0xFF1E3A5F);  // dark chip/pill bg
 
-  // ── Extended surfaces ───────────────────────────────────────────────────
-  static const Color bgCard2     = Color(0xFFF7F7FC);  // light secondary card
-  static const Color bgPill      = Color(0xFFEEEEF6);  // light chip/pill bg
-  static const Color bgCard2Dark = Color(0xFF22223A);  // dark secondary card
-  static const Color bgPillDark  = Color(0xFF252540);  // dark chip/pill bg
+  // ── Backwards-compat aliases (used in existing screens — do not remove) ──
+  static const Color iosBlue   = primary;
+  static const Color iosGreen  = success;
+  static const Color iosOrange = amber;
+  static const Color iosTeal   = Color(0xFF38BDF8);  // sky-400
+  static const Color iosPurple = Color(0xFF818CF8);  // indigo-400 (replaces old purple)
+  static const Color iosRed    = danger;
+  static const Color accent    = primary;
+  static const Color accent2   = Color(0xFF38BDF8);  // sky-400
+  static const Color insight   = Color(0xFF38BDF8);  // sky-400
+  static const Color bgPrimary    = bgPage;
+  static const Color bgPrimaryDark = bgPageDark;
+  static const Color bgCard2      = bgGrouped;
+  static const Color bgCard2Dark  = bgGroupedDark;
+  static const Color bgPill2      = bgPill;
+  static const Color bgPill2Dark  = bgPillDark;
 }

@@ -1,6 +1,5 @@
 {
   "@@locale": "hi",
-
   "appTitle": "स्वस्थ हेल्थ ऐप",
   "appName": "स्वस्थ",
   "loading": "लोड हो रहा है...",
@@ -18,7 +17,6 @@
   "logout": "लॉग आउट",
   "profile": "प्रोफाइल",
   "error": "गड़बड़ी",
-
   "loginTitle": "लॉग इन",
   "emailLabel": "ईमेल",
   "passwordLabel": "पासवर्ड",
@@ -31,7 +29,6 @@
   "emailValidationEmpty": "कृपया अपना ईमेल डालें",
   "emailValidationInvalid": "कृपया सही ईमेल डालें",
   "passwordValidationEmpty": "कृपया अपना पासवर्ड डालें",
-
   "registerTitle": "रजिस्टर",
   "accountDetailsSection": "खाता जानकारी",
   "healthProfileSection": "स्वास्थ्य प्रोफाइल",
@@ -54,14 +51,12 @@
   "alreadyHaveAccount": "पहले से खाता है?",
   "registerSuccessful": "रजिस्ट्रेशन सफल! कृपया लॉग इन करें।",
   "specifyOtherCondition": "कृपया बीमारी बताएं",
-
   "selectProfileTitle": "प्रोफाइल चुनें",
   "myProfilesSection": "मेरी प्रोफाइल",
   "sharedWithMeSection": "मेरे साथ साझा",
   "noSharedProfiles": "अभी कोई साझा प्रोफाइल नहीं है।",
   "addProfile": "प्रोफाइल जोड़ें",
   "pendingInvitesBanner": "आपके पास {count} निमंत्रण हैं",
-
   "homeTitle": "स्वस्थ हेल्थ ऐप",
   "viewingProfile": "{name} की स्वास्थ्य जानकारी",
   "switchProfile": "बदलें",
@@ -79,7 +74,9 @@
   "pointsLabel": "{pts} अंक",
   "@pointsLabel": {
     "placeholders": {
-      "pts": { "type": "int" }
+      "pts": {
+        "type": "int"
+      }
     }
   },
   "glucometer": "ग्लूकोमीटर",
@@ -96,6 +93,8 @@
   "healthTrends": "स्वास्थ्य ट्रेंड",
   "sevenDays": "7 दिन",
   "thirtyDays": "30 दिन",
+  "ninetyDays": "90 दिन",
+  "oneYear": "1 वर्ष",
   "glucoseTrend": "ग्लूकोज ट्रेंड",
   "bpTrend": "रक्तचाप ट्रेंड",
   "avgLabel": "औसत",
@@ -106,28 +105,29 @@
   "tapToViewTrends": "ट्रेंड देखने के लिए टैप करें →",
   "viewTrends": "ट्रेंड देखें",
   "viewTrendsSubtitle": "7 और 30-दिन के ग्लूकोज और बीपी चार्ट",
-
   "healthScore": "स्वास्थ्य स्कोर",
   "dayStreak": "{n}-दिन की स्ट्रीक",
   "@dayStreak": {
     "placeholders": {
-      "n": { "type": "int" }
+      "n": {
+        "type": "int"
+      }
     }
   },
   "lastLogged": "अंतिम लॉग: {time}",
   "@lastLogged": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "noReadingsYetScore": "अपना स्कोर देखने के लिए पहली रीडिंग दर्ज करें",
   "todayGlucose": "ग्लूकोज",
   "todayBP": "बीपी",
-
   "scanWithCamera": "कैमरे से स्कैन करें",
   "connectViaBluetooth": "ब्लूटूथ से जोड़ें",
   "enterManually": "मैन्युअल दर्ज करें",
-
   "scanTitle": "{device} स्कैन करें",
   "placeDeviceInBox": "{device} की स्क्रीन बॉक्स में रखें",
   "toggleFlash": "फ्लैश चालू/बंद करें",
@@ -135,7 +135,6 @@
   "photoBlurryMessage": "हम स्क्रीन नहीं पढ़ सके। कृपया दोबारा फोटो लें:\n\n• कैमरा स्थिर रखें\n• डिवाइस की स्क्रीन बॉक्स में रखें\n• अच्छी रोशनी या फ्लैश चालू करें",
   "tryAgain": "दोबारा कोशिश करें",
   "readingImage": "इमेज पढ़ी जा रही है...",
-
   "glucoseReadingTitle": "ग्लूकोज रीडिंग",
   "bpReadingTitle": "बीपी रीडिंग",
   "glucoseValueLabel": "ग्लूकोज मान",
@@ -158,7 +157,6 @@
   "systolicValidation": "सही सिस्टोलिक मान डालें (60–250 mmHg)",
   "diastolicValidation": "सही डायस्टोलिक मान डालें (40–150 mmHg)",
   "saveFailed": "सेव नहीं हुआ: {error}",
-
   "historyTitle": "रीडिंग इतिहास",
   "filterByType": "प्रकार से छानें",
   "allReadings": "सभी रीडिंग",
@@ -175,7 +173,6 @@
   "statusHighStage2": "अधिक - चरण 2",
   "statusLow": "कम",
   "statusCritical": "गंभीर",
-
   "profileDetailsTitle": "प्रोफाइल विवरण",
   "manageAccess": "पहुंच प्रबंधित करें",
   "yourProfile": "आपकी प्रोफाइल",
@@ -203,7 +200,6 @@
   "appLanguageSection": "ऐप की भाषा",
   "languageEnglish": "English",
   "languageHindi": "हिंदी",
-
   "myDoctorTitle": "मेरे डॉक्टर",
   "contactOnWhatsApp": "व्हाट्सएप पर संपर्क करें",
   "doctorDetailsSection": "डॉक्टर की जानकारी",
@@ -215,12 +211,10 @@
   "editDoctor": "डॉक्टर की जानकारी बदलें",
   "editDoctorTitle": "डॉक्टर की जानकारी",
   "doctorWhatsappHint": "जैसे +917001234567",
-
   "addHealthProfileTitle": "स्वास्थ्य प्रोफाइल जोड़ें",
   "createProfileSubtitle": "किसी की देखभाल के लिए प्रोफाइल बनाएं (जैसे माता-पिता, बच्चा)",
   "profileNameHint": "जैसे पापा, मम्मी",
   "createProfile": "प्रोफाइल बनाएं",
-
   "manageAccessTitle": "पहुंच प्रबंधित करें",
   "inviteSomeoneTitle": "किसी को यह प्रोफाइल देखने के लिए आमंत्रित करें",
   "enterEmailHint": "ईमेल पता डालें",
@@ -228,14 +222,12 @@
   "inviteSentSuccess": "आमंत्रण सफलतापूर्वक भेजा गया",
   "revokeAccessTitle": "पहुंच हटाएं?",
   "revokeAccessConfirm": "क्या आप {name} के साथ यह प्रोफाइल साझा करना बंद करना चाहते हैं?",
-
   "pendingInvitesTitle": "लंबित आमंत्रण",
   "noPendingInvites": "कोई लंबित आमंत्रण नहीं।",
   "wantsToShare": "\"{profileName}\" साझा करना चाहते हैं",
   "expiresInDays": "{days} दिन में समाप्त ({date})",
   "acceptedInvite": "{profileName} का आमंत्रण स्वीकार किया",
   "rejectedInvite": "{profileName} का आमंत्रण अस्वीकार किया",
-
   "scanDevicesTitle": "स्वस्थ — डिवाइस खोजें",
   "pressScanToFind": "डिवाइस खोजने के लिए स्कैन दबाएं",
   "scanButton": "स्कैन",
@@ -244,14 +236,12 @@
   "lookingForDevices": "डिवाइस खोज रहे हैं...",
   "noDevicesFoundAfterScan": "कोई डिवाइस नहीं मिला। डिवाइस चालू करें।",
   "connectButton": "जोड़ें",
-
   "forgotPasswordTitle": "पासवर्ड भूल गए",
   "forgotPasswordHeadline": "पासवर्ड भूल गए?",
   "forgotPasswordSubtitle": "अपना ईमेल डालें, हम आपको OTP भेजेंगे।",
   "sendOtp": "OTP भेजें",
   "otpSentSuccess": "OTP सफलतापूर्वक भेजा गया! ईमेल देखें।",
   "rememberPassword": "पासवर्ड याद है?",
-
   "verifyOtpTitle": "OTP सत्यापित करें",
   "enterOtpHeadline": "OTP डालें",
   "otpSentTo": "हमने {email} पर 6 अंकों का OTP भेजा है",
@@ -263,10 +253,35 @@
   "resendOtp": "OTP दोबारा भेजें",
   "otpResent": "OTP दोबारा भेजा गया! ईमेल देखें।",
   "wantToGoBack": "वापस जाना चाहते हैं?",
-
   "resetPasswordTitle": "पासवर्ड रीसेट",
   "createNewPasswordHeadline": "नया पासवर्ड बनाएं",
   "createNewPasswordSubtitle": "आपका नया पासवर्ड पुराने से अलग होना चाहिए।",
   "resetPasswordButton": "पासवर्ड रीसेट करें",
-  "passwordResetSuccess": "पासवर्ड सफलतापूर्वक रीसेट हुआ!"
+  "passwordResetSuccess": "पासवर्ड सफलतापूर्वक रीसेट हुआ!",
+  "wellnessScoreSection": "स्वास्थ्य स्कोर",
+  "vitalSummarySection": "महत्वपूर्ण सारांश",
+  "ninetyDayAvg": "90 दिन औसत",
+  "aiInsightSection": "AI स्वास्थ्य सुझाव",
+  "primaryPhysicianSection": "मुख्य चिकित्सक",
+  "individualMetricsSection": "व्यक्तिगत मेट्रिक्स",
+  "footerDisclaimer": "यह चिकित्सा निदान नहीं है। नैदानिक सलाह के लिए अपने डॉक्टर से परामर्श करें।",
+  "goodMorning": "सुप्रभात,",
+  "goodAfternoon": "नमस्कार,",
+  "goodEvening": "शुभ संध्या,",
+  "hello": "नमस्ते,",
+  "trendStable": "स्थिर",
+  "optimumRange": "सामान्य सीमा",
+  "physicianConnected": "जुड़े हुए",
+  "physicianNotLinked": "नहीं जुड़े",
+  "activeSync": "सक्रिय सिंक",
+  "notConnected": "नहीं जुड़ा",
+  "lastBP": "पिछला BP",
+  "lastSugar": "पिछला शुगर",
+  "liveSteps": "कदम",
+  "offlineBanner": "आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।",
+  "loggedInOffline": "ऑफ़लाइन लॉगिन हुआ",
+  "readingSavedOffline": "रीडिंग ऑफ़लाइन सहेजी गई। कनेक्ट होने पर सिंक होगी।",
+  "syncComplete": "{count} रीडिंग सिंक हुईं",
+  "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
+  "offlineLoginExpired": "लॉगिन करने के लिए इंटरनेट से कनेक्ट करें"
 }

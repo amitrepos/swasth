@@ -96,6 +96,15 @@ class HealthReading {
     };
   }
 
+  /// Full JSON including server-assigned fields — used for local caching.
+  Map<String, dynamic> toCacheJson() {
+    return {
+      'id': id,
+      ...toJson(),
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
   String get displayValue {
     if (readingType == 'glucose') {
       return '${glucoseValue?.toStringAsFixed(1) ?? '-'} $unitDisplay';
@@ -164,6 +173,8 @@ class HealthReading {
   }
 }
 
+const _kTimeout = Duration(seconds: 20);
+
 class HealthReadingService {
   static String baseUrl = '${AppConfig.serverHost}/api'; // Use /api prefix for health endpoints
 
@@ -174,7 +185,7 @@ class HealthReadingService {
         Uri.parse('$baseUrl/readings'),
         headers: ApiClient.headers(token: token),
         body: jsonEncode(reading.toJson()),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 201) return HealthReading.fromJson(jsonDecode(response.body));
       throw Exception(ApiClient.errorDetail(response, 'Failed to save reading'));
     } catch (e) {
@@ -197,7 +208,7 @@ class HealthReadingService {
       final response = await http.get(
         Uri.parse(url),
         headers: ApiClient.headers(token: token),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 200) {
         return (jsonDecode(response.body) as List).map((j) => HealthReading.fromJson(j)).toList();
       }
@@ -213,7 +224,7 @@ class HealthReadingService {
       final response = await http.get(
         Uri.parse('$baseUrl/readings/$readingId'),
         headers: ApiClient.headers(token: token),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 200) return HealthReading.fromJson(jsonDecode(response.body));
       throw Exception(ApiClient.errorDetail(response, 'Reading not found'));
     } catch (e) {
@@ -227,7 +238,7 @@ class HealthReadingService {
       final response = await http.delete(
         Uri.parse('$baseUrl/readings/$readingId'),
         headers: ApiClient.headers(token: token),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode != 200) {
         throw Exception(ApiClient.errorDetail(response, 'Failed to delete reading'));
       }
@@ -242,7 +253,7 @@ class HealthReadingService {
       final response = await http.get(
         Uri.parse('$baseUrl/readings/stats/summary?profile_id=$profileId'),
         headers: ApiClient.headers(token: token),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
       throw Exception(ApiClient.errorDetail(response, 'Failed to get summary'));
     } catch (e) {
@@ -256,7 +267,7 @@ class HealthReadingService {
       final response = await http.get(
         Uri.parse('$baseUrl/readings/ai-insight?profile_id=$profileId'),
         headers: ApiClient.headers(token: token),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return (data['insight'] as String?) ?? '';
@@ -321,7 +332,7 @@ class HealthReadingService {
       final response = await http.get(
         Uri.parse('$baseUrl/readings/health-score?profile_id=$profileId'),
         headers: ApiClient.headers(token: token),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
       throw Exception(ApiClient.errorDetail(response, 'Failed to get health score'));
     } catch (e) {

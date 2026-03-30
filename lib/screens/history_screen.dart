@@ -4,6 +4,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_card.dart';
 
 class HistoryScreen extends StatefulWidget {
   final int profileId;
@@ -41,11 +42,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
         limit: 100,
       );
 
+      // Cache readings for offline use
+      await StorageService().saveReadings(
+        widget.profileId,
+        readings.map((r) => r.toCacheJson()).toList(),
+      );
+
       setState(() {
         _readings = readings;
         _isLoading = false;
       });
     } catch (e) {
+      // Try loading cached readings for offline use
+      final cached = await StorageService().getCachedReadings(widget.profileId);
+      if (cached != null && cached.isNotEmpty) {
+        var readings = cached.map((j) => HealthReading.fromJson(j)).toList();
+        if (_filterType != null) {
+          readings = readings.where((r) => r.readingType == _filterType).toList();
+        }
+        setState(() {
+          _readings = readings;
+          _isLoading = false;
+        });
+        return;
+      }
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -223,8 +243,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     itemCount: _readings.length,
                     itemBuilder: (context, index) {
                       final reading = _readings[index];
-                      return Card(
+                      return GlassCard(
                         margin: const EdgeInsets.only(bottom: 12),
+                        borderRadius: 16,
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: _getStatusColor(reading.statusFlag)

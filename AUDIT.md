@@ -5,6 +5,66 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — Refactor home_screen.dart: extract widgets (1635 → 367 lines)
+
+- Refactored `lib/screens/home_screen.dart`: Reduced from 1635 to 367 lines by extracting 7 widget/utility files. Pure refactor — no visual or behavioral changes.
+- Created `lib/utils/health_helpers.dart`: Extracted pure helper functions (scoreArcColor, statusTextColor, trendLabel, trendColor, formatLastLogged, streakToPoints, computeFlag, fmtPoints) and StatusFlagData class.
+- Created `lib/widgets/home/health_score_ring.dart`: Extracted wellness score donut ring card, ScoreRingPainter, StatusInfoSheet, and showStatusInfoSheet.
+- Created `lib/widgets/home/ai_insight_card.dart`: Extracted AI health insight card with pulsing dot and save toggle.
+- Created `lib/widgets/home/physician_card.dart`: Extracted primary physician card with WhatsApp link.
+- Created `lib/widgets/home/vital_summary_card.dart`: Extracted vital summary card (BP/Sugar/Steps averages) with VitalTile.
+- Created `lib/widgets/home/metrics_grid.dart`: Extracted 2x2 individual metrics grid with MetricTile and ArmBandTile.
+- Created `lib/widgets/home/home_header.dart`: Extracted header (greeting, profile switcher, avatar menu, pills row) with PillButton.
+- Created `lib/widgets/home/reading_input_modal.dart`: Extracted reading input bottom sheet (camera/BLE/manual entry).
+
+## 2026-03-30 — Comprehensive pytest test suite for backend
+
+- Modified `backend/requirements.txt`: Added `pytest`, `pytest-asyncio`, `httpx` test dependencies.
+- Created `backend/health_utils.py`: Extracted pure functions `calculate_health_score`, `classify_bp`, `classify_glucose` from route handlers and Flutter-side logic for testability.
+- Created `backend/tests/__init__.py`: Package marker.
+- Created `backend/tests/conftest.py`: Shared fixtures — in-memory SQLite engine, transactional DB session per test, FastAPI TestClient wired to test DB, pre-created test user + JWT token helpers.
+- Created `backend/tests/test_auth.py`: 10 unit tests for `verify_password`, `get_password_hash`, `create_access_token`, `decode_access_token`.
+- Created `backend/tests/test_health_score.py`: 14 unit tests covering base score, today bonuses/penalties, streak bonuses, clamping, and color thresholds.
+- Created `backend/tests/test_bp_classification.py`: 14 unit tests for BP classification (NORMAL, STAGE 1, STAGE 2, LOW, edge cases).
+- Created `backend/tests/test_glucose_classification.py`: 13 unit tests for glucose classification (LOW, NORMAL, HIGH, CRITICAL, edge cases).
+- Created `backend/tests/test_api_auth.py`: 9 integration tests for register, login, and /me endpoints via TestClient.
+
+## 2026-03-30 — Trend chart 7/30/90-day tabs + glassmorphism upgrade
+
+- Rewrote `lib/screens/trend_chart_screen.dart`: Changed tabs from 7/30 days to 7/30/90 days. Replaced raw `Colors.*` with semantic constants (`_kGlucoseColor`, `_kSysColor`, `_kDiaColor`, `_kGridColor`). Wrapped all chart cards in `GlassCard`. Added adaptive dot radius (4px for 30d, 3px for 90d). Smart X-axis labels (weekly for ≤30d, tri-weekly for 90d). Correlation card, stats rows, legends all preserved.
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added `ninetyDays`, `oneYear` strings.
+
+## 2026-03-30 — A9: Offline login + offline-first MVP for Bihar pilot
+
+- Created `lib/services/connectivity_service.dart`: Singleton with `isServerReachable()` — HEAD request to backend with 2s timeout.
+- Created `lib/services/sync_service.dart`: Flushes offline sync queue when online. Re-logins with saved credentials if token expired. Called from SplashScreen, ShellScreen (30s timer), HomeScreen init.
+- Created `lib/screens/splash_screen.dart`: Auth gate replacing LoginScreen as app entry point. Auto-login with saved credentials (online → fresh token; offline within 7 days → cached session). Falls back to LoginScreen if no credentials or session expired.
+- Created `lib/widgets/offline_banner.dart`: Amber banner with cloud_off icon, localized text.
+- Modified `lib/services/storage_service.dart`: Added cache methods — `saveProfiles/getCachedProfiles`, `saveReadings/getCachedReadings`, `saveHealthScore/getCachedHealthScore`, `addToSyncQueue/getSyncQueue/clearSyncQueue`, `saveLastLoginTimestamp/getLastLoginTimestamp`. `clearAll()` now preserves sync queue and cached data.
+- Modified `lib/services/health_reading_service.dart`: Added `toCacheJson()` method including `id` and `createdAt` for full round-trip caching.
+- Modified `lib/main.dart`: Entry point changed from `LoginScreen` → `SplashScreen`.
+- Modified `lib/screens/login_screen.dart`: Added offline fallback — if network error and entered credentials match saved credentials, allows offline login with cached session.
+- Modified `lib/screens/select_profile_screen.dart`: Caches profiles on successful API fetch. Loads cached profiles with offline banner on failure.
+- Modified `lib/screens/home_screen.dart`: Caches health score on successful fetch, loads cache on failure. Triggers `SyncService.syncPendingReadings()` on init.
+- Modified `lib/screens/history_screen.dart`: Caches readings on successful fetch, loads cached readings on failure.
+- Modified `lib/screens/reading_confirmation_screen.dart`: Queues readings to sync queue when network fails, shows "Saved offline" snackbar.
+- Modified `lib/screens/shell_screen.dart`: Shows `OfflineBanner` when offline. 30s periodic connectivity check. Auto-syncs when coming back online.
+- Modified `lib/screens/photo_scan_screen.dart`: Pre-flight connectivity check before Gemini scan — shows "requires internet" dialog if offline.
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added `offlineBanner`, `loggedInOffline`, `readingSavedOffline`, `syncComplete`, `offlineLoginExpired` strings in both languages.
+
+---
+
+## 2026-03-30 — Phase 1: Glassmorphism theme foundation
+
+- Rewrote `lib/theme/app_theme.dart`: Replaced Design3 purple/navy palette with glassmorphism sky-blue system. New tokens: `primary` (#0EA5E9 sky-500), `success` (#10B981 emerald), `amber`, `danger`, `bgPage` (#F0F9FF), `bgCard` (45% white), `glassCardBorder`, `glassShadow`. Kept all semantic metric colors unchanged (glucose emerald, BP rose — clinically meaningful). Added backwards-compat aliases for all old tokens still referenced in existing screens (`iosBlue`, `iosPurple`, `insight`, `bgCard2`, etc.) so no existing screen breaks.
+- Modified `lib/main.dart`: Swapped `GoogleFonts.inter` → `GoogleFonts.plusJakartaSans` throughout both light and dark themes. Updated `seedColor`/`primary` to sky-500, `scaffoldBackgroundColor` to `AppColors.bgPage`. Updated button, card, input, and bottom nav theme colors to match new palette.
+- Created `lib/widgets/glass_card.dart`: Reusable glassmorphism card widget. Wraps child in `ClipRRect` → `BackdropFilter(blur:12)` → semi-transparent container with white border and soft shadow. Accepts `borderRadius`, `padding`, `margin`, `color`, `border` overrides. Single implementation point — all future screens use this.
+- Modified `lib/services/api_service.dart`: Added `.timeout(Duration(seconds: 20))` to all 6 HTTP calls. Prevents UI freeze on slow server.
+- Modified `lib/services/health_reading_service.dart`: Added `.timeout(Duration(seconds: 20))` to all 6 HTTP calls (`saveReading`, `getReadings`, `getReading`, `deleteReading`, `getSummary`, `getAiInsight`, `getHealthScore`).
+- All tests pass. `flutter analyze` — zero errors.
+
+---
+
 ## 2026-03-29 — Fix parse-image: MIME type + token budget (BP and glucose scanning now working end-to-end)
 
 - Modified `backend/routes_health.py`: Fixed `application/octet-stream` MIME type — iOS camera files don't set content-type, now defaults to `image/jpeg`. Increased `max_output_tokens` from 200 → 1024 to prevent truncation of Gemini 2.5-flash thinking tokens. Both BP and glucose photo scanning confirmed working on device.
@@ -638,3 +698,114 @@ Format: date, summary, file-level details.
   - 10:33:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/app_config_test.dart
   - 10:33:27 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback.md
   - 10:55:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.gitignore
+  - 11:09:59 modified: /Users/amitkumarmishra/.claude/plans/precious-singing-swan.md
+  - 11:30:35 modified: /Users/amitkumarmishra/.claude/plans/precious-singing-swan.md
+  - 11:38:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/theme/app_theme.dart
+  - 11:38:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/glass_card.dart
+  - 11:38:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 11:39:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/api_service.dart
+  - 11:39:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:40:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/theme/app_theme.dart
+  - 11:41:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 11:48:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 11:49:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 11:50:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 12:07:38 modified: lib/screens/select_profile_screen.dart
+  - 12:08:36 modified: lib/screens/home_screen.dart
+  - 12:08:45 modified: lib/theme/app_theme.dart
+  - 12:21:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 12:21:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 12:22:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 12:42:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:54:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:54:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:55:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:55:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:57:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:57:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:58:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 14:16:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 14:16:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+
+## 2026-03-30 — Phase 2 dashboard fixes + Phase 3 bottom navigation shell
+
+### Phase 2 UI fixes (home_screen.dart)
+- Fixed header: greeting no longer shows default "Health" name. Shows "Good afternoon!" without profile name. Added tappable profile name row (with 🔄 icon) directly below greeting — clearer than hidden avatar popup.
+- Fixed "OPTIMUM RANGE" label: now conditional — shows "OPTIMUM RANGE" (score≥70), "MONITOR CLOSELY" (40–69), "NEEDS ATTENTION" (<40). Color matches arc (emerald/amber/red).
+- Added subtitle to AI Health Insight card: "Based on your last 7 days of readings" — gives users context for the Gemini recommendation.
+- Trimmed glucose value in metrics grid from "92 mg/dL" to "92 mg" — fits tile width better.
+- Fixed AI insight card crash: non-uniform Border (left=sky, others=white) can't use borderRadius. Replaced with ClipRRect + Stack + Positioned left bar.
+
+### Phase 3 bottom navigation (new files)
+- Created `lib/screens/shell_screen.dart`: IndexedStack with 5 tabs (HOME/HISTORY/STREAKS/INSIGHTS/CHAT). Reads profileId from StorageService. Animated active indicator dot under selected tab.
+- Created `lib/screens/streaks_screen.dart`: Shows streak count, points, and milestone progress (1/3/7/14/30-day milestones with pts).
+- Created `lib/screens/insights_screen.dart`: Thin wrapper around TrendChartScreen for the Insights tab.
+- Created `lib/screens/chat_screen.dart`: "AI Doctor Chat — Coming Soon" placeholder.
+- Modified `lib/screens/select_profile_screen.dart`: post-select navigates to ShellScreen instead of HomeScreen.
+  - 15:16:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 15:36:29 modified: /Users/amitkumarmishra/.claude/plans/encapsulated-splashing-owl.md
+  - 15:38:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/connectivity_service.dart
+  - 15:38:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/offline_banner.dart
+  - 15:38:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/storage_service.dart
+  - 15:39:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/storage_service.dart
+  - 15:39:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 15:39:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/sync_service.dart
+  - 15:39:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/splash_screen.dart
+  - 15:39:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 15:39:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 15:40:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 15:40:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 15:40:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 15:40:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 15:40:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 15:40:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 15:40:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 15:40:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 15:41:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 15:41:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 15:41:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 15:41:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 15:41:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:41:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:41:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:42:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 15:42:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 15:42:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 15:43:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 15:44:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 15:44:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 15:44:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 15:44:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 16:03:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 16:03:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 16:03:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 16:11:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 16:22:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/requirements.txt
+  - 16:22:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/health_utils.py
+  - 16:22:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/__init__.py
+  - 16:22:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/conftest.py
+  - 16:23:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_auth.py
+  - 16:23:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/utils/health_helpers.dart
+  - 16:23:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_score.py
+  - 16:23:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_bp_classification.py
+  - 16:23:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_glucose_classification.py
+  - 16:23:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/health_score_ring.dart
+  - 16:23:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_api_auth.py
+  - 16:23:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/ai_insight_card.dart
+  - 16:24:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/physician_card.dart
+  - 16:24:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/vital_summary_card.dart
+  - 16:24:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 16:24:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 16:25:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 16:26:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/health_score_ring.dart
+  - 16:26:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/conftest.py
+  - 16:27:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/reading_input_modal.dart
+  - 16:27:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/home_header.dart
+  - 16:28:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 16:28:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

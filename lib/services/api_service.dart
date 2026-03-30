@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'api_client.dart';
 
+const _kTimeout = Duration(seconds: 20);
+
 class ApiService {
   static String baseUrl = AppConfig.apiBaseUrl;
 
@@ -12,7 +14,7 @@ class ApiService {
         Uri.parse('$baseUrl/register'),
         headers: ApiClient.headers(),
         body: jsonEncode(userData),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 201) return jsonDecode(response.body);
       throw Exception(ApiClient.errorDetail(response, 'Registration failed'));
     } catch (e) {
@@ -26,7 +28,7 @@ class ApiService {
         Uri.parse('$baseUrl/login'),
         headers: ApiClient.headers(),
         body: jsonEncode({'email': email, 'password': password}),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
       throw Exception(ApiClient.errorDetail(response, 'Login failed'));
     } catch (e) {
@@ -39,7 +41,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/me'),
         headers: ApiClient.headers(token: token),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
       throw Exception(ApiClient.errorDetail(response, 'Failed to get user data'));
     } catch (e) {
@@ -53,7 +55,7 @@ class ApiService {
         Uri.parse('$baseUrl/forgot-password'),
         headers: ApiClient.headers(),
         body: jsonEncode({'email': email}),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode != 200) {
         throw Exception(ApiClient.errorDetail(response, 'Failed to send OTP'));
       }
@@ -68,7 +70,7 @@ class ApiService {
         Uri.parse('$baseUrl/verify-otp'),
         headers: ApiClient.headers(),
         body: jsonEncode({'email': email, 'otp': otp}),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode != 200) {
         throw Exception(ApiClient.errorDetail(response, 'Invalid OTP'));
       }
@@ -93,7 +95,7 @@ class ApiService {
           'new_password': newPassword,
           'confirm_password': confirmPassword,
         }),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode != 200) {
         throw Exception(ApiClient.errorDetail(response, 'Failed to reset password'));
       }
@@ -111,7 +113,7 @@ class ApiService {
         Uri.parse('$baseUrl/profile'),
         headers: ApiClient.headers(token: token),
         body: jsonEncode(profileData),
-      );
+      ).timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
       throw Exception(ApiClient.errorDetail(response, 'Failed to update profile'));
     } catch (e) {
