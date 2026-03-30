@@ -170,11 +170,24 @@ def get_health_score(
     ).all():
         days_with_readings.add(r.reading_timestamp.date())
 
+    # Count consecutive days backward. If today has no reading, start from
+    # yesterday so that users who logged yesterday still get streak credit.
     streak = 0
-    check_day = today
-    while check_day in days_with_readings:
+    if today in days_with_readings:
+        check_day = today
+    elif (today - timedelta(days=1)) in days_with_readings:
+        check_day = today - timedelta(days=1)
+    else:
+        check_day = None
+
+    while check_day and check_day in days_with_readings:
         streak += 1
         check_day -= timedelta(days=1)
+
+    # Total lifetime reading count — used to distinguish first-time vs returning users
+    total_reading_count = db.query(func.count(models.HealthReading.id)).filter(
+        models.HealthReading.profile_id == profile_id,
+    ).scalar() or 0
 
     # --- Score calculation ---
     score = 50
@@ -219,10 +232,12 @@ def get_health_score(
         )
         insight = f"⚠️ Your {critical_type} is critical. Please consult a doctor."
     elif not today_readings:
-        if streak > 0:
+        if total_reading_count == 0:
+            insight = "Log your first reading to start tracking your health."
+        elif streak > 0:
             insight = f"Log a reading today to keep your {streak}-day streak alive!"
         else:
-            insight = "Log your first reading to start tracking your health."
+            insight = f"Welcome back! You have {total_reading_count} readings on file. Log today's reading to restart your streak."
     elif streak >= 7:
         insight = f"🔥 {streak}-day streak — you're building a great habit!"
     elif 'HIGH - STAGE 2' in today_statuses_set:
@@ -241,7 +256,10 @@ def get_health_score(
     elif today_statuses_set and all(s == 'NORMAL' for s in today_statuses_set):
         insight = "All readings look healthy today. You're doing great!"
     else:
-        insight = "Log daily readings for the best health insights."
+        if total_reading_count > 1:
+            insight = "Readings logged. Keep tracking daily for better insights!"
+        else:
+            insight = "First reading logged! Keep going — daily tracking unlocks better insights."
 
     last_logged = recent[0].reading_timestamp if recent else None
 
@@ -362,15 +380,38 @@ def get_ai_insight(
     Falls back to rule-based insight on any error — never returns 500."""
     get_profile_access_or_403(profile_id, user, db)
 
-    today_str = date.today().isoformat()
-    cache_key = (profile_id, today_str)
-    if cache_key in _insight_cache:
-        return {"insight": _insight_cache[cache_key]}
+    # ── Smart cache: only call LLM when new readings exist ────────────
+    latest_insight = (
+        db.query(models.AiInsightLog)
+        .filter(
+            models.AiInsightLog.profile_id == profile_id,
+            models.AiInsightLog.model_used != "failed",
+        )
+        .order_by(models.AiInsightLog.created_at.desc())
+        .first()
+    )
+    latest_reading = (
+        db.query(models.HealthReading)
+        .filter(models.HealthReading.profile_id == profile_id)
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
 
-    # Fetch profile for age-aware context
+    if latest_insight and latest_reading:
+        # Compare: if no new readings since last insight, return cached
+        insight_time = latest_insight.created_at
+        reading_time = latest_reading.reading_timestamp
+        # Make both offset-naive for comparison
+        if insight_time and hasattr(insight_time, 'replace'):
+            insight_time = insight_time.replace(tzinfo=None)
+        if reading_time and hasattr(reading_time, 'replace'):
+            reading_time = reading_time.replace(tzinfo=None)
+        if insight_time and reading_time and reading_time <= insight_time:
+            return {"insight": latest_insight.response_text}
+
+    # ── Need fresh insight — fetch data ───────────────────────────────
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
 
-    # Fetch last 30 days of readings (wider window = better context for sparse users)
     thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time())
     recent = (
         db.query(models.HealthReading)
@@ -386,7 +427,10 @@ def get_ai_insight(
     glucose_vals = [r.glucose_value for r in recent if r.reading_type == "glucose" and r.glucose_value]
     bp_readings = [(r.systolic, r.diastolic) for r in recent if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
 
-    fallback = _rule_based_insight(recent)
+    total_count = db.query(func.count(models.HealthReading.id)).filter(
+        models.HealthReading.profile_id == profile_id,
+    ).scalar() or 0
+    fallback = _rule_based_insight(recent, total_count=total_count)
 
     if not glucose_vals and not bp_readings:
         return {"insight": fallback}
@@ -459,7 +503,6 @@ Rules:
     insight = ai_service.generate_health_insight(prompt, profile_id, db, prompt_summary)
 
     if insight:
-        _insight_cache[cache_key] = insight
         return {"insight": insight}
 
     # All AI models failed — use rule-based fallback and log it
@@ -620,9 +663,11 @@ async def parse_image_with_gemini(
         return {"error": f"Gemini Vision failed: {str(e)}"}
 
 
-def _rule_based_insight(recent: list) -> str:
+def _rule_based_insight(recent: list, total_count: int = 0) -> str:
     """Simple rule-based fallback used when Gemini is unavailable."""
     if not recent:
+        if total_count > 0:
+            return f"Welcome back! You have {total_count} readings on file. Log today's reading to get fresh insights."
         return "Log your first reading to start tracking your health."
     statuses = {r.status_flag for r in recent if r.status_flag}
     if "CRITICAL" in statuses:
@@ -636,7 +681,7 @@ def _rule_based_insight(recent: list) -> str:
         return "Some readings were elevated this week. Stay hydrated and keep active."
     if statuses and all(s == "NORMAL" for s in statuses):
         return "All recent readings look healthy. Keep up the great work!"
-    return "Keep logging daily readings for the best health insights."
+    return "Readings logged. Keep tracking daily for better health insights."
 
 
 # ---------------------------------------------------------------------------

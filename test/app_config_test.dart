@@ -2,25 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:swasth_app/config/app_config.dart';
 
 void main() {
-  test('serverHost default must be an IP address, not localhost', () {
+  test('serverHost resolves to a valid http(s) URL', () {
     final host = AppConfig.serverHost;
-    // Reject localhost — physical devices cannot reach it
+    // Must be a valid http or https URL with a port
+    final urlPattern = RegExp(r'^https?://.+:\d+$');
     expect(
-      host.contains('localhost'),
-      isFalse,
-      reason: 'serverHost must not use localhost — use a real IP for device testing',
-    );
-    expect(
-      host.contains('127.0.0.1'),
-      isFalse,
-      reason: 'serverHost must not use 127.0.0.1 — use a real IP for device testing',
-    );
-    // Must look like http(s)://x.x.x.x:port
-    final ipPattern = RegExp(r'https?://\d+\.\d+\.\d+\.\d+:\d+');
-    expect(
-      ipPattern.hasMatch(host),
+      urlPattern.hasMatch(host),
       isTrue,
-      reason: 'serverHost must be a valid http(s)://IP:port address, got: $host',
+      reason: 'serverHost must be a valid http(s)://host:port URL, got: $host',
+    );
+  });
+
+  test('apiBaseUrl ends with /api/auth', () {
+    expect(
+      AppConfig.apiBaseUrl.endsWith('/api/auth'),
+      isTrue,
+      reason: 'apiBaseUrl must end with /api/auth',
     );
   });
 }

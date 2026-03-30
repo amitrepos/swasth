@@ -192,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.emailValidationEmpty;
                   }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                  if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
                     return l10n.emailValidationInvalid;
                   }
                   return null;
