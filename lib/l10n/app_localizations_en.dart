@@ -827,6 +827,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveSteps => 'Live Steps';
 
   @override
+  String get relationshipLabel => 'Relationship to patient';
+
+  @override
+  String get relationshipFather => 'Father';
+
+  @override
+  String get relationshipMother => 'Mother';
+
+  @override
+  String get relationshipSpouse => 'Spouse';
+
+  @override
+  String get relationshipSon => 'Son';
+
+  @override
+  String get relationshipDaughter => 'Daughter';
+
+  @override
+  String get relationshipBrother => 'Brother';
+
+  @override
+  String get relationshipSister => 'Sister';
+
+  @override
+  String get relationshipUncle => 'Uncle';
+
+  @override
+  String get relationshipAunt => 'Aunt';
+
+  @override
+  String get relationshipFriend => 'Friend';
+
+  @override
+  String get relationshipOther => 'Other';
+
+  @override
+  String get consentTitle => 'Privacy & Consent';
+
+  @override
+  String get consentSubject => 'Consent for Health Data Processing';
+
+  @override
+  String get consentIntro => 'By using Swasth, I agree to the following:';
+
+  @override
+  String get consentDataCollectionTitle => 'Data Collection';
+
+  @override
+  String get consentDataCollection =>
+      'I allow Swasth to store my blood glucose, blood pressure, and food photos.';
+
+  @override
+  String get consentFamilySharingTitle => 'Family Sharing';
+
+  @override
+  String get consentFamilySharing =>
+      'I understand that if I share my profile, my designated family members (e.g., son/daughter) will see my health scores and receive alerts.';
+
+  @override
+  String get consentPurposeTitle => 'Purpose';
+
+  @override
+  String get consentPurpose =>
+      'My data will be used to provide me with health insights and shared with my doctor for my treatment.';
+
+  @override
+  String get consentRightsTitle => 'My Rights';
+
+  @override
+  String get consentRights =>
+      'I can withdraw my consent or ask to delete my data at any time through the app settings.';
+
+  @override
+  String get consentAccept => 'I Accept';
+
+  @override
+  String get consentDecline => 'I Decline';
+
+  @override
+  String get consentDeclineTitle => 'Decline Consent?';
+
+  @override
+  String get consentDeclineMessage =>
+      'You cannot use Swasth without accepting the privacy notice. Your registration will not be completed.';
+
+  @override
+  String get consentDeclineConfirm => 'Go Back';
+
+  @override
+  String get consentScrollToAccept => 'Scroll down to read the full notice';
+
+  @override
   String get offlineBanner => 'You are offline. Some features may be limited.';
 
   @override

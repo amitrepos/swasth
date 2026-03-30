@@ -118,3 +118,36 @@ class TestMe:
     def test_me_without_token(self, client):
         resp = client.get(self.ME_URL)
         assert resp.status_code == 401
+
+
+class TestConsentInRegistration:
+    REG_URL = "/api/auth/register"
+
+    def test_register_with_consent_fields(self, client):
+        resp = client.post(self.REG_URL, json={
+            "email": "consent@test.com",
+            "password": "Test@1234",
+            "confirm_password": "Test@1234",
+            "full_name": "Consent User",
+            "phone_number": "9876543210",
+            "consent_app_version": "1.0.0",
+            "consent_language": "en",
+        })
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["consent_app_version"] == "1.0.0"
+        assert body["consent_language"] == "en"
+        assert body["consent_timestamp"] is not None
+
+    def test_register_without_consent_fields(self, client):
+        resp = client.post(self.REG_URL, json={
+            "email": "noconsent@test.com",
+            "password": "Test@1234",
+            "confirm_password": "Test@1234",
+            "full_name": "No Consent User",
+            "phone_number": "9876543210",
+        })
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["consent_timestamp"] is None
+        assert body["consent_app_version"] is None

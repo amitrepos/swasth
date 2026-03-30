@@ -382,19 +382,13 @@ def get_ai_insight(
         .all()
     )
 
-    # Build reading lines for prompt
-    glucose_lines = []
-    bp_lines = []
-    for r in recent:
-        day = r.reading_timestamp.strftime("%b %d")
-        if r.reading_type == "glucose" and r.glucose_value:
-            glucose_lines.append(f"  - {day}: {r.glucose_value:.0f} mg/dL ({r.status_flag or 'unknown'})")
-        elif r.reading_type == "blood_pressure" and r.systolic and r.diastolic:
-            bp_lines.append(f"  - {day}: {r.systolic:.0f}/{r.diastolic:.0f} mmHg ({r.status_flag or 'unknown'})")
+    # Build compact summary (averages + ranges) instead of raw readings
+    glucose_vals = [r.glucose_value for r in recent if r.reading_type == "glucose" and r.glucose_value]
+    bp_readings = [(r.systolic, r.diastolic) for r in recent if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
 
     fallback = _rule_based_insight(recent)
 
-    if not glucose_lines and not bp_lines:
+    if not glucose_vals and not bp_readings:
         return {"insight": fallback}
 
     age = profile.age if profile else None
@@ -402,78 +396,75 @@ def get_ai_insight(
     conditions = ", ".join(profile.medical_conditions) if (profile and profile.medical_conditions) else "None reported"
     medications = profile.current_medications if (profile and profile.current_medications) else "None reported"
 
-    readings_section = ""
-    if glucose_lines:
-        readings_section += "Glucose readings:\n" + "\n".join(glucose_lines) + "\n"
-    if bp_lines:
-        readings_section += "Blood pressure readings:\n" + "\n".join(bp_lines) + "\n"
+    # Glucose summary
+    glucose_summary = ""
+    if glucose_vals:
+        avg_g = sum(glucose_vals) / len(glucose_vals)
+        min_g, max_g = min(glucose_vals), max(glucose_vals)
+        normal_g = sum(1 for v in glucose_vals if 70 <= v <= 130)
+        high_g = sum(1 for v in glucose_vals if v > 180)
+        glucose_summary = (
+            f"Glucose (30-day, {len(glucose_vals)} readings): "
+            f"avg {avg_g:.0f}, range {min_g:.0f}–{max_g:.0f} mg/dL, "
+            f"{normal_g} normal, {high_g} critical (>180). "
+            f"Latest: {glucose_vals[-1]:.0f} mg/dL."
+        )
+
+    # BP summary
+    bp_summary = ""
+    if bp_readings:
+        sys_vals = [s for s, _ in bp_readings]
+        dia_vals = [d for _, d in bp_readings]
+        avg_sys = sum(sys_vals) / len(sys_vals)
+        avg_dia = sum(dia_vals) / len(dia_vals)
+        stage2_count = sum(1 for s, d in bp_readings if s > 140 or d > 90)
+        bp_summary = (
+            f"BP (30-day, {len(bp_readings)} readings): "
+            f"avg {avg_sys:.0f}/{avg_dia:.0f} mmHg, "
+            f"range {min(sys_vals):.0f}–{max(sys_vals):.0f}/{min(dia_vals):.0f}–{max(dia_vals):.0f}, "
+            f"{stage2_count} Stage 2 readings. "
+            f"Latest: {sys_vals[-1]:.0f}/{dia_vals[-1]:.0f} mmHg."
+        )
+
+    # Trend direction
+    trend_note = ""
+    if len(glucose_vals) >= 6:
+        mid = len(glucose_vals) // 2
+        first_avg = sum(glucose_vals[:mid]) / mid
+        second_avg = sum(glucose_vals[mid:]) / (len(glucose_vals) - mid)
+        if second_avg < first_avg - 5:
+            trend_note += "Glucose trending DOWN (improving). "
+        elif second_avg > first_avg + 5:
+            trend_note += "Glucose trending UP (worsening). "
 
     age_desc = f"{age} years" if age else "unknown age"
-    age_context = ""
-    if age:
-        if age >= 60:
-            age_context = f"For patients over 60, BP up to 140/90 mmHg may be acceptable. Glucose targets may be slightly more relaxed."
-        elif age < 30:
-            age_context = f"For patients under 30, even 125/80 mmHg BP warrants attention. Glucose should stay close to 80-100 mg/dL fasting."
-        else:
-            age_context = f"For a {age}-year-old, standard BP target is below 130/80 mmHg and fasting glucose below 100 mg/dL."
 
-    prompt = f"""You are a concise health assistant reviewing a patient's recent biometric data.
+    prompt = f"""You are a concise health assistant. Give 1-2 sentences of personalised advice.
 
-Patient:
-- Age: {age_desc} | Gender: {gender}
-- Medical conditions: {conditions}
-- Current medications: {medications}
+Patient: {age_desc}, {gender}. Conditions: {conditions}. Medications: {medications}.
 
-Last 7 days of readings:
-{readings_section}
-Age context: {age_context}
+{glucose_summary}
+{bp_summary}
+{trend_note}
 
-Critical thresholds that REQUIRE urgent language (do not soften these):
-- BP systolic ≥ 180 or diastolic ≥ 120: hypertensive crisis — ask if they took their medication and tell them to see a doctor today.
-- BP ≥ 140/90 (Stage 2): ask if they took their medication and recommend a doctor visit soon.
-- Glucose > 250 mg/dL: dangerously high — recommend immediate medical attention.
-- Glucose < 60 mg/dL: dangerously low — recommend immediate action (eat something + seek help).
-
-Task: Write exactly 1-2 sentences of personalised health advice based on the data above.
 Rules:
-- Do NOT merely describe or repeat back the readings (e.g. do not write "Your BP on March 28 was 120/80").
-- Always give actionable advice: what the patient should do, watch for, or keep doing.
-- For normal/mildly elevated readings: be specific and encouraging (e.g. mention a habit, food, or activity).
-- For Stage 2 or critical readings: be direct and urgent — ask if they took their medication, recommend seeing a doctor today.
-- If data is limited (1-2 readings): give general advice relevant to their reading type and values.
-- Speak directly to the patient ("Your readings...", "Try to...", "Keep up..."). Never be vague for serious readings."""
+- Give actionable advice (what to do), not data summaries.
+- If avg glucose > 180 or any critical: be urgent, ask about medication, recommend doctor.
+- If BP avg > 140/90 or Stage 2 readings: be urgent about medication and doctor.
+- If normal: be encouraging, mention a specific habit or food.
+- Speak directly to the patient. Max 2 sentences."""
 
-    try:
-        from google import genai
-        from google.genai import types as genai_types
+    import ai_service
+    prompt_summary = f"{glucose_summary} {bp_summary} {trend_note}".strip() or None
+    insight = ai_service.generate_health_insight(prompt, profile_id, db, prompt_summary)
 
-        if not settings.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY not set")
-        client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(
-                max_output_tokens=120,
-                temperature=0.4,
-            ),
-        )
-        # gemini-2.5-flash may include thinking tokens; extract text part explicitly
-        insight = None
-        for candidate in response.candidates:
-            for part in candidate.content.parts:
-                if hasattr(part, 'text') and part.text:
-                    insight = part.text.strip()
-                    break
-            if insight:
-                break
-        if not insight:
-            raise ValueError("Empty response from Gemini")
+    if insight:
         _insight_cache[cache_key] = insight
         return {"insight": insight}
-    except Exception:
-        return {"insight": fallback}
+
+    # All AI models failed — use rule-based fallback and log it
+    ai_service._log(db, profile_id, "rule-based", prompt_summary, fallback, None, None, None)
+    return {"insight": fallback}
 
 
 @router.get("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)

@@ -78,11 +78,13 @@ class ProfileService {
     }
   }
 
-  Future<void> sendInvite(String token, int profileId, String email) async {
+  Future<void> sendInvite(String token, int profileId, String email, {String? relationship}) async {
+    final body = <String, dynamic>{'email': email};
+    if (relationship != null) body['relationship'] = relationship;
     final response = await http.post(
       Uri.parse('$_baseUrl/$profileId/invite'),
       headers: ApiClient.headers(token: token),
-      body: json.encode({'email': email}),
+      body: json.encode(body),
     );
 
     if (response.statusCode != 201) {

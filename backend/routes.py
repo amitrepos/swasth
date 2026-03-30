@@ -23,11 +23,15 @@ def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
         )
 
     # 1. Create User (auth only)
+    from datetime import datetime
     db_user = models.User(
         email=user.email,
         password_hash=auth.get_password_hash(user.password),
         full_name=user.full_name,
         phone_number=user.phone_number,
+        consent_timestamp=datetime.utcnow() if user.consent_app_version else None,
+        consent_app_version=user.consent_app_version,
+        consent_language=user.consent_language,
     )
     db.add(db_user)
     db.flush()  # Get db_user.id

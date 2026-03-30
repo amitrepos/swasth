@@ -13,6 +13,9 @@ class User(Base):
     full_name = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+    consent_timestamp = Column(DateTime(timezone=True), nullable=True)
+    consent_app_version = Column(String, nullable=True)
+    consent_language = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -45,6 +48,7 @@ class ProfileAccess(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     access_level = Column(String, nullable=False)                # "owner" or "viewer"
+    relationship = Column(String, nullable=True)                 # "father", "mother", "spouse", etc.
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
@@ -61,6 +65,7 @@ class ProfileInvite(Base):
     invited_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     invited_email = Column(String, nullable=False, index=True)
     invited_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    relationship = Column(String, nullable=True)                 # "father", "mother", etc.
     status = Column(String, nullable=False, default="pending")   # "pending", "accepted", "rejected"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime, nullable=False)
@@ -108,6 +113,21 @@ class HealthReading(Base):
     __table_args__ = (
         Index("ix_readings_profile_time", "profile_id", "reading_timestamp"),
     )
+
+
+class AiInsightLog(Base):
+    """Audit log for every AI-generated health insight."""
+    __tablename__ = "ai_insight_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    model_used = Column(String, nullable=False)          # "gemini-2.5-flash", "deepseek-chat", "rule-based"
+    prompt_summary = Column(Text, nullable=True)          # compact patient summary sent to AI
+    response_text = Column(Text, nullable=False)          # the full AI response
+    fallback_reason = Column(Text, nullable=True)         # null if primary succeeded, error message otherwise
+    tokens_used = Column(Integer, nullable=True)          # total tokens (input + output) if available
+    latency_ms = Column(Integer, nullable=True)           # response time in milliseconds
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class PasswordResetOTP(Base):

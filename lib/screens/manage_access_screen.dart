@@ -23,10 +23,16 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
   final ProfileService _profileService = ProfileService();
   final StorageService _storageService = StorageService();
   final _emailController = TextEditingController();
+  String? _selectedRelationship;
 
   List<Map<String, dynamic>> _accesses = [];
   bool _isLoading = true;
   String? _error;
+
+  static const _relationships = [
+    'father', 'mother', 'spouse', 'son', 'daughter',
+    'brother', 'sister', 'uncle', 'aunt', 'friend', 'other',
+  ];
 
   @override
   void initState() {
@@ -74,13 +80,14 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
       final token = await _storageService.getToken();
       if (token == null) throw Exception("Not authenticated");
 
-      await _profileService.sendInvite(token, widget.profileId, email);
+      await _profileService.sendInvite(token, widget.profileId, email, relationship: _selectedRelationship);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.inviteSentSuccess), backgroundColor: AppColors.statusNormal),
         );
         _emailController.clear();
+        setState(() => _selectedRelationship = null);
       }
       _loadAccess();
     } catch (e) {
@@ -154,25 +161,36 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              hintText: l10n.enterEmailHint,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _inviteUser,
-                          child: Text(l10n.invite),
-                        ),
-                      ],
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        hintText: l10n.enterEmailHint,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _selectedRelationship,
+                      decoration: InputDecoration(
+                        labelText: l10n.relationshipLabel,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                      items: _relationships.map((r) => DropdownMenuItem(
+                        value: r,
+                        child: Text(_relationshipDisplayName(r, l10n)),
+                      )).toList(),
+                      onChanged: (v) => setState(() => _selectedRelationship = v),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _inviteUser,
+                        child: Text(l10n.invite),
+                      ),
                     ),
                   ],
                 ),
@@ -201,10 +219,15 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                               final access = _accesses[index];
                               if (access['access_level'] == 'owner') return const SizedBox.shrink();
 
+                              final rel = access['relationship'] as String?;
                               return ListTile(
                                 leading: const CircleAvatar(child: Icon(Icons.person)),
                                 title: Text(access['full_name']),
-                                subtitle: Text(access['email']),
+                                subtitle: Text(
+                                  rel != null
+                                      ? '${_relationshipDisplayName(rel, l10n)} · ${access['email']}'
+                                      : access['email'],
+                                ),
                                 trailing: TextButton(
                                   onPressed: _isLoading ? null : () => _revokeAccess(access['user_id'], access['full_name']),
                                   child: Text(l10n.revoke, style: const TextStyle(color: AppColors.statusCritical)),
@@ -216,5 +239,22 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
         ],
       ),
     );
+  }
+
+  String _relationshipDisplayName(String key, AppLocalizations l10n) {
+    switch (key) {
+      case 'father': return l10n.relationshipFather;
+      case 'mother': return l10n.relationshipMother;
+      case 'spouse': return l10n.relationshipSpouse;
+      case 'son': return l10n.relationshipSon;
+      case 'daughter': return l10n.relationshipDaughter;
+      case 'brother': return l10n.relationshipBrother;
+      case 'sister': return l10n.relationshipSister;
+      case 'uncle': return l10n.relationshipUncle;
+      case 'aunt': return l10n.relationshipAunt;
+      case 'friend': return l10n.relationshipFriend;
+      case 'other': return l10n.relationshipOther;
+      default: return key;
+    }
   }
 }
