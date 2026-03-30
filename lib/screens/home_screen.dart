@@ -1180,12 +1180,12 @@ class _GamificationPanel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withOpacity(0.10),
+                  color: AppColors.amber,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '🔥 ${l10n.dayStreak(streak)}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
               ),
               const SizedBox(width: 8),

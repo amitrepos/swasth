@@ -218,15 +218,15 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       child: ListTile(
         onTap: () => _selectProfile(profile),
         leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          backgroundColor: AppColors.primary,
           child: Text(
             profile.name[0].toUpperCase(),
-            style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
         title: Text(
           profile.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
         ),
         subtitle: Text(
           '${profile.age ?? "?"} yrs · ${profile.gender ?? "Unknown"}',
@@ -236,16 +236,16 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: profile.accessLevel == 'owner'
-                ? AppColors.accent.withOpacity(0.1)
-                : AppColors.statusNormal.withOpacity(0.1),
+                ? AppColors.primary
+                : AppColors.success,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             profile.accessLevel.toUpperCase(),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: profile.accessLevel == 'owner' ? AppColors.accent : AppColors.statusNormal,
+              color: Colors.white,
             ),
           ),
         ),

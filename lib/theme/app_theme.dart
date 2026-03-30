@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 
 /// Glassmorphism color palette for Swasth app.
 /// Sky-blue backgrounds, frosted-glass cards, emerald success, slate text.
+///
+/// CONTRAST RULE: Never use [primary] (sky-500) as text/icon color on [bgPage]
+/// (sky-50) — they share the same hue and produce < 2:1 contrast ratio.
+/// Use [textPrimary] (slate-800) or [textSecondary] (slate-500) for text.
+/// Use solid [primary]/[success]/[amber] backgrounds with [Colors.white] text
+/// for badges, chips, and avatars.
 abstract final class AppColors {
   // ── Primary accent ───────────────────────────────────────────────────────
   static const Color primary    = Color(0xFF0EA5E9);  // sky-500 — buttons, rings, accents
