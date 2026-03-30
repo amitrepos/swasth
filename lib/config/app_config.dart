@@ -3,7 +3,7 @@ class AppConfig {
   // Usage: flutter run --dart-define=SERVER_HOST=http://10.0.0.189:8000
   static const String serverHost = String.fromEnvironment(
     'SERVER_HOST',
-    defaultValue: 'http://192.168.0.203:8000',
+    defaultValue: 'http://localhost:8000',
   );
 
   // Complete API base URL

@@ -5,6 +5,13 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — Fix wellness score "first time" bug + streak calculation
+
+- Modified `backend/routes_health.py`: Fixed streak calculation to count from yesterday when today has no reading (was always 0 for historical data). Added `total_reading_count` query to distinguish first-time users from returning users. Fixed insight messages: returning users see "Welcome back!" instead of "Log your first reading". Fixed generic fallback to acknowledge existing readings. Updated `_rule_based_insight()` to accept `total_count` param for same fix.
+- Modified `backend/tests/test_ai_service.py`: Fixed `test_gemini_success_skips_deepseek` — was missing `settings` mock, causing failure on CI where `GEMINI_API_KEY` env var is not set.
+
+---
+
 ## 2026-03-30 — Multi-model AI fallback chain + audit logging
 
 - Created `backend/ai_service.py`: Central AI service with Gemini → DeepSeek → None fallback chain. Logs every call to `ai_insight_logs` table (model, prompt summary, response, error, tokens, latency).
@@ -867,3 +874,54 @@ Format: date, summary, file-level details.
   - 17:30:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ai_service.py
   - 17:30:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
   - 17:32:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 17:35:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/.env
+  - 17:48:30 modified: /Users/amitkumarmishra/.claude/plans/encapsulated-splashing-owl.md
+  - 17:48:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 17:49:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 17:49:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 17:49:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 17:50:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 17:50:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 17:50:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 17:50:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 17:51:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/profile_service.dart
+  - 17:51:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 17:51:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 17:51:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 17:51:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 17:52:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 17:52:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 17:52:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 18:02:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 18:02:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 18:10:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 18:10:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 18:10:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 18:11:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/profile_model.dart
+  - 18:11:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/profile_model.dart
+  - 18:11:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/profile_model.dart
+  - 18:11:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 18:24:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ai_service.py
+  - 18:25:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_relationship.py
+  - 18:32:39 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_status.md
+  - 18:36:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:37:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:37:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ai_service.py
+  - 18:38:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:38:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:38:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:38:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:38:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:39:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:39:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:39:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:39:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:46:31 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_status.md
+  - 18:56:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:56:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:56:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:57:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 18:59:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 19:00:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ai_service.py
+  - 19:01:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 19:12:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/config/app_config.dart

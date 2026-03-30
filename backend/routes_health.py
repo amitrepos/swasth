@@ -170,11 +170,24 @@ def get_health_score(
     ).all():
         days_with_readings.add(r.reading_timestamp.date())
 
+    # Count consecutive days backward. If today has no reading, start from
+    # yesterday so that users who logged yesterday still get streak credit.
     streak = 0
-    check_day = today
-    while check_day in days_with_readings:
+    if today in days_with_readings:
+        check_day = today
+    elif (today - timedelta(days=1)) in days_with_readings:
+        check_day = today - timedelta(days=1)
+    else:
+        check_day = None
+
+    while check_day and check_day in days_with_readings:
         streak += 1
         check_day -= timedelta(days=1)
+
+    # Total lifetime reading count — used to distinguish first-time vs returning users
+    total_reading_count = db.query(func.count(models.HealthReading.id)).filter(
+        models.HealthReading.profile_id == profile_id,
+    ).scalar() or 0
 
     # --- Score calculation ---
     score = 50
@@ -219,10 +232,12 @@ def get_health_score(
         )
         insight = f"⚠️ Your {critical_type} is critical. Please consult a doctor."
     elif not today_readings:
-        if streak > 0:
+        if total_reading_count == 0:
+            insight = "Log your first reading to start tracking your health."
+        elif streak > 0:
             insight = f"Log a reading today to keep your {streak}-day streak alive!"
         else:
-            insight = "Log your first reading to start tracking your health."
+            insight = f"Welcome back! You have {total_reading_count} readings on file. Log today's reading to restart your streak."
     elif streak >= 7:
         insight = f"🔥 {streak}-day streak — you're building a great habit!"
     elif 'HIGH - STAGE 2' in today_statuses_set:
@@ -241,7 +256,10 @@ def get_health_score(
     elif today_statuses_set and all(s == 'NORMAL' for s in today_statuses_set):
         insight = "All readings look healthy today. You're doing great!"
     else:
-        insight = "Log daily readings for the best health insights."
+        if total_reading_count > 1:
+            insight = "Readings logged. Keep tracking daily for better insights!"
+        else:
+            insight = "First reading logged! Keep going — daily tracking unlocks better insights."
 
     last_logged = recent[0].reading_timestamp if recent else None
 
@@ -409,7 +427,10 @@ def get_ai_insight(
     glucose_vals = [r.glucose_value for r in recent if r.reading_type == "glucose" and r.glucose_value]
     bp_readings = [(r.systolic, r.diastolic) for r in recent if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
 
-    fallback = _rule_based_insight(recent)
+    total_count = db.query(func.count(models.HealthReading.id)).filter(
+        models.HealthReading.profile_id == profile_id,
+    ).scalar() or 0
+    fallback = _rule_based_insight(recent, total_count=total_count)
 
     if not glucose_vals and not bp_readings:
         return {"insight": fallback}
@@ -642,9 +663,11 @@ async def parse_image_with_gemini(
         return {"error": f"Gemini Vision failed: {str(e)}"}
 
 
-def _rule_based_insight(recent: list) -> str:
+def _rule_based_insight(recent: list, total_count: int = 0) -> str:
     """Simple rule-based fallback used when Gemini is unavailable."""
     if not recent:
+        if total_count > 0:
+            return f"Welcome back! You have {total_count} readings on file. Log today's reading to get fresh insights."
         return "Log your first reading to start tracking your health."
     statuses = {r.status_flag for r in recent if r.status_flag}
     if "CRITICAL" in statuses:
@@ -658,7 +681,7 @@ def _rule_based_insight(recent: list) -> str:
         return "Some readings were elevated this week. Stay hydrated and keep active."
     if statuses and all(s == "NORMAL" for s in statuses):
         return "All recent readings look healthy. Keep up the great work!"
-    return "Keep logging daily readings for the best health insights."
+    return "Readings logged. Keep tracking daily for better health insights."
 
 
 # ---------------------------------------------------------------------------

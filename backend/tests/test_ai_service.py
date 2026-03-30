@@ -15,7 +15,10 @@ class TestFallbackChain:
         """When Gemini succeeds, DeepSeek should not be called."""
         with patch.object(ai_service, '_try_gemini', return_value={
             'text': 'Gemini insight', 'error': None, 'tokens': 50, 'ms': 200,
-        }) as mock_g, patch.object(ai_service, '_try_deepseek') as mock_d:
+        }) as mock_g, patch.object(ai_service, '_try_deepseek') as mock_d, \
+             patch('ai_service.settings') as mock_settings:
+            mock_settings.GEMINI_API_KEY = 'fake-key'
+            mock_settings.DEEPSEEK_API_KEY = None
             result = ai_service.generate_health_insight('test prompt', 1, db, 'summary')
             assert result == 'Gemini insight'
             mock_g.assert_called_once()
