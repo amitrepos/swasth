@@ -5,6 +5,17 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — Phase 1: Glassmorphism theme foundation
+
+- Rewrote `lib/theme/app_theme.dart`: Replaced Design3 purple/navy palette with glassmorphism sky-blue system. New tokens: `primary` (#0EA5E9 sky-500), `success` (#10B981 emerald), `amber`, `danger`, `bgPage` (#F0F9FF), `bgCard` (45% white), `glassCardBorder`, `glassShadow`. Kept all semantic metric colors unchanged (glucose emerald, BP rose — clinically meaningful). Added backwards-compat aliases for all old tokens still referenced in existing screens (`iosBlue`, `iosPurple`, `insight`, `bgCard2`, etc.) so no existing screen breaks.
+- Modified `lib/main.dart`: Swapped `GoogleFonts.inter` → `GoogleFonts.plusJakartaSans` throughout both light and dark themes. Updated `seedColor`/`primary` to sky-500, `scaffoldBackgroundColor` to `AppColors.bgPage`. Updated button, card, input, and bottom nav theme colors to match new palette.
+- Created `lib/widgets/glass_card.dart`: Reusable glassmorphism card widget. Wraps child in `ClipRRect` → `BackdropFilter(blur:12)` → semi-transparent container with white border and soft shadow. Accepts `borderRadius`, `padding`, `margin`, `color`, `border` overrides. Single implementation point — all future screens use this.
+- Modified `lib/services/api_service.dart`: Added `.timeout(Duration(seconds: 20))` to all 6 HTTP calls. Prevents UI freeze on slow server.
+- Modified `lib/services/health_reading_service.dart`: Added `.timeout(Duration(seconds: 20))` to all 6 HTTP calls (`saveReading`, `getReadings`, `getReading`, `deleteReading`, `getSummary`, `getAiInsight`, `getHealthScore`).
+- All tests pass. `flutter analyze` — zero errors.
+
+---
+
 ## 2026-03-29 — Fix parse-image: MIME type + token budget (BP and glucose scanning now working end-to-end)
 
 - Modified `backend/routes_health.py`: Fixed `application/octet-stream` MIME type — iOS camera files don't set content-type, now defaults to `image/jpeg`. Increased `max_output_tokens` from 200 → 1024 to prevent truncation of Gemini 2.5-flash thinking tokens. Both BP and glucose photo scanning confirmed working on device.
@@ -638,3 +649,18 @@ Format: date, summary, file-level details.
   - 10:33:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/app_config_test.dart
   - 10:33:27 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback.md
   - 10:55:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.gitignore
+  - 11:09:59 modified: /Users/amitkumarmishra/.claude/plans/precious-singing-swan.md
+  - 11:30:35 modified: /Users/amitkumarmishra/.claude/plans/precious-singing-swan.md
+  - 11:38:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/theme/app_theme.dart
+  - 11:38:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/glass_card.dart
+  - 11:38:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 11:39:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/api_service.dart
+  - 11:39:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:39:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:40:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/theme/app_theme.dart
+  - 11:41:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

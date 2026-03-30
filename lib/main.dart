@@ -33,14 +33,14 @@ class SwasthApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(languageProvider);
     const double borderRadiusValue = 16.0;
-    const Color design3Accent = AppColors.accent; // #7B61FF purple
+    const Color skyAccent = AppColors.primary; // #0EA5E9 sky-500
 
     // LIGHT THEME
     final lightColorScheme = ColorScheme.fromSeed(
-      seedColor: design3Accent,
-      primary: design3Accent,
+      seedColor: skyAccent,
+      primary: skyAccent,
       onPrimary: Colors.white,
-      surface: AppColors.bgCard,
+      surface: AppColors.bgPage,
       onSurface: AppColors.textPrimary,
       brightness: Brightness.light,
     );
@@ -48,21 +48,21 @@ class SwasthApp extends ConsumerWidget {
     final lightTheme = ThemeData(
       useMaterial3: true,
       colorScheme: lightColorScheme,
-      scaffoldBackgroundColor: AppColors.bgPrimary,
-      textTheme: GoogleFonts.interTextTheme().copyWith(
-        displayLarge: GoogleFonts.inter(fontWeight: FontWeight.w700),
-        displayMedium: GoogleFonts.inter(fontWeight: FontWeight.w700),
-        displaySmall: GoogleFonts.inter(fontWeight: FontWeight.w700),
-        headlineLarge: GoogleFonts.inter(fontWeight: FontWeight.w700),
-        headlineMedium: GoogleFonts.inter(fontWeight: FontWeight.w700),
-        headlineSmall: GoogleFonts.inter(fontWeight: FontWeight.w700),
-        titleLarge: GoogleFonts.inter(fontWeight: FontWeight.w700),
-        titleMedium: GoogleFonts.inter(fontWeight: FontWeight.w700),
-        titleSmall: GoogleFonts.inter(fontWeight: FontWeight.w700),
-        bodyLarge: GoogleFonts.inter(fontWeight: FontWeight.w400),
-        bodyMedium: GoogleFonts.inter(fontWeight: FontWeight.w400),
-        bodySmall: GoogleFonts.inter(fontWeight: FontWeight.w400),
-        labelLarge: GoogleFonts.inter(fontWeight: FontWeight.w700),
+      scaffoldBackgroundColor: AppColors.bgPage,
+      textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
+        displayLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        displayMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        displaySmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        headlineLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        headlineMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        headlineSmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        titleLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        titleMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        titleSmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        bodyLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
+        bodyMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
+        bodySmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
+        labelLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -71,9 +71,9 @@ class SwasthApp extends ConsumerWidget {
         centerTitle: true,
       ),
       cardTheme: CardThemeData(
-        color: AppColors.bgCard,
-        elevation: 1,
-        shadowColor: Colors.black12,
+        color: Colors.white,
+        elevation: 0,
+        shadowColor: AppColors.glassShadow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadiusValue),
           side: const BorderSide(color: AppColors.separator, width: 0.5),
@@ -82,27 +82,27 @@ class SwasthApp extends ConsumerWidget {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: design3Accent,
+          backgroundColor: skyAccent,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadiusValue),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w700,
             fontSize: 16,
           ),
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        selectedItemColor: AppColors.accent,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textSecondary,
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: Colors.white,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.bgCard,
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadiusValue),
           borderSide: const BorderSide(color: AppColors.separator, width: 0.5),
@@ -113,7 +113,7 @@ class SwasthApp extends ConsumerWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadiusValue),
-          borderSide: const BorderSide(color: design3Accent, width: 1.5),
+          borderSide: const BorderSide(color: skyAccent, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
@@ -121,10 +121,10 @@ class SwasthApp extends ConsumerWidget {
 
     // DARK THEME
     final darkColorScheme = ColorScheme.fromSeed(
-      seedColor: design3Accent,
-      primary: design3Accent,
+      seedColor: skyAccent,
+      primary: skyAccent,
       onPrimary: Colors.white,
-      surface: AppColors.bgCardDark,
+      surface: AppColors.bgPageDark,
       onSurface: AppColors.textPrimaryDark,
       brightness: Brightness.dark,
     );
@@ -132,21 +132,21 @@ class SwasthApp extends ConsumerWidget {
     final darkTheme = ThemeData(
       useMaterial3: true,
       colorScheme: darkColorScheme,
-      scaffoldBackgroundColor: AppColors.bgPrimaryDark,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
-        displayLarge: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-        displayMedium: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-        displaySmall: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-        headlineLarge: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-        headlineMedium: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-        headlineSmall: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-        titleLarge: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-        titleMedium: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-        titleSmall: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
-        bodyLarge: GoogleFonts.inter(fontWeight: FontWeight.w400, color: Colors.white70),
-        bodyMedium: GoogleFonts.inter(fontWeight: FontWeight.w400, color: Colors.white70),
-        bodySmall: GoogleFonts.inter(fontWeight: FontWeight.w400, color: Colors.white70),
-        labelLarge: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
+      scaffoldBackgroundColor: AppColors.bgPageDark,
+      textTheme: GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme).copyWith(
+        displayLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+        displayMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+        displaySmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+        headlineLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+        headlineMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+        headlineSmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+        titleLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+        titleMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+        titleSmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+        bodyLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400, color: Colors.white70),
+        bodyMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400, color: Colors.white70),
+        bodySmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400, color: Colors.white70),
+        labelLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -165,23 +165,23 @@ class SwasthApp extends ConsumerWidget {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: design3Accent,
+          backgroundColor: skyAccent,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadiusValue),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w700,
             fontSize: 16,
           ),
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        selectedItemColor: AppColors.accent,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textSecondaryDark,
-        backgroundColor: AppColors.bgCardDark,
+        backgroundColor: AppColors.bgPageDark,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -196,7 +196,7 @@ class SwasthApp extends ConsumerWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadiusValue),
-          borderSide: const BorderSide(color: design3Accent, width: 1.5),
+          borderSide: const BorderSide(color: skyAccent, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
