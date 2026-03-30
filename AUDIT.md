@@ -5,6 +5,30 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — Refactor home_screen.dart: extract widgets (1635 → 367 lines)
+
+- Refactored `lib/screens/home_screen.dart`: Reduced from 1635 to 367 lines by extracting 7 widget/utility files. Pure refactor — no visual or behavioral changes.
+- Created `lib/utils/health_helpers.dart`: Extracted pure helper functions (scoreArcColor, statusTextColor, trendLabel, trendColor, formatLastLogged, streakToPoints, computeFlag, fmtPoints) and StatusFlagData class.
+- Created `lib/widgets/home/health_score_ring.dart`: Extracted wellness score donut ring card, ScoreRingPainter, StatusInfoSheet, and showStatusInfoSheet.
+- Created `lib/widgets/home/ai_insight_card.dart`: Extracted AI health insight card with pulsing dot and save toggle.
+- Created `lib/widgets/home/physician_card.dart`: Extracted primary physician card with WhatsApp link.
+- Created `lib/widgets/home/vital_summary_card.dart`: Extracted vital summary card (BP/Sugar/Steps averages) with VitalTile.
+- Created `lib/widgets/home/metrics_grid.dart`: Extracted 2x2 individual metrics grid with MetricTile and ArmBandTile.
+- Created `lib/widgets/home/home_header.dart`: Extracted header (greeting, profile switcher, avatar menu, pills row) with PillButton.
+- Created `lib/widgets/home/reading_input_modal.dart`: Extracted reading input bottom sheet (camera/BLE/manual entry).
+
+## 2026-03-30 — Comprehensive pytest test suite for backend
+
+- Modified `backend/requirements.txt`: Added `pytest`, `pytest-asyncio`, `httpx` test dependencies.
+- Created `backend/health_utils.py`: Extracted pure functions `calculate_health_score`, `classify_bp`, `classify_glucose` from route handlers and Flutter-side logic for testability.
+- Created `backend/tests/__init__.py`: Package marker.
+- Created `backend/tests/conftest.py`: Shared fixtures — in-memory SQLite engine, transactional DB session per test, FastAPI TestClient wired to test DB, pre-created test user + JWT token helpers.
+- Created `backend/tests/test_auth.py`: 10 unit tests for `verify_password`, `get_password_hash`, `create_access_token`, `decode_access_token`.
+- Created `backend/tests/test_health_score.py`: 14 unit tests covering base score, today bonuses/penalties, streak bonuses, clamping, and color thresholds.
+- Created `backend/tests/test_bp_classification.py`: 14 unit tests for BP classification (NORMAL, STAGE 1, STAGE 2, LOW, edge cases).
+- Created `backend/tests/test_glucose_classification.py`: 13 unit tests for glucose classification (LOW, NORMAL, HIGH, CRITICAL, edge cases).
+- Created `backend/tests/test_api_auth.py`: 9 integration tests for register, login, and /me endpoints via TestClient.
+
 ## 2026-03-30 — Trend chart 7/30/90-day tabs + glassmorphism upgrade
 
 - Rewrote `lib/screens/trend_chart_screen.dart`: Changed tabs from 7/30 days to 7/30/90 days. Replaced raw `Colors.*` with semantic constants (`_kGlucoseColor`, `_kSysColor`, `_kDiaColor`, `_kGridColor`). Wrapped all chart cards in `GlassCard`. Added adaptive dot radius (4px for 30d, 3px for 90d). Smart X-axis labels (weekly for ≤30d, tri-weekly for 90d). Correlation card, stats rows, legends all preserved.
@@ -762,3 +786,26 @@ Format: date, summary, file-level details.
   - 16:03:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
   - 16:03:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
   - 16:11:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 16:22:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/requirements.txt
+  - 16:22:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/health_utils.py
+  - 16:22:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/__init__.py
+  - 16:22:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/conftest.py
+  - 16:23:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_auth.py
+  - 16:23:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/utils/health_helpers.dart
+  - 16:23:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_score.py
+  - 16:23:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_bp_classification.py
+  - 16:23:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_glucose_classification.py
+  - 16:23:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/health_score_ring.dart
+  - 16:23:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_api_auth.py
+  - 16:23:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/ai_insight_card.dart
+  - 16:24:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/physician_card.dart
+  - 16:24:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/vital_summary_card.dart
+  - 16:24:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 16:24:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 16:25:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 16:26:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/health_score_ring.dart
+  - 16:26:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/conftest.py
+  - 16:27:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/reading_input_modal.dart
+  - 16:27:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/home_header.dart
+  - 16:28:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 16:28:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
