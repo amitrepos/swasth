@@ -128,7 +128,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | No WhatsApp API (Twilio/Gupshup) | D8, D10, D11, D12, D15 |
 | No weight tracking (B3, B6) | C8, D4, D5, D6 (full) |
 | No pedometer (B10) | C6, D1 (full), D2 |
-| No doctor/referral system | D14, D15 |
+| No WhatsApp Business API (D8) | D15 (doctor alerts) — doctor_whatsapp field is ready |
 
 ---
 
