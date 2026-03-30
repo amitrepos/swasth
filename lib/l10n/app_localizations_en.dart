@@ -995,6 +995,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'For privacy-related questions or grievances, contact: support@swasth.app';
 
   @override
+  String get chatTitle => 'Swasth AI';
+
+  @override
+  String get chatSubtitle => 'ONLINE & ANALYZING';
+
+  @override
+  String get chatPlaceholder => 'Ask about your health...';
+
+  @override
+  String get chatEmptyState =>
+      'Ask me anything about your health readings, medications, diet, or lifestyle. I have access to your health data and past conversations.';
+
+  @override
+  String get chatQuotaRemaining => 'questions remaining today';
+
+  @override
+  String get chatQuotaExceeded =>
+      'Daily question limit reached. Resets at midnight.';
+
+  @override
   String get offlineBanner => 'You are offline. Some features may be limited.';
 
   @override

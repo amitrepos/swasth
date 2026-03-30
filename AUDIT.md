@@ -5,6 +5,23 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — AI Chat with rate limiting, conversation memory, and 38 new tests
+
+- Created `backend/routes_chat.py`: Chat endpoints (POST /chat/send, GET /chat/messages, GET /chat/quota). Rate limiting per profile (configurable CHAT_QUOTA_LIMIT/CHAT_QUOTA_PERIOD). Conversation memory via ChatContextProfile (rolling AI summary every 5 messages). Vision pipeline for image analysis (Gemini Vision → DeepSeek text fallback).
+- Created `backend/models.py` additions: ChatMessage table + ChatContextProfile table.
+- Modified `backend/ai_service.py`: Added generate_vision_insight() with Gemini Vision → DeepSeek fallback chain.
+- Modified `backend/config.py`: Added CHAT_QUOTA_LIMIT, CHAT_QUOTA_PERIOD, CHAT_SUMMARY_INTERVAL settings.
+- Modified `backend/main.py`: Registered chat router. CORS regex for localhost in dev mode.
+- Modified `backend/routes.py`: Fixed account deletion FK (nullify logged_by, clean invites by email). Fixed invite unique constraint (partial index on pending only).
+- Created `lib/screens/chat_screen.dart`: Full chat UI — Swasth AI header with BP/Sugar vitals, message bubbles, typing indicator, quota display.
+- Created `lib/services/chat_service.dart`: Chat API client.
+- Modified `lib/screens/shell_screen.dart`: Pass profileId to ChatScreen.
+- Modified `ios/Runner/Info.plist`: Added NSAppTransportSecurity for HTTP in dev.
+- Added l10n: chatTitle, chatSubtitle, chatPlaceholder, chatEmptyState, chatQuotaRemaining, chatQuotaExceeded (EN + HI).
+- Created 4 new test files (38 tests): test_encryption.py (7), test_age_context.py (12), test_account_deletion.py (9), test_chat.py (10). Total: 93→131 tests.
+
+---
+
 ## 2026-03-30 — Data privacy & encryption (SPDI/DPDP compliance for POC)
 
 - Modified `backend/main.py`: CORS locked to `settings.CORS_ORIGINS` (was `*`), restricted methods/headers. Added security headers middleware (X-Content-Type-Options, X-Frame-Options, XSS-Protection, Referrer-Policy, conditional HSTS). Added conditional HTTPSRedirectMiddleware.
@@ -1005,3 +1022,57 @@ Format: date, summary, file-level details.
   - 20:26:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
   - 20:28:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
   - 20:29:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 20:31:30 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_status.md
+  - 21:59:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 21:59:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 22:13:28 modified: /Users/amitkumarmishra/.claude/plans/tidy-crafting-popcorn.md
+  - 22:16:21 modified: /Users/amitkumarmishra/.claude/plans/tidy-crafting-popcorn.md
+  - 22:19:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 22:19:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 22:20:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 22:20:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 22:20:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 22:20:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/chat_service.dart
+  - 22:21:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 22:21:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:22:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 22:22:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 22:29:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:29:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:29:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:30:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:30:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 22:30:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 22:30:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:31:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:31:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:33:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 22:33:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 22:34:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 22:42:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:42:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:48:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 22:48:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 22:49:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ai_service.py
+  - 22:49:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 22:52:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:53:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/chat_service.dart
+  - 22:53:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 22:57:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:57:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:57:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 22:58:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 23:00:22 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback_chrome_refresh.md
+  - 23:00:36 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
+  - 23:03:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_encryption.py
+  - 23:04:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_age_context.py
+  - 23:04:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_account_deletion.py
+  - 23:05:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat.py
+  - 23:06:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_account_deletion.py
+  - 23:27:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/ios/Runner/Info.plist
+  - 00:11:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 00:13:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat.py
+  - 00:13:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat.py
+  - 00:14:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat.py
+  - 00:15:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat.py
+  - 00:16:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat.py

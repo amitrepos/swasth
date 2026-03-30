@@ -1946,6 +1946,42 @@ abstract class AppLocalizations {
   /// **'For privacy-related questions or grievances, contact: support@swasth.app'**
   String get ppContact;
 
+  /// No description provided for @chatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Swasth AI'**
+  String get chatTitle;
+
+  /// No description provided for @chatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ONLINE & ANALYZING'**
+  String get chatSubtitle;
+
+  /// No description provided for @chatPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about your health...'**
+  String get chatPlaceholder;
+
+  /// No description provided for @chatEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask me anything about your health readings, medications, diet, or lifestyle. I have access to your health data and past conversations.'**
+  String get chatEmptyState;
+
+  /// No description provided for @chatQuotaRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'questions remaining today'**
+  String get chatQuotaRemaining;
+
+  /// No description provided for @chatQuotaExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily question limit reached. Resets at midnight.'**
+  String get chatQuotaExceeded;
+
   /// No description provided for @offlineBanner.
   ///
   /// In en, this message translates to:

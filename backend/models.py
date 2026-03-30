@@ -74,8 +74,10 @@ class ProfileInvite(Base):
     expires_at = Column(DateTime, nullable=False)
 
     __table_args__ = (
-        # Prevent duplicate pending invites for the same profile+email
-        UniqueConstraint("profile_id", "invited_email", name="uq_profile_invite_email"),
+        # Partial unique index — only prevent duplicate PENDING invites.
+        # Accepted/rejected invites should not block re-inviting.
+        Index("uq_profile_invite_email_pending", "profile_id", "invited_email",
+              unique=True, postgresql_where="status = 'pending'"),
     )
 
 
@@ -138,6 +140,36 @@ class AiInsightLog(Base):
     tokens_used = Column(Integer, nullable=True)          # total tokens (input + output) if available
     latency_ms = Column(Integer, nullable=True)           # response time in milliseconds
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatMessage(Base):
+    """Individual chat message exchange between user and AI."""
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    user_message = Column(Text, nullable=False)
+    ai_response = Column(Text, nullable=False)
+    model_used = Column(String, nullable=True)
+    tokens_used = Column(Integer, nullable=True)
+    latency_ms = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_chat_profile_time", "profile_id", "created_at"),
+    )
+
+
+class ChatContextProfile(Base):
+    """Rolling AI-generated summary of all past conversations for a profile."""
+    __tablename__ = "chat_context_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, unique=True)
+    summary = Column(Text, nullable=False, default="")
+    message_count = Column(Integer, nullable=False, default=0)
+    last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class PasswordResetOTP(Base):

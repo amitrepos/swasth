@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     # CORS settings
     CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:8080"]
 
+    # Chat quota — configurable rate limiting
+    CHAT_QUOTA_LIMIT: int = 5              # max questions per period
+    CHAT_QUOTA_PERIOD: str = "daily"       # "daily", "weekly", "monthly"
+    CHAT_SUMMARY_INTERVAL: int = 5         # summarize conversation every N messages
+
     # Encryption — 64-char hex string = 32 bytes for AES-256-GCM
     # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
     ENCRYPTION_KEY: Optional[str] = None

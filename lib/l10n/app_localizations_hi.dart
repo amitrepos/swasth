@@ -995,6 +995,26 @@ class AppLocalizationsHi extends AppLocalizations {
       'गोपनीयता संबंधी प्रश्नों या शिकायतों के लिए संपर्क करें: support@swasth.app';
 
   @override
+  String get chatTitle => 'स्वस्थ AI';
+
+  @override
+  String get chatSubtitle => 'ऑनलाइन और विश्लेषण कर रहा है';
+
+  @override
+  String get chatPlaceholder => 'अपने स्वास्थ्य के बारे में पूछें...';
+
+  @override
+  String get chatEmptyState =>
+      'अपनी स्वास्थ्य रीडिंग, दवाइयों, आहार या जीवनशैली के बारे में कुछ भी पूछें। मेरे पास आपके स्वास्थ्य डेटा और पिछली बातचीत तक पहुँच है।';
+
+  @override
+  String get chatQuotaRemaining => 'प्रश्न आज शेष हैं';
+
+  @override
+  String get chatQuotaExceeded =>
+      'दैनिक प्रश्न सीमा पूरी हो गई। मध्यरात्रि में रीसेट होगी।';
+
+  @override
   String get offlineBanner => 'आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।';
 
   @override
