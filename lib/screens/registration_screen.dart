@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import 'consent_screen.dart';
 import 'login_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -127,19 +128,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             : null,
       };
 
-      await _apiService.register(userData);
-
+      // Navigate to consent screen — registration API is called after consent
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.registerSuccessful),
-            backgroundColor: AppColors.statusNormal,
-          ),
-        );
-
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (_) => ConsentScreen(
+              onAccept: ({required String appVersion, required String language}) async {
+                userData['consent_app_version'] = appVersion;
+                userData['consent_language'] = language;
+                await _apiService.register(userData);
+              },
+            ),
+          ),
         );
       }
     } catch (e) {

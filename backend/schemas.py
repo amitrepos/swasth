@@ -44,6 +44,9 @@ class UserRegister(BaseModel):
     current_medications: Optional[str] = None
     medical_conditions: Optional[List[str]] = None
     other_medical_condition: Optional[str] = None
+    # Consent fields — set when user accepts privacy notice during registration
+    consent_app_version: Optional[str] = None
+    consent_language: Optional[str] = None
 
     @validator('password')
     def validate_password(cls, v):
@@ -96,6 +99,9 @@ class UserResponse(BaseModel):
     full_name: str
     phone_number: str
     is_active: bool
+    consent_timestamp: Optional[datetime] = None
+    consent_app_version: Optional[str] = None
+    consent_language: Optional[str] = None
     created_at: datetime
 
     class Config:

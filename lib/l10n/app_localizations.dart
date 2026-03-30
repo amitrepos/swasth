@@ -1640,6 +1640,108 @@ abstract class AppLocalizations {
   /// **'Live Steps'**
   String get liveSteps;
 
+  /// No description provided for @consentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Consent'**
+  String get consentTitle;
+
+  /// No description provided for @consentSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent for Health Data Processing'**
+  String get consentSubject;
+
+  /// No description provided for @consentIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'By using Swasth, I agree to the following:'**
+  String get consentIntro;
+
+  /// No description provided for @consentDataCollectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Collection'**
+  String get consentDataCollectionTitle;
+
+  /// No description provided for @consentDataCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'I allow Swasth to store my blood glucose, blood pressure, and food photos.'**
+  String get consentDataCollection;
+
+  /// No description provided for @consentFamilySharingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Sharing'**
+  String get consentFamilySharingTitle;
+
+  /// No description provided for @consentFamilySharing.
+  ///
+  /// In en, this message translates to:
+  /// **'I understand that if I share my profile, my designated family members (e.g., son/daughter) will see my health scores and receive alerts.'**
+  String get consentFamilySharing;
+
+  /// No description provided for @consentPurposeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purpose'**
+  String get consentPurposeTitle;
+
+  /// No description provided for @consentPurpose.
+  ///
+  /// In en, this message translates to:
+  /// **'My data will be used to provide me with health insights and shared with my doctor for my treatment.'**
+  String get consentPurpose;
+
+  /// No description provided for @consentRightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Rights'**
+  String get consentRightsTitle;
+
+  /// No description provided for @consentRights.
+  ///
+  /// In en, this message translates to:
+  /// **'I can withdraw my consent or ask to delete my data at any time through the app settings.'**
+  String get consentRights;
+
+  /// No description provided for @consentAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'I Accept'**
+  String get consentAccept;
+
+  /// No description provided for @consentDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'I Decline'**
+  String get consentDecline;
+
+  /// No description provided for @consentDeclineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline Consent?'**
+  String get consentDeclineTitle;
+
+  /// No description provided for @consentDeclineMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot use Swasth without accepting the privacy notice. Your registration will not be completed.'**
+  String get consentDeclineMessage;
+
+  /// No description provided for @consentDeclineConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get consentDeclineConfirm;
+
+  /// No description provided for @consentScrollToAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll down to read the full notice'**
+  String get consentScrollToAccept;
+
   /// No description provided for @offlineBanner.
   ///
   /// In en, this message translates to:

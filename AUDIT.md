@@ -5,6 +5,18 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — Consent & Privacy Notice on registration
+
+- Modified `backend/models.py`: Added `consent_timestamp`, `consent_app_version`, `consent_language` columns to User model.
+- Modified `backend/schemas.py`: Added consent fields to `UserRegister` and `UserResponse`.
+- Modified `backend/routes.py`: Register endpoint saves consent fields when provided.
+- Created `lib/screens/consent_screen.dart`: Privacy notice with scroll-to-enable Accept, 4 sections, decline dialog. EN + HI localized.
+- Modified `lib/screens/registration_screen.dart`: Navigates to ConsentScreen before calling register API.
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added 17 consent strings in both languages.
+- Added 2 backend tests for consent in registration.
+
+---
+
 ## 2026-03-30 — Refactor home_screen.dart: extract widgets (1635 → 367 lines)
 
 - Refactored `lib/screens/home_screen.dart`: Reduced from 1635 to 367 lines by extracting 7 widget/utility files. Pure refactor — no visual or behavioral changes.
@@ -809,3 +821,24 @@ Format: date, summary, file-level details.
   - 16:27:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/home_header.dart
   - 16:28:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
   - 16:28:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 16:31:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/ci.yml
+  - 16:37:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 16:38:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/ci.yml
+  - 16:43:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/conftest.py
+  - 16:44:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/conftest.py
+  - 16:45:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.githooks/pre-push
+  - 16:48:06 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback_prepush.md
+  - 16:48:12 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
+  - 16:52:13 modified: /Users/amitkumarmishra/.claude/plans/encapsulated-splashing-owl.md
+  - 16:53:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 16:54:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 16:54:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 16:54:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 16:58:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/consent_screen.dart
+  - 16:58:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 16:58:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 16:59:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 16:59:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 17:00:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 17:01:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_api_auth.py
+  - 17:02:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

@@ -13,6 +13,9 @@ class User(Base):
     full_name = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+    consent_timestamp = Column(DateTime(timezone=True), nullable=True)
+    consent_app_version = Column(String, nullable=True)
+    consent_language = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

@@ -825,6 +825,64 @@ class AppLocalizationsHi extends AppLocalizations {
   String get liveSteps => 'कदम';
 
   @override
+  String get consentTitle => 'गोपनीयता और सहमति';
+
+  @override
+  String get consentSubject => 'स्वास्थ्य डेटा प्रसंस्करण के लिए सहमति';
+
+  @override
+  String get consentIntro =>
+      'स्वास्थ्य ऐप का उपयोग करके, मैं निम्नलिखित से सहमत हूँ:';
+
+  @override
+  String get consentDataCollectionTitle => 'डेटा संग्रह';
+
+  @override
+  String get consentDataCollection =>
+      'मैं स्वास्थ्य ऐप को मेरा ब्लड शुगर, ब्लड प्रेशर और भोजन की तस्वीरें स्टोर करने की अनुमति देता/देती हूँ।';
+
+  @override
+  String get consentFamilySharingTitle => 'परिवार के साथ साझा करना';
+
+  @override
+  String get consentFamilySharing =>
+      'मैं समझता/समझती हूँ कि यदि मैं अपना प्रोफाइल साझा करता/करती हूँ, तो मेरे परिवार के सदस्य (जैसे बेटा/बेटी) मेरा स्वास्थ्य स्कोर देख पाएंगे और अलर्ट प्राप्त करेंगे।';
+
+  @override
+  String get consentPurposeTitle => 'उद्देश्य';
+
+  @override
+  String get consentPurpose =>
+      'मेरे डेटा का उपयोग मुझे स्वास्थ्य संबंधी जानकारी देने और मेरे डॉक्टर के साथ इलाज के लिए साझा करने में किया जाएगा।';
+
+  @override
+  String get consentRightsTitle => 'मेरे अधिकार';
+
+  @override
+  String get consentRights =>
+      'मैं किसी भी समय ऐप सेटिंग्स के माध्यम से अपनी सहमति वापस ले सकता/सकती हूँ या अपना डेटा हटाने के लिए कह सकता/सकती हूँ।';
+
+  @override
+  String get consentAccept => 'मैं सहमत हूँ';
+
+  @override
+  String get consentDecline => 'मैं सहमत नहीं हूँ';
+
+  @override
+  String get consentDeclineTitle => 'सहमति अस्वीकार करें?';
+
+  @override
+  String get consentDeclineMessage =>
+      'गोपनीयता सूचना स्वीकार किए बिना आप स्वास्थ्य ऐप का उपयोग नहीं कर सकते। आपका पंजीकरण पूरा नहीं होगा।';
+
+  @override
+  String get consentDeclineConfirm => 'वापस जाएँ';
+
+  @override
+  String get consentScrollToAccept =>
+      'पूरी सूचना पढ़ने के लिए नीचे स्क्रॉल करें';
+
+  @override
   String get offlineBanner => 'आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।';
 
   @override
