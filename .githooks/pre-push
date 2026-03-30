@@ -1,0 +1,37 @@
+#!/bin/bash
+# Pre-push hook: runs backend tests + Flutter analysis before allowing push.
+# If any check fails, the push is aborted.
+
+set -e
+
+echo "══════════════════════════════════════════════════"
+echo "  Pre-push checks"
+echo "══════════════════════════════════════════════════"
+
+# ── Backend pytest ────────────────────────────────────────────────────────
+echo ""
+echo "▶ Running backend tests..."
+cd "$(git rev-parse --show-toplevel)/backend"
+if [ -d "venv" ]; then
+    source venv/bin/activate
+fi
+python -m pytest tests/ --tb=short -q
+echo "✓ Backend tests passed"
+
+# ── Flutter analyze ───────────────────────────────────────────────────────
+echo ""
+echo "▶ Running Flutter analysis..."
+cd "$(git rev-parse --show-toplevel)"
+flutter analyze --no-fatal-infos --no-fatal-warnings
+echo "✓ Flutter analysis passed"
+
+# ── Flutter tests ─────────────────────────────────────────────────────────
+echo ""
+echo "▶ Running Flutter tests..."
+flutter test
+echo "✓ Flutter tests passed"
+
+echo ""
+echo "══════════════════════════════════════════════════"
+echo "  All checks passed — pushing"
+echo "══════════════════════════════════════════════════"
