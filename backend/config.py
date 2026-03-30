@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     BREVO_SMTP_SERVER: str = "smtp-relay.brevo.com"
     BREVO_SMTP_PORT: int = 587
     BREVO_SENDER_EMAIL: str = "your-brevo-email@example.com"
-    BREVO_SMTP_LOGIN: str
+    BREVO_SMTP_LOGIN: str = ""
     BREVO_SMTP_PASSWORD: str = "your-brevo-smtp-password"
     BREVO_SENDER_NAME: str = "Swasth Health App"
     
