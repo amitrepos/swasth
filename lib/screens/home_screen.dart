@@ -500,11 +500,23 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
 
-            // Status flag badge (top-right)
+            // Info button (top-right) — replaces inline status badge
             Positioned(
               top: 0,
               right: 0,
-              child: _StatusFlag(data: flagData, l10n: l10n),
+              child: GestureDetector(
+                onTap: () => _showStatusInfoSheet(context, flagData, l10n),
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                  ),
+                  child: const Icon(Icons.question_mark_rounded, size: 14, color: AppColors.primary),
+                ),
+              ),
             ),
           ],
         ),
@@ -1462,47 +1474,138 @@ int _streakToPoints(int streak) {
   return 0;
 }
 
-// ── _StatusFlag widget ────────────────────────────────────────────────────────
+// ── Status info bottom sheet ──────────────────────────────────────────────────
 
-class _StatusFlag extends StatelessWidget {
-  final _StatusFlagData data;
-  final AppLocalizations l10n;
+void _showStatusInfoSheet(
+  BuildContext context,
+  _StatusFlagData current,
+  AppLocalizations l10n,
+) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _StatusInfoSheet(current: current),
+  );
+}
 
-  const _StatusFlag({required this.data, required this.l10n});
+class _StatusInfoSheet extends StatelessWidget {
+  final _StatusFlagData current;
+  const _StatusInfoSheet({required this.current});
 
   @override
   Widget build(BuildContext context) {
+    const levels = [
+      (emoji: '🟢', label: 'Fit & Fine', color: AppColors.statusNormal,
+       desc: 'All your readings are within healthy ranges. Keep up the great habits!'),
+      (emoji: '🟡', label: 'Caution', color: AppColors.amber,
+       desc: 'One or more readings are slightly elevated. Monitor them daily and stay hydrated.'),
+      (emoji: '🟠', label: 'At Risk', color: AppColors.statusElevated,
+       desc: 'Your readings suggest increased risk. Consider lifestyle changes and consult your doctor.'),
+      (emoji: '🚨', label: 'Urgent', color: AppColors.statusCritical,
+       desc: 'A critical reading was detected. Please contact your doctor or family member immediately.'),
+    ];
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: data.color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: data.color.withValues(alpha: 0.4)),
+      decoration: const BoxDecoration(
+        color: AppColors.bgPage,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(data.emoji, style: const TextStyle(fontSize: 12)),
-              const SizedBox(width: 4),
-              Text(
-                data.label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: data.color,
-                ),
+          // Handle
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary,
+                borderRadius: BorderRadius.circular(2),
               ),
-            ],
-          ),
-          if (data.subLabel != null)
-            Text(
-              data.subLabel!,
-              style: TextStyle(fontSize: 9, color: data.color.withValues(alpha: 0.85)),
             ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'WELLNESS STATUS',
+            style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary, letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Current status highlight
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.only(top: 8, bottom: 16),
+            decoration: BoxDecoration(
+              color: current.color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: current.color.withValues(alpha: 0.35)),
+            ),
+            child: Row(
+              children: [
+                Text(current.emoji, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your current status',
+                      style: TextStyle(fontSize: 11, color: current.color.withValues(alpha: 0.8)),
+                    ),
+                    Text(
+                      current.label,
+                      style: TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w800, color: current.color,
+                      ),
+                    ),
+                    if (current.subLabel != null)
+                      Text(
+                        current.subLabel!,
+                        style: TextStyle(fontSize: 12, color: current.color.withValues(alpha: 0.8)),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Text(
+            'WHAT EACH LEVEL MEANS',
+            style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary, letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...levels.map((lvl) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(lvl.emoji, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lvl.label,
+                        style: TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w700, color: lvl.color,
+                        ),
+                      ),
+                      Text(
+                        lvl.desc,
+                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )),
         ],
       ),
     );
