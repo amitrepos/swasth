@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_card.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../ble/ble_manager.dart';
 import 'dashboard_screen.dart';
@@ -107,8 +108,9 @@ class _ScanScreenState extends State<ScanScreen> {
     final rssi = result.rssi;
     final l10n = AppLocalizations.of(context)!;
 
-    return Card(
+    return GlassCard(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      borderRadius: 16,
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: type == 'Glucose' ? AppColors.glucose : AppColors.bloodPressure,

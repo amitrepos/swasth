@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_card.dart';
 import '../services/storage_service.dart';
 
 class ManageAccessScreen extends StatefulWidget {
@@ -141,13 +142,8 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
           // Invite Section
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Card(
-              elevation: 0,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
-              ),
+            child: GlassCard(
+              borderRadius: 12,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(

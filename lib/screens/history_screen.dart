@@ -4,6 +4,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_card.dart';
 
 class HistoryScreen extends StatefulWidget {
   final int profileId;
@@ -223,8 +224,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     itemCount: _readings.length,
                     itemBuilder: (context, index) {
                       final reading = _readings[index];
-                      return Card(
+                      return GlassCard(
                         margin: const EdgeInsets.only(bottom: 12),
+                        borderRadius: 16,
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: _getStatusColor(reading.statusFlag)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_card.dart';
 import '../models/invite_model.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
@@ -126,8 +127,9 @@ class _PendingInvitesScreenState extends State<PendingInvitesScreen> {
                             final invite = _invites[index];
                             final daysLeft = invite.expiresAt.difference(DateTime.now()).inDays;
 
-                            return Card(
+                            return GlassCard(
                               margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                              borderRadius: 16,
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(
