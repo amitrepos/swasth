@@ -1640,6 +1640,78 @@ abstract class AppLocalizations {
   /// **'Live Steps'**
   String get liveSteps;
 
+  /// No description provided for @relationshipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship to patient'**
+  String get relationshipLabel;
+
+  /// No description provided for @relationshipFather.
+  ///
+  /// In en, this message translates to:
+  /// **'Father'**
+  String get relationshipFather;
+
+  /// No description provided for @relationshipMother.
+  ///
+  /// In en, this message translates to:
+  /// **'Mother'**
+  String get relationshipMother;
+
+  /// No description provided for @relationshipSpouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Spouse'**
+  String get relationshipSpouse;
+
+  /// No description provided for @relationshipSon.
+  ///
+  /// In en, this message translates to:
+  /// **'Son'**
+  String get relationshipSon;
+
+  /// No description provided for @relationshipDaughter.
+  ///
+  /// In en, this message translates to:
+  /// **'Daughter'**
+  String get relationshipDaughter;
+
+  /// No description provided for @relationshipBrother.
+  ///
+  /// In en, this message translates to:
+  /// **'Brother'**
+  String get relationshipBrother;
+
+  /// No description provided for @relationshipSister.
+  ///
+  /// In en, this message translates to:
+  /// **'Sister'**
+  String get relationshipSister;
+
+  /// No description provided for @relationshipUncle.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncle'**
+  String get relationshipUncle;
+
+  /// No description provided for @relationshipAunt.
+  ///
+  /// In en, this message translates to:
+  /// **'Aunt'**
+  String get relationshipAunt;
+
+  /// No description provided for @relationshipFriend.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend'**
+  String get relationshipFriend;
+
+  /// No description provided for @relationshipOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get relationshipOther;
+
   /// No description provided for @consentTitle.
   ///
   /// In en, this message translates to:

@@ -7,6 +7,7 @@ from datetime import datetime
 GENDER_OPTIONS = ["Male", "Female", "Other"]
 BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]
 MEDICAL_CONDITIONS = ["Diabetes T1", "Diabetes T2", "Hypertension", "Heart Disease", "None", "Other"]
+RELATIONSHIP_OPTIONS = ["father", "mother", "spouse", "son", "daughter", "brother", "sister", "uncle", "aunt", "friend", "other"]
 _SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?'
 
 
@@ -254,6 +255,13 @@ class ProfileResponse(BaseModel):
 
 class InviteRequest(BaseModel):
     email: EmailStr
+    relationship: Optional[str] = None
+
+    @validator('relationship')
+    def validate_relationship(cls, v):
+        if v is not None and v not in RELATIONSHIP_OPTIONS:
+            raise ValueError(f'Relationship must be one of: {", ".join(RELATIONSHIP_OPTIONS)}')
+        return v
 
 
 class InviteResponse(BaseModel):
@@ -261,6 +269,7 @@ class InviteResponse(BaseModel):
     profile_id: int
     profile_name: str
     invited_by_name: str
+    relationship: Optional[str] = None
     status: str
     expires_at: datetime
     created_at: datetime

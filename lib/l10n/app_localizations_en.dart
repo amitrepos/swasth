@@ -827,6 +827,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveSteps => 'Live Steps';
 
   @override
+  String get relationshipLabel => 'Relationship to patient';
+
+  @override
+  String get relationshipFather => 'Father';
+
+  @override
+  String get relationshipMother => 'Mother';
+
+  @override
+  String get relationshipSpouse => 'Spouse';
+
+  @override
+  String get relationshipSon => 'Son';
+
+  @override
+  String get relationshipDaughter => 'Daughter';
+
+  @override
+  String get relationshipBrother => 'Brother';
+
+  @override
+  String get relationshipSister => 'Sister';
+
+  @override
+  String get relationshipUncle => 'Uncle';
+
+  @override
+  String get relationshipAunt => 'Aunt';
+
+  @override
+  String get relationshipFriend => 'Friend';
+
+  @override
+  String get relationshipOther => 'Other';
+
+  @override
   String get consentTitle => 'Privacy & Consent';
 
   @override

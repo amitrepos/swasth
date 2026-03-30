@@ -199,6 +199,7 @@ def send_invite(
         invited_by_user_id=user.id,
         invited_email=data.email.lower(),
         invited_user_id=invitee_user.id if invitee_user else None,
+        relationship=data.relationship,
         status="pending",
         expires_at=datetime.now(timezone.utc) + timedelta(days=INVITE_TTL_DAYS),
     )
@@ -265,6 +266,7 @@ def list_profile_access(
                 "full_name": u.full_name,
                 "email": u.email,
                 "access_level": a.access_level,
+                "relationship": a.relationship,
                 "granted_at": a.created_at,
             })
     return result
@@ -328,6 +330,7 @@ def list_pending_invites(
             profile_id=inv.profile_id,
             profile_name=profile.name if profile else "Unknown",
             invited_by_name=inviter.full_name if inviter else "Unknown",
+            relationship=inv.relationship,
             status=inv.status,
             expires_at=inv.expires_at,
             created_at=inv.created_at,
@@ -384,6 +387,7 @@ def respond_to_invite(
             user_id=user.id,
             profile_id=invite.profile_id,
             access_level="viewer",
+            relationship=invite.relationship,
         ))
 
     invite.status = "accepted"

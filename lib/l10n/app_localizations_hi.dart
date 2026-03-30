@@ -825,6 +825,42 @@ class AppLocalizationsHi extends AppLocalizations {
   String get liveSteps => 'कदम';
 
   @override
+  String get relationshipLabel => 'रोगी से संबंध';
+
+  @override
+  String get relationshipFather => 'पिता';
+
+  @override
+  String get relationshipMother => 'माता';
+
+  @override
+  String get relationshipSpouse => 'पति/पत्नी';
+
+  @override
+  String get relationshipSon => 'बेटा';
+
+  @override
+  String get relationshipDaughter => 'बेटी';
+
+  @override
+  String get relationshipBrother => 'भाई';
+
+  @override
+  String get relationshipSister => 'बहन';
+
+  @override
+  String get relationshipUncle => 'चाचा/मामा';
+
+  @override
+  String get relationshipAunt => 'चाची/मामी';
+
+  @override
+  String get relationshipFriend => 'दोस्त';
+
+  @override
+  String get relationshipOther => 'अन्य';
+
+  @override
   String get consentTitle => 'गोपनीयता और सहमति';
 
   @override
