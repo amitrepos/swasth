@@ -614,6 +614,18 @@ abstract class AppLocalizations {
   /// **'30 Days'**
   String get thirtyDays;
 
+  /// No description provided for @ninetyDays.
+  ///
+  /// In en, this message translates to:
+  /// **'90 Days'**
+  String get ninetyDays;
+
+  /// No description provided for @oneYear.
+  ///
+  /// In en, this message translates to:
+  /// **'1 Year'**
+  String get oneYear;
+
   /// No description provided for @glucoseTrend.
   ///
   /// In en, this message translates to:
@@ -1627,6 +1639,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Live Steps'**
   String get liveSteps;
+
+  /// No description provided for @offlineBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'You are offline. Some features may be limited.'**
+  String get offlineBanner;
+
+  /// No description provided for @loggedInOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged in offline'**
+  String get loggedInOffline;
+
+  /// No description provided for @readingSavedOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading saved offline. Will sync when connected.'**
+  String get readingSavedOffline;
+
+  /// No description provided for @syncComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {count} readings'**
+  String syncComplete(int count);
+
+  /// No description provided for @offlineLoginExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please connect to the internet to log in'**
+  String get offlineLoginExpired;
 }
 
 class _AppLocalizationsDelegate

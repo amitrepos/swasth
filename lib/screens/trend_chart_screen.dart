@@ -5,10 +5,16 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_card.dart';
+
+// ── Semantic chart colors (distinct from UI palette) ──────────────────────────
+const _kGlucoseColor = Color(0xFF10B981);   // emerald-500
+const _kSysColor     = Color(0xFFF43F5E);   // rose-500  (systolic)
+const _kDiaColor     = Color(0xFFFDA4AF);   // rose-300  (diastolic, lighter)
+const _kGridColor    = Color(0x1A64748B);   // slate-500 @ 10%
 
 class TrendChartScreen extends StatefulWidget {
   final int profileId;
-
   const TrendChartScreen({super.key, required this.profileId});
 
   @override
@@ -28,7 +34,7 @@ class _TrendChartScreenState extends State<TrendChartScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadReadings();
   }
 
@@ -46,7 +52,7 @@ class _TrendChartScreenState extends State<TrendChartScreen>
       final readings = await _readingService.getReadings(
         token: token,
         profileId: widget.profileId,
-        limit: 60,
+        limit: 200,
       );
       if (mounted) setState(() { _allReadings = readings; _isLoading = false; });
     } catch (e) {
@@ -63,9 +69,13 @@ class _TrendChartScreenState extends State<TrendChartScreen>
         title: Text(l10n.healthTrends),
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
           tabs: [
             Tab(text: l10n.sevenDays),
             Tab(text: l10n.thirtyDays),
+            Tab(text: l10n.ninetyDays),
           ],
         ),
       ),
@@ -78,6 +88,7 @@ class _TrendChartScreenState extends State<TrendChartScreen>
                   children: [
                     _TrendView(readings: _allReadings, days: 7),
                     _TrendView(readings: _allReadings, days: 30),
+                    _TrendView(readings: _allReadings, days: 90),
                   ],
                 ),
     );
@@ -85,7 +96,7 @@ class _TrendChartScreenState extends State<TrendChartScreen>
 }
 
 // ---------------------------------------------------------------------------
-// Trend view for a given time window
+// Trend view for a given window
 // ---------------------------------------------------------------------------
 
 class _TrendView extends StatelessWidget {
@@ -112,7 +123,7 @@ class _TrendView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.show_chart, size: 64, color: AppColors.textSecondary.withOpacity(0.4)),
+            Icon(Icons.show_chart, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
             Text(l10n.noChartData, style: const TextStyle(color: AppColors.textSecondary, fontSize: 16)),
           ],
@@ -120,84 +131,77 @@ class _TrendView extends StatelessWidget {
       );
     }
 
-    // Build day-keyed maps for correlation
-    final glucoseByDay = <String, HealthReading>{};
-    for (final r in glucose) {
-      final key = DateFormat('yyyy-MM-dd').format(r.readingTimestamp);
-      glucoseByDay.putIfAbsent(key, () => r);
-    }
-    final bpByDay = <String, HealthReading>{};
-    for (final r in bp) {
-      final key = DateFormat('yyyy-MM-dd').format(r.readingTimestamp);
-      bpByDay.putIfAbsent(key, () => r);
-    }
-    final sharedDays = glucoseByDay.keys.toSet().intersection(bpByDay.keys.toSet()).toList()..sort();
+    // Dot radius scales down for larger windows
+    final dotRadius = days <= 30 ? 4.0 : days <= 90 ? 3.0 : 2.0;
 
     return RefreshIndicator(
       onRefresh: () async {},
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Correlation chart (top) ──────────────────────────────────
-            if (sharedDays.isNotEmpty) ...[
-              _CorrelationChart(
-                sharedDays: sharedDays,
-                glucoseByDay: glucoseByDay,
-                bpByDay: bpByDay,
-                days: days,
-              ),
-              const SizedBox(height: 28),
-              const Divider(),
-              const SizedBox(height: 20),
+
+            // ── Correlation overview (always shown if any data) ──────────
+            if (glucose.isNotEmpty || bp.isNotEmpty) ...[
+              _CorrelationCard(glucose: glucose, bp: bp, days: days, dotRadius: dotRadius),
+              const SizedBox(height: 16),
             ],
 
-            // ── Glucose trend ────────────────────────────────────────────
+            // ── Glucose detail ───────────────────────────────────────────
             if (glucose.isNotEmpty) ...[
-              _SectionHeader(
+              _DetailChartCard(
                 icon: Icons.water_drop,
-                color: AppColors.glucose,
+                color: _kGlucoseColor,
                 title: l10n.glucoseTrend,
                 unit: 'mg/dL',
+                child: Column(
+                  children: [
+                    _GlucoseChart(readings: glucose, days: days, dotRadius: dotRadius),
+                    const SizedBox(height: 8),
+                    _StatsRow(
+                      values: glucose.map((r) => r.glucoseValue!).toList(),
+                      statuses: glucose.map((r) => r.statusFlag ?? '').toList(),
+                      l10n: l10n,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              _GlucoseChart(readings: glucose),
-              const SizedBox(height: 8),
-              _StatsRow(
-                values: glucose.map((r) => r.glucoseValue!).toList(),
-                statuses: glucose.map((r) => r.statusFlag ?? '').toList(),
-              ),
+              const SizedBox(height: 16),
             ],
-            if (glucose.isNotEmpty && bp.isNotEmpty) const SizedBox(height: 32),
 
-            // ── BP trend ─────────────────────────────────────────────────
+            // ── BP detail ────────────────────────────────────────────────
             if (bp.isNotEmpty) ...[
-              _SectionHeader(
+              _DetailChartCard(
                 icon: Icons.favorite,
-                color: AppColors.bloodPressure,
+                color: _kSysColor,
                 title: l10n.bpTrend,
                 unit: 'mmHg',
+                child: Column(
+                  children: [
+                    _BpChart(readings: bp, days: days, dotRadius: dotRadius),
+                    const SizedBox(height: 8),
+                    _BpStatsRow(readings: bp, l10n: l10n),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _LegendDot(color: _kSysColor, label: 'Systolic'),
+                        const SizedBox(width: 20),
+                        _LegendDot(color: _kDiaColor, label: 'Diastolic'),
+                        const SizedBox(width: 20),
+                        _LegendDot(
+                          color: AppColors.statusNormal.withValues(alpha: 0.5),
+                          label: 'Normal range',
+                          isBar: true,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              _BpChart(readings: bp),
-              const SizedBox(height: 8),
-              _BpStatsRow(readings: bp),
             ],
-            const SizedBox(height: 24),
-            // Legend
-            if (bp.isNotEmpty)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _LegendDot(color: AppColors.bloodPressure, label: 'Systolic'),
-                  const SizedBox(width: 24),
-                  _LegendDot(color: AppColors.bloodPressure.withOpacity(0.5), label: 'Diastolic'),
-                  const SizedBox(width: 24),
-                  _LegendDot(color: AppColors.statusNormal.withOpacity(0.5), label: 'Normal range', isBar: true),
-                ],
-              ),
           ],
         ),
       ),
@@ -206,242 +210,444 @@ class _TrendView extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Correlation chart — glucose (blue) + systolic BP (red) on same Y axis
+// Correlation card — two stacked mini charts sharing a time axis
 // ---------------------------------------------------------------------------
 
-class _CorrelationChart extends StatelessWidget {
-  final List<String> sharedDays;         // sorted "yyyy-MM-dd" keys
-  final Map<String, HealthReading> glucoseByDay;
-  final Map<String, HealthReading> bpByDay;
+class _CorrelationCard extends StatelessWidget {
+  final List<HealthReading> glucose;
+  final List<HealthReading> bp;
   final int days;
+  final double dotRadius;
 
-  const _CorrelationChart({
-    required this.sharedDays,
-    required this.glucoseByDay,
-    required this.bpByDay,
+  const _CorrelationCard({
+    required this.glucose,
+    required this.bp,
     required this.days,
+    required this.dotRadius,
   });
 
   @override
   Widget build(BuildContext context) {
-    final glucoseSpots = <FlSpot>[];
-    final sysSpots = <FlSpot>[];
-
-    for (var i = 0; i < sharedDays.length; i++) {
-      final day = sharedDays[i];
-      glucoseSpots.add(FlSpot(i.toDouble(), glucoseByDay[day]!.glucoseValue!));
-      sysSpots.add(FlSpot(i.toDouble(), bpByDay[day]!.systolic!));
+    // Insight: days where both were NORMAL
+    final glucoseByDay = <String, HealthReading>{};
+    for (final r in glucose) {
+      glucoseByDay.putIfAbsent(DateFormat('yyyy-MM-dd').format(r.readingTimestamp), () => r);
     }
-
-    // Insight: count days both were NORMAL
-    final bothNormal = sharedDays.where((day) =>
-        glucoseByDay[day]?.statusFlag == 'NORMAL' &&
-        bpByDay[day]?.statusFlag == 'NORMAL').length;
+    final bpByDay = <String, HealthReading>{};
+    for (final r in bp) {
+      bpByDay.putIfAbsent(DateFormat('yyyy-MM-dd').format(r.readingTimestamp), () => r);
+    }
+    final sharedDays = glucoseByDay.keys.toSet().intersection(bpByDay.keys.toSet());
+    final bothNormal = sharedDays.where((d) =>
+        glucoseByDay[d]?.statusFlag == 'NORMAL' && bpByDay[d]?.statusFlag == 'NORMAL').length;
     final total = sharedDays.length;
-    final pct = (bothNormal / total * 100).round();
+    final hasBoth = total > 0;
+    final pct = hasBoth ? (bothNormal / total * 100).round() : 0;
     final insightColor = pct >= 70 ? AppColors.statusNormal : pct >= 40 ? AppColors.statusElevated : AppColors.statusHigh;
-    final insightText = pct == 100
-        ? 'Both glucose & BP were normal on all $total day${total > 1 ? 's' : ''} 🎉'
-        : 'Both normal on $bothNormal of $total day${total > 1 ? 's' : ''} ($pct%)';
+    final insightText = !hasBoth
+        ? 'Log both glucose & BP on the same day to see correlation'
+        : pct == 100
+            ? 'Both glucose & BP were normal on all $total shared day${total > 1 ? 's' : ''} 🎉'
+            : 'Both normal on $bothNormal of $total shared day${total > 1 ? 's' : ''} ($pct%)';
 
-    final allVals = [...glucoseSpots.map((s) => s.y), ...sysSpots.map((s) => s.y)];
-    final minY = (allVals.reduce((a, b) => a < b ? a : b) - 20).clamp(0.0, double.infinity);
-    final maxY = allVals.reduce((a, b) => a > b ? a : b) + 25;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Row(
-          children: [
-            const Icon(Icons.link, size: 18, color: AppColors.iosPurple),
-            const SizedBox(width: 8),
-            Text(
-              'Glucose × BP Correlation',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(width: 6),
-            Text('(last $days days)', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Days where both were logged: $total',
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 10),
-
-        // Chart
-        SizedBox(
-          height: 180,
-          child: LineChart(
-            LineChartData(
-              lineBarsData: [
-                // Glucose — orange (Apple Health glucose color)
-                LineChartBarData(
-                  spots: glucoseSpots,
-                  isCurved: true,
-                  curveSmoothness: 0.35,
-                  color: AppColors.glucose,
-                  barWidth: 2.5,
-                  dotData: FlDotData(
-                    show: true,
-                    getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
-                      radius: 4,
-                      color: AppColors.glucose,
-                      strokeWidth: 1.5,
-                      strokeColor: Colors.white,
-                    ),
-                  ),
-                  belowBarData: BarAreaData(show: false),
+    return GlassCard(
+      borderRadius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              const Icon(Icons.link, size: 16, color: AppColors.iosPurple),
+              const SizedBox(width: 8),
+              const Text(
+                'GLUCOSE & BP OVERVIEW',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 1.5,
                 ),
-                // Systolic BP — red (Apple Health BP color)
-                LineChartBarData(
-                  spots: sysSpots,
-                  isCurved: true,
-                  curveSmoothness: 0.35,
-                  color: AppColors.bloodPressure,
-                  barWidth: 2.5,
-                  dotData: FlDotData(
-                    show: true,
-                    getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
-                      radius: 4,
-                      color: AppColors.bloodPressure,
-                      strokeWidth: 1.5,
-                      strokeColor: Colors.white,
-                    ),
-                  ),
-                  belowBarData: BarAreaData(show: false),
-                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Glucose mini chart
+          if (glucose.isNotEmpty) ...[
+            Row(
+              children: [
+                Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: _kGlucoseColor)),
+                const SizedBox(width: 6),
+                const Text('Glucose (mg/dL)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kGlucoseColor)),
               ],
-              minY: minY,
-              maxY: maxY,
-              titlesData: FlTitlesData(
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 44,
-                    getTitlesWidget: (v, _) => Text(
-                      v.toStringAsFixed(0),
-                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                    ),
-                  ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    interval: 1,
-                    getTitlesWidget: (v, _) {
-                      final idx = v.toInt();
-                      if (idx < 0 || idx >= sharedDays.length) {
-                        return const SizedBox.shrink();
-                      }
-                      final n = sharedDays.length;
-                      final targets = <int>{0, n ~/ 3, (2 * n) ~/ 3, n - 1};
-                      if (!targets.contains(idx)) return const SizedBox.shrink();
-                      final dt = DateTime.parse(sharedDays[idx]);
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          DateFormat('d MMM').format(dt),
-                          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                getDrawingHorizontalLine: (_) => FlLine(
-                  color: AppColors.textSecondary.withOpacity(0.15),
-                  strokeWidth: 1,
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              lineTouchData: LineTouchData(
-                touchTooltipData: LineTouchTooltipData(
-                  getTooltipItems: (spots) => spots.map((s) {
-                    final idx = s.x.toInt();
-                    final isGlucose = s.barIndex == 0;
-                    final label = isGlucose ? 'Glucose' : 'Systolic';
-                    final unit = isGlucose ? 'mg/dL' : 'mmHg';
-                    final dt = idx < sharedDays.length
-                        ? DateTime.parse(sharedDays[idx])
-                        : DateTime.now();
-                    return LineTooltipItem(
-                      '$label: ${s.y.toStringAsFixed(0)} $unit\n${DateFormat('d MMM').format(dt)}',
-                      TextStyle(
-                        color: isGlucose ? AppColors.glucose : AppColors.bloodPressure,
-                        fontSize: 12,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 10),
-
-        // Legend row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            _LegendDot(color: AppColors.glucose, label: 'Glucose (mg/dL)'),
-            SizedBox(width: 20),
-            _LegendDot(color: AppColors.bloodPressure, label: 'Systolic BP (mmHg)'),
+            const SizedBox(height: 6),
+            _MiniLineChart(readings: glucose, color: _kGlucoseColor, days: days, dotRadius: dotRadius - 1),
           ],
-        ),
-        const SizedBox(height: 10),
 
-        // Insight badge
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: insightColor.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: insightColor.withOpacity(0.25)),
-          ),
-          child: Text(
-            insightText,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: insightColor,
+          if (glucose.isNotEmpty && bp.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Divider(color: AppColors.separator, height: 1),
+            const SizedBox(height: 12),
+          ],
+
+          // BP mini chart
+          if (bp.isNotEmpty) ...[
+            Row(
+              children: [
+                Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: _kSysColor)),
+                const SizedBox(width: 6),
+                const Text('Blood Pressure (mmHg)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kSysColor)),
+              ],
             ),
-            textAlign: TextAlign.center,
+            const SizedBox(height: 6),
+            _MiniBpChart(readings: bp, days: days, dotRadius: dotRadius - 1),
+          ],
+
+          // Insight badge
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: insightColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: insightColor.withValues(alpha: 0.25)),
+            ),
+            child: Text(
+              insightText,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: insightColor),
+              textAlign: TextAlign.center,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Glucose line chart
+// Mini line chart (130px) — used in correlation card
+// ---------------------------------------------------------------------------
+
+class _MiniLineChart extends StatelessWidget {
+  final List<HealthReading> readings;
+  final Color color;
+  final int days;
+  final double dotRadius;
+
+  const _MiniLineChart({
+    required this.readings,
+    required this.color,
+    required this.days,
+    required this.dotRadius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final windowStart = DateTime.now().subtract(Duration(days: days));
+    final spots = <FlSpot>[];
+    for (final r in readings) {
+      final x = r.readingTimestamp.difference(windowStart).inHours.toDouble();
+      spots.add(FlSpot(x, r.glucoseValue!));
+    }
+    if (spots.isEmpty) return const SizedBox.shrink();
+
+    final vals = readings.map((r) => r.glucoseValue!).toList();
+    final minY = (vals.reduce((a, b) => a < b ? a : b) - 15).clamp(0.0, double.infinity);
+    final maxY = vals.reduce((a, b) => a > b ? a : b) + 15;
+    final maxX = (days * 24).toDouble();
+
+    return SizedBox(
+      height: 110,
+      child: LineChart(
+        LineChartData(
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              curveSmoothness: 0.3,
+              color: color,
+              barWidth: 2,
+              dotData: FlDotData(
+                show: dotRadius >= 2,
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  radius: dotRadius,
+                  color: color,
+                  strokeWidth: 1,
+                  strokeColor: Colors.white,
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [color.withValues(alpha: 0.15), color.withValues(alpha: 0.0)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ],
+          minY: minY, maxY: maxY,
+          minX: 0, maxX: maxX,
+          titlesData: FlTitlesData(
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 36,
+                interval: (maxY - minY) / 2,
+                getTitlesWidget: (v, _) => Text(
+                  v.toStringAsFixed(0),
+                  style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
+                ),
+              ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 20,
+                interval: _xInterval(days),
+                getTitlesWidget: (v, _) {
+                  final dt = DateTime.now().subtract(Duration(days: days)).add(Duration(hours: v.toInt()));
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(_xDateLabel(dt, days), style: const TextStyle(fontSize: 8, color: AppColors.textSecondary)),
+                  );
+                },
+              ),
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (_) => const FlLine(color: _kGridColor, strokeWidth: 1),
+          ),
+          borderData: FlBorderData(show: false),
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipItems: (spots) => spots.map((s) {
+                final dt = DateTime.now().subtract(Duration(days: days)).add(Duration(hours: s.x.toInt()));
+                return LineTooltipItem(
+                  '${s.y.toStringAsFixed(0)} mg/dL\n${DateFormat('d MMM').format(dt)}',
+                  TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniBpChart extends StatelessWidget {
+  final List<HealthReading> readings;
+  final int days;
+  final double dotRadius;
+
+  const _MiniBpChart({required this.readings, required this.days, required this.dotRadius});
+
+  @override
+  Widget build(BuildContext context) {
+    final windowStart = DateTime.now().subtract(Duration(days: days));
+    final sysSpots = <FlSpot>[];
+    final diaSpots = <FlSpot>[];
+    for (final r in readings) {
+      final x = r.readingTimestamp.difference(windowStart).inHours.toDouble();
+      sysSpots.add(FlSpot(x, r.systolic!));
+      if (r.diastolic != null) diaSpots.add(FlSpot(x, r.diastolic!));
+    }
+    if (sysSpots.isEmpty) return const SizedBox.shrink();
+
+    final allVals = [...readings.map((r) => r.systolic!), ...readings.where((r) => r.diastolic != null).map((r) => r.diastolic!)];
+    final minY = (allVals.reduce((a, b) => a < b ? a : b) - 10).clamp(0.0, double.infinity);
+    final maxY = allVals.reduce((a, b) => a > b ? a : b) + 15;
+    final maxX = (days * 24).toDouble();
+
+    return SizedBox(
+      height: 110,
+      child: LineChart(
+        LineChartData(
+          lineBarsData: [
+            LineChartBarData(
+              spots: sysSpots,
+              isCurved: true,
+              curveSmoothness: 0.3,
+              color: _kSysColor,
+              barWidth: 2,
+              dotData: FlDotData(
+                show: dotRadius >= 2,
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  radius: dotRadius,
+                  color: _kSysColor,
+                  strokeWidth: 1,
+                  strokeColor: Colors.white,
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [_kSysColor.withValues(alpha: 0.12), _kSysColor.withValues(alpha: 0.0)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+            if (diaSpots.isNotEmpty)
+              LineChartBarData(
+                spots: diaSpots,
+                isCurved: true,
+                curveSmoothness: 0.3,
+                color: _kDiaColor,
+                barWidth: 1.5,
+                dotData: FlDotData(
+                  show: dotRadius >= 2,
+                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                    radius: dotRadius - 0.5,
+                    color: _kDiaColor,
+                    strokeWidth: 1,
+                    strokeColor: Colors.white,
+                  ),
+                ),
+                belowBarData: BarAreaData(show: false),
+              ),
+          ],
+          minY: minY, maxY: maxY,
+          minX: 0, maxX: maxX,
+          titlesData: FlTitlesData(
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 36,
+                interval: (maxY - minY) / 2,
+                getTitlesWidget: (v, _) => Text(
+                  v.toStringAsFixed(0),
+                  style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
+                ),
+              ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 20,
+                interval: _xInterval(days),
+                getTitlesWidget: (v, _) {
+                  final dt = DateTime.now().subtract(Duration(days: days)).add(Duration(hours: v.toInt()));
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(_xDateLabel(dt, days), style: const TextStyle(fontSize: 8, color: AppColors.textSecondary)),
+                  );
+                },
+              ),
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (_) => const FlLine(color: _kGridColor, strokeWidth: 1),
+          ),
+          borderData: FlBorderData(show: false),
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipItems: (spots) => spots.map((s) {
+                final dt = DateTime.now().subtract(Duration(days: days)).add(Duration(hours: s.x.toInt()));
+                final label = s.barIndex == 0 ? 'Sys' : 'Dia';
+                final c = s.barIndex == 0 ? _kSysColor : _kDiaColor;
+                return LineTooltipItem(
+                  '$label: ${s.y.toStringAsFixed(0)} mmHg\n${DateFormat('d MMM').format(dt)}',
+                  TextStyle(color: c, fontSize: 11, fontWeight: FontWeight.w600),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Detail chart card wrapper
+// ---------------------------------------------------------------------------
+
+class _DetailChartCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String unit;
+  final Widget child;
+
+  const _DetailChartCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.unit,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      borderRadius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 8),
+              Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text('($unit)', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Full-size glucose line chart (200px)
 // ---------------------------------------------------------------------------
 
 class _GlucoseChart extends StatelessWidget {
   final List<HealthReading> readings;
+  final int days;
+  final double dotRadius;
 
-  const _GlucoseChart({required this.readings});
+  const _GlucoseChart({required this.readings, required this.days, required this.dotRadius});
 
   @override
   Widget build(BuildContext context) {
+    final windowStart = DateTime.now().subtract(Duration(days: days));
     final spots = <FlSpot>[];
-    for (var i = 0; i < readings.length; i++) {
-      spots.add(FlSpot(i.toDouble(), readings[i].glucoseValue!));
+    for (final r in readings) {
+      final x = r.readingTimestamp.difference(windowStart).inHours.toDouble();
+      spots.add(FlSpot(x, r.glucoseValue!));
     }
 
-    final values = readings.map((r) => r.glucoseValue!).toList();
-    final minY = (values.reduce((a, b) => a < b ? a : b) - 20).clamp(0.0, double.infinity);
-    final maxY = values.reduce((a, b) => a > b ? a : b) + 30;
+    final vals = readings.map((r) => r.glucoseValue!).toList();
+    final minY = (vals.reduce((a, b) => a < b ? a : b) - 20).clamp(0.0, double.infinity);
+    final maxY = vals.reduce((a, b) => a > b ? a : b) + 30;
+    final maxX = (days * 24).toDouble();
 
     return SizedBox(
       height: 200,
@@ -451,7 +657,7 @@ class _GlucoseChart extends StatelessWidget {
             horizontalRangeAnnotations: [
               HorizontalRangeAnnotation(
                 y1: 70, y2: 130,
-                color: AppColors.statusNormal.withOpacity(0.12),
+                color: _kGlucoseColor.withValues(alpha: 0.08),
               ),
             ],
           ),
@@ -460,64 +666,48 @@ class _GlucoseChart extends StatelessWidget {
               spots: spots,
               isCurved: true,
               curveSmoothness: 0.3,
-              color: AppColors.glucose,
+              color: _kGlucoseColor,
               barWidth: 2.5,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
-                  radius: 4,
-                  color: _dotColor(readings[spot.x.toInt()].statusFlag),
-                  strokeWidth: 1.5,
-                  strokeColor: Colors.white,
-                ),
+                getDotPainter: (spot, _, __, ___) {
+                  // find nearest reading by x proximity
+                  final r = _nearestReading(spot.x, readings, windowStart);
+                  return FlDotCirclePainter(
+                    radius: dotRadius,
+                    color: _dotColor(r?.statusFlag),
+                    strokeWidth: 1.5,
+                    strokeColor: Colors.white,
+                  );
+                },
               ),
               belowBarData: BarAreaData(
                 show: true,
-                color: AppColors.glucose.withOpacity(0.06),
-              ),
-            ),
-          ],
-          minY: minY,
-          maxY: maxY,
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 44,
-                getTitlesWidget: (v, _) => Text(
-                  v.toStringAsFixed(0),
-                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                gradient: LinearGradient(
+                  colors: [_kGlucoseColor.withValues(alpha: 0.12), _kGlucoseColor.withValues(alpha: 0.0)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
             ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 28,
-                interval: 1,
-                getTitlesWidget: (v, _) => _xLabel(v.toInt(), readings),
-              ),
-            ),
-          ),
+          ],
+          minY: minY, maxY: maxY,
+          minX: 0, maxX: maxX,
+          titlesData: _titlesData(days, maxY, minY),
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
             horizontalInterval: 30,
-            getDrawingHorizontalLine: (v) => FlLine(
-              color: AppColors.textSecondary.withOpacity(0.15),
-              strokeWidth: 1,
-            ),
+            getDrawingHorizontalLine: (_) => const FlLine(color: _kGridColor, strokeWidth: 1),
           ),
           borderData: FlBorderData(show: false),
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
               getTooltipItems: (spots) => spots.map((s) {
-                final r = readings[s.x.toInt()];
+                final dt = windowStart.add(Duration(hours: s.x.toInt()));
                 return LineTooltipItem(
-                  '${s.y.toStringAsFixed(0)} mg/dL\n${DateFormat('MMM d').format(r.readingTimestamp)}',
-                  const TextStyle(color: Colors.white, fontSize: 12),
+                  '${s.y.toStringAsFixed(0)} mg/dL\n${DateFormat('d MMM').format(dt)}',
+                  const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                 );
               }).toList(),
             ),
@@ -529,40 +719,44 @@ class _GlucoseChart extends StatelessWidget {
 
   Color _dotColor(String? status) {
     switch (status) {
-      case 'NORMAL': return AppColors.statusNormal;
+      case 'NORMAL': return _kGlucoseColor;
       case 'HIGH':
       case 'HIGH - STAGE 1':
       case 'HIGH - STAGE 2': return AppColors.statusElevated;
       case 'CRITICAL': return AppColors.statusCritical;
       case 'LOW': return AppColors.statusLow;
-      default: return AppColors.glucose;
+      default: return _kGlucoseColor;
     }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Blood pressure line chart (systolic + diastolic)
+// Full-size BP chart (200px)
 // ---------------------------------------------------------------------------
 
 class _BpChart extends StatelessWidget {
   final List<HealthReading> readings;
+  final int days;
+  final double dotRadius;
 
-  const _BpChart({required this.readings});
+  const _BpChart({required this.readings, required this.days, required this.dotRadius});
 
   @override
   Widget build(BuildContext context) {
+    final windowStart = DateTime.now().subtract(Duration(days: days));
     final sysSpots = <FlSpot>[];
     final diaSpots = <FlSpot>[];
 
-    for (var i = 0; i < readings.length; i++) {
-      final r = readings[i];
-      sysSpots.add(FlSpot(i.toDouble(), r.systolic!));
-      if (r.diastolic != null) diaSpots.add(FlSpot(i.toDouble(), r.diastolic!));
+    for (final r in readings) {
+      final x = r.readingTimestamp.difference(windowStart).inHours.toDouble();
+      sysSpots.add(FlSpot(x, r.systolic!));
+      if (r.diastolic != null) diaSpots.add(FlSpot(x, r.diastolic!));
     }
 
     final allVals = [...readings.map((r) => r.systolic!), ...readings.where((r) => r.diastolic != null).map((r) => r.diastolic!)];
     final minY = (allVals.reduce((a, b) => a < b ? a : b) - 15).clamp(0.0, double.infinity);
     final maxY = allVals.reduce((a, b) => a > b ? a : b) + 20;
+    final maxX = (days * 24).toDouble();
 
     return SizedBox(
       height: 200,
@@ -570,8 +764,8 @@ class _BpChart extends StatelessWidget {
         LineChartData(
           rangeAnnotations: RangeAnnotations(
             horizontalRangeAnnotations: [
-              HorizontalRangeAnnotation(y1: 90, y2: 130, color: AppColors.statusNormal.withOpacity(0.10)),
-              HorizontalRangeAnnotation(y1: 60, y2: 85, color: AppColors.statusNormal.withOpacity(0.10)),
+              HorizontalRangeAnnotation(y1: 90, y2: 130, color: AppColors.statusNormal.withValues(alpha: 0.08)),
+              HorizontalRangeAnnotation(y1: 60, y2: 85, color: AppColors.statusNormal.withValues(alpha: 0.08)),
             ],
           ),
           lineBarsData: [
@@ -579,31 +773,38 @@ class _BpChart extends StatelessWidget {
               spots: sysSpots,
               isCurved: true,
               curveSmoothness: 0.3,
-              color: AppColors.bloodPressure,
+              color: _kSysColor,
               barWidth: 2.5,
               dotData: FlDotData(
                 show: true,
                 getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
-                  radius: 4,
-                  color: AppColors.bloodPressure,
+                  radius: dotRadius,
+                  color: _kSysColor,
                   strokeWidth: 1.5,
                   strokeColor: Colors.white,
                 ),
               ),
-              belowBarData: BarAreaData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [_kSysColor.withValues(alpha: 0.10), _kSysColor.withValues(alpha: 0.0)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
             ),
             if (diaSpots.isNotEmpty)
               LineChartBarData(
                 spots: diaSpots,
                 isCurved: true,
                 curveSmoothness: 0.3,
-                color: AppColors.bloodPressure.withOpacity(0.5),
-                barWidth: 2.5,
+                color: _kDiaColor,
+                barWidth: 2,
                 dotData: FlDotData(
                   show: true,
                   getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
-                    radius: 4,
-                    color: AppColors.bloodPressure.withOpacity(0.5),
+                    radius: dotRadius - 0.5,
+                    color: _kDiaColor,
                     strokeWidth: 1.5,
                     strokeColor: Colors.white,
                   ),
@@ -611,50 +812,30 @@ class _BpChart extends StatelessWidget {
                 belowBarData: BarAreaData(show: false),
               ),
           ],
-          minY: minY,
-          maxY: maxY,
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 44,
-                getTitlesWidget: (v, _) => Text(
-                  v.toStringAsFixed(0),
-                  style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                ),
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 28,
-                interval: 1,
-                getTitlesWidget: (v, _) => _xLabel(v.toInt(), readings),
-              ),
-            ),
-          ),
+          minY: minY, maxY: maxY,
+          minX: 0, maxX: maxX,
+          titlesData: _titlesData(days, maxY, minY),
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
             horizontalInterval: 20,
-            getDrawingHorizontalLine: (v) => FlLine(
-              color: AppColors.textSecondary.withOpacity(0.15),
-              strokeWidth: 1,
-            ),
+            getDrawingHorizontalLine: (_) => const FlLine(color: _kGridColor, strokeWidth: 1),
           ),
           borderData: FlBorderData(show: false),
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipItems: (spots) => spots.map((s) {
-                final r = readings[s.x.toInt()];
-                final label = s.barIndex == 0 ? 'Sys' : 'Dia';
-                return LineTooltipItem(
-                  '$label: ${s.y.toStringAsFixed(0)}\n${DateFormat('MMM d').format(r.readingTimestamp)}',
-                  TextStyle(color: s.barIndex == 0 ? AppColors.bloodPressure : AppColors.bloodPressure.withOpacity(0.5), fontSize: 12),
-                );
-              }).toList(),
+              getTooltipItems: (spots) {
+                final windowStart2 = DateTime.now().subtract(Duration(days: days));
+                return spots.map((s) {
+                  final dt = windowStart2.add(Duration(hours: s.x.toInt()));
+                  final label = s.barIndex == 0 ? 'Sys' : 'Dia';
+                  final c = s.barIndex == 0 ? _kSysColor : _kDiaColor;
+                  return LineTooltipItem(
+                    '$label: ${s.y.toStringAsFixed(0)} mmHg\n${DateFormat('d MMM').format(dt)}',
+                    TextStyle(color: c, fontSize: 12, fontWeight: FontWeight.w600),
+                  );
+                }).toList();
+              },
             ),
           ),
         ),
@@ -667,65 +848,81 @@ class _BpChart extends StatelessWidget {
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-Widget _xLabel(int index, List<HealthReading> readings) {
-  if (index < 0 || index >= readings.length || readings.isEmpty) {
-    return const SizedBox.shrink();
-  }
-  final n = readings.length;
-  // Show at most 4 labels: first, ~1/3, ~2/3, last
-  final targets = <int>{0, n ~/ 3, (2 * n) ~/ 3, n - 1};
-  if (!targets.contains(index)) return const SizedBox.shrink();
-  return Padding(
-    padding: const EdgeInsets.only(top: 4),
-    child: Text(
-      DateFormat('d MMM').format(readings[index].readingTimestamp),
-      style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
+/// X-axis tick interval in hours based on window size
+double _xInterval(int days) {
+  if (days <= 30) return 24 * 7;          // weekly ticks
+  if (days <= 90) return 24 * 21;         // tri-weekly ticks
+  return 24 * 60;                          // bi-monthly ticks for yearly
+}
+
+/// Short date label for X axis
+String _xDateLabel(DateTime dt, int days) {
+  if (days <= 90) return DateFormat('d MMM').format(dt);
+  return DateFormat('MMM').format(dt);     // just month for yearly
+}
+
+FlTitlesData _titlesData(int days, double maxY, double minY) {
+  return FlTitlesData(
+    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    leftTitles: AxisTitles(
+      sideTitles: SideTitles(
+        showTitles: true,
+        reservedSize: 40,
+        interval: ((maxY - minY) / 4).roundToDouble().clamp(10, 50),
+        getTitlesWidget: (v, _) => Text(
+          v.toStringAsFixed(0),
+          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+        ),
+      ),
+    ),
+    bottomTitles: AxisTitles(
+      sideTitles: SideTitles(
+        showTitles: true,
+        reservedSize: 26,
+        interval: _xInterval(days),
+        getTitlesWidget: (v, _) {
+          final dt = DateTime.now().subtract(Duration(days: days)).add(Duration(hours: v.toInt()));
+          return Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              _xDateLabel(dt, days),
+              style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
+            ),
+          );
+        },
+      ),
     ),
   );
 }
 
-class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String unit;
-
-  const _SectionHeader({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.unit,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: color),
-        const SizedBox(width: 8),
-        Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-        const SizedBox(width: 6),
-        Text('($unit)', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-      ],
-    );
+HealthReading? _nearestReading(double x, List<HealthReading> readings, DateTime windowStart) {
+  HealthReading? best;
+  double bestDiff = double.infinity;
+  for (final r in readings) {
+    final rx = r.readingTimestamp.difference(windowStart).inHours.toDouble();
+    final diff = (rx - x).abs();
+    if (diff < bestDiff) { bestDiff = diff; best = r; }
   }
+  return best;
 }
 
 class _StatsRow extends StatelessWidget {
   final List<double> values;
   final List<String> statuses;
+  final AppLocalizations l10n;
 
-  const _StatsRow({required this.values, required this.statuses});
+  const _StatsRow({required this.values, required this.statuses, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     if (values.isEmpty) return const SizedBox.shrink();
     final avg = values.reduce((a, b) => a + b) / values.length;
     final min = values.reduce((a, b) => a < b ? a : b);
     final max = values.reduce((a, b) => a > b ? a : b);
-    final normalCount = statuses.where((s) => s == 'NORMAL').length;
-    final normalPct = (normalCount / statuses.length * 100).round();
+    final normalPct = statuses.isNotEmpty
+        ? (statuses.where((s) => s == 'NORMAL').length / statuses.length * 100).round()
+        : 0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -733,7 +930,7 @@ class _StatsRow extends StatelessWidget {
         _StatCell(label: l10n.avgLabel, value: avg.toStringAsFixed(0)),
         _StatCell(label: l10n.minLabel, value: min.toStringAsFixed(0)),
         _StatCell(label: l10n.maxLabel, value: max.toStringAsFixed(0)),
-        _StatCell(label: l10n.normalPct, value: '$normalPct%', color: AppColors.statusNormal),
+        _StatCell(label: l10n.normalPct, value: '$normalPct%', color: _kGlucoseColor),
       ],
     );
   }
@@ -741,26 +938,24 @@ class _StatsRow extends StatelessWidget {
 
 class _BpStatsRow extends StatelessWidget {
   final List<HealthReading> readings;
+  final AppLocalizations l10n;
 
-  const _BpStatsRow({required this.readings});
+  const _BpStatsRow({required this.readings, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     if (readings.isEmpty) return const SizedBox.shrink();
     final sysVals = readings.map((r) => r.systolic!).toList();
     final diaVals = readings.where((r) => r.diastolic != null).map((r) => r.diastolic!).toList();
-
     final avgSys = sysVals.reduce((a, b) => a + b) / sysVals.length;
     final avgDia = diaVals.isNotEmpty ? diaVals.reduce((a, b) => a + b) / diaVals.length : 0.0;
-    final normalCount = readings.where((r) => r.statusFlag == 'NORMAL').length;
-    final normalPct = (normalCount / readings.length * 100).round();
+    final normalPct = (readings.where((r) => r.statusFlag == 'NORMAL').length / readings.length * 100).round();
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _StatCell(label: 'Avg Sys', value: avgSys.toStringAsFixed(0)),
-        _StatCell(label: 'Avg Dia', value: avgDia.toStringAsFixed(0)),
+        _StatCell(label: 'Avg Sys', value: avgSys.toStringAsFixed(0), color: _kSysColor),
+        _StatCell(label: 'Avg Dia', value: avgDia.toStringAsFixed(0), color: _kDiaColor),
         _StatCell(label: l10n.normalPct, value: '$normalPct%', color: AppColors.statusNormal),
       ],
     );
@@ -783,7 +978,7 @@ class _StatCell extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: color ?? Theme.of(context).colorScheme.onSurface,
+            color: color ?? AppColors.textPrimary,
           ),
         ),
         Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
@@ -805,9 +1000,9 @@ class _LegendDot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         isBar
-            ? Container(width: 16, height: 8, color: color)
+            ? Container(width: 16, height: 6, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)))
             : Container(width: 10, height: 10, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-        const SizedBox(width: 4),
+        const SizedBox(width: 5),
         Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
     );

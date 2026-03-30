@@ -114,6 +114,8 @@
   "healthTrends": "Health Trends",
   "sevenDays": "7 Days",
   "thirtyDays": "30 Days",
+  "ninetyDays": "90 Days",
+  "oneYear": "1 Year",
   "glucoseTrend": "Glucose Trend",
   "bpTrend": "Blood Pressure Trend",
   "avgLabel": "Avg",
@@ -383,5 +385,11 @@
   "notConnected": "Not Connected",
   "lastBP": "Last BP",
   "lastSugar": "Last Sugar",
-  "liveSteps": "Live Steps"
+  "liveSteps": "Live Steps",
+  "offlineBanner": "You are offline. Some features may be limited.",
+  "loggedInOffline": "Logged in offline",
+  "readingSavedOffline": "Reading saved offline. Will sync when connected.",
+  "syncComplete": "Synced {count} readings",
+  "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
+  "offlineLoginExpired": "Please connect to the internet to log in"
 }

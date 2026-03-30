@@ -275,6 +275,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thirtyDays => '30 Days';
 
   @override
+  String get ninetyDays => '90 Days';
+
+  @override
+  String get oneYear => '1 Year';
+
+  @override
   String get glucoseTrend => 'Glucose Trend';
 
   @override
@@ -819,4 +825,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveSteps => 'Live Steps';
+
+  @override
+  String get offlineBanner => 'You are offline. Some features may be limited.';
+
+  @override
+  String get loggedInOffline => 'Logged in offline';
+
+  @override
+  String get readingSavedOffline =>
+      'Reading saved offline. Will sync when connected.';
+
+  @override
+  String syncComplete(int count) {
+    return 'Synced $count readings';
+  }
+
+  @override
+  String get offlineLoginExpired => 'Please connect to the internet to log in';
 }

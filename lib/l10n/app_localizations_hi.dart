@@ -275,6 +275,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get thirtyDays => '30 दिन';
 
   @override
+  String get ninetyDays => '90 दिन';
+
+  @override
+  String get oneYear => '1 वर्ष';
+
+  @override
   String get glucoseTrend => 'ग्लूकोज ट्रेंड';
 
   @override
@@ -817,4 +823,22 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get liveSteps => 'कदम';
+
+  @override
+  String get offlineBanner => 'आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।';
+
+  @override
+  String get loggedInOffline => 'ऑफ़लाइन लॉगिन हुआ';
+
+  @override
+  String get readingSavedOffline =>
+      'रीडिंग ऑफ़लाइन सहेजी गई। कनेक्ट होने पर सिंक होगी।';
+
+  @override
+  String syncComplete(int count) {
+    return '$count रीडिंग सिंक हुईं';
+  }
+
+  @override
+  String get offlineLoginExpired => 'लॉगिन करने के लिए इंटरनेट से कनेक्ट करें';
 }

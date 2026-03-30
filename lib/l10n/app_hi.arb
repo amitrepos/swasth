@@ -93,6 +93,8 @@
   "healthTrends": "स्वास्थ्य ट्रेंड",
   "sevenDays": "7 दिन",
   "thirtyDays": "30 दिन",
+  "ninetyDays": "90 दिन",
+  "oneYear": "1 वर्ष",
   "glucoseTrend": "ग्लूकोज ट्रेंड",
   "bpTrend": "रक्तचाप ट्रेंड",
   "avgLabel": "औसत",
@@ -275,5 +277,11 @@
   "notConnected": "नहीं जुड़ा",
   "lastBP": "पिछला BP",
   "lastSugar": "पिछला शुगर",
-  "liveSteps": "कदम"
+  "liveSteps": "कदम",
+  "offlineBanner": "आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।",
+  "loggedInOffline": "ऑफ़लाइन लॉगिन हुआ",
+  "readingSavedOffline": "रीडिंग ऑफ़लाइन सहेजी गई। कनेक्ट होने पर सिंक होगी।",
+  "syncComplete": "{count} रीडिंग सिंक हुईं",
+  "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
+  "offlineLoginExpired": "लॉगिन करने के लिए इंटरनेट से कनेक्ट करें"
 }
