@@ -96,6 +96,15 @@ class HealthReading {
     };
   }
 
+  /// Full JSON including server-assigned fields — used for local caching.
+  Map<String, dynamic> toCacheJson() {
+    return {
+      'id': id,
+      ...toJson(),
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
   String get displayValue {
     if (readingType == 'glucose') {
       return '${glucoseValue?.toStringAsFixed(1) ?? '-'} $unitDisplay';

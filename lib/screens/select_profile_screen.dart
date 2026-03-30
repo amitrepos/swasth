@@ -11,6 +11,7 @@ import '../services/storage_service.dart';
 import 'shell_screen.dart';
 import 'create_profile_screen.dart';
 import 'pending_invites_screen.dart';
+import '../widgets/offline_banner.dart';
 
 class SelectProfileScreen extends StatefulWidget {
   const SelectProfileScreen({super.key});
@@ -26,6 +27,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   List<ProfileModel> _profiles = [];
   List<InviteModel> _pendingInvites = [];
   bool _isLoading = true;
+  bool _isOffline = false;
   String? _error;
 
   @override
@@ -50,12 +52,28 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       final profiles = await _profileService.getProfiles(token);
       final invites = await _profileService.getPendingInvites(token);
 
+      // Cache profiles for offline use
+      await _storageService.saveProfiles(
+        profiles.map((p) => p.toJson()).toList(),
+      );
+
       setState(() {
         _profiles = profiles;
         _pendingInvites = invites;
         _isLoading = false;
+        _isOffline = false;
       });
     } catch (e) {
+      // Try loading cached profiles for offline use
+      final cached = await _storageService.getCachedProfiles();
+      if (cached != null && cached.isNotEmpty) {
+        setState(() {
+          _profiles = cached.map((j) => ProfileModel.fromJson(j)).toList();
+          _isLoading = false;
+          _isOffline = true;
+        });
+        return;
+      }
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
@@ -113,6 +131,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (_isOffline) const OfflineBanner(),
                         if (_pendingInvites.isNotEmpty)
                           _buildInvitesBanner(l10n),
 

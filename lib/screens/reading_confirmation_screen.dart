@@ -157,7 +157,37 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
         );
       }
 
-      await _readingService.saveReading(reading, token);
+      try {
+        await _readingService.saveReading(reading, token);
+      } catch (e) {
+        final errStr = e.toString();
+        final isNetworkError =
+            errStr.contains('SocketException') ||
+            errStr.contains('TimeoutException') ||
+            errStr.contains('Connection refused') ||
+            errStr.contains('XMLHttpRequest error');
+
+        if (isNetworkError) {
+          // Queue for later sync
+          await StorageService().addToSyncQueue(reading.toJson());
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.readingSavedOffline),
+              backgroundColor: AppColors.amber,
+            ),
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HistoryScreen(profileId: widget.profileId),
+            ),
+            (route) => route.isFirst,
+          );
+          return;
+        }
+        rethrow;
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

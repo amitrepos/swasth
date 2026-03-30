@@ -42,11 +42,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
         limit: 100,
       );
 
+      // Cache readings for offline use
+      await StorageService().saveReadings(
+        widget.profileId,
+        readings.map((r) => r.toCacheJson()).toList(),
+      );
+
       setState(() {
         _readings = readings;
         _isLoading = false;
       });
     } catch (e) {
+      // Try loading cached readings for offline use
+      final cached = await StorageService().getCachedReadings(widget.profileId);
+      if (cached != null && cached.isNotEmpty) {
+        var readings = cached.map((j) => HealthReading.fromJson(j)).toList();
+        if (_filterType != null) {
+          readings = readings.where((r) => r.readingType == _filterType).toList();
+        }
+        setState(() {
+          _readings = readings;
+          _isLoading = false;
+        });
+        return;
+      }
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

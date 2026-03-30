@@ -2,9 +2,13 @@
 // Architecture: IndexedStack (preserves scroll/state per tab).
 // Related: home_screen.dart, history_screen.dart, trend_chart_screen.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../services/connectivity_service.dart';
+import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/offline_banner.dart';
 import 'home_screen.dart';
 import 'history_screen.dart';
 import 'streaks_screen.dart';
@@ -23,11 +27,35 @@ class _ShellScreenState extends State<ShellScreen> {
   int _currentIndex = 0;
   int? _profileId;
   bool _loading = true;
+  bool _isOffline = false;
+  Timer? _connectivityTimer;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _checkConnectivity();
+    _connectivityTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _checkConnectivity(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _connectivityTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkConnectivity() async {
+    final reachable = await ConnectivityService().isServerReachable();
+    if (!mounted) return;
+    final wasOffline = _isOffline;
+    setState(() => _isOffline = !reachable);
+    // Auto-sync when coming back online
+    if (wasOffline && reachable) {
+      SyncService().syncPendingReadings();
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -53,14 +81,21 @@ class _ShellScreenState extends State<ShellScreen> {
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
+      body: Column(
         children: [
-          const HomeScreen(),
-          HistoryScreen(profileId: _profileId!),
-          const StreaksScreen(),
-          InsightsScreen(profileId: _profileId!),
-          const ChatScreen(),
+          if (_isOffline) const OfflineBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: [
+                const HomeScreen(),
+                HistoryScreen(profileId: _profileId!),
+                const StreaksScreen(),
+                InsightsScreen(profileId: _profileId!),
+                const ChatScreen(),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),

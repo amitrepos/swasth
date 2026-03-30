@@ -15,6 +15,9 @@ class StorageService {
   static const String _languageKey = 'language_code';
   static const String _savedEmailKey = 'saved_email';
   static const String _savedPasswordKey = 'saved_password';
+  static const String _cachedProfilesKey = 'cached_profiles';
+  static const String _syncQueueKey = 'sync_queue';
+  static const String _lastLoginTimestampKey = 'last_login_timestamp';
 
   // Save authentication token
   Future<void> saveToken(String token) async {
@@ -92,12 +95,97 @@ class StorageService {
     await _storage.delete(key: _savedPasswordKey);
   }
 
-  // Clear all stored data (logout)
+  // ── Offline cache: profiles ──────────────────────────────────────────────
+
+  Future<void> saveProfiles(List<Map<String, dynamic>> profiles) async {
+    await _storage.write(key: _cachedProfilesKey, value: jsonEncode(profiles));
+  }
+
+  Future<List<Map<String, dynamic>>?> getCachedProfiles() async {
+    final json = await _storage.read(key: _cachedProfilesKey);
+    if (json == null) return null;
+    return (jsonDecode(json) as List).cast<Map<String, dynamic>>();
+  }
+
+  // ── Offline cache: readings (per profile) ──────────────────────────────
+
+  String _readingsKey(int profileId) => 'cached_readings_$profileId';
+
+  Future<void> saveReadings(int profileId, List<Map<String, dynamic>> readings) async {
+    await _storage.write(key: _readingsKey(profileId), value: jsonEncode(readings));
+  }
+
+  Future<List<Map<String, dynamic>>?> getCachedReadings(int profileId) async {
+    final json = await _storage.read(key: _readingsKey(profileId));
+    if (json == null) return null;
+    return (jsonDecode(json) as List).cast<Map<String, dynamic>>();
+  }
+
+  // ── Offline cache: health score (per profile) ──────────────────────────
+
+  String _healthScoreKey(int profileId) => 'cached_health_score_$profileId';
+
+  Future<void> saveHealthScore(int profileId, Map<String, dynamic> data) async {
+    await _storage.write(key: _healthScoreKey(profileId), value: jsonEncode(data));
+  }
+
+  Future<Map<String, dynamic>?> getCachedHealthScore(int profileId) async {
+    final json = await _storage.read(key: _healthScoreKey(profileId));
+    if (json == null) return null;
+    return jsonDecode(json) as Map<String, dynamic>;
+  }
+
+  // ── Sync queue (readings entered offline, pending upload) ──────────────
+
+  Future<void> addToSyncQueue(Map<String, dynamic> reading) async {
+    final queue = await getSyncQueue();
+    queue.add(reading);
+    await _storage.write(key: _syncQueueKey, value: jsonEncode(queue));
+  }
+
+  Future<List<Map<String, dynamic>>> getSyncQueue() async {
+    final json = await _storage.read(key: _syncQueueKey);
+    if (json == null) return [];
+    return (jsonDecode(json) as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> saveSyncQueue(List<Map<String, dynamic>> queue) async {
+    await _storage.write(key: _syncQueueKey, value: jsonEncode(queue));
+  }
+
+  Future<void> clearSyncQueue() async {
+    await _storage.delete(key: _syncQueueKey);
+  }
+
+  // ── Last login timestamp (for offline session staleness) ───────────────
+
+  Future<void> saveLastLoginTimestamp() async {
+    await _storage.write(
+      key: _lastLoginTimestampKey,
+      value: DateTime.now().toIso8601String(),
+    );
+  }
+
+  Future<DateTime?> getLastLoginTimestamp() async {
+    final value = await _storage.read(key: _lastLoginTimestampKey);
+    return value != null ? DateTime.tryParse(value) : null;
+  }
+
+  // ── Clear auth data (logout) — keeps sync queue & cache intact ─────────
+
   Future<void> clearAll() async {
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _userKey);
     await _storage.delete(key: _activeProfileIdKey);
     await _storage.delete(key: _activeProfileNameKey);
     await clearCredentials();
+    // NOTE: cached_profiles, cached_readings_*, sync_queue, and
+    // last_login_timestamp are intentionally NOT cleared so offline
+    // data and pending uploads survive logout.
+  }
+
+  /// Explicit full wipe — clears everything including offline caches.
+  Future<void> clearEverything() async {
+    await _storage.deleteAll();
   }
 }

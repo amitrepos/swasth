@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
-import '../theme/app_theme.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 import 'registration_screen.dart';
 import 'select_profile_screen.dart';
 import 'forgot_password_screen.dart';
@@ -101,12 +101,46 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
-        );
+        final errStr = e.toString();
+        final isNetworkError =
+            errStr.contains('Failed to login') ||
+            errStr.contains('SocketException') ||
+            errStr.contains('TimeoutException') ||
+            errStr.contains('Connection refused') ||
+            errStr.contains('XMLHttpRequest error');
+
+        // Offline fallback: if network error + saved credentials match
+        if (isNetworkError) {
+          final saved = await StorageService().getSavedCredentials();
+          if (saved != null &&
+              saved.email == _emailController.text.trim() &&
+              saved.password == _passwordController.text) {
+            // Offline login — use cached session
+            await StorageService().saveLastLoginTimestamp();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n.loggedInOffline),
+                  backgroundColor: AppColors.amber,
+                ),
+              );
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
+              );
+            }
+            return;
+          }
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceAll('Exception: ', '')),
+              backgroundColor: AppColors.statusCritical,
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

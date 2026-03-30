@@ -5,6 +5,31 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — Trend chart 7/30/90-day tabs + glassmorphism upgrade
+
+- Rewrote `lib/screens/trend_chart_screen.dart`: Changed tabs from 7/30 days to 7/30/90 days. Replaced raw `Colors.*` with semantic constants (`_kGlucoseColor`, `_kSysColor`, `_kDiaColor`, `_kGridColor`). Wrapped all chart cards in `GlassCard`. Added adaptive dot radius (4px for 30d, 3px for 90d). Smart X-axis labels (weekly for ≤30d, tri-weekly for 90d). Correlation card, stats rows, legends all preserved.
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added `ninetyDays`, `oneYear` strings.
+
+## 2026-03-30 — A9: Offline login + offline-first MVP for Bihar pilot
+
+- Created `lib/services/connectivity_service.dart`: Singleton with `isServerReachable()` — HEAD request to backend with 2s timeout.
+- Created `lib/services/sync_service.dart`: Flushes offline sync queue when online. Re-logins with saved credentials if token expired. Called from SplashScreen, ShellScreen (30s timer), HomeScreen init.
+- Created `lib/screens/splash_screen.dart`: Auth gate replacing LoginScreen as app entry point. Auto-login with saved credentials (online → fresh token; offline within 7 days → cached session). Falls back to LoginScreen if no credentials or session expired.
+- Created `lib/widgets/offline_banner.dart`: Amber banner with cloud_off icon, localized text.
+- Modified `lib/services/storage_service.dart`: Added cache methods — `saveProfiles/getCachedProfiles`, `saveReadings/getCachedReadings`, `saveHealthScore/getCachedHealthScore`, `addToSyncQueue/getSyncQueue/clearSyncQueue`, `saveLastLoginTimestamp/getLastLoginTimestamp`. `clearAll()` now preserves sync queue and cached data.
+- Modified `lib/services/health_reading_service.dart`: Added `toCacheJson()` method including `id` and `createdAt` for full round-trip caching.
+- Modified `lib/main.dart`: Entry point changed from `LoginScreen` → `SplashScreen`.
+- Modified `lib/screens/login_screen.dart`: Added offline fallback — if network error and entered credentials match saved credentials, allows offline login with cached session.
+- Modified `lib/screens/select_profile_screen.dart`: Caches profiles on successful API fetch. Loads cached profiles with offline banner on failure.
+- Modified `lib/screens/home_screen.dart`: Caches health score on successful fetch, loads cache on failure. Triggers `SyncService.syncPendingReadings()` on init.
+- Modified `lib/screens/history_screen.dart`: Caches readings on successful fetch, loads cached readings on failure.
+- Modified `lib/screens/reading_confirmation_screen.dart`: Queues readings to sync queue when network fails, shows "Saved offline" snackbar.
+- Modified `lib/screens/shell_screen.dart`: Shows `OfflineBanner` when offline. 30s periodic connectivity check. Auto-syncs when coming back online.
+- Modified `lib/screens/photo_scan_screen.dart`: Pre-flight connectivity check before Gemini scan — shows "requires internet" dialog if offline.
+- Modified `lib/l10n/app_en.arb` + `app_hi.arb`: Added `offlineBanner`, `loggedInOffline`, `readingSavedOffline`, `syncComplete`, `offlineLoginExpired` strings in both languages.
+
+---
+
 ## 2026-03-30 — Phase 1: Glassmorphism theme foundation
 
 - Rewrote `lib/theme/app_theme.dart`: Replaced Design3 purple/navy palette with glassmorphism sky-blue system. New tokens: `primary` (#0EA5E9 sky-500), `success` (#10B981 emerald), `amber`, `danger`, `bgPage` (#F0F9FF), `bgCard` (45% white), `glassCardBorder`, `glassShadow`. Kept all semantic metric colors unchanged (glucose emerald, BP rose — clinically meaningful). Added backwards-compat aliases for all old tokens still referenced in existing screens (`iosBlue`, `iosPurple`, `insight`, `bgCard2`, etc.) so no existing screen breaks.
@@ -699,3 +724,41 @@ Format: date, summary, file-level details.
 - Created `lib/screens/insights_screen.dart`: Thin wrapper around TrendChartScreen for the Insights tab.
 - Created `lib/screens/chat_screen.dart`: "AI Doctor Chat — Coming Soon" placeholder.
 - Modified `lib/screens/select_profile_screen.dart`: post-select navigates to ShellScreen instead of HomeScreen.
+  - 15:16:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 15:36:29 modified: /Users/amitkumarmishra/.claude/plans/encapsulated-splashing-owl.md
+  - 15:38:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/connectivity_service.dart
+  - 15:38:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/offline_banner.dart
+  - 15:38:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/storage_service.dart
+  - 15:39:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/storage_service.dart
+  - 15:39:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 15:39:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/sync_service.dart
+  - 15:39:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/splash_screen.dart
+  - 15:39:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 15:39:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 15:40:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 15:40:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 15:40:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 15:40:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 15:40:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 15:40:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 15:40:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 15:40:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 15:41:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 15:41:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 15:41:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 15:41:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 15:41:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:41:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:41:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:42:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 15:42:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/photo_scan_screen.dart
+  - 15:42:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 15:43:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 15:44:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 15:44:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 15:44:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 15:44:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/reading_confirmation_screen.dart
+  - 16:03:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 16:03:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 16:03:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 16:11:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

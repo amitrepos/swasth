@@ -16,6 +16,7 @@ import 'trend_chart_screen.dart';
 import '../services/storage_service.dart';
 import '../services/health_reading_service.dart';
 import '../services/profile_service.dart';
+import '../services/sync_service.dart';
 import '../models/profile_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -61,6 +62,8 @@ class _HomeScreenState extends State<HomeScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
     _loadProfileInfo();
+    // Sync any offline readings silently
+    SyncService().syncPendingReadings();
   }
 
   @override
@@ -104,13 +107,25 @@ class _HomeScreenState extends State<HomeScreen>
     // Update header pills when data arrives
     try {
       final data = await future;
+      // Cache health score for offline use
+      await _storageService.saveHealthScore(profileId, data);
       if (mounted) {
         setState(() {
           _streak = (data['streak_days'] as num?)?.toInt() ?? 0;
           _pts = _streakToPoints(_streak);
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      // Load cached health score if online fetch failed
+      final cached = await _storageService.getCachedHealthScore(profileId);
+      if (cached != null && mounted) {
+        setState(() {
+          _healthScoreFuture = Future.value(cached);
+          _streak = (cached['streak_days'] as num?)?.toInt() ?? 0;
+          _pts = _streakToPoints(_streak);
+        });
+      }
+    }
     // Fetch profile for physician card (parallel)
     try {
       final profile = await _profileService.getProfile(token, profileId);
