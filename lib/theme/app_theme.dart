@@ -29,7 +29,7 @@ abstract final class AppColors {
 
   // ── Surfaces — light ─────────────────────────────────────────────────────
   static const Color bgPage     = Color(0xFFF0F9FF);  // sky-50 — scaffold background
-  static const Color bgCard     = Color(0x73FFFFFF);  // 45% white — glass card fill
+  static const Color bgCard     = Color(0xCCFFFFFF);  // 80% white — glass card fill
   static const Color bgGrouped  = Color(0xFFE0F2FE);  // sky-100 — grouped sections
 
   // ── Surfaces — dark ──────────────────────────────────────────────────────
@@ -38,8 +38,8 @@ abstract final class AppColors {
   static const Color bgGroupedDark = Color(0xFF0F2540);  // dark grouped
 
   // ── Glass card decorative ────────────────────────────────────────────────
-  static const Color glassCardBorder = Color(0x80FFFFFF);  // 50% white border
-  static const Color glassShadow     = Color(0x0D1F2687);  // soft blue shadow
+  static const Color glassCardBorder = Color(0xFFBAE6FD);  // sky-200 — visible border on sky-50 bg
+  static const Color glassShadow     = Color(0x1A1F2687);  // blue shadow — 12% opacity
 
   // ── Text — light ─────────────────────────────────────────────────────────
   static const Color textPrimary   = Color(0xFF1E293B);  // slate-800

@@ -1274,10 +1274,11 @@ class _MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassCard(
       borderRadius: 24,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       margin: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label.toUpperCase(),
@@ -1288,34 +1289,39 @@ class _MetricTile extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: valueColor,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (onAddTap != null)
-            Align(
-              alignment: Alignment.bottomRight,
-              child: GestureDetector(
-                onTap: onAddTap,
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: addButtonColor,
-                    borderRadius: BorderRadius.circular(10),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: valueColor,
                   ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 20),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
-            )
-          else
-            const SizedBox(height: 34),
+              if (onAddTap != null) ...[
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: onAddTap,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: addButtonColor,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 18),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );
