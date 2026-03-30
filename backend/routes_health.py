@@ -362,15 +362,38 @@ def get_ai_insight(
     Falls back to rule-based insight on any error — never returns 500."""
     get_profile_access_or_403(profile_id, user, db)
 
-    today_str = date.today().isoformat()
-    cache_key = (profile_id, today_str)
-    if cache_key in _insight_cache:
-        return {"insight": _insight_cache[cache_key]}
+    # ── Smart cache: only call LLM when new readings exist ────────────
+    latest_insight = (
+        db.query(models.AiInsightLog)
+        .filter(
+            models.AiInsightLog.profile_id == profile_id,
+            models.AiInsightLog.model_used != "failed",
+        )
+        .order_by(models.AiInsightLog.created_at.desc())
+        .first()
+    )
+    latest_reading = (
+        db.query(models.HealthReading)
+        .filter(models.HealthReading.profile_id == profile_id)
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
 
-    # Fetch profile for age-aware context
+    if latest_insight and latest_reading:
+        # Compare: if no new readings since last insight, return cached
+        insight_time = latest_insight.created_at
+        reading_time = latest_reading.reading_timestamp
+        # Make both offset-naive for comparison
+        if insight_time and hasattr(insight_time, 'replace'):
+            insight_time = insight_time.replace(tzinfo=None)
+        if reading_time and hasattr(reading_time, 'replace'):
+            reading_time = reading_time.replace(tzinfo=None)
+        if insight_time and reading_time and reading_time <= insight_time:
+            return {"insight": latest_insight.response_text}
+
+    # ── Need fresh insight — fetch data ───────────────────────────────
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
 
-    # Fetch last 30 days of readings (wider window = better context for sparse users)
     thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time())
     recent = (
         db.query(models.HealthReading)
@@ -459,7 +482,6 @@ Rules:
     insight = ai_service.generate_health_insight(prompt, profile_id, db, prompt_summary)
 
     if insight:
-        _insight_cache[cache_key] = insight
         return {"insight": insight}
 
     # All AI models failed — use rule-based fallback and log it

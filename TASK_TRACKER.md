@@ -1,6 +1,6 @@
 # Swasth App — Phase 1 Task Tracker
 
-**Last Updated:** 2026-03-28
+**Last Updated:** 2026-03-30
 **Sprint:** 4 weeks + buffer | **Target:** Bihar pilot
 
 Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
@@ -18,9 +18,9 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | A5 | "Add person without smartphone" | ✅ Done | Create profile for someone else → caller becomes "owner". `create_profile_screen.dart`. |
 | A6 | Language toggle (Hindi / English) | ✅ Done | Full gen-l10n: `app_en.arb` + `app_hi.arb`, all UI strings via `AppLocalizations`. Toggle chip in Profile → Settings section. Language persisted via `languageProvider` (Riverpod). |
 | A7 | Profile switcher | ✅ Done | `select_profile_screen.dart` — lists all accessible profiles, tap to switch active profile. |
-| A8 | Cloud sync | 🔄 Partial | PostgreSQL + FastAPI (cloud-deployable). No real-time sync or offline queue. |
-| A9 | Local offline storage | ❌ Not started | `flutter_secure_storage` stores auth token, profile ID, language — not health readings. No hive/sqflite cache for readings. App requires network for all health data reads/writes. |
-| A10 | Invite family via WhatsApp | 🔄 Partial | Email-based invite works (`pending_invites_screen.dart`). No `share_plus`, no WhatsApp deep link or share-to-install flow. |
+| A8 | Cloud sync | 🔄 Partial | PostgreSQL + FastAPI (cloud-deployable). Offline sync queue for readings. |
+| A9 | Local offline storage | ✅ Done | Offline login (7-day window), cached profiles/readings/health scores, sync queue for readings entered offline, auto-sync on reconnect, offline banner, splash auth gate. |
+| A10 | Invite family via WhatsApp | 🔄 Partial | Email-based invite works with relationship dropdown (father/mother/spouse/etc.). No WhatsApp deep link or share-to-install flow. |
 | A11 | Access permissions | ✅ Done | owner / viewer / editor levels via `profile_access` table. `dependencies.py` enforces access. |
 | A12 | First-time onboarding | ❌ Not started | Registration screen collects health info during signup but there are no dedicated onboarding/welcome carousel screens (welcome → how to photograph → invite family flow). |
 | A13 | Remember me / saved credentials | ✅ Done | "Remember me" checkbox on login screen. Credentials stored in `flutter_secure_storage` (iOS Keychain). Pre-fills email + password on next open. Cleared on logout or when checkbox unticked. |
@@ -61,25 +61,25 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | C1 | Today's summary card | ✅ Done | `_HealthScoreCard` on home screen — shows today's glucose + BP values, status icons, last logged time, and health score ring. |
 | C2 | Status badges (HIGH / NORMAL / LOW) | ✅ Done | `history_screen.dart` — color-coded badges. `_glucoseStatus()` and `_bpStatus()` helpers in confirmation screen. |
 | C3 | BMI display | ❌ Not started | Height in profile; no weight readings table; no BMI calculation anywhere in codebase. |
-| C4 | 7-day glucose trend chart | ✅ Done | `trend_chart_screen.dart` — LineChart, normal range band (70–130), color-coded dots, stats row. |
-| C5 | 7-day BP trend chart | ✅ Done | Same screen — systolic (rose) + diastolic lines, normal range bands, avg/normal% stats. |
+| C4 | 7/30/90-day glucose trend chart | ✅ Done | `trend_chart_screen.dart` — 3 tabs (7/30/90 days), glass card styling, adaptive dot radius, smart X-axis labels. |
+| C5 | 7/30/90-day BP trend chart | ✅ Done | Same screen — systolic (rose) + diastolic lines, normal range bands, correlation overview card. |
 | C6 | 7-day steps chart | ❌ Not started | Depends on B10 (pedometer). |
 | C7 | 7-day heart rate chart | ❌ Not started | Depends on B18 (health band). |
 | C8 | Weekly weight trend | ❌ Not started | Depends on B3/B6. |
-| C9 | 30-day trend charts | ✅ Done | `trend_chart_screen.dart` — 7-day / 30-day tab toggle on both glucose and BP charts. |
+| C9 | 30/90-day trend charts | ✅ Done | `trend_chart_screen.dart` — 7/30/90-day tabs with glassmorphism cards. |
 | C10 | Reading history | ✅ Done | `history_screen.dart` — scrollable list, timestamp, type filter, delete, status badges. |
 | C11 | Streak counter | ✅ Done | Backend: consecutive-days logic in `GET /api/readings/health-score`. Shown in gamification panel. |
 | C12 | Empty states | ✅ Done | Health score card has empty/no-profile state. History has "No readings yet". Home screen handles null profileId. |
 | C13 | Family view | ✅ Done | Profile switching gives any profile's dashboard/history. Shared profiles work via A2. |
 | C14 | "Everything is okay" green signal | ✅ Done | `_StatusFlag` widget shows 🟢 "Fit & Fine" when score ≥ 70 and all readings NORMAL. Age-adjusted. |
 | C15 | Pull-to-refresh | ✅ Done | `select_profile_screen.dart` — `RefreshIndicator`. Home screen has refresh on health score card + `RouteAware.didPopNext`. |
-| C16 | Offline mode / "last synced" | ❌ Not started | Depends on A9. No cache layer for health readings. |
+| C16 | Offline mode / "last synced" | ✅ Done | Offline banner, cached readings/profiles/health scores, sync queue. Depends on A9 (done). |
 | C17 | Large text accessibility | ❌ Not started | No `MediaQuery.textScaleFactor` usage. All font sizes hardcoded. |
 | C18 | Health Score widget (home screen) | ✅ Done | 0–100 score ring (green/orange/red), `GET /api/readings/health-score`. Tappable → trend charts. |
 | C19 | Streak counter on home screen | ✅ Done | Shown in `_GamificationPanel` — "🔥 N-day streak" chip. |
 | C20 | AI insight text (rule-based) | ✅ Done | Plain-English tip from last 7 days. Pure rule engine. Differentiates Stage 2 BP with urgent messaging. |
 | C21 | Glucose × BP correlation chart | ✅ Done | `trend_chart_screen.dart` — both charts on same scrollable screen, 7/30-day tabs. |
-| C22 | Design3 visual theme | ✅ Done | Full Design3 palette: glucose=#34D399, BP=#FB7185, accent=#7B61FF, dark navy. All screens migrated. |
+| C22 | Glassmorphism visual theme | ✅ Done | Sky-blue glassmorphism theme (Phase 1-4). GlassCard widget, Plus Jakarta Sans font. All screens migrated. |
 | C23 | Dynamic health status flag | ✅ Done | `_StatusFlag` widget in health score card header. Four states: 🟢 Fit & Fine / 🟡 Caution / 🟠 At Risk / 🚨 Urgent. Age-adjusted thresholds (strict <30, lenient 60+). |
 | C24 | Gamification — streak points + leaderboard | ✅ Done | `_GamificationPanel`: points tiers (1d=10, 3d=100, 7d=300, 14d=700, 30d=1500), Weekly Winners placeholder with 3 avatar chips (coming soon). |
 
@@ -105,7 +105,12 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | D14 | Doctor referral code | ✅ Done | `doctor_name`, `doctor_specialty`, `doctor_whatsapp` columns on `profiles` table. "Doctor Details" section on profile screen (owner-only). Edit dialog with save via `updateProfile`. Ready for D15 WhatsApp sending. |
 | D15 | Doctor weekly WhatsApp summary | ❌ Not started | Depends on D8 + D14. |
 | D16 | Streak notifications | ❌ Not started | Streak calculated and shown visually. No push/WhatsApp alert when streak is broken or reached. |
-| D17 | AI Doctor card (Gemini 1.5 Flash) | ✅ Done | `GET /api/readings/ai-insight` — 7-day readings + profile → age-aware Gemini prompt → 1-2 sentence recommendation. Daily cache per profile, invalidated on new reading save. Urgent tone for Stage 2 BP / CRITICAL. Rule-based fallback. `_AIDoctorCard` widget with shimmer + `RouteAware` refresh. |
+| D17 | AI Doctor card (multi-model) | ✅ Done | `GET /api/readings/ai-insight` — compact prompt (averages+ranges). Gemini 2.5 Flash → DeepSeek V3 → rule-based fallback. Smart DB cache (only calls LLM on new readings). All calls logged to `ai_insight_logs` table for audit. Urgent tone for Stage 2 BP / CRITICAL. |
+| D18 | Consent & Privacy notice | ✅ Done | Scroll-to-accept consent screen shown after registration. Stores consent_timestamp, app_version, language in users table. EN + HI. |
+| D19 | Relationship on profile sharing | ✅ Done | Dropdown (father/mother/spouse/son/daughter/etc.) on invite. Carried to ProfileAccess on accept. Shown on Select Profile + Manage Access screens. |
+| D20 | Demo seed data | ✅ Done | `seed_demo_data.py` — 3 users (Ramesh/Sunita/Arjun) with 45 days of glucose + BP readings. Realistic patterns (diabetic/improving/healthy). |
+| D21 | CI/CD pipeline | ✅ Done | GitHub Actions (pytest + flutter analyze + flutter test). Pre-push git hook runs all tests locally before push. |
+| D22 | Home screen refactor | ✅ Done | 1,635 → 367 lines. 7 extracted widgets + utils/health_helpers.dart. |
 
 ---
 
@@ -113,11 +118,11 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 | Module | Done | Partial | Not Started | Total |
 |--------|------|---------|-------------|-------|
-| A — Auth + Profiles | 8 | 3 | 2 | 13 |
+| A — Auth + Profiles | 9 | 2 | 2 | 13 |
 | B — Data Input | 12 | 2 | 6 | 20 |
-| C — Dashboard | 19 | 0 | 5 | 24 |
-| D — AI + Notifications | 2 | 3 | 12 | 17 |
-| **Total** | **41** | **8** | **25** | **74** |
+| C — Dashboard | 20 | 0 | 4 | 24 |
+| D — AI + Notifications | 8 | 3 | 12 | 23 |
+| **Total** | **49** | **7** | **24** | **80** |
 
 ---
 

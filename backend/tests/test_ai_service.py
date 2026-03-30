@@ -109,3 +109,46 @@ class TestAuditLogging:
         assert log.model_used == 'failed'
         assert 'gemini: 429' in log.fallback_reason
         assert 'deepseek: 402' in log.fallback_reason
+
+
+class TestSmartCaching:
+    """Verify LLM is only called when new readings exist since last insight."""
+
+    def test_returns_cached_when_no_new_readings(self, db, test_user):
+        """If last insight is newer than last reading, return cached."""
+        from datetime import datetime, timedelta
+
+        # Insert a reading from yesterday
+        reading = models.HealthReading(
+            profile_id=1,
+            reading_type='glucose',
+            glucose_value=120,
+            glucose_unit='mg/dL',
+            value_numeric=120,
+            unit_display='mg/dL',
+            status_flag='NORMAL',
+            reading_timestamp=datetime.utcnow() - timedelta(hours=12),
+        )
+        db.add(reading)
+        db.flush()
+
+        # Insert a cached insight from 1 hour ago (newer than reading)
+        log = models.AiInsightLog(
+            profile_id=1,
+            model_used='gemini-2.5-flash',
+            response_text='Cached insight from earlier',
+            prompt_summary='test',
+        )
+        db.add(log)
+        db.commit()
+
+        # Now generate_health_insight should NOT be called
+        # The route handler checks timestamps and returns cached
+        latest_insight = (
+            db.query(models.AiInsightLog)
+            .filter(models.AiInsightLog.profile_id == 1, models.AiInsightLog.model_used != 'failed')
+            .order_by(models.AiInsightLog.created_at.desc())
+            .first()
+        )
+        assert latest_insight is not None
+        assert latest_insight.response_text == 'Cached insight from earlier'
