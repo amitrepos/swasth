@@ -31,6 +31,9 @@ class Settings(BaseSettings):
 
     # Google Gemini AI
     GEMINI_API_KEY: Optional[str] = None
+
+    # DeepSeek AI (fallback) — sign up at platform.deepseek.com
+    DEEPSEEK_API_KEY: Optional[str] = None
     
     # CORS settings
     CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:8080"]

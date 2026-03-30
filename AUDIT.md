@@ -5,6 +5,17 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-03-30 — Multi-model AI fallback chain + audit logging
+
+- Created `backend/ai_service.py`: Central AI service with Gemini → DeepSeek → None fallback chain. Logs every call to `ai_insight_logs` table (model, prompt summary, response, error, tokens, latency).
+- Modified `backend/models.py`: Added `AiInsightLog` table for audit compliance.
+- Modified `backend/config.py`: Added `DEEPSEEK_API_KEY` setting.
+- Modified `backend/requirements.txt`: Added `openai>=1.0.0` for DeepSeek API.
+- Modified `backend/routes_health.py`: Replaced inline Gemini code with `ai_service.generate_health_insight()`. Compact prompt (averages + ranges instead of raw readings). Thinking disabled for Gemini 2.5 Flash.
+- Created `backend/seed_demo_data.py`: 3 demo users with 45 days of realistic readings.
+
+---
+
 ## 2026-03-30 — Consent & Privacy Notice on registration
 
 - Modified `backend/models.py`: Added `consent_timestamp`, `consent_app_version`, `consent_language` columns to User model.
@@ -842,3 +853,17 @@ Format: date, summary, file-level details.
   - 17:00:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
   - 17:01:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_api_auth.py
   - 17:02:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 17:10:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/seed_demo_data.py
+  - 17:16:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:17:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:19:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:19:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:21:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:23:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:28:06 modified: /Users/amitkumarmishra/.claude/plans/encapsulated-splashing-owl.md
+  - 17:29:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 17:29:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 17:29:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/requirements.txt
+  - 17:30:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ai_service.py
+  - 17:30:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 17:32:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

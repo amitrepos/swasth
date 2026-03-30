@@ -113,6 +113,21 @@ class HealthReading(Base):
     )
 
 
+class AiInsightLog(Base):
+    """Audit log for every AI-generated health insight."""
+    __tablename__ = "ai_insight_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    model_used = Column(String, nullable=False)          # "gemini-2.5-flash", "deepseek-chat", "rule-based"
+    prompt_summary = Column(Text, nullable=True)          # compact patient summary sent to AI
+    response_text = Column(Text, nullable=False)          # the full AI response
+    fallback_reason = Column(Text, nullable=True)         # null if primary succeeded, error message otherwise
+    tokens_used = Column(Integer, nullable=True)          # total tokens (input + output) if available
+    latency_ms = Column(Integer, nullable=True)           # response time in milliseconds
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class PasswordResetOTP(Base):
     __tablename__ = "password_reset_otps"
 
