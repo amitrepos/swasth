@@ -92,7 +92,7 @@ class _ShellScreenState extends State<ShellScreen> {
                 HistoryScreen(profileId: _profileId!),
                 const StreaksScreen(),
                 InsightsScreen(profileId: _profileId!),
-                const ChatScreen(),
+                ChatScreen(profileId: _profileId!),
               ],
             ),
           ),

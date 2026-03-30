@@ -221,9 +221,14 @@ def delete_account(
     # 3. Remove any remaining viewer access entries
     db.query(models.ProfileAccess).filter(models.ProfileAccess.user_id == user.id).delete()
 
-    # 4. Nullify invited_by references in invites
+    # 4. Clean up ALL invites referencing this user:
+    #    - Invites they sent (invited_by_user_id)
+    #    - Invites where they are the invitee (invited_user_id or invited_email)
     db.query(models.ProfileInvite).filter(
         models.ProfileInvite.invited_by_user_id == user.id,
+    ).delete()
+    db.query(models.ProfileInvite).filter(
+        models.ProfileInvite.invited_email == user.email.lower(),
     ).delete()
     db.query(models.ProfileInvite).filter(
         models.ProfileInvite.invited_user_id == user.id,
