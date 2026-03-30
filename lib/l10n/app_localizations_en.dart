@@ -758,4 +758,65 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordResetSuccess => 'Password reset successfully!';
+
+  @override
+  String get wellnessScoreSection => 'Wellness Score';
+
+  @override
+  String get vitalSummarySection => 'Vital Summary';
+
+  @override
+  String get ninetyDayAvg => '90 Days Avg';
+
+  @override
+  String get aiInsightSection => 'AI Health Insight';
+
+  @override
+  String get primaryPhysicianSection => 'Primary Physician';
+
+  @override
+  String get individualMetricsSection => 'Individual Metrics';
+
+  @override
+  String get footerDisclaimer =>
+      'Not a medical diagnosis. Consult your doctor for clinical advice. All AI insights are for informational purposes.';
+
+  @override
+  String get goodMorning => 'Good morning,';
+
+  @override
+  String get goodAfternoon => 'Good afternoon,';
+
+  @override
+  String get goodEvening => 'Good evening,';
+
+  @override
+  String get hello => 'Hello,';
+
+  @override
+  String get trendStable => 'Stable';
+
+  @override
+  String get optimumRange => 'Optimum Range';
+
+  @override
+  String get physicianConnected => 'Connected';
+
+  @override
+  String get physicianNotLinked => 'Not Linked';
+
+  @override
+  String get activeSync => 'Active Sync';
+
+  @override
+  String get notConnected => 'Not Connected';
+
+  @override
+  String get lastBP => 'Last BP';
+
+  @override
+  String get lastSugar => 'Last Sugar';
+
+  @override
+  String get liveSteps => 'Live Steps';
 }

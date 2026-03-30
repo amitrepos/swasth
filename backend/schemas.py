@@ -284,6 +284,20 @@ class HealthScoreResponse(BaseModel):
     last_logged: Optional[datetime] = None
     profile_age: Optional[int] = None
 
+    # 90-day averages for Vital Summary card
+    avg_glucose_90d: Optional[float] = None
+    prev_avg_glucose_90d: Optional[float] = None  # prior 90-day window for trend
+    avg_systolic_90d: Optional[float] = None
+    avg_diastolic_90d: Optional[float] = None
+    prev_avg_systolic_90d: Optional[float] = None  # prior 90-day window for trend
+
+    # Most recent readings ever (not just today) for Individual Metrics grid
+    last_glucose_value: Optional[float] = None
+    last_glucose_status: Optional[str] = None
+    last_bp_systolic: Optional[float] = None
+    last_bp_diastolic: Optional[float] = None
+    last_bp_status: Optional[str] = None
+
 
 class HealthReadingCreate(BaseModel):
     profile_id: int

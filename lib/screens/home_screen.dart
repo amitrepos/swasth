@@ -1,13 +1,15 @@
+// Context: Main dashboard — glassmorphism redesign matching dashboard1.html.
+// Related: lib/widgets/glass_card.dart, lib/theme/app_theme.dart, backend/routes_health.py
+
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'dashboard_screen.dart';
-import 'history_screen.dart';
 import 'select_profile_screen.dart';
 import 'manage_access_screen.dart';
-import 'scan_screen.dart';
 import 'photo_scan_screen.dart';
 import 'reading_confirmation_screen.dart';
 import 'trend_chart_screen.dart';
@@ -16,6 +18,7 @@ import '../services/health_reading_service.dart';
 import '../services/profile_service.dart';
 import '../models/profile_model.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_card.dart';
 import '../main.dart' show routeObserver;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -26,19 +29,37 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with RouteAware {
+class _HomeScreenState extends State<HomeScreen>
+    with RouteAware, SingleTickerProviderStateMixin {
   final StorageService _storageService = StorageService();
   final HealthReadingService _readingService = HealthReadingService();
   final ProfileService _profileService = ProfileService();
+
   String _activeProfileName = "Health";
   int? _activeProfileId;
   Future<Map<String, dynamic>>? _healthScoreFuture;
   Future<String>? _aiInsightFuture;
   ProfileModel? _activeProfile;
 
+  // Cached for header pills (updated when health score loads)
+  int _streak = 0;
+  int _pts = 0;
+  bool _insightSaved = false;
+
+  // Pulsing dot animation for AI insight card
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
     _loadProfileInfo();
   }
 
@@ -50,11 +71,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
   @override
   void dispose() {
+    _pulseController.dispose();
     routeObserver.unsubscribe(this);
     super.dispose();
   }
 
-  /// Called when the user navigates back to this screen (e.g. from History or Profile).
   @override
   void didPopNext() {
     if (_activeProfileId != null) _refreshHealthScore(_activeProfileId!);
@@ -75,317 +96,775 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   void _refreshHealthScore(int profileId) async {
     final token = await _storageService.getToken();
     if (token == null || !mounted) return;
+    final future = _readingService.getHealthScore(token, profileId);
     setState(() {
-      _healthScoreFuture = _readingService.getHealthScore(token, profileId);
+      _healthScoreFuture = future;
       _aiInsightFuture = _readingService.getAiInsight(token, profileId);
     });
-    // Fetch profile for doctor details (runs in parallel with above)
+    // Update header pills when data arrives
+    try {
+      final data = await future;
+      if (mounted) {
+        setState(() {
+          _streak = (data['streak_days'] as num?)?.toInt() ?? 0;
+          _pts = _streakToPoints(_streak);
+        });
+      }
+    } catch (_) {}
+    // Fetch profile for physician card (parallel)
     try {
       final profile = await _profileService.getProfile(token, profileId);
       if (mounted) setState(() => _activeProfile = profile);
     } catch (_) {}
   }
 
-  Future<void> _logout(BuildContext context) async {
+  Future<void> _logout(BuildContext ctx) async {
     await _storageService.clearAll();
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    }
+    if (!ctx.mounted) return;
+    Navigator.pushReplacement(
+      ctx,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
+
+  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.homeTitle),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              if (_activeProfileId != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProfileScreen(profileId: _activeProfileId!),
-                  ),
-                );
-              }
-            },
-            tooltip: l10n.profile,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _logout(context),
-            tooltip: l10n.logout,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Active Profile Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              child: Row(
-                children: [
-                  Icon(Icons.account_circle, size: 20, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.viewingProfile(_activeProfileName),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.person_add_alt_1,
-                        size: 20, color: Theme.of(context).colorScheme.primary),
-                    tooltip: l10n.shareProfile,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
-                      if (_activeProfileId != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ManageAccessScreen(
-                              profileId: _activeProfileId!,
-                              profileName: _activeProfileName,
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SelectProfileScreen()),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            if (_activeProfileId != null) _refreshHealthScore(_activeProfileId!);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(l10n),
+                const SizedBox(height: 16),
+
+                if (_healthScoreFuture != null)
+                  FutureBuilder<Map<String, dynamic>>(
+                    future: _healthScoreFuture,
+                    builder: (context, snap) {
+                      final data = snap.data;
+                      final isLoading =
+                          snap.connectionState == ConnectionState.waiting;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildWellnessCard(data, isLoading, l10n),
+                          const SizedBox(height: 16),
+                          _buildVitalSummaryCard(data, l10n),
+                          const SizedBox(height: 16),
+                          if (_aiInsightFuture != null)
+                            _buildAiInsightCard(l10n),
+                          const SizedBox(height: 16),
+                          if (_activeProfile?.doctorName?.isNotEmpty == true)
+                            _buildPhysicianCard(l10n),
+                          if (_activeProfile?.doctorName?.isNotEmpty == true)
+                            const SizedBox(height: 16),
+                          _buildMetricsGrid(data, l10n),
+                          const SizedBox(height: 16),
+                          _buildFooter(l10n),
+                        ],
                       );
                     },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  )
+                else
+                  _buildNoProfileState(l10n),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Header ───────────────────────────────────────────────────────────────
+
+  Widget _buildHeader(AppLocalizations l10n) {
+    final hour = DateTime.now().hour;
+    final greeting = hour >= 5 && hour < 12
+        ? l10n.goodMorning
+        : hour >= 12 && hour < 17
+            ? l10n.goodAfternoon
+            : hour >= 17 && hour < 22
+                ? l10n.goodEvening
+                : l10n.hello;
+    final firstName = _activeProfileName.split(' ').first;
+
+    return Column(
+      children: [
+        // SWASTH label + greeting + avatar
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SWASTH',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textSecondary,
+                      letterSpacing: 3,
                     ),
-                    child: Text(l10n.switchProfile),
+                  ),
+                  Text(
+                    '$greeting $firstName.',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ],
               ),
             ),
+            // Avatar → tap to switch profile
+            PopupMenuButton<String>(
+              offset: const Offset(0, 44),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onSelected: (val) {
+                if (val == 'switch') {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
+                  );
+                } else if (val == 'profile' && _activeProfileId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProfileScreen(profileId: _activeProfileId!),
+                    ),
+                  );
+                } else if (val == 'share' && _activeProfileId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ManageAccessScreen(
+                        profileId: _activeProfileId!,
+                        profileName: _activeProfileName,
+                      ),
+                    ),
+                  );
+                } else if (val == 'logout') {
+                  _logout(context);
+                }
+              },
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.white,
+                child: Text(
+                  _activeProfileName.isNotEmpty
+                      ? _activeProfileName[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'profile', child: Row(children: [const Icon(Icons.person_outline, size: 18), const SizedBox(width: 8), Text(l10n.profile)])),
+                PopupMenuItem(value: 'share', child: Row(children: [const Icon(Icons.share_outlined, size: 18), const SizedBox(width: 8), Text(l10n.shareProfile)])),
+                PopupMenuItem(value: 'switch', child: Row(children: [const Icon(Icons.swap_horiz, size: 18), const SizedBox(width: 8), Text(l10n.switchProfile)])),
+                const PopupMenuDivider(),
+                PopupMenuItem(value: 'logout', child: Row(children: [const Icon(Icons.logout, size: 18, color: AppColors.danger), const SizedBox(width: 8), Text(l10n.logout, style: const TextStyle(color: AppColors.danger))])),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
 
-            // Health Score Card
-            if (_healthScoreFuture != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: _HealthScoreCard(
-                  future: _healthScoreFuture!,
-                  onRefresh: () {
-                    if (_activeProfileId != null) _refreshHealthScore(_activeProfileId!);
-                  },
-                  onTap: _activeProfileId != null
-                      ? () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TrendChartScreen(profileId: _activeProfileId!),
-                            ),
-                          )
-                      : null,
+        // Pills row: Language | Streak | Points
+        GlassCard(
+          borderRadius: 14,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _PillButton(
+                icon: '🇮🇳',
+                label: 'ENGLISH',
+                onTap: () {
+                  if (_activeProfileId != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProfileScreen(profileId: _activeProfileId!),
+                      ),
+                    );
+                  }
+                },
+              ),
+              Container(width: 1, height: 24, color: AppColors.separator),
+              _PillButton(
+                icon: '🔥',
+                label: _streak > 0 ? '$_streak DAYS' : 'STREAK',
+                onTap: () {},
+              ),
+              Container(width: 1, height: 24, color: AppColors.separator),
+              _PillButton(
+                icon: '🏆',
+                label: _pts > 0 ? '${_fmtPoints(_pts)} PTS' : 'POINTS',
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Wellness Score Ring ───────────────────────────────────────────────────
+
+  Widget _buildWellnessCard(
+    Map<String, dynamic>? data,
+    bool isLoading,
+    AppLocalizations l10n,
+  ) {
+    if (isLoading) {
+      return GlassCard(
+        borderRadius: 32,
+        padding: const EdgeInsets.all(32),
+        child: const Center(
+          child: SizedBox(height: 160, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+        ),
+      );
+    }
+
+    final score = (data?['score'] as num?)?.toInt() ?? 50;
+    final insight = data?['insight'] as String? ?? '';
+    final bpStatus = data?['today_bp_status'] as String?;
+    final glucoseStatus = data?['today_glucose_status'] as String?;
+    final profileAge = (data?['profile_age'] as num?)?.toInt();
+    final lastLogged = _formatLastLogged(data?['last_logged'] as String?);
+
+    final arcColor = _scoreArcColor(score);
+    final flagData = _computeFlag(
+      score: score,
+      bpStatus: bpStatus,
+      glucoseStatus: glucoseStatus,
+      age: profileAge,
+    );
+
+    return GestureDetector(
+      onTap: _activeProfileId != null
+          ? () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TrendChartScreen(profileId: _activeProfileId!),
                 ),
               )
-            else
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _HealthScoreCard.empty(),
-              ),
-
-            // AI Doctor Card
-            if (_aiInsightFuture != null)
-              _AIDoctorCard(insightFuture: _aiInsightFuture!),
-
-            // My Doctor Card
-            if (_activeProfile?.doctorName?.isNotEmpty == true)
-              _MyDoctorCard(profile: _activeProfile!),
-
-            // Section 3: Record New Metrics
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor.withOpacity(0.1),
-                  width: 0.5,
+          : null,
+      child: GlassCard(
+        borderRadius: 32,
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                // Section label
+                Text(
+                  l10n.wellnessScoreSection.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 2,
+                  ),
                 ),
-                boxShadow: Theme.of(context).brightness == Brightness.light
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      l10n.recordNewMetrics,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
+                const SizedBox(height: 20),
+
+                // Score ring
+                SizedBox(
+                  width: 160,
+                  height: 160,
+                  child: CustomPaint(
+                    painter: _ScoreRingPainter(score: score.toDouble(), arcColor: arcColor),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$score',
+                            style: const TextStyle(
+                              fontSize: 52,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                              height: 1,
+                            ),
+                          ),
+                          if (lastLogged.isNotEmpty)
+                            Text(
+                              lastLogged,
+                              style: const TextStyle(
+                                fontSize: 9,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                        ],
                       ),
                     ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildDeviceIcon(
-                        context: context,
-                        icon: Icons.water_drop,
-                        label: l10n.glucometer,
-                        color: AppColors.glucose,
-                        onTap: () => _showInputModal(
-                          context,
-                          l10n: l10n,
-                          deviceType: 'glucose',
-                          btDeviceType: 'Glucose',
-                        ),
-                      ),
-                      _buildDeviceIcon(
-                        context: context,
-                        icon: Icons.favorite,
-                        label: l10n.bpMeter,
-                        color: AppColors.bloodPressure,
-                        onTap: () => _showInputModal(
-                          context,
-                          l10n: l10n,
-                          deviceType: 'blood_pressure',
-                          btDeviceType: 'Blood Pressure',
-                        ),
-                      ),
-                      _buildDeviceIcon(
-                        context: context,
-                        icon: Icons.watch,
-                        label: l10n.armband,
-                        color: AppColors.iosGreen,
-                        onTap: () {
-                          if (_activeProfileId != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DashboardScreen(
-                                  device: null,
-                                  services: [],
-                                  deviceType: 'Armband',
-                                  autoConnect: true,
-                                  profileId: _activeProfileId!,
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
+                ),
+                const SizedBox(height: 16),
+
+                // Insight quote
+                if (insight.isNotEmpty)
+                  Text(
+                    '"$insight"',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ],
-              ),
+                const SizedBox(height: 12),
+
+                // Progress bar + label
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 80,
+                      height: 4,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: score / 100,
+                          backgroundColor: const Color(0xFFE2E8F0),
+                          valueColor: AlwaysStoppedAnimation<Color>(arcColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.optimumRange.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                        color: arcColor,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
 
-            // Quick Actions
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      l10n.quickActions,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Card(
-                    child: ListTile(
-                      leading: Icon(Icons.bluetooth_searching, color: Theme.of(context).colorScheme.primary),
-                      title: Text(l10n.connectNewDevice),
-                      subtitle: Text(l10n.connectNewDeviceSubtitle),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        if (_activeProfileId != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ScanScreen(profileId: _activeProfileId!),
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(l10n.selectProfileFirst)),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  Card(
-                    child: ListTile(
-                      leading: Icon(Icons.history, color: Theme.of(context).colorScheme.primary),
-                      title: Text(l10n.viewHistory),
-                      subtitle: Text(l10n.viewHistorySubtitle),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        if (_activeProfileId != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => HistoryScreen(profileId: _activeProfileId!),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  Card(
-                    child: ListTile(
-                      leading: Icon(Icons.show_chart, color: Theme.of(context).colorScheme.primary),
-                      title: Text(l10n.viewTrends),
-                      subtitle: Text(l10n.viewTrendsSubtitle),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        if (_activeProfileId != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TrendChartScreen(profileId: _activeProfileId!),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
+            // Status flag badge (top-right)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: _StatusFlag(data: flagData, l10n: l10n),
             ),
           ],
         ),
       ),
     );
   }
+
+  // ── Vital Summary ─────────────────────────────────────────────────────────
+
+  Widget _buildVitalSummaryCard(Map<String, dynamic>? data, AppLocalizations l10n) {
+    final avgSys = (data?['avg_systolic_90d'] as num?)?.toDouble();
+    final avgDia = (data?['avg_diastolic_90d'] as num?)?.toDouble();
+    final prevAvgSys = (data?['prev_avg_systolic_90d'] as num?)?.toDouble();
+    final avgGlucose = (data?['avg_glucose_90d'] as num?)?.toDouble();
+    final prevAvgGlucose = (data?['prev_avg_glucose_90d'] as num?)?.toDouble();
+
+    final bpLabel = avgSys != null && avgDia != null
+        ? '${avgSys.toStringAsFixed(0)}/${avgDia.toStringAsFixed(0)}'
+        : '—';
+    final glucoseLabel = avgGlucose != null
+        ? '${avgGlucose.toStringAsFixed(0)} mg'
+        : '—';
+
+    return GlassCard(
+      borderRadius: 24,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                l10n.vitalSummarySection.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '• ${l10n.ninetyDayAvg}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _VitalTile(
+                  label: 'BP',
+                  value: bpLabel,
+                  trendLabel: _trendLabel(avgSys, prevAvgSys, lowerIsBetter: true),
+                  trendColor: _trendColor(avgSys, prevAvgSys, lowerIsBetter: true),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _VitalTile(
+                  label: 'SUGAR',
+                  value: glucoseLabel,
+                  trendLabel: _trendLabel(avgGlucose, prevAvgGlucose, lowerIsBetter: true),
+                  trendColor: _trendColor(avgGlucose, prevAvgGlucose, lowerIsBetter: true),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _VitalTile(
+                  label: 'STEPS',
+                  value: '—',
+                  trendLabel: l10n.trendStable,
+                  trendColor: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── AI Health Insight ─────────────────────────────────────────────────────
+
+  Widget _buildAiInsightCard(AppLocalizations l10n) {
+    return GlassCard(
+      borderRadius: 24,
+      padding: const EdgeInsets.all(20),
+      border: Border(
+        left: const BorderSide(color: AppColors.primary, width: 4),
+        top: BorderSide(color: AppColors.glassCardBorder),
+        right: BorderSide(color: AppColors.glassCardBorder),
+        bottom: BorderSide(color: AppColors.glassCardBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      l10n.aiInsightSection.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    AnimatedBuilder(
+                      animation: _pulseAnimation,
+                      builder: (context, _) => Opacity(
+                        opacity: _pulseAnimation.value,
+                        child: const CircleAvatar(
+                          radius: 3,
+                          backgroundColor: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                FutureBuilder<String>(
+                  future: _aiInsightFuture,
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(
+                        height: 40,
+                        child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+                      );
+                    }
+                    final text = snap.data ?? '';
+                    return Text(
+                      text.isNotEmpty ? '"$text"' : '"Log daily readings for the best health insights."',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary,
+                        fontStyle: FontStyle.italic,
+                        height: 1.5,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: () => setState(() => _insightSaved = !_insightSaved),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
+              ),
+              child: Icon(
+                _insightSaved ? Icons.star : Icons.star_border,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Primary Physician ─────────────────────────────────────────────────────
+
+  Widget _buildPhysicianCard(AppLocalizations l10n) {
+    final profile = _activeProfile!;
+    final hasWhatsApp = profile.doctorWhatsapp?.isNotEmpty == true;
+
+    return GlassCard(
+      borderRadius: 24,
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Center(child: Text('👩‍⚕️', style: TextStyle(fontSize: 22))),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.primaryPhysicianSection.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  profile.doctorName!,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (profile.doctorSpecialty?.isNotEmpty == true)
+                  Text(
+                    profile.doctorSpecialty!,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                Text(
+                  l10n.physicianConnected,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.success,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (hasWhatsApp)
+            GestureDetector(
+              onTap: () => _openWhatsApp(profile.doctorWhatsapp!),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.success,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: AppColors.success.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
+                ),
+                child: const Center(child: Text('💬', style: TextStyle(fontSize: 18))),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Individual Metrics 2×2 Grid ───────────────────────────────────────────
+
+  Widget _buildMetricsGrid(Map<String, dynamic>? data, AppLocalizations l10n) {
+    final lastBpSys = (data?['last_bp_systolic'] as num?)?.toDouble();
+    final lastBpDia = (data?['last_bp_diastolic'] as num?)?.toDouble();
+    final lastBpStatus = data?['last_bp_status'] as String?;
+    final lastGlucose = (data?['last_glucose_value'] as num?)?.toDouble();
+    final lastGlucoseStatus = data?['last_glucose_status'] as String?;
+
+    final bpValue = lastBpSys != null && lastBpDia != null
+        ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'
+        : '—';
+    final glucoseValue =
+        lastGlucose != null ? '${lastGlucose.toStringAsFixed(0)} mg/dL' : '—';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.individualMetricsSection.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textSecondary,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricTile(
+                label: l10n.lastBP,
+                value: bpValue,
+                valueColor: _statusTextColor(lastBpStatus),
+                onAddTap: () => _showInputModal(context, l10n: l10n, deviceType: 'blood_pressure', btDeviceType: 'Blood Pressure'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _MetricTile(
+                label: l10n.lastSugar,
+                value: glucoseValue,
+                valueColor: _statusTextColor(lastGlucoseStatus),
+                onAddTap: () => _showInputModal(context, l10n: l10n, deviceType: 'glucose', btDeviceType: 'Glucose'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricTile(
+                label: l10n.liveSteps,
+                value: '—',
+                valueColor: AppColors.textPrimary,
+                addButtonColor: AppColors.primary,
+                onAddTap: null, // Phase 8D
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ArmBandTile(
+                isConnected: false,
+                onTap: () {
+                  if (_activeProfileId != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DashboardScreen(
+                          device: null,
+                          services: [],
+                          deviceType: 'Armband',
+                          autoConnect: true,
+                          profileId: _activeProfileId!,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Footer ────────────────────────────────────────────────────────────────
+
+  Widget _buildFooter(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Text(
+        l10n.footerDisclaimer,
+        style: const TextStyle(
+          fontSize: 9,
+          color: AppColors.textSecondary,
+          letterSpacing: 0.5,
+          height: 1.6,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  // ── No Profile State ──────────────────────────────────────────────────────
+
+  Widget _buildNoProfileState(AppLocalizations l10n) {
+    return GlassCard(
+      borderRadius: 20,
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          const Icon(Icons.health_and_safety_outlined, size: 48, color: AppColors.primary),
+          const SizedBox(height: 16),
+          Text(
+            l10n.noReadingsYetScore,
+            style: const TextStyle(color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
+            ),
+            child: Text(l10n.switchProfile),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Modal: log a reading ──────────────────────────────────────────────────
 
   void _showInputModal(
     BuildContext context, {
@@ -405,7 +884,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => SafeArea(
         child: Padding(
@@ -416,13 +895,19 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             children: [
               Text(
                 l10n.logReading(localizedLabel),
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 l10n.howToLog,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -444,7 +929,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       ),
                     ),
                   );
-                  if (mounted && _activeProfileId != null) _refreshHealthScore(_activeProfileId!);
+                  if (mounted && _activeProfileId != null) {
+                    _refreshHealthScore(_activeProfileId!);
+                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -469,7 +956,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       ),
                     ),
                   );
-                  if (mounted && _activeProfileId != null) _refreshHealthScore(_activeProfileId!);
+                  if (mounted && _activeProfileId != null) {
+                    _refreshHealthScore(_activeProfileId!);
+                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -492,7 +981,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       ),
                     ),
                   );
-                  if (mounted && _activeProfileId != null) _refreshHealthScore(_activeProfileId!);
+                  if (mounted && _activeProfileId != null) {
+                    _refreshHealthScore(_activeProfileId!);
+                  }
                 },
               ),
               const SizedBox(height: 8),
@@ -503,254 +994,14 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     );
   }
 
-  Widget _buildDeviceIcon({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withOpacity(0.1),
-              border: Border.all(
-                color: color,
-                width: 2,
-              ),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 35,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// AI Doctor Card widget
-// ---------------------------------------------------------------------------
-
-class _AIDoctorCard extends StatelessWidget {
-  final Future<String> insightFuture;
-
-  const _AIDoctorCard({required this.insightFuture});
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: insightFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            height: 80,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
-            ),
-            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          );
-        }
-        final text = snapshot.data ?? '';
-        if (text.isEmpty) return const SizedBox.shrink();
-
-        return Container(
-          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.accent.withOpacity(0.25), width: 1),
-            boxShadow: Theme.of(context).brightness == Brightness.light
-                ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2))]
-                : null,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Text('🩺', style: TextStyle(fontSize: 16)),
-                  const SizedBox(width: 8),
-                  Text(
-                    'AI Doctor',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.accent,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
-              ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '— Powered by Gemini —',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textTertiary,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// My Doctor Card widget
-// ---------------------------------------------------------------------------
-
-class _MyDoctorCard extends StatelessWidget {
-  final ProfileModel profile;
-  const _MyDoctorCard({required this.profile});
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
   Future<void> _openWhatsApp(String number) async {
-    // Strip non-digits except leading +
     final cleaned = number.replaceAll(RegExp(r'[\s\-()]'), '');
     final digits = cleaned.startsWith('+') ? cleaned.substring(1) : cleaned;
     final uri = Uri.parse('https://wa.me/$digits');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final hasWhatsApp = profile.doctorWhatsapp?.isNotEmpty == true;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.statusNormal.withOpacity(0.35), width: 1),
-        boxShadow: Theme.of(context).brightness == Brightness.light
-            ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2))]
-            : null,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.statusNormal.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.medical_services_outlined, color: AppColors.statusNormal, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.myDoctorTitle,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  profile.doctorName!,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                ),
-                if (profile.doctorSpecialty?.isNotEmpty == true)
-                  Text(
-                    profile.doctorSpecialty!,
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-              ],
-            ),
-          ),
-          if (hasWhatsApp)
-            GestureDetector(
-              onTap: () => _openWhatsApp(profile.doctorWhatsapp!),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF25D366), // WhatsApp green
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.chat, color: Colors.white, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      l10n.contactOnWhatsApp,
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Health Score Card widget
-// ---------------------------------------------------------------------------
-
-class _HealthScoreCard extends StatelessWidget {
-  final Future<Map<String, dynamic>>? future;
-  final VoidCallback? onRefresh;
-  final VoidCallback? onTap;
-
-  const _HealthScoreCard({
-    required Future<Map<String, dynamic>> future,
-    required VoidCallback onRefresh,
-    this.onTap,
-  })  : future = future,
-        onRefresh = onRefresh;
-
-  const _HealthScoreCard.empty()
-      : future = null,
-        onRefresh = null,
-        onTap = null;
-
-  static Color _scoreColor(String? color) {
-    switch (color) {
-      case 'green':  return AppColors.statusNormal;
-      case 'orange': return AppColors.statusElevated;
-      case 'red':    return AppColors.statusHigh;
-      default:       return AppColors.statusLow;
     }
   }
 
@@ -760,250 +1011,187 @@ class _HealthScoreCard extends StatelessWidget {
       final dt = DateTime.parse(isoString).toLocal();
       final now = DateTime.now();
       if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
-        return 'Today, ${DateFormat('h:mm a').format(dt)}';
+        return 'Updated ${DateFormat('h:mm a').format(dt)}';
       }
-      return DateFormat('MMM d, h:mm a').format(dt);
+      return DateFormat('MMM d').format(dt);
     } catch (_) {
       return '';
     }
   }
 
-  static String _statusIcon(String? status) {
-    if (status == null) return '';
-    if (status == 'NORMAL') return ' ✅';
-    if (status.contains('HIGH') || status == 'CRITICAL') return ' ⚠️';
-    if (status == 'LOW') return ' 🔽';
-    return '';
+  static Color _scoreArcColor(int score) {
+    if (score >= 70) return AppColors.success;
+    if (score >= 40) return AppColors.amber;
+    return AppColors.danger;
+  }
+
+  static Color _statusTextColor(String? status) {
+    if (status == null) return AppColors.textPrimary;
+    if (status == 'NORMAL') return AppColors.success;
+    if (status == 'ELEVATED' || status == 'HIGH - STAGE 1') return AppColors.amber;
+    if (status.contains('HIGH') || status == 'CRITICAL') return AppColors.danger;
+    return AppColors.textPrimary;
+  }
+
+  static String _trendLabel(double? current, double? previous,
+      {bool lowerIsBetter = true}) {
+    if (current == null || previous == null || previous == 0) return 'Stable';
+    final pct = ((current - previous) / previous * 100).abs();
+    if (pct < 2) return 'Stable';
+    final increasing = current > previous;
+    final arrow = increasing ? '↑' : '↓';
+    return '$arrow ${pct.toStringAsFixed(0)}%';
+  }
+
+  static Color _trendColor(double? current, double? previous,
+      {bool lowerIsBetter = true}) {
+    if (current == null || previous == null || previous == 0) {
+      return AppColors.textSecondary;
+    }
+    final pct = ((current - previous) / previous * 100).abs();
+    if (pct < 2) return AppColors.textSecondary;
+    final increasing = current > previous;
+    final isGood = lowerIsBetter ? !increasing : increasing;
+    return isGood ? AppColors.success : AppColors.danger;
+  }
+
+  static String _fmtPoints(int pts) {
+    if (pts >= 1000) return '${(pts / 1000).toStringAsFixed(pts % 1000 == 0 ? 0 : 1)}k';
+    return '$pts';
+  }
+}
+
+// ── Score Ring CustomPainter ─────────────────────────────────────────────────
+
+class _ScoreRingPainter extends CustomPainter {
+  final double score; // 0–100
+  final Color arcColor;
+
+  const _ScoreRingPainter({required this.score, required this.arcColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - 20) / 2;
+    const startAngle = -math.pi / 2; // top
+    final sweepAngle = 2 * math.pi * (score / 100);
+
+    final bgPaint = Paint()
+      ..color = const Color(0xFFE2E8F0) // slate-200
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14
+      ..strokeCap = StrokeCap.round;
+
+    final fgPaint = Paint()
+      ..color = arcColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, bgPaint);
+    if (score > 0) {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle,
+        false,
+        fgPaint,
+      );
+    }
   }
 
   @override
+  bool shouldRepaint(_ScoreRingPainter old) =>
+      old.score != score || old.arcColor != arcColor;
+}
+
+// ── _PillButton ───────────────────────────────────────────────────────────────
+
+class _PillButton extends StatelessWidget {
+  final String icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _PillButton({required this.icon, required this.label, required this.onTap});
+
+  @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    if (future == null) return _buildEmpty(context, l10n);
-
-    return FutureBuilder<Map<String, dynamic>>(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildShimmer(context);
-        }
-        if (snapshot.hasError || !snapshot.hasData) {
-          return _buildEmpty(context, l10n);
-        }
-        return _buildCard(context, l10n, snapshot.data!);
-      },
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildCard(BuildContext context, AppLocalizations l10n, Map<String, dynamic> data) {
-    final score = (data['score'] as num?)?.toInt() ?? 50;
-    final color = data['color'] as String? ?? 'orange';
-    final streak = (data['streak_days'] as num?)?.toInt() ?? 0;
-    final insight = data['insight'] as String? ?? '';
-    final glucoseValue = (data['today_glucose_value'] as num?)?.toDouble();
-    final glucoseStatus = data['today_glucose_status'] as String?;
-    final bpSystolic = (data['today_bp_systolic'] as num?)?.toDouble();
-    final bpDiastolic = (data['today_bp_diastolic'] as num?)?.toDouble();
-    final bpStatus = data['today_bp_status'] as String?;
-    final lastLogged = _formatLastLogged(data['last_logged'] as String?);
-    final profileAge = (data['profile_age'] as num?)?.toInt();
-    final scoreColor = _scoreColor(color);
-    final flagData = _computeFlag(score: score, bpStatus: bpStatus, glucoseStatus: glucoseStatus, age: profileAge);
-    final pts = _streakToPoints(streak);
+// ── _VitalTile ────────────────────────────────────────────────────────────────
 
-    final card = Container(
-      padding: const EdgeInsets.all(20),
+class _VitalTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final String trendLabel;
+  final Color trendColor;
+
+  const _VitalTile({
+    required this.label,
+    required this.value,
+    required this.trendLabel,
+    required this.trendColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Colors.white.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scoreColor.withOpacity(0.3), width: 1.5),
-        boxShadow: Theme.of(context).brightness == Brightness.light
-            ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))]
-            : null,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row: title + status flag
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                l10n.healthScore,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              _StatusFlag(data: flagData, l10n: l10n),
-            ],
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 1,
+            ),
           ),
-          const SizedBox(height: 16),
-
-          // Score ring + insight
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 80,
-                      height: 80,
-                      child: CircularProgressIndicator(
-                        value: score / 100,
-                        strokeWidth: 8,
-                        backgroundColor: scoreColor.withOpacity(0.15),
-                        valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$score',
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: scoreColor),
-                        ),
-                        Text('/100', style: TextStyle(fontSize: 10, color: scoreColor.withOpacity(0.7))),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  insight,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
           ),
-
-          // Gamification: streak + points + weekly winners
-          const SizedBox(height: 16),
-          _GamificationPanel(streak: streak, pts: pts, l10n: l10n),
-
-          // Today's readings
-          if (glucoseValue != null || bpSystolic != null) ...[
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                if (glucoseValue != null)
-                  Expanded(
-                    child: Row(
-                      children: [
-                        const Text('🩸', style: TextStyle(fontSize: 16)),
-                        const SizedBox(width: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.todayGlucose,
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                            Text(
-                              '${glucoseValue.toStringAsFixed(0)} mg/dL${_statusIcon(glucoseStatus)}',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                if (bpSystolic != null && bpDiastolic != null)
-                  Expanded(
-                    child: Row(
-                      children: [
-                        const Text('💓', style: TextStyle(fontSize: 16)),
-                        const SizedBox(width: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.todayBP,
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                            Text(
-                              '${bpSystolic.toStringAsFixed(0)}/${bpDiastolic.toStringAsFixed(0)}${_statusIcon(bpStatus)}',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ],
-
-          if (lastLogged.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              l10n.lastLogged(lastLogged),
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-            ),
-          ],
-
-          if (onTap != null) ...[
-            const SizedBox(height: 10),
-            const Divider(height: 1),
-            const SizedBox(height: 6),
-            Center(
-              child: Text(
-                l10n.tapToViewTrends,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-
-    return onTap != null
-        ? InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: card,
-          )
-        : card;
-  }
-
-  Widget _buildShimmer(BuildContext context) {
-    return Container(
-      height: 140,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
-      ),
-      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-    );
-  }
-
-  Widget _buildEmpty(BuildContext context, AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.health_and_safety, size: 40, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              l10n.noReadingsYetScore,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          const SizedBox(height: 2),
+          Text(
+            trendLabel,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: trendColor,
             ),
           ),
         ],
@@ -1012,9 +1200,122 @@ class _HealthScoreCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Status flag data + computation
-// ---------------------------------------------------------------------------
+// ── _MetricTile ───────────────────────────────────────────────────────────────
+
+class _MetricTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+  final Color addButtonColor;
+  final VoidCallback? onAddTap;
+
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+    this.addButtonColor = AppColors.textPrimary,
+    this.onAddTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      borderRadius: 24,
+      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: valueColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (onAddTap != null)
+            Align(
+              alignment: Alignment.bottomRight,
+              child: GestureDetector(
+                onTap: onAddTap,
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: addButtonColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 20),
+                ),
+              ),
+            )
+          else
+            const SizedBox(height: 34),
+        ],
+      ),
+    );
+  }
+}
+
+// ── _ArmBandTile ──────────────────────────────────────────────────────────────
+
+class _ArmBandTile extends StatelessWidget {
+  final bool isConnected;
+  final VoidCallback onTap;
+
+  const _ArmBandTile({required this.isConnected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassCard(
+        borderRadius: 24,
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        margin: EdgeInsets.zero,
+        color: isConnected ? AppColors.success.withValues(alpha: 0.08) : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'ARM BAND STATUS',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isConnected ? 'ACTIVE SYNC' : 'NOT CONNECTED',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: isConnected ? AppColors.success : AppColors.textSecondary,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Status flag data + computation ───────────────────────────────────────────
 
 class _StatusFlagData {
   final String label;
@@ -1039,17 +1340,14 @@ _StatusFlagData _computeFlag({
   final isUnder30 = age != null && age < 30;
   final isOver60 = age != null && age >= 60;
 
-  // CRITICAL glucose or score < 40 → always Urgent
   if (glucoseStatus == 'CRITICAL' || score < 40) {
     return const _StatusFlagData(
       label: 'Urgent', emoji: '🚨', color: AppColors.statusCritical,
     );
   }
 
-  // Hypertensive crisis / STAGE 2 BP
   if (bpStatus == 'HIGH - STAGE 2') {
     if (isOver60) {
-      // Lenient threshold for 60+
       return const _StatusFlagData(
         label: 'At Risk', subLabel: 'Monitor Blood Pressure',
         emoji: '🟠', color: AppColors.statusElevated,
@@ -1061,7 +1359,6 @@ _StatusFlagData _computeFlag({
     );
   }
 
-  // STAGE 1 BP — escalates to At Risk for under-30, else Caution
   if (bpStatus == 'HIGH - STAGE 1' || bpStatus == 'ELEVATED') {
     if (isUnder30) {
       return const _StatusFlagData(
@@ -1070,20 +1367,18 @@ _StatusFlagData _computeFlag({
       );
     }
     return const _StatusFlagData(
-      label: 'Caution', subLabel: 'Monitor Blood Pressure',
-      emoji: '🟡', color: AppColors.iosOrange,
+      label: 'Caution', subLabel: 'Monitor BP',
+      emoji: '🟡', color: AppColors.amber,
     );
   }
 
-  // High glucose (not critical)
   if (glucoseStatus != null && glucoseStatus.contains('HIGH')) {
     return const _StatusFlagData(
       label: 'Caution', subLabel: 'Monitor Glucose',
-      emoji: '🟡', color: AppColors.iosOrange,
+      emoji: '🟡', color: AppColors.amber,
     );
   }
 
-  // Score-based fallback
   if (score >= 70) {
     return const _StatusFlagData(
       label: 'Fit & Fine', emoji: '🟢', color: AppColors.statusNormal,
@@ -1091,7 +1386,7 @@ _StatusFlagData _computeFlag({
   }
   if (score >= 55) {
     return const _StatusFlagData(
-      label: 'Caution', emoji: '🟡', color: AppColors.iosOrange,
+      label: 'Caution', emoji: '🟡', color: AppColors.amber,
     );
   }
   return const _StatusFlagData(
@@ -1102,15 +1397,13 @@ _StatusFlagData _computeFlag({
 int _streakToPoints(int streak) {
   if (streak >= 30) return 1500;
   if (streak >= 14) return 700;
-  if (streak >= 7)  return 300;
-  if (streak >= 3)  return 100;
-  if (streak >= 1)  return 10;
+  if (streak >= 7) return 300;
+  if (streak >= 3) return 100;
+  if (streak >= 1) return 10;
   return 0;
 }
 
-// ---------------------------------------------------------------------------
-// _StatusFlag widget
-// ---------------------------------------------------------------------------
+// ── _StatusFlag widget ────────────────────────────────────────────────────────
 
 class _StatusFlag extends StatelessWidget {
   final _StatusFlagData data;
@@ -1121,11 +1414,11 @@ class _StatusFlag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: data.color.withOpacity(0.12),
+        color: data.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: data.color.withOpacity(0.4), width: 1),
+        border: Border.all(color: data.color.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -1149,113 +1442,10 @@ class _StatusFlag extends StatelessWidget {
           if (data.subLabel != null)
             Text(
               data.subLabel!,
-              style: TextStyle(fontSize: 9, color: data.color.withOpacity(0.85)),
+              style: TextStyle(fontSize: 9, color: data.color.withValues(alpha: 0.85)),
             ),
         ],
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// _GamificationPanel widget
-// ---------------------------------------------------------------------------
-
-class _GamificationPanel extends StatelessWidget {
-  final int streak;
-  final int pts;
-  final AppLocalizations l10n;
-
-  const _GamificationPanel({required this.streak, required this.pts, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Streak + points row
-        Row(
-          children: [
-            if (streak > 0) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.amber,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '🔥 ${l10n.dayStreak(streak)}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            if (pts > 0)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.iosOrange.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '🏆 ${l10n.pointsLabel(pts)}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.iosOrange),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        // Weekly winners placeholder
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Text(
-                '🥇 ${l10n.weeklyWinnersTitle}',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '(${l10n.weeklyWinnersSoon})',
-                style: const TextStyle(fontSize: 10, color: AppColors.textTertiary, fontStyle: FontStyle.italic),
-              ),
-              const Spacer(),
-              const _PlaceholderAvatar(initials: 'AK'),
-              const SizedBox(width: 4),
-              const _PlaceholderAvatar(initials: 'RS'),
-              const SizedBox(width: 4),
-              const _PlaceholderAvatar(icon: Icons.person),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// _PlaceholderAvatar widget
-// ---------------------------------------------------------------------------
-
-class _PlaceholderAvatar extends StatelessWidget {
-  final String? initials;
-  final IconData? icon;
-
-  const _PlaceholderAvatar({this.initials, this.icon})
-      : assert(initials != null || icon != null);
-
-  @override
-  Widget build(BuildContext context) {
-    return CircleAvatar(
-      radius: 14,
-      backgroundColor: AppColors.bgPill,
-      child: initials != null
-          ? Text(initials!, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.textSecondary))
-          : Icon(icon, size: 14, color: AppColors.textTertiary),
     );
   }
 }

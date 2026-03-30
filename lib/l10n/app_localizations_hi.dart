@@ -756,4 +756,65 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get passwordResetSuccess => 'पासवर्ड सफलतापूर्वक रीसेट हुआ!';
+
+  @override
+  String get wellnessScoreSection => 'स्वास्थ्य स्कोर';
+
+  @override
+  String get vitalSummarySection => 'महत्वपूर्ण सारांश';
+
+  @override
+  String get ninetyDayAvg => '90 दिन औसत';
+
+  @override
+  String get aiInsightSection => 'AI स्वास्थ्य सुझाव';
+
+  @override
+  String get primaryPhysicianSection => 'मुख्य चिकित्सक';
+
+  @override
+  String get individualMetricsSection => 'व्यक्तिगत मेट्रिक्स';
+
+  @override
+  String get footerDisclaimer =>
+      'यह चिकित्सा निदान नहीं है। नैदानिक सलाह के लिए अपने डॉक्टर से परामर्श करें।';
+
+  @override
+  String get goodMorning => 'सुप्रभात,';
+
+  @override
+  String get goodAfternoon => 'नमस्कार,';
+
+  @override
+  String get goodEvening => 'शुभ संध्या,';
+
+  @override
+  String get hello => 'नमस्ते,';
+
+  @override
+  String get trendStable => 'स्थिर';
+
+  @override
+  String get optimumRange => 'सामान्य सीमा';
+
+  @override
+  String get physicianConnected => 'जुड़े हुए';
+
+  @override
+  String get physicianNotLinked => 'नहीं जुड़े';
+
+  @override
+  String get activeSync => 'सक्रिय सिंक';
+
+  @override
+  String get notConnected => 'नहीं जुड़ा';
+
+  @override
+  String get lastBP => 'पिछला BP';
+
+  @override
+  String get lastSugar => 'पिछला शुगर';
+
+  @override
+  String get liveSteps => 'कदम';
 }

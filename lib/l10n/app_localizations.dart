@@ -1507,6 +1507,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password reset successfully!'**
   String get passwordResetSuccess;
+
+  /// No description provided for @wellnessScoreSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Wellness Score'**
+  String get wellnessScoreSection;
+
+  /// No description provided for @vitalSummarySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Vital Summary'**
+  String get vitalSummarySection;
+
+  /// No description provided for @ninetyDayAvg.
+  ///
+  /// In en, this message translates to:
+  /// **'90 Days Avg'**
+  String get ninetyDayAvg;
+
+  /// No description provided for @aiInsightSection.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Health Insight'**
+  String get aiInsightSection;
+
+  /// No description provided for @primaryPhysicianSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Physician'**
+  String get primaryPhysicianSection;
+
+  /// No description provided for @individualMetricsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Individual Metrics'**
+  String get individualMetricsSection;
+
+  /// No description provided for @footerDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a medical diagnosis. Consult your doctor for clinical advice. All AI insights are for informational purposes.'**
+  String get footerDisclaimer;
+
+  /// No description provided for @goodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning,'**
+  String get goodMorning;
+
+  /// No description provided for @goodAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon,'**
+  String get goodAfternoon;
+
+  /// No description provided for @goodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening,'**
+  String get goodEvening;
+
+  /// No description provided for @hello.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello,'**
+  String get hello;
+
+  /// No description provided for @trendStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Stable'**
+  String get trendStable;
+
+  /// No description provided for @optimumRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimum Range'**
+  String get optimumRange;
+
+  /// No description provided for @physicianConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get physicianConnected;
+
+  /// No description provided for @physicianNotLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Linked'**
+  String get physicianNotLinked;
+
+  /// No description provided for @activeSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Sync'**
+  String get activeSync;
+
+  /// No description provided for @notConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Connected'**
+  String get notConnected;
+
+  /// No description provided for @lastBP.
+  ///
+  /// In en, this message translates to:
+  /// **'Last BP'**
+  String get lastBP;
+
+  /// No description provided for @lastSugar.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Sugar'**
+  String get lastSugar;
+
+  /// No description provided for @liveSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Steps'**
+  String get liveSteps;
 }
 
 class _AppLocalizationsDelegate
