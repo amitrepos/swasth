@@ -248,7 +248,9 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
           style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
         ),
         subtitle: Text(
-          '${profile.age ?? "?"} yrs · ${profile.gender ?? "Unknown"}',
+          profile.relationship != null
+              ? '${profile.age ?? "?"} yrs · ${profile.gender ?? "Unknown"} · ${profile.relationship![0].toUpperCase()}${profile.relationship!.substring(1)}'
+              : '${profile.age ?? "?"} yrs · ${profile.gender ?? "Unknown"}',
           style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         trailing: Container(

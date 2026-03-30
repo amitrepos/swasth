@@ -20,7 +20,7 @@ INVITE_TTL_DAYS = 7
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _build_profile_response(profile: models.Profile, access_level: str) -> schemas.ProfileResponse:
+def _build_profile_response(profile: models.Profile, access_level: str, relationship: str = None) -> schemas.ProfileResponse:
     return schemas.ProfileResponse(
         id=profile.id,
         name=profile.name,
@@ -35,6 +35,7 @@ def _build_profile_response(profile: models.Profile, access_level: str) -> schem
         doctor_specialty=profile.doctor_specialty,
         doctor_whatsapp=profile.doctor_whatsapp,
         access_level=access_level,
+        relationship=relationship,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
     )
@@ -59,7 +60,7 @@ def list_profiles(
     for access in accesses:
         profile = db.query(models.Profile).filter(models.Profile.id == access.profile_id).first()
         if profile:
-            result.append(_build_profile_response(profile, access.access_level))
+            result.append(_build_profile_response(profile, access.access_level, access.relationship))
     return result
 
 
