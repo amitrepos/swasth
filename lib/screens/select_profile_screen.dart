@@ -8,7 +8,7 @@ import '../models/invite_model.dart';
 import '../theme/app_theme.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
-import 'home_screen.dart';
+import 'shell_screen.dart';
 import 'create_profile_screen.dart';
 import 'pending_invites_screen.dart';
 
@@ -70,7 +70,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(builder: (context) => const ShellScreen()),
       );
     }
   }

@@ -664,3 +664,38 @@ Format: date, summary, file-level details.
   - 11:39:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
   - 11:40:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/theme/app_theme.dart
   - 11:41:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 11:48:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 11:49:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 11:50:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 12:07:38 modified: lib/screens/select_profile_screen.dart
+  - 12:08:36 modified: lib/screens/home_screen.dart
+  - 12:08:45 modified: lib/theme/app_theme.dart
+  - 12:21:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 12:21:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 12:22:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 12:42:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:54:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:54:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:55:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:55:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:57:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:57:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 12:58:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 14:16:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 14:16:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+
+## 2026-03-30 — Phase 2 dashboard fixes + Phase 3 bottom navigation shell
+
+### Phase 2 UI fixes (home_screen.dart)
+- Fixed header: greeting no longer shows default "Health" name. Shows "Good afternoon!" without profile name. Added tappable profile name row (with 🔄 icon) directly below greeting — clearer than hidden avatar popup.
+- Fixed "OPTIMUM RANGE" label: now conditional — shows "OPTIMUM RANGE" (score≥70), "MONITOR CLOSELY" (40–69), "NEEDS ATTENTION" (<40). Color matches arc (emerald/amber/red).
+- Added subtitle to AI Health Insight card: "Based on your last 7 days of readings" — gives users context for the Gemini recommendation.
+- Trimmed glucose value in metrics grid from "92 mg/dL" to "92 mg" — fits tile width better.
+- Fixed AI insight card crash: non-uniform Border (left=sky, others=white) can't use borderRadius. Replaced with ClipRRect + Stack + Positioned left bar.
+
+### Phase 3 bottom navigation (new files)
+- Created `lib/screens/shell_screen.dart`: IndexedStack with 5 tabs (HOME/HISTORY/STREAKS/INSIGHTS/CHAT). Reads profileId from StorageService. Animated active indicator dot under selected tab.
+- Created `lib/screens/streaks_screen.dart`: Shows streak count, points, and milestone progress (1/3/7/14/30-day milestones with pts).
+- Created `lib/screens/insights_screen.dart`: Thin wrapper around TrendChartScreen for the Insights tab.
+- Created `lib/screens/chat_screen.dart`: "AI Doctor Chat — Coming Soon" placeholder.
+- Modified `lib/screens/select_profile_screen.dart`: post-select navigates to ShellScreen instead of HomeScreen.

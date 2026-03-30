@@ -197,7 +197,12 @@ class _HomeScreenState extends State<HomeScreen>
             : hour >= 17 && hour < 22
                 ? l10n.goodEvening
                 : l10n.hello;
-    final firstName = _activeProfileName.split(' ').first;
+
+    // Profile name shown separately — greeting is always accurate
+    final hasProfile = _activeProfileId != null;
+    final profileDisplayName = _activeProfileName == 'Health'
+        ? 'My Profile'
+        : _activeProfileName;
 
     return Column(
       children: [
@@ -211,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen>
                 children: [
                   Text(
                     'SWASTH',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                       color: AppColors.textSecondary,
@@ -219,13 +224,37 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
                   Text(
-                    '$greeting $firstName.',
+                    greeting,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
                   ),
+                  if (hasProfile)
+                    GestureDetector(
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.person_outline, size: 13, color: AppColors.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            profileDisplayName,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          const Icon(Icons.swap_horiz, size: 13, color: AppColors.primary),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -436,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 const SizedBox(height: 12),
 
-                // Progress bar + label
+                // Progress bar + score label (text reflects actual score state)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -454,7 +483,11 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      l10n.optimumRange.toUpperCase(),
+                      score >= 70
+                          ? l10n.optimumRange.toUpperCase()
+                          : score >= 40
+                              ? 'MONITOR CLOSELY'
+                              : 'NEEDS ATTENTION',
                       style: TextStyle(
                         fontSize: 8,
                         fontWeight: FontWeight.w900,
@@ -600,6 +633,14 @@ class _HomeScreenState extends State<HomeScreen>
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Based on your last 7 days of readings',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       FutureBuilder<String>(
@@ -754,7 +795,7 @@ class _HomeScreenState extends State<HomeScreen>
         ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'
         : '—';
     final glucoseValue =
-        lastGlucose != null ? '${lastGlucose.toStringAsFixed(0)} mg/dL' : '—';
+        lastGlucose != null ? '${lastGlucose.toStringAsFixed(0)} mg' : '—';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
