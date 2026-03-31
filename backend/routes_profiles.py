@@ -205,6 +205,7 @@ def send_invite(
         invited_email=data.email.lower(),
         invited_user_id=invitee_user.id if invitee_user else None,
         relationship=data.relationship,
+        access_level=data.access_level or "viewer",
         status="pending",
         expires_at=datetime.now(timezone.utc) + timedelta(days=INVITE_TTL_DAYS),
     )
@@ -295,15 +296,57 @@ def revoke_access(
         .filter(
             models.ProfileAccess.profile_id == profile_id,
             models.ProfileAccess.user_id == target_user_id,
-            models.ProfileAccess.access_level == "viewer",
+            models.ProfileAccess.access_level.in_(["viewer", "editor"]),
         )
         .first()
     )
     if not access:
-        raise HTTPException(status_code=404, detail="Viewer access not found")
+        raise HTTPException(status_code=404, detail="Non-owner access not found")
 
     db.delete(access)
     db.commit()
+
+
+@router.patch("/profiles/{profile_id}/access/{target_user_id}")
+def update_access_level(
+    profile_id: int,
+    target_user_id: int,
+    data: dict,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update a user's access level (viewer <-> editor). Owner only."""
+    get_profile_owner_or_403(profile_id, user, db)
+
+    new_level = data.get("access_level", "").strip().lower()
+    if new_level not in ("viewer", "editor"):
+        raise HTTPException(status_code=400, detail="access_level must be 'viewer' or 'editor'")
+
+    if target_user_id == user.id:
+        raise HTTPException(status_code=400, detail="Cannot change your own owner access")
+
+    access = (
+        db.query(models.ProfileAccess)
+        .filter(
+            models.ProfileAccess.profile_id == profile_id,
+            models.ProfileAccess.user_id == target_user_id,
+            models.ProfileAccess.access_level.in_(["viewer", "editor"]),
+        )
+        .first()
+    )
+    if not access:
+        raise HTTPException(status_code=404, detail="Non-owner access not found")
+
+    access.access_level = new_level
+    db.commit()
+
+    u = db.query(models.User).filter(models.User.id == target_user_id).first()
+    return {
+        "user_id": target_user_id,
+        "full_name": u.full_name if u else None,
+        "email": u.email if u else None,
+        "access_level": new_level,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -336,6 +379,7 @@ def list_pending_invites(
             profile_name=profile.name if profile else "Unknown",
             invited_by_name=inviter.full_name if inviter else "Unknown",
             relationship=inv.relationship,
+            access_level=inv.access_level or "viewer",
             status=inv.status,
             expires_at=inv.expires_at,
             created_at=inv.created_at,
@@ -378,7 +422,7 @@ def respond_to_invite(
         db.commit()
         return {"message": "Invite rejected"}
 
-    # Accept: create ProfileAccess(viewer)
+    # Accept: create ProfileAccess with the access level specified in the invite
     existing = (
         db.query(models.ProfileAccess)
         .filter(
@@ -391,7 +435,7 @@ def respond_to_invite(
         db.add(models.ProfileAccess(
             user_id=user.id,
             profile_id=invite.profile_id,
-            access_level="viewer",
+            access_level=invite.access_level or "viewer",
             relationship=invite.relationship,
         ))
 

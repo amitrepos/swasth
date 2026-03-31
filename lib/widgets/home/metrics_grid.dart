@@ -10,6 +10,7 @@ class MetricsGrid extends StatelessWidget {
   final int? profileId;
   final void Function({required String deviceType, required String btDeviceType}) onAddReading;
   final VoidCallback onArmBandTap;
+  final bool canEdit;
 
   const MetricsGrid({
     super.key,
@@ -17,6 +18,7 @@ class MetricsGrid extends StatelessWidget {
     required this.profileId,
     required this.onAddReading,
     required this.onArmBandTap,
+    this.canEdit = true,
   });
 
   @override
@@ -57,7 +59,7 @@ class MetricsGrid extends StatelessWidget {
                 label: l10n.lastBP,
                 value: bpValue,
                 valueColor: helpers.statusTextColor(lastBpStatus),
-                onAddTap: () => onAddReading(deviceType: 'blood_pressure', btDeviceType: 'Blood Pressure'),
+                onAddTap: canEdit ? () => onAddReading(deviceType: 'blood_pressure', btDeviceType: 'Blood Pressure') : null,
               ),
             ),
             const SizedBox(width: 12),
@@ -66,7 +68,7 @@ class MetricsGrid extends StatelessWidget {
                 label: l10n.lastSugar,
                 value: glucoseValue,
                 valueColor: helpers.statusTextColor(lastGlucoseStatus),
-                onAddTap: () => onAddReading(deviceType: 'glucose', btDeviceType: 'Glucose'),
+                onAddTap: canEdit ? () => onAddReading(deviceType: 'glucose', btDeviceType: 'Glucose') : null,
               ),
             ),
           ],

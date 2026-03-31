@@ -19,11 +19,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
   bool _isLoading = true;
   List<HealthReading> _readings = [];
   String? _filterType; // null, 'glucose', or 'blood_pressure'
+  bool _canEdit = true;
 
   @override
   void initState() {
     super.initState();
+    _loadAccessLevel();
     _loadReadings();
+  }
+
+  Future<void> _loadAccessLevel() async {
+    final level = await StorageService().getActiveProfileAccessLevel();
+    if (mounted) setState(() => _canEdit = level != 'viewer');
   }
 
   Future<void> _loadReadings() async {
@@ -292,12 +299,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               ),
                             ],
                           ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            color: AppColors.statusCritical,
-                            onPressed: () => _deleteReading(reading.id),
-                            tooltip: l10n.delete,
-                          ),
+                          trailing: _canEdit
+                              ? IconButton(
+                                  icon: const Icon(Icons.delete_outline),
+                                  color: AppColors.statusCritical,
+                                  onPressed: () => _deleteReading(reading.id),
+                                  tooltip: l10n.delete,
+                                )
+                              : null,
                           isThreeLine: true,
                         ),
                       );

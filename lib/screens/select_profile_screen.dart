@@ -84,6 +84,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   Future<void> _selectProfile(ProfileModel profile) async {
     await _storageService.saveActiveProfileId(profile.id);
     await _storageService.saveActiveProfileName(profile.name);
+    await _storageService.saveActiveProfileAccessLevel(profile.accessLevel);
 
     if (mounted) {
       Navigator.pushReplacement(

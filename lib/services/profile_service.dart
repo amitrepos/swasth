@@ -78,8 +78,8 @@ class ProfileService {
     }
   }
 
-  Future<void> sendInvite(String token, int profileId, String email, {String? relationship}) async {
-    final body = <String, dynamic>{'email': email};
+  Future<void> sendInvite(String token, int profileId, String email, {String? relationship, String accessLevel = 'viewer'}) async {
+    final body = <String, dynamic>{'email': email, 'access_level': accessLevel};
     if (relationship != null) body['relationship'] = relationship;
     final response = await http.post(
       Uri.parse('$_baseUrl/$profileId/invite'),
@@ -113,6 +113,18 @@ class ProfileService {
       return List<Map<String, dynamic>>.from(json.decode(response.body));
     } else {
       throw Exception(ApiClient.errorDetail(response, 'Failed to get profile access'));
+    }
+  }
+
+  Future<void> updateAccessLevel(String token, int profileId, int userId, String accessLevel) async {
+    final response = await http.patch(
+      Uri.parse('$_baseUrl/$profileId/access/$userId'),
+      headers: ApiClient.headers(token: token),
+      body: json.encode({'access_level': accessLevel}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(ApiClient.errorDetail(response, 'Failed to update access level'));
     }
   }
 

@@ -29,12 +29,19 @@ class _ChatScreenState extends State<ChatScreen> {
   String _profileName = '';
   String _lastBp = '--';
   String _lastSugar = '--';
+  bool _canEdit = true;
 
   @override
   void initState() {
     super.initState();
+    _loadAccessLevel();
     _loadMessages();
     _loadVitals();
+  }
+
+  Future<void> _loadAccessLevel() async {
+    final level = await _storageService.getActiveProfileAccessLevel();
+    if (mounted) setState(() => _canEdit = level != 'viewer');
   }
 
   @override
@@ -224,47 +231,57 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
 
-            // --- Input bar ---
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: GlassCard(
-                borderRadius: 28,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _inputController,
-                        enabled: _remainingQuota > 0 && !_isSending,
-                        decoration: InputDecoration(
-                          hintText: _remainingQuota > 0 ? l10n.chatPlaceholder : l10n.chatQuotaExceeded,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            // --- Input bar (hidden for viewers) ---
+            if (_canEdit)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                child: GlassCard(
+                  borderRadius: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _inputController,
+                          enabled: _remainingQuota > 0 && !_isSending,
+                          decoration: InputDecoration(
+                            hintText: _remainingQuota > 0 ? l10n.chatPlaceholder : l10n.chatQuotaExceeded,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          style: const TextStyle(fontSize: 14),
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _sendMessage(),
                         ),
-                        style: const TextStyle(fontSize: 14),
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendMessage(),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: _remainingQuota > 0 && !_isSending ? () => _sendMessage() : null,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: _remainingQuota > 0 ? AppColors.textPrimary : AppColors.textSecondary,
-                          borderRadius: BorderRadius.circular(18),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: _remainingQuota > 0 && !_isSending ? () => _sendMessage() : null,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: _remainingQuota > 0 ? AppColors.textPrimary : AppColors.textSecondary,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
                         ),
-                        child: const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text(
+                  'View-only access — you cannot send messages for this profile.',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
                 ),
               ),
-            ),
           ],
         ),
       ),

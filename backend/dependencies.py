@@ -57,6 +57,31 @@ def get_profile_access_or_403(
     return access
 
 
+def get_profile_editor_or_403(
+    profile_id: int,
+    user: models.User,
+    db: Session,
+) -> models.ProfileAccess:
+    """Return the ProfileAccess row if the user is owner or editor.
+    Raises 403 for viewers or users with no access.
+    """
+    access = (
+        db.query(models.ProfileAccess)
+        .filter(
+            models.ProfileAccess.profile_id == profile_id,
+            models.ProfileAccess.user_id == user.id,
+            models.ProfileAccess.access_level.in_(["owner", "editor"]),
+        )
+        .first()
+    )
+    if access is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You need editor or owner access to perform this action",
+        )
+    return access
+
+
 def get_profile_owner_or_403(
     profile_id: int,
     user: models.User,

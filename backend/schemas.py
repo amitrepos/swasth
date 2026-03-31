@@ -266,11 +266,18 @@ class ProfileResponse(BaseModel):
 class InviteRequest(BaseModel):
     email: EmailStr
     relationship: Optional[str] = None
+    access_level: Optional[str] = "viewer"
 
     @validator('relationship')
     def validate_relationship(cls, v):
         if v is not None and v not in RELATIONSHIP_OPTIONS:
             raise ValueError(f'Relationship must be one of: {", ".join(RELATIONSHIP_OPTIONS)}')
+        return v
+
+    @validator('access_level')
+    def validate_access_level(cls, v):
+        if v not in ("viewer", "editor"):
+            raise ValueError('access_level must be "viewer" or "editor"')
         return v
 
 
@@ -280,6 +287,7 @@ class InviteResponse(BaseModel):
     profile_name: str
     invited_by_name: str
     relationship: Optional[str] = None
+    access_level: Optional[str] = "viewer"
     status: str
     expires_at: datetime
     created_at: datetime
