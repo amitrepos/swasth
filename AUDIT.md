@@ -1105,4 +1105,6 @@ Format: date, summary, file-level details.
 - Modified `lib/screens/chat_screen.dart`: Loads access level, hides chat input for viewers (shows "View-only access" message).
 - Modified `lib/services/profile_service.dart`: Added `updateAccessLevel()` method (PATCH). Updated `sendInvite()` to accept `accessLevel` param.
 - Modified `lib/screens/manage_access_screen.dart`: Added access level dropdown to invite form (viewer/editor). Added role dropdown on each user row for owner to change access level. Added revoke (X) icon button. Added `_updateUserAccess()` method.
-  - 09:28:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+- Modified `backend/main.py`: Added PATCH to CORS allowed methods (was missing, causing 403 on access level update).
+- Modified `lib/screens/select_profile_screen.dart`: Fixed shared profiles section to show all non-owner profiles (viewer + editor), not just viewer.
+  - 09:39:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
