@@ -378,6 +378,7 @@ def get_health_score(
         color=color,
         streak_days=streak,
         insight=insight,
+        profile_name=profile.name if profile else None,
         today_glucose_status=today_glucose.status_flag if today_glucose else None,
         today_bp_status=today_bp.status_flag if today_bp else None,
         today_glucose_value=today_glucose.glucose_value if today_glucose else None,

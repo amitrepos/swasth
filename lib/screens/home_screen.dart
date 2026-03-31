@@ -192,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen>
                   activeProfileId: _activeProfileId,
                   streak: _streak,
                   pts: _pts,
-                  onSwitchProfile: () => Navigator.pushReplacement(
+                  onSwitchProfile: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
                   ),

@@ -89,10 +89,10 @@ class _ShellScreenState extends State<ShellScreen> {
               index: _currentIndex,
               children: [
                 const HomeScreen(),
-                HistoryScreen(profileId: _profileId!),
+                HistoryScreen(key: ValueKey('history_$_profileId'), profileId: _profileId!),
                 const StreaksScreen(),
-                InsightsScreen(profileId: _profileId!),
-                ChatScreen(profileId: _profileId!),
+                InsightsScreen(key: ValueKey('insights_$_profileId'), profileId: _profileId!),
+                ChatScreen(key: ValueKey('chat_$_profileId'), profileId: _profileId!),
               ],
             ),
           ),
