@@ -1107,4 +1107,12 @@ Format: date, summary, file-level details.
 - Modified `lib/screens/manage_access_screen.dart`: Added access level dropdown to invite form (viewer/editor). Added role dropdown on each user row for owner to change access level. Added revoke (X) icon button. Added `_updateUserAccess()` method.
 - Modified `backend/main.py`: Added PATCH to CORS allowed methods (was missing, causing 403 on access level update).
 - Modified `lib/screens/select_profile_screen.dart`: Fixed shared profiles section to show all non-owner profiles (viewer + editor), not just viewer.
-  - 09:39:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+
+## 2026-03-31 — Rolled back offline mode, stabilized app for testing
+
+- Discarded all uncommitted offline-mode changes (Hive caching, connectivity_plus, sync queue, photo storage)
+- Switched from `feature/phase2-home-redesign` to `master`, pulled latest (68 commits fast-forwarded)
+- Modified `TASK_TRACKER.md`: Reverted A9 (offline storage) and C16 (offline UI) from Done → Not started, updated progress summary
+- App confirmed running on web (Chrome) and physical iPhone
+- Resolved iPhone "offline" banner — caused by default `10.0.2.2` fallback; fix: pass `--dart-define=SERVER_HOST=http://<LAN-IP>:8000`
+  - 23:08:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

@@ -1,6 +1,6 @@
 # Swasth App — Phase 1 Task Tracker
 
-**Last Updated:** 2026-03-30
+**Last Updated:** 2026-03-31
 **Sprint:** 4 weeks + buffer | **Target:** Bihar pilot
 
 Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
@@ -19,7 +19,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | A6 | Language toggle (Hindi / English) | ✅ Done | Full gen-l10n: `app_en.arb` + `app_hi.arb`, all UI strings via `AppLocalizations`. Toggle chip in Profile → Settings section. Language persisted via `languageProvider` (Riverpod). |
 | A7 | Profile switcher | ✅ Done | `select_profile_screen.dart` — lists all accessible profiles, tap to switch active profile. |
 | A8 | Cloud sync | 🔄 Partial | PostgreSQL + FastAPI (cloud-deployable). Offline sync queue for readings. |
-| A9 | Local offline storage | ✅ Done | Offline login (7-day window), cached profiles/readings/health scores, sync queue for readings entered offline, auto-sync on reconnect, offline banner, splash auth gate. |
+| A9 | Local offline storage | ❌ Not started | Rolled back 2026-03-31. Hive caching was implemented but reverted to stabilize app for testing. Deferred to post-pilot. |
 | A10 | Invite family via WhatsApp | 🔄 Partial | Email-based invite works with relationship dropdown (father/mother/spouse/etc.). No WhatsApp deep link or share-to-install flow. |
 | A11 | Access permissions | ✅ Done | owner / viewer / editor levels via `profile_access` table. `dependencies.py` enforces access. |
 | A12 | First-time onboarding | ❌ Not started | Registration screen collects health info during signup but there are no dedicated onboarding/welcome carousel screens (welcome → how to photograph → invite family flow). |
@@ -73,7 +73,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | C13 | Family view | ✅ Done | Profile switching gives any profile's dashboard/history. Shared profiles work via A2. |
 | C14 | "Everything is okay" green signal | ✅ Done | `_StatusFlag` widget shows 🟢 "Fit & Fine" when score ≥ 70 and all readings NORMAL. Age-adjusted. |
 | C15 | Pull-to-refresh | ✅ Done | `select_profile_screen.dart` — `RefreshIndicator`. Home screen has refresh on health score card + `RouteAware.didPopNext`. |
-| C16 | Offline mode / "last synced" | ✅ Done | Offline banner, cached readings/profiles/health scores, sync queue. Depends on A9 (done). |
+| C16 | Offline mode / "last synced" | ❌ Not started | Rolled back with A9 on 2026-03-31. Deferred to post-pilot. |
 | C17 | Large text accessibility | ❌ Not started | No `MediaQuery.textScaleFactor` usage. All font sizes hardcoded. |
 | C18 | Health Score widget (home screen) | ✅ Done | 0–100 score ring (green/orange/red), `GET /api/readings/health-score`. Tappable → trend charts. |
 | C19 | Streak counter on home screen | ✅ Done | Shown in `_GamificationPanel` — "🔥 N-day streak" chip. |
@@ -118,11 +118,11 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 | Module | Done | Partial | Not Started | Total |
 |--------|------|---------|-------------|-------|
-| A — Auth + Profiles | 9 | 2 | 2 | 13 |
+| A — Auth + Profiles | 8 | 2 | 3 | 13 |
 | B — Data Input | 12 | 2 | 6 | 20 |
-| C — Dashboard | 20 | 0 | 4 | 24 |
+| C — Dashboard | 19 | 0 | 5 | 24 |
 | D — AI + Notifications | 8 | 3 | 12 | 23 |
-| **Total** | **49** | **7** | **24** | **80** |
+| **Total** | **47** | **7** | **26** | **80** |
 
 ---
 
