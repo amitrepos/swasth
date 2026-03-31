@@ -84,6 +84,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   Future<void> _selectProfile(ProfileModel profile) async {
     await _storageService.saveActiveProfileId(profile.id);
     await _storageService.saveActiveProfileName(profile.name);
+    await _storageService.saveActiveProfileAccessLevel(profile.accessLevel);
 
     if (mounted) {
       Navigator.pushReplacement(
@@ -143,10 +144,10 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                         const SizedBox(height: 16),
                         _buildSectionHeader(l10n.sharedWithMeSection),
                         ..._profiles
-                            .where((p) => p.accessLevel == 'viewer')
+                            .where((p) => p.accessLevel != 'owner')
                             .map((p) => _buildProfileCard(p)),
 
-                        if (_profiles.where((p) => p.accessLevel == 'viewer').isEmpty)
+                        if (_profiles.where((p) => p.accessLevel != 'owner').isEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                             child: Text(

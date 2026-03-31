@@ -24,6 +24,7 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
   final StorageService _storageService = StorageService();
   final _emailController = TextEditingController();
   String? _selectedRelationship;
+  String _selectedAccessLevel = 'viewer';
 
   List<Map<String, dynamic>> _accesses = [];
   bool _isLoading = true;
@@ -80,14 +81,17 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
       final token = await _storageService.getToken();
       if (token == null) throw Exception("Not authenticated");
 
-      await _profileService.sendInvite(token, widget.profileId, email, relationship: _selectedRelationship);
+      await _profileService.sendInvite(token, widget.profileId, email, relationship: _selectedRelationship, accessLevel: _selectedAccessLevel);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.inviteSentSuccess), backgroundColor: AppColors.statusNormal),
         );
         _emailController.clear();
-        setState(() => _selectedRelationship = null);
+        setState(() {
+          _selectedRelationship = null;
+          _selectedAccessLevel = 'viewer';
+        });
       }
       _loadAccess();
     } catch (e) {
@@ -125,6 +129,23 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
       if (token == null) throw Exception("Not authenticated");
 
       await _profileService.revokeAccess(token, widget.profileId, userId);
+      _loadAccess();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.statusCritical),
+        );
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _updateUserAccess(int userId, String newLevel) async {
+    setState(() => _isLoading = true);
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) throw Exception("Not authenticated");
+      await _profileService.updateAccessLevel(token, widget.profileId, userId, newLevel);
       _loadAccess();
     } catch (e) {
       if (mounted) {
@@ -185,6 +206,20 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                       onChanged: (v) => setState(() => _selectedRelationship = v),
                     ),
                     const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _selectedAccessLevel,
+                      decoration: const InputDecoration(
+                        labelText: 'Access Level',
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'viewer', child: Text('Viewer — can only view readings')),
+                        DropdownMenuItem(value: 'editor', child: Text('Editor — can add & delete readings')),
+                      ],
+                      onChanged: (v) => setState(() => _selectedAccessLevel = v ?? 'viewer'),
+                    ),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -220,6 +255,8 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                               if (access['access_level'] == 'owner') return const SizedBox.shrink();
 
                               final rel = access['relationship'] as String?;
+                              final currentLevel = access['access_level'] as String? ?? 'viewer';
+                              final userId = access['user_id'] as int;
                               return ListTile(
                                 leading: const CircleAvatar(child: Icon(Icons.person)),
                                 title: Text(access['full_name']),
@@ -228,9 +265,36 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
                                       ? '${_relationshipDisplayName(rel, l10n)} · ${access['email']}'
                                       : access['email'],
                                 ),
-                                trailing: TextButton(
-                                  onPressed: _isLoading ? null : () => _revokeAccess(access['user_id'], access['full_name']),
-                                  child: Text(l10n.revoke, style: const TextStyle(color: AppColors.statusCritical)),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    DropdownButton<String>(
+                                      value: currentLevel,
+                                      underline: const SizedBox.shrink(),
+                                      isDense: true,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: currentLevel == 'editor' ? AppColors.primary : AppColors.textSecondary,
+                                      ),
+                                      items: const [
+                                        DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
+                                        DropdownMenuItem(value: 'editor', child: Text('Editor')),
+                                      ],
+                                      onChanged: _isLoading ? null : (v) {
+                                        if (v != null && v != currentLevel) {
+                                          _updateUserAccess(userId, v);
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(width: 4),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, size: 18),
+                                      color: AppColors.statusCritical,
+                                      tooltip: l10n.revoke,
+                                      onPressed: _isLoading ? null : () => _revokeAccess(userId, access['full_name']),
+                                    ),
+                                  ],
                                 ),
                               );
                             },

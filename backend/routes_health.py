@@ -11,7 +11,7 @@ import json
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
 from encryption_service import encrypt, encrypt_float
 from health_utils import age_context_bp, age_context_glucose
@@ -31,8 +31,8 @@ def save_reading(
     user: models.User = Depends(get_current_user),
 ):
     """Save a new health reading (glucose or blood pressure) for a specific profile."""
-    # Verify profile access
-    get_profile_access_or_403(reading.profile_id, user, db)
+    # Verify editor/owner access (viewers cannot create readings)
+    get_profile_editor_or_403(reading.profile_id, user, db)
 
     if reading.reading_type not in _VALID_READING_TYPES:
         raise HTTPException(
@@ -587,9 +587,9 @@ def delete_reading(
     db_reading = db.query(models.HealthReading).filter(models.HealthReading.id == reading_id).first()
     if not db_reading:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
-    
-    # Verify access to the profile this reading belongs to
-    get_profile_access_or_403(db_reading.profile_id, user, db)
+
+    # Verify editor/owner access (viewers cannot delete readings)
+    get_profile_editor_or_403(db_reading.profile_id, user, db)
     
     db.delete(db_reading)
     db.commit()

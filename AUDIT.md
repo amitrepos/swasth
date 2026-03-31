@@ -1086,4 +1086,25 @@ Format: date, summary, file-level details.
 - Modified `lib/screens/shell_screen.dart`: Added `ValueKey` tied to `profileId` on `HistoryScreen`, `InsightsScreen`, and `ChatScreen` — forces widget recreation on profile switch so data reloads for the correct profile.
 - Modified `lib/widgets/home/home_header.dart`: Replaced hidden `PopupMenuButton` with visible icon buttons (Switch Profile, Share, Avatar→Profile, Logout) for better discoverability.
 - Modified `lib/screens/home_screen.dart`: Changed Switch Profile from `pushReplacement` to `push` so users can press back to return to previous profile.
-  - 09:13:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+
+---
+
+## 2026-03-31 — Access control: viewer/editor/owner enforcement
+
+- Modified `backend/dependencies.py`: Added `get_profile_editor_or_403` — allows owner + editor, blocks viewers on write operations.
+- Modified `backend/routes_health.py`: POST /readings and DELETE /readings now use `get_profile_editor_or_403` (was `get_profile_access_or_403`). Viewers can no longer create or delete readings.
+- Modified `backend/routes_chat.py`: POST /chat/send now uses `get_profile_editor_or_403`. Viewers can read chat history but cannot send messages.
+- Modified `backend/models.py`: Added `access_level` column to `ProfileInvite` (default "viewer"). Invites now carry the intended access level.
+- Modified `backend/schemas.py`: Added `access_level` to `InviteRequest` (with validator) and `InviteResponse`. Added validator for "viewer"/"editor" values.
+- Modified `backend/routes_profiles.py`: Invite creation stores `access_level`. Invite accept uses `invite.access_level` instead of hardcoded "viewer". Added PATCH `/profiles/{id}/access/{user_id}` endpoint for owner to change viewer<->editor. Updated revoke to handle editor access too.
+- Modified `lib/services/storage_service.dart`: Added `saveActiveProfileAccessLevel` / `getActiveProfileAccessLevel` for persisting access level locally.
+- Modified `lib/screens/select_profile_screen.dart`: Saves access level to storage when selecting a profile.
+- Modified `lib/screens/home_screen.dart`: Loads access level, passes `canEdit` to `MetricsGrid` — hides add reading buttons for viewers.
+- Modified `lib/widgets/home/metrics_grid.dart`: Added `canEdit` param. When false, add reading (+) buttons are hidden.
+- Modified `lib/screens/history_screen.dart`: Loads access level, hides delete button for viewers.
+- Modified `lib/screens/chat_screen.dart`: Loads access level, hides chat input for viewers (shows "View-only access" message).
+- Modified `lib/services/profile_service.dart`: Added `updateAccessLevel()` method (PATCH). Updated `sendInvite()` to accept `accessLevel` param.
+- Modified `lib/screens/manage_access_screen.dart`: Added access level dropdown to invite form (viewer/editor). Added role dropdown on each user row for owner to change access level. Added revoke (X) icon button. Added `_updateUserAccess()` method.
+- Modified `backend/main.py`: Added PATCH to CORS allowed methods (was missing, causing 403 on access level update).
+- Modified `lib/screens/select_profile_screen.dart`: Fixed shared profiles section to show all non-owner profiles (viewer + editor), not just viewer.
+  - 09:39:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

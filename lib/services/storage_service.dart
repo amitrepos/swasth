@@ -12,6 +12,7 @@ class StorageService {
   static const String _userKey = 'user_data';
   static const String _activeProfileIdKey = 'active_profile_id';
   static const String _activeProfileNameKey = 'active_profile_name';
+  static const String _activeProfileAccessLevelKey = 'active_profile_access_level';
   static const String _languageKey = 'language_code';
   static const String _savedEmailKey = 'saved_email';
   static const String _savedPasswordKey = 'saved_password';
@@ -56,6 +57,16 @@ class StorageService {
   // Get active profile name
   Future<String?> getActiveProfileName() async {
     return await _storage.read(key: _activeProfileNameKey);
+  }
+
+  // Save active profile access level
+  Future<void> saveActiveProfileAccessLevel(String level) async {
+    await _storage.write(key: _activeProfileAccessLevelKey, value: level);
+  }
+
+  // Get active profile access level
+  Future<String?> getActiveProfileAccessLevel() async {
+    return await _storage.read(key: _activeProfileAccessLevelKey);
   }
 
   // Save language preference (survives logout)

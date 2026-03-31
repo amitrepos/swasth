@@ -42,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   String _activeProfileName = "Health";
   int? _activeProfileId;
+  String _accessLevel = "owner";
   Future<Map<String, dynamic>>? _healthScoreFuture;
   Future<String>? _aiInsightFuture;
   ProfileModel? _activeProfile;
@@ -88,10 +89,12 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _loadProfileInfo() async {
     final name = await _storageService.getActiveProfileName();
     final id = await _storageService.getActiveProfileId();
+    final level = await _storageService.getActiveProfileAccessLevel();
     if (mounted) {
       setState(() {
         if (name != null) _activeProfileName = name;
         _activeProfileId = id;
+        _accessLevel = level ?? 'owner';
         if (id != null) _refreshHealthScore(id);
       });
     }
@@ -289,6 +292,7 @@ class _HomeScreenState extends State<HomeScreen>
                           MetricsGrid(
                             data: data,
                             profileId: _activeProfileId,
+                            canEdit: _accessLevel != 'viewer',
                             onAddReading: _handleAddReading,
                             onArmBandTap: () {
                               if (_activeProfileId != null) {

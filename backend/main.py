@@ -43,7 +43,7 @@ app.add_middleware(
     allow_origins=_cors_origins,
     allow_origin_regex=r"^http://localhost:\d+$" if not settings.REQUIRE_HTTPS else None,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
 

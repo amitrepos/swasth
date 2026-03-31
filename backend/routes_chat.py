@@ -10,7 +10,7 @@ from typing import Optional
 import models
 import ai_service
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
 
 router = APIRouter()
@@ -202,7 +202,8 @@ def send_chat_message(
     if not profile_id or not message:
         raise HTTPException(status_code=400, detail="profile_id and message are required")
 
-    get_profile_access_or_403(profile_id, user, db)
+    # Viewers can read chat history but cannot send messages
+    get_profile_editor_or_403(profile_id, user, db)
 
     # --- Rate limit check ---
     quota = _get_quota_info(profile_id, db)
