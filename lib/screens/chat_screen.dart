@@ -55,14 +55,8 @@ class _ChatScreenState extends State<ChatScreen> {
         _lastBp = sys != null && dia != null ? '${sys.toStringAsFixed(0)}/${dia.toStringAsFixed(0)}' : '--';
         final glucose = (data['last_glucose_value'] as num?)?.toDouble();
         _lastSugar = glucose != null ? '${glucose.toStringAsFixed(0)} mg/dL' : '--';
+        _profileName = data['profile_name'] as String? ?? '';
       });
-    } catch (_) {}
-    // Load profile name
-    try {
-      final userData = await _storageService.getUserData();
-      if (userData != null) {
-        setState(() => _profileName = userData['full_name'] ?? '');
-      }
     } catch (_) {}
   }
 

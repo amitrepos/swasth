@@ -301,6 +301,7 @@ class HealthScoreResponse(BaseModel):
     color: str                          # "green" | "orange" | "red"
     streak_days: int                    # consecutive days with ≥1 reading
     insight: str                        # plain-English encouragement/tip
+    profile_name: Optional[str] = None  # name of the profile (not the logged-in user)
     today_glucose_status: Optional[str] = None   # NORMAL | HIGH | CRITICAL | LOW
     today_bp_status: Optional[str] = None
     today_glucose_value: Optional[float] = None

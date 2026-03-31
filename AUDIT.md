@@ -1076,3 +1076,14 @@ Format: date, summary, file-level details.
   - 00:14:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat.py
   - 00:15:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat.py
   - 00:16:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat.py
+---
+
+## 2026-03-31 — Fix chat profile bug, visible header actions, back navigation UX
+
+- Modified `backend/schemas.py`: Added `profile_name` to `HealthScoreResponse` so chat screen shows selected profile name, not logged-in user.
+- Modified `backend/routes_health.py`: Populate `profile_name` from profile query in health-score endpoint.
+- Modified `lib/screens/chat_screen.dart`: Read profile name from health score response instead of `getUserData()` — fixes bug where chat always showed logged-in user's name instead of selected profile.
+- Modified `lib/screens/shell_screen.dart`: Added `ValueKey` tied to `profileId` on `HistoryScreen`, `InsightsScreen`, and `ChatScreen` — forces widget recreation on profile switch so data reloads for the correct profile.
+- Modified `lib/widgets/home/home_header.dart`: Replaced hidden `PopupMenuButton` with visible icon buttons (Switch Profile, Share, Avatar→Profile, Logout) for better discoverability.
+- Modified `lib/screens/home_screen.dart`: Changed Switch Profile from `pushReplacement` to `push` so users can press back to return to previous profile.
+  - 09:13:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

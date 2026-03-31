@@ -96,22 +96,20 @@ class HomeHeader extends StatelessWidget {
                 ],
               ),
             ),
-            PopupMenuButton<String>(
-              offset: const Offset(0, 44),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              onSelected: (val) {
-                if (val == 'switch') {
-                  onSwitchProfile();
-                } else if (val == 'profile' && activeProfileId != null) {
-                  onViewProfile();
-                } else if (val == 'share' && activeProfileId != null) {
-                  onShareProfile();
-                } else if (val == 'logout') {
-                  onLogout();
-                }
-              },
+            _HeaderIconButton(
+              icon: Icons.swap_horiz,
+              tooltip: l10n.switchProfile,
+              onTap: onSwitchProfile,
+            ),
+            _HeaderIconButton(
+              icon: Icons.share_outlined,
+              tooltip: l10n.shareProfile,
+              onTap: hasProfile ? onShareProfile : null,
+            ),
+            GestureDetector(
+              onTap: hasProfile ? onViewProfile : null,
               child: CircleAvatar(
-                radius: 20,
+                radius: 18,
                 backgroundColor: Colors.white,
                 child: Text(
                   activeProfileName.isNotEmpty
@@ -120,17 +118,16 @@ class HomeHeader extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,
-                    fontSize: 16,
+                    fontSize: 14,
                   ),
                 ),
               ),
-              itemBuilder: (_) => [
-                PopupMenuItem(value: 'profile', child: Row(children: [const Icon(Icons.person_outline, size: 18), const SizedBox(width: 8), Text(l10n.profile)])),
-                PopupMenuItem(value: 'share', child: Row(children: [const Icon(Icons.share_outlined, size: 18), const SizedBox(width: 8), Text(l10n.shareProfile)])),
-                PopupMenuItem(value: 'switch', child: Row(children: [const Icon(Icons.swap_horiz, size: 18), const SizedBox(width: 8), Text(l10n.switchProfile)])),
-                const PopupMenuDivider(),
-                PopupMenuItem(value: 'logout', child: Row(children: [const Icon(Icons.logout, size: 18, color: AppColors.danger), const SizedBox(width: 8), Text(l10n.logout, style: const TextStyle(color: AppColors.danger))])),
-              ],
+            ),
+            _HeaderIconButton(
+              icon: Icons.logout,
+              tooltip: l10n.logout,
+              onTap: onLogout,
+              color: AppColors.danger,
             ),
           ],
         ),
@@ -162,6 +159,35 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
+  final Color color;
+
+  const _HeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.color = AppColors.textSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Icon(icon, size: 22, color: onTap != null ? color : AppColors.separator),
+        ),
+      ),
     );
   }
 }
