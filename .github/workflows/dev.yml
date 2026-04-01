@@ -20,7 +20,8 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r requirements.txt
-      - run: python -m pytest tests/ -v --tb=short
+      - name: Run pytest with coverage (fails below 85%)
+        run: python -m pytest tests/ -v --tb=short --cov=. --cov-config=.coveragerc
 
   flutter-checks:
     name: Flutter Analyze & Test
