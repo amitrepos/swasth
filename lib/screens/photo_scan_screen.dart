@@ -105,31 +105,16 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         ),
       );
 
-      // 1. Try local ML Kit OCR first (free, unlimited, on-device)
+      // Try Gemini Vision via backend (uses fallback chain: Gemini → DeepSeek)
+      // ML Kit local OCR disabled on iOS due to arm64 crash on iOS 26.
       OcrResult? result;
-      try {
-        if (widget.deviceType == 'glucose') {
-          result = await OcrService.extractGlucose(file);
-        } else {
-          result = await OcrService.extractBloodPressure(file);
-        }
-      } catch (_) {
-        // ML Kit failed — fall through to Gemini
-      }
-
-      // 2. If local OCR didn't extract values, try Gemini Vision (API, may be rate-limited)
-      if (result == null || !result.hasValue) {
-        final token = await StorageService().getToken();
-        if (token != null) {
-          final geminiResult = await HealthReadingService().parseImageWithGemini(
-            file,
-            widget.deviceType,
-            token,
-          );
-          if (geminiResult != null && geminiResult.hasValue) {
-            result = geminiResult;
-          }
-        }
+      final token = await StorageService().getToken();
+      if (token != null) {
+        result = await HealthReadingService().parseImageWithGemini(
+          file,
+          widget.deviceType,
+          token,
+        );
       }
 
       if (mounted) Navigator.of(context).pop();
