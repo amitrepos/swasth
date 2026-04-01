@@ -6,7 +6,7 @@ import '../services/ocr_service.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import 'history_screen.dart';
+import 'shell_screen.dart';
 
 class ReadingConfirmationScreen extends StatefulWidget {
   final OcrResult? ocrResult;
@@ -179,13 +179,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
               backgroundColor: AppColors.amber,
             ),
           );
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HistoryScreen(profileId: widget.profileId),
-            ),
-            (route) => route.isFirst,
-          );
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          try { ShellScreen.switchToTab(0); } catch (_) {}
           return;
         }
         rethrow;
@@ -204,13 +199,12 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
         SnackBar(content: Text(l10n.readingSavedSuccess)),
       );
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HistoryScreen(profileId: widget.profileId),
-        ),
-        (route) => route.isFirst,
-      );
+      // Pop back to the Shell and switch to Home tab (refreshes data)
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      // Trigger Shell to refresh and switch to Home
+      try {
+        ShellScreen.switchToTab(0);
+      } catch (_) {}  // ShellScreen may not be available in all nav contexts
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
