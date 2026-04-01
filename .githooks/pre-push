@@ -16,8 +16,8 @@ cd "$(git rev-parse --show-toplevel)/backend"
 if [ -d "venv" ]; then
     source venv/bin/activate
 fi
-python -m pytest tests/ --tb=short -q
-echo "✓ Backend tests passed"
+python -m pytest tests/ --tb=short -q --cov=. --cov-config=.coveragerc
+echo "✓ Backend tests passed (85% coverage gate passed)"
 
 # ── Flutter analyze ───────────────────────────────────────────────────────
 echo ""

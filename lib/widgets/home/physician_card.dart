@@ -50,7 +50,7 @@ class PhysicianCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  profile.doctorName!,
+                  profile.doctorName ?? l10n.primaryPhysicianSection,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
