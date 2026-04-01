@@ -1,0 +1,24 @@
+[run]
+source = .
+omit =
+    tests/*
+    migrate_*.py
+    init_db.py
+    seed_demo_data.py
+    */venv/*
+    */build/*
+
+[report]
+fail_under = 85
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__
+    print\(
+    from google import genai
+    from google.genai import
+    from openai import OpenAI
+    client = genai.Client
+    client = OpenAI
+    response = client\.models\.generate_content
+    response = client\.chat\.completions\.create
+show_missing = true

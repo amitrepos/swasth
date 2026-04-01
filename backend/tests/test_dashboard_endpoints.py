@@ -325,6 +325,55 @@ class TestAiInsightEndpoint:
         body = resp.json()
         assert "insight" in body
 
+    def test_ai_insight_no_consent_with_multiple_readings(self, client, test_user, auth_headers, db):
+        """Without AI consent, rule-based insight should handle various reading statuses."""
+        profile = db.query(models.ProfileAccess).filter(
+            models.ProfileAccess.user_id == test_user.id,
+        ).first()
+
+        # Add diverse readings to trigger different rule-based paths
+        _add_glucose_reading(db, profile.profile_id, test_user.id, 250.0, hours_ago=0, status="CRITICAL")
+        _add_bp_reading(db, profile.profile_id, test_user.id, 165, 100, hours_ago=1, status="HIGH - STAGE 2")
+
+        resp = client.get(self.URL, params={"profile_id": profile.profile_id}, headers=auth_headers)
+        assert resp.status_code == 200
+        assert len(resp.json()["insight"]) > 0
+
+    @patch("ai_service.generate_health_insight", return_value="AI personalized insight.")
+    def test_ai_insight_with_consent_and_data(self, mock_ai, client, test_user, auth_headers, db):
+        """With consent + data, should attempt AI call and return insight."""
+        test_user.ai_consent = True
+        db.flush()
+
+        profile = db.query(models.ProfileAccess).filter(
+            models.ProfileAccess.user_id == test_user.id,
+        ).first()
+
+        # Add glucose and BP readings to cover both summary paths
+        _add_glucose_reading(db, profile.profile_id, test_user.id, 180.0, hours_ago=0, status="HIGH")
+        _add_glucose_reading(db, profile.profile_id, test_user.id, 120.0, hours_ago=24, status="NORMAL")
+        _add_bp_reading(db, profile.profile_id, test_user.id, 140, 90, hours_ago=2, status="HIGH - STAGE 1")
+
+        resp = client.get(self.URL, params={"profile_id": profile.profile_id}, headers=auth_headers)
+        assert resp.status_code == 200
+        assert "insight" in resp.json()
+
+    @patch("ai_service.generate_health_insight", return_value=None)
+    def test_ai_insight_ai_unavailable_falls_to_rule(self, mock_ai, client, test_user, auth_headers, db):
+        """When AI is down but user has consent, should fall back to rule-based."""
+        test_user.ai_consent = True
+        db.flush()
+
+        profile = db.query(models.ProfileAccess).filter(
+            models.ProfileAccess.user_id == test_user.id,
+        ).first()
+
+        _add_glucose_reading(db, profile.profile_id, test_user.id, 100.0, hours_ago=0, status="NORMAL")
+
+        resp = client.get(self.URL, params={"profile_id": profile.profile_id}, headers=auth_headers)
+        assert resp.status_code == 200
+        assert len(resp.json()["insight"]) > 0
+
     def test_ai_insight_unauthenticated(self, client):
         resp = client.get(self.URL, params={"profile_id": 1})
         assert resp.status_code == 401
