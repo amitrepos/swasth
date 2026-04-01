@@ -84,7 +84,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void didPopNext() {
-    if (_activeProfileId != null) _refreshHealthScore(_activeProfileId!);
+    // Re-read active profile from storage in case it changed
+    _loadProfileInfo();
   }
 
   Future<void> _loadProfileInfo() async {
