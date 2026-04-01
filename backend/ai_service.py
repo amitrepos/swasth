@@ -17,36 +17,38 @@ def generate_health_insight(
     db: Session,
     prompt_summary: Optional[str] = None,
 ) -> Optional[str]:
-    """Try Gemini, then DeepSeek, then return None. Always logs to DB."""
+    """Try DeepSeek first (cheap, no rate limit), then Gemini, then return None.
 
-    # 1. Try Gemini
-    if settings.GEMINI_API_KEY:
-        result = _try_gemini(prompt)
-        if result["text"]:
-            _log(db, profile_id, "gemini-2.5-flash", prompt_summary,
-                 result["text"], None, result["tokens"], result["ms"])
-            return result["text"]
-        gemini_error = result["error"]
-    else:
-        gemini_error = "GEMINI_API_KEY not set"
+    DeepSeek-first saves Gemini's free quota for image scanning where it's needed.
+    """
 
-    # 2. Try DeepSeek
+    # 1. Try DeepSeek first (cheap, reliable, no rate limit)
     if settings.DEEPSEEK_API_KEY:
         result = _try_deepseek(prompt)
         if result["text"]:
             _log(db, profile_id, "deepseek-chat", prompt_summary,
-                 result["text"], f"gemini failed: {gemini_error}",
-                 result["tokens"], result["ms"])
+                 result["text"], None, result["tokens"], result["ms"])
             return result["text"]
         deepseek_error = result["error"]
     else:
         deepseek_error = "DEEPSEEK_API_KEY not set"
 
+    # 2. Fallback to Gemini
+    if settings.GEMINI_API_KEY:
+        result = _try_gemini(prompt)
+        if result["text"]:
+            _log(db, profile_id, "gemini-2.5-flash", prompt_summary,
+                 result["text"], f"deepseek failed: {deepseek_error}",
+                 result["tokens"], result["ms"])
+            return result["text"]
+        gemini_error = result["error"]
+    else:
+        gemini_error = "GEMINI_API_KEY not set"
+
     # 3. Both failed — return None (caller will use rule-based fallback)
-    # Log the failure so we have an audit trail
     _log(db, profile_id, "failed", prompt_summary,
          "AI unavailable — both models failed",
-         f"gemini: {gemini_error}; deepseek: {deepseek_error}",
+         f"deepseek: {deepseek_error}; gemini: {gemini_error}",
          None, None)
     return None
 

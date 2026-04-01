@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
-import '../services/ocr_service.dart' show OcrResult; // type only — not called directly
+import '../services/ocr_service.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import 'reading_confirmation_screen.dart';
@@ -71,27 +71,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
   Future<void> _capture() async {
     if (_controller == null || !_controller!.value.isInitialized || _isCapturing) return;
 
-    // Pre-flight: photo scan needs internet for Gemini Vision
-    final reachable = await ConnectivityService().isServerReachable();
-    if (!reachable && mounted) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('No Internet'),
-          content: const Text(
-            'Photo scan requires an internet connection to analyze the image. '
-            'Please try again when connected, or use manual entry.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
+    // No internet check needed — local ML Kit OCR works offline
 
     setState(() => _isCapturing = true);
 
@@ -125,17 +105,31 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         ),
       );
 
-      // Use Gemini Vision via backend
-      // ML Kit on-device OCR is NOT used here — it has arm64 incompatibilities
-      // on iOS 26 that crash the app. If Gemini fails, user is prompted to enter manually.
+      // 1. Try local ML Kit OCR first (free, unlimited, on-device)
       OcrResult? result;
-      final token = await StorageService().getToken();
-      if (token != null) {
-        result = await HealthReadingService().parseImageWithGemini(
-          file,
-          widget.deviceType,
-          token,
-        );
+      try {
+        if (widget.deviceType == 'glucose') {
+          result = await OcrService.extractGlucose(file);
+        } else {
+          result = await OcrService.extractBloodPressure(file);
+        }
+      } catch (_) {
+        // ML Kit failed — fall through to Gemini
+      }
+
+      // 2. If local OCR didn't extract values, try Gemini Vision (API, may be rate-limited)
+      if (result == null || !result.hasValue) {
+        final token = await StorageService().getToken();
+        if (token != null) {
+          final geminiResult = await HealthReadingService().parseImageWithGemini(
+            file,
+            widget.deviceType,
+            token,
+          );
+          if (geminiResult != null && geminiResult.hasValue) {
+            result = geminiResult;
+          }
+        }
       }
 
       if (mounted) Navigator.of(context).pop();
