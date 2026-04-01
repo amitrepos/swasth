@@ -357,4 +357,21 @@ class HealthReadingService {
       throw Exception('Failed to get health score: $e');
     }
   }
+
+  /// Get streaks and points for all accessible profiles (family leaderboard).
+  Future<List<Map<String, dynamic>>> getFamilyStreaks(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/readings/family-streaks'),
+        headers: ApiClient.headers(token: token),
+      ).timeout(_kTimeout);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data['leaderboard'] ?? []);
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
 }

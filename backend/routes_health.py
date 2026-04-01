@@ -703,6 +703,77 @@ def get_trend_summary(
     return {"summary": summary, "period": period, "cached": False}
 
 
+@router.get("/readings/family-streaks")
+def get_family_streaks(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Get streak and points for all profiles the user has access to."""
+    accesses = (
+        db.query(models.ProfileAccess)
+        .filter(models.ProfileAccess.user_id == user.id)
+        .all()
+    )
+
+    today = date.today()
+    board = []
+
+    for access in accesses:
+        profile = db.query(models.Profile).filter(models.Profile.id == access.profile_id).first()
+        if not profile:
+            continue
+
+        days_with_readings = set()
+        for r in db.query(models.HealthReading).filter(
+            models.HealthReading.profile_id == access.profile_id,
+            models.HealthReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
+        ).all():
+            days_with_readings.add(r.reading_timestamp.date())
+
+        streak = 0
+        if today in days_with_readings:
+            check_day = today
+        elif (today - timedelta(days=1)) in days_with_readings:
+            check_day = today - timedelta(days=1)
+        else:
+            check_day = None
+        while check_day and check_day in days_with_readings:
+            streak += 1
+            check_day -= timedelta(days=1)
+
+        total = db.query(func.count(models.HealthReading.id)).filter(
+            models.HealthReading.profile_id == access.profile_id,
+        ).scalar() or 0
+
+        pts = total * 10
+        if streak >= 30: pts += 1500
+        elif streak >= 14: pts += 700
+        elif streak >= 7: pts += 300
+        elif streak >= 3: pts += 100
+
+        week_activity = []
+        for d in range(6, -1, -1):
+            day = today - timedelta(days=d)
+            week_activity.append({
+                "date": day.isoformat(),
+                "weekday": day.strftime("%a"),
+                "has_reading": day in days_with_readings,
+            })
+
+        board.append({
+            "profile_id": access.profile_id,
+            "profile_name": profile.name,
+            "access_level": access.access_level,
+            "streak_days": streak,
+            "total_readings": total,
+            "points": pts,
+            "week_activity": week_activity,
+        })
+
+    board.sort(key=lambda x: (x["streak_days"], x["points"]), reverse=True)
+    return {"leaderboard": board}
+
+
 @router.get("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
 def get_reading(
     reading_id: int,
