@@ -64,38 +64,39 @@ class TestFallbackChain:
 class TestAuditLogging:
     """Verify every AI call creates an audit row in ai_insight_logs."""
 
-    def test_gemini_success_logged(self, db, test_user):
-        with patch.object(ai_service, '_try_gemini', return_value={
-            'text': 'Good insight', 'error': None, 'tokens': 60, 'ms': 300,
+    def test_deepseek_success_logged(self, db, test_user):
+        """DeepSeek is tried first (cheap, no rate limit)."""
+        with patch.object(ai_service, '_try_deepseek', return_value={
+            'text': 'Good insight', 'error': None, 'tokens': 40, 'ms': 200,
         }), patch('ai_service.settings') as mock_settings:
-            mock_settings.GEMINI_API_KEY = 'fake-key'
-            mock_settings.DEEPSEEK_API_KEY = None
+            mock_settings.DEEPSEEK_API_KEY = 'fake-key'
+            mock_settings.GEMINI_API_KEY = None
             ai_service.generate_health_insight('prompt', 1, db, 'glucose avg 120')
 
         log = db.query(models.AiInsightLog).order_by(models.AiInsightLog.id.desc()).first()
         assert log is not None
-        assert log.model_used == 'gemini-2.5-flash'
+        assert log.model_used == 'deepseek-chat'
         assert log.response_text == 'Good insight'
         assert log.fallback_reason is None
-        assert log.tokens_used == 60
-        assert log.latency_ms == 300
+        assert log.tokens_used == 40
         assert log.prompt_summary == 'glucose avg 120'
 
-    def test_deepseek_fallback_logged_with_reason(self, db, test_user):
-        with patch.object(ai_service, '_try_gemini', return_value={
-            'text': None, 'error': '429 RATE_LIMITED', 'tokens': None, 'ms': 50,
-        }), patch.object(ai_service, '_try_deepseek', return_value={
-            'text': 'Fallback insight', 'error': None, 'tokens': 40, 'ms': 2000,
+    def test_gemini_fallback_logged_with_reason(self, db, test_user):
+        """When DeepSeek fails, falls back to Gemini."""
+        with patch.object(ai_service, '_try_deepseek', return_value={
+            'text': None, 'error': 'timeout', 'tokens': None, 'ms': 50,
+        }), patch.object(ai_service, '_try_gemini', return_value={
+            'text': 'Fallback insight', 'error': None, 'tokens': 60, 'ms': 300,
         }), patch('ai_service.settings') as mock_settings:
-            mock_settings.GEMINI_API_KEY = 'fake-key'
             mock_settings.DEEPSEEK_API_KEY = 'fake-key'
+            mock_settings.GEMINI_API_KEY = 'fake-key'
             ai_service.generate_health_insight('prompt', 1, db, 'bp avg 140/90')
 
         log = db.query(models.AiInsightLog).order_by(models.AiInsightLog.id.desc()).first()
         assert log is not None
-        assert log.model_used == 'deepseek-chat'
+        assert log.model_used == 'gemini-2.5-flash'
         assert log.response_text == 'Fallback insight'
-        assert 'gemini failed: 429' in log.fallback_reason
+        assert 'deepseek failed: timeout' in log.fallback_reason
 
     def test_both_fail_logged(self, db, test_user):
         with patch.object(ai_service, '_try_gemini', return_value={
