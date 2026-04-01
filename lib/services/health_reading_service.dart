@@ -178,15 +178,21 @@ const _kTimeout = Duration(seconds: 20);
 class HealthReadingService {
   static String baseUrl = '${AppConfig.serverHost}/api'; // Use /api prefix for health endpoints
 
-  /// Save a new health reading
-  Future<HealthReading> saveReading(HealthReading reading, String token) async {
+  /// Save a new health reading. Returns {reading, alert?} map.
+  Future<Map<String, dynamic>> saveReading(HealthReading reading, String token) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/readings'),
         headers: ApiClient.headers(token: token),
         body: jsonEncode(reading.toJson()),
       ).timeout(_kTimeout);
-      if (response.statusCode == 201) return HealthReading.fromJson(jsonDecode(response.body));
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        return {
+          'reading': HealthReading.fromJson(body),
+          'alert': body['alert'],
+        };
+      }
       throw Exception(ApiClient.errorDetail(response, 'Failed to save reading'));
     } catch (e) {
       throw Exception('Failed to save reading: $e');

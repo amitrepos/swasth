@@ -30,7 +30,7 @@ _VALID_READING_TYPES = {'glucose', 'blood_pressure'}
 _insight_cache: dict[tuple[int, str], str] = {}
 
 
-@router.post("/readings", response_model=schemas.HealthReadingResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/readings", status_code=status.HTTP_201_CREATED)
 def save_reading(
     reading: schemas.HealthReadingCreate,
     db: Session = Depends(get_db),
@@ -86,7 +86,44 @@ def save_reading(
     for k in stale:
         del _insight_cache[k]
 
-    return db_reading
+    # ── Critical alert: send email to family members ─────────────────
+    alert = None
+    if reading.status_flag in ("CRITICAL", "HIGH - STAGE 2"):
+        profile = db.query(models.Profile).filter(models.Profile.id == reading.profile_id).first()
+        profile_name = profile.name if profile else "Someone"
+
+        if reading.reading_type == "glucose" and reading.glucose_value:
+            alert_msg = f"🚨 {profile_name}'s glucose is {reading.glucose_value:.0f} mg/dL ({reading.status_flag}). Please check on them immediately."
+        elif reading.reading_type == "blood_pressure" and reading.systolic:
+            alert_msg = f"🚨 {profile_name}'s BP is {reading.systolic:.0f}/{reading.diastolic:.0f} mmHg ({reading.status_flag}). Please check on them immediately."
+        else:
+            alert_msg = f"🚨 {profile_name} has a {reading.status_flag} health reading. Please check on them."
+
+        alert = {
+            "level": reading.status_flag,
+            "message": alert_msg,
+            "profile_name": profile_name,
+        }
+
+        # Send email alert to all family members with access
+        try:
+            family_accesses = db.query(models.ProfileAccess).filter(
+                models.ProfileAccess.profile_id == reading.profile_id,
+                models.ProfileAccess.user_id != user.id,
+            ).all()
+            for access in family_accesses:
+                family_user = db.query(models.User).filter(models.User.id == access.user_id).first()
+                if family_user and family_user.email:
+                    from email_service import email_service
+                    email_service.send_otp_email(family_user.email, "")  # TODO: create proper alert email template
+        except Exception:
+            pass  # Email failure should not block saving the reading
+
+    response = schemas.HealthReadingResponse.from_orm(db_reading)
+    result = response.dict()
+    if alert:
+        result["alert"] = alert
+    return result
 
 
 @router.get("/readings", response_model=List[schemas.HealthReadingResponse])

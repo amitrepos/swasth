@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/ocr_service.dart';
 import '../services/health_reading_service.dart';
@@ -157,8 +158,9 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
         );
       }
 
+      Map<String, dynamic>? saveResult;
       try {
-        await _readingService.saveReading(reading, token);
+        saveResult = await _readingService.saveReading(reading, token);
       } catch (e) {
         final errStr = e.toString();
         final isNetworkError =
@@ -190,6 +192,14 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
       }
 
       if (!mounted) return;
+
+      // Check for critical alert
+      final alert = saveResult?['alert'] as Map<String, dynamic>?;
+      if (alert != null) {
+        await _showCriticalAlert(context, alert);
+      }
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.readingSavedSuccess)),
       );
@@ -210,6 +220,65 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<void> _showCriticalAlert(BuildContext ctx, Map<String, dynamic> alert) async {
+    final message = alert['message'] as String? ?? 'Critical reading detected.';
+    final profileName = alert['profile_name'] as String? ?? 'Patient';
+
+    await showDialog(
+      context: ctx,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Text('🚨', style: TextStyle(fontSize: 28)),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('Critical Alert', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.statusCritical)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message, style: const TextStyle(fontSize: 15, height: 1.5)),
+            const SizedBox(height: 16),
+            const Text(
+              'Share this alert with your family members on WhatsApp so they can check on you.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Dismiss'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              final whatsappMsg = Uri.encodeComponent(
+                '$message\n\n— Sent from Swasth Health App',
+              );
+              launchUrl(
+                Uri.parse('https://wa.me/?text=$whatsappMsg'),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            icon: const Icon(Icons.share, size: 18),
+            label: const Text('Share on WhatsApp'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF25D366),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _glucoseStatus(double v) {

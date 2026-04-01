@@ -950,7 +950,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
       
       print('No duplicate found. Calling API to save reading...');
-      final savedReading = await HealthReadingService().saveReading(healthReading, token);
+      final saveResult = await HealthReadingService().saveReading(healthReading, token);
+      final savedReading = saveResult['reading'] as HealthReading;
       print('SUCCESS: Reading saved with ID: ${savedReading.id}');
       
       // Add to local list after successful save
