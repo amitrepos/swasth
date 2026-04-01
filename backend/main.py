@@ -2,6 +2,9 @@ from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from database import engine, Base
 from config import settings
 import models
@@ -18,11 +21,19 @@ load_dotenv()
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# ---------------------------------------------------------------------------
+# Rate limiter — shared instance used by route files via app.state.limiter
+# ---------------------------------------------------------------------------
+_rate_limit_enabled = os.getenv("TESTING", "").lower() != "true"
+limiter = Limiter(key_func=get_remote_address, enabled=_rate_limit_enabled)
+
 app = FastAPI(
     title="Swasth Health App API",
     description="Backend API for Swasth Health Application",
     version="1.0.0"
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ---------------------------------------------------------------------------
 # HTTPS redirect (enable in production via REQUIRE_HTTPS=true in .env)

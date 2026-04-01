@@ -2,17 +2,23 @@
 # Related: backend/main.py, lib/services/health_reading_service.dart
 
 """Health Readings API Routes"""
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date, timedelta
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+import os
 import json
 import models
 import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
+
+_enabled = os.environ.get("TESTING", "").lower() != "true"
+limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 from encryption_service import encrypt, encrypt_float
 from health_utils import age_context_bp, age_context_glucose
 
@@ -597,7 +603,9 @@ def delete_reading(
 
 
 @router.post("/readings/parse-image")
+@limiter.limit("20/minute")
 async def parse_image_with_gemini(
+    request: Request,
     device_type: str,
     file: UploadFile = File(...),
     user: models.User = Depends(get_current_user),
