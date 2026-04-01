@@ -6,7 +6,6 @@ import '../services/ocr_service.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import 'history_screen.dart';
 
 class ReadingConfirmationScreen extends StatefulWidget {
   final OcrResult? ocrResult;
@@ -179,13 +178,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
               backgroundColor: AppColors.amber,
             ),
           );
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => HistoryScreen(profileId: widget.profileId),
-            ),
-            (route) => route.isFirst,
-          );
+          Navigator.of(context).popUntil((route) => route.isFirst);
           return;
         }
         rethrow;
@@ -204,13 +197,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
         SnackBar(content: Text(l10n.readingSavedSuccess)),
       );
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HistoryScreen(profileId: widget.profileId),
-        ),
-        (route) => route.isFirst,
-      );
+      // Pop back to the Shell (keeps bottom nav + correct profile)
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
