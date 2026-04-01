@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Text, ARRAY, DateTime, Boolean, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Column, Integer, String, Float, Text, ARRAY, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.sql import func
 from database import Base
 
@@ -18,6 +18,8 @@ class User(Base):
     consent_language = Column(String, nullable=True)
     ai_consent = Column(Boolean, default=False)
     ai_consent_timestamp = Column(DateTime(timezone=True), nullable=True)
+    is_admin = Column(Boolean, default=False)
+    last_login_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -171,6 +173,24 @@ class ChatContextProfile(Base):
     summary = Column(Text, nullable=False, default="")
     message_count = Column(Integer, nullable=False, default=0)
     last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class TrendSummaryCache(Base):
+    """Cached AI-generated trend summary per profile/period/day."""
+    __tablename__ = "trend_summary_cache"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False)
+    period_days = Column(Integer, nullable=False)
+    cache_date = Column(Date, nullable=False)
+    summary_text = Column(Text, nullable=False)
+    model_used = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('profile_id', 'period_days', 'cache_date', name='uq_trend_summary'),
+        Index("ix_trend_cache_lookup", "profile_id", "period_days", "cache_date"),
+    )
 
 
 class PasswordResetOTP(Base):

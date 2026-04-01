@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swasth Admin Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f9ff; color: #1e293b; }
+  .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  .login-box { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); width: 360px; }
+  .login-box h2 { margin-bottom: 24px; text-align: center; }
+  .login-box input { width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+  .login-box button { width: 100%; padding: 12px; background: #0ea5e9; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .login-box button:hover { background: #0284c7; }
+  .login-box .error { color: #ef4444; font-size: 13px; margin-bottom: 8px; display: none; }
+
+  .dashboard { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .header h1 { font-size: 24px; }
+  .header button { padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
+  .card .label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; }
+  .card .value { font-size: 32px; font-weight: 800; margin-top: 4px; }
+  .card .sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .card .value.green { color: #10b981; }
+  .card .value.blue { color: #0ea5e9; }
+  .card .value.amber { color: #f59e0b; }
+  .card .value.red { color: #ef4444; }
+
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
+  .chart-card h3 { font-size: 13px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+
+  .section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); margin-bottom: 16px; }
+  .section h3 { font-size: 13px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; border-bottom: 2px solid #e2e8f0; font-weight: 600; color: #64748b; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
+  tr:hover td { background: #f8fafc; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge-admin { background: #dbeafe; color: #1d4ed8; }
+  .badge-user { background: #f1f5f9; color: #64748b; }
+
+  @media (max-width: 768px) {
+    .charts { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-container" id="loginSection">
+  <div class="login-box">
+    <h2>🏥 Swasth Admin</h2>
+    <div class="error" id="loginError">Invalid credentials or not an admin</div>
+    <input type="email" id="email" placeholder="Email" value="">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Sign In</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard" id="dashboard">
+  <div class="header">
+    <h1>📊 Swasth Admin Dashboard</h1>
+    <div>
+      <span id="genTime" style="font-size:12px;color:#94a3b8;margin-right:12px"></span>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="grid" id="kpiGrid"></div>
+
+  <!-- Charts -->
+  <div class="charts">
+    <div class="chart-card">
+      <h3>Signups (30 days)</h3>
+      <canvas id="signupsChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Readings (30 days)</h3>
+      <canvas id="readingsChart"></canvas>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div class="chart-card">
+      <h3>Streak Distribution</h3>
+      <canvas id="streakChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Clinical Outcomes</h3>
+      <canvas id="clinicalChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Users table -->
+  <div class="section">
+    <h3>Users</h3>
+    <table id="usersTable">
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Profiles</th><th>Readings</th><th>Last Login</th><th>Signed Up</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let TOKEN = '';
+const API = window.location.origin;
+
+async function login() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  try {
+    const resp = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email, password})
+    });
+    const data = await resp.json();
+    if (!data.access_token) throw new Error('No token');
+    TOKEN = data.access_token;
+
+    // Test admin access
+    const test = await fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+    if (test.status === 403) throw new Error('Not admin');
+
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadDashboard();
+  } catch(e) {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function logout() {
+  TOKEN = '';
+  document.getElementById('loginSection').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+}
+
+async function loadDashboard() {
+  const [metricsResp, usersResp] = await Promise.all([
+    fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}}),
+    fetch(`${API}/api/admin/users`, {headers: {'Authorization': `Bearer ${TOKEN}`}})
+  ]);
+  const metrics = await metricsResp.json();
+  const users = await usersResp.json();
+
+  document.getElementById('genTime').textContent = `Updated: ${new Date(metrics.generated_at).toLocaleString()}`;
+
+  // KPI Cards
+  const kpis = [
+    {label: 'Total Users', value: metrics.total_users, color: 'blue'},
+    {label: 'DAU', value: metrics.dau, color: 'green'},
+    {label: 'MAU', value: metrics.mau, color: 'blue'},
+    {label: 'Stickiness (DAU/MAU)', value: metrics.stickiness_pct + '%', color: metrics.stickiness_pct > 20 ? 'green' : 'amber'},
+    {label: 'Total Readings', value: metrics.total_readings.toLocaleString(), color: 'blue'},
+    {label: 'Readings/User/Week', value: metrics.readings_per_user_week, color: 'blue'},
+    {label: 'D1 Retention', value: metrics.d1_retention_pct != null ? metrics.d1_retention_pct + '%' : '—', color: 'green'},
+    {label: 'D7 Retention', value: metrics.d7_retention_pct != null ? metrics.d7_retention_pct + '%' : '—', color: 'amber'},
+    {label: 'Chat Adoption', value: metrics.chat_adoption_pct + '%', color: 'blue'},
+    {label: 'Invite Accept Rate', value: metrics.invite_accept_rate_pct + '%', color: 'green'},
+    {label: 'AI Fallback Rate', value: metrics.ai_fallback_rate_pct + '%', color: metrics.ai_fallback_rate_pct < 20 ? 'green' : 'red'},
+    {label: 'Glucose Normal %', value: metrics.glucose_normal_pct + '%', color: metrics.glucose_normal_pct > 50 ? 'green' : 'red'},
+  ];
+
+  const grid = document.getElementById('kpiGrid');
+  grid.innerHTML = kpis.map(k => `
+    <div class="card">
+      <div class="label">${k.label}</div>
+      <div class="value ${k.color}">${k.value}</div>
+    </div>
+  `).join('');
+
+  // Signups chart
+  new Chart(document.getElementById('signupsChart'), {
+    type: 'bar',
+    data: {
+      labels: metrics.signups_by_day.map(d => d.date.slice(5)),
+      datasets: [{label: 'Signups', data: metrics.signups_by_day.map(d => d.count), backgroundColor: '#0ea5e9'}]
+    },
+    options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {stepSize: 1}}}}
+  });
+
+  // Readings chart
+  new Chart(document.getElementById('readingsChart'), {
+    type: 'line',
+    data: {
+      labels: metrics.readings_by_day.map(d => d.date.slice(5)),
+      datasets: [{label: 'Readings', data: metrics.readings_by_day.map(d => d.count), borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16,185,129,0.1)'}]
+    },
+    options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}}}
+  });
+
+  // Streak distribution
+  const sd = metrics.streak_distribution;
+  new Chart(document.getElementById('streakChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(sd),
+      datasets: [{data: Object.values(sd), backgroundColor: ['#ef4444','#f59e0b','#eab308','#22c55e','#10b981','#059669']}]
+    },
+    options: {plugins: {legend: {position: 'bottom'}}}
+  });
+
+  // Clinical outcomes
+  new Chart(document.getElementById('clinicalChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Glucose Normal%', 'BP Normal%', 'Critical Readings'],
+      datasets: [{
+        data: [metrics.glucose_normal_pct, metrics.bp_normal_pct, metrics.glucose_critical_count],
+        backgroundColor: ['#10b981', '#0ea5e9', '#ef4444']
+      }]
+    },
+    options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}}}
+  });
+
+  // Users table
+  const tbody = document.querySelector('#usersTable tbody');
+  tbody.innerHTML = users.users.map(u => `
+    <tr>
+      <td><strong>${u.full_name}</strong></td>
+      <td>${u.email}</td>
+      <td><span class="badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">${u.is_admin ? 'Admin' : 'User'}</span></td>
+      <td>${u.profiles_count}</td>
+      <td>${u.total_readings}</td>
+      <td>${u.last_login ? new Date(u.last_login).toLocaleDateString() : '—'}</td>
+      <td>${u.signed_up ? new Date(u.signed_up).toLocaleDateString() : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+// Enter key triggers login
+document.getElementById('password').addEventListener('keypress', (e) => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>

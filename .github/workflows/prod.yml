@@ -1,0 +1,70 @@
+name: PROD Manual Deploy
+
+on: [workflow_dispatch]
+
+jobs:
+  # ── Deploy backend to PROD ─────────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend to PROD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy PROD FastAPI
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/swasth_prod
+            git pull origin master
+            source venv/bin/activate
+            cd backend
+            pip install -r requirements.txt
+
+            # Restart or start the PROD backend via PM2
+            pm2 restart swasth-prod || pm2 start "python3 main.py" --name "swasth-prod" --cwd /var/www/swasth_prod/backend
+            echo "✅ Backend PROD deployed on port 8008"
+
+  # ── Build & deploy Flutter web to PROD ─────────────────────────────────────
+  deploy-web:
+    name: Deploy Flutter Web to PROD
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create .env for asset bundling
+        run: echo "SERVER_HOST=http://localhost:8000" > .env
+
+      - run: flutter pub get
+
+      - name: Build Flutter Web
+        run: |
+          flutter build web --release \
+            --dart-define=SERVER_HOST=http://${{ secrets.SERVER_HOST }}:8011
+
+      - name: Deploy web to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "build/web/*"
+          target: "/var/www/swasth_prod/web"
+          strip_components: 2
+          overwrite: true
+
+      - name: Reload Nginx
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✅ Flutter Web PROD deployed"

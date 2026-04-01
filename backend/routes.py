@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+import os
 import models
 import schemas
 import auth
@@ -10,10 +13,13 @@ from config import settings
 from dependencies import get_current_user
 
 router = APIRouter()
+_enabled = os.environ.get("TESTING", "").lower() != "true"
+limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 
 
 @router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
-def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, user: schemas.UserRegister, db: Session = Depends(get_db)):
     """Register a new user and create their initial 'My Health' profile."""
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
@@ -73,7 +79,8 @@ def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=schemas.Token)
-def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, user: schemas.UserLogin, db: Session = Depends(get_db)):
     """Login user and return JWT token."""
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if not db_user or not auth.verify_password(user.password, db_user.password_hash):
@@ -82,6 +89,8 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    db_user.last_login_at = datetime.utcnow()
+    db.commit()
     access_token = auth.create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -93,9 +102,10 @@ def get_current_user_info(user: models.User = Depends(get_current_user)):
 
 
 @router.post("/forgot-password")
-def request_password_reset(request: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def request_password_reset(request: Request, body: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Request password reset OTP."""
-    user = db.query(models.User).filter(models.User.email == request.email).first()
+    user = db.query(models.User).filter(models.User.email == body.email).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -105,10 +115,10 @@ def request_password_reset(request: schemas.ForgotPasswordRequest, db: Session =
     otp = email_service.generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
 
-    db.add(models.PasswordResetOTP(email=request.email, otp=otp, expires_at=expires_at))
+    db.add(models.PasswordResetOTP(email=body.email, otp=otp, expires_at=expires_at))
     db.commit()
 
-    if not email_service.send_otp_email(request.email, otp):
+    if not email_service.send_otp_email(body.email, otp):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send OTP email. Please try again later."
@@ -118,26 +128,28 @@ def request_password_reset(request: schemas.ForgotPasswordRequest, db: Session =
 
 
 @router.post("/verify-otp")
-def verify_reset_otp(request: schemas.VerifyOTPRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def verify_reset_otp(request: Request, body: schemas.VerifyOTPRequest, db: Session = Depends(get_db)):
     """Verify OTP for password reset."""
-    otp_record = _get_valid_otp(db, request.email, request.otp)
+    otp_record = _get_valid_otp(db, body.email, body.otp)
     if not otp_record:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OTP")
     return {"message": "OTP verified successfully"}
 
 
 @router.post("/reset-password")
-def reset_password(request: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
     """Reset password using OTP."""
-    otp_record = _get_valid_otp(db, request.email, request.otp)
+    otp_record = _get_valid_otp(db, body.email, body.otp)
     if not otp_record:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OTP")
 
-    user = db.query(models.User).filter(models.User.email == request.email).first()
+    user = db.query(models.User).filter(models.User.email == body.email).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    user.password_hash = auth.get_password_hash(request.new_password)
+    user.password_hash = auth.get_password_hash(body.new_password)
     user.updated_at = datetime.utcnow()
     otp_record.is_used = True
     db.commit()

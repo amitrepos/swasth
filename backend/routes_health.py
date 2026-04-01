@@ -2,17 +2,23 @@
 # Related: backend/main.py, lib/services/health_reading_service.dart
 
 """Health Readings API Routes"""
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date, timedelta
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+import os
 import json
 import models
 import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
+
+_enabled = os.environ.get("TESTING", "").lower() != "true"
+limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 from encryption_service import encrypt, encrypt_float
 from health_utils import age_context_bp, age_context_glucose
 
@@ -560,6 +566,214 @@ Rules:
     return {"insight": fallback}
 
 
+@router.get("/readings/trend-summary")
+def get_trend_summary(
+    profile_id: int,
+    period: int = Query(default=7, ge=7, le=90),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Layered trend summary: reuses dashboard AI insight + appends period-specific data.
+
+    No extra Gemini calls — consistent messaging across all views, instant response.
+    """
+    get_profile_access_or_403(profile_id, user, db)
+
+    today = date.today()
+
+    # ── Cache check ──────────────────────────────────────────────────
+    cached = db.query(models.TrendSummaryCache).filter(
+        models.TrendSummaryCache.profile_id == profile_id,
+        models.TrendSummaryCache.period_days == period,
+        models.TrendSummaryCache.cache_date == today,
+    ).first()
+    if cached:
+        return {"summary": cached.summary_text, "period": period, "cached": True}
+
+    # ── 1. Fetch dashboard AI insight (single source of truth) ───────
+    latest_insight = (
+        db.query(models.AiInsightLog)
+        .filter(
+            models.AiInsightLog.profile_id == profile_id,
+            models.AiInsightLog.model_used != "failed",
+        )
+        .order_by(models.AiInsightLog.id.desc())
+        .first()
+    )
+    base_insight = latest_insight.response_text if latest_insight else ""
+
+    # ── 2. Compute period-specific data stats ────────────────────────
+    period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time())
+    prev_period_start = datetime.combine(today - timedelta(days=period * 2 - 1), datetime.min.time())
+
+    readings = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_timestamp >= period_start,
+        )
+        .order_by(models.HealthReading.reading_timestamp.asc())
+        .all()
+    )
+
+    if not readings and not base_insight:
+        return {"summary": f"No readings recorded in the last {period} days. Start logging to see trend insights.", "period": period, "cached": False}
+
+    # Glucose stats
+    glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
+    data_parts = []
+    if glucose_vals:
+        avg_g = sum(glucose_vals) / len(glucose_vals)
+        mid = len(glucose_vals) // 2
+        first_half = sum(glucose_vals[:mid]) / max(mid, 1)
+        second_half = sum(glucose_vals[mid:]) / max(len(glucose_vals) - mid, 1)
+        if second_half < first_half * 0.95:
+            trend = "improving ↓"
+        elif second_half > first_half * 1.05:
+            trend = "rising ↑"
+        else:
+            trend = "stable →"
+        normal_pct = sum(1 for v in glucose_vals if 70 <= v <= 130) * 100 // len(glucose_vals)
+        data_parts.append(
+            f"Glucose: avg {avg_g:.0f} mg/dL ({len(glucose_vals)} readings), "
+            f"range {min(glucose_vals):.0f}–{max(glucose_vals):.0f}, "
+            f"{normal_pct}% normal, trend {trend}"
+        )
+
+    # BP stats
+    bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+    if bp_readings:
+        sys_vals = [s for s, _ in bp_readings]
+        dia_vals = [d for _, d in bp_readings]
+        avg_sys = sum(sys_vals) / len(sys_vals)
+        avg_dia = sum(dia_vals) / len(dia_vals)
+        elevated = sum(1 for s, d in bp_readings if s > 140 or d > 90)
+        data_parts.append(
+            f"BP: avg {avg_sys:.0f}/{avg_dia:.0f} mmHg ({len(bp_readings)} readings), "
+            f"{elevated} elevated"
+        )
+
+    # Previous period comparison
+    prev_readings = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_timestamp >= prev_period_start,
+            models.HealthReading.reading_timestamp < period_start,
+        )
+        .all()
+    )
+    prev_glucose = [r.glucose_value for r in prev_readings if r.reading_type == "glucose" and r.glucose_value]
+    comparison = ""
+    if prev_glucose and glucose_vals:
+        prev_avg = sum(prev_glucose) / len(prev_glucose)
+        curr_avg = sum(glucose_vals) / len(glucose_vals)
+        diff = curr_avg - prev_avg
+        if abs(diff) > 5:
+            direction = "up" if diff > 0 else "down"
+            comparison = f"vs previous {period}d: glucose {direction} {abs(diff):.0f} mg/dL"
+
+    # ── 3. Assemble layered summary ──────────────────────────────────
+    period_label = f"{period}-day"
+    data_line = ". ".join(data_parts)
+    if comparison:
+        data_line += f". {comparison}"
+
+    if base_insight:
+        summary = f"{base_insight}\n\n{period_label} details: {data_line}." if data_line else base_insight
+    elif data_line:
+        summary = f"{period_label} summary: {data_line}."
+    else:
+        summary = f"You have {len(readings)} readings in the last {period} days. Keep tracking for better insights!"
+
+    # ── Cache ────────────────────────────────────────────────────────
+    try:
+        cache_entry = models.TrendSummaryCache(
+            profile_id=profile_id,
+            period_days=period,
+            cache_date=today,
+            summary_text=summary,
+            model_used="layered",
+        )
+        db.add(cache_entry)
+        db.commit()
+    except Exception:
+        db.rollback()
+
+    return {"summary": summary, "period": period, "cached": False}
+
+
+@router.get("/readings/family-streaks")
+def get_family_streaks(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Get streak and points for all profiles the user has access to."""
+    accesses = (
+        db.query(models.ProfileAccess)
+        .filter(models.ProfileAccess.user_id == user.id)
+        .all()
+    )
+
+    today = date.today()
+    board = []
+
+    for access in accesses:
+        profile = db.query(models.Profile).filter(models.Profile.id == access.profile_id).first()
+        if not profile:
+            continue
+
+        days_with_readings = set()
+        for r in db.query(models.HealthReading).filter(
+            models.HealthReading.profile_id == access.profile_id,
+            models.HealthReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
+        ).all():
+            days_with_readings.add(r.reading_timestamp.date())
+
+        streak = 0
+        if today in days_with_readings:
+            check_day = today
+        elif (today - timedelta(days=1)) in days_with_readings:
+            check_day = today - timedelta(days=1)
+        else:
+            check_day = None
+        while check_day and check_day in days_with_readings:
+            streak += 1
+            check_day -= timedelta(days=1)
+
+        total = db.query(func.count(models.HealthReading.id)).filter(
+            models.HealthReading.profile_id == access.profile_id,
+        ).scalar() or 0
+
+        pts = total * 10
+        if streak >= 30: pts += 1500
+        elif streak >= 14: pts += 700
+        elif streak >= 7: pts += 300
+        elif streak >= 3: pts += 100
+
+        week_activity = []
+        for d in range(6, -1, -1):
+            day = today - timedelta(days=d)
+            week_activity.append({
+                "date": day.isoformat(),
+                "weekday": day.strftime("%a"),
+                "has_reading": day in days_with_readings,
+            })
+
+        board.append({
+            "profile_id": access.profile_id,
+            "profile_name": profile.name,
+            "access_level": access.access_level,
+            "streak_days": streak,
+            "total_readings": total,
+            "points": pts,
+            "week_activity": week_activity,
+        })
+
+    board.sort(key=lambda x: (x["streak_days"], x["points"]), reverse=True)
+    return {"leaderboard": board}
+
+
 @router.get("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
 def get_reading(
     reading_id: int,
@@ -597,7 +811,9 @@ def delete_reading(
 
 
 @router.post("/readings/parse-image")
+@limiter.limit("20/minute")
 async def parse_image_with_gemini(
+    request: Request,
     device_type: str,
     file: UploadFile = File(...),
     user: models.User = Depends(get_current_user),

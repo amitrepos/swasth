@@ -44,6 +44,9 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | B11 | Reading reminders | ❌ Not started | No `flutter_local_notifications` in `pubspec.yaml`. No reminder scheduling. |
 | B12 | Weekly weight reminder | ❌ Not started | Depends on B11. |
 | B13 | Blurry photo detection | ✅ Done | `photo_scan_screen.dart` — near-empty OCR result shows "Photo is blurry — retake" dialog. |
+| B21 | Store device photo with reading | ❌ Not started | Currently images are discarded after OCR. Should save to server filesystem (`/uploads/{profile_id}/{reading_id}.jpg`) and add `image_path` column to `health_readings` table. Provides audit trail, dispute resolution, and ability to re-process with better AI models later. |
+| B22 | Pull data from Apple Health / Google Health Connect | ❌ Not started | Use `health` Flutter package to read steps, heart rate, sleep, weight from device health APIs. Requires user permission. Enables cross-data AI insights (glucose × activity × sleep). See plan below. |
+| B23 | Voice conversation with AI | ❌ Not started | Phase 2. Use phone keyboard's built-in voice-to-text for now (zero cost). Full voice would need STT + TTS APIs (~$50-100/mo at scale). Architecture doesn't change — voice input feeds same chat + memory system. |
 | B14 | Flash toggle | ✅ Done | `photo_scan_screen.dart` — flash on/off button, uses `CameraController.setFlashMode()`. |
 | B15 | Meal context tag | ✅ Done | `reading_confirmation_screen.dart` — Fasting / Before Meal / After Meal chips. Stored in `notes`. |
 | B16 | BLE auto-sync — glucometer | ✅ Done | `lib/ble/glucose_service.dart` — full RACP protocol, SFLOAT decoding, timestamp, sample type/location, auto-fetches historical records. Integrated into `dashboard_screen.dart`. |

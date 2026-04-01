@@ -9,6 +9,7 @@ import 'dashboard_screen.dart';
 import 'select_profile_screen.dart';
 import 'manage_access_screen.dart';
 import 'trend_chart_screen.dart';
+import 'shell_screen.dart';
 import '../services/storage_service.dart';
 import '../services/health_reading_service.dart';
 import '../services/profile_service.dart';
@@ -251,12 +252,17 @@ class _HomeScreenState extends State<HomeScreen>
                             isLoading: isLoading,
                             profileId: _activeProfileId,
                             onTap: _activeProfileId != null
-                                ? () => Navigator.push(
+                                ? () async {
+                                    final result = await Navigator.push<String>(
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => TrendChartScreen(profileId: _activeProfileId!),
                                       ),
-                                    )
+                                    );
+                                    if (result == 'open_chat' && mounted) {
+                                      ShellScreen.switchToTab(4);
+                                    }
+                                  }
                                 : null,
                             onInfoTap: () {
                               final score = (data?['score'] as num?)?.toInt() ?? 50;
