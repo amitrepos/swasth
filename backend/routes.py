@@ -89,6 +89,8 @@ def login(request: Request, user: schemas.UserLogin, db: Session = Depends(get_d
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    db_user.last_login_at = datetime.utcnow()
+    db.commit()
     access_token = auth.create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
