@@ -73,17 +73,22 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   @override
+  @override
   void dispose() {
     _connectivityTimer?.cancel();
     _profileRefreshTimer?.cancel();
+    if (_instance == this) _instance = null;
     super.dispose();
   }
 
   Future<void> _refreshProfileIfChanged() async {
+    if (!mounted) return;
     final storage = StorageService();
     final id = await storage.getActiveProfileId();
-    if (id != null && id != _profileId && mounted) {
+    if (!mounted) return;
+    if (id != null && id != _profileId) {
       final name = await storage.getActiveProfileName() ?? 'Health';
+      if (!mounted) return;
       setState(() { _profileId = id; _profileName = name; });
     }
   }
@@ -98,6 +103,7 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   Future<void> _checkConnectivity() async {
+    if (!mounted) return;
     final reachable = await ConnectivityService().isServerReachable();
     if (!mounted) return;
     final wasOffline = _isOffline;
