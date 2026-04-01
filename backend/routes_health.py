@@ -566,6 +566,158 @@ Rules:
     return {"insight": fallback}
 
 
+@router.get("/readings/trend-summary")
+def get_trend_summary(
+    profile_id: int,
+    period: int = Query(default=7, ge=7, le=90),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """AI-generated trend summary for 7/30/90 day periods.
+
+    Combines health readings + chat conversation memory + profile info
+    to produce a pattern-focused summary. Cached per (profile, period, day).
+    """
+    get_profile_access_or_403(profile_id, user, db)
+
+    today = date.today()
+
+    # ── Cache check ──────────────────────────────────────────────────
+    cached = db.query(models.TrendSummaryCache).filter(
+        models.TrendSummaryCache.profile_id == profile_id,
+        models.TrendSummaryCache.period_days == period,
+        models.TrendSummaryCache.cache_date == today,
+    ).first()
+    if cached:
+        return {"summary": cached.summary_text, "period": period, "cached": True}
+
+    # ── Fetch readings for the period ────────────────────────────────
+    period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time())
+    prev_period_start = datetime.combine(today - timedelta(days=period * 2 - 1), datetime.min.time())
+
+    readings = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_timestamp >= period_start,
+        )
+        .order_by(models.HealthReading.reading_timestamp.asc())
+        .all()
+    )
+
+    if not readings:
+        return {"summary": f"No readings recorded in the last {period} days. Start logging to see trend insights.", "period": period, "cached": False}
+
+    # ── Build data summaries ─────────────────────────────────────────
+    glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
+    bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+
+    glucose_summary = ""
+    if glucose_vals:
+        avg_g = sum(glucose_vals) / len(glucose_vals)
+        normal_g = sum(1 for v in glucose_vals if 70 <= v <= 130)
+        high_g = sum(1 for v in glucose_vals if v > 180)
+        # Compare first half vs second half for trend
+        mid = len(glucose_vals) // 2
+        first_half_avg = sum(glucose_vals[:mid]) / max(mid, 1)
+        second_half_avg = sum(glucose_vals[mid:]) / max(len(glucose_vals) - mid, 1)
+        trend_dir = "improving" if second_half_avg < first_half_avg else "worsening" if second_half_avg > first_half_avg * 1.05 else "stable"
+        glucose_summary = (
+            f"Glucose ({period}d, {len(glucose_vals)} readings): avg {avg_g:.0f} mg/dL, "
+            f"range {min(glucose_vals):.0f}–{max(glucose_vals):.0f}, "
+            f"{normal_g} normal, {high_g} critical (>180). Trend: {trend_dir}. "
+            f"First half avg: {first_half_avg:.0f}, second half avg: {second_half_avg:.0f}."
+        )
+
+    bp_summary = ""
+    if bp_readings:
+        sys_vals = [s for s, _ in bp_readings]
+        dia_vals = [d for _, d in bp_readings]
+        avg_sys = sum(sys_vals) / len(sys_vals)
+        avg_dia = sum(dia_vals) / len(dia_vals)
+        high_bp = sum(1 for s, d in bp_readings if s > 140 or d > 90)
+        bp_summary = (
+            f"BP ({period}d, {len(bp_readings)} readings): avg {avg_sys:.0f}/{avg_dia:.0f} mmHg, "
+            f"range {min(sys_vals):.0f}–{max(sys_vals):.0f}/{min(dia_vals):.0f}–{max(dia_vals):.0f}, "
+            f"{high_bp} elevated readings."
+        )
+
+    # ── Fetch conversation context (chat memory) ─────────────────────
+    ctx = db.query(models.ChatContextProfile).filter(
+        models.ChatContextProfile.profile_id == profile_id,
+    ).first()
+    conversation_context = ctx.summary if ctx else ""
+
+    # ── Profile info ─────────────────────────────────────────────────
+    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
+    age = profile.age if profile else None
+    gender = profile.gender if profile else "Unknown"
+    conditions = ", ".join(profile.medical_conditions) if (profile and profile.medical_conditions) else "None reported"
+    medications = profile.current_medications if (profile and profile.current_medications) else "None reported"
+
+    profile_desc = f"Patient: {age} years, {gender}. Conditions: {conditions}. Medications: {medications}."
+
+    # ── AI consent gate ──────────────────────────────────────────────
+    if not user.ai_consent:
+        # Rule-based summary without AI
+        parts = []
+        if glucose_summary:
+            parts.append(glucose_summary)
+        if bp_summary:
+            parts.append(bp_summary)
+        fallback = " ".join(parts) if parts else f"You have {len(readings)} readings in the last {period} days."
+        return {"summary": fallback, "period": period, "cached": False}
+
+    # ── Build AI prompt ──────────────────────────────────────────────
+    prompt = f"""You are a health analyst reviewing a patient's {period}-day health data. Write a 3-4 sentence summary focusing on PATTERNS and TRENDS, not individual readings.
+
+{profile_desc}
+
+{glucose_summary}
+
+{bp_summary}
+
+{f"What the patient has shared in conversations (important context — they may have mentioned new diagnoses, medication changes, lifestyle changes, or concerns):{chr(10)}{conversation_context}" if conversation_context else ""}
+
+Rules:
+- Focus on trends: is the patient getting better, worse, or stable?
+- If conversation context mentions a new diagnosis or medication change, connect it to the data patterns.
+- Be encouraging if improving, gently urgent if worsening.
+- Mention specific numbers sparingly — summarize the pattern, not the data.
+- Keep it personal and warm, not clinical.
+- 3-4 sentences maximum."""
+
+    insight = ai_service.generate_health_insight(
+        prompt, profile_id, db,
+        prompt_summary=f"trend-summary-{period}d",
+    )
+
+    if not insight:
+        # AI failed — return rule-based
+        parts = []
+        if glucose_summary:
+            parts.append(glucose_summary)
+        if bp_summary:
+            parts.append(bp_summary)
+        insight = " ".join(parts) if parts else f"You have {len(readings)} readings in the last {period} days."
+
+    # ── Cache the result ─────────────────────────────────────────────
+    try:
+        cache_entry = models.TrendSummaryCache(
+            profile_id=profile_id,
+            period_days=period,
+            cache_date=today,
+            summary_text=insight,
+            model_used="gemini-2.5-flash",
+        )
+        db.add(cache_entry)
+        db.commit()
+    except Exception:
+        db.rollback()
+
+    return {"summary": insight, "period": period, "cached": False}
+
+
 @router.get("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
 def get_reading(
     reading_id: int,

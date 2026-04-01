@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -19,11 +23,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final StorageService _storageService = StorageService();
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ImagePicker _imagePicker = ImagePicker();
   List<Map<String, dynamic>> _messages = [];
   int _remainingQuota = 5;
   String _resetsAt = '';
   bool _isLoading = true;
   bool _isSending = false;
+  XFile? _selectedImage;
 
   // Header vitals
   String _profileName = '';
@@ -85,22 +91,71 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    final picked = await _imagePicker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 80,
+    );
+    if (picked != null) {
+      setState(() => _selectedImage = picked);
+    }
+  }
+
+  void _showImageSourcePicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () { Navigator.pop(ctx); _pickImage(ImageSource.camera); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () { Navigator.pop(ctx); _pickImage(ImageSource.gallery); },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _sendMessage({String? imageDescription}) async {
     final text = imageDescription ?? _inputController.text.trim();
-    if (text.isEmpty || _isSending || _remainingQuota <= 0) return;
+    final imageFile = _selectedImage;
+
+    if (text.isEmpty && imageFile == null) return;
+    if (_isSending || _remainingQuota <= 0) return;
 
     if (imageDescription == null) _inputController.clear();
+    final displayText = text.isNotEmpty ? text : 'Analyzing uploaded image...';
 
     setState(() {
-      _messages.add({'user_message': text, 'ai_response': null, 'created_at': DateTime.now().toIso8601String()});
+      _messages.add({'user_message': displayText, 'ai_response': null, 'created_at': DateTime.now().toIso8601String()});
       _isSending = true;
+      _selectedImage = null;
     });
     _scrollToBottom();
 
     try {
       final token = await _storageService.getToken();
       if (token == null) return;
-      final response = await _chatService.sendMessage(token, widget.profileId, text);
+
+      Map<String, dynamic> response;
+      if (imageFile != null) {
+        final bytes = await imageFile.readAsBytes();
+        final base64Str = base64Encode(bytes);
+        final msg = text.isNotEmpty ? text : 'Please analyze this image';
+        response = await _chatService.sendImageMessage(token, widget.profileId, msg, base64Str);
+      } else {
+        response = await _chatService.sendMessage(token, widget.profileId, text);
+      }
 
       if (response.containsKey('error') && response['error'] == 'quota_exceeded') {
         setState(() {
@@ -231,6 +286,30 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
 
+            // --- Image preview (if selected) ---
+            if (_selectedImage != null && _canEdit)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: kIsWeb
+                          ? const SizedBox(width: 60, height: 60, child: Icon(Icons.image, size: 30))
+                          : Image.file(File(_selectedImage!.path), width: 60, height: 60, fit: BoxFit.cover),
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text('Image ready to send', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ),
+                    GestureDetector(
+                      onTap: () => setState(() => _selectedImage = null),
+                      child: const Icon(Icons.close, size: 18, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+
             // --- Input bar (hidden for viewers) ---
             if (_canEdit)
               Padding(
@@ -240,6 +319,16 @@ class _ChatScreenState extends State<ChatScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Row(
                     children: [
+                      // Attachment button
+                      GestureDetector(
+                        onTap: _remainingQuota > 0 && !_isSending ? _showImageSourcePicker : null,
+                        child: Icon(
+                          Icons.attach_file,
+                          color: _remainingQuota > 0 ? AppColors.textSecondary : AppColors.textSecondary.withValues(alpha: 0.4),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           controller: _inputController,
