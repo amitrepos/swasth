@@ -6,6 +6,8 @@ import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import 'chat_screen.dart';
+import 'shell_screen.dart';
 
 // ── Semantic chart colors (distinct from UI palette) ──────────────────────────
 const _kGlucoseColor = Color(0xFF10B981);   // emerald-500
@@ -31,17 +33,43 @@ class _TrendChartScreenState extends State<TrendChartScreen>
   List<HealthReading> _allReadings = [];
   String? _error;
 
+  // Trend summary per period
+  final Map<int, String> _summaries = {};
+  final Map<int, bool> _summaryLoading = {};
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _loadReadings();
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging) {
+      final period = [7, 30, 90][_tabController.index];
+      _loadSummary(period);
+    }
+  }
+
+  Future<void> _loadSummary(int period) async {
+    if (_summaries.containsKey(period)) return;
+    setState(() => _summaryLoading[period] = true);
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) return;
+      final summary = await _readingService.getTrendSummary(token, widget.profileId, period);
+      if (mounted) setState(() { _summaries[period] = summary; _summaryLoading[period] = false; });
+    } catch (_) {
+      if (mounted) setState(() => _summaryLoading[period] = false);
+    }
   }
 
   Future<void> _loadReadings() async {
@@ -55,6 +83,7 @@ class _TrendChartScreenState extends State<TrendChartScreen>
         limit: 200,
       );
       if (mounted) setState(() { _allReadings = readings; _isLoading = false; });
+      _loadSummary(7); // Load summary for default tab
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
     }
@@ -86,9 +115,9 @@ class _TrendChartScreenState extends State<TrendChartScreen>
               : TabBarView(
                   controller: _tabController,
                   children: [
-                    _TrendView(readings: _allReadings, days: 7),
-                    _TrendView(readings: _allReadings, days: 30),
-                    _TrendView(readings: _allReadings, days: 90),
+                    _TrendView(readings: _allReadings, days: 7, summary: _summaries[7], summaryLoading: _summaryLoading[7] ?? false, profileId: widget.profileId),
+                    _TrendView(readings: _allReadings, days: 30, summary: _summaries[30], summaryLoading: _summaryLoading[30] ?? false, profileId: widget.profileId),
+                    _TrendView(readings: _allReadings, days: 90, summary: _summaries[90], summaryLoading: _summaryLoading[90] ?? false, profileId: widget.profileId),
                   ],
                 ),
     );
@@ -102,8 +131,11 @@ class _TrendChartScreenState extends State<TrendChartScreen>
 class _TrendView extends StatelessWidget {
   final List<HealthReading> readings;
   final int days;
+  final String? summary;
+  final bool summaryLoading;
+  final int profileId;
 
-  const _TrendView({required this.readings, required this.days});
+  const _TrendView({required this.readings, required this.days, this.summary, this.summaryLoading = false, required this.profileId});
 
   List<HealthReading> get _filtered {
     final cutoff = DateTime.now().subtract(Duration(days: days));
@@ -142,6 +174,81 @@ class _TrendView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
+            // ── AI Trend Summary ────────────────────────────────────────
+            if (summaryLoading)
+              GlassCard(
+                borderRadius: 20,
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                    const SizedBox(width: 12),
+                    const Text('Generating summary...', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                  ],
+                ),
+              )
+            else if (summary != null && summary!.isNotEmpty)
+              GlassCard(
+                borderRadius: 20,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 8, height: 8,
+                          decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$days-Day Summary',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      summary!,
+                      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, height: 1.5),
+                    ),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () {
+                        ChatScreen.pendingMessage =
+                            'Based on my $days-day health summary: "${summary!}" — can you give me more details and what I should do?';
+                        // If pushed (from home), pop back and switch tab
+                        // If embedded (insights tab), just switch tab directly
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context, 'open_chat');
+                        } else {
+                          ShellScreen.switchToTab(4);
+                        }
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Discuss with AI',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.primary),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (summary != null && summary!.isNotEmpty || summaryLoading)
+              const SizedBox(height: 16),
 
             // ── Correlation overview (always shown if any data) ──────────
             if (glucose.isNotEmpty || bp.isNotEmpty) ...[

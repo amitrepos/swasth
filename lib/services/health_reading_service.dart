@@ -278,6 +278,24 @@ class HealthReadingService {
     }
   }
 
+  /// Get AI trend summary for a period (7, 30, or 90 days).
+  /// Combines health readings + chat memory + profile info for pattern analysis.
+  Future<String> getTrendSummary(String token, int profileId, int period) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/readings/trend-summary?profile_id=$profileId&period=$period'),
+        headers: ApiClient.headers(token: token),
+      ).timeout(const Duration(seconds: 45));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return (data['summary'] as String?) ?? '';
+      }
+      return '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   /// Send a device photo to the backend and use Gemini Vision to extract
   /// the reading values. Returns an OcrResult on success, null on failure.
   /// Caller should fall back to local OCR when null is returned.
@@ -337,6 +355,23 @@ class HealthReadingService {
       throw Exception(ApiClient.errorDetail(response, 'Failed to get health score'));
     } catch (e) {
       throw Exception('Failed to get health score: $e');
+    }
+  }
+
+  /// Get streaks and points for all accessible profiles (family leaderboard).
+  Future<List<Map<String, dynamic>>> getFamilyStreaks(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/readings/family-streaks'),
+        headers: ApiClient.headers(token: token),
+      ).timeout(_kTimeout);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data['leaderboard'] ?? []);
+      }
+      return [];
+    } catch (_) {
+      return [];
     }
   }
 }
