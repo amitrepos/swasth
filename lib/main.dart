@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/splash_screen.dart';
 import 'providers/language_provider.dart';
 import 'services/storage_service.dart';
+import 'services/reminder_service.dart';
 import 'theme/app_theme.dart';
 
 /// Global observer — HomeScreen subscribes to know when it becomes active again.
@@ -15,6 +16,7 @@ final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  await ReminderService().initialize();
   final langCode = await StorageService().getLanguage() ?? 'en';
   runApp(
     ProviderScope(
