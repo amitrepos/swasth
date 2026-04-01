@@ -31,6 +31,8 @@ jobs:
         with:
           channel: stable
           cache: true
+      - name: Create .env for asset bundling
+        run: echo "SERVER_HOST=http://localhost:8000" > .env
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - run: flutter test
@@ -71,6 +73,9 @@ jobs:
         with:
           channel: stable
           cache: true
+
+      - name: Create .env for asset bundling
+        run: echo "SERVER_HOST=http://localhost:8000" > .env
 
       - run: flutter pub get
 
