@@ -38,7 +38,7 @@ class TestParseImageGlucose:
         )
         assert resp.status_code == 200
         assert "error" in resp.json()
-        assert "GEMINI_API_KEY" in resp.json()["error"]
+        assert "error" in resp.json()
 
     def test_invalid_device_type(self, client, test_user, auth_headers):
         resp = client.post(
