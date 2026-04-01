@@ -160,7 +160,7 @@ def _try_gemini(prompt: str) -> dict:
             model="gemini-2.5-flash",
             contents=prompt,
             config=genai_types.GenerateContentConfig(
-                max_output_tokens=512,
+                max_output_tokens=100,
                 temperature=0.4,
                 thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
             ),

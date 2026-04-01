@@ -576,20 +576,9 @@ def get_ai_insight(
 
     age_desc = f"{age} years" if age else "unknown age"
 
-    prompt = f"""You are a concise health assistant. Give 1-2 sentences of personalised advice.
+    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {trend_note}
 
-Patient: {age_desc}, {gender}. Conditions: {conditions}. Medications: {medications}.
-
-{glucose_summary}
-{bp_summary}
-{trend_note}
-
-Rules:
-- Give actionable advice (what to do), not data summaries.
-- If avg glucose > 180 or any critical: be urgent, ask about medication, recommend doctor.
-- If BP avg > 140/90 or Stage 2 readings: be urgent about medication and doctor.
-- If normal: be encouraging, mention a specific habit or food.
-- Speak directly to the patient. Max 2 sentences."""
+Write exactly 2 short sentences: one about their status, one actionable tip. Under 30 words total. No greetings, no data numbers, no bullet points."""
 
     import ai_service
     prompt_summary = f"{glucose_summary} {bp_summary} {trend_note}".strip() or None
