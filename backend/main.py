@@ -12,6 +12,7 @@ import routes
 import routes_health
 import routes_profiles
 import routes_chat
+import routes_admin
 import os
 from dotenv import load_dotenv
 
@@ -95,6 +96,9 @@ app.include_router(routes_profiles.router, prefix="/api", tags=["Profiles"])
 
 # Include chat routes
 app.include_router(routes_chat.router, prefix="/api", tags=["Chat"])
+
+# Include admin routes
+app.include_router(routes_admin.router, prefix="/api", tags=["Admin"])
 
 
 if __name__ == "__main__":
