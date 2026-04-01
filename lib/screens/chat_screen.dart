@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -29,13 +29,12 @@ class _ChatScreenState extends State<ChatScreen> {
   final StorageService _storageService = StorageService();
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final ImagePicker _imagePicker = ImagePicker();
   List<Map<String, dynamic>> _messages = [];
   int _remainingQuota = 5;
   String _resetsAt = '';
   bool _isLoading = true;
   bool _isSending = false;
-  XFile? _selectedImage;
+  PlatformFile? _selectedImage;
 
   // Header vitals
   String _profileName = '';
@@ -104,39 +103,14 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final picked = await _imagePicker.pickImage(
-      source: source,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 80,
+  Future<void> _pickImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
     );
-    if (picked != null) {
-      setState(() => _selectedImage = picked);
+    if (result != null && result.files.isNotEmpty) {
+      setState(() => _selectedImage = result.files.first);
     }
-  }
-
-  void _showImageSourcePicker() {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
-              onTap: () { Navigator.pop(ctx); _pickImage(ImageSource.camera); },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
-              onTap: () { Navigator.pop(ctx); _pickImage(ImageSource.gallery); },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<void> _sendMessage({String? imageDescription}) async {
@@ -162,10 +136,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
       Map<String, dynamic> response;
       if (imageFile != null) {
-        final bytes = await imageFile.readAsBytes();
-        final base64Str = base64Encode(bytes);
-        final msg = text.isNotEmpty ? text : 'Please analyze this image';
-        response = await _chatService.sendImageMessage(token, widget.profileId, msg, base64Str);
+        final bytes = imageFile.bytes ?? (imageFile.path != null ? await File(imageFile.path!).readAsBytes() : null);
+        if (bytes != null) {
+          final base64Str = base64Encode(bytes);
+          final msg = text.isNotEmpty ? text : 'Please analyze this image';
+          response = await _chatService.sendImageMessage(token, widget.profileId, msg, base64Str);
+        } else {
+          response = await _chatService.sendMessage(token, widget.profileId, text);
+        }
       } else {
         response = await _chatService.sendMessage(token, widget.profileId, text);
       }
@@ -288,9 +266,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: kIsWeb
-                          ? const SizedBox(width: 60, height: 60, child: Icon(Icons.image, size: 30))
-                          : Image.file(File(_selectedImage!.path), width: 60, height: 60, fit: BoxFit.cover),
+                      child: _selectedImage!.path != null && !kIsWeb
+                          ? Image.file(File(_selectedImage!.path!), width: 60, height: 60, fit: BoxFit.cover)
+                          : const SizedBox(width: 60, height: 60, child: Icon(Icons.image, size: 30)),
                     ),
                     const SizedBox(width: 8),
                     const Expanded(
@@ -315,7 +293,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: [
                       // Attachment button
                       GestureDetector(
-                        onTap: _remainingQuota > 0 && !_isSending ? _showImageSourcePicker : null,
+                        onTap: _remainingQuota > 0 && !_isSending ? _pickImage : null,
                         child: Icon(
                           Icons.attach_file,
                           color: _remainingQuota > 0 ? AppColors.textSecondary : AppColors.textSecondary.withValues(alpha: 0.4),
