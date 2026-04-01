@@ -34,6 +34,9 @@ class Settings(BaseSettings):
 
     # DeepSeek AI (fallback) — sign up at platform.deepseek.com
     DEEPSEEK_API_KEY: Optional[str] = None
+
+    # Groq AI (free vision) — sign up at console.groq.com
+    GROQ_API_KEY: Optional[str] = None
     
     # CORS settings
     CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:8080"]

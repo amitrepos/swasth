@@ -61,20 +61,33 @@ def generate_vision_insight(
     prompt_summary: Optional[str] = None,
     mime_type: str = "image/jpeg",
 ) -> Optional[str]:
-    """Analyze an image with Gemini Vision, fall back to DeepSeek (text-only), then None."""
+    """Analyze image: Groq LLaVA (free) → Gemini Vision → DeepSeek text → None."""
 
-    # 1. Try Gemini Vision
+    errors = []
+
+    # 1. Try Groq Vision (free, fast, no rate limit issues)
+    if settings.GROQ_API_KEY:
+        result = _try_groq_vision(prompt, image_bytes, mime_type)
+        if result["text"]:
+            _log(db, profile_id, "groq-llava", prompt_summary,
+                 result["text"], None, result["tokens"], result["ms"])
+            return result["text"]
+        errors.append(f"groq: {result['error']}")
+    else:
+        errors.append("groq: GROQ_API_KEY not set")
+
+    # 2. Fallback: Gemini Vision
     if settings.GEMINI_API_KEY:
         result = _try_gemini_vision(prompt, image_bytes, mime_type)
         if result["text"]:
             _log(db, profile_id, "gemini-2.5-flash-vision", prompt_summary,
-                 result["text"], None, result["tokens"], result["ms"])
+                 result["text"], "; ".join(errors), result["tokens"], result["ms"])
             return result["text"]
-        gemini_error = result["error"]
+        errors.append(f"gemini: {result['error']}")
     else:
-        gemini_error = "GEMINI_API_KEY not set"
+        errors.append("gemini: GEMINI_API_KEY not set")
 
-    # 2. Fall back to DeepSeek (text-only — describe that an image was uploaded)
+    # 3. Fallback: DeepSeek text-only
     if settings.DEEPSEEK_API_KEY:
         fallback_prompt = (
             f"{prompt}\n\n"
@@ -85,17 +98,14 @@ def generate_vision_insight(
         result = _try_deepseek(fallback_prompt)
         if result["text"]:
             _log(db, profile_id, "deepseek-chat", prompt_summary,
-                 result["text"], f"gemini vision failed: {gemini_error}",
-                 result["tokens"], result["ms"])
+                 result["text"], "; ".join(errors), result["tokens"], result["ms"])
             return result["text"]
-        deepseek_error = result["error"]
-    else:
-        deepseek_error = "DEEPSEEK_API_KEY not set"
+        errors.append(f"deepseek: {result['error']}")
 
-    # 3. Both failed
+    # 4. All failed
     _log(db, profile_id, "failed", prompt_summary,
-         "AI unavailable — vision and text models both failed",
-         f"gemini: {gemini_error}; deepseek: {deepseek_error}",
+         "AI unavailable — all vision models failed",
+         "; ".join(errors),
          None, None)
     return None
 
@@ -188,6 +198,46 @@ def _try_gemini(prompt: str) -> dict:
         if not text:
             return {"text": None, "error": "Empty response", "tokens": None, "ms": ms}
         return {"text": text, "error": None, "tokens": token_count, "ms": ms}
+
+    except Exception as e:
+        ms = int((time.time() - start) * 1000)
+        return {"text": None, "error": str(e)[:200], "tokens": None, "ms": ms}
+
+
+def _try_groq_vision(prompt: str, image_bytes: bytes, mime_type: str) -> dict:
+    """Attempt Groq LLaVA vision (free). Returns {text, error, tokens, ms}."""
+    import base64
+    start = time.time()
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=settings.GROQ_API_KEY,
+            base_url="https://api.groq.com/openai/v1",
+        )
+
+        b64_image = base64.b64encode(image_bytes).decode("utf-8")
+
+        response = client.chat.completions.create(
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64_image}"}},
+                ],
+            }],
+            max_tokens=256,
+            temperature=0.0,
+        )
+
+        ms = int((time.time() - start) * 1000)
+        text = response.choices[0].message.content.strip() if response.choices else None
+        tokens = (response.usage.total_tokens if response.usage else None)
+
+        if not text:
+            return {"text": None, "error": "Empty response", "tokens": None, "ms": ms}
+        return {"text": text, "error": None, "tokens": tokens, "ms": ms}
 
     except Exception as e:
         ms = int((time.time() - start) * 1000)
