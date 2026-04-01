@@ -48,7 +48,8 @@ dependencies:
     sdk: flutter
   intl: ^0.20.2
   url_launcher: ^6.3.2
-  image_picker: ^1.1.2
+  # image_picker: ^1.2.1  # Disabled: iOS build fails with Xcode 16 (viewController bug). Re-enable when image_picker_ios >0.8.13+6 is released.
+  file_picker: ^8.0.0
   share_plus: ^10.1.4
   http: ^1.2.0
 
