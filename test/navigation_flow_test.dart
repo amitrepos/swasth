@@ -32,23 +32,16 @@ void main() {
   // ChatScreen.pendingMessage
   // =========================================================================
 
-  group('ChatScreen.pendingMessage', () {
-    test('pendingMessage static field exists and starts null', () {
-      expect(ChatScreen.pendingMessage, isNull);
+  group('ChatScreen initialMessage', () {
+    test('ChatScreen accepts initialMessage parameter', () {
+      // Verifies the constructor works — catches if param is removed
+      const screen = ChatScreen(profileId: 1, initialMessage: 'Test message');
+      expect(screen.initialMessage, 'Test message');
     });
 
-    test('pendingMessage can be set and read', () {
-      ChatScreen.pendingMessage = 'Test message from trend summary';
-      expect(ChatScreen.pendingMessage, 'Test message from trend summary');
-      ChatScreen.pendingMessage = null; // cleanup
-    });
-
-    test('pendingMessage is consumed (set to null after reading)', () {
-      ChatScreen.pendingMessage = 'Consume me';
-      final msg = ChatScreen.pendingMessage;
-      ChatScreen.pendingMessage = null;
-      expect(msg, 'Consume me');
-      expect(ChatScreen.pendingMessage, isNull);
+    test('ChatScreen works without initialMessage', () {
+      const screen = ChatScreen(profileId: 1);
+      expect(screen.initialMessage, isNull);
     });
   });
 

@@ -23,8 +23,20 @@ class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
 
   /// Switch to a tab from outside the shell (e.g. "Discuss with AI").
-  static void switchToTab(int index) {
-    _ShellScreenState._instance?._onTap(index);
+  /// If chatMessage is provided and index is 4 (Chat), rebuilds Chat with that message.
+  static void switchToTab(int index, {String? chatMessage}) {
+    final state = _ShellScreenState._instance;
+    if (state == null) return;
+    if (index == 4 && chatMessage != null) {
+      state._chatInitialMessage = chatMessage;
+      // Force rebuild Chat by changing its key
+      state.setState(() {
+        state._chatRebuildKey++;
+        state._currentIndex = index;
+      });
+    } else {
+      state._onTap(index);
+    }
   }
 
   @override
@@ -40,6 +52,8 @@ class _ShellScreenState extends State<ShellScreen> {
   bool _isOffline = false;
   Timer? _connectivityTimer;
   Timer? _profileRefreshTimer;
+  String? _chatInitialMessage;
+  int _chatRebuildKey = 0;
 
   @override
   void initState() {
@@ -131,7 +145,11 @@ class _ShellScreenState extends State<ShellScreen> {
                 HistoryScreen(key: ValueKey('history_$_profileId'), profileId: _profileId!),
                 const StreaksScreen(),
                 InsightsScreen(key: ValueKey('insights_$_profileId'), profileId: _profileId!),
-                ChatScreen(key: ValueKey('chat_$_profileId'), profileId: _profileId!),
+                ChatScreen(
+                  key: ValueKey('chat_${_profileId}_$_chatRebuildKey'),
+                  profileId: _profileId!,
+                  initialMessage: _chatInitialMessage,
+                ),
               ],
             ),
           ),
@@ -167,7 +185,11 @@ class _ShellScreenState extends State<ShellScreen> {
     );
   }
 
-  void _onTap(int index) => setState(() => _currentIndex = index);
+  void _onTap(int index) {
+    // Clear chat message when switching away from chat or switching normally
+    if (index != 4) _chatInitialMessage = null;
+    setState(() => _currentIndex = index);
+  }
 }
 
 class _NavItem extends StatelessWidget {
