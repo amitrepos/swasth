@@ -1,6 +1,8 @@
+import 'dart:math' show min;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/splash_screen.dart';
@@ -10,6 +12,10 @@ import 'theme/app_theme.dart';
 
 /// Global observer — HomeScreen subscribes to know when it becomes active again.
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
+/// On Flutter Web, content uses the full viewport up to this width, then stays centered
+/// (typical web app column — avoids ultra-wide stretching while not feeling like a phone shell).
+const double _kWebMaxContentWidth = 1280;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -126,6 +132,26 @@ class SwasthApp extends ConsumerWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       theme: theme,
       navigatorObservers: [routeObserver],
+      builder: (context, child) {
+        if (!kIsWeb) return child ?? const SizedBox.shrink();
+
+        final size = MediaQuery.sizeOf(context);
+        final contentMaxWidth = min(size.width, _kWebMaxContentWidth);
+
+        return ColoredBox(
+          color: AppColors.bgPage,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: contentMaxWidth,
+                minHeight: size.height,
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
+        );
+      },
       home: const SplashScreen(),
     );
   }

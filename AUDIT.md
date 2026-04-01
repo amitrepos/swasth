@@ -5,6 +5,16 @@ Format: date, summary, file-level details.
 
 ---
 
+## 2026-04-01 — Restore Flutter Web width fixes after pull
+
+- Modified `lib/main.dart`: Re-added web-only `MaterialApp.builder` wrapper (`kIsWeb`) that caps content width to `min(viewport, 1280)` and centers it to avoid mobile layouts stretching across ultra-wide browsers.
+- Created `lib/widgets/auth_form_scroll_body.dart`: Centered scroll wrapper that caps auth forms to `maxWidth: 440` on wide screens.
+- Modified `lib/screens/login_screen.dart`, `lib/screens/registration_screen.dart`, `lib/screens/forgot_password_screen.dart`, `lib/screens/otp_verification_screen.dart`, `lib/screens/reset_password_screen.dart`: Use `AuthFormScrollBody` so auth screens stay a normal form width on web/tablet.
+
+## 2026-04-01 — Backend fix: missing profile_invites.access_level column
+
+- Created `backend/migrate_add_invite_access_level.py`: Idempotent Postgres migration to add `profile_invites.access_level` (`VARCHAR NOT NULL DEFAULT 'viewer'`) to fix `/api/invites/pending` 500 (UndefinedColumn).
+
 ## 2026-03-30 — AI Chat with rate limiting, conversation memory, and 38 new tests
 
 - Created `backend/routes_chat.py`: Chat endpoints (POST /chat/send, GET /chat/messages, GET /chat/quota). Rate limiting per profile (configurable CHAT_QUOTA_LIMIT/CHAT_QUOTA_PERIOD). Conversation memory via ChatContextProfile (rolling AI summary every 5 messages). Vision pipeline for image analysis (Gemini Vision → DeepSeek text fallback).
