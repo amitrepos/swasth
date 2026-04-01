@@ -380,4 +380,20 @@ class HealthReadingService {
       return [];
     }
   }
+
+  /// Get shareable weekly summary text for a profile.
+  Future<Map<String, dynamic>> getWeeklySummary(String token, int profileId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/readings/weekly-summary?profile_id=$profileId'),
+        headers: ApiClient.headers(token: token),
+      ).timeout(_kTimeout);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
 }

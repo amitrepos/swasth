@@ -800,6 +800,87 @@ def get_family_streaks(
     return {"leaderboard": board}
 
 
+@router.get("/readings/weekly-summary")
+def get_weekly_summary(
+    profile_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Generate a shareable weekly health summary for the doctor or family."""
+    get_profile_access_or_403(profile_id, user, db)
+
+    today = date.today()
+    week_start = datetime.combine(today - timedelta(days=6), datetime.min.time())
+
+    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
+    profile_name = profile.name if profile else "Patient"
+
+    readings = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_timestamp >= week_start,
+        )
+        .order_by(models.HealthReading.reading_timestamp.asc())
+        .all()
+    )
+
+    glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
+    bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+
+    # Build summary text
+    lines = [f"📊 Weekly Health Summary — {profile_name}"]
+    lines.append(f"Period: {(today - timedelta(days=6)).strftime('%b %d')} – {today.strftime('%b %d, %Y')}")
+    lines.append("")
+
+    if glucose_vals:
+        avg_g = sum(glucose_vals) / len(glucose_vals)
+        normal_pct = sum(1 for v in glucose_vals if 70 <= v <= 130) * 100 // len(glucose_vals)
+        lines.append(f"🩸 Glucose: {len(glucose_vals)} readings")
+        lines.append(f"   Avg: {avg_g:.0f} mg/dL | Range: {min(glucose_vals):.0f}–{max(glucose_vals):.0f}")
+        lines.append(f"   Normal: {normal_pct}%")
+    else:
+        lines.append("🩸 Glucose: No readings this week")
+
+    lines.append("")
+
+    if bp_readings:
+        sys_vals = [s for s, _ in bp_readings]
+        dia_vals = [d for _, d in bp_readings]
+        avg_sys = sum(sys_vals) / len(sys_vals)
+        avg_dia = sum(dia_vals) / len(dia_vals)
+        elevated = sum(1 for s, d in bp_readings if s > 140 or d > 90)
+        lines.append(f"❤️ Blood Pressure: {len(bp_readings)} readings")
+        lines.append(f"   Avg: {avg_sys:.0f}/{avg_dia:.0f} mmHg")
+        lines.append(f"   Elevated: {elevated}")
+    else:
+        lines.append("❤️ Blood Pressure: No readings this week")
+
+    # Streak
+    days_with = set()
+    for r in readings:
+        days_with.add(r.reading_timestamp.date())
+    days_logged = len(days_with)
+    lines.append("")
+    lines.append(f"📅 Days logged: {days_logged}/7")
+    lines.append("")
+    lines.append("— Sent from Swasth Health App")
+
+    summary_text = "\n".join(lines)
+
+    return {
+        "summary_text": summary_text,
+        "profile_name": profile_name,
+        "glucose_count": len(glucose_vals),
+        "glucose_avg": round(sum(glucose_vals) / len(glucose_vals), 1) if glucose_vals else None,
+        "bp_count": len(bp_readings),
+        "bp_avg_sys": round(sum(s for s, _ in bp_readings) / len(bp_readings), 1) if bp_readings else None,
+        "bp_avg_dia": round(sum(d for _, d in bp_readings) / len(bp_readings), 1) if bp_readings else None,
+        "days_logged": days_logged,
+        "total_readings": len(readings),
+    }
+
+
 @router.get("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
 def get_reading(
     reading_id: int,
