@@ -1,7 +1,8 @@
 """
 Central AI service with multi-model fallback chain and audit logging.
 
-Chain: Gemini 2.5 Flash → DeepSeek V3 → None (caller uses rule-based fallback)
+Text chain: DeepSeek → Gemini → rule-based
+Vision chain: Gemini (with key rotation) → Groq → DeepSeek text → None
 Every call is logged to the ai_insight_logs table for compliance.
 """
 import time
@@ -9,6 +10,16 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from config import settings
 import models
+
+
+def _get_gemini_keys() -> list:
+    """Get all available Gemini API keys for rotation."""
+    keys = []
+    if settings.GEMINI_API_KEYS:
+        keys = [k.strip() for k in settings.GEMINI_API_KEYS.split(",") if k.strip()]
+    if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY not in keys:
+        keys.insert(0, settings.GEMINI_API_KEY)
+    return keys
 
 
 def generate_health_insight(
@@ -61,64 +72,52 @@ def generate_vision_insight(
     prompt_summary: Optional[str] = None,
     mime_type: str = "image/jpeg",
 ) -> Optional[str]:
-    """Analyze image: Gemini Vision (best accuracy) → Groq (free fallback) → DeepSeek text → None."""
+    """Analyze image with Gemini Vision (with key rotation). Gemini-only for accuracy."""
 
-    errors = []
+    keys = _get_gemini_keys()
+    if not keys:
+        _log(db, profile_id, "failed", prompt_summary,
+             "No Gemini API keys configured", None, None, None)
+        return None
 
-    # 1. Try Gemini Vision first (best accuracy for medical devices)
-    if settings.GEMINI_API_KEY:
-        result = _try_gemini_vision(prompt, image_bytes, mime_type)
-        if result["text"]:
-            _log(db, profile_id, "gemini-2.5-flash-vision", prompt_summary,
-                 result["text"], "; ".join(errors), result["tokens"], result["ms"])
-            return result["text"]
-        errors.append(f"gemini: {result['error']}")
-    else:
-        errors.append("gemini: GEMINI_API_KEY not set")
+    result = _try_gemini_vision(prompt, image_bytes, mime_type)
+    if result["text"]:
+        _log(db, profile_id, "gemini-2.5-flash-vision", prompt_summary,
+             result["text"], None, result["tokens"], result["ms"])
+        return result["text"]
 
-    # 2. Fallback: Groq Vision (free but less accurate)
-    if settings.GROQ_API_KEY:
-        result = _try_groq_vision(prompt, image_bytes, mime_type)
-        if result["text"]:
-            _log(db, profile_id, "groq-llava", prompt_summary,
-                 result["text"], "; ".join(errors), result["tokens"], result["ms"])
-            return result["text"]
-        errors.append(f"groq: {result['error']}")
-    else:
-        errors.append("groq: GROQ_API_KEY not set")
-
-    # 3. Fallback: DeepSeek text-only
-    if settings.DEEPSEEK_API_KEY:
-        fallback_prompt = (
-            f"{prompt}\n\n"
-            "Note: The patient uploaded a medical image but image analysis is temporarily unavailable. "
-            "Based on the text context above, provide what advice you can and recommend they consult their doctor "
-            "for interpretation of the image."
-        )
-        result = _try_deepseek(fallback_prompt)
-        if result["text"]:
-            _log(db, profile_id, "deepseek-chat", prompt_summary,
-                 result["text"], "; ".join(errors), result["tokens"], result["ms"])
-            return result["text"]
-        errors.append(f"deepseek: {result['error']}")
-
-    # 4. All failed
     _log(db, profile_id, "failed", prompt_summary,
-         "AI unavailable — all vision models failed",
-         "; ".join(errors),
-         None, None)
+         "Gemini Vision failed to analyze image",
+         result["error"], None, result["ms"])
     return None
 
 
 def _try_gemini_vision(prompt: str, image_bytes: bytes, mime_type: str) -> dict:
-    """Attempt Gemini Vision with an image. Returns {text, error, tokens, ms}."""
+    """Attempt Gemini Vision with key rotation. Returns {text, error, tokens, ms}."""
+    keys = _get_gemini_keys()
+    if not keys:
+        return {"text": None, "error": "No Gemini API keys configured", "tokens": None, "ms": 0}
+
+    last_error = None
+    for api_key in keys:
+        result = _try_gemini_vision_with_key(prompt, image_bytes, mime_type, api_key)
+        if result["text"]:
+            return result
+        last_error = result["error"]
+        if "429" not in str(last_error) and "RESOURCE_EXHAUSTED" not in str(last_error):
+            return result
+    return {"text": None, "error": last_error, "tokens": None, "ms": 0}
+
+
+def _try_gemini_vision_with_key(prompt: str, image_bytes: bytes, mime_type: str, api_key: str) -> dict:
+    """Attempt Gemini Vision with a specific API key."""
     import time
     start = time.time()
     try:
         from google import genai
         from google.genai import types as genai_types
 
-        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=[
@@ -161,13 +160,30 @@ def _try_gemini_vision(prompt: str, image_bytes: bytes, mime_type: str) -> dict:
 
 
 def _try_gemini(prompt: str) -> dict:
-    """Attempt Gemini 2.5 Flash. Returns {text, error, tokens, ms}."""
+    """Attempt Gemini 2.5 Flash with key rotation. Returns {text, error, tokens, ms}."""
+    keys = _get_gemini_keys()
+    if not keys:
+        return {"text": None, "error": "No Gemini API keys configured", "tokens": None, "ms": 0}
+
+    last_error = None
+    for api_key in keys:
+        result = _try_gemini_with_key(prompt, api_key)
+        if result["text"]:
+            return result
+        last_error = result["error"]
+        if "429" not in str(last_error) and "RESOURCE_EXHAUSTED" not in str(last_error):
+            return result  # Non-rate-limit error, don't try other keys
+    return {"text": None, "error": last_error, "tokens": None, "ms": 0}
+
+
+def _try_gemini_with_key(prompt: str, api_key: str) -> dict:
+    """Attempt Gemini with a specific API key."""
     start = time.time()
     try:
         from google import genai
         from google.genai import types as genai_types
 
-        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
@@ -203,45 +219,6 @@ def _try_gemini(prompt: str) -> dict:
         ms = int((time.time() - start) * 1000)
         return {"text": None, "error": str(e)[:200], "tokens": None, "ms": ms}
 
-
-def _try_groq_vision(prompt: str, image_bytes: bytes, mime_type: str) -> dict:
-    """Attempt Groq LLaVA vision (free). Returns {text, error, tokens, ms}."""
-    import base64
-    start = time.time()
-    try:
-        from openai import OpenAI
-
-        client = OpenAI(
-            api_key=settings.GROQ_API_KEY,
-            base_url="https://api.groq.com/openai/v1",
-        )
-
-        b64_image = base64.b64encode(image_bytes).decode("utf-8")
-
-        response = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64_image}"}},
-                ],
-            }],
-            max_tokens=256,
-            temperature=0.0,
-        )
-
-        ms = int((time.time() - start) * 1000)
-        text = response.choices[0].message.content.strip() if response.choices else None
-        tokens = (response.usage.total_tokens if response.usage else None)
-
-        if not text:
-            return {"text": None, "error": "Empty response", "tokens": None, "ms": ms}
-        return {"text": text, "error": None, "tokens": tokens, "ms": ms}
-
-    except Exception as e:
-        ms = int((time.time() - start) * 1000)
-        return {"text": None, "error": str(e)[:200], "tokens": None, "ms": ms}
 
 
 def _try_deepseek(prompt: str) -> dict:
