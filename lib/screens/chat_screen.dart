@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -14,10 +13,6 @@ import '../services/storage_service.dart';
 class ChatScreen extends StatefulWidget {
   final int profileId;
   final String? initialMessage;
-
-  /// Pending message set by other screens (e.g. trend summary "Discuss with AI").
-  /// Consumed once by ChatScreen on next build within the Shell.
-  static String? pendingMessage;
 
   const ChatScreen({super.key, required this.profileId, this.initialMessage});
 
@@ -36,7 +31,6 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = true;
   bool _isSending = false;
   PlatformFile? _selectedImage;
-  Timer? _pendingMessageTimer;
 
   // Header vitals
   String _profileName = '';
@@ -48,18 +42,13 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _loadAccessLevel();
-    _loadMessages().then((_) => _checkPendingMessage());
+    _loadMessages().then((_) {
+      // Send initial message if provided (from "Discuss with AI" button)
+      if (widget.initialMessage != null && widget.initialMessage!.isNotEmpty) {
+        _sendMessage(imageDescription: widget.initialMessage);
+      }
+    });
     _loadVitals();
-    // Poll for pending messages from "Discuss with AI" (IndexedStack keeps widget alive)
-    _pendingMessageTimer = Timer.periodic(const Duration(seconds: 1), (_) => _checkPendingMessage());
-  }
-
-  void _checkPendingMessage() {
-    final pending = widget.initialMessage ?? ChatScreen.pendingMessage;
-    if (pending != null && pending.isNotEmpty) {
-      ChatScreen.pendingMessage = null;
-      _sendMessage(imageDescription: pending);
-    }
   }
 
   Future<void> _loadAccessLevel() async {
@@ -69,7 +58,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    _pendingMessageTimer?.cancel();
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
