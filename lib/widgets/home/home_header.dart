@@ -72,63 +72,11 @@ class HomeHeader extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  if (hasProfile)
-                    GestureDetector(
-                      onTap: onSwitchProfile,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.person_outline, size: 13, color: AppColors.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            profileDisplayName,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 2),
-                          const Icon(Icons.swap_horiz, size: 13, color: AppColors.primary),
-                        ],
-                      ),
-                    ),
+                  // Profile name shown in shell header bar
                 ],
               ),
             ),
-            _HeaderIconButton(
-              icon: Icons.swap_horiz,
-              tooltip: l10n.switchProfile,
-              onTap: onSwitchProfile,
-            ),
-            _HeaderIconButton(
-              icon: Icons.share_outlined,
-              tooltip: l10n.shareProfile,
-              onTap: hasProfile ? onShareProfile : null,
-            ),
-            GestureDetector(
-              onTap: hasProfile ? onViewProfile : null,
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: Text(
-                  activeProfileName.isNotEmpty
-                      ? activeProfileName[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-            _HeaderIconButton(
-              icon: Icons.logout,
-              tooltip: l10n.logout,
-              onTap: onLogout,
-              color: AppColors.danger,
-            ),
+            // Icons moved to shell header bar
           ],
         ),
         const SizedBox(height: 12),

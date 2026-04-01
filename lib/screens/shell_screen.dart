@@ -15,26 +15,43 @@ import 'streaks_screen.dart';
 import 'insights_screen.dart';
 import 'chat_screen.dart';
 import 'select_profile_screen.dart';
+import 'profile_screen.dart';
+import 'manage_access_screen.dart';
+import 'login_screen.dart';
 
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
+
+  /// Switch to a tab from outside the shell (e.g. "Discuss with AI").
+  static void switchToTab(int index) {
+    _ShellScreenState._instance?._onTap(index);
+  }
 
   @override
   State<ShellScreen> createState() => _ShellScreenState();
 }
 
 class _ShellScreenState extends State<ShellScreen> {
+  static _ShellScreenState? _instance;
   int _currentIndex = 0;
   int? _profileId;
+  String _profileName = '';
   bool _loading = true;
   bool _isOffline = false;
   Timer? _connectivityTimer;
+  Timer? _profileRefreshTimer;
 
   @override
   void initState() {
     super.initState();
+    _instance = this;
     _loadProfile();
     _checkConnectivity();
+    // Listen for profile switches from other screens
+    _profileRefreshTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => _refreshProfileIfChanged(),
+    );
     _connectivityTimer = Timer.periodic(
       const Duration(seconds: 30),
       (_) => _checkConnectivity(),
@@ -44,7 +61,26 @@ class _ShellScreenState extends State<ShellScreen> {
   @override
   void dispose() {
     _connectivityTimer?.cancel();
+    _profileRefreshTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _refreshProfileIfChanged() async {
+    final storage = StorageService();
+    final id = await storage.getActiveProfileId();
+    if (id != null && id != _profileId && mounted) {
+      final name = await storage.getActiveProfileName() ?? 'Health';
+      setState(() { _profileId = id; _profileName = name; });
+    }
+  }
+
+  Future<void> _logout() async {
+    await StorageService().clearAll();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   Future<void> _checkConnectivity() async {
@@ -59,7 +95,8 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final id = await StorageService().getActiveProfileId();
+    final storage = StorageService();
+    final id = await storage.getActiveProfileId();
     if (!mounted) return;
     if (id == null) {
       Navigator.pushReplacement(
@@ -68,8 +105,10 @@ class _ShellScreenState extends State<ShellScreen> {
       );
       return;
     }
+    final name = await storage.getActiveProfileName() ?? 'Health';
     setState(() {
       _profileId = id;
+      _profileName = name;
       _loading = false;
     });
   }
@@ -84,6 +123,101 @@ class _ShellScreenState extends State<ShellScreen> {
       body: Column(
         children: [
           if (_isOffline) const OfflineBanner(),
+
+          // ── Persistent header bar (visible on all tabs) ────────────
+          SafeArea(
+            bottom: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
+              decoration: const BoxDecoration(
+                color: AppColors.bgPage,
+                border: Border(bottom: BorderSide(color: AppColors.separator, width: 0.5)),
+              ),
+              child: Row(
+                children: [
+                  // Profile avatar
+                  GestureDetector(
+                    onTap: () {
+                      if (_profileId != null) {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => ProfileScreen(profileId: _profileId!),
+                        ));
+                      }
+                    },
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                      child: Text(
+                        _profileName.isNotEmpty ? _profileName[0].toUpperCase() : '?',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Profile name — tap to view profile
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        if (_profileId != null) {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => ProfileScreen(profileId: _profileId!),
+                          ));
+                        }
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _profileName,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Switch profile
+                  IconButton(
+                    icon: const Icon(Icons.switch_account, size: 22),
+                    color: AppColors.textSecondary,
+                    tooltip: 'Switch Profile',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
+                    ),
+                  ),
+                  // Share / manage access
+                  IconButton(
+                    icon: const Icon(Icons.share, size: 20),
+                    color: AppColors.textSecondary,
+                    tooltip: 'Share Profile',
+                    onPressed: () {
+                      if (_profileId != null) {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => ManageAccessScreen(
+                            profileId: _profileId!,
+                            profileName: _profileName,
+                          ),
+                        ));
+                      }
+                    },
+                  ),
+                  // Logout
+                  IconButton(
+                    icon: const Icon(Icons.logout, size: 20),
+                    color: AppColors.statusCritical,
+                    tooltip: 'Logout',
+                    onPressed: _logout,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           Expanded(
             child: IndexedStack(
               index: _currentIndex,

@@ -12,7 +12,13 @@ import '../services/storage_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final int profileId;
-  const ChatScreen({super.key, required this.profileId});
+  final String? initialMessage;
+
+  /// Pending message set by other screens (e.g. trend summary "Discuss with AI").
+  /// Consumed once by ChatScreen on next build within the Shell.
+  static String? pendingMessage;
+
+  const ChatScreen({super.key, required this.profileId, this.initialMessage});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -41,7 +47,14 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _loadAccessLevel();
-    _loadMessages();
+    _loadMessages().then((_) {
+      // Check for pending message from trend summary "Discuss with AI"
+      final pending = widget.initialMessage ?? ChatScreen.pendingMessage;
+      ChatScreen.pendingMessage = null;
+      if (pending != null && pending.isNotEmpty) {
+        _sendMessage(imageDescription: pending);
+      }
+    });
     _loadVitals();
   }
 
@@ -202,34 +215,15 @@ class _ChatScreenState extends State<ChatScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // --- Simple header: profile name + last BP + last sugar ---
+            // --- Compact vitals bar ---
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
               child: Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.health_and_safety, color: Colors.white, size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.chatTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-                        if (_profileName.isNotEmpty)
-                          Text(_profileName, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                      ],
-                    ),
-                  ),
-                  // Vitals chips
+                  const Icon(Icons.health_and_safety, color: AppColors.primary, size: 18),
+                  const SizedBox(width: 6),
+                  Text(l10n.chatTitle, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  const Spacer(),
                   _VitalChip(label: 'BP', value: _lastBp),
                   const SizedBox(width: 6),
                   _VitalChip(label: 'Sugar', value: _lastSugar),

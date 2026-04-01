@@ -285,7 +285,7 @@ class HealthReadingService {
       final response = await http.get(
         Uri.parse('$baseUrl/readings/trend-summary?profile_id=$profileId&period=$period'),
         headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      ).timeout(const Duration(seconds: 45));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return (data['summary'] as String?) ?? '';

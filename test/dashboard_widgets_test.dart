@@ -276,7 +276,7 @@ void main() {
   // =========================================================================
 
   group('HomeHeader', () {
-    testWidgets('renders profile name', (tester) async {
+    testWidgets('renders greeting and gamification', (tester) async {
       await tester.pumpWidget(_wrap(
         HomeHeader(
           activeProfileName: 'Test User',
@@ -292,7 +292,9 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Test User'), findsWidgets);
+      // Should render SWASTH label and greeting
+      expect(find.text('SWASTH'), findsOneWidget);
+      expect(find.byType(HomeHeader), findsOneWidget);
     });
   });
 

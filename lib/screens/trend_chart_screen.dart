@@ -6,6 +6,8 @@ import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import 'chat_screen.dart';
+import 'shell_screen.dart';
 
 // ── Semantic chart colors (distinct from UI palette) ──────────────────────────
 const _kGlucoseColor = Color(0xFF10B981);   // emerald-500
@@ -113,9 +115,9 @@ class _TrendChartScreenState extends State<TrendChartScreen>
               : TabBarView(
                   controller: _tabController,
                   children: [
-                    _TrendView(readings: _allReadings, days: 7, summary: _summaries[7], summaryLoading: _summaryLoading[7] ?? false),
-                    _TrendView(readings: _allReadings, days: 30, summary: _summaries[30], summaryLoading: _summaryLoading[30] ?? false),
-                    _TrendView(readings: _allReadings, days: 90, summary: _summaries[90], summaryLoading: _summaryLoading[90] ?? false),
+                    _TrendView(readings: _allReadings, days: 7, summary: _summaries[7], summaryLoading: _summaryLoading[7] ?? false, profileId: widget.profileId),
+                    _TrendView(readings: _allReadings, days: 30, summary: _summaries[30], summaryLoading: _summaryLoading[30] ?? false, profileId: widget.profileId),
+                    _TrendView(readings: _allReadings, days: 90, summary: _summaries[90], summaryLoading: _summaryLoading[90] ?? false, profileId: widget.profileId),
                   ],
                 ),
     );
@@ -131,8 +133,9 @@ class _TrendView extends StatelessWidget {
   final int days;
   final String? summary;
   final bool summaryLoading;
+  final int profileId;
 
-  const _TrendView({required this.readings, required this.days, this.summary, this.summaryLoading = false});
+  const _TrendView({required this.readings, required this.days, this.summary, this.summaryLoading = false, required this.profileId});
 
   List<HealthReading> get _filtered {
     final cutoff = DateTime.now().subtract(Duration(days: days));
@@ -209,6 +212,37 @@ class _TrendView extends StatelessWidget {
                     Text(
                       summary!,
                       style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, height: 1.5),
+                    ),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () {
+                        ChatScreen.pendingMessage =
+                            'Based on my $days-day health summary: "${summary!}" — can you give me more details and what I should do?';
+                        // If pushed (from home), pop back and switch tab
+                        // If embedded (insights tab), just switch tab directly
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context, 'open_chat');
+                        } else {
+                          ShellScreen.switchToTab(4);
+                        }
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Discuss with AI',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.primary),
+                        ],
+                      ),
                     ),
                   ],
                 ),
