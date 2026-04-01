@@ -576,20 +576,9 @@ def get_ai_insight(
 
     age_desc = f"{age} years" if age else "unknown age"
 
-    prompt = f"""You are a concise health assistant. Give 1-2 sentences of personalised advice.
+    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {trend_note}
 
-Patient: {age_desc}, {gender}. Conditions: {conditions}. Medications: {medications}.
-
-{glucose_summary}
-{bp_summary}
-{trend_note}
-
-Rules:
-- Give actionable advice (what to do), not data summaries.
-- If avg glucose > 180 or any critical: be urgent, ask about medication, recommend doctor.
-- If BP avg > 140/90 or Stage 2 readings: be urgent about medication and doctor.
-- If normal: be encouraging, mention a specific habit or food.
-- Speak directly to the patient. Max 2 sentences."""
+Write exactly 2 short sentences: one about their status, one actionable tip. Under 30 words total. No greetings, no data numbers, no bullet points."""
 
     import ai_service
     prompt_summary = f"{glucose_summary} {bp_summary} {trend_note}".strip() or None
@@ -863,8 +852,8 @@ async def parse_image_with_gemini(
     if device_type not in _VALID_READING_TYPES:
         raise HTTPException(status_code=400, detail="device_type must be 'glucose' or 'blood_pressure'")
 
-    if not settings.GEMINI_API_KEY:
-        return {"error": "GEMINI_API_KEY not configured"}
+    if not settings.GEMINI_API_KEY and not settings.DEEPSEEK_API_KEY:
+        return {"error": "No AI API key configured"}
 
     try:
         image_bytes = await file.read()
@@ -904,37 +893,21 @@ async def parse_image_with_gemini(
                 '{"glucose": <number or null>}'
             )
 
-        from google import genai
-        from google.genai import types as genai_types
-
-        client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[
-                genai_types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-                prompt,
-            ],
-            config=genai_types.GenerateContentConfig(
-                max_output_tokens=1024,
-                temperature=0.0,
-            ),
+        # Use ai_service fallback chain: Gemini Vision → DeepSeek text → None
+        import ai_service
+        all_text = ai_service.generate_vision_insight(
+            prompt, image_bytes, 0, db,
+            prompt_summary=f"parse-image-{device_type}",
+            mime_type=mime_type,
         )
 
-        # gemini-2.5-flash may include thinking tokens; collect all text parts then
-        # use regex to find the JSON object regardless of surrounding markdown.
-        import re
-        all_text = "".join(
-            part.text
-            for candidate in response.candidates
-            for part in candidate.content.parts
-            if hasattr(part, "text") and part.text
-        )
         if not all_text:
-            return {"error": "Gemini returned an empty response"}
+            return {"error": "AI could not process the image. Please enter values manually."}
 
+        import re
         json_match = re.search(r"\{[^{}]+\}", all_text, re.DOTALL)
         if not json_match:
-            return {"error": "No JSON found in Gemini response"}
+            return {"error": "AI could not extract values from the image"}
 
         parsed = json.loads(json_match.group())
 
