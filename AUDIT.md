@@ -3,6 +3,18 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-04-01 — Use .env SERVER_HOST instead of hardcoded localhost
+- Modified `lib/config/app_config.dart`: Replaced localhost/10.0.2.2 fallback logic with `flutter_dotenv` reading SERVER_HOST from `.env` file. --dart-define still takes precedence.
+- Modified `lib/main.dart`: Added `flutter_dotenv` import and `dotenv.load()` call before app startup.
+- Modified `pubspec.yaml`: Added `.env` to flutter assets section.
+- Modified `.gitignore`: Added root `.env` to prevent committing secrets.
+
+## 2026-04-01 — CI/CD pipeline with GitHub Actions (Phase 1: Backend + Web)
+- Created `.github/workflows/dev.yml`: Auto-deploy on push to master — runs tests, deploys backend via SSH+PM2 (port 8007), builds Flutter web and SCPs to server, reloads Nginx.
+- Created `.github/workflows/prod.yml`: Manual deploy via workflow_dispatch — same flow but targets prod directory (port 8008).
+- Created `deploy/nginx-swasth.conf`: Nginx reverse proxy config serving both dev and prod (Flutter web static + API proxy).
+- Created `deploy/setup-server.sh`: One-time server provisioning script (directories, venvs, PostgreSQL databases, PM2 services, Nginx config).
+
 ---
 
 ## 2026-03-30 — AI Chat with rate limiting, conversation memory, and 38 new tests
@@ -1116,3 +1128,22 @@ Format: date, summary, file-level details.
 - App confirmed running on web (Chrome) and physical iPhone
 - Resolved iPhone "offline" banner — caused by default `10.0.2.2` fallback; fix: pass `--dart-define=SERVER_HOST=http://<LAN-IP>:8000`
   - 23:08:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 23:10:58 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback_branch_workflow.md
+  - 23:11:04 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
+  - 08:39:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/pubspec.yaml
+  - 08:39:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 08:39:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/config/app_config.dart
+  - 08:39:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.gitignore
+  - 08:40:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 09:01:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 09:01:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 09:02:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/deploy/nginx-swasth.conf
+  - 09:02:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/deploy/setup-server.sh
+  - 09:03:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 09:10:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 09:10:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 09:10:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/deploy/nginx-swasth.conf
+  - 09:10:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 09:10:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 09:11:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 09:11:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml

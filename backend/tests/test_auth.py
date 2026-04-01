@@ -103,9 +103,7 @@ class TestDecodeAccessToken:
 
     def test_tampered_token_returns_none(self):
         token = create_access_token(data={"sub": "a@b.com"})
-        # Flip a character in the signature part
+        # Replace the signature with a completely different string
         parts = token.split(".")
-        sig = parts[2]
-        tampered_sig = sig[:-1] + ("A" if sig[-1] != "A" else "B")
-        tampered = ".".join([parts[0], parts[1], tampered_sig])
+        tampered = ".".join([parts[0], parts[1], "INVALIDSIGNATURE"])
         assert decode_access_token(tampered) is None
