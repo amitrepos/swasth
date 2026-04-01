@@ -110,12 +110,20 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _pickImage() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      setState(() => _selectedImage = result.files.first);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        setState(() => _selectedImage = result.files.first);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open file picker: $e')),
+        );
+      }
     }
   }
 
@@ -142,7 +150,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       Map<String, dynamic> response;
       if (imageFile != null) {
-        final bytes = imageFile.bytes ?? (imageFile.path != null ? await File(imageFile.path!).readAsBytes() : null);
+        final bytes = imageFile.bytes ?? ((!kIsWeb && imageFile.path != null) ? await File(imageFile.path!).readAsBytes() : null);
         if (bytes != null) {
           final base64Str = base64Encode(bytes);
           final msg = text.isNotEmpty ? text : 'Please analyze this image';
@@ -272,8 +280,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: _selectedImage!.path != null && !kIsWeb
-                          ? Image.file(File(_selectedImage!.path!), width: 60, height: 60, fit: BoxFit.cover)
+                      child: _selectedImage!.bytes != null
+                          ? Image.memory(_selectedImage!.bytes!, width: 60, height: 60, fit: BoxFit.cover)
                           : const SizedBox(width: 60, height: 60, child: Icon(Icons.image, size: 30)),
                     ),
                     const SizedBox(width: 8),
