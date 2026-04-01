@@ -66,18 +66,17 @@ class TestFallbackChain:
 
 class TestVisionFallbackChain:
 
-    @patch("ai_service._try_deepseek")
     @patch("ai_service._try_gemini_vision")
     @patch("ai_service.settings")
-    def test_vision_fails_falls_to_text(self, mock_settings, mock_vision, mock_deepseek, db, test_user):
+    def test_vision_fails_returns_none(self, mock_settings, mock_vision, db, test_user):
+        """When Gemini Vision fails, returns None (Gemini-only for vision accuracy)."""
         mock_settings.GEMINI_API_KEY = "key"
-        mock_settings.DEEPSEEK_API_KEY = "key"
+        mock_settings.GEMINI_API_KEYS = None
         mock_vision.return_value = {"text": None, "error": "vision failed", "tokens": None, "ms": 100}
-        mock_deepseek.return_value = {"text": "Text-only advice.", "error": None, "tokens": 50, "ms": 200}
 
         from ai_service import generate_vision_insight
         result = generate_vision_insight("test", b"img", test_user.id, db)
-        assert result == "Text-only advice."
+        assert result is None
 
     @patch("ai_service._try_gemini_vision")
     @patch("ai_service.settings")

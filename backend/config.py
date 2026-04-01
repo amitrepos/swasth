@@ -29,13 +29,14 @@ class Settings(BaseSettings):
     # OTP settings
     OTP_EXPIRE_MINUTES: int = 10
 
-    # Google Gemini AI
+    # Google Gemini AI (comma-separated for key rotation)
     GEMINI_API_KEY: Optional[str] = None
+    GEMINI_API_KEYS: Optional[str] = None  # e.g. "key1,key2,key3"
 
     # DeepSeek AI (fallback) — sign up at platform.deepseek.com
     DEEPSEEK_API_KEY: Optional[str] = None
 
-    # Groq AI (free vision) — sign up at console.groq.com
+    # Groq AI (kept for future use, not used for vision — Gemini is more accurate)
     GROQ_API_KEY: Optional[str] = None
     
     # CORS settings
