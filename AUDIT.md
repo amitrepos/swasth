@@ -3,6 +3,74 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-04-01 — Major session: CI/CD, security, AI summaries, streaks, admin dashboard
+
+### CI/CD Pipeline
+- Created GitHub Actions workflows (dev.yml auto-deploy, prod.yml manual deploy)
+- Set up DEV (port 8007/8010) and PROD (port 8009/8011) environments on server
+- HTTPS with self-signed cert, Nginx reverse proxy
+- GitHub secrets configured for SSH deployment
+
+### Security (P0 fixes)
+- Added rate limiting (slowapi) to all sensitive endpoints
+- Set ENCRYPTION_KEY on both server environments for AES-256-GCM at-rest encryption
+- Rotated SECRET_KEY on both environments
+- 85% test coverage enforced in CI pipeline and pre-push hook
+
+### Test Suite (141 → 268 tests)
+- test_password_reset.py: 10 tests for OTP flow
+- test_dashboard_endpoints.py: 25 tests for health-score, ai-insight, readings CRUD
+- test_profiles_endpoints.py: 30 tests for profile CRUD, invites, access control
+- test_image_parsing.py: 15 tests for Gemini Vision + rule-based insights
+- test_ai_service_extended.py: 12 tests for AI fallback chain
+- test_chat_extended.py: 10 tests for chat context, history, access control
+- test_trend_summary.py: 13 tests for layered trend summaries
+- test_family_streaks.py: 8 tests for family leaderboard
+- test_admin.py: 13 tests for admin metrics + user management
+- dashboard_widgets_test.dart: 16 Flutter widget tests
+
+### AI Trend Summary (7/30/90 day)
+- New GET /readings/trend-summary endpoint with layered approach
+- Reuses dashboard AI insight (single source of truth) + appends period-specific data
+- Zero extra Gemini calls — instant response, consistent messaging
+- Shows trend direction, period comparison, normal %
+
+### Image Upload in Chat
+- Added image_picker for camera + gallery access
+- Chat input bar has attachment button with image preview
+- Sends to existing Gemini Vision backend pipeline
+
+### Persistent Shell Header
+- Profile avatar, name, switch_account, share, logout visible on all tabs
+- Removed duplicate icons from HomeHeader
+- Shell auto-refreshes on profile switch
+
+### Streaks & Family Leaderboard
+- New GET /readings/family-streaks endpoint
+- Cumulative points (10 per reading + streak bonuses)
+- Weekly activity calendar (7-day grid)
+- Family Health Board with medals, sorted by streak
+- Share button for streak cards
+
+### Admin Dashboard
+- New routes_admin.py with admin-only endpoints
+- GET /admin/metrics: DAU/MAU, retention, stickiness, streak distribution, viral metrics, clinical outcomes, AI usage, 30-day trend charts
+- GET /admin/users: user list with activity stats
+- POST /admin/users/{id}/make-admin and remove-admin
+- is_admin + last_login_at columns added to User model
+
+### Bug Fixes
+- PhysicianCard crash when doctorName is null
+- Missing ai_service import in trend-summary (crashed for shared profile viewers)
+- Route order fix: family-streaks before {reading_id}
+- Timezone comparison fix in retention calculation
+- DB schema fix: added access_level column to profile_invites on server
+
+### Tasks Added
+- B21: Store device photo with reading
+- B22: Pull data from Apple Health / Google Health Connect
+- B23: Voice conversation with AI (Phase 2)
+
 ## 2026-04-01 — Use .env SERVER_HOST instead of hardcoded localhost
 - Modified `lib/config/app_config.dart`: Replaced localhost/10.0.2.2 fallback logic with `flutter_dotenv` reading SERVER_HOST from `.env` file. --dart-define still takes precedence.
 - Modified `lib/main.dart`: Added `flutter_dotenv` import and `dotenv.load()` call before app startup.
@@ -1169,3 +1237,113 @@ Format: date, summary, file-level details.
   - 09:56:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
   - 09:56:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
   - 10:01:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_password_reset.py
+  - 10:05:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 10:05:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/conftest.py
+  - 10:07:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 10:07:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 10:08:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 10:08:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 10:08:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 10:08:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 10:08:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.githooks/pre-push
+  - 10:13:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_dashboard_endpoints.py
+  - 10:14:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_dashboard_endpoints.py
+  - 10:14:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_dashboard_endpoints.py
+  - 10:15:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 10:16:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 10:16:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 10:17:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 10:18:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/physician_card.dart
+  - 10:18:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 10:24:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/.coveragerc
+  - 10:26:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_profiles_endpoints.py
+  - 10:26:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_image_parsing.py
+  - 10:27:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/requirements.txt
+  - 10:28:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_image_parsing.py
+  - 10:28:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ai_service_extended.py
+  - 10:29:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat_extended.py
+  - 10:30:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ai_service_extended.py
+  - 10:31:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_chat_extended.py
+  - 10:32:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/.coveragerc
+  - 10:33:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/.coveragerc
+  - 10:34:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_dashboard_endpoints.py
+  - 10:39:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 10:41:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/ci.yml
+  - 10:41:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 10:41:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.githooks/pre-push
+  - 10:54:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 10:57:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 10:57:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 10:58:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 10:58:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 10:59:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 10:59:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 10:59:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 10:59:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 10:59:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:00:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/pubspec.yaml
+  - 11:00:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 11:00:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 11:00:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 11:01:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 11:01:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:11:22 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback_test_local_first.md
+  - 11:16:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 11:16:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:17:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:17:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:18:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:23:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 11:23:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 11:23:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:23:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 11:30:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 11:30:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 11:30:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:31:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:31:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 11:31:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 11:31:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:31:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 11:31:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 11:32:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:32:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:32:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:32:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
+  - 11:39:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 11:39:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 11:39:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 11:44:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 11:47:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:50:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 11:53:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 11:53:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 12:00:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 12:06:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 12:06:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 12:06:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 12:06:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 12:06:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 12:07:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 12:11:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/home_header.dart
+  - 12:11:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/home_header.dart
+  - 12:14:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 12:18:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/chat_screen.dart
+  - 12:26:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_trend_summary.py
+  - 12:32:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 12:40:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 12:41:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/health_reading_service.dart
+  - 12:41:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/streaks_screen.dart
+  - 12:42:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/pubspec.yaml
+  - 12:44:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/streaks_screen.dart
+  - 12:46:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 12:47:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 12:48:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_family_streaks.py
+  - 13:02:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 13:02:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 13:03:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 13:08:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 13:08:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 13:08:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_admin.py
+  - 13:16:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 13:20:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
