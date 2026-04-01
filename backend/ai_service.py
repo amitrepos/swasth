@@ -61,22 +61,11 @@ def generate_vision_insight(
     prompt_summary: Optional[str] = None,
     mime_type: str = "image/jpeg",
 ) -> Optional[str]:
-    """Analyze image: Groq LLaVA (free) → Gemini Vision → DeepSeek text → None."""
+    """Analyze image: Gemini Vision (best accuracy) → Groq (free fallback) → DeepSeek text → None."""
 
     errors = []
 
-    # 1. Try Groq Vision (free, fast, no rate limit issues)
-    if settings.GROQ_API_KEY:
-        result = _try_groq_vision(prompt, image_bytes, mime_type)
-        if result["text"]:
-            _log(db, profile_id, "groq-llava", prompt_summary,
-                 result["text"], None, result["tokens"], result["ms"])
-            return result["text"]
-        errors.append(f"groq: {result['error']}")
-    else:
-        errors.append("groq: GROQ_API_KEY not set")
-
-    # 2. Fallback: Gemini Vision
+    # 1. Try Gemini Vision first (best accuracy for medical devices)
     if settings.GEMINI_API_KEY:
         result = _try_gemini_vision(prompt, image_bytes, mime_type)
         if result["text"]:
@@ -86,6 +75,17 @@ def generate_vision_insight(
         errors.append(f"gemini: {result['error']}")
     else:
         errors.append("gemini: GEMINI_API_KEY not set")
+
+    # 2. Fallback: Groq Vision (free but less accurate)
+    if settings.GROQ_API_KEY:
+        result = _try_groq_vision(prompt, image_bytes, mime_type)
+        if result["text"]:
+            _log(db, profile_id, "groq-llava", prompt_summary,
+                 result["text"], "; ".join(errors), result["tokens"], result["ms"])
+            return result["text"]
+        errors.append(f"groq: {result['error']}")
+    else:
+        errors.append("groq: GROQ_API_KEY not set")
 
     # 3. Fallback: DeepSeek text-only
     if settings.DEEPSEEK_API_KEY:

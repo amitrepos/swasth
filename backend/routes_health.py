@@ -842,6 +842,7 @@ async def parse_image_with_gemini(
     request: Request,
     device_type: str,
     file: UploadFile = File(...),
+    db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
     """Use Gemini Vision to extract glucose or BP values from a device photo.
