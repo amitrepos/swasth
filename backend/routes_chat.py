@@ -1,11 +1,14 @@
 """AI Chat endpoints with rate limiting and conversation memory."""
 
 import base64
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from datetime import datetime, date, timedelta
 from typing import Optional
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+import os
 
 import models
 import ai_service
@@ -14,6 +17,8 @@ from dependencies import get_current_user, get_profile_access_or_403, get_profil
 from config import settings
 
 router = APIRouter()
+_enabled = os.environ.get("TESTING", "").lower() != "true"
+limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +195,9 @@ Write a single cohesive summary. Keep only the most important and actionable inf
 # ---------------------------------------------------------------------------
 
 @router.post("/chat/send")
+@limiter.limit("10/minute")
 def send_chat_message(
+    request: Request,
     data: dict,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),

@@ -9,6 +9,9 @@ import sys, os
 # Ensure the backend package root is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+# Disable rate limiting during tests
+os.environ["TESTING"] = "true"
+
 import pytest
 from sqlalchemy import create_engine, event, JSON
 from sqlalchemy.orm import sessionmaker
