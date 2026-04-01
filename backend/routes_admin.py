@@ -2,7 +2,9 @@
 
 All endpoints require is_admin=True on the authenticated user.
 """
+import os
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import HTMLResponse
 from sqlalchemy import func, distinct, case
 from sqlalchemy.orm import Session
 from datetime import datetime, date, timedelta
@@ -12,6 +14,15 @@ from database import get_db
 from dependencies import get_current_user
 
 router = APIRouter()
+
+_DASHBOARD_HTML = os.path.join(os.path.dirname(__file__), "admin_dashboard.html")
+
+
+@router.get("/admin", response_class=HTMLResponse)
+def admin_dashboard_page():
+    """Serve the admin dashboard HTML page."""
+    with open(_DASHBOARD_HTML, "r") as f:
+        return f.read()
 
 
 def _require_admin(user: models.User = Depends(get_current_user)):
