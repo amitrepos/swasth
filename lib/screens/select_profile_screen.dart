@@ -14,7 +14,10 @@ import 'pending_invites_screen.dart';
 import '../widgets/offline_banner.dart';
 
 class SelectProfileScreen extends StatefulWidget {
-  const SelectProfileScreen({super.key});
+  /// If true, was pushed from Shell (profile switcher) — pop back on select.
+  /// If false, came from Login/Splash — pushReplacement to Shell.
+  final bool pushedFromShell;
+  const SelectProfileScreen({super.key, this.pushedFromShell = false});
 
   @override
   State<SelectProfileScreen> createState() => _SelectProfileScreenState();
@@ -82,23 +85,27 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   }
 
   Future<void> _selectProfile(ProfileModel profile) async {
+    print('[SELECT-PROFILE] Saving profile: id=${profile.id} name=${profile.name}');
     await _storageService.saveActiveProfileId(profile.id);
     await _storageService.saveActiveProfileName(profile.name);
     await _storageService.saveActiveProfileAccessLevel(profile.accessLevel);
 
     // Verify the write completed before navigating
     final savedId = await _storageService.getActiveProfileId();
+    print('[SELECT-PROFILE] Verified savedId=$savedId');
     if (savedId == null) {
-      // Retry once
+      print('[SELECT-PROFILE] Write failed, retrying...');
       await _storageService.saveActiveProfileId(profile.id);
     }
 
+    print('[SELECT-PROFILE] pushedFromShell=${widget.pushedFromShell} mounted=$mounted');
+
     if (mounted) {
-      // If we were pushed from Shell (profile switcher), pop back.
-      // If we replaced Shell (first time / no profile), push new Shell.
-      if (Navigator.canPop(context)) {
+      if (widget.pushedFromShell) {
+        print('[SELECT-PROFILE] Popping back to Shell');
         Navigator.pop(context);
       } else {
+        print('[SELECT-PROFILE] pushReplacement to ShellScreen');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ShellScreen()),
