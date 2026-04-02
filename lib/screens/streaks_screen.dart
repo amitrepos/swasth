@@ -50,7 +50,8 @@ class _StreaksScreenState extends State<StreaksScreen> {
     try {
       return _leaderboard.firstWhere((e) => e['profile_id'] == _activeProfileId);
     } catch (_) {
-      return _leaderboard.isNotEmpty ? _leaderboard.first : null;
+      // Active profile not in leaderboard — show nothing, not someone else's data
+      return null;
     }
   }
 
