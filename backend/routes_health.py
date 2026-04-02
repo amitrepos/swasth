@@ -578,7 +578,7 @@ def get_ai_insight(
 
     prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {trend_note}
 
-Write exactly 2 short sentences: one about their status, one actionable tip. Under 30 words total. No greetings, no data numbers, no bullet points."""
+Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points."""
 
     import ai_service
     prompt_summary = f"{glucose_summary} {bp_summary} {trend_note}".strip() or None
