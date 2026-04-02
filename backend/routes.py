@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import os
+import pytz
 import models
 import schemas
 import auth
@@ -29,17 +30,22 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         )
 
     # 1. Create User (auth only)
-    from datetime import datetime
+    # Get UTC time and convert to user's timezone
+    user_tz = pytz.timezone(user.timezone)
+    now_utc = datetime.now(pytz.UTC)
+    now_in_user_tz = now_utc.astimezone(user_tz)
+    
     db_user = models.User(
         email=user.email,
         password_hash=auth.get_password_hash(user.password),
         full_name=user.full_name,
         phone_number=user.phone_number,
-        consent_timestamp=datetime.utcnow() if user.consent_app_version else None,
+        timezone=user.timezone,
+        consent_timestamp=now_in_user_tz if user.consent_app_version else None,
         consent_app_version=user.consent_app_version,
         consent_language=user.consent_language,
         ai_consent=bool(user.ai_consent) if user.ai_consent else bool(user.consent_app_version),
-        ai_consent_timestamp=datetime.utcnow() if (user.ai_consent or user.consent_app_version) else None,
+        ai_consent_timestamp=now_in_user_tz if (user.ai_consent or user.consent_app_version) else None,
     )
     db.add(db_user)
     db.flush()  # Get db_user.id
@@ -89,7 +95,12 @@ def login(request: Request, user: schemas.UserLogin, db: Session = Depends(get_d
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    db_user.last_login_at = datetime.utcnow()
+    # Update last_login with timezone-aware timestamp
+    # Handle case where old users might not have timezone set
+    user_timezone = db_user.timezone if db_user.timezone else "Asia/Kolkata"
+    user_tz = pytz.timezone(user_timezone)
+    now_utc = datetime.now(pytz.UTC)
+    db_user.last_login_at = now_utc.astimezone(user_tz)
     db.commit()
     access_token = auth.create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -150,7 +161,11 @@ def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Ses
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     user.password_hash = auth.get_password_hash(body.new_password)
-    user.updated_at = datetime.utcnow()
+    # Update timestamp in user's timezone - handle NULL timezone for old users
+    user_timezone = user.timezone if user.timezone else "Asia/Kolkata"
+    user_tz = pytz.timezone(user_timezone)
+    now_utc = datetime.now(pytz.UTC)
+    user.updated_at = now_utc.astimezone(user_tz)
     otp_record.is_used = True
     db.commit()
     return {"message": "Password reset successfully"}
@@ -178,7 +193,11 @@ def update_profile(
     if user_update.phone_number:
         user.phone_number = user_update.phone_number
 
-    user.updated_at = datetime.utcnow()
+    # Update timestamp in user's timezone - handle NULL timezone for old users
+    user_timezone = user.timezone if user.timezone else "Asia/Kolkata"
+    user_tz = pytz.timezone(user_timezone)
+    now_utc = datetime.now(pytz.UTC)
+    user.updated_at = now_utc.astimezone(user_tz)
     db.commit()
     db.refresh(user)
     return user
@@ -195,7 +214,11 @@ def grant_ai_consent(
 ):
     """Grant consent for AI-powered health insights (third-party processing)."""
     user.ai_consent = True
-    user.ai_consent_timestamp = datetime.utcnow()
+    # Record consent timestamp in user's timezone - handle NULL timezone for old users
+    user_timezone = user.timezone if user.timezone else "Asia/Kolkata"
+    user_tz = pytz.timezone(user_timezone)
+    now_utc = datetime.now(pytz.UTC)
+    user.ai_consent_timestamp = now_utc.astimezone(user_tz)
     db.commit()
     return {"message": "AI consent granted"}
 

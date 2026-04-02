@@ -3,6 +3,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/auth_form_scroll_body.dart';
 import 'registration_screen.dart';
 import 'select_profile_screen.dart';
 import 'forgot_password_screen.dart';
@@ -155,8 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         title: Text(l10n.loginTitle),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: AuthFormScrollBody(
         child: Form(
           key: _formKey,
           child: Column(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../widgets/auth_form_scroll_body.dart';
 import 'consent_screen.dart';
 import 'login_screen.dart';
 
@@ -31,7 +32,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'A+';
+  String _selectedTimezone = 'Asia/Kolkata'; // Default timezone for Bihar
   final List<String> _selectedConditions = [];
+
+  // Timezone options for global users
+  final List<Map<String, String>> _timezoneOptions = [
+    // India
+    {'display': 'India (IST)', 'value': 'Asia/Kolkata'},
+    // USA
+    {'display': 'USA - Eastern Time (EST/EDT)', 'value': 'America/New_York'},
+    {'display': 'USA - Central Time (CST/CDT)', 'value': 'America/Chicago'},
+    {'display': 'USA - Mountain Time (MST/MDT)', 'value': 'America/Denver'},
+    {'display': 'USA - Pacific Time (PST/PDT)', 'value': 'America/Los_Angeles'},
+    // Europe
+    {'display': 'Europe - London (GMT/BST)', 'value': 'Europe/London'},
+    {'display': 'Europe - Paris/Berlin (CET/CEST)', 'value': 'Europe/Paris'},
+    // Asia
+    {'display': 'Asia - Bangkok (ICT)', 'value': 'Asia/Bangkok'},
+    {'display': 'Asia - Singapore (SGT)', 'value': 'Asia/Singapore'},
+    {'display': 'Asia - Tokyo (JST)', 'value': 'Asia/Tokyo'},
+    {'display': 'Asia - Hong Kong (HKT)', 'value': 'Asia/Hong_Kong'},
+    {'display': 'Asia - Dubai (GST)', 'value': 'Asia/Dubai'},
+    // Australia
+    {'display': 'Australia - Sydney (AEST/AEDT)', 'value': 'Australia/Sydney'},
+    {'display': 'Australia - Melbourne (AEST/AEDT)', 'value': 'Australia/Melbourne'},
+    // Other
+    {'display': 'UTC (GMT)', 'value': 'UTC'},
+  ];
 
   // Medical condition values are API keys — do NOT translate
   final List<String> _medicalConditionsOptions = [
@@ -113,6 +140,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'confirm_password': _confirmPasswordController.text,
         'full_name': _fullNameController.text.trim(),
         'phone_number': _phoneController.text.trim(),
+        'timezone': _selectedTimezone,
         'profile_name': _profileNameController.text.trim(),
         'age': int.tryParse(_ageController.text),
         'gender': _selectedGender,
@@ -134,9 +162,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => ConsentScreen(
-              onAccept: ({required String appVersion, required String language}) async {
+              onAccept: ({required String appVersion, required String language, required bool aiConsent}) async {
                 userData['consent_app_version'] = appVersion;
                 userData['consent_language'] = language;
+                userData['ai_consent'] = aiConsent;
                 await _apiService.register(userData);
               },
             ),
@@ -165,8 +194,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       appBar: AppBar(
         title: Text(l10n.registerTitle),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: AuthFormScrollBody(
         child: Form(
           key: _formKey,
           child: Column(
@@ -226,6 +254,25 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     return 'Phone number must be 10-15 digits';
                   }
                   return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Timezone
+              DropdownButtonFormField<String>(
+                value: _selectedTimezone,
+                decoration: InputDecoration(
+                  labelText: 'Time Zone',
+                  prefixIcon: const Icon(Icons.public),
+                ),
+                items: _timezoneOptions
+                    .map((tz) => DropdownMenuItem(
+                          value: tz['value']!,
+                          child: Text(tz['display']!),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() => _selectedTimezone = value!);
                 },
               ),
               const SizedBox(height: 16),

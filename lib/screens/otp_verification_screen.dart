@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/auth_form_scroll_body.dart';
 import 'reset_password_screen.dart';
 import 'login_screen.dart';
 
@@ -128,8 +129,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       appBar: AppBar(
         title: Text(l10n.verifyOtpTitle),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: AuthFormScrollBody(
         child: Form(
           key: _formKey,
           child: Column(

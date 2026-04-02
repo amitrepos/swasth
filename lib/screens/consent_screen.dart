@@ -14,6 +14,7 @@ class ConsentScreen extends StatefulWidget {
   final Future<void> Function({
     required String appVersion,
     required String language,
+    required bool aiConsent,
   }) onAccept;
 
   const ConsentScreen({super.key, required this.onAccept});
@@ -66,6 +67,7 @@ class _ConsentScreenState extends State<ConsentScreen> {
       await widget.onAccept(
         appVersion: '1.0.0',
         language: locale,
+        aiConsent: true,
       );
 
       if (!mounted) return;
