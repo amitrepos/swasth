@@ -87,10 +87,16 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
     await _storageService.saveActiveProfileAccessLevel(profile.accessLevel);
 
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ShellScreen()),
-      );
+      // If we were pushed from Shell (profile switcher), pop back.
+      // If we replaced Shell (first time / no profile), push new Shell.
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ShellScreen()),
+        );
+      }
     }
   }
 
