@@ -148,7 +148,7 @@ class _ShellScreenState extends State<ShellScreen> {
               children: [
                 const HomeScreen(),
                 HistoryScreen(key: ValueKey('history_$_profileId'), profileId: _profileId!),
-                const StreaksScreen(),
+                StreaksScreen(key: ValueKey('streaks_$_profileId')),
                 InsightsScreen(key: ValueKey('insights_$_profileId'), profileId: _profileId!),
                 ChatScreen(
                   key: ValueKey('chat_${_profileId}_$_chatRebuildKey'),
