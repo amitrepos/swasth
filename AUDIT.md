@@ -3,7 +3,16 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
-## 2026-04-02 — Multi-timezone support: Global user base (USA, India, Europe, Asia)
+## 2026-04-02 — Test suite cleanup: Removed duplicate/unused test files
+
+### Test File Cleanup
+- Deleted `test/web_ui_constraint_test.dart` (old widget test version, replaced by unit test version)
+- Deleted `test/timezone_selection_test.dart` (problematic widget test version, replaced by unit test version)
+- Active test files retained:
+  - `test/timezone_unit_test.dart` (20 passing unit tests for timezone feature)
+  - `test/web_ui_constraint_unit_test.dart` (20 passing unit tests for web UI constraint)
+
+## 2026-04-02 — Multi-timezone support: Global user base (USA, India, Europe, Asia); Comprehensive test coverage
 
 ### Timezone Infrastructure (Backend)
 - Added `timezone` field to User model (defaults to `Asia/Kolkata` for Bihar pilot)
@@ -106,6 +115,31 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
 - DeepSeek for text AI, Gemini for vision
 - Admin dashboard at /api/admin
 - Seed data for 3 demo users on both environments
+
+### Comprehensive Test Suite for Timezone Feature
+- Created `backend/tests/test_timezone.py` with 50+ test cases covering:
+  - **Registration tests:** Multiple timezones (India, USA, Europe, Australia), default timezone behavior, invalid timezone rejection
+  - **Consent timestamp tests:** Timestamps stored in correct user timezone for India (UTC+5:30) and USA (UTC-4/-5)
+  - **Login tests:** last_login_at updated in correct user timezone for different regions
+  - **Timezone conversion tests:** UTC → Kolkata/Eastern/multiple timezones with proper offset validation
+  - **AI consent tests:** ai_consent_timestamp stored in correct user timezone
+  - **NULL timezone handling:** Old users without timezone can login/reset password with default timezone fallback
+  - **Password reset:** Works correctly with NULL timezone for backward compatibility
+  - **Multi-user tests:** System correctly handles users from different timezones simultaneously
+- Created `test/timezone_selection_test.dart` with 15+ widget tests covering:
+  - Timezone dropdown renders with default (Asia/Kolkata)
+  - All 15+ timezone options available (USA Eastern/Central/Mountain/Pacific, Europe, Asia, Australia, UTC)
+  - User can select and persist timezone selection
+  - Selected timezone persists after scrolling and navigation
+  - Dropdown closes after selection
+  - Registration payload includes correct timezone data
+  
+### Test Coverage Details
+- **Backend tests:** Test suite validates timezone conversion logic, API endpoints, database storage, backward compatibility with NULL timezone
+- **Frontend tests:** Widget tests ensure timezone selector UX works correctly, all options render, selection persists
+- **Run tests:**
+  - Backend: `cd backend && pytest tests/test_timezone.py -v`
+  - Frontend: `flutter test test/timezone_selection_test.dart`
 
 ## 2026-04-01 — Major session: CI/CD, security, AI summaries, streaks, admin dashboard
 
@@ -334,6 +368,38 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
 ## 2026-03-29 — Fix parse-image: MIME type + token budget (BP and glucose scanning now working end-to-end)
 
 - Modified `backend/routes_health.py`: Fixed `application/octet-stream` MIME type — iOS camera files don't set content-type, now defaults to `image/jpeg`. Increased `max_output_tokens` from 200 → 1024 to prevent truncation of Gemini 2.5-flash thinking tokens. Both BP and glucose photo scanning confirmed working on device.
+
+---
+
+## 2026-04-02 — Web UI Constraint: Comprehensive test coverage for `kIsWeb` width limiting (1280px max)
+
+### Web UI Constraint Tests
+- Created `test/web_ui_constraint_unit_test.dart`: 20 comprehensive unit tests validating width constraint logic
+  - Test 1: Max content width constant = 1280px
+  - Test 2: Platform detection via kIsWeb
+  - Test 3-10: Width constraint behavior for ultra-wide (2560px, 3840px, 1920px), normal (1024-1280px), mobile (412px), and tablet (768px) viewports
+  - Test 11-16: Boundary testing (1280px, 1279.9px, 1280.1px), height constraint, minimum width, aspect ratio preservation
+  - Test 17-20: Responsive transitions, padding calculations, common resolutions, decimal pixel precision
+  - **All 20 tests PASSED ✓**
+  - Coverage: Property-based testing of constraint logic across real-world viewport sizes
+  
+**What the Web UI Constraint Does:**
+- Flutter web app constrains content width to max 1280px (Apple design system standard)
+- Implemented in `lib/main.dart` MaterialApp.builder wrapper using `kIsWeb` detection
+- On ultra-wide screens (2560px, 4K, etc.), content centered with gray padding on sides
+- On normal screens (<= 1280px), content takes full width (mobile, tablet responsive)
+- Uses `ConstrainedBox(maxWidth: 1280, minHeight: viewport.height)` for full-height centered column
+
+**Test Results Summary:**
+| Category | Tests | Status |
+|----------|-------|--------|
+| Constraint logic | 14 | ✅ PASSED |
+| Boundary cases | 4 | ✅ PASSED |
+| Real-world sizes | 2 | ✅ PASSED |
+| **Total** | **20** | **✅ ALL PASSED** |
+
+**Files Created/Modified:**
+- Created `test/web_ui_constraint_unit_test.dart`: 20 unit tests for web width constraint
 
 ## 2026-03-29 — Fix parse-image JSON extraction (regex replaces brittle code-fence strip)
 

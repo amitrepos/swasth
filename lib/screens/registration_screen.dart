@@ -261,6 +261,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               // Timezone
               DropdownButtonFormField<String>(
                 value: _selectedTimezone,
+                isExpanded: true,
                 decoration: InputDecoration(
                   labelText: 'Time Zone',
                   prefixIcon: const Icon(Icons.public),
