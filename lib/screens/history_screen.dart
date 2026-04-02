@@ -55,6 +55,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         readings.map((r) => r.toCacheJson()).toList(),
       );
 
+      readings.sort((a, b) => b.readingTimestamp.compareTo(a.readingTimestamp));
       setState(() {
         _readings = readings;
         _isLoading = false;
@@ -67,6 +68,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         if (_filterType != null) {
           readings = readings.where((r) => r.readingType == _filterType).toList();
         }
+        readings.sort((a, b) => b.readingTimestamp.compareTo(a.readingTimestamp));
         setState(() {
           _readings = readings;
           _isLoading = false;
