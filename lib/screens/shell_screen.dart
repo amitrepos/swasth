@@ -73,7 +73,6 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   @override
-  @override
   void dispose() {
     _connectivityTimer?.cancel();
     _profileRefreshTimer?.cancel();
