@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
-import '../services/ocr_service.dart' show OcrResult; // type only — not called directly
+import '../services/ocr_service.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import 'reading_confirmation_screen.dart';
@@ -71,27 +71,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
   Future<void> _capture() async {
     if (_controller == null || !_controller!.value.isInitialized || _isCapturing) return;
 
-    // Pre-flight: photo scan needs internet for Gemini Vision
-    final reachable = await ConnectivityService().isServerReachable();
-    if (!reachable && mounted) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('No Internet'),
-          content: const Text(
-            'Photo scan requires an internet connection to analyze the image. '
-            'Please try again when connected, or use manual entry.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
+    // No internet check needed — local ML Kit OCR works offline
 
     setState(() => _isCapturing = true);
 
@@ -125,9 +105,8 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         ),
       );
 
-      // Use Gemini Vision via backend
-      // ML Kit on-device OCR is NOT used here — it has arm64 incompatibilities
-      // on iOS 26 that crash the app. If Gemini fails, user is prompted to enter manually.
+      // Try Gemini Vision via backend (uses fallback chain: Gemini → DeepSeek)
+      // ML Kit local OCR disabled on iOS due to arm64 crash on iOS 26.
       OcrResult? result;
       final token = await StorageService().getToken();
       if (token != null) {
@@ -142,17 +121,26 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
 
       if (!mounted) return;
 
-      // Gemini failed to respond (network error, backend unreachable, no token)
-      // Don't say "blurry" — that's misleading. Offer manual entry instead.
       if (result == null) {
-        _showServerError();
+        _showError(
+          title: 'Could Not Read Display',
+          message: 'Neither the on-device reader nor the AI could extract values from this photo.\n\n'
+              'Try:\n'
+              '  • Hold the phone steady and closer to the display\n'
+              '  • Make sure the screen is lit and numbers are visible\n'
+              '  • Avoid glare or shadows on the display',
+        );
         setState(() => _isCapturing = false);
         return;
       }
 
-      // Gemini responded but couldn't extract valid values from the image
       if (!result.hasValue) {
-        _showParseError(l10n, result.rawText);
+        _showError(
+          title: 'Numbers Not Detected',
+          message: 'The photo was captured but no valid reading was found.\n\n'
+              'The camera detected: "${result.rawText.isNotEmpty ? result.rawText : 'no text'}"\n\n'
+              'Try taking the photo again or enter the reading manually.',
+        );
         setState(() => _isCapturing = false);
         return;
       }
@@ -195,18 +183,12 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
     );
   }
 
-  void _showServerError() {
+  void _showError({required String title, required String message}) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Couldn't Reach Server"),
-        content: const Text(
-          "The photo was taken but the AI couldn't be reached to read the display.\n\n"
-          "Check that:\n"
-          "  • Your phone is on the same WiFi as the server\n"
-          "  • The backend is running\n\n"
-          "You can enter the reading manually instead.",
-        ),
+        title: Text(title),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -233,49 +215,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
     );
   }
 
-  void _showParseError(AppLocalizations l10n, String rawText) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Couldn't Read the Display"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "The image was captured but the reading couldn't be extracted. Try:\n"
-              "  • Hold the phone steady and parallel to the display\n"
-              "  • Make sure the screen is fully lit and numbers are visible\n"
-              "  • Turn on flash if the room is dark\n"
-              "  • Check your internet connection (needed for AI scanning)",
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Try Again"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // close dialog
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ReadingConfirmationScreen(
-                    ocrResult: null,
-                    deviceType: widget.deviceType,
-                    profileId: widget.profileId,
-                  ),
-                ),
-              );
-            },
-            child: const Text("Enter Manually"),
-          ),
-        ],
-      ),
-    );
-  }
+  // _showParseError removed — replaced by _showError with specific messages
 
   @override
   void dispose() {

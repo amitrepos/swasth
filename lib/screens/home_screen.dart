@@ -25,8 +25,10 @@ import '../widgets/home/vital_summary_card.dart';
 import '../widgets/home/metrics_grid.dart';
 import '../widgets/home/reading_input_modal.dart';
 import '../utils/health_helpers.dart' as helpers;
+import '../services/reminder_service.dart';
 import '../main.dart' show routeObserver;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -84,7 +86,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void didPopNext() {
-    if (_activeProfileId != null) _refreshHealthScore(_activeProfileId!);
+    // Re-read active profile from storage in case it changed
+    _loadProfileInfo();
   }
 
   Future<void> _loadProfileInfo() async {
@@ -318,6 +321,11 @@ class _HomeScreenState extends State<HomeScreen>
                             },
                           ),
                           const SizedBox(height: 16),
+
+                          // Quick actions: reminders + weekly summary
+                          _buildQuickActions(l10n),
+                          const SizedBox(height: 16),
+
                           _buildFooter(l10n),
                         ],
                       );
@@ -331,6 +339,93 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildQuickActions(AppLocalizations l10n) {
+    return Row(
+      children: [
+        // Reminder toggle
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _showReminderDialog(context),
+            child: GlassCard(
+              borderRadius: 16,
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Icon(Icons.notifications_active, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text('Set Reminder', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Share weekly summary
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _shareWeeklySummary(),
+            child: GlassCard(
+              borderRadius: 16,
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Icon(Icons.share, size: 20, color: AppColors.success),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text('Share Summary', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showReminderDialog(BuildContext ctx) async {
+    final reminder = ReminderService();
+    final enabled = await reminder.isEnabled();
+    final hour = await reminder.getHour();
+    final minute = await reminder.getMinute();
+
+    if (!mounted) return;
+    final time = await showTimePicker(
+      context: ctx,
+      initialTime: TimeOfDay(hour: hour, minute: minute),
+      helpText: enabled ? 'Change reminder time (or cancel to disable)' : 'Set daily reminder time',
+    );
+
+    if (time != null) {
+      await reminder.enableReminder(time.hour, time.minute);
+      if (mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(content: Text('Reminder set for ${time.format(ctx)} daily')),
+        );
+      }
+    } else if (enabled) {
+      await reminder.disableReminder();
+      if (mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(content: Text('Reminder disabled')),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareWeeklySummary() async {
+    if (_activeProfileId == null) return;
+    final token = await _storageService.getToken();
+    if (token == null) return;
+
+    final data = await _readingService.getWeeklySummary(token, _activeProfileId!);
+    final text = data['summary_text'] as String? ?? 'No summary available';
+
+    Share.share(text);
   }
 
   Widget _buildFooter(AppLocalizations l10n) {

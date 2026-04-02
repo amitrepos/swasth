@@ -418,8 +418,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (isDuplicate) return;
 
-      final saved =
+      final saveResult =
           await HealthReadingService().saveReading(healthReading, token);
+      final saved = saveResult['reading'] as HealthReading;
       print('Saved reading ID: ${saved.id}');
 
       if (mounted) {

@@ -23,8 +23,20 @@ class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
 
   /// Switch to a tab from outside the shell (e.g. "Discuss with AI").
-  static void switchToTab(int index) {
-    _ShellScreenState._instance?._onTap(index);
+  /// If chatMessage is provided and index is 4 (Chat), rebuilds Chat with that message.
+  static void switchToTab(int index, {String? chatMessage}) {
+    final state = _ShellScreenState._instance;
+    if (state == null) return;
+    if (index == 4 && chatMessage != null) {
+      state._chatInitialMessage = chatMessage;
+      // Force rebuild Chat by changing its key
+      state.setState(() {
+        state._chatRebuildKey++;
+        state._currentIndex = index;
+      });
+    } else {
+      state._onTap(index);
+    }
   }
 
   @override
@@ -40,6 +52,8 @@ class _ShellScreenState extends State<ShellScreen> {
   bool _isOffline = false;
   Timer? _connectivityTimer;
   Timer? _profileRefreshTimer;
+  String? _chatInitialMessage;
+  int _chatRebuildKey = 0;
 
   @override
   void initState() {
@@ -59,17 +73,22 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   @override
+  @override
   void dispose() {
     _connectivityTimer?.cancel();
     _profileRefreshTimer?.cancel();
+    if (_instance == this) _instance = null;
     super.dispose();
   }
 
   Future<void> _refreshProfileIfChanged() async {
+    if (!mounted) return;
     final storage = StorageService();
     final id = await storage.getActiveProfileId();
-    if (id != null && id != _profileId && mounted) {
+    if (!mounted) return;
+    if (id != null && id != _profileId) {
       final name = await storage.getActiveProfileName() ?? 'Health';
+      if (!mounted) return;
       setState(() { _profileId = id; _profileName = name; });
     }
   }
@@ -84,6 +103,7 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   Future<void> _checkConnectivity() async {
+    if (!mounted) return;
     final reachable = await ConnectivityService().isServerReachable();
     if (!mounted) return;
     final wasOffline = _isOffline;
@@ -123,101 +143,6 @@ class _ShellScreenState extends State<ShellScreen> {
       body: Column(
         children: [
           if (_isOffline) const OfflineBanner(),
-
-          // ── Persistent header bar (visible on all tabs) ────────────
-          SafeArea(
-            bottom: false,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
-              decoration: const BoxDecoration(
-                color: AppColors.bgPage,
-                border: Border(bottom: BorderSide(color: AppColors.separator, width: 0.5)),
-              ),
-              child: Row(
-                children: [
-                  // Profile avatar
-                  GestureDetector(
-                    onTap: () {
-                      if (_profileId != null) {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => ProfileScreen(profileId: _profileId!),
-                        ));
-                      }
-                    },
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                      child: Text(
-                        _profileName.isNotEmpty ? _profileName[0].toUpperCase() : '?',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Profile name — tap to view profile
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        if (_profileId != null) {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => ProfileScreen(profileId: _profileId!),
-                          ));
-                        }
-                      },
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              _profileName,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Switch profile
-                  IconButton(
-                    icon: const Icon(Icons.switch_account, size: 22),
-                    color: AppColors.textSecondary,
-                    tooltip: 'Switch Profile',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
-                    ),
-                  ),
-                  // Share / manage access
-                  IconButton(
-                    icon: const Icon(Icons.share, size: 20),
-                    color: AppColors.textSecondary,
-                    tooltip: 'Share Profile',
-                    onPressed: () {
-                      if (_profileId != null) {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => ManageAccessScreen(
-                            profileId: _profileId!,
-                            profileName: _profileName,
-                          ),
-                        ));
-                      }
-                    },
-                  ),
-                  // Logout
-                  IconButton(
-                    icon: const Icon(Icons.logout, size: 20),
-                    color: AppColors.statusCritical,
-                    tooltip: 'Logout',
-                    onPressed: _logout,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           Expanded(
             child: IndexedStack(
               index: _currentIndex,
@@ -226,7 +151,11 @@ class _ShellScreenState extends State<ShellScreen> {
                 HistoryScreen(key: ValueKey('history_$_profileId'), profileId: _profileId!),
                 const StreaksScreen(),
                 InsightsScreen(key: ValueKey('insights_$_profileId'), profileId: _profileId!),
-                ChatScreen(key: ValueKey('chat_$_profileId'), profileId: _profileId!),
+                ChatScreen(
+                  key: ValueKey('chat_${_profileId}_$_chatRebuildKey'),
+                  profileId: _profileId!,
+                  initialMessage: _chatInitialMessage,
+                ),
               ],
             ),
           ),
@@ -262,7 +191,11 @@ class _ShellScreenState extends State<ShellScreen> {
     );
   }
 
-  void _onTap(int index) => setState(() => _currentIndex = index);
+  void _onTap(int index) {
+    // Clear chat message when switching away from chat or switching normally
+    if (index != 4) _chatInitialMessage = null;
+    setState(() => _currentIndex = index);
+  }
 }
 
 class _NavItem extends StatelessWidget {

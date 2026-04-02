@@ -22,8 +22,10 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | A9 | Local offline storage | ❌ Not started | Rolled back 2026-03-31. Hive caching was implemented but reverted to stabilize app for testing. Deferred to post-pilot. |
 | A10 | Invite family via WhatsApp | 🔄 Partial | Email-based invite works with relationship dropdown (father/mother/spouse/etc.). No WhatsApp deep link or share-to-install flow. |
 | A11 | Access permissions | ✅ Done | owner / viewer / editor levels via `profile_access` table. `dependencies.py` enforces access. |
-| A12 | First-time onboarding | ❌ Not started | Registration screen collects health info during signup but there are no dedicated onboarding/welcome carousel screens (welcome → how to photograph → invite family flow). |
+| A12 | First-time onboarding | ❌ Deferred | Replaced with YouTube tutorial video link. App is self-intuitive. Add "How to use" link on empty state that opens YouTube video. No in-app onboarding screens needed. |
 | A13 | Remember me / saved credentials | ✅ Done | "Remember me" checkbox on login screen. Credentials stored in `flutter_secure_storage` (iOS Keychain). Pre-fills email + password on next open. Cleared on logout or when checkbox unticked. |
+| A14 | Google OAuth login | ❌ Not started | Add "Sign in with Google" option. Use `google_sign_in` Flutter package + backend token verification. ~3 hours. Needs Google Cloud OAuth client IDs (web + iOS + Android). Existing email/password login stays as fallback. |
+| A15 | Admin visual dashboard (Phase 2) | ✅ Done | HTML dashboard at `/api/admin` with KPI cards, charts, user management. Served by backend. |
 
 ---
 

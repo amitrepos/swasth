@@ -216,15 +216,16 @@ class _TrendView extends StatelessWidget {
                     const SizedBox(height: 12),
                     GestureDetector(
                       onTap: () {
-                        ChatScreen.pendingMessage =
-                            'Based on my $days-day health summary: "${summary!}" — can you give me more details and what I should do?';
-                        // If pushed (from home), pop back and switch tab
-                        // If embedded (insights tab), just switch tab directly
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context, 'open_chat');
-                        } else {
-                          ShellScreen.switchToTab(4);
-                        }
+                        final msg = 'Based on my $days-day health summary: "${summary!}" — can you give me more details and what I should do?';
+                        // Switch to chat first, then pop if needed
+                        ShellScreen.switchToTab(4, chatMessage: msg);
+                        // Pop back to shell if this was pushed (from home screen)
+                        // Use addPostFrameCallback to avoid context issues
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (Navigator.canPop(context)) {
+                            Navigator.popUntil(context, (route) => route.isFirst);
+                          }
+                        });
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

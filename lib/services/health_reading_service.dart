@@ -178,15 +178,21 @@ const _kTimeout = Duration(seconds: 20);
 class HealthReadingService {
   static String baseUrl = '${AppConfig.serverHost}/api'; // Use /api prefix for health endpoints
 
-  /// Save a new health reading
-  Future<HealthReading> saveReading(HealthReading reading, String token) async {
+  /// Save a new health reading. Returns {reading, alert?} map.
+  Future<Map<String, dynamic>> saveReading(HealthReading reading, String token) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/readings'),
         headers: ApiClient.headers(token: token),
         body: jsonEncode(reading.toJson()),
       ).timeout(_kTimeout);
-      if (response.statusCode == 201) return HealthReading.fromJson(jsonDecode(response.body));
+      if (response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        return {
+          'reading': HealthReading.fromJson(body),
+          'alert': body['alert'],
+        };
+      }
       throw Exception(ApiClient.errorDetail(response, 'Failed to save reading'));
     } catch (e) {
       throw Exception('Failed to save reading: $e');
@@ -372,6 +378,22 @@ class HealthReadingService {
       return [];
     } catch (_) {
       return [];
+    }
+  }
+
+  /// Get shareable weekly summary text for a profile.
+  Future<Map<String, dynamic>> getWeeklySummary(String token, int profileId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/readings/weekly-summary?profile_id=$profileId'),
+        headers: ApiClient.headers(token: token),
+      ).timeout(_kTimeout);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {};
+    } catch (_) {
+      return {};
     }
   }
 }

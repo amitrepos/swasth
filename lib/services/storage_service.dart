@@ -199,4 +199,8 @@ class StorageService {
   Future<void> clearEverything() async {
     await _storage.deleteAll();
   }
+
+  /// Generic string get/set for app preferences (reminders, settings).
+  Future<String?> getString(String key) async => _storage.read(key: key);
+  Future<void> setString(String key, String value) async => _storage.write(key: key, value: value);
 }
