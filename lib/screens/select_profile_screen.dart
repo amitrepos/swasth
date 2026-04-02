@@ -86,6 +86,13 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
     await _storageService.saveActiveProfileName(profile.name);
     await _storageService.saveActiveProfileAccessLevel(profile.accessLevel);
 
+    // Verify the write completed before navigating
+    final savedId = await _storageService.getActiveProfileId();
+    if (savedId == null) {
+      // Retry once
+      await _storageService.saveActiveProfileId(profile.id);
+    }
+
     if (mounted) {
       // If we were pushed from Shell (profile switcher), pop back.
       // If we replaced Shell (first time / no profile), push new Shell.

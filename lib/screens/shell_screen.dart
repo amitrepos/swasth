@@ -115,7 +115,12 @@ class _ShellScreenState extends State<ShellScreen> {
 
   Future<void> _loadProfile() async {
     final storage = StorageService();
-    final id = await storage.getActiveProfileId();
+    var id = await storage.getActiveProfileId();
+    // Retry once if null — storage may not have flushed yet
+    if (id == null) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      id = await storage.getActiveProfileId();
+    }
     if (!mounted) return;
     if (id == null) {
       Navigator.pushReplacement(
