@@ -61,6 +61,15 @@ class UserRegister(BaseModel):
             raise ValueError('Passwords do not match')
         return v
 
+    @validator('timezone')
+    def validate_timezone(cls, v):
+        import pytz
+        try:
+            pytz.timezone(v)
+            return v
+        except pytz.exceptions.UnknownTimeZoneError:
+            raise ValueError(f'Invalid timezone: {v}')
+
     @validator('gender')
     def validate_gender(cls, v):
         if v is not None and v not in GENDER_OPTIONS:
@@ -102,6 +111,7 @@ class UserResponse(BaseModel):
     full_name: str
     phone_number: str
     is_active: bool
+    timezone: str
     consent_timestamp: Optional[datetime] = None
     consent_app_version: Optional[str] = None
     consent_language: Optional[str] = None
