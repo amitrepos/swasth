@@ -19,6 +19,7 @@ class User(Base):
     ai_consent = Column(Boolean, default=False)
     ai_consent_timestamp = Column(DateTime(timezone=True), nullable=True)
     is_admin = Column(Boolean, default=False)
+    timezone = Column(String, default="Asia/Kolkata", nullable=False)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

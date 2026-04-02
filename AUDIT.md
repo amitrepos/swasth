@@ -3,6 +3,48 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-04-02 — Multi-timezone support: Global user base (USA, India, Europe, Asia)
+
+### Timezone Infrastructure (Backend)
+- Added `timezone` field to User model (defaults to `Asia/Kolkata` for Bihar pilot)
+- Added `timezone` to UserRegister schema in registration flow
+- Updated registration route to accept timezone and store timezone-aware timestamps using pytz
+- Updated login route to use timezone-aware `last_login_at` based on user's timezone
+- Fixed password reset route to use `updated_at` in user's timezone
+- Fixed profile update route to use `updated_at` in user's timezone
+- Fixed AI consent route to use `ai_consent_timestamp` in user's timezone
+- **Fixed critical timezone conversion bug:** Changed all `datetime.now(user_tz)` to `datetime.now(pytz.UTC).astimezone(user_tz)` in routes.py (lines 35-36, 100-101, 164, 194, 213)
+  - Previous code was incorrectly tagging server's local time with user timezone
+  - Now properly converts UTC to user's local timezone for consent_timestamp, ai_consent_timestamp, last_login_at, updated_at
+  - This fixes timestamps showing incorrect timezone offset
+- Added pytz>=2024.1 to requirements.txt
+- Changed imports in routes.py to include pytz
+- All user-facing timestamps (consent, login, updates) now correctly stored in user's local timezone
+
+### Timezone UI (Frontend)
+- Added timezone selection dropdown to registration screen with 15+ region options:
+  - USA: Eastern, Central, Mountain, Pacific times
+  - India: IST (Asia/Kolkata) — default
+  - Europe: London, Paris/Berlin
+  - Asia: Bangkok, Singapore, Tokyo, Hong Kong, Dubai
+  - Australia: Sydney, Melbourne
+  - UTC
+- Timezone is sent during user registration via registration_screen.dart
+- Users can now select their own timezone instead of being forced to India's timezone
+
+**Rationale:** Health app needs to display times in each user's local timezone. USA users see Eastern/PST times, India users see IST, EU users see CET, etc. All timestamps (registration, login, health readings) now respect the user's selected timezone.
+
+### Bug Fixes: Login 500 Error & Timezone NULL Handling
+- **Fixed login 500 error:** Added NULL check for `user.timezone` in login route (line 100-101)
+  - Root cause: Existing users in DB didn't have timezone column, so `pytz.timezone(user.timezone)` crashed when user tried to login
+  - All routes now safe: login, password reset, profile update, AI consent check for NULL timezone and default to 'Asia/Kolkata'
+- Created migration script `migrate_add_timezone.py` to add timezone column to users table with default value
+  - Migration adds column with DEFAULT 'Asia/Kolkata', so all existing users automatically get default timezone
+  - All old users preserved; no data loss
+- Backend now handles both new users (with timezone from registration) and old users (with default timezone)
+- **Registration consent issue fixed:** Removed duplicate timezone field in UserRegister schema (was causing schema validation error)
+- **Consent callback fixed:** Updated ConsentScreen to pass `ai_consent=true` in registration payload
+
 ## 2026-04-01 — Major session: CI/CD, security, AI summaries, streaks, admin dashboard
 
 ### CI/CD Pipeline
@@ -1359,3 +1401,15 @@ Format: date, summary, file-level details.
   - 13:20:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
   - 13:27:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
   - 13:27:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+
+## 2026-04-01 — Resolve `lib/main.dart` merge conflict
+
+- Modified `lib/main.dart`: Removed Git conflict markers and kept `flutter_dotenv` import so `dotenv.load()` startup path compiles cleanly.
+
+## 2026-04-01 — Fix login "Client failed to fetch" (web URL scheme)
+
+- Modified `.env`: Changed `SERVER_HOST` from `localhost:8007` to `http://localhost:8007` so Flutter web builds valid absolute API URLs.
+
+## 2026-04-01 — Backend login fix: missing `users` admin columns
+
+- Created `backend/migrate_add_user_admin_fields.py`: Idempotent migration to add `users.is_admin` and `users.last_login_at` expected by current ORM and auth flow.
