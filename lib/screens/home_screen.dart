@@ -303,22 +303,6 @@ class _HomeScreenState extends State<HomeScreen>
                             profileId: _activeProfileId,
                             canEdit: _accessLevel != 'viewer',
                             onAddReading: _handleAddReading,
-                            onArmBandTap: () {
-                              if (_activeProfileId != null) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => DashboardScreen(
-                                      device: null,
-                                      services: [],
-                                      deviceType: 'Armband',
-                                      autoConnect: true,
-                                      profileId: _activeProfileId!,
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
                           ),
                           const SizedBox(height: 16),
 

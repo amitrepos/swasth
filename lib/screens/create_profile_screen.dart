@@ -19,6 +19,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _heightController = TextEditingController();
+  final _weightController = TextEditingController();
   final _medicationsController = TextEditingController();
   final _otherConditionController = TextEditingController();
 
@@ -44,6 +45,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     _nameController.dispose();
     _ageController.dispose();
     _heightController.dispose();
+    _weightController.dispose();
     _medicationsController.dispose();
     _otherConditionController.dispose();
     super.dispose();
@@ -64,6 +66,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
         'age': int.tryParse(_ageController.text),
         'gender': _selectedGender,
         'height': double.tryParse(_heightController.text),
+        'weight': double.tryParse(_weightController.text),
         'blood_group': _selectedBloodGroup,
         'medical_conditions': _selectedConditions,
         'other_medical_condition': _selectedConditions.contains('Other')
@@ -175,14 +178,26 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _selectedBloodGroup,
-                            decoration: InputDecoration(labelText: l10n.bloodGroupLabel),
-                            items: _bloodGroupOptions.map((bg) => DropdownMenuItem(value: bg, child: Text(bg))).toList(),
-                            onChanged: (v) => setState(() => _selectedBloodGroup = v),
+                          child: TextFormField(
+                            controller: _weightController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Weight (kg)',
+                              prefixIcon: Icon(Icons.monitor_weight_outlined),
+                            ),
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedBloodGroup,
+                      decoration: InputDecoration(
+                        labelText: l10n.bloodGroupLabel,
+                        prefixIcon: const Icon(Icons.bloodtype),
+                      ),
+                      items: _bloodGroupOptions.map((bg) => DropdownMenuItem(value: bg, child: Text(bg))).toList(),
+                      onChanged: (v) => setState(() => _selectedBloodGroup = v),
                     ),
                     const SizedBox(height: 24),
 
