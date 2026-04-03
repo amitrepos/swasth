@@ -4,12 +4,11 @@ import '../../theme/app_theme.dart';
 import '../../utils/health_helpers.dart' as helpers;
 import '../glass_card.dart';
 
-/// 2x2 grid of individual metric tiles (BP, Sugar, Steps, Armband).
+/// 2x2 grid of individual metric tiles (BP, Sugar, Steps, BMI).
 class MetricsGrid extends StatelessWidget {
   final Map<String, dynamic>? data;
   final int? profileId;
   final void Function({required String deviceType, required String btDeviceType}) onAddReading;
-  final VoidCallback onArmBandTap;
   final bool canEdit;
 
   const MetricsGrid({
@@ -17,7 +16,6 @@ class MetricsGrid extends StatelessWidget {
     required this.data,
     required this.profileId,
     required this.onAddReading,
-    required this.onArmBandTap,
     this.canEdit = true,
   });
 
@@ -32,6 +30,9 @@ class MetricsGrid extends StatelessWidget {
     final lastGlucoseStatus = data?['last_glucose_status'] as String?;
     final ageContextBp = data?['age_context_bp'] as String?;
     final ageContextGlucose = data?['age_context_glucose'] as String?;
+
+    final bmi = (data?['bmi'] as num?)?.toDouble();
+    final bmiCategory = data?['bmi_category'] as String?;
 
     final bpValue = lastBpSys != null && lastBpDia != null
         ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'
@@ -113,10 +114,7 @@ class MetricsGrid extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _ArmBandTile(
-                isConnected: false,
-                onTap: onArmBandTap,
-              ),
+              child: _BmiTile(bmi: bmi, category: bmiCategory),
             ),
           ],
         ),
@@ -198,45 +196,81 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
-class _ArmBandTile extends StatelessWidget {
-  final bool isConnected;
-  final VoidCallback onTap;
+class _BmiTile extends StatelessWidget {
+  final double? bmi;
+  final String? category;
 
-  const _ArmBandTile({required this.isConnected, required this.onTap});
+  const _BmiTile({this.bmi, this.category});
+
+  Color _bmiColor() {
+    if (bmi == null) return AppColors.textSecondary;
+    if (bmi! < 18.5) return AppColors.statusLow;
+    if (bmi! < 25) return AppColors.statusNormal;
+    if (bmi! < 30) return AppColors.statusElevated;
+    return AppColors.statusCritical;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: GlassCard(
-        borderRadius: 24,
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-        margin: EdgeInsets.zero,
-        color: isConnected ? AppColors.success.withValues(alpha: 0.08) : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'ARM BAND STATUS',
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
-                letterSpacing: 0.8,
-              ),
+    final color = _bmiColor();
+    final displayValue = bmi != null ? bmi!.toStringAsFixed(1) : '—';
+    final displayCategory = category ?? '';
+
+    return GlassCard(
+      borderRadius: 24,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      margin: EdgeInsets.zero,
+      color: bmi != null ? color.withValues(alpha: 0.08) : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'BMI',
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 1,
             ),
-            const SizedBox(height: 8),
-            Text(
-              isConnected ? 'ACTIVE SYNC' : 'NOT CONNECTED',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: isConnected ? AppColors.success : AppColors.textSecondary,
-                letterSpacing: 1,
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 6),
+              Text(
+                displayValue,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+              if (displayCategory.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    displayCategory,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }

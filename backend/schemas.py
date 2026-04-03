@@ -42,6 +42,7 @@ class UserRegister(BaseModel):
     age: Optional[int] = Field(None, ge=1, le=150)
     gender: Optional[str] = None
     height: Optional[float] = Field(None, gt=0, le=300)   # cm
+    weight: Optional[float] = Field(None, gt=0, le=500)   # kg
     blood_group: Optional[str] = None
     current_medications: Optional[str] = None
     medical_conditions: Optional[List[str]] = None
@@ -179,6 +180,7 @@ class ProfileCreate(BaseModel):
     age: Optional[int] = Field(None, ge=1, le=150)
     gender: Optional[str] = None
     height: Optional[float] = Field(None, gt=0, le=300)   # cm
+    weight: Optional[float] = Field(None, gt=0, le=500)   # kg
     blood_group: Optional[str] = None
     medical_conditions: Optional[List[str]] = None
     other_medical_condition: Optional[str] = None
@@ -219,6 +221,7 @@ class ProfileUpdate(BaseModel):
     age: Optional[int] = Field(None, ge=1, le=150)
     gender: Optional[str] = None
     height: Optional[float] = Field(None, gt=0, le=300)
+    weight: Optional[float] = Field(None, gt=0, le=500)   # kg
     blood_group: Optional[str] = None
     medical_conditions: Optional[List[str]] = None
     other_medical_condition: Optional[str] = None
@@ -254,6 +257,7 @@ class ProfileResponse(BaseModel):
     age: Optional[int]
     gender: Optional[str]
     height: Optional[float]
+    weight: Optional[float]
     blood_group: Optional[str]
     medical_conditions: Optional[List[str]]
     other_medical_condition: Optional[str]
@@ -348,6 +352,12 @@ class HealthScoreResponse(BaseModel):
     # Actual days with data in 90d window — drives dynamic "N-day avg" label
     glucose_data_days: Optional[int] = None
     bp_data_days: Optional[int] = None
+
+    # BMI (computed from profile height + weight)
+    bmi: Optional[float] = None              # kg/m²
+    bmi_category: Optional[str] = None       # Underweight | Normal | Overweight | Obese
+    profile_height: Optional[float] = None   # cm
+    profile_weight: Optional[float] = None   # kg
 
 
 class HealthReadingCreate(BaseModel):

@@ -55,6 +55,7 @@ class _ShellScreenState extends State<ShellScreen> {
   Timer? _profileRefreshTimer;
   String? _chatInitialMessage;
   int _chatRebuildKey = 0;
+  final _historyKey = GlobalKey<HistoryScreenState>();
 
   @override
   void initState() {
@@ -159,7 +160,7 @@ class _ShellScreenState extends State<ShellScreen> {
               index: _currentIndex,
               children: [
                 const HomeScreen(),
-                HistoryScreen(key: ValueKey('history_$_profileId'), profileId: _profileId!),
+                HistoryScreen(key: _historyKey, profileId: _profileId!),
                 StreaksScreen(key: ValueKey('streaks_$_profileId')),
                 InsightsScreen(key: ValueKey('insights_$_profileId'), profileId: _profileId!),
                 ChatScreen(
@@ -207,6 +208,10 @@ class _ShellScreenState extends State<ShellScreen> {
     // Clear chat message when switching away from chat or switching normally
     if (index != 4) _chatInitialMessage = null;
     setState(() => _currentIndex = index);
+    // Auto-refresh History when switching to it
+    if (index == 1) {
+      _historyKey.currentState?.refresh();
+    }
   }
 }
 

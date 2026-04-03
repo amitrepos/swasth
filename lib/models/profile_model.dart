@@ -4,6 +4,7 @@ class ProfileModel {
   final int? age;
   final String? gender;
   final double? height;
+  final double? weight;
   final String? bloodGroup;
   final List<String>? medicalConditions;
   final String? otherMedicalCondition;
@@ -22,6 +23,7 @@ class ProfileModel {
     this.age,
     this.gender,
     this.height,
+    this.weight,
     this.bloodGroup,
     this.medicalConditions,
     this.otherMedicalCondition,
@@ -42,6 +44,7 @@ class ProfileModel {
       age: json['age'],
       gender: json['gender'],
       height: json['height']?.toDouble(),
+      weight: json['weight']?.toDouble(),
       bloodGroup: json['blood_group'],
       medicalConditions: json['medical_conditions'] != null
           ? List<String>.from(json['medical_conditions'])
@@ -67,6 +70,7 @@ class ProfileModel {
       'age': age,
       'gender': gender,
       'height': height,
+      'weight': weight,
       'blood_group': bloodGroup,
       'medical_conditions': medicalConditions,
       'other_medical_condition': otherMedicalCondition,

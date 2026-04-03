@@ -57,6 +57,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         age=user.age,
         gender=user.gender,
         height=user.height,
+        weight=user.weight,
         blood_group=user.blood_group,
         medical_conditions=user.medical_conditions,
         other_medical_condition=user.other_medical_condition,

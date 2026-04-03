@@ -416,6 +416,23 @@ def get_health_score(
             profile_age, getattr(_glucose_for_context, "sample_type", None),
         )
 
+    # --- BMI ---
+    p_height = profile.height if profile else None
+    p_weight = profile.weight if profile else None
+    bmi = None
+    bmi_category = None
+    if p_height and p_weight and p_height > 0:
+        height_m = p_height / 100.0
+        bmi = round(p_weight / (height_m * height_m), 1)
+        if bmi < 18.5:
+            bmi_category = "Underweight"
+        elif bmi < 25:
+            bmi_category = "Normal"
+        elif bmi < 30:
+            bmi_category = "Overweight"
+        else:
+            bmi_category = "Obese"
+
     return schemas.HealthScoreResponse(
         score=score,
         color=color,
@@ -443,6 +460,10 @@ def get_health_score(
         last_bp_status=last_bp.status_flag if last_bp else None,
         glucose_data_days=int(glucose_data_days),
         bp_data_days=int(bp_data_days),
+        bmi=bmi,
+        bmi_category=bmi_category,
+        profile_height=p_height,
+        profile_weight=p_weight,
     )
 
 

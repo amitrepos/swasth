@@ -31,6 +31,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  // Health info controllers
+  final _ageController = TextEditingController();
+  final _heightEditController = TextEditingController();
+  final _weightEditController = TextEditingController();
+
   // Doctor detail controllers
   final _doctorNameController = TextEditingController();
   final _doctorSpecialtyController = TextEditingController();
@@ -47,6 +52,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _ageController.dispose();
+    _heightEditController.dispose();
+    _weightEditController.dispose();
     _doctorNameController.dispose();
     _doctorSpecialtyController.dispose();
     _doctorWhatsappController.dispose();
@@ -67,9 +75,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _profile = profile;
         _isLoading = false;
       });
-      _doctorNameController.text = profile.doctorName ?? '';
-      _doctorSpecialtyController.text = profile.doctorSpecialty ?? '';
-      _doctorWhatsappController.text = profile.doctorWhatsapp ?? '';
+      _initHealthControllers();
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -233,20 +239,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Future<void> _saveDoctorDetails() async {
+  void _initHealthControllers() {
+    _ageController.text = _profile?.age?.toString() ?? '';
+    _heightEditController.text = _profile?.height?.toString() ?? '';
+    _weightEditController.text = _profile?.weight?.toString() ?? '';
+    _doctorNameController.text = _profile?.doctorName ?? '';
+    _doctorSpecialtyController.text = _profile?.doctorSpecialty ?? '';
+    _doctorWhatsappController.text = _profile?.doctorWhatsapp ?? '';
+  }
+
+  Future<void> _saveProfile() async {
     final l10n = AppLocalizations.of(context)!;
     try {
       final token = await StorageService().getToken();
       if (token == null) throw Exception('Not authenticated');
 
-      await _profileService.updateProfile(token, _profile!.id, {
+      final data = <String, dynamic>{
         'doctor_name': _doctorNameController.text.trim().isEmpty ? null : _doctorNameController.text.trim(),
         'doctor_specialty': _doctorSpecialtyController.text.trim().isEmpty ? null : _doctorSpecialtyController.text.trim(),
         'doctor_whatsapp': _doctorWhatsappController.text.trim().isEmpty ? null : _doctorWhatsappController.text.trim(),
-      });
+      };
+      final age = int.tryParse(_ageController.text);
+      if (age != null) data['age'] = age;
+      final height = double.tryParse(_heightEditController.text);
+      if (height != null) data['height'] = height;
+      final weight = double.tryParse(_weightEditController.text);
+      if (weight != null) data['weight'] = weight;
+
+      await _profileService.updateProfile(token, _profile!.id, data);
 
       if (mounted) {
-        Navigator.pop(context);
         await _loadData();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -261,69 +283,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         );
       }
     }
-  }
-
-  void _showEditDoctorDialog() {
-    final l10n = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text(l10n.editDoctorTitle),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: _doctorNameController,
-                    decoration: InputDecoration(
-                      labelText: l10n.doctorNameField,
-                      prefixIcon: const Icon(Icons.medical_services_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _doctorSpecialtyController,
-                    decoration: InputDecoration(
-                      labelText: l10n.doctorSpecialtyField,
-                      prefixIcon: const Icon(Icons.domain_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _doctorWhatsappController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: l10n.doctorWhatsappField,
-                      hintText: l10n.doctorWhatsappHint,
-                      prefixIcon: const Icon(Icons.phone_outlined),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  // Restore from current profile state on cancel
-                  _doctorNameController.text = _profile?.doctorName ?? '';
-                  _doctorSpecialtyController.text = _profile?.doctorSpecialty ?? '';
-                  _doctorWhatsappController.text = _profile?.doctorWhatsapp ?? '';
-                  Navigator.pop(dialogContext);
-                },
-                child: Text(l10n.cancel),
-              ),
-              ElevatedButton(
-                onPressed: _saveDoctorDetails,
-                child: Text(l10n.save),
-              ),
-            ],
-          );
-        },
-      ),
-    );
   }
 
   Widget _buildLanguageToggle(AppLocalizations l10n) {
@@ -459,47 +418,138 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 24),
 
             // Info Sections
-            _buildSection(l10n.healthInfoSection, [
-              _buildInfoCard(icon: Icons.cake, label: l10n.ageField, value: l10n.ageYears('${_profile?.age ?? "?"}')),
-              _buildInfoCard(icon: Icons.male, label: l10n.genderField, value: _profile?.gender ?? 'Unknown'),
-              _buildInfoCard(icon: Icons.bloodtype, label: l10n.bloodGroupField, value: _profile?.bloodGroup ?? 'Unknown'),
-              _buildInfoCard(icon: Icons.straighten, label: l10n.heightField, value: l10n.heightCm('${_profile?.height ?? "?"}')),
-            ]),
-
-            if (_profile?.medicalConditions != null && _profile!.medicalConditions!.isNotEmpty)
-              _buildSection(l10n.medicalConditionsField, [
-                _buildInfoCard(
-                  icon: Icons.medical_services,
-                  label: l10n.medicalConditionsField,
-                  value: _profile!.medicalConditions!.join(", ") +
-                      (_profile!.otherMedicalCondition != null ? " (${_profile!.otherMedicalCondition})" : ""),
+            if (isOwner) ...[
+              _buildSection(l10n.healthInfoSection, [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _ageController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: l10n.ageField,
+                          prefixIcon: const Icon(Icons.cake),
+                          suffixText: 'yrs',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _heightEditController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: l10n.heightField,
+                          prefixIcon: const Icon(Icons.straighten),
+                          suffixText: 'cm',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _weightEditController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Weight',
+                          prefixIcon: Icon(Icons.monitor_weight_outlined),
+                          suffixText: 'kg',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildInfoCard(icon: Icons.male, label: l10n.genderField, value: _profile?.gender ?? '—'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildInfoCard(icon: Icons.bloodtype, label: l10n.bloodGroupField, value: _profile?.bloodGroup ?? '—'),
+              ]),
+              if (_profile?.medicalConditions != null && _profile!.medicalConditions!.isNotEmpty)
+                _buildSection(l10n.medicalConditionsField, [
+                  _buildInfoCard(
+                    icon: Icons.medical_services,
+                    label: l10n.medicalConditionsField,
+                    value: _profile!.medicalConditions!.join(", ") +
+                        (_profile!.otherMedicalCondition != null ? " (${_profile!.otherMedicalCondition})" : ""),
+                  ),
+                ]),
+              _buildSection(l10n.doctorDetailsSection, [
+                TextFormField(
+                  controller: _doctorNameController,
+                  decoration: InputDecoration(
+                    labelText: l10n.doctorNameField,
+                    prefixIcon: const Icon(Icons.medical_services_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _doctorSpecialtyController,
+                  decoration: InputDecoration(
+                    labelText: l10n.doctorSpecialtyField,
+                    prefixIcon: const Icon(Icons.domain_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _doctorWhatsappController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: l10n.doctorWhatsappField,
+                    hintText: l10n.doctorWhatsappHint,
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                  ),
                 ),
               ]),
-
-            if (isOwner)
-              _buildSection(l10n.doctorDetailsSection, [
-                if (_profile?.doctorName != null && _profile!.doctorName!.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _saveProfile,
+                    icon: const Icon(Icons.save),
+                    label: Text(l10n.save),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ),
+            ] else ...[
+              // Read-only view for non-owners
+              _buildSection(l10n.healthInfoSection, [
+                _buildInfoCard(icon: Icons.cake, label: l10n.ageField, value: l10n.ageYears('${_profile?.age ?? "?"}')),
+                _buildInfoCard(icon: Icons.male, label: l10n.genderField, value: _profile?.gender ?? '—'),
+                _buildInfoCard(icon: Icons.bloodtype, label: l10n.bloodGroupField, value: _profile?.bloodGroup ?? '—'),
+                _buildInfoCard(icon: Icons.straighten, label: l10n.heightField, value: l10n.heightCm('${_profile?.height ?? "?"}')),
+                _buildInfoCard(icon: Icons.monitor_weight, label: 'Weight', value: _profile?.weight != null ? '${_profile!.weight} kg' : '?'),
+              ]),
+              if (_profile?.medicalConditions != null && _profile!.medicalConditions!.isNotEmpty)
+                _buildSection(l10n.medicalConditionsField, [
+                  _buildInfoCard(
+                    icon: Icons.medical_services,
+                    label: l10n.medicalConditionsField,
+                    value: _profile!.medicalConditions!.join(", ") +
+                        (_profile!.otherMedicalCondition != null ? " (${_profile!.otherMedicalCondition})" : ""),
+                  ),
+                ]),
+              if (_profile?.doctorName?.isNotEmpty == true)
+                _buildSection(l10n.doctorDetailsSection, [
                   _buildInfoCard(icon: Icons.medical_services_outlined, label: l10n.doctorNameField, value: _profile!.doctorName!),
                   if (_profile?.doctorSpecialty?.isNotEmpty == true)
                     _buildInfoCard(icon: Icons.domain_outlined, label: l10n.doctorSpecialtyField, value: _profile!.doctorSpecialty!),
                   if (_profile?.doctorWhatsapp?.isNotEmpty == true)
                     _buildInfoCard(icon: Icons.phone_outlined, label: l10n.doctorWhatsappField, value: _profile!.doctorWhatsapp!),
-                ] else
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(l10n.noDoctorLinked,
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                  ),
-                GlassCard(
-                  borderRadius: 16,
-                  child: ListTile(
-                    leading: const Icon(Icons.edit_outlined, color: AppColors.primary),
-                    title: Text(_profile?.doctorName?.isNotEmpty == true ? l10n.editDoctor : l10n.addDoctor),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: _showEditDoctorDialog,
-                  ),
-                ),
-              ]),
+                ]),
+            ],
 
             if (isOwner)
               _buildSection(l10n.accountSettingsSection, [

@@ -11,21 +11,33 @@ class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key, required this.profileId});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  State<HistoryScreen> createState() => HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class HistoryScreenState extends State<HistoryScreen> {
   final HealthReadingService _readingService = HealthReadingService();
   bool _isLoading = true;
   List<HealthReading> _readings = [];
   String? _filterType; // null, 'glucose', or 'blood_pressure'
   bool _canEdit = true;
 
+  /// Called by ShellScreen when this tab becomes active.
+  void refresh() => _loadReadings();
+
   @override
   void initState() {
     super.initState();
     _loadAccessLevel();
     _loadReadings();
+  }
+
+  @override
+  void didUpdateWidget(HistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.profileId != widget.profileId) {
+      _loadAccessLevel();
+      _loadReadings();
+    }
   }
 
   Future<void> _loadAccessLevel() async {
