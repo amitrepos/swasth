@@ -416,6 +416,20 @@ def get_user_detail(
         models.ProfileInvite.status == "accepted",
     ).scalar() or 0
 
+    # ── AI memory (ChatContextProfile) per profile ───────────────────
+    ai_memory = []
+    for pid in profile_ids:
+        ctx = db.query(models.ChatContextProfile).filter(
+            models.ChatContextProfile.profile_id == pid,
+        ).first()
+        ai_memory.append({
+            "profile_id": pid,
+            "profile_name": profile_name_map.get(pid, "Unknown"),
+            "summary": ctx.summary if ctx else "",
+            "message_count": ctx.message_count if ctx else 0,
+            "last_updated": ctx.last_updated.isoformat() if ctx and ctx.last_updated else None,
+        })
+
     return {
         "user": {
             "id": target.id,
@@ -432,6 +446,7 @@ def get_user_detail(
         "recent_readings": recent_readings,
         "recent_chats": recent_chats,
         "recent_ai_insights": recent_insights,
+        "ai_memory": ai_memory,
         "feature_usage": {
             "readings_logged": readings_count,
             "chat_messages": chat_count,
@@ -441,6 +456,41 @@ def get_user_detail(
             "invites_accepted": invites_accepted,
         },
     }
+
+
+@router.put("/admin/profiles/{profile_id}/ai-memory")
+def update_ai_memory(
+    profile_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Update the AI chat context summary for a profile."""
+    ctx = db.query(models.ChatContextProfile).filter(
+        models.ChatContextProfile.profile_id == profile_id,
+    ).first()
+    if not ctx:
+        raise HTTPException(status_code=404, detail="No AI memory found for this profile")
+    ctx.summary = payload.get("summary", ctx.summary)
+    db.commit()
+    return {"message": "AI memory updated", "profile_id": profile_id}
+
+
+@router.delete("/admin/profiles/{profile_id}/ai-memory")
+def reset_ai_memory(
+    profile_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Reset the AI chat context summary for a profile."""
+    ctx = db.query(models.ChatContextProfile).filter(
+        models.ChatContextProfile.profile_id == profile_id,
+    ).first()
+    if ctx:
+        ctx.summary = ""
+        ctx.message_count = 0
+        db.commit()
+    return {"message": "AI memory reset", "profile_id": profile_id}
 
 
 @router.post("/admin/users/{user_id}/make-admin")
