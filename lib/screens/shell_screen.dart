@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/sync_service.dart';
@@ -143,7 +144,13 @@ class _ShellScreenState extends State<ShellScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Scaffold(
       body: Column(
         children: [
           if (_isOffline) const OfflineBanner(),
@@ -166,6 +173,7 @@ class _ShellScreenState extends State<ShellScreen> {
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),
+    ),
     );
   }
 
