@@ -114,7 +114,12 @@ class MetricsGrid extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _BmiTile(bmi: bmi, category: bmiCategory),
+              child: _BmiTile(
+                bmi: bmi,
+                category: bmiCategory,
+                heightCm: (data?['profile_height'] as num?)?.toDouble(),
+                weightKg: (data?['profile_weight'] as num?)?.toDouble(),
+              ),
             ),
           ],
         ),
@@ -199,8 +204,10 @@ class _MetricTile extends StatelessWidget {
 class _BmiTile extends StatelessWidget {
   final double? bmi;
   final String? category;
+  final double? heightCm;
+  final double? weightKg;
 
-  const _BmiTile({this.bmi, this.category});
+  const _BmiTile({this.bmi, this.category, this.heightCm, this.weightKg});
 
   Color _bmiColor() {
     if (bmi == null) return AppColors.textSecondary;
@@ -210,15 +217,33 @@ class _BmiTile extends StatelessWidget {
     return AppColors.statusCritical;
   }
 
+  String? _tip() {
+    if (bmi == null || heightCm == null || weightKg == null || heightCm! <= 0) return null;
+    final hm = heightCm! / 100.0;
+    final hm2 = hm * hm;
+    if (bmi! < 18.5) {
+      final targetKg = (18.5 * hm2) - weightKg!;
+      return 'Gain ${targetKg.toStringAsFixed(1)} kg to reach normal';
+    } else if (bmi! >= 25 && bmi! < 30) {
+      final targetKg = weightKg! - (24.9 * hm2);
+      return 'Lose ${targetKg.toStringAsFixed(1)} kg to reach normal';
+    } else if (bmi! >= 30) {
+      final targetKg = weightKg! - (24.9 * hm2);
+      return 'Lose ${targetKg.toStringAsFixed(1)} kg to reach normal';
+    }
+    return 'Healthy BMI — keep it up!';
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = _bmiColor();
     final displayValue = bmi != null ? bmi!.toStringAsFixed(1) : '—';
     final displayCategory = category ?? '';
+    final tip = _tip();
 
     return GlassCard(
       borderRadius: 24,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       margin: EdgeInsets.zero,
       color: bmi != null ? color.withValues(alpha: 0.08) : null,
       child: Column(
@@ -234,7 +259,7 @@ class _BmiTile extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Row(
             children: [
               Container(
@@ -270,6 +295,20 @@ class _BmiTile extends StatelessWidget {
               ],
             ],
           ),
+          if (tip != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              tip,
+              style: TextStyle(
+                fontSize: 9,
+                color: color,
+                fontStyle: FontStyle.italic,
+                height: 1.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );
