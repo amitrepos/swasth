@@ -282,6 +282,167 @@ def list_users(
     return {"users": result, "total": len(result)}
 
 
+@router.get("/admin/users/{user_id}/detail")
+def get_user_detail(
+    user_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Full user detail for admin inspection — profiles, readings, chats, AI insights."""
+    target = db.query(models.User).filter(models.User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # ── Profiles via ProfileAccess ───────────────────────────────────
+    access_rows = (
+        db.query(models.ProfileAccess, models.Profile)
+        .join(models.Profile, models.ProfileAccess.profile_id == models.Profile.id)
+        .filter(models.ProfileAccess.user_id == user_id)
+        .all()
+    )
+    profile_ids = [p.id for _, p in access_rows]
+    profiles = []
+    for pa, p in access_rows:
+        profiles.append({
+            "id": p.id,
+            "name": p.name,
+            "relationship": p.relationship,
+            "access_level": pa.access_level,
+            "age": p.age,
+            "gender": p.gender,
+            "height": p.height,
+            "blood_group": p.blood_group,
+            "medical_conditions": p.medical_conditions or [],
+            "other_medical_condition": p.other_medical_condition,
+            "current_medications": p.current_medications,
+            "doctor_name": p.doctor_name,
+            "doctor_specialty": p.doctor_specialty,
+            "doctor_whatsapp": p.doctor_whatsapp,
+        })
+
+    # ── Recent health readings (last 50) ─────────────────────────────
+    profile_name_map = {p["id"]: p["name"] for p in profiles}
+    readings_q = (
+        db.query(models.HealthReading)
+        .filter(models.HealthReading.profile_id.in_(profile_ids))
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .limit(50)
+        .all()
+    ) if profile_ids else []
+
+    recent_readings = []
+    for r in readings_q:
+        recent_readings.append({
+            "id": r.id,
+            "profile_name": profile_name_map.get(r.profile_id, "Unknown"),
+            "reading_type": r.reading_type,
+            "glucose_value": r.glucose_value,
+            "sample_type": r.sample_type,
+            "systolic": r.systolic,
+            "diastolic": r.diastolic,
+            "pulse_rate": r.pulse_rate,
+            "value_numeric": r.value_numeric,
+            "unit_display": r.unit_display,
+            "status_flag": r.status_flag,
+            "notes": r.notes,
+            "reading_timestamp": r.reading_timestamp.isoformat() if r.reading_timestamp else None,
+        })
+
+    # ── Recent chat messages (last 20) ───────────────────────────────
+    chats_q = (
+        db.query(models.ChatMessage)
+        .filter(models.ChatMessage.user_id == user_id)
+        .order_by(models.ChatMessage.created_at.desc())
+        .limit(20)
+        .all()
+    )
+    recent_chats = []
+    for c in chats_q:
+        recent_chats.append({
+            "id": c.id,
+            "profile_id": c.profile_id,
+            "profile_name": profile_name_map.get(c.profile_id, "Unknown"),
+            "user_message": c.user_message,
+            "ai_response": c.ai_response,
+            "model_used": c.model_used,
+            "tokens_used": c.tokens_used,
+            "latency_ms": c.latency_ms,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        })
+
+    # ── Recent AI insight logs (last 20) ─────────────────────────────
+    insights_q = (
+        db.query(models.AiInsightLog)
+        .filter(models.AiInsightLog.profile_id.in_(profile_ids))
+        .order_by(models.AiInsightLog.created_at.desc())
+        .limit(20)
+        .all()
+    ) if profile_ids else []
+
+    recent_insights = []
+    for i in insights_q:
+        recent_insights.append({
+            "id": i.id,
+            "profile_id": i.profile_id,
+            "profile_name": profile_name_map.get(i.profile_id, "Unknown"),
+            "model_used": i.model_used,
+            "prompt_summary": i.prompt_summary,
+            "response_text": i.response_text,
+            "fallback_reason": i.fallback_reason,
+            "tokens_used": i.tokens_used,
+            "latency_ms": i.latency_ms,
+            "created_at": i.created_at.isoformat() if i.created_at else None,
+        })
+
+    # ── Feature usage summary ────────────────────────────────────────
+    readings_count = db.query(func.count(models.HealthReading.id)).filter(
+        models.HealthReading.profile_id.in_(profile_ids),
+    ).scalar() or 0 if profile_ids else 0
+
+    chat_count = db.query(func.count(models.ChatMessage.id)).filter(
+        models.ChatMessage.user_id == user_id,
+    ).scalar() or 0
+
+    ai_insight_count = db.query(func.count(models.AiInsightLog.id)).filter(
+        models.AiInsightLog.profile_id.in_(profile_ids),
+    ).scalar() or 0 if profile_ids else 0
+
+    invites_sent = db.query(func.count(models.ProfileInvite.id)).filter(
+        models.ProfileInvite.invited_by_user_id == user_id,
+    ).scalar() or 0
+
+    invites_accepted = db.query(func.count(models.ProfileInvite.id)).filter(
+        models.ProfileInvite.invited_by_user_id == user_id,
+        models.ProfileInvite.status == "accepted",
+    ).scalar() or 0
+
+    return {
+        "user": {
+            "id": target.id,
+            "email": target.email,
+            "full_name": target.full_name,
+            "phone_number": target.phone_number,
+            "is_admin": target.is_admin,
+            "ai_consent": target.ai_consent,
+            "timezone": target.timezone,
+            "last_login": target.last_login_at.isoformat() if target.last_login_at else None,
+            "signed_up": target.created_at.isoformat() if target.created_at else None,
+        },
+        "profiles": profiles,
+        "recent_readings": recent_readings,
+        "recent_chats": recent_chats,
+        "recent_ai_insights": recent_insights,
+        "feature_usage": {
+            "readings_logged": readings_count,
+            "chat_messages": chat_count,
+            "ai_insights": ai_insight_count,
+            "profiles_managed": len(profiles),
+            "invites_sent": invites_sent,
+            "invites_accepted": invites_accepted,
+        },
+    }
+
+
 @router.post("/admin/users/{user_id}/make-admin")
 def make_admin(
     user_id: int,

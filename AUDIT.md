@@ -3,6 +3,11 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-04-03 — Admin dashboard: User detail view with health data visibility (PoC/testing)
+
+- Changed `backend/routes_admin.py`: Added `GET /api/admin/users/{user_id}/detail` endpoint returning full user info, profiles, recent health readings (last 50 with actual values), chat messages (last 20), AI insight logs (last 20), and feature usage summary counts
+- Changed `backend/admin_dashboard.html`: Added clickable user rows that open a modal overlay with 5 tabs (Overview with feature usage bars/engagement grid, Profiles with medical details, Health Readings table with color-coded status badges, Chat History with bubble-style messages, AI Insights with collapsible prompts). Includes Escape key close, show more/less toggles, and empty states
+
 ## 2026-04-02 — Test suite cleanup: Removed duplicate/unused test files
 
 ### Test File Cleanup
@@ -1650,3 +1655,24 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 23:54:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
   - 00:03:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
   - 00:04:21 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_status.md
+  - 18:29:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:29:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:30:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:30:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:31:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:34:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/ci.yml
+  - 18:53:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ai_service.py
+  - 18:53:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 08:13:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 08:13:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 08:25:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 08:26:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 08:26:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 08:26:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 11:57:31 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_status.md
+  - 14:44:47 modified: /Users/amitkumarmishra/.claude/plans/calm-soaring-lobster.md
+  - 14:47:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 14:47:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 14:47:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 14:48:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 14:50:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

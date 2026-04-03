@@ -46,9 +46,95 @@
   .badge-admin { background: #dbeafe; color: #1d4ed8; }
   .badge-user { background: #f1f5f9; color: #64748b; }
 
+  /* User table clickable rows */
+  #usersTable tbody tr { cursor: pointer; }
+
+  /* Modal overlay */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 20px; }
+  .modal-overlay.active { display: flex; }
+  .modal-content { background: white; border-radius: 16px; max-width: 1000px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 24px; position: relative; margin-top: 20px; }
+  .modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b; line-height: 1; }
+  .modal-close:hover { color: #1e293b; }
+
+  /* Modal header */
+  .user-header { margin-bottom: 20px; }
+  .user-header h2 { font-size: 22px; margin-bottom: 4px; }
+  .user-header .meta { font-size: 13px; color: #64748b; }
+  .user-header .meta span { margin-right: 16px; }
+
+  /* Tabs */
+  .tab-bar { display: flex; gap: 0; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
+  .tab-btn { padding: 10px 20px; border: none; background: none; font-size: 13px; font-weight: 600; color: #94a3b8; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tab-btn:hover { color: #1e293b; }
+  .tab-btn.active { color: #0ea5e9; border-bottom-color: #0ea5e9; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Feature usage bars */
+  .usage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .usage-item { display: flex; align-items: center; gap: 12px; }
+  .usage-item .u-label { font-size: 12px; font-weight: 600; color: #64748b; min-width: 110px; }
+  .usage-item .u-bar { flex: 1; height: 24px; background: #f1f5f9; border-radius: 6px; overflow: hidden; position: relative; }
+  .usage-item .u-fill { height: 100%; border-radius: 6px; min-width: 2px; transition: width 0.3s; }
+  .usage-item .u-count { font-size: 13px; font-weight: 700; min-width: 40px; text-align: right; }
+
+  /* Engagement grid */
+  .engage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .engage-card { background: #f8fafc; border-radius: 10px; padding: 16px; text-align: center; }
+  .engage-card .icon { font-size: 24px; margin-bottom: 4px; }
+  .engage-card .e-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+  .engage-card .e-val { font-size: 20px; font-weight: 800; margin-top: 2px; }
+  .engage-card.active-feat { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .engage-card.inactive-feat { opacity: 0.5; }
+
+  /* Profile cards */
+  .profile-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .profile-card { background: #f8fafc; border-radius: 12px; padding: 16px; }
+  .profile-card h4 { font-size: 15px; margin-bottom: 8px; }
+  .profile-card .p-row { font-size: 13px; color: #475569; margin-bottom: 4px; }
+  .profile-card .p-row strong { color: #1e293b; }
+  .condition-pill { display: inline-block; padding: 2px 8px; background: #fef3c7; color: #92400e; border-radius: 10px; font-size: 11px; font-weight: 600; margin: 2px; }
+
+  /* Status badges */
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .status-NORMAL { background: #dcfce7; color: #166534; }
+  .status-HIGH { background: #fef3c7; color: #92400e; }
+  .status-CRITICAL { background: #fee2e2; color: #991b1b; }
+  .status-LOW { background: #dbeafe; color: #1e40af; }
+
+  /* Chat bubbles */
+  .chat-list { display: flex; flex-direction: column; gap: 16px; }
+  .chat-entry { border-bottom: 1px solid #f1f5f9; padding-bottom: 16px; }
+  .chat-entry:last-child { border-bottom: none; }
+  .chat-meta { font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
+  .chat-user { background: #eff6ff; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 6px; max-width: 85%; }
+  .chat-ai { background: #f0fdf4; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-left: auto; max-width: 85%; }
+  .chat-ai-meta { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 4px; }
+  .truncated { max-height: 120px; overflow: hidden; position: relative; }
+  .truncated.expanded { max-height: none; }
+  .show-more-btn { font-size: 12px; color: #0ea5e9; cursor: pointer; border: none; background: none; padding: 4px 0; font-weight: 600; }
+
+  /* Insight cards */
+  .insight-cards { display: flex; flex-direction: column; gap: 16px; }
+  .insight-card { background: #f8fafc; border-radius: 12px; padding: 16px; }
+  .insight-card .i-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .insight-card .i-model { font-size: 12px; font-weight: 600; color: #0ea5e9; }
+  .insight-card .i-time { font-size: 11px; color: #94a3b8; }
+  .insight-card .i-fallback { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 6px; font-size: 12px; margin-bottom: 8px; }
+  .insight-card .i-text { font-size: 13px; color: #334155; }
+  .insight-card .i-stats { font-size: 11px; color: #94a3b8; margin-top: 8px; }
+
+  /* Loading spinner */
+  .modal-loading { display: flex; justify-content: center; align-items: center; min-height: 200px; font-size: 14px; color: #94a3b8; }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 14px; }
+
   @media (max-width: 768px) {
     .charts { grid-template-columns: 1fr; }
     .grid { grid-template-columns: repeat(2, 1fr); }
+    .usage-grid { grid-template-columns: 1fr; }
+    .modal-content { padding: 16px; }
   }
 </style>
 </head>
@@ -110,6 +196,26 @@
       </thead>
       <tbody></tbody>
     </table>
+  </div>
+</div>
+
+<!-- User Detail Modal -->
+<div class="modal-overlay" id="userDetailModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeUserDetail()">&times;</button>
+    <div class="user-header" id="userDetailHeader"></div>
+    <div class="tab-bar" id="detailTabs">
+      <button class="tab-btn active" onclick="switchTab('Overview')">Overview</button>
+      <button class="tab-btn" onclick="switchTab('Profiles')">Profiles</button>
+      <button class="tab-btn" onclick="switchTab('Readings')">Health Readings</button>
+      <button class="tab-btn" onclick="switchTab('Chats')">Chat History</button>
+      <button class="tab-btn" onclick="switchTab('Insights')">AI Insights</button>
+    </div>
+    <div id="tabOverview" class="tab-panel active"></div>
+    <div id="tabProfiles" class="tab-panel"></div>
+    <div id="tabReadings" class="tab-panel"></div>
+    <div id="tabChats" class="tab-panel"></div>
+    <div id="tabInsights" class="tab-panel"></div>
   </div>
 </div>
 
@@ -229,7 +335,7 @@ async function loadDashboard() {
   // Users table
   const tbody = document.querySelector('#usersTable tbody');
   tbody.innerHTML = users.users.map(u => `
-    <tr>
+    <tr onclick="openUserDetail(${u.id})">
       <td><strong>${u.full_name}</strong></td>
       <td>${u.email}</td>
       <td><span class="badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">${u.is_admin ? 'Admin' : 'User'}</span></td>
@@ -240,6 +346,206 @@ async function loadDashboard() {
     </tr>
   `).join('');
 }
+
+// ── User Detail Modal ─────────────────────────────────────────────
+
+async function openUserDetail(userId) {
+  const modal = document.getElementById('userDetailModal');
+  modal.classList.add('active');
+  // Show loading
+  document.getElementById('userDetailHeader').innerHTML = '';
+  document.querySelectorAll('.tab-panel').forEach(p => p.innerHTML = '');
+  document.getElementById('tabOverview').innerHTML = '<div class="modal-loading">Loading user data...</div>';
+  document.getElementById('tabOverview').classList.add('active');
+
+  try {
+    const resp = await fetch(`${API}/api/admin/users/${userId}/detail`, {
+      headers: {'Authorization': `Bearer ${TOKEN}`}
+    });
+    if (!resp.ok) throw new Error('Failed to load');
+    const data = await resp.json();
+    renderUserHeader(data.user);
+    renderOverviewTab(data.feature_usage);
+    renderProfilesTab(data.profiles);
+    renderReadingsTab(data.recent_readings);
+    renderChatsTab(data.recent_chats);
+    renderInsightsTab(data.recent_ai_insights);
+    // Reset to Overview tab
+    switchTab('Overview');
+  } catch(e) {
+    document.getElementById('tabOverview').innerHTML = '<div class="modal-loading">Failed to load user data.</div>';
+  }
+}
+
+function closeUserDetail() {
+  document.getElementById('userDetailModal').classList.remove('active');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.textContent.includes(name) || (name === 'Readings' && b.textContent.includes('Health')) || (name === 'Chats' && b.textContent.includes('Chat')) || (name === 'Insights' && b.textContent.includes('AI'))) b.classList.add('active');
+  });
+}
+
+function renderUserHeader(u) {
+  document.getElementById('userDetailHeader').innerHTML = `
+    <h2>${esc(u.full_name)} <span class="badge ${u.is_admin ? 'badge-admin' : 'badge-user'}" style="font-size:12px;vertical-align:middle">${u.is_admin ? 'Admin' : 'User'}</span></h2>
+    <div class="meta">
+      <span>${esc(u.email)}</span>
+      ${u.phone_number ? `<span>${esc(u.phone_number)}</span>` : ''}
+      <span>Joined: ${u.signed_up ? new Date(u.signed_up).toLocaleDateString() : '—'}</span>
+      <span>Last login: ${u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</span>
+      <span>AI consent: ${u.ai_consent ? 'Yes' : 'No'}</span>
+    </div>
+  `;
+}
+
+function renderOverviewTab(fu) {
+  const maxVal = Math.max(fu.readings_logged, fu.chat_messages, fu.ai_insights, fu.profiles_managed, fu.invites_sent, 1);
+  const items = [
+    {label: 'Health Readings', count: fu.readings_logged, color: '#10b981'},
+    {label: 'Chat Messages', count: fu.chat_messages, color: '#0ea5e9'},
+    {label: 'AI Insights', count: fu.ai_insights, color: '#8b5cf6'},
+    {label: 'Profiles', count: fu.profiles_managed, color: '#f59e0b'},
+    {label: 'Invites Sent', count: fu.invites_sent, color: '#ec4899'},
+    {label: 'Invites Accepted', count: fu.invites_accepted, color: '#06b6d4'},
+  ];
+
+  const barsHtml = items.map(it => `
+    <div class="usage-item">
+      <span class="u-label">${it.label}</span>
+      <div class="u-bar"><div class="u-fill" style="width:${Math.max((it.count/maxVal)*100, it.count > 0 ? 5 : 0)}%;background:${it.color}"></div></div>
+      <span class="u-count">${it.count}</span>
+    </div>
+  `).join('');
+
+  const features = [
+    {icon: '💉', label: 'Health Tracking', val: fu.readings_logged, active: fu.readings_logged > 0},
+    {icon: '💬', label: 'AI Chat', val: fu.chat_messages, active: fu.chat_messages > 0},
+    {icon: '🧠', label: 'AI Insights', val: fu.ai_insights, active: fu.ai_insights > 0},
+    {icon: '👤', label: 'Profiles', val: fu.profiles_managed, active: fu.profiles_managed > 0},
+    {icon: '🔗', label: 'Sharing', val: fu.invites_sent, active: fu.invites_sent > 0},
+  ];
+
+  const engageHtml = features.map(f => `
+    <div class="engage-card ${f.active ? 'active-feat' : 'inactive-feat'}">
+      <div class="icon">${f.icon}</div>
+      <div class="e-val">${f.val}</div>
+      <div class="e-label">${f.label}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('tabOverview').innerHTML = `
+    <h3 style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Feature Usage</h3>
+    <div class="usage-grid">${barsHtml}</div>
+    <h3 style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Feature Engagement</h3>
+    <div class="engage-grid">${engageHtml}</div>
+  `;
+}
+
+function renderProfilesTab(profiles) {
+  if (!profiles.length) {
+    document.getElementById('tabProfiles').innerHTML = '<div class="empty-state">No profiles found.</div>';
+    return;
+  }
+  document.getElementById('tabProfiles').innerHTML = '<div class="profile-cards">' + profiles.map(p => `
+    <div class="profile-card">
+      <h4>${esc(p.name)} <span class="badge ${p.access_level === 'owner' ? 'badge-admin' : 'badge-user'}" style="font-size:11px">${p.access_level}</span></h4>
+      ${p.relationship ? `<div class="p-row"><strong>Relationship:</strong> ${esc(p.relationship)}</div>` : ''}
+      ${p.age ? `<div class="p-row"><strong>Age:</strong> ${p.age}</div>` : ''}
+      ${p.gender ? `<div class="p-row"><strong>Gender:</strong> ${esc(p.gender)}</div>` : ''}
+      ${p.height ? `<div class="p-row"><strong>Height:</strong> ${p.height} cm</div>` : ''}
+      ${p.blood_group ? `<div class="p-row"><strong>Blood Group:</strong> ${esc(p.blood_group)}</div>` : ''}
+      ${p.medical_conditions && p.medical_conditions.length ? `<div class="p-row"><strong>Conditions:</strong> ${p.medical_conditions.map(c => `<span class="condition-pill">${esc(c)}</span>`).join(' ')}</div>` : ''}
+      ${p.current_medications ? `<div class="p-row"><strong>Medications:</strong> ${esc(p.current_medications)}</div>` : ''}
+      ${p.doctor_name ? `<div class="p-row"><strong>Doctor:</strong> ${esc(p.doctor_name)}${p.doctor_specialty ? ' (' + esc(p.doctor_specialty) + ')' : ''}</div>` : ''}
+    </div>
+  `).join('') + '</div>';
+}
+
+function renderReadingsTab(readings) {
+  if (!readings.length) {
+    document.getElementById('tabReadings').innerHTML = '<div class="empty-state">No health readings found.</div>';
+    return;
+  }
+  const rows = readings.map(r => {
+    let value = '';
+    if (r.reading_type === 'glucose') {
+      value = `${r.glucose_value} mg/dL` + (r.sample_type ? ` <span style="color:#94a3b8">(${esc(r.sample_type)})</span>` : '');
+    } else {
+      value = `${r.systolic}/${r.diastolic} mmHg` + (r.pulse_rate ? ` <span style="color:#94a3b8">${r.pulse_rate} bpm</span>` : '');
+    }
+    const statusCls = r.status_flag ? 'status-' + r.status_flag.replace(/ .*/,'') : '';
+    return `<tr>
+      <td>${r.reading_timestamp ? new Date(r.reading_timestamp).toLocaleString() : '—'}</td>
+      <td>${esc(r.profile_name)}</td>
+      <td>${r.reading_type === 'glucose' ? 'Glucose' : 'Blood Pressure'}</td>
+      <td>${value}</td>
+      <td>${r.status_flag ? `<span class="status-badge ${statusCls}">${esc(r.status_flag)}</span>` : '—'}</td>
+      <td>${r.notes ? esc(r.notes).substring(0, 60) : ''}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tabReadings').innerHTML = `
+    <table><thead><tr><th>Time</th><th>Profile</th><th>Type</th><th>Value</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+  `;
+}
+
+function renderChatsTab(chats) {
+  if (!chats.length) {
+    document.getElementById('tabChats').innerHTML = '<div class="empty-state">No chat messages found.</div>';
+    return;
+  }
+  document.getElementById('tabChats').innerHTML = '<div class="chat-list">' + chats.map((c, i) => `
+    <div class="chat-entry">
+      <div class="chat-meta">${c.created_at ? new Date(c.created_at).toLocaleString() : ''} &middot; ${esc(c.profile_name)}</div>
+      <div class="chat-user">${esc(c.user_message)}</div>
+      <div class="chat-ai truncated" id="chatAi${i}">${esc(c.ai_response || '')}</div>
+      ${(c.ai_response || '').length > 300 ? `<button class="show-more-btn" onclick="toggleExpand('chatAi${i}', this)">Show more</button>` : ''}
+      <div class="chat-ai-meta">${esc(c.model_used || '')} &middot; ${c.tokens_used || 0} tokens &middot; ${c.latency_ms || 0}ms</div>
+    </div>
+  `).join('') + '</div>';
+}
+
+function renderInsightsTab(insights) {
+  if (!insights.length) {
+    document.getElementById('tabInsights').innerHTML = '<div class="empty-state">No AI insights found.</div>';
+    return;
+  }
+  document.getElementById('tabInsights').innerHTML = '<div class="insight-cards">' + insights.map((it, i) => `
+    <div class="insight-card">
+      <div class="i-header">
+        <span class="i-model">${esc(it.model_used || 'unknown')}</span>
+        <span class="i-time">${it.created_at ? new Date(it.created_at).toLocaleString() : ''} &middot; ${esc(it.profile_name)}</span>
+      </div>
+      ${it.fallback_reason ? `<div class="i-fallback">Fallback: ${esc(it.fallback_reason)}</div>` : ''}
+      ${it.prompt_summary ? `<details style="margin-bottom:8px"><summary style="font-size:12px;color:#64748b;cursor:pointer">Prompt summary</summary><div style="font-size:12px;color:#475569;margin-top:4px">${esc(it.prompt_summary)}</div></details>` : ''}
+      <div class="i-text truncated" id="insight${i}">${esc(it.response_text || '')}</div>
+      ${(it.response_text || '').length > 300 ? `<button class="show-more-btn" onclick="toggleExpand('insight${i}', this)">Show more</button>` : ''}
+      <div class="i-stats">${it.tokens_used || 0} tokens &middot; ${it.latency_ms || 0}ms</div>
+    </div>
+  `).join('') + '</div>';
+}
+
+function toggleExpand(id, btn) {
+  const el = document.getElementById(id);
+  el.classList.toggle('expanded');
+  btn.textContent = el.classList.contains('expanded') ? 'Show less' : 'Show more';
+}
+
+function esc(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// Close modal on Escape
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeUserDetail(); });
 
 // Enter key triggers login
 document.getElementById('password').addEventListener('keypress', (e) => { if (e.key === 'Enter') login(); });
