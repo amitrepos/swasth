@@ -3,7 +3,13 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
-## 2026-04-03 — BMI tile replaces Armband, History auto-refresh, Admin user detail
+## 2026-04-03 — Full session: Admin dashboard, BMI, profile editing, history refresh, AI memory
+
+### Admin Dashboard — User Detail View (PoC testing)
+- Changed `backend/routes_admin.py`: Added `GET /api/admin/users/{user_id}/detail` endpoint + AI memory endpoints (PUT/DELETE `/api/admin/profiles/{id}/ai-memory`)
+- Changed `backend/admin_dashboard.html`: Clickable user rows → modal with 6 tabs (Overview, Profiles, Health Readings, Chat History, AI Insights, AI Memory). AI Memory tab has editable textarea, Save/Reset buttons
+
+### BMI Tile (replaces Armband)
 
 ### BMI Tile (replaces Armband)
 - Changed `backend/models.py`: Added `weight` column to Profile model (kg, nullable)
@@ -1741,3 +1747,16 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 15:31:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
   - 15:31:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
   - 15:31:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 15:42:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 15:42:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 15:43:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 15:43:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 16:05:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 16:05:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 16:06:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 16:06:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 16:06:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 16:06:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 16:24:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 16:24:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 16:25:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

@@ -210,12 +210,14 @@
       <button class="tab-btn" onclick="switchTab('Readings')">Health Readings</button>
       <button class="tab-btn" onclick="switchTab('Chats')">Chat History</button>
       <button class="tab-btn" onclick="switchTab('Insights')">AI Insights</button>
+      <button class="tab-btn" onclick="switchTab('Memory')">AI Memory</button>
     </div>
     <div id="tabOverview" class="tab-panel active"></div>
     <div id="tabProfiles" class="tab-panel"></div>
     <div id="tabReadings" class="tab-panel"></div>
     <div id="tabChats" class="tab-panel"></div>
     <div id="tabInsights" class="tab-panel"></div>
+    <div id="tabMemory" class="tab-panel"></div>
   </div>
 </div>
 
@@ -370,6 +372,7 @@ async function openUserDetail(userId) {
     renderReadingsTab(data.recent_readings);
     renderChatsTab(data.recent_chats);
     renderInsightsTab(data.recent_ai_insights);
+    renderMemoryTab(data.ai_memory || []);
     // Reset to Overview tab
     switchTab('Overview');
   } catch(e) {
@@ -529,6 +532,56 @@ function renderInsightsTab(insights) {
       <div class="i-stats">${it.tokens_used || 0} tokens &middot; ${it.latency_ms || 0}ms</div>
     </div>
   `).join('') + '</div>';
+}
+
+function renderMemoryTab(memories) {
+  if (!memories.length) {
+    document.getElementById('tabMemory').innerHTML = '<div class="empty-state">No AI memory found.</div>';
+    return;
+  }
+  document.getElementById('tabMemory').innerHTML = '<div class="insight-cards">' + memories.map(m => `
+    <div class="insight-card">
+      <div class="i-header">
+        <span class="i-model">${esc(m.profile_name)}</span>
+        <span class="i-time">${m.message_count} messages &middot; ${m.last_updated ? 'Updated: ' + new Date(m.last_updated).toLocaleString() : 'Never'}</span>
+      </div>
+      <textarea id="memory_${m.profile_id}" style="width:100%;min-height:120px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;margin:8px 0">${esc(m.summary)}</textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="saveMemory(${m.profile_id})" style="padding:6px 16px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Save</button>
+        <button onclick="resetMemory(${m.profile_id}, '${esc(m.profile_name)}')" style="padding:6px 16px;background:#ef4444;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Reset</button>
+      </div>
+    </div>
+  `).join('') + '</div>';
+}
+
+async function saveMemory(profileId) {
+  try {
+    const summary = document.getElementById('memory_' + profileId).value;
+    const resp = await fetch(`${API}/api/admin/profiles/${profileId}/ai-memory`, {
+      method: 'PUT',
+      headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
+      body: JSON.stringify({summary})
+    });
+    if (!resp.ok) throw new Error('Failed');
+    alert('AI memory saved.');
+  } catch(e) {
+    alert('Error saving AI memory: ' + e.message);
+  }
+}
+
+async function resetMemory(profileId, name) {
+  if (!confirm(`Reset all AI memory for "${name}"? This clears the conversation context.`)) return;
+  try {
+    const resp = await fetch(`${API}/api/admin/profiles/${profileId}/ai-memory`, {
+      method: 'DELETE',
+      headers: {'Authorization': `Bearer ${TOKEN}`}
+    });
+    if (!resp.ok) throw new Error('Failed');
+    document.getElementById('memory_' + profileId).value = '';
+    alert('AI memory reset.');
+  } catch(e) {
+    alert('Error resetting AI memory: ' + e.message);
+  }
 }
 
 function toggleExpand(id, btn) {

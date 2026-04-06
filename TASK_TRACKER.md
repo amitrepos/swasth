@@ -13,7 +13,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 |---|---------|--------|-------|
 | A1 | Phone OTP login | 🔄 Partial | Email + password + JWT only. Phone number collected at registration but unused for auth. OTP used only for password reset. No Firebase phone OTP. |
 | A2 | Multi-profile data model | ✅ Done | Full backend: profiles, profile_access, profile_invites tables. All 22 steps complete. |
-| A3 | Profile creation | ✅ Done | `create_profile_screen.dart` — name, age, gender, height, blood group, conditions, medications. |
+| A3 | Profile creation | ✅ Done | `create_profile_screen.dart` — name, age, gender, height, weight, blood group, conditions, medications. Weight added 2026-04-03. |
 | A4 | Medication list | ✅ Done | Current medications text field in profile creation + edit. |
 | A5 | "Add person without smartphone" | ✅ Done | Create profile for someone else → caller becomes "owner". `create_profile_screen.dart`. |
 | A6 | Language toggle (Hindi / English) | ✅ Done | Full gen-l10n: `app_en.arb` + `app_hi.arb`, all UI strings via `AppLocalizations`. Toggle chip in Profile → Settings section. Language persisted via `languageProvider` (Riverpod). |
@@ -25,7 +25,8 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | A12 | First-time onboarding | ❌ Deferred | Replaced with YouTube tutorial video link. App is self-intuitive. Add "How to use" link on empty state that opens YouTube video. No in-app onboarding screens needed. |
 | A13 | Remember me / saved credentials | ✅ Done | "Remember me" checkbox on login screen. Credentials stored in `flutter_secure_storage` (iOS Keychain). Pre-fills email + password on next open. Cleared on logout or when checkbox unticked. |
 | A14 | Google OAuth login | ❌ Not started | Add "Sign in with Google" option. Use `google_sign_in` Flutter package + backend token verification. ~3 hours. Needs Google Cloud OAuth client IDs (web + iOS + Android). Existing email/password login stays as fallback. |
-| A15 | Admin visual dashboard (Phase 2) | ✅ Done | HTML dashboard at `/api/admin` with KPI cards, charts, user management. Served by backend. |
+| A15 | Admin visual dashboard (Phase 2) | ✅ Done | HTML dashboard at `/api/admin` with KPI cards, charts, user management. User detail modal with 6 tabs (Overview, Profiles, Readings, Chats, Insights, AI Memory). AI memory edit/reset. Served by backend. |
+| A16 | Inline profile editing | ✅ Done | Profile screen: owners can edit age, height, weight, doctor details inline with single Save button. Read-only for viewers. Added 2026-04-03. |
 
 ---
 
