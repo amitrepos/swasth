@@ -103,7 +103,15 @@ def _build_health_summary(profile_id: int, db: Session) -> str:
     conditions = ", ".join(profile.medical_conditions) if profile.medical_conditions else "None reported"
     medications = profile.current_medications or "None reported"
 
-    parts = [f"Patient: {age_desc}, {gender}. Conditions: {conditions}. Medications: {medications}."]
+    # BMI
+    bmi_desc = ""
+    if profile.height and profile.weight and profile.height > 0:
+        height_m = profile.height / 100.0
+        bmi = round(profile.weight / (height_m * height_m), 1)
+        cat = "Underweight" if bmi < 18.5 else "Normal" if bmi < 25 else "Overweight" if bmi < 30 else "Obese"
+        bmi_desc = f" Height: {profile.height:.0f}cm, Weight: {profile.weight:.0f}kg, BMI: {bmi} ({cat})."
+
+    parts = [f"Patient: {age_desc}, {gender}. Conditions: {conditions}. Medications: {medications}.{bmi_desc}"]
 
     if glucose_vals:
         avg_g = sum(glucose_vals) / len(glucose_vals)

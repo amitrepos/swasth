@@ -2,6 +2,7 @@ import 'dart:math' show min;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
@@ -21,6 +22,14 @@ const double _kWebMaxContentWidth = 1280;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Dark status bar icons on light background (time, WiFi, battery visible)
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,      // Android
+    statusBarBrightness: Brightness.light,          // iOS
+  ));
+
   await dotenv.load(fileName: ".env");
   await ReminderService().initialize();
   final langCode = await StorageService().getLanguage() ?? 'en';
@@ -78,6 +87,11 @@ class SwasthApp extends ConsumerWidget {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: true,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
       ),
       cardTheme: CardThemeData(
         color: Colors.white,

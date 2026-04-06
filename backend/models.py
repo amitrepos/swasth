@@ -35,6 +35,7 @@ class Profile(Base):
     age = Column(Integer, nullable=True)
     gender = Column(String, nullable=True)                       # Male / Female / Other
     height = Column(Float, nullable=True)                        # cm
+    weight = Column(Float, nullable=True)                        # kg
     blood_group = Column(String, nullable=True)
     medical_conditions = Column(ARRAY(String), nullable=True)
     other_medical_condition = Column(Text, nullable=True)

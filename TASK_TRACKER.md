@@ -65,12 +65,12 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 |---|---------|--------|-------|
 | C1 | Today's summary card | ✅ Done | `_HealthScoreCard` on home screen — shows today's glucose + BP values, status icons, last logged time, and health score ring. |
 | C2 | Status badges (HIGH / NORMAL / LOW) | ✅ Done | `history_screen.dart` — color-coded badges. `_glucoseStatus()` and `_bpStatus()` helpers in confirmation screen. |
-| C3 | BMI display | ❌ Not started | Height in profile; no weight readings table; no BMI calculation anywhere in codebase. |
+| C3 | BMI display | ✅ Done | BMI tile on home screen (replaces Armband). Color-coded WHO categories. Actionable tip shows kg to lose/gain. Weight field added to Profile model. |
 | C4 | 7/30/90-day glucose trend chart | ✅ Done | `trend_chart_screen.dart` — 3 tabs (7/30/90 days), glass card styling, adaptive dot radius, smart X-axis labels. |
 | C5 | 7/30/90-day BP trend chart | ✅ Done | Same screen — systolic (rose) + diastolic lines, normal range bands, correlation overview card. |
 | C6 | 7-day steps chart | ❌ Not started | Depends on B10 (pedometer). |
 | C7 | 7-day heart rate chart | ❌ Not started | Depends on B18 (health band). |
-| C8 | Weekly weight trend | ❌ Not started | Depends on B3/B6. |
+| C8 | Weekly weight trend | ❌ Not started | Plan: treat weight as a `reading_type: "weight"` in health_readings table. Reuses existing trend charts, history, streak system. Track weight changes over time for BMI trends. No longer depends on B3/B6. |
 | C9 | 30/90-day trend charts | ✅ Done | `trend_chart_screen.dart` — 7/30/90-day tabs with glassmorphism cards. |
 | C10 | Reading history | ✅ Done | `history_screen.dart` — scrollable list, timestamp, type filter, delete, status badges. |
 | C11 | Streak counter | ✅ Done | Backend: consecutive-days logic in `GET /api/readings/health-score`. Shown in gamification panel. |

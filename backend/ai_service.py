@@ -234,7 +234,7 @@ def _try_deepseek(prompt: str) -> dict:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=256,
+            max_tokens=80,
             temperature=0.4,
         )
 

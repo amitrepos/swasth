@@ -247,7 +247,6 @@ void main() {
           data: _healthScoreData,
           profileId: 1,
           onAddReading: ({required String deviceType, required String btDeviceType}) {},
-          onArmBandTap: () {},
         ),
       ));
       await tester.pumpAndSettle();
@@ -261,7 +260,6 @@ void main() {
           data: null,
           profileId: 1,
           onAddReading: ({required String deviceType, required String btDeviceType}) {},
-          onArmBandTap: () {},
         ),
       ));
       await tester.pumpAndSettle();
@@ -342,8 +340,7 @@ void main() {
             data: _healthScoreData,
             profileId: 1,
             onAddReading: ({required String deviceType, required String btDeviceType}) {},
-            onArmBandTap: () {},
-          ),
+            ),
         ],
       ),
     ));

@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/sync_service.dart';
@@ -54,6 +55,7 @@ class _ShellScreenState extends State<ShellScreen> {
   Timer? _profileRefreshTimer;
   String? _chatInitialMessage;
   int _chatRebuildKey = 0;
+  final _historyKey = GlobalKey<HistoryScreenState>();
 
   @override
   void initState() {
@@ -115,7 +117,12 @@ class _ShellScreenState extends State<ShellScreen> {
 
   Future<void> _loadProfile() async {
     final storage = StorageService();
-    final id = await storage.getActiveProfileId();
+    var id = await storage.getActiveProfileId();
+    // Retry once if null — storage may not have flushed yet
+    if (id == null) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      id = await storage.getActiveProfileId();
+    }
     if (!mounted) return;
     if (id == null) {
       Navigator.pushReplacement(
@@ -138,7 +145,13 @@ class _ShellScreenState extends State<ShellScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Scaffold(
       body: Column(
         children: [
           if (_isOffline) const OfflineBanner(),
@@ -147,7 +160,7 @@ class _ShellScreenState extends State<ShellScreen> {
               index: _currentIndex,
               children: [
                 const HomeScreen(),
-                HistoryScreen(key: ValueKey('history_$_profileId'), profileId: _profileId!),
+                HistoryScreen(key: _historyKey, profileId: _profileId!),
                 StreaksScreen(key: ValueKey('streaks_$_profileId')),
                 InsightsScreen(key: ValueKey('insights_$_profileId'), profileId: _profileId!),
                 ChatScreen(
@@ -161,6 +174,7 @@ class _ShellScreenState extends State<ShellScreen> {
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),
+    ),
     );
   }
 
@@ -194,6 +208,10 @@ class _ShellScreenState extends State<ShellScreen> {
     // Clear chat message when switching away from chat or switching normally
     if (index != 4) _chatInitialMessage = null;
     setState(() => _currentIndex = index);
+    // Auto-refresh History when switching to it
+    if (index == 1) {
+      _historyKey.currentState?.refresh();
+    }
   }
 }
 

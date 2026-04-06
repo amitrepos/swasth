@@ -3,6 +3,32 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-04-03 — BMI tile replaces Armband, History auto-refresh, Admin user detail
+
+### BMI Tile (replaces Armband)
+- Changed `backend/models.py`: Added `weight` column to Profile model (kg, nullable)
+- Changed `backend/schemas.py`: Added `weight` to ProfileCreate, ProfileUpdate, ProfileResponse, UserRegister; added `bmi`, `bmi_category`, `profile_height`, `profile_weight` to HealthScoreResponse
+- Changed `backend/routes_health.py`: Compute BMI from profile height/weight in health-score endpoint, return with WHO category
+- Changed `backend/routes_chat.py`: Include height, weight, BMI in AI chat health summary context
+- Changed `backend/routes.py`: Store weight during registration
+- Changed `backend/routes_profiles.py`: Store weight during profile creation, include in profile response
+- Created `backend/migrate_add_weight.py`: Idempotent migration to add weight column to profiles table
+- Changed `lib/widgets/home/metrics_grid.dart`: Replaced `_ArmBandTile` with `_BmiTile` showing color-coded BMI (blue/green/amber/red per WHO categories)
+- Changed `lib/screens/home_screen.dart`: Removed armband tap handler from MetricsGrid
+- Changed `lib/models/profile_model.dart`: Added `weight` field to ProfileModel
+- Changed `lib/screens/create_profile_screen.dart`: Added weight input field next to height
+- Changed `lib/screens/profile_screen.dart`: Display weight in health info section
+- Changed `test/dashboard_widgets_test.dart`: Removed `onArmBandTap` from MetricsGrid test calls
+
+### History auto-refresh on tab switch
+- Changed `lib/screens/history_screen.dart`: Made state public (`HistoryScreenState`), added `refresh()` method, added `didUpdateWidget` for profile changes
+- Changed `lib/screens/shell_screen.dart`: Used GlobalKey for HistoryScreen, calls `refresh()` when History tab is selected
+
+## 2026-04-03 — Admin dashboard: User detail view with health data visibility (PoC/testing)
+
+- Changed `backend/routes_admin.py`: Added `GET /api/admin/users/{user_id}/detail` endpoint returning full user info, profiles, recent health readings (last 50 with actual values), chat messages (last 20), AI insight logs (last 20), and feature usage summary counts
+- Changed `backend/admin_dashboard.html`: Added clickable user rows that open a modal overlay with 5 tabs (Overview with feature usage bars/engagement grid, Profiles with medical details, Health Readings table with color-coded status badges, Chat History with bubble-style messages, AI Insights with collapsible prompts). Includes Escape key close, show more/less toggles, and empty states
+
 ## 2026-04-02 — Test suite cleanup: Removed duplicate/unused test files
 
 ### Test File Cleanup
@@ -1650,3 +1676,68 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 23:54:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart
   - 00:03:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
   - 00:04:21 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_status.md
+  - 18:29:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:29:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:30:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:30:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:31:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 18:34:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/ci.yml
+  - 18:53:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ai_service.py
+  - 18:53:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 08:13:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 08:13:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 08:25:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/main.dart
+  - 08:26:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 08:26:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 08:26:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 11:57:31 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_status.md
+  - 14:44:47 modified: /Users/amitkumarmishra/.claude/plans/calm-soaring-lobster.md
+  - 14:47:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 14:47:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 14:47:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 14:48:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 14:50:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 14:58:01 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/reference_server_deploy.md
+  - 14:58:09 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
+  - 15:07:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 15:07:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:07:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:07:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 15:07:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:07:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/shell_screen.dart
+  - 15:07:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/history_screen.dart
+  - 15:10:59 modified: /Users/amitkumarmishra/.claude/plans/calm-soaring-lobster.md
+  - 15:11:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 15:11:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 15:12:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 15:12:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 15:12:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 15:13:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/migrate_add_weight.py
+  - 15:13:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 15:13:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 15:14:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 15:14:17 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_chat.py
+  - 15:14:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 15:15:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 15:15:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 15:15:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/profile_model.dart
+  - 15:15:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/profile_model.dart
+  - 15:15:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/profile_model.dart
+  - 15:15:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/profile_model.dart
+  - 15:16:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 15:16:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 15:16:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 15:16:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/create_profile_screen.dart
+  - 15:17:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 15:17:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 15:17:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 15:18:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 15:20:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 15:27:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 15:27:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 15:27:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 15:27:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 15:31:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 15:31:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 15:31:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
+  - 15:31:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/profile_screen.dart
