@@ -63,6 +63,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _startAutoConnect();
     } else if (widget.device != null) {
       _fetchReadings();
+    } else {
+      // No device and no auto-connect - show device selection popup
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startScanForDevice(widget.deviceType);
+      });
     }
   }
 
@@ -92,6 +97,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await _requestPermissions();
 
       bool found = false;
+      
+      // Scan for all devices (no UUID filtering)
       BleManager.startScan().listen((results) async {
         if (results.isNotEmpty && !found) {
           ScanResult? target;
@@ -151,6 +158,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _armbandConnected       = type == 'Unknown';
         _connectedDeviceType    = type;
         _loading                = false;
+        
+        // Clear previous readings when connecting to a new device
+        if (type == 'Glucose') {
+          // Connecting to glucose - clear BP readings
+          _latestBPReading = null;
+          _allBPReadings = [];
+        } else if (type == 'Blood Pressure') {
+          // Connecting to BP - clear glucose readings
+          _latestGlucoseReading = null;
+          _allGlucoseReadings = [];
+        }
       });
 
       if (type == 'Blood Pressure') {
@@ -314,68 +332,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
 
   Future<void> _startScanForDevice(String deviceType) async {
-    setState(() {
-      _status  = 'Scanning for $deviceType…';
-      _loading = true;
-    });
+    // Show device selection dialog
+    await _showDeviceSelectionDialog(deviceType);
+  }
 
-    try {
-      await _requestPermissions();
-
-      bool found = false;
-
-      BleManager.startScan(timeout: const Duration(seconds: 20))
-          .listen((results) async {
-        if (results.isNotEmpty && !found) {
-          ScanResult? selected;
-
-          if (deviceType == 'Blood Pressure') {
-            // ── Match exactly like Python: BLESMART / HEM / OMRON name first,
-            //    then standard 0x1810 as fallback.
-            selected = results.firstWhere(
-              (r) => BleManager.isOmronDevice(r),
-              orElse: () => results.firstWhere(
-                (r) => BleManager.deviceType(r) == 'Blood Pressure',
-                orElse: () => results.first,
-              ),
-            );
-          } else if (deviceType == 'Glucose') {
-            selected = results.firstWhere(
-              (r) => BleManager.deviceType(r) == 'Glucose',
-              orElse: () => results.first,
-            );
-          } else {
-            selected = results.first;
-          }
-
-          found = true;
-          _connectToDevice(selected);
-        }
-      });
-
-      await Future.delayed(const Duration(seconds: 20));
-      await BleManager.stopScan();
-
-      if (!found && mounted) {
-        setState(() {
-          _status  = 'No $deviceType found. '
-                     '${deviceType == 'Blood Pressure' ? 'Press BT on device first.' : 'Turn on your device.'}';
-          _loading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('No $deviceType found nearby'),
-          backgroundColor: AppColors.statusElevated,
-        ));
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _status  = 'Scan error: $e';
-          _loading = false;
-        });
-      }
-    }
+  Future<void> _showDeviceSelectionDialog(String deviceType) async {
+    // Request permissions first
+    await _requestPermissions();
+    
+    // Show loading dialog
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return _DeviceSelectionDialog(
+          deviceType: deviceType,
+          onDeviceSelected: (device) {
+            Navigator.pop(dialogContext);
+            _connectToDevice(device);
+          },
+        );
+      },
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1170,6 +1148,240 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     if (widget.device != null) BleManager.disconnect(widget.device!);
+    super.dispose();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Device Selection Dialog Widget
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _DeviceSelectionDialog extends StatefulWidget {
+  final String deviceType;
+  final Function(ScanResult) onDeviceSelected;
+
+  const _DeviceSelectionDialog({
+    required this.deviceType,
+    required this.onDeviceSelected,
+  });
+
+  @override
+  State<_DeviceSelectionDialog> createState() => _DeviceSelectionDialogState();
+}
+
+class _DeviceSelectionDialogState extends State<_DeviceSelectionDialog> {
+  List<ScanResult> _devices = [];
+  bool _isScanning = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _startScanning();
+  }
+
+  void _startScanning() {
+    setState(() {
+      _isScanning = true;
+      _devices = [];
+    });
+
+    BleManager.startScan(timeout: const Duration(seconds: 15)).listen((results) {
+      if (mounted) {
+        setState(() {
+          // Filter devices based on type
+          _devices = results.where((r) {
+            if (widget.deviceType == 'Glucose') {
+              return BleManager.deviceType(r) == 'Glucose';
+            } else if (widget.deviceType == 'Blood Pressure') {
+              return BleManager.deviceType(r) == 'Blood Pressure';
+            }
+            return true; // For armband or other types - show all
+          }).toList();
+          _isScanning = false;
+        });
+      }
+    });
+
+    // Auto-stop scanning after 15 seconds
+    Future.delayed(const Duration(seconds: 15), () {
+      if (mounted) {
+        BleManager.stopScan();
+        setState(() {
+          _isScanning = false;
+        });
+      }
+    });
+  }
+
+  void _rescan() {
+    BleManager.stopScan();
+    _startScanning();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Select ${widget.deviceType}'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Show device-specific instructions
+            _buildInstructionsCard(),
+            const SizedBox(height: 12),
+            if (_isScanning)
+              const Column(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Scanning for devices...'),
+                ],
+              )
+            else if (_devices.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No devices found.\nMake sure your device is turned on and in pairing mode.'),
+              )
+            else
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _devices.length,
+                  itemBuilder: (ctx, index) {
+                    final device = _devices[index];
+                    final name = device.device.platformName.isNotEmpty
+                        ? device.device.platformName
+                        : 'Unknown Device';
+                    
+                    return ListTile(
+                      leading: Icon(
+                        widget.deviceType == 'Glucose' ? Icons.water_drop : Icons.favorite,
+                        color: widget.deviceType == 'Glucose' ? AppColors.glucose : AppColors.bloodPressure,
+                      ),
+                      title: Text(name),
+                      subtitle: Text('Signal: ${device.rssi} dBm'),
+                      onTap: () {
+                        widget.onDeviceSelected(device);
+                      },
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            BleManager.stopScan();
+            Navigator.pop(context);
+          },
+          child: const Text('Cancel'),
+        ),
+        if (!_isScanning)
+          TextButton(
+            onPressed: _rescan,
+            child: const Text('Rescan'),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInstructionsCard() {
+    final isGlucose = widget.deviceType == 'Glucose';
+    
+    return Card(
+      color: (isGlucose ? AppColors.glucose : AppColors.bloodPressure).withOpacity(0.08),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: isGlucose ? AppColors.glucose : AppColors.bloodPressure,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isGlucose ? 'Glucometer – Prerequisites:' : 'BP Meter – Prerequisites:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: isGlucose ? AppColors.glucose : AppColors.bloodPressure,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (isGlucose) ...[
+              const Text(
+                'For the first time:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '1. Pair the device via Bluetooth. The glucometer will display "OK" once connected.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Always:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '2. Take a sugar test, or press the bottom-right button to view history on the device screen.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '3. The app will scan and display the current reading or history.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+            ] else ...[
+              const Text(
+                'For the first time:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '1. Press and hold the Bluetooth button on the Omron HEM-7140T1 until \'P\' starts blinking.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '2. Pair the device manually via Bluetooth. After pairing, \'P\' will continue blinking.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '3. Click the \' + \' icon. The device will display "OK", and the app will show readings.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Always:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '4. Click the \' + \' icon. The app will scan and display current and previous readings.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    BleManager.stopScan();
     super.dispose();
   }
 }

@@ -84,7 +84,7 @@ void showReadingInputModal(
                       device: null,
                       services: [],
                       deviceType: btDeviceType,
-                      autoConnect: true,
+                      autoConnect: false, // Changed to false - will show popup
                       profileId: profileId,
                     ),
                   ),
