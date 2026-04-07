@@ -697,7 +697,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanningButton => 'Scanning...';
 
   @override
-  String get noDevicesFound => 'No devices found yet';
+  String get noDevicesFound =>
+      'No devices found.\nMake sure your device is turned on and in pairing mode.';
 
   @override
   String get lookingForDevices => 'Looking for devices...';
@@ -1031,4 +1032,103 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offlineLoginExpired => 'Please connect to the internet to log in';
+
+  @override
+  String get glucometerPrerequisites => 'Glucometer – Prerequisites:';
+
+  @override
+  String get bpMeterPrerequisites => 'BP Meter – Prerequisites:';
+
+  @override
+  String get forTheFirstTime => 'For the first time:';
+
+  @override
+  String get always => 'Always:';
+
+  @override
+  String get glucoseFirstTimeStep1 =>
+      '1. Pair the device via Bluetooth. The glucometer will display \"OK\" once connected.';
+
+  @override
+  String get glucoseAlwaysStep1 =>
+      '2. Take a sugar test, or press the bottom-right button to view history on the device screen.';
+
+  @override
+  String get glucoseAlwaysStep2 =>
+      '3. The app will scan and display the current reading or history.';
+
+  @override
+  String get bpFirstTimeStep1 =>
+      '1. Press and hold the Bluetooth button on the Omron HEM-7140T1 until \'P\' starts blinking.';
+
+  @override
+  String get bpFirstTimeStep2 =>
+      '2. Pair the device manually via Bluetooth. After pairing, \'P\' will continue blinking.';
+
+  @override
+  String get bpFirstTimeStep3 =>
+      '3. Click the \'+\' icon. The device will display \"OK\", and the app will show readings.';
+
+  @override
+  String get bpAlwaysStep1 =>
+      '4. Click the \'+\' icon. The app will scan and display current and previous readings.';
+
+  @override
+  String get scanningForDevices => 'Scanning for devices...';
+
+  @override
+  String get rescan => 'Rescan';
+
+  @override
+  String get tapToConnectDevice => 'Tap to connect a device';
+
+  @override
+  String connectDeviceType(String deviceType) {
+    return 'Connect $deviceType';
+  }
+
+  @override
+  String alreadyConnectedMessage(String deviceType) {
+    return '$deviceType already connected. Scan for another $deviceType?';
+  }
+
+  @override
+  String scanForDeviceMessage(String deviceType) {
+    return 'Scan for $deviceType?';
+  }
+
+  @override
+  String get bpTransferHint =>
+      '\n\nPress BT on the device once first (slow LED = transfer mode).';
+
+  @override
+  String get scan => 'Scan';
+
+  @override
+  String signalStrength(int rssi) {
+    return 'Signal: $rssi dBm';
+  }
+
+  @override
+  String get bpHistory => 'BP History';
+
+  @override
+  String get allRecords => 'All Records';
+
+  @override
+  String recordsCount(int count) {
+    return '$count records';
+  }
+
+  @override
+  String get viewAllHistory => 'View All History';
+
+  @override
+  String get deviceDisconnected => 'Device disconnected';
+
+  @override
+  String get tapDeviceToConnect => 'Tap a device icon above to connect';
+
+  @override
+  String get unknownDevice => 'Unknown Device';
 }

@@ -122,7 +122,7 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
-  /// No description provided for @cancel.
+  /// Button to cancel dialog
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
@@ -482,7 +482,7 @@ abstract class AppLocalizations {
   /// **'Your health monitoring companion'**
   String get welcomeSubtitle;
 
-  /// No description provided for @selectDevice.
+  /// Title for device selection dialog
   ///
   /// In en, this message translates to:
   /// **'Select Device'**
@@ -1394,10 +1394,10 @@ abstract class AppLocalizations {
   /// **'Scanning...'**
   String get scanningButton;
 
-  /// No description provided for @noDevicesFound.
+  /// Message shown when no BLE devices are found
   ///
   /// In en, this message translates to:
-  /// **'No devices found yet'**
+  /// **'No devices found.\nMake sure your device is turned on and in pairing mode.'**
   String get noDevicesFound;
 
   /// No description provided for @lookingForDevices.
@@ -2011,6 +2011,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please connect to the internet to log in'**
   String get offlineLoginExpired;
+
+  /// Title for glucometer prerequisites section
+  ///
+  /// In en, this message translates to:
+  /// **'Glucometer – Prerequisites:'**
+  String get glucometerPrerequisites;
+
+  /// Title for BP meter prerequisites section
+  ///
+  /// In en, this message translates to:
+  /// **'BP Meter – Prerequisites:'**
+  String get bpMeterPrerequisites;
+
+  /// Section header for first-time setup instructions
+  ///
+  /// In en, this message translates to:
+  /// **'For the first time:'**
+  String get forTheFirstTime;
+
+  /// Section header for regular usage instructions
+  ///
+  /// In en, this message translates to:
+  /// **'Always:'**
+  String get always;
+
+  /// First time setup step 1 for glucose meter
+  ///
+  /// In en, this message translates to:
+  /// **'1. Pair the device via Bluetooth. The glucometer will display \"OK\" once connected.'**
+  String get glucoseFirstTimeStep1;
+
+  /// Regular usage step 1 for glucose meter
+  ///
+  /// In en, this message translates to:
+  /// **'2. Take a sugar test, or press the bottom-right button to view history on the device screen.'**
+  String get glucoseAlwaysStep1;
+
+  /// Regular usage step 2 for glucose meter
+  ///
+  /// In en, this message translates to:
+  /// **'3. The app will scan and display the current reading or history.'**
+  String get glucoseAlwaysStep2;
+
+  /// First time setup step 1 for BP meter
+  ///
+  /// In en, this message translates to:
+  /// **'1. Press and hold the Bluetooth button on the Omron HEM-7140T1 until \'P\' starts blinking.'**
+  String get bpFirstTimeStep1;
+
+  /// First time setup step 2 for BP meter
+  ///
+  /// In en, this message translates to:
+  /// **'2. Pair the device manually via Bluetooth. After pairing, \'P\' will continue blinking.'**
+  String get bpFirstTimeStep2;
+
+  /// First time setup step 3 for BP meter
+  ///
+  /// In en, this message translates to:
+  /// **'3. Click the \'+\' icon. The device will display \"OK\", and the app will show readings.'**
+  String get bpFirstTimeStep3;
+
+  /// Regular usage step 1 for BP meter
+  ///
+  /// In en, this message translates to:
+  /// **'4. Click the \'+\' icon. The app will scan and display current and previous readings.'**
+  String get bpAlwaysStep1;
+
+  /// Message shown while scanning for BLE devices
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning for devices...'**
+  String get scanningForDevices;
+
+  /// Button to rescan for BLE devices
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan'**
+  String get rescan;
+
+  /// Instruction text in device panel
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to connect a device'**
+  String get tapToConnectDevice;
+
+  /// Title for connect device dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Connect {deviceType}'**
+  String connectDeviceType(String deviceType);
+
+  /// Message when device is already connected
+  ///
+  /// In en, this message translates to:
+  /// **'{deviceType} already connected. Scan for another {deviceType}?'**
+  String alreadyConnectedMessage(String deviceType);
+
+  /// Message to scan for device
+  ///
+  /// In en, this message translates to:
+  /// **'Scan for {deviceType}?'**
+  String scanForDeviceMessage(String deviceType);
+
+  /// Hint for Omron BP device transfer mode
+  ///
+  /// In en, this message translates to:
+  /// **'\n\nPress BT on the device once first (slow LED = transfer mode).'**
+  String get bpTransferHint;
+
+  /// Button to start scanning
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get scan;
+
+  /// BLE device signal strength
+  ///
+  /// In en, this message translates to:
+  /// **'Signal: {rssi} dBm'**
+  String signalStrength(int rssi);
+
+  /// Title for BP history section
+  ///
+  /// In en, this message translates to:
+  /// **'BP History'**
+  String get bpHistory;
+
+  /// Title for all glucose records section
+  ///
+  /// In en, this message translates to:
+  /// **'All Records'**
+  String get allRecords;
+
+  /// Count of records
+  ///
+  /// In en, this message translates to:
+  /// **'{count} records'**
+  String recordsCount(int count);
+
+  /// Tooltip for history button
+  ///
+  /// In en, this message translates to:
+  /// **'View All History'**
+  String get viewAllHistory;
+
+  /// Message shown when device is disconnected
+  ///
+  /// In en, this message translates to:
+  /// **'Device disconnected'**
+  String get deviceDisconnected;
+
+  /// Status message when no device is connected
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a device icon above to connect'**
+  String get tapDeviceToConnect;
+
+  /// Default name for unnamed BLE devices
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Device'**
+  String get unknownDevice;
 }
 
 class _AppLocalizationsDelegate

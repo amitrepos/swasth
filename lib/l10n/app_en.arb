@@ -449,5 +449,150 @@
   "readingSavedOffline": "Reading saved offline. Will sync when connected.",
   "syncComplete": "Synced {count} readings",
   "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
-  "offlineLoginExpired": "Please connect to the internet to log in"
+  "offlineLoginExpired": "Please connect to the internet to log in",
+  "glucometerPrerequisites": "Glucometer – Prerequisites:",
+  "@glucometerPrerequisites": {
+    "description": "Title for glucometer prerequisites section"
+  },
+  "bpMeterPrerequisites": "BP Meter – Prerequisites:",
+  "@bpMeterPrerequisites": {
+    "description": "Title for BP meter prerequisites section"
+  },
+  "forTheFirstTime": "For the first time:",
+  "@forTheFirstTime": {
+    "description": "Section header for first-time setup instructions"
+  },
+  "always": "Always:",
+  "@always": {
+    "description": "Section header for regular usage instructions"
+  },
+  "glucoseFirstTimeStep1": "1. Pair the device via Bluetooth. The glucometer will display \"OK\" once connected.",
+  "@glucoseFirstTimeStep1": {
+    "description": "First time setup step 1 for glucose meter"
+  },
+  "glucoseAlwaysStep1": "2. Take a sugar test, or press the bottom-right button to view history on the device screen.",
+  "@glucoseAlwaysStep1": {
+    "description": "Regular usage step 1 for glucose meter"
+  },
+  "glucoseAlwaysStep2": "3. The app will scan and display the current reading or history.",
+  "@glucoseAlwaysStep2": {
+    "description": "Regular usage step 2 for glucose meter"
+  },
+  "bpFirstTimeStep1": "1. Press and hold the Bluetooth button on the Omron HEM-7140T1 until 'P' starts blinking.",
+  "@bpFirstTimeStep1": {
+    "description": "First time setup step 1 for BP meter"
+  },
+  "bpFirstTimeStep2": "2. Pair the device manually via Bluetooth. After pairing, 'P' will continue blinking.",
+  "@bpFirstTimeStep2": {
+    "description": "First time setup step 2 for BP meter"
+  },
+  "bpFirstTimeStep3": "3. Click the '+' icon. The device will display \"OK\", and the app will show readings.",
+  "@bpFirstTimeStep3": {
+    "description": "First time setup step 3 for BP meter"
+  },
+  "bpAlwaysStep1": "4. Click the '+' icon. The app will scan and display current and previous readings.",
+  "@bpAlwaysStep1": {
+    "description": "Regular usage step 1 for BP meter"
+  },
+  "selectDevice": "Select Device",
+  "@selectDevice": {
+    "description": "Title for device selection dialog"
+  },
+  "scanningForDevices": "Scanning for devices...",
+  "@scanningForDevices": {
+    "description": "Message shown while scanning for BLE devices"
+  },
+  "noDevicesFound": "No devices found.\nMake sure your device is turned on and in pairing mode.",
+  "@noDevicesFound": {
+    "description": "Message shown when no BLE devices are found"
+  },
+  "rescan": "Rescan",
+  "@rescan": {
+    "description": "Button to rescan for BLE devices"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Button to cancel dialog"
+  },
+  "tapToConnectDevice": "Tap to connect a device",
+  "@tapToConnectDevice": {
+    "description": "Instruction text in device panel"
+  },
+  "connectDeviceType": "Connect {deviceType}",
+  "@connectDeviceType": {
+    "description": "Title for connect device dialog",
+    "placeholders": {
+      "deviceType": {
+        "type": "String"
+      }
+    }
+  },
+  "alreadyConnectedMessage": "{deviceType} already connected. Scan for another {deviceType}?",
+  "@alreadyConnectedMessage": {
+    "description": "Message when device is already connected",
+    "placeholders": {
+      "deviceType": {
+        "type": "String"
+      }
+    }
+  },
+  "scanForDeviceMessage": "Scan for {deviceType}?",
+  "@scanForDeviceMessage": {
+    "description": "Message to scan for device",
+    "placeholders": {
+      "deviceType": {
+        "type": "String"
+      }
+    }
+  },
+  "bpTransferHint": "\n\nPress BT on the device once first (slow LED = transfer mode).",
+  "@bpTransferHint": {
+    "description": "Hint for Omron BP device transfer mode"
+  },
+  "scan": "Scan",
+  "@scan": {
+    "description": "Button to start scanning"
+  },
+  "signalStrength": "Signal: {rssi} dBm",
+  "@signalStrength": {
+    "description": "BLE device signal strength",
+    "placeholders": {
+      "rssi": {
+        "type": "int"
+      }
+    }
+  },
+  "bpHistory": "BP History",
+  "@bpHistory": {
+    "description": "Title for BP history section"
+  },
+  "allRecords": "All Records",
+  "@allRecords": {
+    "description": "Title for all glucose records section"
+  },
+  "recordsCount": "{count} records",
+  "@recordsCount": {
+    "description": "Count of records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewAllHistory": "View All History",
+  "@viewAllHistory": {
+    "description": "Tooltip for history button"
+  },
+  "deviceDisconnected": "Device disconnected",
+  "@deviceDisconnected": {
+    "description": "Message shown when device is disconnected"
+  },
+  "tapDeviceToConnect": "Tap a device icon above to connect",
+  "@tapDeviceToConnect": {
+    "description": "Status message when no device is connected"
+  },
+  "unknownDevice": "Unknown Device",
+  "@unknownDevice": {
+    "description": "Default name for unnamed BLE devices"
+  }
 }

@@ -341,5 +341,106 @@
   "readingSavedOffline": "रीडिंग ऑफ़लाइन सहेजी गई। कनेक्ट होने पर सिंक होगी।",
   "syncComplete": "{count} रीडिंग सिंक हुईं",
   "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
-  "offlineLoginExpired": "लॉगिन करने के लिए इंटरनेट से कनेक्ट करें"
+  "offlineLoginExpired": "लॉगिन करने के लिए इंटरनेट से कनेक्ट करें",
+  "selectDevice": "डिवाइस चुनें",
+  "@selectDevice": {
+    "description": "Title for device selection dialog"
+  },
+  "scanningForDevices": "डिवाइस की खोज...",
+  "@scanningForDevices": {
+    "description": "Message shown while scanning for BLE devices"
+  },
+  "noDevicesFound": "कोई डिवाइस नहीं मिला।\nसुनिश्चित करें कि आपका डिवाइस चालू है और पेयरिंग मोड में है।",
+  "@noDevicesFound": {
+    "description": "Message shown when no BLE devices are found"
+  },
+  "rescan": "पुनः खोजें",
+  "@rescan": {
+    "description": "Button to rescan for BLE devices"
+  },
+  "cancel": "रद्द करें",
+  "@cancel": {
+    "description": "Button to cancel dialog"
+  },
+  "tapToConnectDevice": "डिवाइस कनेक्ट करने के लिए टैप करें",
+  "@tapToConnectDevice": {
+    "description": "Instruction text in device panel"
+  },
+  "connectDeviceType": "{deviceType} कनेक्ट करें",
+  "@connectDeviceType": {
+    "description": "Title for connect device dialog",
+    "placeholders": {
+      "deviceType": {
+        "type": "String"
+      }
+    }
+  },
+  "alreadyConnectedMessage": "{deviceType} पहले से कनेक्टेड है। क्या दूसरे {deviceType} की खोज करें?",
+  "@alreadyConnectedMessage": {
+    "description": "Message when device is already connected",
+    "placeholders": {
+      "deviceType": {
+        "type": "String"
+      }
+    }
+  },
+  "scanForDeviceMessage": "{deviceType} की खोज करें?",
+  "@scanForDeviceMessage": {
+    "description": "Message to scan for device",
+    "placeholders": {
+      "deviceType": {
+        "type": "String"
+      }
+    }
+  },
+  "bpTransferHint": "\n\nडिवाइस पर BT बटन एक बार दबाएं (धीमी LED = ट्रांसफर मोड)।",
+  "@bpTransferHint": {
+    "description": "Hint for Omron BP device transfer mode"
+  },
+  "scan": "खोजें",
+  "@scan": {
+    "description": "Button to start scanning"
+  },
+  "signalStrength": "सिग्नल: {rssi} dBm",
+  "@signalStrength": {
+    "description": "BLE device signal strength",
+    "placeholders": {
+      "rssi": {
+        "type": "int"
+      }
+    }
+  },
+  "bpHistory": "BP इतिहास",
+  "@bpHistory": {
+    "description": "Title for BP history section"
+  },
+  "allRecords": "सभी रिकॉर्ड",
+  "@allRecords": {
+    "description": "Title for all glucose records section"
+  },
+  "recordsCount": "{count} रिकॉर्ड",
+  "@recordsCount": {
+    "description": "Count of records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewAllHistory": "संपूर्ण इतिहास देखें",
+  "@viewAllHistory": {
+    "description": "Tooltip for history button"
+  },
+  "deviceDisconnected": "डिवाइस डिस्कनेक्ट हो गया",
+  "@deviceDisconnected": {
+    "description": "Message shown when device is disconnected"
+  },
+  "tapDeviceToConnect": "कनेक्ट करने के लिए ऊपर डिवाइस आइकन टैप करें",
+  "@tapDeviceToConnect": {
+    "description": "Status message when no device is connected"
+  },
+  "unknownDevice": "अज्ञात डिवाइस",
+  "@unknownDevice": {
+    "description": "Default name for unnamed BLE devices"
+  }
 }
