@@ -36,7 +36,7 @@ class UserRegister(BaseModel):
     confirm_password: str
     full_name: str = Field(..., min_length=2, max_length=100)
     phone_number: str = Field(..., min_length=10, max_length=15)
-    timezone: str = "Asia/Kolkata"  # User's local timezone
+    timezone: str = "UTC"  # User's local timezone
     # Optional first-profile fields — used to auto-create "My Health" profile on register
     profile_name: Optional[str] = "My Health"
     age: Optional[int] = Field(None, ge=1, le=150)

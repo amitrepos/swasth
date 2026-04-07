@@ -31,10 +31,8 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         )
 
     # 1. Create User (auth only)
-    # Get UTC time and convert to user's timezone
-    user_tz = pytz.timezone(user.timezone)
+    # Store UTC time directly — convert to local time at read/display time
     now_utc = datetime.now(pytz.UTC)
-    now_in_user_tz = now_utc.astimezone(user_tz)
     
     db_user = models.User(
         email=user.email,
@@ -42,11 +40,13 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         full_name=user.full_name,
         phone_number=user.phone_number,
         timezone=user.timezone,
-        consent_timestamp=now_in_user_tz if user.consent_app_version else None,
+        consent_timestamp=now_utc if user.consent_app_version else None,
         consent_app_version=user.consent_app_version,
         consent_language=user.consent_language,
         ai_consent=bool(user.ai_consent) if user.ai_consent else bool(user.consent_app_version),
-        ai_consent_timestamp=now_in_user_tz if (user.ai_consent or user.consent_app_version) else None,
+        ai_consent_timestamp=now_utc if (user.ai_consent or user.consent_app_version) else None,
+        created_at=now_utc,
+        updated_at=now_utc,
     )
     db.add(db_user)
     db.flush()  # Get db_user.id
@@ -62,6 +62,8 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         medical_conditions=user.medical_conditions,
         other_medical_condition=user.other_medical_condition,
         current_medications=user.current_medications,
+        created_at=now_utc,
+        updated_at=now_utc,
     )
     db.add(db_profile)
     db.flush()  # Get db_profile.id
@@ -71,6 +73,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         user_id=db_user.id,
         profile_id=db_profile.id,
         access_level="owner",
+        created_at=now_utc,
     )
     db.add(db_access)
     
@@ -97,12 +100,9 @@ def login(request: Request, user: schemas.UserLogin, db: Session = Depends(get_d
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    # Update last_login with timezone-aware timestamp
-    # Handle case where old users might not have timezone set
-    user_timezone = db_user.timezone if db_user.timezone else "Asia/Kolkata"
-    user_tz = pytz.timezone(user_timezone)
+    # Update last_login with UTC timestamp (convert to local time at display)
     now_utc = datetime.now(pytz.UTC)
-    db_user.last_login_at = now_utc.astimezone(user_tz)
+    db_user.last_login_at = now_utc
     db.commit()
     access_token = auth.create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -166,11 +166,9 @@ def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Ses
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     user.password_hash = auth.get_password_hash(body.new_password)
-    # Update timestamp in user's timezone - handle NULL timezone for old users
-    user_timezone = user.timezone if user.timezone else "Asia/Kolkata"
-    user_tz = pytz.timezone(user_timezone)
+    # Update timestamp with UTC (convert to local time at display)
     now_utc = datetime.now(pytz.UTC)
-    user.updated_at = now_utc.astimezone(user_tz)
+    user.updated_at = now_utc
     otp_record.is_used = True
     db.commit()
     return {"message": "Password reset successfully"}
@@ -198,11 +196,9 @@ def update_profile(
     if user_update.phone_number:
         user.phone_number = user_update.phone_number
 
-    # Update timestamp in user's timezone - handle NULL timezone for old users
-    user_timezone = user.timezone if user.timezone else "Asia/Kolkata"
-    user_tz = pytz.timezone(user_timezone)
+    # Update timestamp with UTC (convert to local time at display)
     now_utc = datetime.now(pytz.UTC)
-    user.updated_at = now_utc.astimezone(user_tz)
+    user.updated_at = now_utc
     db.commit()
     db.refresh(user)
     return user
@@ -219,11 +215,9 @@ def grant_ai_consent(
 ):
     """Grant consent for AI-powered health insights (third-party processing)."""
     user.ai_consent = True
-    # Record consent timestamp in user's timezone - handle NULL timezone for old users
-    user_timezone = user.timezone if user.timezone else "Asia/Kolkata"
-    user_tz = pytz.timezone(user_timezone)
+    # Record consent timestamp with UTC (convert to local time at display)
     now_utc = datetime.now(pytz.UTC)
-    user.ai_consent_timestamp = now_utc.astimezone(user_tz)
+    user.ai_consent_timestamp = now_utc
     db.commit()
     return {"message": "AI consent granted"}
 
