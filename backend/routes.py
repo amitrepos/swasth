@@ -3,8 +3,11 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import logging
 import os
 import pytz
+
+logger = logging.getLogger(__name__)
 import models
 import schemas
 import auth
@@ -22,7 +25,6 @@ limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 @limiter.limit("5/minute")
 def register(request: Request, user: schemas.UserRegister, db: Session = Depends(get_db)):
     """Register a new user and create their initial 'My Health' profile."""
-    user.email = user.email.strip().lower()
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(
@@ -84,7 +86,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
     try:
         email_service.send_welcome_email(db_user.email, db_user.full_name)
     except Exception as e:
-        print(f"Error sending welcome email: {e}")
+        logger.error("Error sending welcome email: %s", e)
 
     return db_user
 
@@ -93,7 +95,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
 @limiter.limit("10/minute")
 def login(request: Request, user: schemas.UserLogin, db: Session = Depends(get_db)):
     """Login user and return JWT token."""
-    db_user = db.query(models.User).filter(models.User.email == user.email.strip().lower()).first()
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if not db_user or not auth.verify_password(user.password, db_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -118,7 +120,6 @@ def get_current_user_info(user: models.User = Depends(get_current_user)):
 @limiter.limit("3/minute")
 def request_password_reset(request: Request, body: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Request password reset OTP."""
-    body.email = body.email.strip().lower()
     user = db.query(models.User).filter(models.User.email == body.email).first()
     if not user:
         raise HTTPException(
@@ -145,7 +146,6 @@ def request_password_reset(request: Request, body: schemas.ForgotPasswordRequest
 @limiter.limit("5/minute")
 def verify_reset_otp(request: Request, body: schemas.VerifyOTPRequest, db: Session = Depends(get_db)):
     """Verify OTP for password reset."""
-    body.email = body.email.strip().lower()
     otp_record = _get_valid_otp(db, body.email, body.otp)
     if not otp_record:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OTP")
@@ -156,7 +156,6 @@ def verify_reset_otp(request: Request, body: schemas.VerifyOTPRequest, db: Sessi
 @limiter.limit("5/minute")
 def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
     """Reset password using OTP."""
-    body.email = body.email.strip().lower()
     otp_record = _get_valid_otp(db, body.email, body.otp)
     if not otp_record:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OTP")

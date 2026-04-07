@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen>
                   pts: _pts,
                   onSwitchProfile: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
+                    MaterialPageRoute(builder: (_) => const SelectProfileScreen(pushedFromShell: true)),
                   ),
                   onViewProfile: () {
                     if (_activeProfileId != null) {
@@ -445,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen>
           ElevatedButton(
             onPressed: () => Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
+              MaterialPageRoute(builder: (_) => const SelectProfileScreen(pushedFromShell: true)),
             ),
             child: Text(l10n.switchProfile),
           ),

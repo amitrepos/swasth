@@ -151,3 +151,84 @@ class TestConsentInRegistration:
         body = resp.json()
         assert body["consent_timestamp"] is None
         assert body["consent_app_version"] is None
+
+
+# ---------------------------------------------------------------------------
+# Case-insensitive email normalization
+# ---------------------------------------------------------------------------
+
+class TestCaseInsensitiveEmail:
+    REGISTER_URL = "/api/auth/register"
+    LOGIN_URL = "/api/auth/login"
+
+    def _payload(self, **overrides):
+        data = {
+            "email": "CaseTest@Swasth.App",
+            "password": "Test@1234",
+            "confirm_password": "Test@1234",
+            "full_name": "Case Test",
+            "phone_number": "9000000099",
+        }
+        data.update(overrides)
+        return data
+
+    def test_register_normalizes_email_to_lowercase(self, client):
+        """Email with mixed case should be stored as lowercase."""
+        resp = client.post(self.REGISTER_URL, json=self._payload())
+        assert resp.status_code == 201
+        assert resp.json()["email"] == "casetest@swasth.app"
+
+    def test_register_strips_whitespace_from_email(self, client):
+        """Leading/trailing whitespace in email should be stripped."""
+        resp = client.post(
+            self.REGISTER_URL,
+            json=self._payload(email="  spaced@swasth.app  "),
+        )
+        assert resp.status_code == 201
+        assert resp.json()["email"] == "spaced@swasth.app"
+
+    def test_duplicate_email_case_insensitive(self, client):
+        """Registering with same email in different case should fail."""
+        resp1 = client.post(
+            self.REGISTER_URL,
+            json=self._payload(email="unique@swasth.app"),
+        )
+        assert resp1.status_code == 201
+
+        resp2 = client.post(
+            self.REGISTER_URL,
+            json=self._payload(
+                email="UNIQUE@Swasth.App",
+                phone_number="9000000098",
+            ),
+        )
+        assert resp2.status_code == 400
+        assert "already registered" in resp2.json()["detail"].lower()
+
+    def test_login_case_insensitive(self, client):
+        """Login should work regardless of email casing."""
+        # Register with lowercase
+        client.post(
+            self.REGISTER_URL,
+            json=self._payload(email="logincase@swasth.app"),
+        )
+        # Login with uppercase
+        resp = client.post(
+            self.LOGIN_URL,
+            json={"email": "LOGINCASE@Swasth.App", "password": "Test@1234"},
+        )
+        assert resp.status_code == 200
+        assert "access_token" in resp.json()
+
+    def test_login_with_whitespace_email(self, client):
+        """Login should work even with whitespace around email."""
+        client.post(
+            self.REGISTER_URL,
+            json=self._payload(email="wslogin@swasth.app"),
+        )
+        resp = client.post(
+            self.LOGIN_URL,
+            json={"email": "  wslogin@swasth.app  ", "password": "Test@1234"},
+        )
+        assert resp.status_code == 200
+        assert "access_token" in resp.json()

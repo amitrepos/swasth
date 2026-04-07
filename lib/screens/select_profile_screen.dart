@@ -14,7 +14,10 @@ import 'pending_invites_screen.dart';
 import '../widgets/offline_banner.dart';
 
 class SelectProfileScreen extends StatefulWidget {
-  const SelectProfileScreen({super.key});
+  /// If true, was pushed from Shell (profile switcher) — pop back on select.
+  /// If false, came from Login/Splash — pushReplacement to Shell.
+  final bool pushedFromShell;
+  const SelectProfileScreen({super.key, this.pushedFromShell = false});
 
   @override
   State<SelectProfileScreen> createState() => _SelectProfileScreenState();
@@ -89,14 +92,11 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
     // Verify the write completed before navigating
     final savedId = await _storageService.getActiveProfileId();
     if (savedId == null) {
-      // Retry once
       await _storageService.saveActiveProfileId(profile.id);
     }
 
     if (mounted) {
-      // If we were pushed from Shell (profile switcher), pop back.
-      // If we replaced Shell (first time / no profile), push new Shell.
-      if (Navigator.canPop(context)) {
+      if (widget.pushedFromShell) {
         Navigator.pop(context);
       } else {
         Navigator.pushReplacement(
