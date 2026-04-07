@@ -90,7 +90,7 @@ void main() {
           onInfoTap: () {},
         ),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('78'), findsOneWidget);
     });
@@ -120,7 +120,7 @@ void main() {
           onInfoTap: () {},
         ),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('50'), findsOneWidget);
     });
@@ -344,7 +344,7 @@ void main() {
         ],
       ),
     ));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.byType(HomeHeader), findsOneWidget);
     expect(find.byType(HealthScoreRing), findsOneWidget);
