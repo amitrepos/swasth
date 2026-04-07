@@ -118,23 +118,19 @@ class _ShellScreenState extends State<ShellScreen> {
   Future<void> _loadProfile() async {
     final storage = StorageService();
     var id = await storage.getActiveProfileId();
-    print('[SHELL] _loadProfile: first read id=$id');
     // Retry once if null — storage may not have flushed yet
     if (id == null) {
       await Future.delayed(const Duration(milliseconds: 300));
       id = await storage.getActiveProfileId();
-      print('[SHELL] _loadProfile: retry read id=$id');
     }
     if (!mounted) return;
     if (id == null) {
-      print('[SHELL] _loadProfile: id still null, going to SelectProfileScreen');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
       );
       return;
     }
-    print('[SHELL] _loadProfile: success, id=$id');
     final name = await storage.getActiveProfileName() ?? 'Health';
     setState(() {
       _profileId = id;

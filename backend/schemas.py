@@ -52,6 +52,10 @@ class UserRegister(BaseModel):
     consent_language: Optional[str] = None
     ai_consent: Optional[bool] = None
 
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
     @validator('password')
     def validate_password(cls, v):
         return _validate_password_strength(v)
@@ -96,6 +100,10 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
 
 class Token(BaseModel):
     access_token: str
@@ -126,10 +134,18 @@ class UserResponse(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
 
 class VerifyOTPRequest(BaseModel):
     email: EmailStr
     otp: str = Field(..., min_length=6, max_length=6)
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
 
 
 class ResetPasswordRequest(BaseModel):
@@ -137,6 +153,10 @@ class ResetPasswordRequest(BaseModel):
     otp: str = Field(..., min_length=6, max_length=6)
     new_password: str
     confirm_password: str
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
 
     @validator('new_password')
     def validate_password(cls, v):

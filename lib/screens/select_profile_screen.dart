@@ -85,27 +85,20 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   }
 
   Future<void> _selectProfile(ProfileModel profile) async {
-    print('[SELECT-PROFILE] Saving profile: id=${profile.id} name=${profile.name}');
     await _storageService.saveActiveProfileId(profile.id);
     await _storageService.saveActiveProfileName(profile.name);
     await _storageService.saveActiveProfileAccessLevel(profile.accessLevel);
 
     // Verify the write completed before navigating
     final savedId = await _storageService.getActiveProfileId();
-    print('[SELECT-PROFILE] Verified savedId=$savedId');
     if (savedId == null) {
-      print('[SELECT-PROFILE] Write failed, retrying...');
       await _storageService.saveActiveProfileId(profile.id);
     }
 
-    print('[SELECT-PROFILE] pushedFromShell=${widget.pushedFromShell} mounted=$mounted');
-
     if (mounted) {
       if (widget.pushedFromShell) {
-        print('[SELECT-PROFILE] Popping back to Shell');
         Navigator.pop(context);
       } else {
-        print('[SELECT-PROFILE] pushReplacement to ShellScreen');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ShellScreen()),
