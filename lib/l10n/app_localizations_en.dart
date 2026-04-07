@@ -1031,4 +1031,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offlineLoginExpired => 'Please connect to the internet to log in';
+
+  @override
+  String get heartStatusHealthy => 'You\'re doing great';
+
+  @override
+  String get heartStatusCaution => 'Monitor closely today';
+
+  @override
+  String get heartStatusUrgent => 'Call your doctor today';
+
+  @override
+  String get heartFaceHealthy => 'All is well';
+
+  @override
+  String get heartFaceCaution => 'Stay alert today';
+
+  @override
+  String get heartFaceUrgent => 'Need doctor\'s help';
+
+  @override
+  String get heartCallDoctor => 'Call your doctor now';
 }

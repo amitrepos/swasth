@@ -1031,4 +1031,25 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get offlineLoginExpired => 'लॉगिन करने के लिए इंटरनेट से कनेक्ट करें';
+
+  @override
+  String get heartStatusHealthy => 'बहुत अच्छा!';
+
+  @override
+  String get heartStatusCaution => 'आज ध्यान रखें';
+
+  @override
+  String get heartStatusUrgent => 'डॉक्टर से बात करें';
+
+  @override
+  String get heartFaceHealthy => 'सब ठीक है';
+
+  @override
+  String get heartFaceCaution => 'आज ध्यान रखें';
+
+  @override
+  String get heartFaceUrgent => 'डॉक्टर की ज़रूरत';
+
+  @override
+  String get heartCallDoctor => 'अभी डॉक्टर को कॉल करें';
 }

@@ -449,5 +449,12 @@
   "readingSavedOffline": "Reading saved offline. Will sync when connected.",
   "syncComplete": "Synced {count} readings",
   "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
-  "offlineLoginExpired": "Please connect to the internet to log in"
+  "offlineLoginExpired": "Please connect to the internet to log in",
+  "heartStatusHealthy": "You're doing great",
+  "heartStatusCaution": "Monitor closely today",
+  "heartStatusUrgent": "Call your doctor today",
+  "heartFaceHealthy": "All is well",
+  "heartFaceCaution": "Stay alert today",
+  "heartFaceUrgent": "Need doctor's help",
+  "heartCallDoctor": "Call your doctor now"
 }

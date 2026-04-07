@@ -2011,6 +2011,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please connect to the internet to log in'**
   String get offlineLoginExpired;
+
+  /// No description provided for @heartStatusHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re doing great'**
+  String get heartStatusHealthy;
+
+  /// No description provided for @heartStatusCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor closely today'**
+  String get heartStatusCaution;
+
+  /// No description provided for @heartStatusUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Call your doctor today'**
+  String get heartStatusUrgent;
+
+  /// No description provided for @heartFaceHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'All is well'**
+  String get heartFaceHealthy;
+
+  /// No description provided for @heartFaceCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay alert today'**
+  String get heartFaceCaution;
+
+  /// No description provided for @heartFaceUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Need doctor\'s help'**
+  String get heartFaceUrgent;
+
+  /// No description provided for @heartCallDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Call your doctor now'**
+  String get heartCallDoctor;
 }
 
 class _AppLocalizationsDelegate
