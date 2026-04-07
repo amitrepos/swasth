@@ -54,9 +54,9 @@ class HealthReading {
 
   factory HealthReading.fromJson(Map<String, dynamic> json) {
     return HealthReading(
-      id: json['id'],
-      profileId: json['profile_id'],
-      readingType: json['reading_type'],
+      id: json['id'] ?? 0,
+      profileId: json['profile_id'] ?? 0,
+      readingType: json['reading_type'] ?? 'glucose',
       glucoseValue: json['glucose_value']?.toDouble(),
       glucoseUnit: json['glucose_unit'],
       sampleType: json['sample_type'],
@@ -66,12 +66,16 @@ class HealthReading {
       pulseRate: json['pulse_rate']?.toDouble(),
       bpUnit: json['bp_unit'],
       bpStatus: json['bp_status'],
-      valueNumeric: json['value_numeric'].toDouble(),
-      unitDisplay: json['unit_display'],
+      valueNumeric: (json['value_numeric'] ?? 0).toDouble(),
+      unitDisplay: json['unit_display'] ?? '',
       statusFlag: json['status_flag'],
       notes: json['notes'],
-      readingTimestamp: DateTime.parse(json['reading_timestamp']),
-      createdAt: DateTime.parse(json['created_at']),
+      readingTimestamp: json['reading_timestamp'] != null 
+          ? DateTime.parse(json['reading_timestamp']) 
+          : DateTime.now(),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
     );
   }
 
@@ -144,7 +148,7 @@ class HealthReading {
         valueNumeric: reading.mgdl ?? 0,
         unitDisplay: 'mg/dL',
         statusFlag: reading.flag,
-        notes: null,
+        notes: 'seq:${reading.sequenceNumber}', // Include sequence number for duplicate detection
         readingTimestamp: reading.timestamp ?? now,
         createdAt: now,
       );
@@ -154,22 +158,33 @@ class HealthReading {
         id: 0,
         profileId: 0,
         readingType: 'blood_pressure',
-        systolic: reading.systolic,
-        diastolic: reading.diastolic,
-        meanArterialPressure: reading.mean_arterial_pressure,
-        pulseRate: reading.pulseRate,
-        bpUnit: reading.unit ?? 'mmHg',
-        bpStatus: reading.flag,
-        valueNumeric: reading.systolic ?? 0,
-        unitDisplay: reading.unit ?? 'mmHg',
-        statusFlag: reading.flag,
-        notes: null,
-        readingTimestamp: reading.timestamp ?? now,
+        systolic: reading.systolicMmhg?.toDouble(),
+        diastolic: reading.diastolicMmhg?.toDouble(),
+        meanArterialPressure: reading.mapMmhg,
+        pulseRate: reading.pulseBpm?.toDouble(),
+        bpUnit: 'mmHg',
+        bpStatus: reading.bpCategory,
+        valueNumeric: reading.systolicMmhg?.toDouble() ?? 0,
+        unitDisplay: 'mmHg',
+        statusFlag: reading.bpCategory,
+        notes: 'seq:${reading.seq}_slot:${reading.slot}',
+        readingTimestamp: _parseBPTimestamp(reading.timestamp),
         createdAt: now,
       );
     }
     
     throw Exception('Unknown device type: $deviceType');
+  }
+
+  /// Parse BP timestamp which can be ISO-8601 or "unsynced:..." format
+  static DateTime _parseBPTimestamp(String timestamp) {
+    try {
+      // Try parsing as ISO-8601 first
+      return DateTime.parse(timestamp);
+    } catch (e) {
+      // If it's "unsynced:..." or any invalid format, return current time
+      return DateTime.now();
+    }
   }
 }
 
@@ -215,11 +230,19 @@ class HealthReadingService {
         Uri.parse(url),
         headers: ApiClient.headers(token: token),
       ).timeout(_kTimeout);
+      
       if (response.statusCode == 200) {
-        return (jsonDecode(response.body) as List).map((j) => HealthReading.fromJson(j)).toList();
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList.map((j) => HealthReading.fromJson(j)).toList();
       }
+      
+      // Log detailed error information for debugging
+      print('Failed to get readings - Status: ${response.statusCode}');
+      print('URL: $url');
+      print('Response: ${response.body}');
       throw Exception(ApiClient.errorDetail(response, 'Failed to get readings'));
     } catch (e) {
+      print('Error in getReadings: $e');
       throw Exception('Failed to get readings: $e');
     }
   }

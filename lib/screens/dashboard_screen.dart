@@ -398,9 +398,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final token = await StorageService().getToken();
       if (token == null) return;
 
-      // TODO: convert BPReading → HealthReading and call HealthReadingService
-      // This mirrors the _saveReadingToDatabase pattern used for glucose.
-      print('BP saved: ${reading.systolicMmhg}/${reading.diastolicMmhg} mmHg');
+      // Convert BPReading to HealthReading
+      final healthReading = HealthReading.fromGlucoseOrBP(reading, 'blood_pressure');
+      healthReading.profileId = widget.profileId;
+
+      // Try to check for existing readings (fail-safe - if this fails, just try to save)
+      bool isDuplicate = false;
+      try {
+        final existingReadings = await HealthReadingService().getReadings(
+          token: token,
+          profileId: widget.profileId,
+          readingType: 'blood_pressure',
+          limit: 500, // Backend max is 500
+        );
+
+        // Check if this sequence already exists (by seq number in notes or by matching values)
+        final sequenceId = 'seq:${reading.seq}_slot:${reading.slot}';
+        isDuplicate = existingReadings.any((e) => 
+          // Check if notes contain this sequence
+          e.notes?.contains(sequenceId) == true ||
+          // Fallback: check by matching values (if notes not available)
+          (e.systolic == reading.systolicMmhg &&
+           e.diastolic == reading.diastolicMmhg &&
+           e.pulseRate == reading.pulseBpm &&
+           e.readingTimestamp.toString().contains(reading.timestamp.substring(0, 16)))
+        );
+      } catch (e, stackTrace) {
+        print('⚠️ Could not check for duplicates, proceeding with save: $e');
+        print('Stack trace: $stackTrace');
+        // Continue with save - backend will handle duplicate detection
+      }
+
+      if (isDuplicate) {
+        print('BP reading already exists (seq: ${reading.seq}, slot: ${reading.slot})');
+        return;
+      }
+
+      print('Saving BP reading with sequence: ${reading.seq}, slot: ${reading.slot}');
+
+      final saveResult = await HealthReadingService().saveReading(healthReading, token);
+      final saved = saveResult['reading'] as HealthReading;
+      print('Saved BP reading ID: ${saved.id} (seq: ${reading.seq}, slot: ${reading.slot})');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Saved: ${healthReading.displayValue}'),
+          backgroundColor: AppColors.statusNormal,
+          duration: const Duration(seconds: 2),
+        ));
+      }
     } catch (e) {
       print('Error saving BP reading: $e');
     }
@@ -415,19 +461,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final healthReading =
           HealthReading.fromGlucoseOrBP(reading, deviceType);
       healthReading.profileId = widget.profileId;
-      final readingTimestamp = reading.timestamp ?? DateTime.now();
 
-      final existingReadings = await HealthReadingService().getReadings(
-        token: token,
-        profileId: widget.profileId,
-        limit: 1000,
-      );
+      // Try to check for duplicates (fail-safe - if this fails, just try to save)
+      bool isDuplicate = false;
+      try {
+        final existingReadings = await HealthReadingService().getReadings(
+          token: token,
+          profileId: widget.profileId,
+          readingType: deviceType,
+          limit: 500, // Backend max is 500
+        );
 
-      final isDuplicate = existingReadings.any((e) =>
-          e.readingTimestamp.millisecondsSinceEpoch ==
-          readingTimestamp.millisecondsSinceEpoch);
+        if (reading is GlucoseReading) {
+          // For glucose meters, they store historical readings in device memory
+          // When syncing, we get ALL readings from the device
+          // Strategy: Save if it's a new sequence OR skip if already in DB
+          // This ensures first sync saves everything, subsequent syncs only save new readings
+          final sequenceId = 'seq:${reading.sequenceNumber}';
+          isDuplicate = existingReadings.any((e) =>
+            e.notes?.contains(sequenceId) == true
+          );
+          
+          if (!isDuplicate) {
+            print('✅ Saving NEW glucose reading - seq: ${reading.sequenceNumber}, value: ${reading.mgdl}');
+          } else {
+            // Silently skip duplicates without printing (reduces log spam)
+          }
+        } else {
+          // For BP, check by timestamp and values
+          final readingTimestamp = reading.timestamp != null 
+              ? DateTime.tryParse(reading.timestamp) 
+              : DateTime.now();
+          isDuplicate = existingReadings.any((e) =>
+            e.readingTimestamp.millisecondsSinceEpoch ==
+            readingTimestamp?.millisecondsSinceEpoch
+          );
+        }
+      } catch (e, stackTrace) {
+        print('⚠️ Could not check for duplicates, proceeding with save: $e');
+        print('Stack trace: $stackTrace');
+        // Continue with save - backend will handle duplicate detection
+      }
 
-      if (isDuplicate) return;
+      if (isDuplicate) {
+        print('$deviceType reading already exists');
+        return;
+      }
 
       final saveResult =
           await HealthReadingService().saveReading(healthReading, token);

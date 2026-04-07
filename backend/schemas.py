@@ -360,6 +360,7 @@ class HealthScoreResponse(BaseModel):
     profile_weight: Optional[float] = None   # kg
 
 
+# Backward compatibility - keep HealthReadingCreate for existing API
 class HealthReadingCreate(BaseModel):
     profile_id: int
     reading_type: str           # 'glucose' or 'blood_pressure'
@@ -378,13 +379,14 @@ class HealthReadingCreate(BaseModel):
     bp_status: Optional[str] = None
 
     # Common fields
-    value_numeric: float
-    unit_display: str
+    value_numeric: Optional[float] = None
+    unit_display: Optional[str] = None
     status_flag: Optional[str] = None
     notes: Optional[str] = None
     reading_timestamp: datetime
 
 
+# Backward compatibility - keep HealthReadingResponse for existing API
 class HealthReadingResponse(BaseModel):
     id: int
     profile_id: int
@@ -399,8 +401,84 @@ class HealthReadingResponse(BaseModel):
     pulse_rate: Optional[float]
     bp_unit: Optional[str]
     bp_status: Optional[str]
-    value_numeric: float
-    unit_display: str
+    value_numeric: Optional[float]
+    unit_display: Optional[str]
+    status_flag: Optional[str]
+    notes: Optional[str]
+    reading_timestamp: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# Glucose Reading Schemas
+class GlucoseReadingCreate(BaseModel):
+    profile_id: int
+    sequence_number: int
+    glucose_value: float
+    glucose_unit: Optional[str] = "mg/dL"
+    sample_type: Optional[str] = None
+    sample_location: Optional[str] = None
+    status_flag: Optional[str] = None
+    notes: Optional[str] = None
+    reading_timestamp: datetime
+
+
+class GlucoseReadingResponse(BaseModel):
+    id: int
+    profile_id: int
+    logged_by: Optional[int]
+    sequence_number: int
+    glucose_value: float
+    glucose_unit: Optional[str]
+    sample_type: Optional[str]
+    sample_location: Optional[str]
+    status_flag: Optional[str]
+    notes: Optional[str]
+    reading_timestamp: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# BP Reading Schemas
+class BPReadingCreate(BaseModel):
+    profile_id: int
+    sequence_number: int
+    slot_number: int
+    systolic: float
+    diastolic: float
+    mean_arterial_pressure: Optional[float] = None
+    pulse_rate: Optional[float] = None
+    bp_unit: Optional[str] = "mmHg"
+    bp_status: Optional[str] = None
+    user_number: Optional[int] = 1
+    irregular_heartbeat: Optional[bool] = False
+    body_movement: Optional[bool] = False
+    morning_reading: Optional[bool] = False
+    status_flag: Optional[str] = None
+    notes: Optional[str] = None
+    reading_timestamp: datetime
+
+
+class BPReadingResponse(BaseModel):
+    id: int
+    profile_id: int
+    logged_by: Optional[int]
+    sequence_number: int
+    slot_number: int
+    systolic: float
+    diastolic: float
+    mean_arterial_pressure: Optional[float]
+    pulse_rate: Optional[float]
+    bp_unit: Optional[str]
+    bp_status: Optional[str]
+    user_number: Optional[int]
+    irregular_heartbeat: Optional[bool]
+    body_movement: Optional[bool]
+    morning_reading: Optional[bool]
     status_flag: Optional[str]
     notes: Optional[str]
     reading_timestamp: datetime

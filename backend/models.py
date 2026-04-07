@@ -86,38 +86,70 @@ class ProfileInvite(Base):
     )
 
 
-class HealthReading(Base):
-    """Glucose and blood pressure readings. Belongs to a profile, logged by a user."""
-    __tablename__ = "health_readings"
+class GlucoseReading(Base):
+    """Glucose readings from glucometer devices."""
+    __tablename__ = "glucose_readings"
 
     id = Column(Integer, primary_key=True, index=True)
     profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    # Reading type: 'glucose' or 'blood_pressure'
-    reading_type = Column(String, nullable=False)
-
     # Glucose specific fields
-    glucose_value = Column(Float, nullable=True)                 # mg/dL
-    glucose_unit = Column(String, nullable=True)
+    sequence_number = Column(Integer, nullable=False)
+    glucose_value = Column(Float, nullable=False)                # mg/dL
+    glucose_unit = Column(String, default="mg/dL")
     sample_type = Column(String, nullable=True)
-
-    # BP specific fields
-    systolic = Column(Float, nullable=True)                      # mmHg
-    diastolic = Column(Float, nullable=True)                     # mmHg
-    mean_arterial_pressure = Column(Float, nullable=True)
-    pulse_rate = Column(Float, nullable=True)                    # bpm
-    bp_unit = Column(String, nullable=True)
-    bp_status = Column(String, nullable=True)
+    sample_location = Column(String, nullable=True)
 
     # Common fields
-    value_numeric = Column(Float, nullable=False)
-    unit_display = Column(String, nullable=False)
     status_flag = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
 
-    # AES-256-GCM encrypted copies of sensitive health values (SPDI compliance)
+    # AES-256-GCM encrypted copies (SPDI compliance)
     glucose_value_enc = Column(Text, nullable=True)
+    notes_enc = Column(Text, nullable=True)
+
+    reading_timestamp = Column(DateTime, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    __table_args__ = (
+        Index("ix_glucose_profile_time", "profile_id", "reading_timestamp"),
+        Index("ix_glucose_profile_seq", "profile_id", "sequence_number"),
+        # Unique constraint on profile + sequence number
+        Index("uq_glucose_profile_sequence", "profile_id", "sequence_number", unique=True),
+    )
+
+
+class BPReading(Base):
+    """Blood pressure readings from BP meter devices."""
+    __tablename__ = "bp_readings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    # BP specific fields
+    sequence_number = Column(Integer, nullable=False)            # Monotonic sequence counter (0-255, wraps)
+    slot_number = Column(Integer, nullable=False)                # Slot index in ring buffer
+    systolic = Column(Float, nullable=False)                     # mmHg
+    diastolic = Column(Float, nullable=False)                    # mmHg
+    mean_arterial_pressure = Column(Float, nullable=True)
+    pulse_rate = Column(Float, nullable=True)                    # bpm
+    bp_unit = Column(String, default="mmHg")
+    bp_status = Column(String, nullable=True)
+    user_number = Column(Integer, default=1)                     # User 1 or 2
+
+    # Flags from byte 7 of record
+    irregular_heartbeat = Column(Boolean, default=False)
+    body_movement = Column(Boolean, default=False)
+    morning_reading = Column(Boolean, default=False)
+
+    # Common fields
+    status_flag = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    # AES-256-GCM encrypted copies (SPDI compliance)
     systolic_enc = Column(Text, nullable=True)
     diastolic_enc = Column(Text, nullable=True)
     pulse_rate_enc = Column(Text, nullable=True)
@@ -128,7 +160,10 @@ class HealthReading(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     __table_args__ = (
-        Index("ix_readings_profile_time", "profile_id", "reading_timestamp"),
+        Index("ix_bp_profile_time", "profile_id", "reading_timestamp"),
+        Index("ix_bp_profile_seq_slot", "profile_id", "sequence_number", "slot_number"),
+        # Unique constraint on profile + sequence + slot
+        Index("uq_bp_profile_seq_slot", "profile_id", "sequence_number", "slot_number", unique=True),
     )
 
 

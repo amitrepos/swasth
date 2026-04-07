@@ -40,34 +40,138 @@ def save_reading(
     # Verify editor/owner access (viewers cannot create readings)
     get_profile_editor_or_403(reading.profile_id, user, db)
 
-    if reading.reading_type not in _VALID_READING_TYPES:
+    if reading.reading_type == 'glucose':
+        return save_glucose_reading(reading, db, user)
+    elif reading.reading_type == 'blood_pressure':
+        return save_bp_reading(reading, db, user)
+    else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid reading type. Must be 'glucose' or 'blood_pressure'",
         )
 
-    db_reading = models.HealthReading(
+
+def save_glucose_reading(reading, db: Session, user: models.User):
+    """Save glucose reading to glucose_readings table."""
+    # Extract sequence number from notes if available
+    seq_num = 0
+    if reading.notes and 'seq:' in reading.notes:
+        try:
+            seq_num = int(reading.notes.split('seq:')[1].split('_')[0])
+        except:
+            pass
+
+    # Check for duplicate by sequence number
+    if seq_num > 0:
+        existing = db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == reading.profile_id,
+            models.GlucoseReading.sequence_number == seq_num
+        ).first()
+        
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Glucose reading with this sequence number already exists",
+            )
+
+    db_reading = models.GlucoseReading(
         profile_id=reading.profile_id,
         logged_by=user.id,
-        reading_type=reading.reading_type,
+        sequence_number=seq_num,
         glucose_value=reading.glucose_value,
-        glucose_unit=reading.glucose_unit,
+        glucose_unit=reading.glucose_unit or "mg/dL",
         sample_type=reading.sample_type,
-        systolic=reading.systolic,
-        diastolic=reading.diastolic,
-        mean_arterial_pressure=reading.mean_arterial_pressure,
-        pulse_rate=reading.pulse_rate,
-        bp_unit=reading.bp_unit,
-        bp_status=reading.bp_status,
-        value_numeric=reading.value_numeric,
-        unit_display=reading.unit_display,
+        sample_location=None,
         status_flag=reading.status_flag,
         notes=reading.notes,
         reading_timestamp=reading.reading_timestamp,
     )
-    # Populate AES-256-GCM encrypted copies for SPDI compliance
+    
+    # Encrypt sensitive fields
     if reading.glucose_value is not None:
         db_reading.glucose_value_enc = encrypt_float(reading.glucose_value)
+    if reading.notes is not None:
+        db_reading.notes_enc = encrypt(reading.notes)
+
+    db.add(db_reading)
+    db.commit()
+    db.refresh(db_reading)
+
+    # Invalidate AI insight cache
+    stale = [k for k in _insight_cache if k[0] == reading.profile_id]
+    for k in stale:
+        del _insight_cache[k]
+
+    # Return as dict for frontend compatibility
+    return {
+        "id": db_reading.id,
+        "profile_id": db_reading.profile_id,
+        "logged_by": db_reading.logged_by,
+        "reading_type": "glucose",
+        "glucose_value": db_reading.glucose_value,
+        "glucose_unit": db_reading.glucose_unit,
+        "sample_type": db_reading.sample_type,
+        "systolic": None,
+        "diastolic": None,
+        "mean_arterial_pressure": None,
+        "pulse_rate": None,
+        "bp_unit": None,
+        "bp_status": None,
+        "value_numeric": db_reading.glucose_value or 0,
+        "unit_display": db_reading.glucose_unit or "mg/dL",
+        "status_flag": db_reading.status_flag,
+        "notes": db_reading.notes,
+        "reading_timestamp": db_reading.reading_timestamp,
+        "created_at": db_reading.created_at,
+    }
+
+
+def save_bp_reading(reading, db: Session, user: models.User):
+    """Save BP reading to bp_readings table."""
+    # Extract sequence and slot from notes if available
+    seq_num = 0
+    slot_num = 0
+    if reading.notes and 'seq:' in reading.notes and 'slot:' in reading.notes:
+        try:
+            seq_num = int(reading.notes.split('seq:')[1].split('_')[0])
+            slot_num = int(reading.notes.split('slot:')[1].split(']')[0])
+        except:
+            pass
+
+    # Check for duplicate by sequence + slot
+    existing = db.query(models.BPReading).filter(
+        models.BPReading.profile_id == reading.profile_id,
+        models.BPReading.sequence_number == seq_num,
+        models.BPReading.slot_number == slot_num
+    ).first()
+    
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="BP reading with this sequence and slot already exists",
+        )
+
+    db_reading = models.BPReading(
+        profile_id=reading.profile_id,
+        logged_by=user.id,
+        sequence_number=seq_num,
+        slot_number=slot_num,
+        systolic=reading.systolic,
+        diastolic=reading.diastolic,
+        mean_arterial_pressure=reading.mean_arterial_pressure,
+        pulse_rate=reading.pulse_rate,
+        bp_unit=reading.bp_unit or "mmHg",
+        bp_status=reading.bp_status,
+        user_number=1,
+        irregular_heartbeat=False,
+        body_movement=False,
+        morning_reading=False,
+        status_flag=reading.status_flag,
+        notes=reading.notes,
+        reading_timestamp=reading.reading_timestamp,
+    )
+    
+    # Encrypt sensitive fields
     if reading.systolic is not None:
         db_reading.systolic_enc = encrypt_float(reading.systolic)
     if reading.diastolic is not None:
@@ -81,49 +185,33 @@ def save_reading(
     db.commit()
     db.refresh(db_reading)
 
-    # Invalidate AI insight cache so the next home screen load gets a fresh Gemini recommendation
+    # Invalidate AI insight cache
     stale = [k for k in _insight_cache if k[0] == reading.profile_id]
     for k in stale:
         del _insight_cache[k]
 
-    # ── Critical alert: send email to family members ─────────────────
-    alert = None
-    if reading.status_flag in ("CRITICAL", "HIGH - STAGE 2"):
-        profile = db.query(models.Profile).filter(models.Profile.id == reading.profile_id).first()
-        profile_name = profile.name if profile else "Someone"
-
-        if reading.reading_type == "glucose" and reading.glucose_value:
-            alert_msg = f"🚨 {profile_name}'s glucose is {reading.glucose_value:.0f} mg/dL ({reading.status_flag}). Please check on them immediately."
-        elif reading.reading_type == "blood_pressure" and reading.systolic:
-            alert_msg = f"🚨 {profile_name}'s BP is {reading.systolic:.0f}/{reading.diastolic:.0f} mmHg ({reading.status_flag}). Please check on them immediately."
-        else:
-            alert_msg = f"🚨 {profile_name} has a {reading.status_flag} health reading. Please check on them."
-
-        alert = {
-            "level": reading.status_flag,
-            "message": alert_msg,
-            "profile_name": profile_name,
-        }
-
-        # Send email alert to all family members with access
-        try:
-            family_accesses = db.query(models.ProfileAccess).filter(
-                models.ProfileAccess.profile_id == reading.profile_id,
-                models.ProfileAccess.user_id != user.id,
-            ).all()
-            for access in family_accesses:
-                family_user = db.query(models.User).filter(models.User.id == access.user_id).first()
-                if family_user and family_user.email:
-                    from email_service import email_service
-                    email_service.send_otp_email(family_user.email, "")  # TODO: create proper alert email template
-        except Exception:
-            pass  # Email failure should not block saving the reading
-
-    response = schemas.HealthReadingResponse.from_orm(db_reading)
-    result = response.dict()
-    if alert:
-        result["alert"] = alert
-    return result
+    # Return as dict for frontend compatibility
+    return {
+        "id": db_reading.id,
+        "profile_id": db_reading.profile_id,
+        "logged_by": db_reading.logged_by,
+        "reading_type": "blood_pressure",
+        "glucose_value": None,
+        "glucose_unit": None,
+        "sample_type": None,
+        "systolic": db_reading.systolic,
+        "diastolic": db_reading.diastolic,
+        "mean_arterial_pressure": db_reading.mean_arterial_pressure,
+        "pulse_rate": db_reading.pulse_rate,
+        "bp_unit": db_reading.bp_unit,
+        "bp_status": db_reading.bp_status,
+        "value_numeric": db_reading.systolic or 0,
+        "unit_display": db_reading.bp_unit or "mmHg",
+        "status_flag": db_reading.status_flag,
+        "notes": db_reading.notes,
+        "reading_timestamp": db_reading.reading_timestamp,
+        "created_at": db_reading.created_at,
+    }
 
 
 @router.get("/readings", response_model=List[schemas.HealthReadingResponse])
@@ -135,20 +223,85 @@ def get_readings(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ):
-    """Get health readings for a specific profile."""
+    """Get health readings for a specific profile from both glucose and BP tables."""
     get_profile_access_or_403(profile_id, user, db)
 
-    query = db.query(models.HealthReading).filter(models.HealthReading.profile_id == profile_id)
+    readings = []
 
-    if reading_type:
-        if reading_type not in _VALID_READING_TYPES:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid reading type. Must be 'glucose' or 'blood_pressure'",
-            )
-        query = query.filter(models.HealthReading.reading_type == reading_type)
+    # Fetch glucose readings if no filter or glucose filter
+    if reading_type is None or reading_type == 'glucose':
+        glucose_query = db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == profile_id
+        )
+        # Apply ordering and pagination at database level
+        glucose_readings = glucose_query.order_by(
+            models.GlucoseReading.reading_timestamp.desc()
+        ).offset(offset).limit(limit).all()
+        
+        for gr in glucose_readings:
+            readings.append(schemas.HealthReadingResponse(
+                id=gr.id,
+                profile_id=gr.profile_id,
+                logged_by=gr.logged_by,
+                reading_type='glucose',
+                glucose_value=gr.glucose_value,
+                glucose_unit=gr.glucose_unit,
+                sample_type=gr.sample_type,
+                systolic=None,
+                diastolic=None,
+                mean_arterial_pressure=None,
+                pulse_rate=None,
+                bp_unit=None,
+                bp_status=None,
+                value_numeric=gr.glucose_value or 0,
+                unit_display=gr.glucose_unit or 'mg/dL',
+                status_flag=gr.status_flag,
+                notes=gr.notes,
+                reading_timestamp=gr.reading_timestamp,
+                created_at=gr.created_at,
+            ))
 
-    return query.order_by(models.HealthReading.reading_timestamp.desc()).offset(offset).limit(limit).all()
+    # Fetch BP readings if no filter or BP filter
+    if reading_type is None or reading_type == 'blood_pressure':
+        bp_query = db.query(models.BPReading).filter(
+            models.BPReading.profile_id == profile_id
+        )
+        # Apply ordering and pagination at database level
+        bp_readings = bp_query.order_by(
+            models.BPReading.reading_timestamp.desc()
+        ).offset(offset).limit(limit).all()
+        
+        for br in bp_readings:
+            readings.append(schemas.HealthReadingResponse(
+                id=br.id,
+                profile_id=br.profile_id,
+                logged_by=br.logged_by,
+                reading_type='blood_pressure',
+                glucose_value=None,
+                glucose_unit=None,
+                sample_type=None,
+                systolic=br.systolic,
+                diastolic=br.diastolic,
+                mean_arterial_pressure=br.mean_arterial_pressure,
+                pulse_rate=br.pulse_rate,
+                bp_unit=br.bp_unit,
+                bp_status=br.bp_status,
+                value_numeric=br.systolic or 0,
+                unit_display=br.bp_unit or 'mmHg',
+                status_flag=br.status_flag,
+                notes=br.notes,
+                reading_timestamp=br.reading_timestamp,
+                created_at=br.created_at,
+            ))
+
+    # Sort all readings by timestamp
+    readings.sort(key=lambda r: r.reading_timestamp, reverse=True)
+    
+    # Apply limit if both types were fetched (to ensure total doesn't exceed limit)
+    if reading_type is None:
+        readings = readings[:limit]
+    
+    return readings
 
 
 @router.get("/readings/stats/summary")
@@ -160,29 +313,77 @@ def get_readings_summary(
     """Get summary statistics for readings of a specific profile."""
     get_profile_access_or_403(profile_id, user, db)
 
-    total_readings = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id
+    # Count from both tables
+    glucose_count = db.query(models.GlucoseReading).filter(
+        models.GlucoseReading.profile_id == profile_id
     ).count()
 
-    glucose_count = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'glucose',
+    bp_count = db.query(models.BPReading).filter(
+        models.BPReading.profile_id == profile_id
     ).count()
 
-    bp_count = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'blood_pressure',
-    ).count()
+    total_readings = glucose_count + bp_count
 
-    latest_reading = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id
-    ).order_by(models.HealthReading.reading_timestamp.desc()).first()
+    # Get latest reading from either table
+    latest_glucose = db.query(models.GlucoseReading).filter(
+        models.GlucoseReading.profile_id == profile_id
+    ).order_by(models.GlucoseReading.reading_timestamp.desc()).first()
+
+    latest_bp = db.query(models.BPReading).filter(
+        models.BPReading.profile_id == profile_id
+    ).order_by(models.BPReading.reading_timestamp.desc()).first()
+
+    latest_reading = None
+    if latest_glucose and latest_bp:
+        latest = latest_glucose if latest_glucose.reading_timestamp > latest_bp.reading_timestamp else latest_bp
+    else:
+        latest = latest_glucose or latest_bp
+
+    if latest:
+        if isinstance(latest, models.GlucoseReading):
+            latest_reading = schemas.HealthReadingResponse(
+                id=latest.id,
+                profile_id=latest.profile_id,
+                logged_by=latest.logged_by,
+                reading_type='glucose',
+                glucose_value=latest.glucose_value,
+                glucose_unit=latest.glucose_unit,
+                sample_type=latest.sample_type,
+                systolic=None, diastolic=None, mean_arterial_pressure=None,
+                pulse_rate=None, bp_unit=None, bp_status=None,
+                value_numeric=latest.glucose_value or 0,
+                unit_display=latest.glucose_unit or 'mg/dL',
+                status_flag=latest.status_flag,
+                notes=latest.notes,
+                reading_timestamp=latest.reading_timestamp,
+                created_at=latest.created_at,
+            )
+        else:
+            latest_reading = schemas.HealthReadingResponse(
+                id=latest.id,
+                profile_id=latest.profile_id,
+                logged_by=latest.logged_by,
+                reading_type='blood_pressure',
+                glucose_value=None, glucose_unit=None, sample_type=None,
+                systolic=latest.systolic,
+                diastolic=latest.diastolic,
+                mean_arterial_pressure=latest.mean_arterial_pressure,
+                pulse_rate=latest.pulse_rate,
+                bp_unit=latest.bp_unit,
+                bp_status=latest.bp_status,
+                value_numeric=latest.systolic or 0,
+                unit_display=latest.bp_unit or 'mmHg',
+                status_flag=latest.status_flag,
+                notes=latest.notes,
+                reading_timestamp=latest.reading_timestamp,
+                created_at=latest.created_at,
+            )
 
     return {
         "total_readings": total_readings,
         "glucose_readings": glucose_count,
         "bp_readings": bp_count,
-        "latest_reading": schemas.HealthReadingResponse.from_orm(latest_reading) if latest_reading else None,
+        "latest_reading": latest_reading,
     }
 
 
@@ -201,16 +402,49 @@ def get_health_score(
     today = date.today()
     seven_days_ago = datetime.combine(today - timedelta(days=6), datetime.min.time())
 
-    # Fetch last 7 days of readings
-    recent = (
-        db.query(models.HealthReading)
+    # Fetch last 7 days of readings from both tables
+    recent_glucose = (
+        db.query(models.GlucoseReading)
         .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_timestamp >= seven_days_ago,
+            models.GlucoseReading.profile_id == profile_id,
+            models.GlucoseReading.reading_timestamp >= seven_days_ago,
         )
-        .order_by(models.HealthReading.reading_timestamp.desc())
         .all()
     )
+
+    recent_bp = (
+        db.query(models.BPReading)
+        .filter(
+            models.BPReading.profile_id == profile_id,
+            models.BPReading.reading_timestamp >= seven_days_ago,
+        )
+        .all()
+    )
+
+    # Combine and convert to compatible format
+    recent = []
+    for gr in recent_glucose:
+        recent.append(type('Reading', (), {
+            'reading_type': 'glucose',
+            'status_flag': gr.status_flag,
+            'reading_timestamp': gr.reading_timestamp,
+            'glucose_value': gr.glucose_value,
+            'systolic': None,
+            'diastolic': None,
+            'pulse_rate': None,
+        }))
+    for br in recent_bp:
+        recent.append(type('Reading', (), {
+            'reading_type': 'blood_pressure',
+            'status_flag': br.status_flag,
+            'reading_timestamp': br.reading_timestamp,
+            'glucose_value': None,
+            'systolic': br.systolic,
+            'diastolic': br.diastolic,
+            'pulse_rate': br.pulse_rate,
+        }))
+    
+    recent.sort(key=lambda r: r.reading_timestamp, reverse=True)
 
     # Today's readings
     today_start = datetime.combine(today, datetime.min.time())
@@ -221,11 +455,18 @@ def get_health_score(
 
     # --- Streak calculation ---
     days_with_readings = set()
-    for r in db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
+    
+    for gr in db.query(models.GlucoseReading).filter(
+        models.GlucoseReading.profile_id == profile_id,
+        models.GlucoseReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
     ).all():
-        days_with_readings.add(r.reading_timestamp.date())
+        days_with_readings.add(gr.reading_timestamp.date())
+
+    for br in db.query(models.BPReading).filter(
+        models.BPReading.profile_id == profile_id,
+        models.BPReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
+    ).all():
+        days_with_readings.add(br.reading_timestamp.date())
 
     # Count consecutive days backward. If today has no reading, start from
     # yesterday so that users who logged yesterday still get streak credit.
@@ -242,9 +483,15 @@ def get_health_score(
         check_day -= timedelta(days=1)
 
     # Total lifetime reading count — used to distinguish first-time vs returning users
-    total_reading_count = db.query(func.count(models.HealthReading.id)).filter(
-        models.HealthReading.profile_id == profile_id,
+    glucose_count = db.query(func.count(models.GlucoseReading.id)).filter(
+        models.GlucoseReading.profile_id == profile_id,
     ).scalar() or 0
+    
+    bp_count = db.query(func.count(models.BPReading.id)).filter(
+        models.BPReading.profile_id == profile_id,
+    ).scalar() or 0
+    
+    total_reading_count = glucose_count + bp_count
 
     # --- Score calculation ---
     score = 50
@@ -324,79 +571,72 @@ def get_health_score(
     ninety_days_ago = datetime.combine(today - timedelta(days=89), datetime.min.time())
     prev_90_start = datetime.combine(today - timedelta(days=179), datetime.min.time())
 
-    avg_glucose_90d = db.query(func.avg(models.HealthReading.glucose_value)).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'glucose',
-        models.HealthReading.reading_timestamp >= ninety_days_ago,
-        models.HealthReading.glucose_value.isnot(None),
+    # Glucose averages from glucose_readings table
+    avg_glucose_90d = db.query(func.avg(models.GlucoseReading.glucose_value)).filter(
+        models.GlucoseReading.profile_id == profile_id,
+        models.GlucoseReading.reading_timestamp >= ninety_days_ago,
+        models.GlucoseReading.glucose_value.isnot(None),
     ).scalar()
 
-    prev_avg_glucose_90d = db.query(func.avg(models.HealthReading.glucose_value)).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'glucose',
-        models.HealthReading.reading_timestamp >= prev_90_start,
-        models.HealthReading.reading_timestamp < ninety_days_ago,
-        models.HealthReading.glucose_value.isnot(None),
+    prev_avg_glucose_90d = db.query(func.avg(models.GlucoseReading.glucose_value)).filter(
+        models.GlucoseReading.profile_id == profile_id,
+        models.GlucoseReading.reading_timestamp >= prev_90_start,
+        models.GlucoseReading.reading_timestamp < ninety_days_ago,
+        models.GlucoseReading.glucose_value.isnot(None),
     ).scalar()
 
-    avg_systolic_90d = db.query(func.avg(models.HealthReading.systolic)).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'blood_pressure',
-        models.HealthReading.reading_timestamp >= ninety_days_ago,
-        models.HealthReading.systolic.isnot(None),
+    # BP averages from bp_readings table
+    avg_systolic_90d = db.query(func.avg(models.BPReading.systolic)).filter(
+        models.BPReading.profile_id == profile_id,
+        models.BPReading.reading_timestamp >= ninety_days_ago,
+        models.BPReading.systolic.isnot(None),
     ).scalar()
 
-    avg_diastolic_90d = db.query(func.avg(models.HealthReading.diastolic)).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'blood_pressure',
-        models.HealthReading.reading_timestamp >= ninety_days_ago,
-        models.HealthReading.diastolic.isnot(None),
+    avg_diastolic_90d = db.query(func.avg(models.BPReading.diastolic)).filter(
+        models.BPReading.profile_id == profile_id,
+        models.BPReading.reading_timestamp >= ninety_days_ago,
+        models.BPReading.diastolic.isnot(None),
     ).scalar()
 
-    prev_avg_systolic_90d = db.query(func.avg(models.HealthReading.systolic)).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'blood_pressure',
-        models.HealthReading.reading_timestamp >= prev_90_start,
-        models.HealthReading.reading_timestamp < ninety_days_ago,
-        models.HealthReading.systolic.isnot(None),
+    prev_avg_systolic_90d = db.query(func.avg(models.BPReading.systolic)).filter(
+        models.BPReading.profile_id == profile_id,
+        models.BPReading.reading_timestamp >= prev_90_start,
+        models.BPReading.reading_timestamp < ninety_days_ago,
+        models.BPReading.systolic.isnot(None),
     ).scalar()
 
     # --- Distinct calendar days with readings (for dynamic "N-day avg" label) ---
     glucose_data_days = db.query(
-        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+        func.count(func.distinct(func.date(models.GlucoseReading.reading_timestamp)))
     ).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'glucose',
-        models.HealthReading.reading_timestamp >= ninety_days_ago,
-        models.HealthReading.glucose_value.isnot(None),
+        models.GlucoseReading.profile_id == profile_id,
+        models.GlucoseReading.reading_timestamp >= ninety_days_ago,
+        models.GlucoseReading.glucose_value.isnot(None),
     ).scalar() or 0
 
     bp_data_days = db.query(
-        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+        func.count(func.distinct(func.date(models.BPReading.reading_timestamp)))
     ).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'blood_pressure',
-        models.HealthReading.reading_timestamp >= ninety_days_ago,
-        models.HealthReading.systolic.isnot(None),
+        models.BPReading.profile_id == profile_id,
+        models.BPReading.reading_timestamp >= ninety_days_ago,
+        models.BPReading.systolic.isnot(None),
     ).scalar() or 0
 
     # --- Most recent readings (any date) for Individual Metrics grid ---
     last_glucose = (
-        db.query(models.HealthReading)
+        db.query(models.GlucoseReading)
         .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_type == 'glucose',
+            models.GlucoseReading.profile_id == profile_id,
         )
-        .order_by(models.HealthReading.reading_timestamp.desc())
+        .order_by(models.GlucoseReading.reading_timestamp.desc())
         .first()
     )
     last_bp = (
-        db.query(models.HealthReading)
+        db.query(models.BPReading)
         .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_type == 'blood_pressure',
+            models.BPReading.profile_id == profile_id,
         )
-        .order_by(models.HealthReading.reading_timestamp.desc())
+        .order_by(models.BPReading.reading_timestamp.desc())
         .first()
     )
 
@@ -480,18 +720,59 @@ def get_ai_insight(
     # ── AI consent gate — return rule-based fallback if user hasn't consented ──
     if not user.ai_consent:
         thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time())
-        recent = (
-            db.query(models.HealthReading)
+        
+        # Fetch from both tables
+        recent_glucose = (
+            db.query(models.GlucoseReading)
             .filter(
-                models.HealthReading.profile_id == profile_id,
-                models.HealthReading.reading_timestamp >= thirty_days_ago,
+                models.GlucoseReading.profile_id == profile_id,
+                models.GlucoseReading.reading_timestamp >= thirty_days_ago,
             )
-            .order_by(models.HealthReading.reading_timestamp.asc())
+            .order_by(models.GlucoseReading.reading_timestamp.asc())
             .all()
         )
-        total_count = db.query(func.count(models.HealthReading.id)).filter(
-            models.HealthReading.profile_id == profile_id,
+        recent_bp = (
+            db.query(models.BPReading)
+            .filter(
+                models.BPReading.profile_id == profile_id,
+                models.BPReading.reading_timestamp >= thirty_days_ago,
+            )
+            .order_by(models.BPReading.reading_timestamp.asc())
+            .all()
+        )
+        
+        # Combine into compatible format
+        recent = []
+        for gr in recent_glucose:
+            recent.append(type('Reading', (), {
+                'reading_type': 'glucose',
+                'glucose_value': gr.glucose_value,
+                'systolic': None,
+                'diastolic': None,
+                'status_flag': gr.status_flag,
+                'reading_timestamp': gr.reading_timestamp,
+                'sample_type': gr.sample_type,
+            }))
+        for br in recent_bp:
+            recent.append(type('Reading', (), {
+                'reading_type': 'blood_pressure',
+                'glucose_value': None,
+                'systolic': br.systolic,
+                'diastolic': br.diastolic,
+                'status_flag': br.status_flag,
+                'reading_timestamp': br.reading_timestamp,
+                'sample_type': None,
+            }))
+        recent.sort(key=lambda r: r.reading_timestamp)
+        
+        glucose_count = db.query(func.count(models.GlucoseReading.id)).filter(
+            models.GlucoseReading.profile_id == profile_id,
         ).scalar() or 0
+        bp_count = db.query(func.count(models.BPReading.id)).filter(
+            models.BPReading.profile_id == profile_id,
+        ).scalar() or 0
+        total_count = glucose_count + bp_count
+        
         return {"insight": _rule_based_insight(recent, total_count=total_count), "ai_consent_required": True}
 
     # ── Smart cache: only call LLM when new readings exist ────────────
@@ -504,17 +785,30 @@ def get_ai_insight(
         .order_by(models.AiInsightLog.created_at.desc())
         .first()
     )
-    latest_reading = (
-        db.query(models.HealthReading)
-        .filter(models.HealthReading.profile_id == profile_id)
-        .order_by(models.HealthReading.reading_timestamp.desc())
+    
+    # Get latest reading from either table
+    latest_glucose = (
+        db.query(models.GlucoseReading)
+        .filter(models.GlucoseReading.profile_id == profile_id)
+        .order_by(models.GlucoseReading.reading_timestamp.desc())
         .first()
     )
+    latest_bp = (
+        db.query(models.BPReading)
+        .filter(models.BPReading.profile_id == profile_id)
+        .order_by(models.BPReading.reading_timestamp.desc())
+        .first()
+    )
+    
+    if latest_glucose and latest_bp:
+        latest_reading = latest_glucose if latest_glucose.reading_timestamp > latest_bp.reading_timestamp else latest_bp
+    else:
+        latest_reading = latest_glucose or latest_bp
 
     if latest_insight and latest_reading:
         # Compare: if no new readings since last insight, return cached
         insight_time = latest_insight.created_at
-        reading_time = latest_reading.reading_timestamp
+        reading_time = latest_reading.reading_timestamp if hasattr(latest_reading, 'reading_timestamp') else None
         # Make both offset-naive for comparison
         if insight_time and hasattr(insight_time, 'replace'):
             insight_time = insight_time.replace(tzinfo=None)
@@ -527,23 +821,62 @@ def get_ai_insight(
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
 
     thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time())
-    recent = (
-        db.query(models.HealthReading)
+    
+    # Fetch from both tables
+    recent_glucose = (
+        db.query(models.GlucoseReading)
         .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_timestamp >= thirty_days_ago,
+            models.GlucoseReading.profile_id == profile_id,
+            models.GlucoseReading.reading_timestamp >= thirty_days_ago,
         )
-        .order_by(models.HealthReading.reading_timestamp.asc())
+        .order_by(models.GlucoseReading.reading_timestamp.asc())
+        .all()
+    )
+    recent_bp = (
+        db.query(models.BPReading)
+        .filter(
+            models.BPReading.profile_id == profile_id,
+            models.BPReading.reading_timestamp >= thirty_days_ago,
+        )
+        .order_by(models.BPReading.reading_timestamp.asc())
         .all()
     )
 
     # Build compact summary (averages + ranges) instead of raw readings
-    glucose_vals = [r.glucose_value for r in recent if r.reading_type == "glucose" and r.glucose_value]
-    bp_readings = [(r.systolic, r.diastolic) for r in recent if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+    glucose_vals = [gr.glucose_value for gr in recent_glucose if gr.glucose_value]
+    bp_readings = [(br.systolic, br.diastolic) for br in recent_bp if br.systolic and br.diastolic]
 
-    total_count = db.query(func.count(models.HealthReading.id)).filter(
-        models.HealthReading.profile_id == profile_id,
+    glucose_count = db.query(func.count(models.GlucoseReading.id)).filter(
+        models.GlucoseReading.profile_id == profile_id,
     ).scalar() or 0
+    bp_count = db.query(func.count(models.BPReading.id)).filter(
+        models.BPReading.profile_id == profile_id,
+    ).scalar() or 0
+    total_count = glucose_count + bp_count
+    
+    # Combine for fallback
+    recent = []
+    for gr in recent_glucose:
+        recent.append(type('Reading', (), {
+            'reading_type': 'glucose',
+            'glucose_value': gr.glucose_value,
+            'systolic': None,
+            'diastolic': None,
+            'status_flag': gr.status_flag,
+            'reading_timestamp': gr.reading_timestamp,
+            'sample_type': gr.sample_type,
+        }))
+    for br in recent_bp:
+        recent.append(type('Reading', (), {
+            'reading_type': 'blood_pressure',
+            'glucose_value': None,
+            'systolic': br.systolic,
+            'diastolic': br.diastolic,
+            'status_flag': br.status_flag,
+            'reading_timestamp': br.reading_timestamp,
+            'sample_type': None,
+        }))
+    
     fallback = _rule_based_insight(recent, total_count=total_count)
 
     if not glucose_vals and not bp_readings:
@@ -653,21 +986,31 @@ def get_trend_summary(
     period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time())
     prev_period_start = datetime.combine(today - timedelta(days=period * 2 - 1), datetime.min.time())
 
-    readings = (
-        db.query(models.HealthReading)
+    # Fetch from both tables
+    glucose_readings = (
+        db.query(models.GlucoseReading)
         .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_timestamp >= period_start,
+            models.GlucoseReading.profile_id == profile_id,
+            models.GlucoseReading.reading_timestamp >= period_start,
         )
-        .order_by(models.HealthReading.reading_timestamp.asc())
+        .order_by(models.GlucoseReading.reading_timestamp.asc())
+        .all()
+    )
+    bp_readings_list = (
+        db.query(models.BPReading)
+        .filter(
+            models.BPReading.profile_id == profile_id,
+            models.BPReading.reading_timestamp >= period_start,
+        )
+        .order_by(models.BPReading.reading_timestamp.asc())
         .all()
     )
 
-    if not readings and not base_insight:
+    if not glucose_readings and not bp_readings_list and not base_insight:
         return {"summary": f"No readings recorded in the last {period} days. Start logging to see trend insights.", "period": period, "cached": False}
 
     # Glucose stats
-    glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
+    glucose_vals = [gr.glucose_value for gr in glucose_readings if gr.glucose_value]
     data_parts = []
     if glucose_vals:
         avg_g = sum(glucose_vals) / len(glucose_vals)
@@ -688,29 +1031,29 @@ def get_trend_summary(
         )
 
     # BP stats
-    bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
-    if bp_readings:
-        sys_vals = [s for s, _ in bp_readings]
-        dia_vals = [d for _, d in bp_readings]
+    bp_pairs = [(br.systolic, br.diastolic) for br in bp_readings_list if br.systolic and br.diastolic]
+    if bp_pairs:
+        sys_vals = [s for s, _ in bp_pairs]
+        dia_vals = [d for _, d in bp_pairs]
         avg_sys = sum(sys_vals) / len(sys_vals)
         avg_dia = sum(dia_vals) / len(dia_vals)
-        elevated = sum(1 for s, d in bp_readings if s > 140 or d > 90)
+        elevated = sum(1 for s, d in bp_pairs if s > 140 or d > 90)
         data_parts.append(
-            f"BP: avg {avg_sys:.0f}/{avg_dia:.0f} mmHg ({len(bp_readings)} readings), "
+            f"BP: avg {avg_sys:.0f}/{avg_dia:.0f} mmHg ({len(bp_pairs)} readings), "
             f"{elevated} elevated"
         )
 
     # Previous period comparison
-    prev_readings = (
-        db.query(models.HealthReading)
+    prev_glucose_readings = (
+        db.query(models.GlucoseReading)
         .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_timestamp >= prev_period_start,
-            models.HealthReading.reading_timestamp < period_start,
+            models.GlucoseReading.profile_id == profile_id,
+            models.GlucoseReading.reading_timestamp >= prev_period_start,
+            models.GlucoseReading.reading_timestamp < period_start,
         )
         .all()
     )
-    prev_glucose = [r.glucose_value for r in prev_readings if r.reading_type == "glucose" and r.glucose_value]
+    prev_glucose = [gr.glucose_value for gr in prev_glucose_readings if gr.glucose_value]
     comparison = ""
     if prev_glucose and glucose_vals:
         prev_avg = sum(prev_glucose) / len(prev_glucose)
@@ -771,11 +1114,19 @@ def get_family_streaks(
             continue
 
         days_with_readings = set()
-        for r in db.query(models.HealthReading).filter(
-            models.HealthReading.profile_id == access.profile_id,
-            models.HealthReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
+        
+        # Get readings from both tables
+        for gr in db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == access.profile_id,
+            models.GlucoseReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
         ).all():
-            days_with_readings.add(r.reading_timestamp.date())
+            days_with_readings.add(gr.reading_timestamp.date())
+
+        for br in db.query(models.BPReading).filter(
+            models.BPReading.profile_id == access.profile_id,
+            models.BPReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
+        ).all():
+            days_with_readings.add(br.reading_timestamp.date())
 
         streak = 0
         if today in days_with_readings:
@@ -788,9 +1139,16 @@ def get_family_streaks(
             streak += 1
             check_day -= timedelta(days=1)
 
-        total = db.query(func.count(models.HealthReading.id)).filter(
-            models.HealthReading.profile_id == access.profile_id,
+        # Count from both tables
+        glucose_total = db.query(func.count(models.GlucoseReading.id)).filter(
+            models.GlucoseReading.profile_id == access.profile_id,
         ).scalar() or 0
+
+        bp_total = db.query(func.count(models.BPReading.id)).filter(
+            models.BPReading.profile_id == access.profile_id,
+        ).scalar() or 0
+
+        total = glucose_total + bp_total
 
         pts = total * 10
         if streak >= 30: pts += 1500
@@ -836,18 +1194,27 @@ def get_weekly_summary(
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
     profile_name = profile.name if profile else "Patient"
 
-    readings = (
-        db.query(models.HealthReading)
+    readings_glucose = (
+        db.query(models.GlucoseReading)
         .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_timestamp >= week_start,
+            models.GlucoseReading.profile_id == profile_id,
+            models.GlucoseReading.reading_timestamp >= week_start,
         )
-        .order_by(models.HealthReading.reading_timestamp.asc())
+        .order_by(models.GlucoseReading.reading_timestamp.asc())
+        .all()
+    )
+    readings_bp = (
+        db.query(models.BPReading)
+        .filter(
+            models.BPReading.profile_id == profile_id,
+            models.BPReading.reading_timestamp >= week_start,
+        )
+        .order_by(models.BPReading.reading_timestamp.asc())
         .all()
     )
 
-    glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
-    bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+    glucose_vals = [gr.glucose_value for gr in readings_glucose if gr.glucose_value]
+    bp_readings = [(br.systolic, br.diastolic) for br in readings_bp if br.systolic and br.diastolic]
 
     # Build summary text
     lines = [f"📊 Weekly Health Summary — {profile_name}"]
@@ -909,14 +1276,53 @@ def get_reading(
     user: models.User = Depends(get_current_user),
 ):
     """Get a specific reading by ID."""
-    db_reading = db.query(models.HealthReading).filter(models.HealthReading.id == reading_id).first()
-    if not db_reading:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
+    # Try glucose table first
+    db_reading = db.query(models.GlucoseReading).filter(models.GlucoseReading.id == reading_id).first()
+    if db_reading:
+        get_profile_access_or_403(db_reading.profile_id, user, db)
+        return schemas.HealthReadingResponse(
+            id=db_reading.id,
+            profile_id=db_reading.profile_id,
+            logged_by=db_reading.logged_by,
+            reading_type='glucose',
+            glucose_value=db_reading.glucose_value,
+            glucose_unit=db_reading.glucose_unit,
+            sample_type=db_reading.sample_type,
+            systolic=None, diastolic=None, mean_arterial_pressure=None,
+            pulse_rate=None, bp_unit=None, bp_status=None,
+            value_numeric=db_reading.glucose_value or 0,
+            unit_display=db_reading.glucose_unit or 'mg/dL',
+            status_flag=db_reading.status_flag,
+            notes=db_reading.notes,
+            reading_timestamp=db_reading.reading_timestamp,
+            created_at=db_reading.created_at,
+        )
     
-    # Verify access to the profile this reading belongs to
-    get_profile_access_or_403(db_reading.profile_id, user, db)
+    # Try BP table
+    db_reading = db.query(models.BPReading).filter(models.BPReading.id == reading_id).first()
+    if db_reading:
+        get_profile_access_or_403(db_reading.profile_id, user, db)
+        return schemas.HealthReadingResponse(
+            id=db_reading.id,
+            profile_id=db_reading.profile_id,
+            logged_by=db_reading.logged_by,
+            reading_type='blood_pressure',
+            glucose_value=None, glucose_unit=None, sample_type=None,
+            systolic=db_reading.systolic,
+            diastolic=db_reading.diastolic,
+            mean_arterial_pressure=db_reading.mean_arterial_pressure,
+            pulse_rate=db_reading.pulse_rate,
+            bp_unit=db_reading.bp_unit,
+            bp_status=db_reading.bp_status,
+            value_numeric=db_reading.systolic or 0,
+            unit_display=db_reading.bp_unit or 'mmHg',
+            status_flag=db_reading.status_flag,
+            notes=db_reading.notes,
+            reading_timestamp=db_reading.reading_timestamp,
+            created_at=db_reading.created_at,
+        )
     
-    return db_reading
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
 
 
 @router.delete("/readings/{reading_id}")
@@ -926,16 +1332,23 @@ def delete_reading(
     user: models.User = Depends(get_current_user),
 ):
     """Delete a reading."""
-    db_reading = db.query(models.HealthReading).filter(models.HealthReading.id == reading_id).first()
-    if not db_reading:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
-
-    # Verify editor/owner access (viewers cannot delete readings)
-    get_profile_editor_or_403(db_reading.profile_id, user, db)
+    # Try glucose table first
+    db_reading = db.query(models.GlucoseReading).filter(models.GlucoseReading.id == reading_id).first()
+    if db_reading:
+        get_profile_access_or_403(db_reading.profile_id, user, db)
+        db.delete(db_reading)
+        db.commit()
+        return {"message": "Reading deleted"}
     
-    db.delete(db_reading)
-    db.commit()
-    return {"message": "Reading deleted successfully"}
+    # Try BP table
+    db_reading = db.query(models.BPReading).filter(models.BPReading.id == reading_id).first()
+    if db_reading:
+        get_profile_access_or_403(db_reading.profile_id, user, db)
+        db.delete(db_reading)
+        db.commit()
+        return {"message": "Reading deleted"}
+    
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
 
 
 @router.post("/readings/parse-image")
