@@ -10,13 +10,12 @@ from auth import get_password_hash, create_access_token
 
 
 def _add_reading(db, profile_id, user_id, hours_ago=0):
-    r = models.HealthReading(
+    r = models.GlucoseReading(
         profile_id=profile_id,
         logged_by=user_id,
-        reading_type="glucose",
+        sequence_number=0,
         glucose_value=100.0,
-        value_numeric=100.0,
-        unit_display="mg/dL",
+        glucose_unit="mg/dL",
         status_flag="NORMAL",
         reading_timestamp=datetime.utcnow() - timedelta(hours=hours_ago),
     )

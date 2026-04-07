@@ -9,13 +9,12 @@ import models
 
 
 def _add_glucose(db, profile_id, user_id, value, hours_ago=0, status="NORMAL"):
-    r = models.HealthReading(
+    r = models.GlucoseReading(
         profile_id=profile_id,
         logged_by=user_id,
-        reading_type="glucose",
+        sequence_number=0,
         glucose_value=value,
-        value_numeric=value,
-        unit_display="mg/dL",
+        glucose_unit="mg/dL",
         status_flag=status,
         reading_timestamp=datetime.utcnow() - timedelta(hours=hours_ago),
     )
@@ -25,16 +24,15 @@ def _add_glucose(db, profile_id, user_id, value, hours_ago=0, status="NORMAL"):
 
 
 def _add_bp(db, profile_id, user_id, sys_val, dia_val, hours_ago=0, status="NORMAL"):
-    r = models.HealthReading(
+    r = models.BPReading(
         profile_id=profile_id,
         logged_by=user_id,
-        reading_type="blood_pressure",
+        sequence_number=0,
+        slot_number=0,
         systolic=float(sys_val),
         diastolic=float(dia_val),
         pulse_rate=72.0,
         bp_unit="mmHg",
-        value_numeric=float(sys_val),
-        unit_display="mmHg",
         status_flag=status,
         reading_timestamp=datetime.utcnow() - timedelta(hours=hours_ago),
     )

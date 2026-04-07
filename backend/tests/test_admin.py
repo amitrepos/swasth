@@ -78,13 +78,12 @@ class TestAdminMetrics:
 
         db.add(models.ProfileAccess(user_id=user.id, profile_id=profile.id, access_level="owner"))
 
-        reading = models.HealthReading(
+        reading = models.GlucoseReading(
             profile_id=profile.id,
             logged_by=user.id,
-            reading_type="glucose",
+            sequence_number=0,
             glucose_value=120.0,
-            value_numeric=120.0,
-            unit_display="mg/dL",
+            glucose_unit="mg/dL",
             status_flag="NORMAL",
             reading_timestamp=datetime.utcnow(),
         )

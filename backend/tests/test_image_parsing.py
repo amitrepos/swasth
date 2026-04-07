@@ -175,13 +175,12 @@ class TestGetSingleReading:
             models.ProfileAccess.user_id == test_user.id,
         ).first()
 
-        reading = models.HealthReading(
+        reading = models.GlucoseReading(
             profile_id=profile_access.profile_id,
             logged_by=test_user.id,
-            reading_type="glucose",
+            sequence_number=0,
             glucose_value=100.0,
-            value_numeric=100.0,
-            unit_display="mg/dL",
+            glucose_unit="mg/dL",
             status_flag="NORMAL",
             reading_timestamp=datetime.utcnow(),
         )

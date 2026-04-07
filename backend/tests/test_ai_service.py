@@ -123,13 +123,12 @@ class TestSmartCaching:
         from datetime import datetime, timedelta
 
         # Insert a reading from yesterday
-        reading = models.HealthReading(
+        reading = models.GlucoseReading(
             profile_id=1,
-            reading_type='glucose',
+            logged_by=test_user.id,
+            sequence_number=0,
             glucose_value=120,
             glucose_unit='mg/dL',
-            value_numeric=120,
-            unit_display='mg/dL',
             status_flag='NORMAL',
             reading_timestamp=datetime.utcnow() - timedelta(hours=12),
         )

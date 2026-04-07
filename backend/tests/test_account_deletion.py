@@ -25,13 +25,12 @@ class TestAccountDeletion:
         ).first()
 
         # Add a reading
-        reading = models.HealthReading(
+        reading = models.GlucoseReading(
             profile_id=access.profile_id,
             logged_by=test_user.id,
-            reading_type="glucose",
+            sequence_number=0,
             glucose_value=120,
-            value_numeric=120,
-            unit_display="mg/dL",
+            glucose_unit="mg/dL",
             status_flag="NORMAL",
             reading_timestamp=datetime.utcnow(),
         )
@@ -42,7 +41,7 @@ class TestAccountDeletion:
         assert resp.status_code == 200
 
         # Reading gone
-        assert db.query(models.HealthReading).filter_by(profile_id=access.profile_id).first() is None
+        assert db.query(models.GlucoseReading).filter_by(profile_id=access.profile_id).first() is None
 
     def test_delete_removes_ai_logs(self, client, test_user, auth_headers, db):
         access = db.query(models.ProfileAccess).filter_by(
@@ -97,13 +96,12 @@ class TestAccountDeletion:
         db.add(other_profile)
         db.flush()
 
-        reading = models.HealthReading(
+        reading = models.GlucoseReading(
             profile_id=other_profile.id,
             logged_by=test_user.id,
-            reading_type="glucose",
+            sequence_number=0,
             glucose_value=100,
-            value_numeric=100,
-            unit_display="mg/dL",
+            glucose_unit="mg/dL",
             status_flag="NORMAL",
             reading_timestamp=datetime.utcnow(),
         )
@@ -115,7 +113,7 @@ class TestAccountDeletion:
         assert resp.status_code == 200
 
         # Reading still exists but logged_by is NULL
-        r = db.query(models.HealthReading).filter_by(id=reading_id).first()
+        r = db.query(models.GlucoseReading).filter_by(id=reading_id).first()
         assert r is not None
         assert r.logged_by is None
 

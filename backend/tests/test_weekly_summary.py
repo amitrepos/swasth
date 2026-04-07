@@ -8,14 +8,33 @@ import models
 
 
 def _add_reading(db, pid, uid, rtype, value, hours_ago=0):
-    r = models.HealthReading(
-        profile_id=pid, logged_by=uid, reading_type=rtype,
-        glucose_value=value if rtype == "glucose" else None,
-        systolic=value if rtype == "blood_pressure" else None,
-        diastolic=(value - 40) if rtype == "blood_pressure" else None,
-        value_numeric=value, unit_display="mg/dL" if rtype == "glucose" else "mmHg",
-        status_flag="NORMAL", reading_timestamp=datetime.utcnow() - timedelta(hours=hours_ago),
-    )
+    ts = datetime.utcnow() - timedelta(hours=hours_ago)
+    
+    if rtype == "glucose":
+        r = models.GlucoseReading(
+            profile_id=pid,
+            logged_by=uid,
+            sequence_number=0,
+            glucose_value=value,
+            glucose_unit="mg/dL",
+            status_flag="NORMAL",
+            reading_timestamp=ts,
+        )
+    elif rtype == "blood_pressure":
+        r = models.BPReading(
+            profile_id=pid,
+            logged_by=uid,
+            sequence_number=0,
+            slot_number=0,
+            systolic=value,
+            diastolic=value - 40,
+            bp_unit="mmHg",
+            status_flag="NORMAL",
+            reading_timestamp=ts,
+        )
+    else:
+        raise ValueError(f"Unknown reading_type: {rtype}")
+    
     db.add(r)
     db.flush()
 

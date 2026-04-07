@@ -55,13 +55,12 @@ class TestChatContextSummarization:
         pid = _get_profile_id(db, test_user.id)
 
         # Add some health readings
-        reading = models.HealthReading(
+        reading = models.GlucoseReading(
             profile_id=pid,
             logged_by=test_user.id,
-            reading_type="glucose",
+            sequence_number=0,
             glucose_value=200.0,
-            value_numeric=200.0,
-            unit_display="mg/dL",
+            glucose_unit="mg/dL",
             status_flag="HIGH",
             reading_timestamp=datetime.utcnow(),
         )
