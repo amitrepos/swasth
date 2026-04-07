@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     # HTTPS — enable in production behind TLS termination
     REQUIRE_HTTPS: bool = False
     
+    # WhatsApp Business API
+    WA_PHONE_NUMBER_ID: Optional[str] = None
+    WA_ACCESS_TOKEN: Optional[str] = None
+    WA_VERIFY_TOKEN: Optional[str] = None
+    
     class Config:
         env_file = ".env"
 
