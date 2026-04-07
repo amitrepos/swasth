@@ -126,7 +126,7 @@ class TestSmartCaching:
         reading = models.GlucoseReading(
             profile_id=1,
             logged_by=test_user.id,
-            sequence_number=0,
+            sequence_number=0,  # First reading for this profile
             glucose_value=120,
             glucose_unit='mg/dL',
             status_flag='NORMAL',

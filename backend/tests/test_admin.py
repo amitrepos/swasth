@@ -78,10 +78,13 @@ class TestAdminMetrics:
 
         db.add(models.ProfileAccess(user_id=user.id, profile_id=profile.id, access_level="owner"))
 
+        max_seq = db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == profile.id
+        ).count()
         reading = models.GlucoseReading(
             profile_id=profile.id,
             logged_by=user.id,
-            sequence_number=0,
+            sequence_number=max_seq,
             glucose_value=120.0,
             glucose_unit="mg/dL",
             status_flag="NORMAL",

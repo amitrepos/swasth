@@ -47,7 +47,10 @@ def get_metrics(
     # ── User counts ──────────────────────────────────────────────────
     total_users = db.query(func.count(models.User.id)).scalar() or 0
     total_profiles = db.query(func.count(models.Profile.id)).scalar() or 0
-    total_readings = db.query(func.count(models.HealthReading.id)).scalar() or 0
+    # Count from both reading tables
+    total_glucose = db.query(func.count(models.GlucoseReading.id)).scalar() or 0
+    total_bp = db.query(func.count(models.BPReading.id)).scalar() or 0
+    total_readings = total_glucose + total_bp
 
     # ── DAU / MAU ────────────────────────────────────────────────────
     day_ago = now - timedelta(days=1)
@@ -92,21 +95,34 @@ def get_metrics(
     d30_retention = _retention(30, 0)
 
     # ── Engagement ───────────────────────────────────────────────────
-    readings_this_week = db.query(func.count(models.HealthReading.id)).filter(
-        models.HealthReading.created_at >= datetime.combine(today - timedelta(days=6), datetime.min.time()),
+    week_ago = datetime.combine(today - timedelta(days=6), datetime.min.time())
+    glucose_this_week = db.query(func.count(models.GlucoseReading.id)).filter(
+        models.GlucoseReading.created_at >= week_ago,
     ).scalar() or 0
+    bp_this_week = db.query(func.count(models.BPReading.id)).filter(
+        models.BPReading.created_at >= week_ago,
+    ).scalar() or 0
+    readings_this_week = glucose_this_week + bp_this_week
 
     readings_per_user_week = round(readings_this_week / max(wau, 1), 1)
 
     # Streak distribution
     all_profiles = db.query(models.Profile).all()
     streak_counts = {"0": 0, "1-2": 0, "3-6": 0, "7-13": 0, "14-29": 0, "30+": 0}
+    two_months_ago = datetime.combine(today - timedelta(days=60), datetime.min.time())
     for profile in all_profiles:
         days_with = set()
-        for r in db.query(models.HealthReading).filter(
-            models.HealthReading.profile_id == profile.id,
-            models.HealthReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
-        ).all():
+        # Query both reading tables
+        glucose_readings = db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == profile.id,
+            models.GlucoseReading.reading_timestamp >= two_months_ago,
+        ).all()
+        bp_readings = db.query(models.BPReading).filter(
+            models.BPReading.profile_id == profile.id,
+            models.BPReading.reading_timestamp >= two_months_ago,
+        ).all()
+        
+        for r in glucose_readings + bp_readings:
             days_with.add(r.reading_timestamp.date())
 
         streak = 0
@@ -135,9 +151,8 @@ def get_metrics(
     sharing_rate = round(users_with_shared / max(total_users, 1) * 100, 1)
 
     # ── Clinical outcomes ────────────────────────────────────────────
-    glucose_readings = db.query(models.HealthReading).filter(
-        models.HealthReading.reading_type == "glucose",
-        models.HealthReading.glucose_value.isnot(None),
+    glucose_readings = db.query(models.GlucoseReading).filter(
+        models.GlucoseReading.glucose_value.isnot(None),
     ).all()
 
     total_glucose = len(glucose_readings)
@@ -145,9 +160,8 @@ def get_metrics(
     critical_glucose = sum(1 for r in glucose_readings if r.status_flag == "CRITICAL")
     high_glucose = sum(1 for r in glucose_readings if r.status_flag and "HIGH" in r.status_flag)
 
-    bp_readings = db.query(models.HealthReading).filter(
-        models.HealthReading.reading_type == "blood_pressure",
-        models.HealthReading.systolic.isnot(None),
+    bp_readings = db.query(models.BPReading).filter(
+        models.BPReading.systolic.isnot(None),
     ).all()
     total_bp = len(bp_readings)
     normal_bp = sum(1 for r in bp_readings if r.status_flag == "NORMAL")
@@ -181,10 +195,15 @@ def get_metrics(
         day = today - timedelta(days=d)
         day_start = datetime.combine(day, datetime.min.time())
         day_end = datetime.combine(day + timedelta(days=1), datetime.min.time())
-        count = db.query(func.count(models.HealthReading.id)).filter(
-            models.HealthReading.created_at >= day_start,
-            models.HealthReading.created_at < day_end,
+        glucose_count = db.query(func.count(models.GlucoseReading.id)).filter(
+            models.GlucoseReading.created_at >= day_start,
+            models.GlucoseReading.created_at < day_end,
         ).scalar() or 0
+        bp_count = db.query(func.count(models.BPReading.id)).filter(
+            models.BPReading.created_at >= day_start,
+            models.BPReading.created_at < day_end,
+        ).scalar() or 0
+        count = glucose_count + bp_count
         readings_by_day.append({"date": day.isoformat(), "count": count})
 
     return {
@@ -258,9 +277,13 @@ def list_users(
         ).all()
         total_readings = 0
         for pa in owned_profiles:
-            total_readings += db.query(func.count(models.HealthReading.id)).filter(
-                models.HealthReading.profile_id == pa.profile_id,
+            glucose_count = db.query(func.count(models.GlucoseReading.id)).filter(
+                models.GlucoseReading.profile_id == pa.profile_id,
             ).scalar() or 0
+            bp_count = db.query(func.count(models.BPReading.id)).filter(
+                models.BPReading.profile_id == pa.profile_id,
+            ).scalar() or 0
+            total_readings = glucose_count + bp_count
 
         profile_count = db.query(func.count(models.ProfileAccess.id)).filter(
             models.ProfileAccess.user_id == u.id,

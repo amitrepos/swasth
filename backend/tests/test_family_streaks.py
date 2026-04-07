@@ -10,10 +10,13 @@ from auth import get_password_hash, create_access_token
 
 
 def _add_reading(db, profile_id, user_id, hours_ago=0):
+    max_seq = db.query(models.GlucoseReading).filter(
+        models.GlucoseReading.profile_id == profile_id
+    ).count()
     r = models.GlucoseReading(
         profile_id=profile_id,
         logged_by=user_id,
-        sequence_number=0,
+        sequence_number=max_seq,
         glucose_value=100.0,
         glucose_unit="mg/dL",
         status_flag="NORMAL",

@@ -9,10 +9,13 @@ import models
 
 
 def _add_glucose(db, profile_id, user_id, value, hours_ago=0, status="NORMAL"):
+    max_seq = db.query(models.GlucoseReading).filter(
+        models.GlucoseReading.profile_id == profile_id
+    ).count()
     r = models.GlucoseReading(
         profile_id=profile_id,
         logged_by=user_id,
-        sequence_number=0,
+        sequence_number=max_seq,
         glucose_value=value,
         glucose_unit="mg/dL",
         status_flag=status,
@@ -24,10 +27,13 @@ def _add_glucose(db, profile_id, user_id, value, hours_ago=0, status="NORMAL"):
 
 
 def _add_bp(db, profile_id, user_id, sys_val, dia_val, hours_ago=0, status="NORMAL"):
+    max_seq = db.query(models.BPReading).filter(
+        models.BPReading.profile_id == profile_id
+    ).count()
     r = models.BPReading(
         profile_id=profile_id,
         logged_by=user_id,
-        sequence_number=0,
+        sequence_number=max_seq,
         slot_number=0,
         systolic=float(sys_val),
         diastolic=float(dia_val),

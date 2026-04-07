@@ -85,15 +85,28 @@ def _build_health_summary(profile_id: int, db: Session) -> str:
         return ""
 
     thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time())
-    recent = (
-        db.query(models.HealthReading)
+    # Fetch from both reading tables
+    glucose_readings = (
+        db.query(models.GlucoseReading)
         .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_timestamp >= thirty_days_ago,
+            models.GlucoseReading.profile_id == profile_id,
+            models.GlucoseReading.reading_timestamp >= thirty_days_ago,
         )
-        .order_by(models.HealthReading.reading_timestamp.asc())
+        .order_by(models.GlucoseReading.reading_timestamp.asc())
         .all()
     )
+    bp_readings = (
+        db.query(models.BPReading)
+        .filter(
+            models.BPReading.profile_id == profile_id,
+            models.BPReading.reading_timestamp >= thirty_days_ago,
+        )
+        .order_by(models.BPReading.reading_timestamp.asc())
+        .all()
+    )
+    recent = glucose_readings + bp_readings
+    # Sort combined list by timestamp
+    recent.sort(key=lambda r: r.reading_timestamp)
 
     glucose_vals = [r.glucose_value for r in recent if r.reading_type == "glucose" and r.glucose_value]
     bp_readings = [(r.systolic, r.diastolic) for r in recent if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]

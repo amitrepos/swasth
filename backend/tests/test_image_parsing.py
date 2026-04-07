@@ -175,10 +175,13 @@ class TestGetSingleReading:
             models.ProfileAccess.user_id == test_user.id,
         ).first()
 
+        max_seq = db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == profile_access.profile_id
+        ).count()
         reading = models.GlucoseReading(
             profile_id=profile_access.profile_id,
             logged_by=test_user.id,
-            sequence_number=0,
+            sequence_number=max_seq,
             glucose_value=100.0,
             glucose_unit="mg/dL",
             status_flag="NORMAL",

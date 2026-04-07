@@ -112,7 +112,7 @@ class TestCriticalAlertEmail:
         db.add(models.ProfileAccess(user_id=viewer.id, profile_id=pid, access_level="viewer"))
         db.flush()
 
-        with patch("email_service.email_service.send_otp_email") as mock_email:
+        with patch("email_service.BrevoEmailService.send_otp_email") as mock_email:
             resp = client.post("/api/readings", json={
                 "profile_id": pid,
                 "reading_type": "glucose",

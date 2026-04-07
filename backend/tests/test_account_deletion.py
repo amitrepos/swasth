@@ -25,10 +25,13 @@ class TestAccountDeletion:
         ).first()
 
         # Add a reading
+        max_seq = db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == access.profile_id
+        ).count()
         reading = models.GlucoseReading(
             profile_id=access.profile_id,
             logged_by=test_user.id,
-            sequence_number=0,
+            sequence_number=max_seq,
             glucose_value=120,
             glucose_unit="mg/dL",
             status_flag="NORMAL",
@@ -96,10 +99,13 @@ class TestAccountDeletion:
         db.add(other_profile)
         db.flush()
 
+        max_seq = db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == other_profile.id
+        ).count()
         reading = models.GlucoseReading(
             profile_id=other_profile.id,
             logged_by=test_user.id,
-            sequence_number=0,
+            sequence_number=max_seq,
             glucose_value=100,
             glucose_unit="mg/dL",
             status_flag="NORMAL",

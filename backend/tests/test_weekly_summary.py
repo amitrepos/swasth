@@ -11,20 +11,28 @@ def _add_reading(db, pid, uid, rtype, value, hours_ago=0):
     ts = datetime.utcnow() - timedelta(hours=hours_ago)
     
     if rtype == "glucose":
+        # Get next sequence number for this profile
+        max_seq = db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == pid
+        ).count()
         r = models.GlucoseReading(
             profile_id=pid,
             logged_by=uid,
-            sequence_number=0,
+            sequence_number=max_seq,
             glucose_value=value,
             glucose_unit="mg/dL",
             status_flag="NORMAL",
             reading_timestamp=ts,
         )
     elif rtype == "blood_pressure":
+        # Get next sequence number for this profile
+        max_seq = db.query(models.BPReading).filter(
+            models.BPReading.profile_id == pid
+        ).count()
         r = models.BPReading(
             profile_id=pid,
             logged_by=uid,
-            sequence_number=0,
+            sequence_number=max_seq,
             slot_number=0,
             systolic=value,
             diastolic=value - 40,

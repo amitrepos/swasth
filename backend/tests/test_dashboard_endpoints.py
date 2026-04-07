@@ -24,10 +24,13 @@ import models
 
 def _add_glucose_reading(db, profile_id, user_id, value, hours_ago=0, status="NORMAL"):
     ts = datetime.utcnow() - timedelta(hours=hours_ago)
+    max_seq = db.query(models.GlucoseReading).filter(
+        models.GlucoseReading.profile_id == profile_id
+    ).count()
     r = models.GlucoseReading(
         profile_id=profile_id,
         logged_by=user_id,
-        sequence_number=0,
+        sequence_number=max_seq,
         glucose_value=value,
         glucose_unit="mg/dL",
         sample_type="Fasting",
@@ -41,10 +44,13 @@ def _add_glucose_reading(db, profile_id, user_id, value, hours_ago=0, status="NO
 
 def _add_bp_reading(db, profile_id, user_id, systolic, diastolic, hours_ago=0, status="NORMAL"):
     ts = datetime.utcnow() - timedelta(hours=hours_ago)
+    max_seq = db.query(models.BPReading).filter(
+        models.BPReading.profile_id == profile_id
+    ).count()
     r = models.BPReading(
         profile_id=profile_id,
         logged_by=user_id,
-        sequence_number=0,
+        sequence_number=max_seq,
         slot_number=0,
         systolic=float(systolic),
         diastolic=float(diastolic),

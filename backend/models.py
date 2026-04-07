@@ -93,6 +93,7 @@ class GlucoseReading(Base):
     id = Column(Integer, primary_key=True, index=True)
     profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reading_type = Column(String, default="glucose")  # Compatibility property
 
     # Glucose specific fields
     sequence_number = Column(Integer, nullable=False)
@@ -119,6 +120,19 @@ class GlucoseReading(Base):
         # Unique constraint on profile + sequence number
         Index("uq_glucose_profile_sequence", "profile_id", "sequence_number", unique=True),
     )
+    
+    # Compatibility properties for unified queries
+    @property
+    def systolic(self):
+        return None
+    
+    @property
+    def diastolic(self):
+        return None
+    
+    @property
+    def pulse_rate(self):
+        return None
 
 
 class BPReading(Base):
@@ -128,6 +142,7 @@ class BPReading(Base):
     id = Column(Integer, primary_key=True, index=True)
     profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reading_type = Column(String, default="blood_pressure")  # Compatibility property
 
     # BP specific fields
     sequence_number = Column(Integer, nullable=False)            # Monotonic sequence counter (0-255, wraps)
@@ -165,6 +180,19 @@ class BPReading(Base):
         # Unique constraint on profile + sequence + slot
         Index("uq_bp_profile_seq_slot", "profile_id", "sequence_number", "slot_number", unique=True),
     )
+    
+    # Compatibility properties for unified queries
+    @property
+    def glucose_value(self):
+        return None
+    
+    @property
+    def glucose_unit(self):
+        return None
+    
+    @property
+    def sample_type(self):
+        return None
 
 
 class AiInsightLog(Base):

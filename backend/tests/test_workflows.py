@@ -242,17 +242,43 @@ class TestStreakAndPointsFlow:
         ).first().profile_id
 
         # Log readings for 3 consecutive days
-        for days_ago in range(2, -1, -1):
+        # Query the database to find the max sequence number and avoid conflicts
+        from sqlalchemy import func
+        max_seq_result = db.query(func.max(models.GlucoseReading.sequence_number)).filter(
+            models.GlucoseReading.profile_id == profile_id
+        ).scalar()
+        base_seq = (max_seq_result or 0) + 10000  # Start well above any existing sequence
+        
+        for idx, days_ago in enumerate(range(2, -1, -1)):
             ts = (datetime.utcnow() - timedelta(days=days_ago)).isoformat()
-            client.post("/api/readings", json={
+            resp = client.post("/api/readings", json={
                 "profile_id": profile_id,
                 "reading_type": "glucose",
                 "glucose_value": 110.0,
+                "glucose_unit": "mg/dL",
+                "sequence_number": base_seq + idx,
                 "value_numeric": 110.0,
                 "unit_display": "mg/dL",
                 "status_flag": "NORMAL",
                 "reading_timestamp": ts,
             }, headers=auth_headers)
+            
+            # If we still get a conflict, use an even larger number
+            if resp.status_code != 201:
+                fallback_seq = 9000000 + idx  # Fallback to very large number
+                resp = client.post("/api/readings", json={
+                    "profile_id": profile_id,
+                    "reading_type": "glucose",
+                    "glucose_value": 110.0,
+                    "glucose_unit": "mg/dL",
+                    "sequence_number": fallback_seq,
+                    "value_numeric": 110.0,
+                    "unit_display": "mg/dL",
+                    "status_flag": "NORMAL",
+                    "reading_timestamp": ts,
+                }, headers=auth_headers)
+                
+            assert resp.status_code == 201, f"Failed to create reading {idx}: {resp.status_code} - {resp.text}"
 
         # Check streak
         streaks = client.get("/api/readings/family-streaks", headers=auth_headers)

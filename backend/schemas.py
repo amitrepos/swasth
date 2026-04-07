@@ -369,6 +369,7 @@ class HealthReadingCreate(BaseModel):
     glucose_value: Optional[float] = None
     glucose_unit: Optional[str] = None
     sample_type: Optional[str] = None
+    sequence_number: Optional[int] = None  # For glucose readings
 
     # BP fields
     systolic: Optional[float] = None
@@ -377,6 +378,7 @@ class HealthReadingCreate(BaseModel):
     pulse_rate: Optional[float] = None
     bp_unit: Optional[str] = None
     bp_status: Optional[str] = None
+    slot_number: Optional[int] = None  # For BP readings
 
     # Common fields
     value_numeric: Optional[float] = None

@@ -20,6 +20,7 @@ from config import settings
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 from encryption_service import encrypt, encrypt_float
+from email_service import BrevoEmailService
 from health_utils import age_context_bp, age_context_glucose
 
 router = APIRouter()
@@ -53,15 +54,17 @@ def save_reading(
 
 def save_glucose_reading(reading, db: Session, user: models.User):
     """Save glucose reading to glucose_readings table."""
-    # Extract sequence number from notes if available
-    seq_num = 0
-    if reading.notes and 'seq:' in reading.notes:
+    # Use sequence_number from request if provided, otherwise extract from notes
+    seq_num = reading.sequence_number if reading.sequence_number is not None else 0
+    
+    # Also check notes for backward compatibility
+    if seq_num == 0 and reading.notes and 'seq:' in reading.notes:
         try:
             seq_num = int(reading.notes.split('seq:')[1].split('_')[0])
         except:
             pass
 
-    # Check for duplicate by sequence number
+    # Check for duplicate by sequence number (only if seq_num > 0)
     if seq_num > 0:
         existing = db.query(models.GlucoseReading).filter(
             models.GlucoseReading.profile_id == reading.profile_id,
@@ -102,6 +105,46 @@ def save_glucose_reading(reading, db: Session, user: models.User):
     for k in stale:
         del _insight_cache[k]
 
+    # Check if this is a critical reading that should trigger an alert
+    alert = None
+    if reading.status_flag == "CRITICAL":
+        alert = {
+            "type": "critical",
+            "level": "CRITICAL",
+            "message": f"CRITICAL glucose reading detected ({reading.glucose_value} {reading.glucose_unit or 'mg/dL'})! Please seek medical attention immediately.",
+            "severity": "critical"
+        }
+        
+        # Send email to family members (viewers)
+        try:
+            from models import ProfileAccess
+            family_members = db.query(ProfileAccess).filter(
+                ProfileAccess.profile_id == reading.profile_id,
+                ProfileAccess.access_level == "viewer"
+            ).all()
+            
+            email_service = BrevoEmailService()
+            for member in family_members:
+                family_user = db.query(models.User).filter(models.User.id == member.user_id).first()
+                if family_user and family_user.email:
+                    # Generate a simple alert message as OTP
+                    alert_otp = f"ALERT-{reading.glucose_value}"
+                    email_service.send_otp_email(
+                        recipient_email=family_user.email,
+                        otp=alert_otp
+                    )
+        except Exception as e:
+            # Don't fail the save if email fails
+            print(f"Failed to send critical alert email: {e}")
+            
+    elif reading.status_flag and "HIGH" in reading.status_flag:
+        alert = {
+            "type": "warning",
+            "level": "HIGH",
+            "message": f"High glucose reading detected ({reading.glucose_value} {reading.glucose_unit or 'mg/dL'}). Please monitor closely.",
+            "severity": "warning"
+        }
+
     # Return as dict for frontend compatibility
     return {
         "id": db_reading.id,
@@ -123,6 +166,7 @@ def save_glucose_reading(reading, db: Session, user: models.User):
         "notes": db_reading.notes,
         "reading_timestamp": db_reading.reading_timestamp,
         "created_at": db_reading.created_at,
+        "alert": alert,
     }
 
 
@@ -190,6 +234,23 @@ def save_bp_reading(reading, db: Session, user: models.User):
     for k in stale:
         del _insight_cache[k]
 
+    # Check if this is a critical reading that should trigger an alert
+    alert = None
+    if reading.status_flag == "CRITICAL":
+        alert = {
+            "type": "critical",
+            "level": "CRITICAL",
+            "message": f"CRITICAL blood pressure reading detected ({reading.systolic}/{reading.diastolic} {reading.bp_unit or 'mmHg'})! Please seek medical attention immediately.",
+            "severity": "critical"
+        }
+    elif reading.status_flag and "HIGH" in reading.status_flag:
+        alert = {
+            "type": "warning",
+            "level": "HIGH",
+            "message": f"High blood pressure reading detected ({reading.systolic}/{reading.diastolic} {reading.bp_unit or 'mmHg'}). Please monitor closely.",
+            "severity": "warning"
+        }
+
     # Return as dict for frontend compatibility
     return {
         "id": db_reading.id,
@@ -211,6 +272,7 @@ def save_bp_reading(reading, db: Session, user: models.User):
         "notes": db_reading.notes,
         "reading_timestamp": db_reading.reading_timestamp,
         "created_at": db_reading.created_at,
+        "alert": alert,
     }
 
 
@@ -1246,7 +1308,9 @@ def get_weekly_summary(
 
     # Streak
     days_with = set()
-    for r in readings:
+    # Combine both reading types for streak calculation
+    all_readings = readings_glucose + readings_bp
+    for r in all_readings:
         days_with.add(r.reading_timestamp.date())
     days_logged = len(days_with)
     lines.append("")
@@ -1265,7 +1329,7 @@ def get_weekly_summary(
         "bp_avg_sys": round(sum(s for s, _ in bp_readings) / len(bp_readings), 1) if bp_readings else None,
         "bp_avg_dia": round(sum(d for _, d in bp_readings) / len(bp_readings), 1) if bp_readings else None,
         "days_logged": days_logged,
-        "total_readings": len(readings),
+        "total_readings": len(glucose_vals) + len(bp_readings),
     }
 
 

@@ -247,15 +247,19 @@ def delete_account(
     for access in owned_access:
         pid = access.profile_id
         # Delete readings, AI logs, invites, access entries for owned profiles
-        db.query(models.HealthReading).filter(models.HealthReading.profile_id == pid).delete()
+        db.query(models.GlucoseReading).filter(models.GlucoseReading.profile_id == pid).delete()
+        db.query(models.BPReading).filter(models.BPReading.profile_id == pid).delete()
         db.query(models.AiInsightLog).filter(models.AiInsightLog.profile_id == pid).delete()
         db.query(models.ProfileInvite).filter(models.ProfileInvite.profile_id == pid).delete()
         db.query(models.ProfileAccess).filter(models.ProfileAccess.profile_id == pid).delete()
         db.query(models.Profile).filter(models.Profile.id == pid).delete()
 
     # 2. Nullify logged_by on readings this user logged on other people's profiles
-    db.query(models.HealthReading).filter(
-        models.HealthReading.logged_by == user.id,
+    db.query(models.GlucoseReading).filter(
+        models.GlucoseReading.logged_by == user.id,
+    ).update({"logged_by": None})
+    db.query(models.BPReading).filter(
+        models.BPReading.logged_by == user.id,
     ).update({"logged_by": None})
 
     # 3. Remove any remaining viewer access entries

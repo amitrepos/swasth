@@ -256,10 +256,13 @@ class TestChatContextAndSummary:
         ).first().profile_id
 
         # Add a reading first
+        max_seq = db.query(models.GlucoseReading).filter(
+            models.GlucoseReading.profile_id == pid
+        ).count()
         reading = models.GlucoseReading(
             profile_id=pid,
             logged_by=test_user.id,
-            sequence_number=0,
+            sequence_number=max_seq,
             glucose_value=200.0,
             glucose_unit="mg/dL",
             status_flag="HIGH",
