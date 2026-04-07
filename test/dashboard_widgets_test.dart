@@ -124,6 +124,168 @@ void main() {
 
       expect(find.text('50'), findsOneWidget);
     });
+
+    testWidgets('urgent state shows call doctor button', (tester) async {
+      await tester.pumpWidget(_wrap(
+        HealthScoreRing(
+          data: {'score': 25, 'insight': 'See your doctor'},
+          isLoading: false,
+          profileId: 1,
+          onTap: () {},
+          onInfoTap: () {},
+          onCallDoctor: () {},
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.text('25'), findsOneWidget);
+      expect(find.byType(ElevatedButton), findsOneWidget);
+    });
+
+    testWidgets('caution state shows score without call button', (tester) async {
+      await tester.pumpWidget(_wrap(
+        HealthScoreRing(
+          data: {'score': 55, 'insight': 'Monitor closely'},
+          isLoading: false,
+          profileId: 1,
+          onTap: () {},
+          onInfoTap: () {},
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.text('55'), findsOneWidget);
+      expect(find.byType(ElevatedButton), findsNothing);
+    });
+
+    testWidgets('trend arrow shows up-arrow when score improved', (tester) async {
+      await tester.pumpWidget(_wrap(
+        HealthScoreRing(
+          data: {'score': 78, 'previous_score': 60, 'insight': ''},
+          isLoading: false,
+          profileId: 1,
+          onTap: () {},
+          onInfoTap: () {},
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.text('↑'), findsOneWidget);
+    });
+
+    testWidgets('trend arrow shows down-arrow when score declined', (tester) async {
+      await tester.pumpWidget(_wrap(
+        HealthScoreRing(
+          data: {'score': 50, 'previous_score': 70, 'insight': ''},
+          isLoading: false,
+          profileId: 1,
+          onTap: () {},
+          onInfoTap: () {},
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.text('↓'), findsOneWidget);
+    });
+
+    testWidgets('no trend arrow when no previous score', (tester) async {
+      await tester.pumpWidget(_wrap(
+        HealthScoreRing(
+          data: {'score': 78, 'insight': ''},
+          isLoading: false,
+          profileId: 1,
+          onTap: () {},
+          onInfoTap: () {},
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.text('↑'), findsNothing);
+      expect(find.text('↓'), findsNothing);
+      expect(find.text('→'), findsNothing);
+    });
+
+    testWidgets('stable trend shows flat arrow', (tester) async {
+      await tester.pumpWidget(_wrap(
+        HealthScoreRing(
+          data: {'score': 78, 'previous_score': 77, 'insight': ''},
+          isLoading: false,
+          profileId: 1,
+          onTap: () {},
+          onInfoTap: () {},
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.text('→'), findsOneWidget);
+    });
+
+    testWidgets('info button fires onInfoTap callback', (tester) async {
+      bool tapped = false;
+      await tester.pumpWidget(_wrap(
+        HealthScoreRing(
+          data: _healthScoreData,
+          isLoading: false,
+          profileId: 1,
+          onTap: () {},
+          onInfoTap: () => tapped = true,
+        ),
+      ));
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.question_mark_rounded));
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('call doctor button fires onCallDoctor callback', (tester) async {
+      bool called = false;
+      await tester.pumpWidget(_wrap(
+        HealthScoreRing(
+          data: {'score': 25, 'insight': ''},
+          isLoading: false,
+          profileId: 1,
+          onTap: () {},
+          onInfoTap: () {},
+          onCallDoctor: () => called = true,
+        ),
+      ));
+      await tester.pump();
+
+      await tester.tap(find.byType(ElevatedButton));
+      expect(called, isTrue);
+    });
+  });
+
+  // =========================================================================
+  // Unit tests for public helpers
+  // =========================================================================
+
+  group('heartColorForScore', () {
+    test('green for healthy scores', () {
+      expect(heartColorForScore(70), const Color(0xFF28A745));
+      expect(heartColorForScore(100), const Color(0xFF28A745));
+    });
+    test('orange for caution scores', () {
+      expect(heartColorForScore(40), const Color(0xFFFF9500));
+      expect(heartColorForScore(69), const Color(0xFFFF9500));
+    });
+    test('red for urgent scores', () {
+      expect(heartColorForScore(0), const Color(0xFFFF3B30));
+      expect(heartColorForScore(39), const Color(0xFFFF3B30));
+    });
+  });
+
+  group('faceStateForScore', () {
+    test('happy for healthy', () => expect(faceStateForScore(80), FaceState.happy));
+    test('neutral for caution', () => expect(faceStateForScore(55), FaceState.neutral));
+    test('worried for urgent', () => expect(faceStateForScore(20), FaceState.worried));
+  });
+
+  group('computeTrendArrow', () {
+    test('null when no previous', () => expect(computeTrendArrow(80, null), isNull));
+    test('up when improved > 3', () => expect(computeTrendArrow(80, 70), '↑'));
+    test('down when declined > 3', () => expect(computeTrendArrow(50, 70), '↓'));
+    test('flat when within deadband', () => expect(computeTrendArrow(80, 78), '→'));
   });
 
   // =========================================================================

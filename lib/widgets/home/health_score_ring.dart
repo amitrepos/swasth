@@ -4,15 +4,21 @@ import '../../theme/app_theme.dart';
 import '../../utils/health_helpers.dart';
 import '../glass_card.dart';
 
+/// Score thresholds for health states.
+const int kHealthyThreshold = 70;
+const int kCautionThreshold = 40;
+const int _trendDeadband = 3;
+
 /// The "Living Heart" wellness-score widget on the home screen.
-/// Replaces the old donut ring with a heart shape whose color, pulse speed,
-/// face icon, and action text communicate health status at a glance.
+/// Heart color, pulse speed, face icon, and action text communicate
+/// health status at a glance for 50+ users with vision problems.
 class HealthScoreRing extends StatefulWidget {
   final Map<String, dynamic>? data;
   final bool isLoading;
   final int? profileId;
   final VoidCallback? onTap;
   final VoidCallback onInfoTap;
+  final VoidCallback? onCallDoctor;
 
   const HealthScoreRing({
     super.key,
@@ -21,6 +27,7 @@ class HealthScoreRing extends StatefulWidget {
     required this.profileId,
     required this.onTap,
     required this.onInfoTap,
+    this.onCallDoctor,
   });
 
   @override
@@ -30,6 +37,7 @@ class HealthScoreRing extends StatefulWidget {
 class _HealthScoreRingState extends State<HealthScoreRing>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
+  CurvedAnimation? _curvedAnimation;
   late Animation<double> _pulseAnimation;
 
   @override
@@ -42,7 +50,17 @@ class _HealthScoreRingState extends State<HealthScoreRing>
   @override
   void didUpdateWidget(covariant HealthScoreRing oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _updatePulse();
+    final oldScore = (oldWidget.data?['score'] as num?)?.toInt() ?? 50;
+    final newScore = (widget.data?['score'] as num?)?.toInt() ?? 50;
+    final oldTier = _tier(oldScore);
+    final newTier = _tier(newScore);
+    if (oldTier != newTier) _updatePulse();
+  }
+
+  int _tier(int score) {
+    if (score >= kHealthyThreshold) return 2;
+    if (score >= kCautionThreshold) return 1;
+    return 0;
   }
 
   void _updatePulse() {
@@ -50,10 +68,10 @@ class _HealthScoreRingState extends State<HealthScoreRing>
     final Duration duration;
     final double maxScale;
 
-    if (score >= 70) {
+    if (score >= kHealthyThreshold) {
       duration = const Duration(milliseconds: 2000);
       maxScale = 1.03;
-    } else if (score >= 40) {
+    } else if (score >= kCautionThreshold) {
       duration = const Duration(milliseconds: 1200);
       maxScale = 1.05;
     } else {
@@ -62,15 +80,20 @@ class _HealthScoreRingState extends State<HealthScoreRing>
     }
 
     _pulseController.stop();
+    _curvedAnimation?.dispose();
     _pulseController.duration = duration;
-    _pulseAnimation = Tween<double>(begin: 1.0, end: maxScale).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    _curvedAnimation = CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
     );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: maxScale)
+        .animate(_curvedAnimation!);
     _pulseController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _curvedAnimation?.dispose();
     _pulseController.dispose();
     super.dispose();
   }
@@ -96,10 +119,10 @@ class _HealthScoreRingState extends State<HealthScoreRing>
     final insight = widget.data?['insight'] as String? ?? '';
     final previousScore = (widget.data?['previous_score'] as num?)?.toInt();
 
-    final heartColor = _heartColor(score);
+    final heartColor = heartColorForScore(score);
     final statusText = _statusText(score, l10n);
-    final hindiText = _hindiStatusText(score);
-    final trendArrow = _trendArrow(score, previousScore);
+    final faceText = _faceText(score, l10n);
+    final trendArrow = computeTrendArrow(score, previousScore);
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -137,12 +160,10 @@ class _HealthScoreRingState extends State<HealthScoreRing>
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Heart shape
                         CustomPaint(
                           size: const Size(190, 176),
-                          painter: _HeartPainter(color: heartColor),
+                          painter: HeartPainter(color: heartColor),
                         ),
-                        // Score + trend arrow
                         Positioned(
                           top: 56,
                           child: Row(
@@ -193,25 +214,20 @@ class _HealthScoreRingState extends State<HealthScoreRing>
                 ),
                 const SizedBox(height: 14),
 
-                // Face icon + Hindi status text
+                // Face icon + status text
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Custom SVG-style face
                     CustomPaint(
                       size: const Size(36, 36),
-                      painter: _FacePainter(
-                        state: score >= 70
-                            ? _FaceState.happy
-                            : score >= 40
-                                ? _FaceState.neutral
-                                : _FaceState.worried,
+                      painter: FacePainter(
+                        state: faceStateForScore(score),
                         color: heartColor,
                       ),
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      hindiText,
+                      faceText,
                       style: TextStyle(
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
@@ -251,18 +267,16 @@ class _HealthScoreRingState extends State<HealthScoreRing>
                 ],
 
                 // Call doctor button — only on urgent
-                if (score < 40) ...[
+                if (score < kCautionThreshold) ...[
                   const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: widget.onTap,
-                      icon: const Text('📞', style: TextStyle(fontSize: 20)),
+                      onPressed: widget.onCallDoctor ?? widget.onTap,
+                      icon: const Icon(Icons.phone, color: Colors.white, size: 22),
                       label: Text(
-                        l10n.localeName == 'hi'
-                            ? 'Doctor se baat karein'
-                            : 'Call your doctor now',
+                        l10n.heartCallDoctor,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -309,39 +323,49 @@ class _HealthScoreRingState extends State<HealthScoreRing>
     );
   }
 
-  /// Solid heart colors — darkened for sunlight readability on budget phones.
-  Color _heartColor(int score) {
-    if (score >= 70) return const Color(0xFF28A745); // darkened green
-    if (score >= 40) return const Color(0xFFFF9500); // solid orange
-    return const Color(0xFFFF3B30); // solid red
-  }
-
   String _statusText(int score, AppLocalizations l10n) {
-    if (score >= 70) return l10n.localeName == 'hi' ? 'बहुत अच्छा!' : "You're doing great";
-    if (score >= 40) return l10n.localeName == 'hi' ? 'ध्यान दें' : 'Monitor closely today';
-    return l10n.localeName == 'hi' ? 'डॉक्टर से बात करें' : 'Call your doctor today';
+    if (score >= kHealthyThreshold) return l10n.heartStatusHealthy;
+    if (score >= kCautionThreshold) return l10n.heartStatusCaution;
+    return l10n.heartStatusUrgent;
   }
 
-  String _hindiStatusText(int score) {
-    if (score >= 70) return 'Sab theek hai';
-    if (score >= 40) return 'Aaj dhyan rakhein';
-    return 'Aaj doctor se baat karein';
+  String _faceText(int score, AppLocalizations l10n) {
+    if (score >= kHealthyThreshold) return l10n.heartFaceHealthy;
+    if (score >= kCautionThreshold) return l10n.heartFaceCaution;
+    return l10n.heartFaceUrgent;
   }
+}
 
-  String? _trendArrow(int score, int? previousScore) {
-    if (previousScore == null) return null;
-    final diff = score - previousScore;
-    if (diff > 3) return '↑';
-    if (diff < -3) return '↓';
-    return '→';
-  }
+// ── Public helpers (used by widget and tests) ───────────────────────────
+
+/// Returns the solid heart color for a given score.
+Color heartColorForScore(int score) {
+  if (score >= kHealthyThreshold) return const Color(0xFF28A745);
+  if (score >= kCautionThreshold) return const Color(0xFFFF9500);
+  return const Color(0xFFFF3B30);
+}
+
+/// Returns the face state for a given score.
+FaceState faceStateForScore(int score) {
+  if (score >= kHealthyThreshold) return FaceState.happy;
+  if (score >= kCautionThreshold) return FaceState.neutral;
+  return FaceState.worried;
+}
+
+/// Returns the trend arrow string, or null if no previous score.
+String? computeTrendArrow(int score, int? previousScore) {
+  if (previousScore == null) return null;
+  final diff = score - previousScore;
+  if (diff > _trendDeadband) return '↑';
+  if (diff < -_trendDeadband) return '↓';
+  return '→';
 }
 
 // ── Heart Shape Painter ─────────────────────────────────────────────────
 
-class _HeartPainter extends CustomPainter {
+class HeartPainter extends CustomPainter {
   final Color color;
-  const _HeartPainter({required this.color});
+  const HeartPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -353,7 +377,6 @@ class _HeartPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Heart shape — proportional to widget size
     path.moveTo(w * 0.5, h * 0.93);
     path.cubicTo(w * 0.5, h * 0.93, w * 0.08, h * 0.62, w * 0.08, h * 0.36);
     path.cubicTo(w * 0.08, h * 0.19, w * 0.21, h * 0.10, w * 0.33, h * 0.10);
@@ -365,8 +388,7 @@ class _HeartPainter extends CustomPainter {
 
     canvas.drawPath(path, paint);
 
-    // Subtle ECG watermark at ~7% opacity — invisible to low-vision,
-    // medical feel for doctors and younger family members
+    // ECG watermark at ~7% opacity
     final ecgPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.07)
       ..style = PaintingStyle.stroke
@@ -393,40 +415,39 @@ class _HeartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_HeartPainter old) => old.color != color;
+  bool shouldRepaint(HeartPainter old) => old.color != color;
 }
 
-// ── Face Painter (replaces emoji for cross-device consistency) ───────────
+// ── Face Painter ────────────────────────────────────────────────────────
 
-enum _FaceState { happy, neutral, worried }
+enum FaceState { happy, neutral, worried }
 
-class _FacePainter extends CustomPainter {
-  final _FaceState state;
+class FacePainter extends CustomPainter {
+  final FaceState state;
   final Color color;
-  const _FacePainter({required this.state, required this.color});
+  const FacePainter({required this.state, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 2;
 
-    // Circle outline
     final circlePaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5;
     canvas.drawCircle(center, radius, circlePaint);
 
-    // Eyes
     final eyePaint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
     canvas.drawCircle(
-        Offset(center.dx - radius * 0.3, center.dy - radius * 0.15), 2.5, eyePaint);
+        Offset(center.dx - radius * 0.3, center.dy - radius * 0.15),
+        2.5, eyePaint);
     canvas.drawCircle(
-        Offset(center.dx + radius * 0.3, center.dy - radius * 0.15), 2.5, eyePaint);
+        Offset(center.dx + radius * 0.3, center.dy - radius * 0.15),
+        2.5, eyePaint);
 
-    // Mouth
     final mouthPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
@@ -438,22 +459,25 @@ class _FacePainter extends CustomPainter {
     final mx = center.dx;
 
     switch (state) {
-      case _FaceState.happy:
+      case FaceState.happy:
         mouthPath.moveTo(mx - radius * 0.35, my - radius * 0.05);
-        mouthPath.quadraticBezierTo(mx, my + radius * 0.35, mx + radius * 0.35, my - radius * 0.05);
-      case _FaceState.neutral:
+        mouthPath.quadraticBezierTo(
+            mx, my + radius * 0.35, mx + radius * 0.35, my - radius * 0.05);
+      case FaceState.neutral:
         mouthPath.moveTo(mx - radius * 0.3, my + radius * 0.05);
         mouthPath.lineTo(mx + radius * 0.3, my + radius * 0.05);
-      case _FaceState.worried:
+      case FaceState.worried:
         mouthPath.moveTo(mx - radius * 0.35, my + radius * 0.15);
-        mouthPath.quadraticBezierTo(mx, my - radius * 0.2, mx + radius * 0.35, my + radius * 0.15);
+        mouthPath.quadraticBezierTo(
+            mx, my - radius * 0.2, mx + radius * 0.35, my + radius * 0.15);
     }
 
     canvas.drawPath(mouthPath, mouthPaint);
   }
 
   @override
-  bool shouldRepaint(_FacePainter old) => old.state != state || old.color != color;
+  bool shouldRepaint(FacePainter old) =>
+      old.state != state || old.color != color;
 }
 
 /// Shows the wellness status explanation bottom sheet.
@@ -493,7 +517,8 @@ class StatusInfoSheet extends StatelessWidget {
         color: AppColors.bgPage,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 24),
+      padding: EdgeInsets.fromLTRB(
+          20, 16, 20, MediaQuery.of(context).padding.bottom + 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,13 +533,9 @@ class StatusInfoSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'WELLNESS STATUS',
-            style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary, letterSpacing: 2,
-            ),
-          ),
+          const Text('WELLNESS STATUS',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary, letterSpacing: 2)),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -524,67 +545,42 @@ class StatusInfoSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: current.color.withValues(alpha: 0.35)),
             ),
-            child: Row(
-              children: [
-                Text(current.emoji, style: const TextStyle(fontSize: 22)),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Your current status',
-                      style: TextStyle(fontSize: 11, color: current.color.withValues(alpha: 0.8)),
-                    ),
-                    Text(
-                      current.label,
-                      style: TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w800, color: current.color,
-                      ),
-                    ),
-                    if (current.subLabel != null)
-                      Text(
-                        current.subLabel!,
-                        style: TextStyle(fontSize: 12, color: current.color.withValues(alpha: 0.8)),
-                      ),
-                  ],
-                ),
-              ],
-            ),
+            child: Row(children: [
+              Text(current.emoji, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 12),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Your current status',
+                    style: TextStyle(fontSize: 11,
+                        color: current.color.withValues(alpha: 0.8))),
+                Text(current.label,
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
+                        color: current.color)),
+                if (current.subLabel != null)
+                  Text(current.subLabel!,
+                      style: TextStyle(fontSize: 12,
+                          color: current.color.withValues(alpha: 0.8))),
+              ]),
+            ]),
           ),
-          const Text(
-            'WHAT EACH LEVEL MEANS',
-            style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary, letterSpacing: 2,
-            ),
-          ),
+          const Text('WHAT EACH LEVEL MEANS',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary, letterSpacing: 2)),
           const SizedBox(height: 12),
           ...levels.map((lvl) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(lvl.emoji, style: const TextStyle(fontSize: 18)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lvl.label,
-                        style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700, color: lvl.color,
-                        ),
-                      ),
-                      Text(
-                        lvl.desc,
-                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(lvl.emoji, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 12),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(lvl.label, style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700, color: lvl.color)),
+                  Text(lvl.desc, style: const TextStyle(
+                      fontSize: 13, color: AppColors.textSecondary, height: 1.4)),
+                ],
+              )),
+            ]),
           )),
         ],
       ),

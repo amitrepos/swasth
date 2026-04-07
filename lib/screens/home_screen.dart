@@ -155,6 +155,14 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  Future<void> _callDoctor(String number) async {
+    final cleaned = number.replaceAll(RegExp(r'[\s\-()]'), '');
+    final uri = Uri.parse('tel:$cleaned');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
   void _handleAddReading({required String deviceType, required String btDeviceType}) {
     if (_activeProfileId == null) {
       final l10n = AppLocalizations.of(context)!;
@@ -266,6 +274,9 @@ class _HomeScreenState extends State<HomeScreen>
                                       ShellScreen.switchToTab(4);
                                     }
                                   }
+                                : null,
+                            onCallDoctor: _activeProfile?.doctorWhatsapp?.isNotEmpty == true
+                                ? () => _callDoctor(_activeProfile!.doctorWhatsapp!)
                                 : null,
                             onInfoTap: () {
                               final score = (data?['score'] as num?)?.toInt() ?? 50;
