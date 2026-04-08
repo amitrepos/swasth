@@ -111,6 +111,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneLabel => 'Phone Number';
 
   @override
+  String get phoneValidationEmpty => 'Please enter your phone number';
+
+  @override
+  String get phoneValidationDigits => 'Phone number can only contain digits';
+
+  @override
+  String get phoneValidationLength => 'Phone number must be 10-15 digits';
+
+  @override
   String get confirmPasswordLabel => 'Confirm Password';
 
   @override

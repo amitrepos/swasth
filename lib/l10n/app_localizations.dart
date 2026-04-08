@@ -302,6 +302,24 @@ abstract class AppLocalizations {
   /// **'Phone Number'**
   String get phoneLabel;
 
+  /// No description provided for @phoneValidationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your phone number'**
+  String get phoneValidationEmpty;
+
+  /// No description provided for @phoneValidationDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number can only contain digits'**
+  String get phoneValidationDigits;
+
+  /// No description provided for @phoneValidationLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number must be 10-15 digits'**
+  String get phoneValidationLength;
+
   /// No description provided for @confirmPasswordLabel.
   ///
   /// In en, this message translates to:
