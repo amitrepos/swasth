@@ -179,6 +179,40 @@ class TestCarbGlucoseCorrelation:
         tip = carb_glucose_correlation(meals, readings)
         assert tip is None
 
+    def test_no_insight_when_no_glucose_readings(self):
+        """Meals exist but no glucose readings → None."""
+        now = datetime.now(timezone.utc)
+        meals = [FakeMeal("HIGH_CARB", "DINNER", now - timedelta(days=i)) for i in range(10)]
+        tip = carb_glucose_correlation(meals, [])
+        assert tip is None
+
+    def test_no_insight_when_weak_correlation(self):
+        """Heavy meals but glucose stays normal → pct < 40 → None."""
+        now = datetime.now(timezone.utc)
+        meals = []
+        readings = []
+        for i in range(10):
+            ts = now - timedelta(days=i)
+            meals.append(FakeMeal("HIGH_CARB", "DINNER", ts))
+            # All glucose is normal (below 130) → no correlation
+            readings.append(FakeReading(100, ts + timedelta(hours=2)))
+        tip = carb_glucose_correlation(meals, readings)
+        assert tip is None
+
+    def test_reading_with_no_timestamp_skipped(self):
+        """Readings without timestamp attribute are safely skipped."""
+        now = datetime.now(timezone.utc)
+        meals = [FakeMeal("HIGH_CARB", "DINNER", now - timedelta(days=i)) for i in range(10)]
+
+        class NoTsReading:
+            glucose_value = 170
+            reading_type = "glucose"
+
+        readings = [NoTsReading() for _ in range(10)]
+        # Should not crash, should return None (can't compute delta)
+        tip = carb_glucose_correlation(meals, readings)
+        assert tip is None
+
 
 # ---------------------------------------------------------------------------
 # Rule 5: weekly_food_pattern
@@ -267,3 +301,23 @@ class TestGenerateMealInsights:
         insights = generate_meal_insights(meals, readings)
         # At minimum: high_carb_dinner + sweet_alert
         assert len(insights) >= 2
+
+    def test_includes_correlation_when_enough_data(self):
+        """With 10+ days of heavy meals + high glucose, correlation tip appears."""
+        now = datetime.now(timezone.utc)
+        meals = []
+        readings = []
+        for i in range(10):
+            ts = now - timedelta(days=i)
+            meals.append(FakeMeal("HIGH_CARB", "DINNER", ts))
+            readings.append(FakeReading(170, ts + timedelta(hours=2), status_flag="HIGH"))
+        insights = generate_meal_insights(meals, readings)
+        # Should include correlation + weekly pattern
+        assert any("pattern" in t.lower() or "awareness" in t.lower() for t in insights)
+
+    def test_includes_weekly_pattern(self):
+        """Weekly pattern tip included when 3+ meals."""
+        now = datetime.now(timezone.utc)
+        meals = [FakeMeal("LOW_CARB", "LUNCH", now - timedelta(days=i)) for i in range(5)]
+        insights = generate_meal_insights(meals, [])
+        assert any("week" in t.lower() for t in insights)
