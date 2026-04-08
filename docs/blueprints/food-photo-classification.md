@@ -21,6 +21,24 @@ Patient photographs their meal → Gemini classifies carb level → app shows he
 ### Noted (defer to post-pilot)
 8. **Medication interaction** — correlation may be misleading if patient takes metformin. Document as limitation.
 
+## Stage 3 Validation — Healthify UX Review (2026-04-08)
+
+**Overall score: 7/10. Approved with Must Fix items below.**
+
+### Must Fix (incorporated into frontend steps 4-6)
+1. **Hindi label PRIMARY (20sp bold), English secondary (14sp)** — not mixed English labels
+2. **Dashboard badges use emotional language** — "Good choice" / "Heavy meal" / "Had sweets" not "LOW_CARB"
+3. **Color-blind safe: add icons alongside colors** — ✅/➖/⚠️/❗ not just red/yellow/green
+4. **Full-width stacked buttons (not 2-column grid)** — 72dp height, one column, top-to-bottom scan
+5. **"Change" button must look tappable** — outlined border, not text link
+6. **Save button fixed at screen bottom** — elderly users scroll past and get lost
+7. **Disclaimer visible above save button** — 12sp, textSecondary
+
+### Should Fix
+8. **Track "More options" taps** — analytics to decide if 3→5 buttons needed post-pilot
+9. **Dashboard empty state: warm language + tappable meal pills** — not status text
+10. **Quick Select result screen: 64x64 emoji if no photo** — not blank space
+
 ## Architecture Fit
 - Backend: new `routes_meals.py` (mirrors `routes_health.py` pattern)
 - Model: `MealLog` table in `models.py` ✅ DONE (Step 1 complete)

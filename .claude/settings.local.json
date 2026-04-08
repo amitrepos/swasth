@@ -187,5 +187,9 @@
         ]
       }
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "github",
+    "context7"
+  ]
 }
