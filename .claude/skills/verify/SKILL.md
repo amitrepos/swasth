@@ -40,13 +40,18 @@ flutter test 2>&1
 - **PASS:** All tests pass
 - **FAIL:** Fix code (not tests) unless test is genuinely wrong
 
-## Phase 4: COVERAGE CHECK
+## Phase 4: COVERAGE CHECK (MANDATORY — blocks PR)
 ```bash
+# Install pytest-cov if missing
+pip3 install --break-system-packages pytest-cov 2>/dev/null || true
+
+# Run coverage on changed backend files
 cd backend && TESTING=true python -m pytest tests/ --cov=. --cov-config=.coveragerc --cov-report=term-missing -q 2>&1
 ```
-- **PASS:** ≥80% on changed files
-- **WARN:** <80% — list uncovered lines, suggest tests
-- Coverage on NEW code must be ≥90%
+- **PASS:** ≥85% on changed files, ≥90% on NEW code
+- **FAIL:** <85% on any changed file — write tests BEFORE proceeding. Do NOT skip.
+- If `pytest-cov` cannot be installed, this is a FAIL, not a WARN.
+- Coverage must be checked on EACH changed backend .py file individually, not just overall.
 
 ## Phase 5: SECURITY SCAN
 Quick grep scan for common issues:

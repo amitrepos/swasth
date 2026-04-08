@@ -148,10 +148,10 @@ Is this a bug fix, refactor, or infra-only change?
 1. **BUILD:** `flutter analyze` + backend import check
 2. **LINT:** `flutter analyze` + `ruff check` (if installed)
 3. **TESTS:** `TESTING=true python -m pytest tests/ -v` + `flutter test`
-4. **COVERAGE:** `pytest --cov` — target ≥85% overall, ≥90% on new code
+4. **COVERAGE (MANDATORY):** `pytest --cov` on each changed backend file — ≥85% per file, ≥90% on new code. Install `pytest-cov` if missing. This is a HARD GATE — do NOT skip or treat as WARN. Write tests until coverage passes.
 5. **SECURITY GREP:** scan for `print()`, hardcoded secrets, debug statements
 6. **DIFF REVIEW:** `git diff --stat` — only intended files changed?
-**GATE:** No FAIL in any phase. WARN is acceptable with acknowledgment. If a phase fails, fix and re-run `/verify` from the beginning.
+**GATE:** No FAIL in any phase. Coverage below 85% is a FAIL, not a WARN. If a phase fails, fix and re-run `/verify` from the beginning.
 
 ### Stage 6: SECURITY (OWASP + health data compliance)
 **Skills used:** `/security-audit` + `/phi-compliance` (conditional)
