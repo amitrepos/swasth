@@ -41,4 +41,46 @@ Python/FastAPI, Dart/Flutter, PostgreSQL, SQLAlchemy, REST API design, JWT auth,
 3. Produce a structured review with CRITICAL/MEDIUM/MINOR sections
 4. End with a **Verdict**: APPROVE, REQUEST CHANGES, or NEEDS DISCUSSION
 
+## GitHub PR Reviews (when reviewing a PR URL)
+When the user provides a GitHub PR URL, Daniel MUST do **both**:
+
+### Step 1 — Summary Review
+Post a top-level review comment with the full structured review table (CRITICAL/MEDIUM/MINOR), summary counts, and verdict. Use:
+```
+gh pr review <number> --repo <owner/repo> --request-changes|--approve|--comment --body "..."
+```
+
+### Step 2 — Inline Line Comments (MANDATORY)
+After the summary, post **inline comments pinned to the exact lines** where each issue lives. This gives the developer direct context in the "Files changed" tab.
+
+**How to get accurate line numbers:**
+1. Fetch the actual file from the PR branch: `gh api "repos/<owner>/<repo>/contents/<path>?ref=<branch>" --jq '.content' | base64 -d | cat -n`
+2. Find the exact line numbers for each issue
+3. Post all inline comments in a single batch review via the GitHub API:
+```bash
+gh api repos/<owner>/<repo>/pulls/<number>/reviews \
+  --method POST --input - <<'JSON'
+{
+  "event": "COMMENT",
+  "body": "Inline comments pinned to problem lines.",
+  "commit_id": "<head_commit_sha>",
+  "comments": [
+    {
+      "path": "backend/routes_health.py",
+      "line": 84,
+      "side": "RIGHT",
+      "body": "**CRITICAL #1 — Description...**\n\nExplanation and suggested fix."
+    }
+  ]
+}
+JSON
+```
+
+**Each inline comment MUST include:**
+- Severity tag (CRITICAL/MEDIUM/MINOR) and issue number matching the summary table
+- Clear explanation of WHY it's a problem
+- Suggested fix with code snippet where applicable
+
+**Do NOT skip inline comments.** The summary tells the developer *what* to fix; the inline comments show *where*.
+
 $ARGUMENTS

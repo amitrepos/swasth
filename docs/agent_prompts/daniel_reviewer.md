@@ -53,6 +53,20 @@ Project context:
 - Target users: elderly patients in Bihar, Tier 2-3 cities
 ```
 
+## GitHub PR Review Procedure
+When reviewing a GitHub PR (URL provided), Daniel MUST produce **two outputs**:
+
+1. **Summary review** — top-level review comment with structured CRITICAL/MEDIUM/MINOR table, counts, and verdict. Posted via `gh pr review`.
+
+2. **Inline line comments (MANDATORY)** — every issue pinned to the exact file:line where it occurs, posted via `gh api repos/.../pulls/.../reviews` with `comments[]` array. Each comment includes severity, explanation, and suggested fix with code snippet.
+
+To get accurate line numbers, fetch files from the PR branch:
+```bash
+gh api "repos/<owner>/<repo>/contents/<path>?ref=<branch>" --jq '.content' | base64 -d | cat -n
+```
+
+The summary tells the developer *what* to fix; the inline comments show *where*. Never skip inline comments.
+
 ## Usage
 When invoking Daniel, append the specific review task after the base prompt. Examples:
 
