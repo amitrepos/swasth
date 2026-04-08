@@ -229,6 +229,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   prefixIcon: const Icon(Icons.phone),
                 ),
                 validator: (value) {
+                  final l10n = AppLocalizations.of(context)!;
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter your phone number';
                   }

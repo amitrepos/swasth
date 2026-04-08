@@ -111,6 +111,15 @@ class AppLocalizationsHi extends AppLocalizations {
   String get phoneLabel => 'फोन नंबर';
 
   @override
+  String get phoneValidationEmpty => 'कृपया अपना फोन नंबर डालें';
+
+  @override
+  String get phoneValidationDigits => 'फोन नंबर में केवल अंक होने चाहिए';
+
+  @override
+  String get phoneValidationLength => 'फोन नंबर 10-15 अंकों का होना चाहिए';
+
+  @override
   String get confirmPasswordLabel => 'पासवर्ड दोबारा डालें';
 
   @override
