@@ -3,6 +3,33 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-04-08 — Food Photo Classification feature (Steps 1-6) + pipeline improvements
+
+### Food Photo Classification (PR #65)
+- **Step 3**: 5 meal-glucose insight rules in `health_utils.py` — suggestive language enforced, 26 tests
+- **Step 4**: `food_photo_screen.dart` + `meal_result_screen.dart` — camera capture, 5s timeout, carb badge
+- **Step 5**: `quick_select_screen.dart` + `meal_service.dart` + `meal_log.dart` — 3 buttons, single-locale
+- **Step 6**: Dashboard integration — `meal_summary_card.dart`, `meal_input_modal.dart`, Meals tile replaces Steps in MetricsGrid
+- Fixed dual-language buttons to single-locale (AppLocalizations)
+- 55 new tests (backend + Flutter), 100% coverage on health_utils.py
+- Validated by: Dr. Rajesh, Healthify UX, Legal, Security audit, Daniel review
+- HTML prototype: `docs/meal_screens_prototype.html`
+
+### Pipeline Improvements
+- **Coverage is now a hard gate** — was WARN, now FAIL if <85%. Tiered: 95% health-critical, 90% auth, 85% UI
+- **New QA expert skill** (`/qa-review` — Priya) — fires at Stage 5, reviews test quality not just coverage %
+- **Pre-Production E2E gate** — Flutter integration_test for automated user flow testing before prod deployment
+- Stage 5 expanded from 6 to 7 phases
+- Fixed CI failure: `test_parse_image_success` needed `settings` mock for environments without API keys
+
+### Task Tracker Updates
+- D23: AI responses in user's language (new — not started)
+- D24: Food Photo Classification (done)
+- D25: E2E integration tests (new — not started)
+- D26: Boundary value tests for health classifications (new — not started)
+
+---
+
 ## 2026-04-07 — PR reviews, pitch deck, Living Heart widget, sub-agents, branch cleanup
 
 ### Branch Cleanup
@@ -1956,3 +1983,14 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 11:21:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
   - 11:21:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
   - 11:22:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 11:43:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meal_insights.py
+  - 11:43:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meal_insights.py
+  - 11:44:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_utils_classify.py
+  - 11:48:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/verify/SKILL.md
+  - 11:48:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 11:54:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/qa-review/SKILL.md
+  - 11:54:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 11:54:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 11:54:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 12:00:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meals.py
+  - 12:09:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
