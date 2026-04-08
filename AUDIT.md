@@ -1873,3 +1873,86 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 10:16:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/claude-toolkit-template/HOW-IT-WORKS.md
   - 10:17:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.gitignore
   - 10:20:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.gitignore
+  - 10:24:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/blueprints/food-photo-classification.md
+  - 10:25:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meals.py
+  - 10:25:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meals.py
+  - 10:27:23 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_meals.py
+  - 10:27:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 10:27:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 10:32:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/blueprints/food-photo-classification.md
+  - 10:34:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/blueprints/food-photo-classification.md
+  - 10:36:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/compact-state.md
+
+## 2026-04-08 — Claude Code Toolkit + Food Feature Steps 1-2
+
+### Toolkit (inspired by github.com/affaan-m/everything-claude-code)
+- Created `RULES.md`: Must Always/Must Never guardrails, model routing table
+- Created `WORKING-CONTEXT.md`: live sprint board
+- Created `.mcp.json`: GitHub + Context7 MCP servers
+- Created 15 skills in `.claude/skills/`: review, tdd, verify, security-audit, ship, blueprint, council, ux-review, doctor-feedback, legal-check, phi-compliance, safety-guard, learn, strategic-compact, ux-expert
+- Created `.claude/scripts/save-session.sh` + `load-session.sh`: session persistence
+- Updated `.claude/settings.local.json`: 7 hooks (SessionStart, Stop, PreCompact, block-no-verify, config-protection, auto-format, audit-log)
+- Updated `CLAUDE.md`: 9-stage enforced pipeline with domain expert validation at Stage 3
+- Created `docs/claude-toolkit-template/`: portable template (5 files)
+- Updated `.gitignore`: track all .claude/ files except secrets
+
+### Food Photo Classification (Steps 1-2 of 6)
+- Created `backend/models.py` MealLog class: profile_id, category, glucose_impact, tip_en/hi, meal_type, photo_path, input_method, confidence, user_corrected_category
+- Created `backend/schemas.py`: MealLogCreate, MealLogResponse, FoodClassificationResponse with enum validation
+- Created `backend/routes_meals.py`: POST /meals, GET /meals, GET /meals/today, DELETE /meals/{id}, POST /meals/parse-image
+- Registered meals router in `backend/main.py`
+- Created `backend/tests/test_meals.py`: 23 tests (model, schema, CRUD, parse-image, auth, access control)
+- Created `docs/blueprints/food-photo-classification.md`: 6-step blueprint with 3 expert validations
+
+### Expert Validations (Stage 3)
+- Dr. Rajesh: Quick Select primary, 3 buttons, soft language, photo privacy
+- Healthify UX: Hindi primary labels, stacked buttons, color-blind icons, fixed save
+- Legal: EXIF stripping (HIGH), consent update (HIGH), bilingual disclaimer (HIGH)
+
+367 backend tests + 97 frontend tests passing. Zero regressions.
+  - 10:44:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meal_insights.py
+  - 10:45:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/health_utils.py
+  - 10:45:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 10:45:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 10:45:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py
+  - 10:50:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/daniel-review/SKILL.md
+  - 10:50:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/agent_prompts/daniel_reviewer.md
+  - 10:51:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/meal_log.dart
+  - 10:52:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/meal_service.dart
+  - 10:52:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/food_photo_screen.dart
+  - 10:53:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/quick_select_screen.dart
+  - 10:53:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 10:53:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/meal_result_screen.dart
+  - 10:53:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 10:53:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 10:53:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 10:53:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/screens/quick_select_screen_test.dart
+  - 10:54:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/models/meal_log.dart
+  - 10:54:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/meal_service.dart
+  - 10:54:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/screens/food_photo_screen_test.dart
+  - 10:54:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/quick_select_screen.dart
+  - 10:54:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/meal_result_screen.dart
+  - 10:55:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/food_photo_screen.dart
+  - 11:01:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/meal_screens_prototype.html
+  - 11:11:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/meal_screens_prototype.html
+  - 11:11:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/meal_screens_prototype.html
+  - 11:12:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/meal_screens_prototype.html
+  - 11:12:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/meal_screens_prototype.html
+  - 11:12:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/meal_screens_prototype.html
+  - 11:16:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 11:17:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 11:18:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 11:18:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/quick_select_screen.dart
+  - 11:18:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/quick_select_screen.dart
+  - 11:18:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/screens/quick_select_screen_test.dart
+  - 11:18:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/screens/quick_select_screen_test.dart
+  - 11:18:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/meal_input_modal.dart
+  - 11:19:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/meal_summary_card.dart
+  - 11:19:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 11:19:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart
+  - 11:20:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:20:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:20:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 11:21:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 11:21:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 11:22:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/metrics_grid.dart

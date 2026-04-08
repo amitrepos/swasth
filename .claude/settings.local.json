@@ -118,9 +118,25 @@
       "Bash(rmdir /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/save-session.sh:*)",
-      "Bash(/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/load-session.sh:*)"
+      "Bash(/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/load-session.sh:*)",
+      "mcp__github__get_pull_request",
+      "mcp__github__get_pull_request_files",
+      "mcp__github__create_pull_request_review",
+      "Bash(TESTING=true python -m pytest tests/test_meal_insights.py -v --tb=short)",
+      "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py -v --tb=short)",
+      "mcp__github__get_file_contents",
+      "Bash(TESTING=true python3 -m pytest tests/ -v --tb=short)",
+      "Bash(TESTING=true python3 -m pytest tests/ -v --tb=short --ignore=tests/test_timezone.py)",
+      "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py tests/test_meals.py tests/test_health_utils.py tests/test_health_score.py -v --tb=short)",
+      "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py tests/test_meals.py tests/test_health_score.py -v --tb=short)",
+      "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py tests/test_meals.py -v --tb=short)",
+      "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py tests/test_meals.py --cov=health_utils --cov=routes_meals --cov-report=term-missing -q)"
     ]
   },
+  "enabledMcpjsonServers": [
+    "github",
+    "context7"
+  ],
   "hooks": {
     "PreToolUse": [
       {

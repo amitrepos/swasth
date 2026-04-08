@@ -1,6 +1,7 @@
 """Tests for Meal Logging feature — MealLog model, schemas, and API endpoints."""
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from unittest.mock import patch, MagicMock
 
 
 # ---------------------------------------------------------------------------
@@ -220,3 +221,185 @@ class TestMealLogSchemas:
             created_at=datetime.now(timezone.utc),
         )
         assert resp.id == 1
+
+
+# ---------------------------------------------------------------------------
+# API endpoint tests
+# ---------------------------------------------------------------------------
+
+def _get_profile_id(db, user_id):
+    """Helper to get the test user's profile ID."""
+    import models
+    access = db.query(models.ProfileAccess).filter_by(user_id=user_id).first()
+    return access.profile_id
+
+
+class TestMealCreateEndpoint:
+    """Test POST /meals"""
+
+    def test_create_meal_quick_select(self, client, auth_headers, db, test_user):
+        profile_id = _get_profile_id(db, test_user.id)
+        resp = client.post("/api/meals", json={
+            "profile_id": profile_id,
+            "category": "HIGH_CARB",
+            "glucose_impact": "HIGH",
+            "meal_type": "DINNER",
+            "input_method": "QUICK_SELECT",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }, headers=auth_headers)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["category"] == "HIGH_CARB"
+        assert data["input_method"] == "QUICK_SELECT"
+        assert data["id"] is not None
+
+    def test_create_meal_requires_auth(self, client):
+        resp = client.post("/api/meals", json={
+            "profile_id": 1,
+            "category": "HIGH_CARB",
+            "glucose_impact": "HIGH",
+            "meal_type": "DINNER",
+            "input_method": "QUICK_SELECT",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        assert resp.status_code == 401
+
+    def test_create_meal_invalid_category(self, client, auth_headers, db, test_user):
+        profile_id = _get_profile_id(db, test_user.id)
+        resp = client.post("/api/meals", json={
+            "profile_id": profile_id,
+            "category": "JUNK_FOOD",
+            "glucose_impact": "HIGH",
+            "meal_type": "DINNER",
+            "input_method": "QUICK_SELECT",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }, headers=auth_headers)
+        assert resp.status_code == 422
+
+
+class TestMealListEndpoint:
+    """Test GET /meals"""
+
+    def test_list_meals_empty(self, client, auth_headers, db, test_user):
+        profile_id = _get_profile_id(db, test_user.id)
+        resp = client.get(f"/api/meals?profile_id={profile_id}", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_list_meals_returns_created(self, client, auth_headers, db, test_user):
+        profile_id = _get_profile_id(db, test_user.id)
+        # Create a meal first
+        client.post("/api/meals", json={
+            "profile_id": profile_id,
+            "category": "LOW_CARB",
+            "glucose_impact": "LOW",
+            "meal_type": "LUNCH",
+            "input_method": "QUICK_SELECT",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }, headers=auth_headers)
+
+        resp = client.get(f"/api/meals?profile_id={profile_id}", headers=auth_headers)
+        assert resp.status_code == 200
+        meals = resp.json()
+        assert len(meals) >= 1
+        assert meals[0]["category"] == "LOW_CARB"
+
+    def test_list_meals_requires_auth(self, client):
+        resp = client.get("/api/meals?profile_id=1")
+        assert resp.status_code == 401
+
+
+class TestMealTodayEndpoint:
+    """Test GET /meals/today"""
+
+    def test_today_meals(self, client, auth_headers, db, test_user):
+        profile_id = _get_profile_id(db, test_user.id)
+        # Create today's meal
+        client.post("/api/meals", json={
+            "profile_id": profile_id,
+            "category": "SWEETS",
+            "glucose_impact": "VERY_HIGH",
+            "meal_type": "SNACK",
+            "input_method": "QUICK_SELECT",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }, headers=auth_headers)
+
+        resp = client.get(f"/api/meals/today?profile_id={profile_id}", headers=auth_headers)
+        assert resp.status_code == 200
+        meals = resp.json()
+        assert len(meals) >= 1
+
+
+class TestMealDeleteEndpoint:
+    """Test DELETE /meals/{id}"""
+
+    def test_delete_meal(self, client, auth_headers, db, test_user):
+        profile_id = _get_profile_id(db, test_user.id)
+        # Create then delete
+        create_resp = client.post("/api/meals", json={
+            "profile_id": profile_id,
+            "category": "HIGH_PROTEIN",
+            "glucose_impact": "LOW",
+            "meal_type": "BREAKFAST",
+            "input_method": "QUICK_SELECT",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }, headers=auth_headers)
+        meal_id = create_resp.json()["id"]
+
+        del_resp = client.delete(f"/api/meals/{meal_id}", headers=auth_headers)
+        assert del_resp.status_code == 200
+
+    def test_delete_nonexistent_meal(self, client, auth_headers):
+        resp = client.delete("/api/meals/99999", headers=auth_headers)
+        assert resp.status_code == 404
+
+
+class TestMealParseImage:
+    """Test POST /meals/parse-image"""
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_meals.settings")
+    def test_parse_image_success(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
+        mock_vision.return_value = '{"category": "HIGH_CARB", "glucose_impact": "HIGH", "tip_en": "A short walk after meals may help keep sugar levels stable.", "tip_hi": "खाने के बाद थोड़ी सैर करना शुगर को स्थिर रखने में मदद कर सकता है।", "confidence": 0.88}'
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["category"] == "HIGH_CARB"
+        assert data["confidence"] == 0.88
+        assert "may" in data["tip_en"].lower() or "consider" in data["tip_en"].lower()
+
+    @patch("ai_service.generate_vision_insight")
+    def test_parse_image_returns_error_on_failure(self, mock_vision, client, auth_headers, db, test_user):
+        mock_vision.return_value = None  # Gemini failed
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        assert "error" in resp.json()
+
+    def test_parse_image_requires_auth(self, client):
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+        resp = client.post(
+            "/api/meals/parse-image?profile_id=1",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+        )
+        assert resp.status_code == 401

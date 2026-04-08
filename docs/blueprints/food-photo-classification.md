@@ -3,33 +3,78 @@
 ## Objective
 Patient photographs their meal → Gemini classifies carb level → app shows health tip → stores for glucose correlation over time.
 
+## Stage 3 Validation — Dr. Rajesh Feedback (2026-04-08)
+
+**Overall score: 6.2/10. Approved with Must Fix items below.**
+
+### Must Fix (incorporated into steps below)
+1. **Quick Select is DEFAULT entry point**, Photo is secondary. Patients won't photograph food.
+2. **3 buttons for patients** (Heavy/Light/Sweets), not 5. Keep 5 categories internally for AI.
+3. **Soften ALL tip language** — "may help", "consider", never "do this". Add disclaimer.
+4. **Photo privacy** — shared-profile viewers see meal logs (category+time) but NOT photos.
+5. **Add disclaimer** — "Tips are for general wellness, not medical advice."
+
+### Should Fix
+6. **Reduce Gemini timeout to 3-5 seconds** (Bihar patients assume it's broken after 3s).
+7. **Doctor dashboard** — add meal-glucose correlation tab to admin panel.
+
+### Noted (defer to post-pilot)
+8. **Medication interaction** — correlation may be misleading if patient takes metformin. Document as limitation.
+
+## Stage 3 Validation — Healthify UX Review (2026-04-08)
+
+**Overall score: 7/10. Approved with Must Fix items below.**
+
+### Must Fix (incorporated into frontend steps 4-6)
+1. **Hindi label PRIMARY (20sp bold), English secondary (14sp)** — not mixed English labels
+2. **Dashboard badges use emotional language** — "Good choice" / "Heavy meal" / "Had sweets" not "LOW_CARB"
+3. **Color-blind safe: add icons alongside colors** — ✅/➖/⚠️/❗ not just red/yellow/green
+4. **Full-width stacked buttons (not 2-column grid)** — 72dp height, one column, top-to-bottom scan
+5. **"Change" button must look tappable** — outlined border, not text link
+6. **Save button fixed at screen bottom** — elderly users scroll past and get lost
+7. **Disclaimer visible above save button** — 12sp, textSecondary
+
+### Should Fix
+8. **Track "More options" taps** — analytics to decide if 3→5 buttons needed post-pilot
+9. **Dashboard empty state: warm language + tappable meal pills** — not status text
+10. **Quick Select result screen: 64x64 emoji if no photo** — not blank space
+
+## Stage 3 Validation — Legal Review (2026-04-08)
+
+### HIGH (must fix before pilot)
+1. **Strip EXIF metadata from food photos** — remove GPS, camera model before storage. Use `piexif` library.
+2. **Update consent screen** to cover food photo collection + storage purpose. Current consent (D18) only covers health readings.
+3. **Bilingual disclaimer on tip screen** — Hindi + English, visible where tip is shown.
+
+### MEDIUM (fix before pilot launch)
+4. **Separate AI training consent toggle** — "Allow photos to improve AI accuracy" (default: OFF).
+5. **90-day photo retention policy** for pilot — delete photos, keep classification data.
+6. **Right to deletion must include photos** — update deletion endpoint.
+7. **Correlation language: "pattern" not "prediction"** — always with disclaimer.
+8. **Gemini cross-border processing disclosure** — one line in consent about AI processing.
+
+### LOW (post-funding)
+9. Photo encryption at rest (S3 + SSE).
+10. NMC fee-splitting risk if doctors charge for app-based diet consultation.
+
 ## Architecture Fit
 - Backend: new `routes_meals.py` (mirrors `routes_health.py` pattern)
-- Model: new `MealLog` table in `models.py` (mirrors `HealthReading`)
+- Model: `MealLog` table in `models.py` ✅ DONE (Step 1 complete)
 - AI: reuse existing `ai_service.generate_vision_insight()` with food-specific prompt
 - Frontend: new screens in `lib/screens/` (mirrors photo_scan_screen pattern)
-- Spec says Firestore → we use PostgreSQL (adapt)
-- Spec says `lib/features/meal_logging/` → we follow existing flat `lib/screens/` pattern
+- Spec says Firestore → we use PostgreSQL (adapted)
+- Quick Select is PRIMARY path, Photo is secondary (Rajesh feedback)
 
 ## Steps
 
-### Step 1: Backend — MealLog model + schemas + migration
-**Context brief:** Add a `meal_logs` table to PostgreSQL. The project uses SQLAlchemy declarative models in `backend/models.py` and Pydantic schemas in `backend/schemas.py`. Follow the `HealthReading` model pattern exactly. No Firestore — we use PostgreSQL. Table auto-creates via `Base.metadata.create_all(bind=engine)` in `main.py`.
-**Files:**
-- Modify: `backend/models.py` — add `MealLog` class
-- Modify: `backend/schemas.py` — add `MealLogCreate`, `MealLogResponse`, `FoodClassificationResponse`
-**Changes:**
-- `MealLog` model with columns: id, profile_id, logged_by, timestamp, category (HIGH_CARB etc), glucose_impact, tip_en, tip_hi, meal_type, photo_path, input_method (PHOTO_GEMINI/QUICK_SELECT), confidence, user_confirmed, user_corrected_category, created_at
-- Pydantic schemas for create/response
-- Category and meal_type as string enums in schemas
-**Tests:**
-- Unit test: MealLog model instantiation
-- Unit test: schema validation (valid/invalid categories, boundary values)
-**Done when:** `MealLog` table creates on app startup, schemas validate correctly
-**Blocks:** Step 2, Step 3
+### Step 1: Backend — MealLog model + schemas ✅ DONE
+- `MealLog` class added to `backend/models.py`
+- `MealLogCreate`, `MealLogResponse`, `FoodClassificationResponse` added to `backend/schemas.py`
+- 11 tests in `backend/tests/test_meals.py` — all passing
+- 355 total backend tests pass
 
 ### Step 2: Backend — Meal API routes (CRUD + parse-image)
-**Context brief:** Create `backend/routes_meals.py` mirroring `routes_health.py` structure. Register in `main.py` with `prefix="/api"`. All endpoints require auth via `Depends(get_current_user)`. Rate limit 20/min. The `/meals/parse-image` endpoint reuses `ai_service.generate_vision_insight()` with a food-specific prompt. NEVER return food names — only carb category.
+**Context brief:** Create `backend/routes_meals.py` mirroring `routes_health.py` structure. Register in `main.py` with `prefix="/api"`. All endpoints require auth via `Depends(get_current_user)`. Rate limit 20/min. The `/meals/parse-image` endpoint reuses `ai_service.generate_vision_insight()` with a food-specific prompt. NEVER return food names — only carb category. Gemini timeout must be 5 seconds max (Rajesh: Bihar users).
 **Files:**
 - Create: `backend/routes_meals.py`
 - Modify: `backend/main.py` — import and register router
@@ -37,96 +82,108 @@ Patient photographs their meal → Gemini classifies carb level → app shows he
 - `POST /meals` — save a meal log (from photo result or quick select)
 - `GET /meals` — list meals for a profile (with date range filter)
 - `GET /meals/today` — today's meals for dashboard summary
-- `POST /meals/parse-image` — accept food photo, call Gemini Vision with carb classification prompt, return `FoodClassificationResponse`
+- `POST /meals/parse-image` — accept food photo, call Gemini Vision with carb classification prompt, return `FoodClassificationResponse`. **Timeout: 5 seconds.**
 - `DELETE /meals/{id}` — delete a meal log
 - Photo saved to `uploads/meals/{profile_id}/{meal_id}.jpg`
+- **Photo access control:** only profile owners can view photos. Viewers see logs only (Rajesh #4).
+- **Prompt must include:** suggestive language only — "may help", "consider" (Rajesh #3)
+- **Prompt must include:** disclaimer text for tip_en and tip_hi (Rajesh #5)
 **Tests:**
 - Test: parse-image endpoint with mock Gemini response
 - Test: CRUD operations (create, list, get today, delete)
 - Test: auth required on all endpoints
 - Test: profile access control (can't access other user's meals)
-- Test: rate limiting
+- Test: photo_path NOT returned for viewer-level access
+- Test: tip language contains "may" or "consider" (no commanding language)
 **Done when:** All endpoints work, tests pass, registered in main.py
-**Blocked by:** Step 1
+**Blocked by:** Step 1 ✅
 
 ### Step 3: Backend — Food AI insight rules
-**Context brief:** Add food-specific rules to the AI insight engine. The existing insight engine is in `routes_health.py` (`GET /api/readings/ai-insight`). Add 5 new rules that cross-reference meal logs with glucose readings. Rules are in-app only — no WhatsApp.
+**Context brief:** Add food-specific rules to the AI insight engine. Rules are in-app only — no WhatsApp. ALL tip language must be suggestive (Rajesh #3). Add correlation disclaimer (Rajesh #8).
 **Files:**
 - Modify: `backend/routes_health.py` — add food rules to ai-insight endpoint
 - Modify: `backend/health_utils.py` — add meal correlation helpers
 **Changes:**
-- Rule: high_carb_dinner_warning (immediate tip when HIGH_CARB/SWEETS dinner logged)
-- Rule: carb_glucose_correlation (7+ days: compare fasting glucose after high vs low carb dinners)
-- Rule: sweet_alert (immediate tip when SWEETS logged)
-- Rule: good_food_choice (positive reinforcement for LOW_CARB/HIGH_PROTEIN)
-- Rule: weekly_food_pattern (weekly summary of carb distribution)
+- Rule: high_carb_dinner_warning — suggestive: "A short walk after meals may help keep sugar stable."
+- Rule: carb_glucose_correlation (7+ days) — with disclaimer: "These patterns are for awareness. Always follow your doctor's diet advice."
+- Rule: sweet_alert — suggestive: "You had sweets today. Consider checking sugar in 2 hours."
+- Rule: good_food_choice — positive reinforcement (no changes needed)
+- Rule: weekly_food_pattern — weekly summary with disclaimer
 **Tests:**
 - Test each rule with mock meal + reading data
 - Test correlation calculation with 7+ days of data
-- Test rules don't fire with insufficient data
-**Done when:** AI insight endpoint includes food-aware tips when meal data exists
-**Blocked by:** Step 1
+- Test ALL tip strings contain suggestive language (no "must", "should", "do this")
+- Test correlation disclaimer is present
+**Done when:** AI insight endpoint includes food-aware tips with safe language
+**Blocked by:** Step 1 ✅
 
 ### Step 4: Frontend — Food photo capture screen
-**Context brief:** Create `lib/screens/food_photo_screen.dart` by adapting `photo_scan_screen.dart`. Same camera pattern (camera package v0.12.0+1, back camera, medium resolution). Overlay says "Point at your plate and tap to capture" in Hindi/English. After capture, calls `POST /meals/parse-image`. On success, navigates to meal result screen. On failure, falls back to quick select. All strings via AppLocalizations, all colors via AppColors.
+**Context brief:** Create photo capture screen as SECONDARY option (not primary — Rajesh #1). Gemini timeout 5 seconds (Rajesh #6). On failure/timeout, fall back to quick select INSTANTLY — no waiting. All strings via AppLocalizations, all colors via AppColors. Tip display must include disclaimer.
 **Files:**
 - Create: `lib/screens/food_photo_screen.dart`
 - Create: `lib/screens/meal_result_screen.dart`
 - Modify: `lib/l10n/app_en.arb` — add food-related strings
 - Modify: `lib/l10n/app_hi.arb` — add Hindi translations
 **Changes:**
-- Camera capture with overlay hint text
-- Loading state while Gemini processes
-- Navigate to meal_result_screen on success
-- Fall back to quick_select on failure/timeout
-- meal_result_screen: show carb badge (color-coded), tip in user's language, meal type auto-detected by time, "Not correct? Change" dropdown, Save button
+- Camera capture with overlay hint: "Point at your plate" (Hindi/English)
+- Loading state — max 5 seconds, then auto-fallback to quick select
+- meal_result_screen: carb badge (color-coded), tip in user's language
+- **Disclaimer at bottom:** "For general wellness, not medical advice"
+- Meal type auto-detected by time, editable
+- "Not correct? Change" → opens quick select for override
 - NEVER show food name — only carb level badge
 **Tests:**
 - Widget test: food_photo_screen renders camera overlay
-- Widget test: meal_result_screen renders badge + tip
+- Widget test: meal_result_screen renders badge + tip + disclaimer
 - Widget test: correction dropdown works
 **Done when:** Photo capture → Gemini → result screen → save works end-to-end
 **Blocked by:** Step 2
 
 ### Step 5: Frontend — Quick select screen + meal log service
-**Context brief:** Create quick select fallback screen with 5 large buttons (HIGH_CARB, LOW_CARB, HIGH_PROTEIN, SWEETS, MODERATE_CARB). Hindi/English labels. Also create `lib/services/meal_service.dart` mirroring `health_reading_service.dart` — handles API calls to /meals endpoints.
+**Context brief:** Quick Select is the PRIMARY entry point (Rajesh #1). Show 3 LARGE buttons to patient (Rajesh #2), not 5. Internally map to 5 categories. Hindi/English labels. Two taps max to log a meal.
 **Files:**
 - Create: `lib/screens/quick_select_screen.dart`
 - Create: `lib/services/meal_service.dart`
 - Create: `lib/models/meal_log.dart`
 **Changes:**
-- 5 large tap buttons in a grid (icons + bilingual labels)
-- Tap → auto-detect meal type by time → save immediately
+- **3 large buttons (patient-facing):**
+  - 🍚 "Heavy — Rice / Roti" → maps to HIGH_CARB internally
+  - 🥗 "Light — Sabzi / Dal" → maps to LOW_CARB internally
+  - 🍬 "Sweets / Meetha" → maps to SWEETS internally
+- Small link below: "More options" → expands to show HIGH_PROTEIN and MODERATE_CARB
+- Tap → auto-detect meal type by time → save immediately (2 taps total)
 - meal_service.dart: parseImageWithFood(), saveMeal(), getMeals(), getTodayMeals()
 - meal_log.dart: MealLog data class matching backend schema
 **Tests:**
-- Widget test: all 5 buttons render
-- Widget test: tap saves with correct category
+- Widget test: 3 primary buttons render with Hindi/English
+- Widget test: "More options" expands to show 2 additional buttons
+- Widget test: tap saves with correct internal category
 - Unit test: meal type auto-detection by time of day
-**Done when:** Quick select saves meals, meal service communicates with backend
+**Done when:** Quick select saves meals in 2 taps, meal service communicates with backend
 **Blocked by:** Step 2
 
 ### Step 6: Frontend — Dashboard integration + meal entry point
-**Context brief:** Add "Log Meal" button to dashboard and meal summary card showing today's meals. Entry point shows two options: "Photograph your meal" and "Quick select". Add meal summary card to home screen after health score card. Profile selector for "log for someone else" — reuse existing select_profile_screen pattern.
+**Context brief:** Add "Log Meal" entry to dashboard. Quick Select is the default (Rajesh #1). Photo is a secondary option. Meal summary card shows today's meals with carb badges. Photo thumbnails visible ONLY to profile owners (Rajesh #4).
 **Files:**
 - Modify: `lib/screens/home_screen.dart` — add meal summary card + log meal button
 - Modify: `lib/screens/dashboard_screen.dart` — add meal entry point
 - Create: `lib/widgets/meal_summary_card.dart`
 **Changes:**
-- Floating action button or bottom sheet with Photo/Quick Select options
-- Meal summary card: today's meals with carb badges (no food names)
+- Entry point opens Quick Select by default, with "Want more accuracy? Take a photo" link
+- Meal summary card: today's meals with color badges (🔴🟢🟡), no food names
 - "Not logged yet → Log now" prompts for missing meals
-- Profile selector before camera for multi-profile users
+- Photo thumbnails: show only if current user is profile owner
+- Profile selector for "log for someone else" — reuse existing pattern
 **Tests:**
 - Widget test: meal summary card renders today's meals
 - Widget test: empty state shows "Log your meals" prompt
-- Widget test: FAB opens photo/quick select choice
+- Widget test: entry point shows Quick Select as primary
 **Done when:** Meal logging accessible from dashboard, today's summary visible
 **Blocked by:** Step 4, Step 5
 
 ## Dependency Graph
 ```
-Step 1 (model + schemas)
+Step 1 (model + schemas) ✅ DONE
   ├── Step 2 (API routes) ──── Step 4 (photo screen) ──┐
   ├── Step 3 (AI rules)                                  ├── Step 6 (dashboard)
   └──────────────────────── Step 5 (quick select) ──────┘
@@ -137,10 +194,12 @@ Step 1 (model + schemas)
 - Steps 4 and 5 can run in parallel (different screens, both depend on Step 2)
 
 ## Risks
-- **Gemini food classification accuracy:** Mitigation — Quick Select fallback always available. Low confidence (<0.5) asks user to confirm.
-- **Photo storage disk space:** Mitigation — save to server filesystem with cleanup policy. Consider S3 later.
+- **Gemini food classification accuracy:** Mitigation — Quick Select is primary path. Photo is secondary.
+- **Commanding tip language (NMC liability):** Mitigation — all tips use "may help", "consider". Disclaimer on every screen. (Rajesh #3, #5)
+- **Photo privacy:** Mitigation — viewers see logs, not photos. Only owners see photos. (Rajesh #4)
+- **Bihar connectivity:** Mitigation — 5s Gemini timeout, instant fallback to Quick Select. (Rajesh #6)
+- **Medication confound:** Mitigation — documented as limitation. Correlation disclaimer added. (Rajesh #8)
 - **iOS camera bug:** Mitigation — existing photo_scan_screen handles this. Reuse same workarounds.
-- **Hindi translations for food tips:** Mitigation — Gemini generates tip_hi in the prompt. Validate with native speaker.
-- **Spec says Firestore, we use PostgreSQL:** Mitigation — MealLog table in PostgreSQL, same as HealthReading. No architecture conflict.
 
-## Estimated Steps: 6 | Critical Path: Steps 1 → 2 → 4 → 6
+## Estimated Steps: 6 | Critical Path: Steps 1 → 2 → 5 → 6
+## Step 1: ✅ Complete | Next: Step 2

@@ -16,6 +16,7 @@ import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
+from health_utils import generate_meal_insights
 
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
@@ -595,21 +596,50 @@ def get_ai_insight(
         elif second_avg > first_avg + 5:
             trend_note += "Glucose trending UP (worsening). "
 
+    # ── Meal summary for LLM context ────────────────────────────────
+    recent_meals = (
+        db.query(models.MealLog)
+        .filter(
+            models.MealLog.profile_id == profile_id,
+            models.MealLog.timestamp >= thirty_days_ago,
+        )
+        .order_by(models.MealLog.timestamp.asc())
+        .all()
+    )
+
+    food_summary = ""
+    if recent_meals:
+        from collections import Counter
+        cat_counts = Counter(m.category for m in recent_meals)
+        food_summary = (
+            f"Meals (30-day, {len(recent_meals)} logged): "
+            + ", ".join(f"{k} {v}" for k, v in cat_counts.most_common())
+            + ". "
+        )
+
+    # Rule-based meal insights (appended to response, not sent to LLM)
+    meal_tips = generate_meal_insights(recent_meals, recent)
+
     age_desc = f"{age} years" if age else "unknown age"
 
-    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {trend_note}
+    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {food_summary}{trend_note}
 
-Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points."""
+Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points. Use suggestive language only ("may help", "consider")."""
 
     import ai_service
-    prompt_summary = f"{glucose_summary} {bp_summary} {trend_note}".strip() or None
+    prompt_summary = f"{glucose_summary} {bp_summary} {food_summary}{trend_note}".strip() or None
     insight = ai_service.generate_health_insight(prompt, profile_id, db, prompt_summary)
 
     if insight:
+        # Append top meal insight if available (max 1 to keep it concise)
+        if meal_tips:
+            insight = f"{insight}\n\n{meal_tips[0]}"
         return {"insight": insight}
 
     # All AI models failed — use rule-based fallback and log it
     ai_service._log(db, profile_id, "rule-based", prompt_summary, fallback, None, None, None)
+    if meal_tips:
+        fallback = f"{fallback}\n\n{meal_tips[0]}"
     return {"insight": fallback}
 
 
@@ -698,6 +728,24 @@ def get_trend_summary(
         data_parts.append(
             f"BP: avg {avg_sys:.0f}/{avg_dia:.0f} mmHg ({len(bp_readings)} readings), "
             f"{elevated} elevated"
+        )
+
+    # Meal stats for the period
+    period_meals = (
+        db.query(models.MealLog)
+        .filter(
+            models.MealLog.profile_id == profile_id,
+            models.MealLog.timestamp >= period_start,
+        )
+        .all()
+    )
+    if period_meals:
+        from collections import Counter
+        cat_counts = Counter(m.category for m in period_meals)
+        heavy = cat_counts.get("HIGH_CARB", 0) + cat_counts.get("SWEETS", 0)
+        data_parts.append(
+            f"Diet: {len(period_meals)} meals logged, "
+            f"{heavy} heavy/sweet"
         )
 
     # Previous period comparison

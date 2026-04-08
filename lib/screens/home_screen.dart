@@ -24,6 +24,8 @@ import '../widgets/home/physician_card.dart';
 import '../widgets/home/vital_summary_card.dart';
 import '../widgets/home/metrics_grid.dart';
 import '../widgets/home/reading_input_modal.dart';
+import '../widgets/home/meal_input_modal.dart';
+import '../widgets/home/meal_summary_card.dart';
 import '../utils/health_helpers.dart' as helpers;
 import '../services/reminder_service.dart';
 import '../main.dart' show routeObserver;
@@ -163,12 +165,38 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _handleAddReading({required String deviceType, required String btDeviceType}) {
+  final GlobalKey<MealSummaryCardState> _mealSummaryKey =
+      GlobalKey<MealSummaryCardState>();
+
+  void _handleAddMeal() {
     if (_activeProfileId == null) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.selectProfileFirst)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.selectProfileFirst)));
+      return;
+    }
+    showMealInputModal(
+      context,
+      profileId: _activeProfileId!,
+      onMealSaved: () {
+        if (mounted && _activeProfileId != null) {
+          _refreshHealthScore(_activeProfileId!);
+          _mealSummaryKey.currentState?.loadMeals();
+        }
+      },
+    );
+  }
+
+  void _handleAddReading({
+    required String deviceType,
+    required String btDeviceType,
+  }) {
+    if (_activeProfileId == null) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.selectProfileFirst)));
       return;
     }
     showReadingInputModal(
@@ -194,7 +222,8 @@ class _HomeScreenState extends State<HomeScreen>
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            if (_activeProfileId != null) _refreshHealthScore(_activeProfileId!);
+            if (_activeProfileId != null)
+              _refreshHealthScore(_activeProfileId!);
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -209,14 +238,18 @@ class _HomeScreenState extends State<HomeScreen>
                   pts: _pts,
                   onSwitchProfile: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SelectProfileScreen(pushedFromShell: true)),
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const SelectProfileScreen(pushedFromShell: true),
+                    ),
                   ),
                   onViewProfile: () {
                     if (_activeProfileId != null) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ProfileScreen(profileId: _activeProfileId!),
+                          builder: (_) =>
+                              ProfileScreen(profileId: _activeProfileId!),
                         ),
                       );
                     }
@@ -239,7 +272,8 @@ class _HomeScreenState extends State<HomeScreen>
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ProfileScreen(profileId: _activeProfileId!),
+                          builder: (_) =>
+                              ProfileScreen(profileId: _activeProfileId!),
                         ),
                       );
                     }
@@ -267,7 +301,9 @@ class _HomeScreenState extends State<HomeScreen>
                                     final result = await Navigator.push<String>(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => TrendChartScreen(profileId: _activeProfileId!),
+                                        builder: (_) => TrendChartScreen(
+                                          profileId: _activeProfileId!,
+                                        ),
                                       ),
                                     );
                                     if (result == 'open_chat' && mounted) {
@@ -275,15 +311,21 @@ class _HomeScreenState extends State<HomeScreen>
                                     }
                                   }
                                 : null,
-                            onCallDoctor: _activeProfile?.doctorWhatsapp?.isNotEmpty == true
-                                ? () => _callDoctor(_activeProfile!.doctorWhatsapp!)
+                            onCallDoctor:
+                                _activeProfile?.doctorWhatsapp?.isNotEmpty ==
+                                    true
+                                ? () => _callDoctor(
+                                    _activeProfile!.doctorWhatsapp!,
+                                  )
                                 : null,
                             onInfoTap: () {
-                              final score = (data?['score'] as num?)?.toInt() ?? 50;
+                              final score =
+                                  (data?['score'] as num?)?.toInt() ?? 50;
                               final flagData = helpers.computeFlag(
                                 score: score,
                                 bpStatus: data?['today_bp_status'] as String?,
-                                glucoseStatus: data?['today_glucose_status'] as String?,
+                                glucoseStatus:
+                                    data?['today_glucose_status'] as String?,
                                 age: (data?['profile_age'] as num?)?.toInt(),
                               );
                               showStatusInfoSheet(context, flagData, l10n);
@@ -297,23 +339,41 @@ class _HomeScreenState extends State<HomeScreen>
                               insightFuture: _aiInsightFuture,
                               pulseAnimation: _pulseAnimation,
                               isSaved: _insightSaved,
-                              onSaveToggle: () => setState(() => _insightSaved = !_insightSaved),
+                              onSaveToggle: () => setState(
+                                () => _insightSaved = !_insightSaved,
+                              ),
                             ),
                           const SizedBox(height: 16),
                           if (_activeProfile?.doctorName?.isNotEmpty == true)
                             PhysicianCard(
                               profile: _activeProfile!,
-                              onWhatsAppTap: _activeProfile!.doctorWhatsapp?.isNotEmpty == true
-                                  ? () => _openWhatsApp(_activeProfile!.doctorWhatsapp!)
+                              onWhatsAppTap:
+                                  _activeProfile!.doctorWhatsapp?.isNotEmpty ==
+                                      true
+                                  ? () => _openWhatsApp(
+                                      _activeProfile!.doctorWhatsapp!,
+                                    )
                                   : null,
                             ),
                           if (_activeProfile?.doctorName?.isNotEmpty == true)
+                            const SizedBox(height: 16),
+                          if (_activeProfileId != null)
+                            MealSummaryCard(
+                              key: _mealSummaryKey,
+                              profileId: _activeProfileId!,
+                              onTapLogMeal: _handleAddMeal,
+                            ),
+                          if (_activeProfileId != null)
                             const SizedBox(height: 16),
                           MetricsGrid(
                             data: data,
                             profileId: _activeProfileId,
                             canEdit: _accessLevel != 'viewer',
                             onAddReading: _handleAddReading,
+                            onAddMeal: _handleAddMeal,
+                            todayMealCount:
+                                _mealSummaryKey.currentState?.todayMealCount ??
+                                0,
                           ),
                           const SizedBox(height: 16),
 
@@ -348,10 +408,21 @@ class _HomeScreenState extends State<HomeScreen>
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  Icon(Icons.notifications_active, size: 20, color: AppColors.primary),
+                  Icon(
+                    Icons.notifications_active,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
                   const SizedBox(width: 8),
                   const Expanded(
-                    child: Text('Set Reminder', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    child: Text(
+                      'Set Reminder',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -371,7 +442,14 @@ class _HomeScreenState extends State<HomeScreen>
                   Icon(Icons.share, size: 20, color: AppColors.success),
                   const SizedBox(width: 8),
                   const Expanded(
-                    child: Text('Share Summary', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    child: Text(
+                      'Share Summary',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -392,7 +470,9 @@ class _HomeScreenState extends State<HomeScreen>
     final time = await showTimePicker(
       context: ctx,
       initialTime: TimeOfDay(hour: hour, minute: minute),
-      helpText: enabled ? 'Change reminder time (or cancel to disable)' : 'Set daily reminder time',
+      helpText: enabled
+          ? 'Change reminder time (or cancel to disable)'
+          : 'Set daily reminder time',
     );
 
     if (time != null) {
@@ -405,9 +485,9 @@ class _HomeScreenState extends State<HomeScreen>
     } else if (enabled) {
       await reminder.disableReminder();
       if (mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          const SnackBar(content: Text('Reminder disabled')),
-        );
+        ScaffoldMessenger.of(
+          ctx,
+        ).showSnackBar(const SnackBar(content: Text('Reminder disabled')));
       }
     }
   }
@@ -417,7 +497,10 @@ class _HomeScreenState extends State<HomeScreen>
     final token = await _storageService.getToken();
     if (token == null) return;
 
-    final data = await _readingService.getWeeklySummary(token, _activeProfileId!);
+    final data = await _readingService.getWeeklySummary(
+      token,
+      _activeProfileId!,
+    );
     final text = data['summary_text'] as String? ?? 'No summary available';
 
     Share.share(text);
@@ -445,7 +528,11 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.all(32),
       child: Column(
         children: [
-          const Icon(Icons.health_and_safety_outlined, size: 48, color: AppColors.primary),
+          const Icon(
+            Icons.health_and_safety_outlined,
+            size: 48,
+            color: AppColors.primary,
+          ),
           const SizedBox(height: 16),
           Text(
             l10n.noReadingsYetScore,
@@ -456,7 +543,10 @@ class _HomeScreenState extends State<HomeScreen>
           ElevatedButton(
             onPressed: () => Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const SelectProfileScreen(pushedFromShell: true)),
+              MaterialPageRoute(
+                builder: (_) =>
+                    const SelectProfileScreen(pushedFromShell: true),
+              ),
             ),
             child: Text(l10n.switchProfile),
           ),

@@ -4,19 +4,27 @@ import '../../theme/app_theme.dart';
 import '../../utils/health_helpers.dart' as helpers;
 import '../glass_card.dart';
 
-/// 2x2 grid of individual metric tiles (BP, Sugar, Steps, BMI).
+/// 2x2 grid of individual metric tiles (BP, Sugar, Meals, BMI).
 class MetricsGrid extends StatelessWidget {
   final Map<String, dynamic>? data;
   final int? profileId;
-  final void Function({required String deviceType, required String btDeviceType}) onAddReading;
+  final void Function({
+    required String deviceType,
+    required String btDeviceType,
+  })
+  onAddReading;
+  final VoidCallback? onAddMeal;
   final bool canEdit;
+  final int todayMealCount;
 
   const MetricsGrid({
     super.key,
     required this.data,
     required this.profileId,
     required this.onAddReading,
+    this.onAddMeal,
     this.canEdit = true,
+    this.todayMealCount = 0,
   });
 
   @override
@@ -37,8 +45,9 @@ class MetricsGrid extends StatelessWidget {
     final bpValue = lastBpSys != null && lastBpDia != null
         ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'
         : '—';
-    final glucoseValue =
-        lastGlucose != null ? '${lastGlucose.toStringAsFixed(0)} mg' : '—';
+    final glucoseValue = lastGlucose != null
+        ? '${lastGlucose.toStringAsFixed(0)} mg'
+        : '—';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +69,12 @@ class MetricsGrid extends StatelessWidget {
                 label: l10n.lastBP,
                 value: bpValue,
                 valueColor: helpers.statusTextColor(lastBpStatus),
-                onAddTap: canEdit ? () => onAddReading(deviceType: 'blood_pressure', btDeviceType: 'Blood Pressure') : null,
+                onAddTap: canEdit
+                    ? () => onAddReading(
+                        deviceType: 'blood_pressure',
+                        btDeviceType: 'Blood Pressure',
+                      )
+                    : null,
               ),
             ),
             const SizedBox(width: 12),
@@ -69,20 +83,29 @@ class MetricsGrid extends StatelessWidget {
                 label: l10n.lastSugar,
                 value: glucoseValue,
                 valueColor: helpers.statusTextColor(lastGlucoseStatus),
-                onAddTap: canEdit ? () => onAddReading(deviceType: 'glucose', btDeviceType: 'Glucose') : null,
+                onAddTap: canEdit
+                    ? () => onAddReading(
+                        deviceType: 'glucose',
+                        btDeviceType: 'Glucose',
+                      )
+                    : null,
               ),
             ),
           ],
         ),
         if (ageContextBp != null || ageContextGlucose != null) ...[
           const SizedBox(height: 8),
-          ...[ ageContextBp, ageContextGlucose ].whereType<String>().map(
+          ...[ageContextBp, ageContextGlucose].whereType<String>().map(
             (note) => Padding(
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline, size: 14, color: AppColors.primary),
+                  const Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -105,11 +128,16 @@ class MetricsGrid extends StatelessWidget {
           children: [
             Expanded(
               child: _MetricTile(
-                label: l10n.liveSteps,
-                value: '—',
-                valueColor: AppColors.textPrimary,
-                addButtonColor: AppColors.primary,
-                onAddTap: null, // Phase 8D
+                label: l10n.mealsTileLabel,
+                value: todayMealCount > 0
+                    ? l10n.mealsTodayCount(todayMealCount)
+                    : '—',
+                valueColor: todayMealCount > 0
+                    ? AppColors.amber
+                    : AppColors.textPrimary,
+                addButtonColor: AppColors.amber,
+                emoji: '\uD83C\uDF5A', // 🍚
+                onAddTap: canEdit ? onAddMeal : null,
               ),
             ),
             const SizedBox(width: 12),
@@ -133,6 +161,7 @@ class _MetricTile extends StatelessWidget {
   final String value;
   final Color valueColor;
   final Color addButtonColor;
+  final String? emoji;
   final VoidCallback? onAddTap;
 
   const _MetricTile({
@@ -140,6 +169,7 @@ class _MetricTile extends StatelessWidget {
     required this.value,
     required this.valueColor,
     this.addButtonColor = AppColors.textPrimary,
+    this.emoji,
     this.onAddTap,
   });
 
@@ -153,14 +183,22 @@ class _MetricTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
-              letterSpacing: 1,
-            ),
+          Row(
+            children: [
+              if (emoji != null) ...[
+                Text(emoji!, style: const TextStyle(fontSize: 14)),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           Row(
@@ -218,7 +256,8 @@ class _BmiTile extends StatelessWidget {
   }
 
   String? _tip() {
-    if (bmi == null || heightCm == null || weightKg == null || heightCm! <= 0) return null;
+    if (bmi == null || heightCm == null || weightKg == null || heightCm! <= 0)
+      return null;
     final hm = heightCm! / 100.0;
     final hm2 = hm * hm;
     if (bmi! < 18.5) {
@@ -265,10 +304,7 @@ class _BmiTile extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 6),
               Text(
