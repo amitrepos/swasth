@@ -358,7 +358,10 @@ class TestMealParseImage:
     """Test POST /meals/parse-image"""
 
     @patch("ai_service.generate_vision_insight")
-    def test_parse_image_success(self, mock_vision, client, auth_headers, db, test_user):
+    @patch("routes_meals.settings")
+    def test_parse_image_success(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
         mock_vision.return_value = '{"category": "HIGH_CARB", "glucose_impact": "HIGH", "tip_en": "A short walk after meals may help keep sugar levels stable.", "tip_hi": "खाने के बाद थोड़ी सैर करना शुगर को स्थिर रखने में मदद कर सकता है।", "confidence": 0.88}'
 
         profile_id = _get_profile_id(db, test_user.id)
