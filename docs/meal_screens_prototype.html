@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swasth Meal Logging — Screen Prototypes</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    padding: 32px 16px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #0ea5e9;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 15px;
+    color: #64748b;
+    margin-bottom: 40px;
+  }
+
+  /* ── Flow container ───────────────────────────────────────────── */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .screen-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Arrow between screens ────────────────────────────────────── */
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: #0ea5e9;
+    padding-top: 260px;
+    user-select: none;
+  }
+  .arrow-label {
+    font-size: 11px;
+    color: #64748b;
+    text-align: center;
+    margin-top: 4px;
+  }
+  .arrow-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Phone frame ──────────────────────────────────────────────── */
+  .phone {
+    width: 360px;
+    min-height: 640px;
+    background: #f0f9ff; /* AppColors.bgPage */
+    border-radius: 32px;
+    border: 3px solid #cbd5e1;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.12), 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+    position: relative;
+  }
+  .phone.dark-bg {
+    background: #000;
+  }
+
+  .screen-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0ea5e9;
+    text-align: center;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+  }
+  .screen-number {
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: center;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ── Status bar (top of phone) ────────────────────────────────── */
+  .status-bar {
+    height: 28px;
+    background: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 11px;
+    color: #64748b;
+  }
+  .status-bar.dark { color: #94a3b8; }
+
+  /* ── App bar ──────────────────────────────────────────────────── */
+  .app-bar {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+  }
+  .app-bar .back {
+    font-size: 20px;
+    color: #1e293b;
+    cursor: default;
+  }
+  .app-bar .title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  .app-bar.dark .back,
+  .app-bar.dark .title {
+    color: #fff;
+  }
+
+  /* ── Meal type chip ───────────────────────────────────────────── */
+  .meal-chip {
+    display: inline-block;
+    padding: 6px 16px;
+    background: #e0f2fe; /* AppColors.bgPill */
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  /* ── Meal button (72dp) ───────────────────────────────────────── */
+  .meal-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 72px;
+    border-radius: 16px;
+    padding: 0 16px;
+    margin-bottom: 12px;
+    border: 1px solid;
+    cursor: default;
+    transition: transform 0.1s;
+  }
+  .meal-btn:hover { transform: scale(1.01); }
+  .meal-btn .emoji { font-size: 28px; margin-right: 12px; flex-shrink: 0; }
+  .meal-btn .labels { flex: 1; }
+  .meal-btn .hindi { font-size: 20px; font-weight: 700; color: #1e293b; }
+  .meal-btn .english { font-size: 14px; color: #64748b; }
+  .meal-btn .impact { font-size: 20px; flex-shrink: 0; }
+
+  /* Button color variants */
+  .btn-amber { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); }
+  .btn-green { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); }
+  .btn-red   { background: rgba(239,68,68,0.12);  border-color: rgba(239,68,68,0.3); }
+  .btn-blue  { background: rgba(14,165,233,0.12); border-color: rgba(14,165,233,0.3); }
+
+  /* ── More options toggle ──────────────────────────────────────── */
+  .more-toggle {
+    text-align: center;
+    color: #0ea5e9;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 0;
+  }
+
+  /* ── Divider dot line ─────────────────────────────────────────── */
+  .divider-dots {
+    text-align: center;
+    color: #bae6fd;
+    letter-spacing: 4px;
+    font-size: 12px;
+    padding: 4px 0;
+  }
+
+  /* ── Disclaimer ───────────────────────────────────────────────── */
+  .disclaimer {
+    font-size: 12px;
+    color: #64748b;
+    text-align: center;
+    padding: 12px 20px;
+  }
+
+  /* ── Camera view ──────────────────────────────────────────────── */
+  .camera-view {
+    position: relative;
+    flex: 1;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .camera-view .plate-circle {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    border: 2px dashed rgba(255,255,255,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    opacity: 0.4;
+  }
+  .camera-hint {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.54);
+    border-radius: 20px;
+    color: #fff;
+    font-size: 16px;
+    position: absolute;
+    top: 16px;
+  }
+  .camera-controls {
+    position: absolute;
+    bottom: 40px;
+    left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+  }
+  .gallery-btn {
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 28px;
+  }
+  .capture-btn {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    color: #1e293b;
+  }
+  .spacer-48 { width: 48px; }
+
+  /* ── Result screen ────────────────────────────────────────────── */
+  .carb-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 28px;
+    border-radius: 16px;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .carb-badge .badge-icon { font-size: 28px; }
+
+  .badge-red    { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; }
+  .badge-amber  { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; }
+  .badge-green  { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #10b981; }
+  .badge-blue   { background: rgba(14,165,233,0.12); border: 1px solid rgba(14,165,233,0.3); color: #0ea5e9; }
+
+  .tip-card {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .tip-card .bulb { font-size: 24px; flex-shrink: 0; }
+  .tip-card .tip-text { font-size: 16px; color: #1e293b; line-height: 1.4; }
+
+  .dropdown-field {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 16px;
+    color: #1e293b;
+  }
+
+  .change-btn {
+    color: #0ea5e9;
+    font-size: 16px;
+    text-align: center;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .disclaimer-box {
+    background: #e0f2fe;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .disclaimer-box .info-icon { font-size: 16px; color: #64748b; flex-shrink: 0; }
+  .disclaimer-box .text { font-size: 12px; color: #64748b; }
+
+  .save-btn {
+    width: 100%;
+    height: 52px;
+    border: none;
+    border-radius: 12px;
+    background: #0ea5e9;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: default;
+  }
+
+  /* ── Dashboard preview ────────────────────────────────────────── */
+  .dash-card {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid #bae6fd;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(31,38,135,0.06);
+  }
+  .dash-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .metric-tile {
+    background: #e0f2fe;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+  .metric-tile .value { font-size: 24px; font-weight: 700; color: #1e293b; }
+  .metric-tile .label { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+  .log-meal-btn {
+    width: 100%;
+    height: 56px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 16px rgba(14,165,233,0.3);
+    position: relative;
+  }
+  .pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    border: 2px solid rgba(14,165,233,0.4);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.03); opacity: 0; }
+  }
+
+  .bottom-nav {
+    display: flex;
+    height: 56px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    background: #fff;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #94a3b8;
+    gap: 2px;
+  }
+  .nav-item.active { color: #0ea5e9; }
+  .nav-item .icon { font-size: 20px; }
+
+  /* ── Reference strip ──────────────────────────────────────────── */
+  .ref-strip {
+    margin-top: 48px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px 32px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .ref-strip h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #1e293b;
+  }
+  .ref-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .ref-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .ref-badge .icon { font-size: 20px; }
+
+  /* ── Section labels ───────────────────────────────────────────── */
+  .section-label {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  /* ── Utility ──────────────────────────────────────────────────── */
+  .pad { padding: 0 20px; }
+  .center { text-align: center; }
+  .mb-4 { margin-bottom: 4px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-20 { margin-bottom: 20px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mt-16 { margin-top: 16px; }
+  .pt-16 { padding-top: 16px; }
+  .pb-16 { padding-bottom: 16px; }
+
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+
+  .phone-inner {
+    display: flex;
+    flex-direction: column;
+    height: 640px;
+  }
+
+  /* ── Annotation callout ───────────────────────────────────────── */
+  .callout {
+    position: absolute;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: #92400e;
+    line-height: 1.3;
+    max-width: 140px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .callout::before {
+    content: '';
+    position: absolute;
+    width: 0; height: 0;
+  }
+
+  /* ── Responsive ───────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .arrow { display: none; }
+    .arrow-wrap { display: none; }
+    .flow { flex-direction: column; align-items: center; }
+  }
+
+  /* ── Notes section ────────────────────────────────────────────── */
+  .notes {
+    max-width: 900px;
+    margin: 40px auto 0;
+    padding: 24px 32px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .notes h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #1e293b; }
+  .notes ul { padding-left: 20px; }
+  .notes li { font-size: 14px; color: #475569; margin-bottom: 6px; line-height: 1.5; }
+  .notes li strong { color: #1e293b; }
+
+  .expanded-label {
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Swasth Meal Logging Screens</h1>
+<p class="subtitle">
+  Dashboard integration + meal flow for Bihar patients (50-70 yrs) on budget Android &mdash; 360px viewport<br>
+  Meals tile sits alongside BP &amp; Glucose in MetricsGrid &mdash; same "+" pattern, same mental model
+</p>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SCREEN FLOW
+     ════════════════════════════════════════════════════════════════ -->
+<div class="flow">
+
+  <!-- ── SCREEN 1: Home Dashboard (Real Layout) ──────────────── -->
+  <div class="screen-group">
+    <div class="screen-number">Screen 1 &mdash; Home Dashboard</div>
+    <div class="screen-title">Meal integrated into existing layout</div>
+    <div class="phone">
+      <div class="phone-inner" style="height:auto; min-height:640px;">
+        <div class="status-bar">
+          <span>12:34</span>
+          <span>&#128267; 78%</span>
+        </div>
+
+        <div class="scroll-area" style="overflow:visible;">
+          <!-- SWASTH Header -->
+          <div class="mb-4">
+            <div style="font-size:10px; font-weight:900; color:#64748b; letter-spacing:3px;">SWASTH</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="font-size:20px; font-weight:700; color:#1e293b;">Good Afternoon, Ramesh</div>
+              <div style="font-size:13px; color:#0ea5e9; font-weight:600; cursor:default;">&#128100; Switch</div>
+            </div>
+          </div>
+
+          <!-- Health Score Ring -->
+          <div class="dash-card mb-16" style="text-align:center; padding:20px;">
+            <div style="width:100px;height:100px;border-radius:50%;border:8px solid #10b981;display:inline-flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;color:#10b981;position:relative;">
+              <span>75</span>
+            </div>
+            <div style="font-size:12px; color:#64748b; margin-top:8px;">Health Score</div>
+            <div style="display:flex; justify-content:center; gap:12px; margin-top:12px;">
+              <div style="font-size:12px; padding:6px 14px; background:#e0f2fe; border-radius:20px; color:#1e293b;">&#128222; Call Doctor</div>
+              <div style="font-size:12px; padding:6px 14px; background:#e0f2fe; border-radius:20px; color:#1e293b;">&#9432; More Info</div>
+            </div>
+          </div>
+
+          <!-- Vital Summary Card -->
+          <div class="dash-card mb-16" style="padding:14px;">
+            <div style="font-size:11px; font-weight:700; color:#64748b; letter-spacing:2px; margin-bottom:8px;">TODAY'S VITALS</div>
+            <div style="display:flex; gap:16px;">
+              <div style="flex:1;"><span style="font-size:13px; font-weight:600; color:#10b981;">&#9989; BP Normal</span></div>
+              <div style="flex:1;"><span style="font-size:13px; font-weight:600; color:#f59e0b;">&#9888;&#65039; Sugar Elevated</span></div>
+            </div>
+          </div>
+
+          <!-- AI Insight Card -->
+          <div style="background:#1e293b; border-radius:16px; padding:16px; margin-bottom:16px;">
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <span style="font-size:20px;">&#128161;</span>
+              <div style="font-size:14px; color:#e2e8f0; line-height:1.5;">Your sugar has been trending down this week. A short walk after dinner may help keep it stable.</div>
+            </div>
+          </div>
+
+          <!-- ★ NEW: Today's Meals Summary Card -->
+          <div class="dash-card mb-16" style="padding:14px; border:2px solid #0ea5e9; position:relative;">
+            <div style="position:absolute; top:-10px; left:16px; background:#0ea5e9; color:white; font-size:10px; font-weight:700; padding:2px 10px; border-radius:10px; letter-spacing:1px;">NEW</div>
+            <div style="font-size:11px; font-weight:700; color:#64748b; letter-spacing:2px; margin-bottom:10px;">&#127858; TODAY'S MEALS</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <!-- Logged meals as badges -->
+              <div style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:rgba(16,185,129,0.12); border-radius:20px; font-size:13px; font-weight:600; color:#10b981;">
+                &#9989; &#2361;&#2354;&#2381;&#2325;&#2366; Lunch
+              </div>
+              <div style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:rgba(245,158,11,0.12); border-radius:20px; font-size:13px; font-weight:600; color:#f59e0b;">
+                &#9888;&#65039; &#2349;&#2366;&#2352;&#2368; Dinner
+              </div>
+              <!-- Tap to log more -->
+              <div style="display:inline-flex; align-items:center; gap:4px; padding:6px 12px; background:#e0f2fe; border-radius:20px; font-size:12px; color:#0ea5e9; font-weight:600; cursor:default;">
+                + &#2324;&#2352; &#2342;&#2352;&#2381;&#2332; &#2325;&#2352;&#2375;&#2306; (Log more)
+              </div>
+            </div>
+          </div>
+
+          <!-- ★ UPDATED: MetricsGrid — Meals replaces Steps -->
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; color:#64748b; letter-spacing:2px; margin-bottom:12px;">INDIVIDUAL METRICS</div>
+            <!-- Row 1: BP + Glucose (existing) -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+              <!-- BP Tile -->
+              <div style="background:rgba(255,255,255,0.8); border:1px solid #bae6fd; border-radius:24px; padding:12px 14px;">
+                <div style="font-size:9px; font-weight:700; color:#64748b; letter-spacing:1px;">LAST BP</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;">
+                  <span style="font-size:15px; font-weight:800; color:#10b981;">128/82</span>
+                  <div style="width:30px;height:30px;background:#1e293b;border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;cursor:default;">+</div>
+                </div>
+              </div>
+              <!-- Glucose Tile -->
+              <div style="background:rgba(255,255,255,0.8); border:1px solid #bae6fd; border-radius:24px; padding:12px 14px;">
+                <div style="font-size:9px; font-weight:700; color:#64748b; letter-spacing:1px;">LAST SUGAR</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;">
+                  <span style="font-size:15px; font-weight:800; color:#f59e0b;">153 mg</span>
+                  <div style="width:30px;height:30px;background:#1e293b;border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;cursor:default;">+</div>
+                </div>
+              </div>
+            </div>
+            <!-- Row 2: Meals (★ NEW) + BMI -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <!-- ★ Meals Tile (replaces Steps) -->
+              <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:24px; padding:12px 14px; position:relative;">
+                <div style="position:absolute; top:-6px; right:10px; background:#0ea5e9; color:white; font-size:8px; font-weight:700; padding:1px 6px; border-radius:6px;">NEW</div>
+                <div style="font-size:9px; font-weight:700; color:#64748b; letter-spacing:1px;">&#127858; MEALS</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;">
+                  <div>
+                    <span style="font-size:15px; font-weight:800; color:#1e293b;">2 today</span>
+                    <div style="font-size:11px; margin-top:2px;">&#9989;&#9888;&#65039;</div>
+                  </div>
+                  <div style="width:30px;height:30px;background:#f59e0b;border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;cursor:default;">+</div>
+                </div>
+              </div>
+              <!-- BMI Tile (existing) -->
+              <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:24px; padding:12px 14px;">
+                <div style="font-size:9px; font-weight:700; color:#64748b; letter-spacing:1px;">BMI</div>
+                <div style="display:flex; align-items:center; gap:6px; margin-top:6px;">
+                  <div style="width:8px;height:8px;background:#10b981;border-radius:50%;"></div>
+                  <span style="font-size:15px; font-weight:800; color:#10b981;">24.1</span>
+                  <span style="font-size:10px; font-weight:600; color:#10b981;">Normal</span>
+                </div>
+                <div style="font-size:9px; color:#10b981; font-style:italic; margin-top:4px;">Healthy BMI &#8212; keep it up!</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div style="display:flex; gap:12px; margin-bottom:16px;">
+            <div style="flex:1; background:rgba(255,255,255,0.8); border:1px solid #bae6fd; border-radius:16px; padding:14px; display:flex; align-items:center; gap:8px;">
+              <span style="font-size:20px;">&#128276;</span>
+              <span style="font-size:13px; font-weight:600; color:#1e293b;">Set Reminder</span>
+            </div>
+            <div style="flex:1; background:rgba(255,255,255,0.8); border:1px solid #bae6fd; border-radius:16px; padding:14px; display:flex; align-items:center; gap:8px;">
+              <span style="font-size:20px;">&#128200;</span>
+              <span style="font-size:13px; font-weight:600; color:#1e293b;">Share Summary</span>
+            </div>
+          </div>
+
+          <!-- Footer disclaimer -->
+          <div style="font-size:9px; color:#64748b; text-align:center; letter-spacing:0.5px; line-height:1.6;">
+            Swasth is for health awareness only. Always consult your doctor for medical decisions.
+          </div>
+        </div>
+
+        <!-- Bottom nav (5 tabs — real layout) -->
+        <div class="bottom-nav">
+          <div class="nav-item active"><span class="icon">&#x1F3E0;</span><span>Home</span></div>
+          <div class="nav-item"><span class="icon">&#128203;</span><span>History</span></div>
+          <div class="nav-item"><span class="icon">&#128293;</span><span>Streaks</span></div>
+          <div class="nav-item"><span class="icon">&#128200;</span><span>Insights</span></div>
+          <div class="nav-item"><span class="icon">&#128172;</span><span>Chat</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow-wrap">
+    <div class="arrow">&#10132;</div>
+    <div class="arrow-label">Tap Meals [+]</div>
+  </div>
+
+  <!-- ── SCREEN 2: Meal Input Modal (Bottom Sheet) ────────────── -->
+  <div class="screen-group">
+    <div class="screen-number">Screen 2 &mdash; Bottom Sheet</div>
+    <div class="screen-title">Meal Input Modal</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar"><span>12:34</span><span>&#128267; 78%</span></div>
+
+        <!-- Dimmed dashboard behind modal -->
+        <div style="flex:1; background:rgba(0,0,0,0.3); display:flex; flex-direction:column; justify-content:flex-end;">
+          <!-- Bottom sheet -->
+          <div style="background:white; border-radius:24px 24px 0 0; padding:20px 24px 16px;">
+            <!-- Handle bar -->
+            <div style="text-align:center; margin-bottom:16px;">
+              <div style="width:40px; height:4px; background:#cbd5e1; border-radius:2px; display:inline-block;"></div>
+            </div>
+
+            <div style="text-align:center; margin-bottom:8px;">
+              <div style="font-size:20px; font-weight:700; color:#1e293b;">&#127858; &#2326;&#2366;&#2344;&#2366; &#2342;&#2352;&#2381;&#2332; &#2325;&#2352;&#2375;&#2306;</div>
+              <div style="font-size:14px; color:#64748b;">Log your meal</div>
+            </div>
+            <div style="font-size:14px; color:#64748b; text-align:center; margin-bottom:20px;">&#2325;&#2376;&#2360;&#2375; &#2342;&#2352;&#2381;&#2332; &#2325;&#2352;&#2375;&#2306;? &bull; How to log?</div>
+
+            <!-- Option 1: Quick Select (PRIMARY) -->
+            <div style="width:100%; height:52px; background:#0ea5e9; border:none; border-radius:12px; color:white; font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:12px; cursor:default;">
+              &#127858; Quick Select &bull; &#2340;&#2369;&#2352;&#2306;&#2340; &#2330;&#2369;&#2344;&#2375;&#2306;
+            </div>
+
+            <!-- Option 2: Photo (secondary) -->
+            <div style="width:100%; height:52px; background:white; border:2px solid #0ea5e9; border-radius:12px; color:#0ea5e9; font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px; cursor:default;">
+              &#128247; Scan Food Photo &bull; &#2347;&#2379;&#2335;&#2379; &#2360;&#2381;&#2325;&#2376;&#2344;
+            </div>
+
+            <div style="font-size:12px; color:#64748b; text-align:center; padding:8px 0;">
+              &#128247; &#2347;&#2379;&#2335;&#2379; &#2360;&#2375; AI &#2325;&#2366;&#2352;&#2381;&#2348; &#2354;&#2375;&#2357;&#2354; &#2346;&#2340;&#2366; &#2325;&#2352;&#2340;&#2366; &#2361;&#2376;<br>
+              <span style="font-size:11px;">Photo lets AI detect carb level automatically</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow-wrap">
+    <div class="arrow">&#10132;</div>
+    <div class="arrow-label">Tap "Quick Select"</div>
+  </div>
+
+  <!-- ── SCREEN 3: Quick Select ───────────────────────────────── -->
+  <div class="screen-group">
+    <div class="screen-number">Screen 3 &mdash; Primary Path</div>
+    <div class="screen-title">Quick Select</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar">
+          <span>12:34</span>
+          <span>&#128267; 78%</span>
+        </div>
+        <div class="app-bar">
+          <span class="back">&#8592;</span>
+          <span class="title">&#2326;&#2366;&#2344;&#2366; &#2342;&#2352;&#2381;&#2332; &#2325;&#2352;&#2375;&#2306;</span>
+        </div>
+
+        <div class="scroll-area">
+          <!-- Meal type chip -->
+          <div class="center mb-20">
+            <span class="meal-chip">&#127858; Lunch &bull; &#2342;&#2379;&#2346;&#2361;&#2352; &#2325;&#2366; &#2326;&#2366;&#2344;&#2366;</span>
+          </div>
+
+          <!-- 3 Primary Buttons -->
+          <div class="meal-btn btn-amber">
+            <span class="emoji">&#127834;</span>
+            <div class="labels">
+              <div class="hindi">&#2349;&#2366;&#2352;&#2368; &#2326;&#2366;&#2344;&#2366;</div>
+              <div class="english">Heavy &mdash; Rice / Roti</div>
+            </div>
+            <span class="impact">&#9888;&#65039;</span>
+          </div>
+
+          <div class="meal-btn btn-green">
+            <span class="emoji">&#129367;</span>
+            <div class="labels">
+              <div class="hindi">&#2361;&#2354;&#2381;&#2325;&#2366; &#2326;&#2366;&#2344;&#2366;</div>
+              <div class="english">Light &mdash; Sabzi / Dal</div>
+            </div>
+            <span class="impact">&#9989;</span>
+          </div>
+
+          <div class="meal-btn btn-red">
+            <span class="emoji">&#127852;</span>
+            <div class="labels">
+              <div class="hindi">&#2350;&#2368;&#2336;&#2366;</div>
+              <div class="english">Sweets / Meetha</div>
+            </div>
+            <span class="impact">&#10071;</span>
+          </div>
+
+          <!-- More options -->
+          <div class="more-toggle mb-8">&#9660; More options &bull; &#2324;&#2352; &#2357;&#2367;&#2325;&#2354;&#2381;&#2346;</div>
+
+          <div class="divider-dots mb-8">&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;</div>
+          <div class="expanded-label">Expanded state (hidden by default)</div>
+
+          <!-- 2 Extra Buttons -->
+          <div class="meal-btn btn-blue">
+            <span class="emoji">&#129385;</span>
+            <div class="labels">
+              <div class="hindi">&#2346;&#2381;&#2352;&#2379;&#2335;&#2368;&#2344;</div>
+              <div class="english">Protein &mdash; Egg / Paneer / Dal</div>
+            </div>
+            <span class="impact">&#9989;</span>
+          </div>
+
+          <div class="meal-btn btn-amber">
+            <span class="emoji">&#127857;</span>
+            <div class="labels">
+              <div class="hindi">&#2350;&#2367;&#2354;&#2366;-&#2332;&#2369;&#2354;&#2366;</div>
+              <div class="english">Mixed / Balanced</div>
+            </div>
+            <span class="impact">&#10134;</span>
+          </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+          &#x26A0; &#2360;&#2366;&#2350;&#2366;&#2344;&#2381;&#2351; &#2360;&#2381;&#2357;&#2366;&#2360;&#2381;&#2341;&#2381;&#2351; &#2325;&#2375; &#2354;&#2367;&#2319;, &#2330;&#2367;&#2325;&#2367;&#2340;&#2381;&#2360;&#2366; &#2360;&#2354;&#2366;&#2361; &#2344;&#2361;&#2368;&#2306;<br>
+          <span style="font-size:11px;">For general wellness, not medical advice</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow-wrap">
+    <div class="arrow">&#10132;</div>
+    <div class="arrow-label">Alt: Take Photo</div>
+  </div>
+
+  <!-- ── SCREEN 4: Food Photo ─────────────────────────────────── -->
+  <div class="screen-group">
+    <div class="screen-number">Screen 4 &mdash; Secondary Path</div>
+    <div class="screen-title">Food Photo</div>
+    <div class="phone dark-bg">
+      <div class="phone-inner">
+        <div class="status-bar dark">
+          <span>12:35</span>
+          <span>&#128267; 78%</span>
+        </div>
+        <div class="app-bar dark">
+          <span class="back">&#8592;</span>
+          <span class="title">&#2326;&#2366;&#2344;&#2375; &#2325;&#2368; &#2347;&#2379;&#2335;&#2379; &#2354;&#2375;&#2306;</span>
+        </div>
+
+        <!-- Camera view -->
+        <div class="camera-view">
+          <span class="camera-hint">&#128247; &#2325;&#2376;&#2350;&#2352;&#2366; &#2309;&#2346;&#2344;&#2375; &#2326;&#2366;&#2344;&#2375; &#2325;&#2368; &#2340;&#2352;&#2347; &#2325;&#2352;&#2375;&#2306;<br><span style="font-size:13px;">Point camera at your food</span></span>
+
+          <div class="plate-circle">&#127858;</div>
+
+          <div class="camera-controls">
+            <div class="gallery-btn">&#128444;&#65039;</div>
+            <div class="capture-btn">&#128247;</div>
+            <div class="spacer-48"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow-wrap">
+    <div class="arrow">&#10132;</div>
+    <div class="arrow-label">Gemini classifies</div>
+  </div>
+
+  <!-- ── SCREEN 5: Meal Result ────────────────────────────────── -->
+  <div class="screen-group">
+    <div class="screen-number">Screen 5 &mdash; AI Result</div>
+    <div class="screen-title">Meal Result</div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="status-bar">
+          <span>12:35</span>
+          <span>&#128267; 78%</span>
+        </div>
+        <div class="app-bar">
+          <span class="back">&#8592;</span>
+          <span class="title">&#2326;&#2366;&#2344;&#2375; &#2325;&#2366; &#2344;&#2340;&#2368;&#2332;&#2366;</span>
+        </div>
+
+        <div class="scroll-area">
+          <!-- Carb badge -->
+          <div class="center mb-24">
+            <div class="carb-badge badge-red">
+              <span class="badge-icon">&#9888;&#65039;</span>
+              <span>&#2332;&#2364;&#2381;&#2351;&#2366;&#2342;&#2366; &#2325;&#2366;&#2352;&#2381;&#2348;<br><span style="font-size:15px; font-weight:400;">High Carb</span></span>
+            </div>
+          </div>
+
+          <!-- Tip card -->
+          <div class="tip-card mb-20">
+            <span class="bulb" style="color:#f59e0b;">&#128161;</span>
+            <div class="tip-text">
+              &#2330;&#2366;&#2357;&#2354; &#2325;&#2375; &#2360;&#2366;&#2341; &#2360;&#2348;&#2381;&#2332;&#2364;&#2368; &#2326;&#2366;&#2319;&#2306;, &#2358;&#2369;&#2327;&#2352; &#2343;&#2368;&#2352;&#2375; &#2348;&#2338;&#2364;&#2340;&#2366; &#2361;&#2376;
+              <br><span style="font-size:14px; color:#64748b;">Eat vegetables with rice to slow sugar rise</span>
+            </div>
+          </div>
+
+          <!-- Meal type dropdown -->
+          <div class="section-label">&#2326;&#2366;&#2344;&#2375; &#2325;&#2366; &#2346;&#2381;&#2352;&#2325;&#2366;&#2352; &bull; Meal Type</div>
+          <div class="dropdown-field mb-20">
+            <span>&#127858; &#2342;&#2379;&#2346;&#2361;&#2352; &#2325;&#2366; &#2326;&#2366;&#2344;&#2366; (Lunch)</span>
+            <span style="color:#94a3b8;">&#9660;</span>
+          </div>
+
+          <!-- Not correct? Change -->
+          <div class="change-btn mb-24">
+            &#9998; &#2360;&#2361;&#2368; &#2344;&#2361;&#2368;&#2306;? &#2348;&#2342;&#2354;&#2375;&#2306; &bull; <span style="font-size:14px;">Not correct? Change</span>
+          </div>
+
+          <!-- Disclaimer -->
+          <div class="disclaimer-box">
+            <span class="info-icon">&#9432;</span>
+            <div class="text">
+              &#2360;&#2366;&#2350;&#2366;&#2344;&#2381;&#2351; &#2360;&#2381;&#2357;&#2366;&#2360;&#2381;&#2341;&#2381;&#2351; &#2325;&#2375; &#2354;&#2367;&#2319;, &#2330;&#2367;&#2325;&#2367;&#2340;&#2381;&#2360;&#2366; &#2360;&#2354;&#2366;&#2361; &#2344;&#2361;&#2368;&#2306;<br>
+              For general wellness, not medical advice
+            </div>
+          </div>
+        </div>
+
+        <!-- Save button fixed at bottom -->
+        <div style="padding:16px;">
+          <button class="save-btn">&#10003; &#2360;&#2375;&#2357; &#2325;&#2352;&#2375;&#2306; &bull; Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /flow -->
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     CARB CATEGORY REFERENCE STRIP
+     ════════════════════════════════════════════════════════════════ -->
+<div class="ref-strip">
+  <h3>&#127993; All 5 Carb Category Badges (Color-Blind Safe)</h3>
+  <div class="ref-badges">
+    <div class="ref-badge badge-red">
+      <span class="icon">&#9888;&#65039;</span>
+      High Carb &mdash; &#2332;&#2364;&#2381;&#2351;&#2366;&#2342;&#2366; &#2325;&#2366;&#2352;&#2381;&#2348;
+    </div>
+    <div class="ref-badge badge-amber">
+      <span class="icon">&#10134;</span>
+      Moderate Carb &mdash; &#2360;&#2366;&#2350;&#2366;&#2344;&#2381;&#2351; &#2325;&#2366;&#2352;&#2381;&#2348;
+    </div>
+    <div class="ref-badge badge-green">
+      <span class="icon">&#9989;</span>
+      Low Carb &mdash; &#2325;&#2350; &#2325;&#2366;&#2352;&#2381;&#2348;
+    </div>
+    <div class="ref-badge badge-blue">
+      <span class="icon">&#128170;</span>
+      High Protein &mdash; &#2332;&#2364;&#2381;&#2351;&#2366;&#2342;&#2366; &#2346;&#2381;&#2352;&#2379;&#2335;&#2368;&#2344;
+    </div>
+    <div class="ref-badge badge-red">
+      <span class="icon">&#10071;</span>
+      Sweets &mdash; &#2350;&#2368;&#2336;&#2366;
+    </div>
+  </div>
+  <p style="font-size:12px; color:#94a3b8; margin-top:12px;">
+    Each badge has a unique icon shape in addition to color, ensuring color-blind accessibility.<br>
+    Colors: <strong style="color:#ef4444;">Danger #EF4444</strong> &nbsp;
+    <strong style="color:#f59e0b;">Amber #F59E0B</strong> &nbsp;
+    <strong style="color:#10b981;">Success #10B981</strong> &nbsp;
+    <strong style="color:#0ea5e9;">Primary #0EA5E9</strong>
+  </p>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     DESIGN NOTES
+     ════════════════════════════════════════════════════════════════ -->
+<div class="notes">
+  <h3>Design Notes for Stakeholder Review</h3>
+  <ul>
+    <li><strong>Key decision (Healthify UX):</strong> Meals tile replaces unused Steps tile in MetricsGrid. Same "+" button pattern as BP/Glucose &mdash; no new mental model needed.</li>
+    <li><strong>Same sibling pattern:</strong> Tap Meals [+] &rarr; bottom sheet modal &rarr; choose Quick Select or Photo. Identical to how BP/Glucose readings work.</li>
+    <li><strong>MealSummaryCard (new):</strong> Shows today's meals as colored badges between AI Insight and MetricsGrid. "Log more" link for easy access.</li>
+    <li><strong>No FAB, no new tab:</strong> Healthify recommends against both. 5 bottom tabs is already the elderly cognitive max. FABs confuse Bihar grandmothers.</li>
+    <li><strong>Two-tap flow:</strong> Meals [+] &rarr; Quick Select &rarr; tap category &rarr; done (3 taps including modal).</li>
+    <li><strong>Hindi-first design:</strong> Hindi labels 20px bold (primary), English 14px secondary. All text via AppLocalizations.</li>
+    <li><strong>72dp touch targets:</strong> Each meal button is 72px tall, well above 48dp minimum for elderly users.</li>
+    <li><strong>Color-blind safe:</strong> Every badge has a distinct icon shape (check, minus, warning, exclamation) alongside color.</li>
+    <li><strong>Color consistency fix:</strong> HIGH_CARB = amber (caution) everywhere. SWEETS = red (danger) everywhere. Consistent across Quick Select and Result screens.</li>
+    <li><strong>Photo path (secondary):</strong> Camera &rarr; Gemini Vision classifies &rarr; result with tip. 5-second timeout auto-falls back to Quick Select.</li>
+    <li><strong>"Not correct? Change":</strong> Now OutlinedButton with visible border (Healthify requirement &mdash; must look tappable).</li>
+    <li><strong>Disclaimer:</strong> Present on Quick Select and Result screens. Required for NMC compliance.</li>
+    <li><strong>Colors from AppColors:</strong> primary=#0EA5E9, success=#10B981, amber=#F59E0B, danger=#EF4444, bgPage=#F0F9FF, textPrimary=#1E293B.</li>
+  </ul>
+</div>
+
+<p style="text-align:center; color:#cbd5e1; font-size:12px; margin-top:32px; padding-bottom:24px;">
+  Swasth Health App &mdash; Meal Logging Prototype &mdash; April 2026<br>
+  For stakeholder review only. Not a functional prototype.
+</p>
+
+</body>
+</html>

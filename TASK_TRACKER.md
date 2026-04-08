@@ -117,6 +117,8 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | D20 | Demo seed data | ✅ Done | `seed_demo_data.py` — 3 users (Ramesh/Sunita/Arjun) with 45 days of glucose + BP readings. Realistic patterns (diabetic/improving/healthy). |
 | D21 | CI/CD pipeline | ✅ Done | GitHub Actions (pytest + flutter analyze + flutter test). Pre-push git hook runs all tests locally before push. |
 | D22 | Home screen refactor | ✅ Done | 1,635 → 367 lines. 7 extracted widgets + utils/health_helpers.dart. |
+| D23 | AI responses in user's selected language | ❌ Not started | AI insight, trend summary, and health tips return English even when Hindi is selected. Need translation service (Google Translate API or Gemini) to convert AI-generated text to user's locale before displaying. Affects: ai-insight endpoint, trend-summary, meal tips. |
+| D24 | Food Photo Classification | 🔄 Partial | Steps 1-3 done (model, API, insight rules). Steps 4-5 done (Quick Select, Food Photo, Meal Result screens). Step 6 in progress (dashboard integration). Blueprint: docs/blueprints/food-photo-classification.md |
 
 ---
 

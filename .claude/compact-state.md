@@ -50,3 +50,12 @@
 2. Start Step 3: AI insight rules in `backend/routes_health.py` + `backend/health_utils.py`
 3. Then Steps 4-6: Flutter frontend screens
 4. After implementation: run Stages 5-9 of pipeline (verify → security → expert QA → review → ship)
+## 2026-04-08 10:37 — Pre-compact state
+Branch: feature/living-heart-widget
+Last commit: 40fd0d4 docs: save session state + audit log before compact
+ .claude/compact-state.md    |   3 +++
+ .claude/sessions/latest.md  |   2 +-
+ .claude/settings.local.json |  15 +++++++++------
+ backend/.coverage           | Bin 53248 -> 0 bytes
+ 4 files changed, 13 insertions(+), 7 deletions(-)
+---
