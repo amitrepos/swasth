@@ -1,0 +1,191 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(psql -U postgres -c \"\\\\du\")",
+      "Bash(psql -U amitkumarmishra -c \"\\\\du\")",
+      "Bash(source venv/bin/activate)",
+      "Bash(python -c \":*)",
+      "Read(//Users/amitkumarmishari/workspace/swasth/swasth_app/lib/**)",
+      "Read(//Users/amitkumarmishari/workspace/swasth/swasth_app/lib/models/**)",
+      "Bash(psql -U postgres -lqt)",
+      "Bash(psql -U amitkumarmishra -lqt)",
+      "Bash(pip install:*)",
+      "Bash(curl -s http://localhost:8000/docs)",
+      "Bash(python3 -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(source /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/venv/bin/activate)",
+      "Bash(python3 -c \":*)",
+      "Bash(flutter gen-l10n:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(xargs kill:*)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(ls:*)",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(grep:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"docs: update audit log for dashboard redesign session:*)",
+      "Bash(lsof -ti:8000)",
+      "Bash(lsof -ti:8080)",
+      "Bash(git commit -m \"docs: update audit log for doctor card + dashboard session:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "Bash(flutter doctor:*)",
+      "Bash(flutter pub:*)",
+      "Bash(pod install:*)",
+      "Bash(flutter build:*)",
+      "Bash(brew services:*)",
+      "Bash(curl -s http://192.168.0.235:8000/)",
+      "Bash(flutter run:*)",
+      "Bash(kill 75221 83633 89390 89388 83715 84065 83633 75219)",
+      "Bash(pkill -f \"flutter run\")",
+      "Bash(pkill -f \"flutter_tools.snapshot run\")",
+      "Bash(flutter clean:*)",
+      "Bash(python3 -c \"from google import genai; print\\(''google-genai OK''\\)\")",
+      "Bash(flutter devices:*)",
+      "Bash(pkill -x Xcode)",
+      "Bash(git commit:*)",
+      "Bash(for file:*)",
+      "Bash(do basename:*)",
+      "Bash(pkill -f flutter_tools)",
+      "Bash(pkill -f dart.*flutter)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(k\\) for k in d if not k.startswith\\(''''@''''\\)]\")",
+      "Bash(python3:*)",
+      "Bash(head -15 grep -n \"Card\\\\\\(\\\\|TabBar\\\\|glass_card\\\\|chart.*Container\\\\|Container.*chart\" /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/trend_chart_screen.dart)",
+      "Bash(wc -l /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/**/*.dart /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/*.dart)",
+      "Bash(wc -l /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/*.py)",
+      "Bash(find /Users/amitkumarmishra/workspace/swasth/swasth_app/backend -maxdepth 1 -name \"*.py\" -exec wc -l {})",
+      "Bash(find . -name *test*.py -o -name pytest.ini -o -name conftest.py)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest tests/test_api_auth.py::TestRegister::test_register_success -v --tb=long)",
+      "Bash(python -c \"from config import settings; print\\(f''GEMINI_API_KEY set: {bool\\(settings.GEMINI_API_KEY\\)}''\\)\")",
+      "Bash(lsof -ti:8000 -ti:8080)",
+      "Bash(curl:*)",
+      "Bash(ipconfig getifaddr:*)",
+      "Bash(idevicesyslog)",
+      "Bash(xcrun devicectl:*)",
+      "Bash(git checkout:*)",
+      "Bash(git clean:*)",
+      "Bash(gh auth:*)",
+      "Bash(ssh:*)",
+      "Bash(python -m pytest tests/test_auth.py::TestDecodeAccessToken::test_tampered_token_returns_none -v)",
+      "Bash(pip3 install:*)",
+      "Bash(git stash:*)",
+      "Bash(TESTING=true python -m pytest tests/test_dashboard_endpoints.py -v --tb=short)",
+      "Bash(flutter test:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//Users/amitkumarmishra/workspace/swasth/swasth_app/**)",
+      "Bash(done)",
+      "Bash(python -m pytest tests/ --cov=. --cov-report=term-missing --cov-config=.coveragerc -q)",
+      "Bash(TESTING=true python -m pytest tests/ --cov=. --cov-config=.coveragerc --cov-report=term-missing -q)",
+      "Bash(TESTING=true python -m pytest tests/test_chat_extended.py::TestChatContextSummarization::test_chat_with_health_data_context -v --tb=short)",
+      "Bash(TESTING=true python -m pytest tests/test_chat_extended.py::TestChatContextSummarization::test_chat_with_health_data_context -v --tb=long)",
+      "Bash(TESTING=true python -m pytest tests/ --cov=. --cov-config=.coveragerc -q)",
+      "Bash(pkill -f \"flutter\")",
+      "Bash(psql --version)",
+      "Bash(brew list:*)",
+      "Bash(pg_isready)",
+      "Bash(psql -l)",
+      "Bash(pkill -f \"python3 main.py\")",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(scp -i '~/.ssh/hertzner-key' /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ai_service.py root@65.109.226.36:/var/www/swasth/backend/ai_service.py)",
+      "Bash(scp -i '~/.ssh/hertzner-key' /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py root@65.109.226.36:/var/www/swasth/backend/routes_health.py)",
+      "Bash(scp -i '~/.ssh/hertzner-key' /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ai_service.py /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py root@65.109.226.36:/var/www/swasth/backend/)",
+      "Bash(scp -i '~/.ssh/hertzner-key' /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ai_service.py /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py root@65.109.226.36:/var/www/swasth/backend/)",
+      "Bash(TESTING=true python -m pytest tests/test_critical_gaps.py::TestCriticalAlertEmail::test_critical_glucose_sends_email_to_family -v --tb=short)",
+      "Bash(TESTING=true python -m pytest tests/ --cov=. --cov-config=.coveragerc --cov-report=term -q)",
+      "Bash(scp -i '~/.ssh/hertzner-key' /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_health.py root@65.109.226.36:/var/www/swasth/backend/)",
+      "Bash(scp -i '~/.ssh/hertzner-key' /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py root@65.109.226.36:/var/www/swasth/backend/)",
+      "Bash(python -m pytest tests/test_admin.py -v)",
+      "WebSearch",
+      "WebFetch(domain:www.loophealth.com)",
+      "Bash(gh api:*)",
+      "Bash(pip3 list:*)",
+      "Bash(/tmp/pptx_env/bin/pip install:*)",
+      "Bash(/tmp/pptx_env/bin/python:*)",
+      "Read(//Users/amitkumarmishra/**)",
+      "WebFetch(domain:iclg.com)",
+      "WebFetch(domain:doccure.io)",
+      "WebFetch(domain:corporate.cyrilamarchandblogs.com)",
+      "Bash(brew install:*)",
+      "Bash(pdftoppm -v)",
+      "Bash(git pull:*)",
+      "Bash(python -m pytest tests/test_api_auth.py -v)",
+      "Bash(git rebase:*)",
+      "Bash(GIT_EDITOR=true git rebase --continue)",
+      "Bash(rm /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands/review.md /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands/ux-review.md /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands/doctor-feedback.md /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands/legal-check.md)",
+      "Bash(rmdir /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/save-session.sh:*)",
+      "Bash(/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/load-session.sh:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$TOOL_INPUT\" | grep -q '\\-\\-no-verify' && echo 'BLOCKED: --no-verify is not allowed. Fix the issue instead of skipping hooks.' && exit 1 || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(echo \"$TOOL_INPUT\" | jq -r '.file_path // \"\"'); case \"$f\" in */analysis_options.yaml|*/pyproject.toml|*/.coveragerc|*/.github/workflows/*) echo 'WARNING: You are about to modify a config/CI file. Make sure this is intentional and not to weaken checks.' ;; esac; true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // \"unknown\"' | { read -r f; echo \"  - $(date '+%H:%M:%S') modified: $f\" >> /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md; } 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); case \"$f\" in *.dart) dart format \"$f\" 2>/dev/null || true ;; *.py) cd /Users/amitkumarmishra/workspace/swasth/swasth_app/backend && python -m black \"$f\" --quiet 2>/dev/null || true ;; esac"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=/Users/amitkumarmishra/workspace/swasth/swasth_app; echo \"## $(date '+%Y-%m-%d %H:%M') — Pre-compact state\" >> $P/.claude/compact-state.md && echo \"Branch: $(git -C $P branch --show-current 2>/dev/null)\" >> $P/.claude/compact-state.md && echo \"Last commit: $(git -C $P log --oneline -1 2>/dev/null)\" >> $P/.claude/compact-state.md && git -C $P diff --stat >> $P/.claude/compact-state.md 2>/dev/null && echo '---' >> $P/.claude/compact-state.md || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/save-session.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/load-session.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

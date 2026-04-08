@@ -3,6 +3,49 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-04-07 — PR reviews, pitch deck, Living Heart widget, sub-agents, branch cleanup
+
+### Branch Cleanup
+- Deleted 10 merged remote branches (kept open PR branches #55, #56)
+- Closed PR #55 (TIMESTAMPTZ→TIMESTAMP — wrong approach, superseded by #59)
+
+### PR Reviews & Merges
+- **PR #60** (merged): `GET /health` connectivity check — fixed 405 error from `HEAD /`
+- **PR #59** (merged): Store timestamps in UTC — correct timezone approach
+- **PR #57** (merged): Case-insensitive email + profile navigation fix
+  - Fixed: centralized email normalization into Pydantic validators (5 schemas)
+  - Fixed: removed 6 debug print() statements from Flutter
+  - Fixed: replaced print() with logging.error() in routes.py
+  - Added 5 tests for case-insensitive email handling
+- **PR #61** (merged): Living Heart widget — replaced score donut ring
+  - Changed `lib/widgets/home/health_score_ring.dart`: Complete rewrite — heart shape via CustomPaint, solid colors (#28A745/#FF9500/#FF3B30), 72px score, pulse animation (2s/1.2s/0.8s), custom SVG face painter, trend arrows, full-width call-doctor button on urgent
+  - Changed `lib/screens/home_screen.dart`: Added `_callDoctor()` method, wired `onCallDoctor` callback to `tel:` URI via url_launcher
+  - Changed `lib/l10n/app_en.arb` + `app_hi.arb`: 7 new localization keys for heart widget
+  - Changed `test/dashboard_widgets_test.dart`: 18 new tests (79→97 total)
+- **PR #56, #58**: Review comments posted — waiting on Karthik for fixes
+
+### Connectivity Fix
+- Changed `lib/services/connectivity_service.dart`: HEAD / → GET /health (fixed 405 Method Not Allowed)
+
+### Doctor Pitch Deck
+- Created `docs/Swasth_Pitch_Deck_v2.pptx`: 8-slide deck for doctor recruitment
+- Created `docs/doctor_deck_feedback.md`: Feedback from simulated doctor persona review
+- Created `docs/heart_prototype.html` + `docs/heart_prototype_v2.html`: Interactive prototypes for Living Heart widget
+- Created `docs/deck_screenshots/`: 12 app screenshots for the deck
+
+### Sub-Agents Framework
+- Created `docs/agent_prompts/README.md`: Directory of all 4 sub-agents
+- Created `docs/agent_prompts/daniel_reviewer.md`: Senior SDE reviewer (auto-triggered on PRs)
+- Created `docs/agent_prompts/ux_designer.md`: UX designer for health-tech
+- Created `docs/agent_prompts/lawyer_startup.md`: Startup legal advisor (India)
+- Created `docs/agent_prompts/doctor_persona.md`: Doctor persona for product feedback
+- Updated Daniel's prompt: mandatory 100% test coverage check on all reviews
+
+### NMC Compliance Research
+- Documented NMC Telemedicine Practice Guidelines requirements
+- Identified gaps: AI chat disclaimer, doctor registration display, 3-year record retention
+- Compliance summary prepared for pitch deck (Slide 4)
+
 ## 2026-04-03 — Full session: Admin dashboard, BMI, profile editing, history refresh, AI memory
 
 ### Admin Dashboard — User Detail View (PoC testing)
@@ -1761,3 +1804,72 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 16:24:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
   - 16:25:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
   - 20:16:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes.py
+  - 20:46:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/health_score_ring.dart
+  - 20:46:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/health_score_ring.dart
+  - 20:47:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/health_score_ring.dart
+  - 20:47:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 20:48:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 20:48:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 22:08:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_en.arb
+  - 22:09:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/l10n/app_hi.arb
+  - 22:10:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/health_score_ring.dart
+  - 22:10:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 22:10:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/home_screen.dart
+  - 22:11:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/dashboard_widgets_test.dart
+  - 22:34:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 08:43:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/WORKING-CONTEXT.md
+  - 08:44:00 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/RULES.md
+  - 08:44:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.mcp.json
+  - 08:44:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands/review.md
+  - 08:44:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands/doctor-feedback.md
+  - 08:44:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands/legal-check.md
+  - 08:45:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/commands/ux-review.md
+  - 08:46:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/settings.local.json
+  - 08:46:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 08:51:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/daniel-review/SKILL.md
+  - 08:51:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/doctor-feedback/SKILL.md
+  - 08:51:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/legal-check/SKILL.md
+  - 08:52:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/ux-review/SKILL.md
+  - 08:59:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 09:00:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/tdd-workflow/SKILL.md
+  - 09:00:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/security-audit/SKILL.md
+  - 09:00:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/ship/SKILL.md
+  - 09:01:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/claude-toolkit-template/README.md
+  - 09:01:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/claude-toolkit-template/CLAUDE-TEMPLATE.md
+  - 09:02:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/claude-toolkit-template/RULES-TEMPLATE.md
+  - 09:02:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/claude-toolkit-template/WORKING-CONTEXT-TEMPLATE.md
+  - 09:03:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/blueprint/SKILL.md
+  - 09:04:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/phi-compliance/SKILL.md
+  - 09:04:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/verify/SKILL.md
+  - 09:04:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/safety-guard/SKILL.md
+  - 09:04:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/council/SKILL.md
+  - 09:04:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 09:32:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/claude-toolkit-template/HOW-IT-WORKS.md
+  - 09:41:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/save-session.sh
+  - 09:41:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/load-session.sh
+  - 09:41:53 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/learn/SKILL.md
+  - 09:42:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/strategic-compact/SKILL.md
+  - 09:42:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/settings.local.json
+  - 09:42:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/blueprint/SKILL.md
+  - 09:42:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/council/SKILL.md
+  - 09:42:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/security-audit/SKILL.md
+  - 09:42:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/phi-compliance/SKILL.md
+  - 09:43:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/RULES.md
+  - 09:43:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 09:43:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 09:43:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 09:46:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 09:46:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/ship/SKILL.md
+  - 09:47:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/claude-toolkit-template/HOW-IT-WORKS.md
+  - 09:50:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 09:50:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 09:50:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/ship/SKILL.md
+  - 10:00:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/blueprints/food-photo-classification.md
+  - 10:02:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meals.py
+  - 10:03:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 10:03:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 10:04:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meals.py
+  - 10:15:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 10:16:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/claude-toolkit-template/HOW-IT-WORKS.md
+  - 10:17:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.gitignore
+  - 10:20:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.gitignore

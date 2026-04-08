@@ -195,6 +195,42 @@ class TrendSummaryCache(Base):
     )
 
 
+class MealLog(Base):
+    """Food photo classification — carb level detection for glucose correlation."""
+    __tablename__ = "meal_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False)
+
+    # Classification (NO food naming — only carb level)
+    category = Column(String, nullable=False)          # HIGH_CARB, MODERATE_CARB, LOW_CARB, HIGH_PROTEIN, SWEETS
+    glucose_impact = Column(String, nullable=False)    # HIGH, MODERATE, LOW, VERY_HIGH
+
+    # Health tip from Gemini
+    tip_en = Column(Text, nullable=True)
+    tip_hi = Column(Text, nullable=True)
+
+    # Meal context
+    meal_type = Column(String, nullable=False)         # BREAKFAST, LUNCH, DINNER, SNACK
+
+    # Photo storage
+    photo_path = Column(String, nullable=True)         # Server filesystem path
+
+    # Metadata
+    input_method = Column(String, nullable=False)      # PHOTO_GEMINI, QUICK_SELECT
+    confidence = Column(Float, nullable=True)          # Gemini confidence score
+    user_confirmed = Column(Boolean, default=False)
+    user_corrected_category = Column(String, nullable=True)  # If user overrode Gemini
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_meals_profile_time", "profile_id", "timestamp"),
+    )
+
+
 class PasswordResetOTP(Base):
     __tablename__ = "password_reset_otps"
 
