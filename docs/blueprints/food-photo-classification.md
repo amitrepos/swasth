@@ -39,6 +39,24 @@ Patient photographs their meal → Gemini classifies carb level → app shows he
 9. **Dashboard empty state: warm language + tappable meal pills** — not status text
 10. **Quick Select result screen: 64x64 emoji if no photo** — not blank space
 
+## Stage 3 Validation — Legal Review (2026-04-08)
+
+### HIGH (must fix before pilot)
+1. **Strip EXIF metadata from food photos** — remove GPS, camera model before storage. Use `piexif` library.
+2. **Update consent screen** to cover food photo collection + storage purpose. Current consent (D18) only covers health readings.
+3. **Bilingual disclaimer on tip screen** — Hindi + English, visible where tip is shown.
+
+### MEDIUM (fix before pilot launch)
+4. **Separate AI training consent toggle** — "Allow photos to improve AI accuracy" (default: OFF).
+5. **90-day photo retention policy** for pilot — delete photos, keep classification data.
+6. **Right to deletion must include photos** — update deletion endpoint.
+7. **Correlation language: "pattern" not "prediction"** — always with disclaimer.
+8. **Gemini cross-border processing disclosure** — one line in consent about AI processing.
+
+### LOW (post-funding)
+9. Photo encryption at rest (S3 + SSE).
+10. NMC fee-splitting risk if doctors charge for app-based diet consultation.
+
 ## Architecture Fit
 - Backend: new `routes_meals.py` (mirrors `routes_health.py` pattern)
 - Model: `MealLog` table in `models.py` ✅ DONE (Step 1 complete)
