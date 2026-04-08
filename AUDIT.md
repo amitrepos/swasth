@@ -1881,3 +1881,32 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 10:27:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
   - 10:32:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/blueprints/food-photo-classification.md
   - 10:34:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/blueprints/food-photo-classification.md
+  - 10:36:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/compact-state.md
+
+## 2026-04-08 — Claude Code Toolkit + Food Feature Steps 1-2
+
+### Toolkit (inspired by github.com/affaan-m/everything-claude-code)
+- Created `RULES.md`: Must Always/Must Never guardrails, model routing table
+- Created `WORKING-CONTEXT.md`: live sprint board
+- Created `.mcp.json`: GitHub + Context7 MCP servers
+- Created 15 skills in `.claude/skills/`: review, tdd, verify, security-audit, ship, blueprint, council, ux-review, doctor-feedback, legal-check, phi-compliance, safety-guard, learn, strategic-compact, ux-expert
+- Created `.claude/scripts/save-session.sh` + `load-session.sh`: session persistence
+- Updated `.claude/settings.local.json`: 7 hooks (SessionStart, Stop, PreCompact, block-no-verify, config-protection, auto-format, audit-log)
+- Updated `CLAUDE.md`: 9-stage enforced pipeline with domain expert validation at Stage 3
+- Created `docs/claude-toolkit-template/`: portable template (5 files)
+- Updated `.gitignore`: track all .claude/ files except secrets
+
+### Food Photo Classification (Steps 1-2 of 6)
+- Created `backend/models.py` MealLog class: profile_id, category, glucose_impact, tip_en/hi, meal_type, photo_path, input_method, confidence, user_corrected_category
+- Created `backend/schemas.py`: MealLogCreate, MealLogResponse, FoodClassificationResponse with enum validation
+- Created `backend/routes_meals.py`: POST /meals, GET /meals, GET /meals/today, DELETE /meals/{id}, POST /meals/parse-image
+- Registered meals router in `backend/main.py`
+- Created `backend/tests/test_meals.py`: 23 tests (model, schema, CRUD, parse-image, auth, access control)
+- Created `docs/blueprints/food-photo-classification.md`: 6-step blueprint with 3 expert validations
+
+### Expert Validations (Stage 3)
+- Dr. Rajesh: Quick Select primary, 3 buttons, soft language, photo privacy
+- Healthify UX: Hindi primary labels, stacked buttons, color-blind icons, fixed save
+- Legal: EXIF stripping (HIGH), consent update (HIGH), bilingual disclaimer (HIGH)
+
+367 backend tests + 97 frontend tests passing. Zero regressions.
