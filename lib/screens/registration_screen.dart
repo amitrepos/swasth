@@ -232,7 +232,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter your phone number';
                   }
-                  if (value.length < 10 || value.length > 15) {
+                  final stripped = value.replaceAll(RegExp(r'[\s\-]'), '');
+                  if (!RegExp(r'^\+?[0-9]+$').hasMatch(stripped)) {
+                    return 'Phone number can only contain digits';
+                  }
+                  if (stripped.length < 10 || stripped.length > 15) {
                     return 'Phone number must be 10-15 digits';
                   }
                   return null;

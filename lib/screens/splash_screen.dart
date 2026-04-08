@@ -24,50 +24,61 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _attemptAutoLogin() async {
-    final creds = await _storage.getSavedCredentials();
-
-    // No saved credentials → show login screen
-    if (creds == null) {
-      _goToLogin();
-      return;
-    }
-
-    // Try online login first (fast timeout)
+    final token = await _storage.getToken();
     final reachable = await ConnectivityService().isServerReachable();
 
-    if (reachable) {
+    // 1. Try to use existing token
+    if (token != null) {
+      if (reachable) {
+        try {
+          // Verify token is still valid
+          final userData = await ApiService().getCurrentUser(token);
+          await _storage.saveUserData(userData);
+          await _storage.saveLastLoginTimestamp();
+          
+          SyncService().syncPendingReadings();
+          _goToProfiles();
+          return;
+        } catch (_) {
+          // Token expired or invalid, fall through to credential login
+        }
+      } else {
+        // Offline session check
+        final lastLogin = await _storage.getLastLoginTimestamp();
+        if (lastLogin != null) {
+          final daysSince = DateTime.now().difference(lastLogin).inDays;
+          if (daysSince <= 7) {
+            _goToProfiles();
+            return;
+          }
+        }
+      }
+    }
+
+    // 2. Try saved credentials fallback (if token was invalid or missing)
+    final creds = await _storage.getSavedCredentials();
+    if (creds != null && reachable) {
       try {
         final resp = await ApiService().login(creds.email, creds.password);
-        final token = resp['access_token'] as String?;
-        if (token != null) {
-          await _storage.saveToken(token);
+        final newToken = resp['access_token'] as String?;
+        if (newToken != null) {
+          await _storage.saveToken(newToken);
           await _storage.saveLastLoginTimestamp();
           try {
-            final userData = await ApiService().getCurrentUser(token);
+            final userData = await ApiService().getCurrentUser(newToken);
             await _storage.saveUserData(userData);
           } catch (_) {}
-          // Sync any pending offline readings in background
+          
           SyncService().syncPendingReadings();
           _goToProfiles();
           return;
         }
       } catch (_) {
-        // Online login failed (wrong password changed on another device, etc.)
-        // Fall through to offline check
+        // Credential login failed
       }
     }
 
-    // Offline path — check if session is fresh enough (within 7 days)
-    final lastLogin = await _storage.getLastLoginTimestamp();
-    if (lastLogin != null) {
-      final daysSince = DateTime.now().difference(lastLogin).inDays;
-      if (daysSince <= 7) {
-        _goToProfiles();
-        return;
-      }
-    }
-
-    // Session too old or no previous login — must log in online
+    // 3. No active session or valid fallback credentials, show login screen
     _goToLogin();
   }
 
