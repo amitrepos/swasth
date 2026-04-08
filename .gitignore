@@ -48,8 +48,11 @@ app.*.map.json
 # Secrets
 backend/.env
 
-# Local tooling
-.claude/
+# Local tooling — track skills/scripts/settings, ignore session state
+.claude/settings.local.json
+.claude/sessions/
+.claude/learnings/
+.claude/compact-state.md
 .vscode/
 
 # Backup directories

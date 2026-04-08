@@ -428,3 +428,87 @@ class HealthReadingResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ---------------------------------------------------------------------------
+# Meal Logging schemas
+# ---------------------------------------------------------------------------
+
+MEAL_CATEGORIES = ["HIGH_CARB", "MODERATE_CARB", "LOW_CARB", "HIGH_PROTEIN", "SWEETS"]
+GLUCOSE_IMPACT_OPTIONS = ["HIGH", "MODERATE", "LOW", "VERY_HIGH"]
+MEAL_TYPE_OPTIONS = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"]
+MEAL_INPUT_METHODS = ["PHOTO_GEMINI", "QUICK_SELECT"]
+
+
+class MealLogCreate(BaseModel):
+    profile_id: int
+    category: str
+    glucose_impact: str
+    meal_type: str
+    input_method: str
+    timestamp: datetime
+    tip_en: Optional[str] = None
+    tip_hi: Optional[str] = None
+    confidence: Optional[float] = None
+    user_confirmed: bool = True
+    user_corrected_category: Optional[str] = None
+
+    @validator('category')
+    def validate_category(cls, v):
+        if v not in MEAL_CATEGORIES:
+            raise ValueError(f'category must be one of: {", ".join(MEAL_CATEGORIES)}')
+        return v
+
+    @validator('glucose_impact')
+    def validate_glucose_impact(cls, v):
+        if v not in GLUCOSE_IMPACT_OPTIONS:
+            raise ValueError(f'glucose_impact must be one of: {", ".join(GLUCOSE_IMPACT_OPTIONS)}')
+        return v
+
+    @validator('meal_type')
+    def validate_meal_type(cls, v):
+        if v not in MEAL_TYPE_OPTIONS:
+            raise ValueError(f'meal_type must be one of: {", ".join(MEAL_TYPE_OPTIONS)}')
+        return v
+
+    @validator('input_method')
+    def validate_input_method(cls, v):
+        if v not in MEAL_INPUT_METHODS:
+            raise ValueError(f'input_method must be one of: {", ".join(MEAL_INPUT_METHODS)}')
+        return v
+
+    @validator('user_corrected_category')
+    def validate_corrected_category(cls, v):
+        if v is not None and v not in MEAL_CATEGORIES:
+            raise ValueError(f'user_corrected_category must be one of: {", ".join(MEAL_CATEGORIES)}')
+        return v
+
+
+class MealLogResponse(BaseModel):
+    id: int
+    profile_id: int
+    logged_by: Optional[int] = None
+    category: str
+    glucose_impact: str
+    tip_en: Optional[str] = None
+    tip_hi: Optional[str] = None
+    meal_type: str
+    photo_path: Optional[str] = None
+    input_method: str
+    confidence: Optional[float] = None
+    user_confirmed: bool
+    user_corrected_category: Optional[str] = None
+    timestamp: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FoodClassificationResponse(BaseModel):
+    """Response from Gemini Vision food classification."""
+    category: str
+    glucose_impact: str
+    tip_en: str
+    tip_hi: str
+    confidence: float
