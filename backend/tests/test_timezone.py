@@ -69,8 +69,8 @@ class TestRegistrationWithTimezone:
         data = response.json()
         assert data["timezone"] == "America/New_York"
 
-    def test_register_without_timezone_defaults_to_kolkata(self, client):
-        """Test that registration defaults to Asia/Kolkata if timezone not provided."""
+    def test_register_without_timezone_defaults_to_utc(self, client):
+        """Test that registration defaults to UTC if timezone not provided."""
         response = client.post(
             "/api/auth/register",
             json={
@@ -86,7 +86,7 @@ class TestRegistrationWithTimezone:
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["timezone"] == "Asia/Kolkata"
+        assert data["timezone"] == "UTC"
 
     def test_register_with_invalid_timezone(self, client):
         """Test that invalid timezone is rejected."""
