@@ -1031,4 +1031,148 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offlineLoginExpired => 'Please connect to the internet to log in';
+
+  @override
+  String get heartStatusHealthy => 'You\'re doing great';
+
+  @override
+  String get heartStatusCaution => 'Monitor closely today';
+
+  @override
+  String get heartStatusUrgent => 'Call your doctor today';
+
+  @override
+  String get heartFaceHealthy => 'All is well';
+
+  @override
+  String get heartFaceCaution => 'Stay alert today';
+
+  @override
+  String get heartFaceUrgent => 'Need doctor\'s help';
+
+  @override
+  String get heartCallDoctor => 'Call your doctor now';
+
+  @override
+  String get quickSelectTitle => 'Log Meal';
+
+  @override
+  String get mealHighCarb => 'Heavy — Rice / Roti';
+
+  @override
+  String get mealLowCarb => 'Light — Sabzi / Dal';
+
+  @override
+  String get mealSweets => 'Sweets / Meetha';
+
+  @override
+  String get mealHighProtein => 'Protein — Egg / Paneer';
+
+  @override
+  String get mealModerateCarb => 'Mixed / Balanced';
+
+  @override
+  String get mealMoreOptions => 'More options';
+
+  @override
+  String get mealLessOptions => 'Less options';
+
+  @override
+  String get mealSavedSuccess => 'Meal logged!';
+
+  @override
+  String get mealTypeBreakfast => 'Breakfast';
+
+  @override
+  String get mealTypeLunch => 'Lunch';
+
+  @override
+  String get mealTypeSnack => 'Snack';
+
+  @override
+  String get mealTypeDinner => 'Dinner';
+
+  @override
+  String get mealDisclaimer => 'For general wellness, not medical advice';
+
+  @override
+  String get foodPhotoTitle => 'Take Food Photo';
+
+  @override
+  String get foodPhotoHint => 'Point camera at your food';
+
+  @override
+  String get foodPhotoGallery => 'Choose from Gallery';
+
+  @override
+  String get foodPhotoAnalyzing => 'Analyzing your food...';
+
+  @override
+  String get foodPhotoFailed =>
+      'Could not classify food. Please select manually.';
+
+  @override
+  String get foodResultTitle => 'Meal Result';
+
+  @override
+  String get foodCategoryHighCarb => 'High Carb';
+
+  @override
+  String get foodCategoryModerateCarb => 'Moderate Carb';
+
+  @override
+  String get foodCategoryLowCarb => 'Low Carb';
+
+  @override
+  String get foodCategoryHighProtein => 'High Protein';
+
+  @override
+  String get foodCategorySweets => 'Sweets';
+
+  @override
+  String get foodMealTypeLabel => 'Meal Type';
+
+  @override
+  String get foodNotCorrectChange => 'Not correct? Change';
+
+  @override
+  String get foodDisclaimer => 'For general wellness, not medical advice';
+
+  @override
+  String get foodPhotoSaved => 'Meal saved!';
+
+  @override
+  String get foodPhotoSaveFailed => 'Could not save meal. Please try again.';
+
+  @override
+  String get mealsTileLabel => 'Meals';
+
+  @override
+  String mealsTodayCount(int count) {
+    return '$count today';
+  }
+
+  @override
+  String get todaysMeals => 'Today\'s Meals';
+
+  @override
+  String get noMealsToday => 'No meals logged today';
+
+  @override
+  String get tapToLogMeal => 'Tap to log';
+
+  @override
+  String get logMeal => 'Log Meal';
+
+  @override
+  String get logMealSubtitle => 'How would you like to log?';
+
+  @override
+  String get quickSelectOption => 'Quick Select';
+
+  @override
+  String get scanFoodPhotoOption => 'Scan Food Photo';
+
+  @override
+  String get photoAiHint => 'Photo lets AI detect carb level automatically';
 }

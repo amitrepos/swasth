@@ -27,43 +27,46 @@ class _SplashScreenState extends State<SplashScreen> {
     final token = await _storage.getToken();
     final reachable = await ConnectivityService().isServerReachable();
 
-    // 1. Try to use existing token
-    if (token != null) {
-      if (reachable) {
-        try {
-          // Verify token is still valid
-          final userData = await ApiService().getCurrentUser(token);
-          await _storage.saveUserData(userData);
-          await _storage.saveLastLoginTimestamp();
-          
-          SyncService().syncPendingReadings();
+    // SCENARIO 1: OFFLINE
+    if (!reachable) {
+      final lastLogin = await _storage.getLastLoginTimestamp();
+      if (lastLogin != null) {
+        final daysSince = DateTime.now().difference(lastLogin).inDays;
+        if (daysSince <= 7) {
           _goToProfiles();
           return;
-        } catch (_) {
-          // Token expired or invalid, fall through to credential login
         }
-      } else {
-        // Offline session check
-        final lastLogin = await _storage.getLastLoginTimestamp();
-        if (lastLogin != null) {
-          final daysSince = DateTime.now().difference(lastLogin).inDays;
-          if (daysSince <= 7) {
-            _goToProfiles();
-            return;
-          }
-        }
+      }
+      _goToLogin(); // Offline but session expired
+      return;
+    }
+
+    // SCENARIO 2: ONLINE - TOKEN REUSE
+    if (token != null) {
+      try {
+        final userData = await ApiService().getCurrentUser(token);
+        await _storage.saveUserData(userData);
+        // Note: We intentionally do NOT call saveLastLoginTimestamp here
+        // to maintain the 7-day credential requirement.
+        
+        SyncService().syncPendingReadings();
+        _goToProfiles();
+        return;
+      } catch (_) {
+        await _storage.deleteToken(); // Clear invalid token
       }
     }
 
-    // 2. Try saved credentials fallback (if token was invalid or missing)
+    // SCENARIO 3: ONLINE - CREDENTIAL FALLBACK
     final creds = await _storage.getSavedCredentials();
-    if (creds != null && reachable) {
+    if (creds != null) {
       try {
         final resp = await ApiService().login(creds.email, creds.password);
         final newToken = resp['access_token'] as String?;
         if (newToken != null) {
           await _storage.saveToken(newToken);
-          await _storage.saveLastLoginTimestamp();
+          await _storage.saveLastLoginTimestamp(); // Extend grace period only on re-auth
+          
           try {
             final userData = await ApiService().getCurrentUser(newToken);
             await _storage.saveUserData(userData);
@@ -74,11 +77,11 @@ class _SplashScreenState extends State<SplashScreen> {
           return;
         }
       } catch (_) {
-        // Credential login failed
+        // Credential login failed (e.g. password changed)
       }
     }
 
-    // 3. No active session or valid fallback credentials, show login screen
+    // SCENARIO 4: NO SESSION
     _goToLogin();
   }
 

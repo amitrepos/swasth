@@ -2011,6 +2011,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please connect to the internet to log in'**
   String get offlineLoginExpired;
+
+  /// No description provided for @heartStatusHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re doing great'**
+  String get heartStatusHealthy;
+
+  /// No description provided for @heartStatusCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor closely today'**
+  String get heartStatusCaution;
+
+  /// No description provided for @heartStatusUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Call your doctor today'**
+  String get heartStatusUrgent;
+
+  /// No description provided for @heartFaceHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'All is well'**
+  String get heartFaceHealthy;
+
+  /// No description provided for @heartFaceCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay alert today'**
+  String get heartFaceCaution;
+
+  /// No description provided for @heartFaceUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Need doctor\'s help'**
+  String get heartFaceUrgent;
+
+  /// No description provided for @heartCallDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Call your doctor now'**
+  String get heartCallDoctor;
+
+  /// No description provided for @quickSelectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Meal'**
+  String get quickSelectTitle;
+
+  /// No description provided for @mealHighCarb.
+  ///
+  /// In en, this message translates to:
+  /// **'Heavy — Rice / Roti'**
+  String get mealHighCarb;
+
+  /// No description provided for @mealLowCarb.
+  ///
+  /// In en, this message translates to:
+  /// **'Light — Sabzi / Dal'**
+  String get mealLowCarb;
+
+  /// No description provided for @mealSweets.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweets / Meetha'**
+  String get mealSweets;
+
+  /// No description provided for @mealHighProtein.
+  ///
+  /// In en, this message translates to:
+  /// **'Protein — Egg / Paneer'**
+  String get mealHighProtein;
+
+  /// No description provided for @mealModerateCarb.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed / Balanced'**
+  String get mealModerateCarb;
+
+  /// No description provided for @mealMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get mealMoreOptions;
+
+  /// No description provided for @mealLessOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Less options'**
+  String get mealLessOptions;
+
+  /// No description provided for @mealSavedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal logged!'**
+  String get mealSavedSuccess;
+
+  /// No description provided for @mealTypeBreakfast.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakfast'**
+  String get mealTypeBreakfast;
+
+  /// No description provided for @mealTypeLunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch'**
+  String get mealTypeLunch;
+
+  /// No description provided for @mealTypeSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Snack'**
+  String get mealTypeSnack;
+
+  /// No description provided for @mealTypeDinner.
+  ///
+  /// In en, this message translates to:
+  /// **'Dinner'**
+  String get mealTypeDinner;
+
+  /// No description provided for @mealDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'For general wellness, not medical advice'**
+  String get mealDisclaimer;
+
+  /// No description provided for @foodPhotoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Food Photo'**
+  String get foodPhotoTitle;
+
+  /// No description provided for @foodPhotoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point camera at your food'**
+  String get foodPhotoHint;
+
+  /// No description provided for @foodPhotoGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get foodPhotoGallery;
+
+  /// No description provided for @foodPhotoAnalyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing your food...'**
+  String get foodPhotoAnalyzing;
+
+  /// No description provided for @foodPhotoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not classify food. Please select manually.'**
+  String get foodPhotoFailed;
+
+  /// No description provided for @foodResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal Result'**
+  String get foodResultTitle;
+
+  /// No description provided for @foodCategoryHighCarb.
+  ///
+  /// In en, this message translates to:
+  /// **'High Carb'**
+  String get foodCategoryHighCarb;
+
+  /// No description provided for @foodCategoryModerateCarb.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate Carb'**
+  String get foodCategoryModerateCarb;
+
+  /// No description provided for @foodCategoryLowCarb.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Carb'**
+  String get foodCategoryLowCarb;
+
+  /// No description provided for @foodCategoryHighProtein.
+  ///
+  /// In en, this message translates to:
+  /// **'High Protein'**
+  String get foodCategoryHighProtein;
+
+  /// No description provided for @foodCategorySweets.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweets'**
+  String get foodCategorySweets;
+
+  /// No description provided for @foodMealTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal Type'**
+  String get foodMealTypeLabel;
+
+  /// No description provided for @foodNotCorrectChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Not correct? Change'**
+  String get foodNotCorrectChange;
+
+  /// No description provided for @foodDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'For general wellness, not medical advice'**
+  String get foodDisclaimer;
+
+  /// No description provided for @foodPhotoSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal saved!'**
+  String get foodPhotoSaved;
+
+  /// No description provided for @foodPhotoSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save meal. Please try again.'**
+  String get foodPhotoSaveFailed;
+
+  /// No description provided for @mealsTileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Meals'**
+  String get mealsTileLabel;
+
+  /// No description provided for @mealsTodayCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} today'**
+  String mealsTodayCount(int count);
+
+  /// No description provided for @todaysMeals.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Meals'**
+  String get todaysMeals;
+
+  /// No description provided for @noMealsToday.
+  ///
+  /// In en, this message translates to:
+  /// **'No meals logged today'**
+  String get noMealsToday;
+
+  /// No description provided for @tapToLogMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to log'**
+  String get tapToLogMeal;
+
+  /// No description provided for @logMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Meal'**
+  String get logMeal;
+
+  /// No description provided for @logMealSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to log?'**
+  String get logMealSubtitle;
+
+  /// No description provided for @quickSelectOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Select'**
+  String get quickSelectOption;
+
+  /// No description provided for @scanFoodPhotoOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Food Photo'**
+  String get scanFoodPhotoOption;
+
+  /// No description provided for @photoAiHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo lets AI detect carb level automatically'**
+  String get photoAiHint;
 }
 
 class _AppLocalizationsDelegate

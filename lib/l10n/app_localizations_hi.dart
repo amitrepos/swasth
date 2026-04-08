@@ -1031,4 +1031,148 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get offlineLoginExpired => 'लॉगिन करने के लिए इंटरनेट से कनेक्ट करें';
+
+  @override
+  String get heartStatusHealthy => 'बहुत अच्छा!';
+
+  @override
+  String get heartStatusCaution => 'आज ध्यान रखें';
+
+  @override
+  String get heartStatusUrgent => 'डॉक्टर से बात करें';
+
+  @override
+  String get heartFaceHealthy => 'सब ठीक है';
+
+  @override
+  String get heartFaceCaution => 'आज ध्यान रखें';
+
+  @override
+  String get heartFaceUrgent => 'डॉक्टर की ज़रूरत';
+
+  @override
+  String get heartCallDoctor => 'अभी डॉक्टर को कॉल करें';
+
+  @override
+  String get quickSelectTitle => 'खाना दर्ज करें';
+
+  @override
+  String get mealHighCarb => 'भारी खाना — चावल / रोटी';
+
+  @override
+  String get mealLowCarb => 'हल्का खाना — सब्ज़ी / दाल';
+
+  @override
+  String get mealSweets => 'मीठा / मिठाई';
+
+  @override
+  String get mealHighProtein => 'प्रोटीन — अंडा / पनीर';
+
+  @override
+  String get mealModerateCarb => 'मिला-जुला खाना';
+
+  @override
+  String get mealMoreOptions => 'और विकल्प';
+
+  @override
+  String get mealLessOptions => 'कम विकल्प';
+
+  @override
+  String get mealSavedSuccess => 'खाना दर्ज हो गया!';
+
+  @override
+  String get mealTypeBreakfast => 'सुबह का नाश्ता';
+
+  @override
+  String get mealTypeLunch => 'दोपहर का खाना';
+
+  @override
+  String get mealTypeSnack => 'नाश्ता';
+
+  @override
+  String get mealTypeDinner => 'रात का खाना';
+
+  @override
+  String get mealDisclaimer => 'सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं';
+
+  @override
+  String get foodPhotoTitle => 'खाने की फोटो लें';
+
+  @override
+  String get foodPhotoHint => 'कैमरा अपने खाने की तरफ करें';
+
+  @override
+  String get foodPhotoGallery => 'गैलरी से चुनें';
+
+  @override
+  String get foodPhotoAnalyzing => 'खाना पहचान रहे हैं...';
+
+  @override
+  String get foodPhotoFailed => 'खाना पहचान नहीं पाए। कृपया खुद चुनें।';
+
+  @override
+  String get foodResultTitle => 'खाने का नतीजा';
+
+  @override
+  String get foodCategoryHighCarb => 'ज़्यादा कार्ब';
+
+  @override
+  String get foodCategoryModerateCarb => 'सामान्य कार्ब';
+
+  @override
+  String get foodCategoryLowCarb => 'कम कार्ब';
+
+  @override
+  String get foodCategoryHighProtein => 'ज़्यादा प्रोटीन';
+
+  @override
+  String get foodCategorySweets => 'मीठा';
+
+  @override
+  String get foodMealTypeLabel => 'खाने का प्रकार';
+
+  @override
+  String get foodNotCorrectChange => 'सही नहीं? बदलें';
+
+  @override
+  String get foodDisclaimer => 'सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं';
+
+  @override
+  String get foodPhotoSaved => 'खाना दर्ज हो गया!';
+
+  @override
+  String get foodPhotoSaveFailed =>
+      'खाना सेव नहीं हुआ। कृपया दोबारा कोशिश करें।';
+
+  @override
+  String get mealsTileLabel => 'खाना';
+
+  @override
+  String mealsTodayCount(int count) {
+    return '$count आज';
+  }
+
+  @override
+  String get todaysMeals => 'आज का खाना';
+
+  @override
+  String get noMealsToday => 'आज कोई खाना दर्ज नहीं';
+
+  @override
+  String get tapToLogMeal => 'दर्ज करें';
+
+  @override
+  String get logMeal => 'खाना दर्ज करें';
+
+  @override
+  String get logMealSubtitle => 'कैसे दर्ज करें?';
+
+  @override
+  String get quickSelectOption => 'तुरंत चुनें';
+
+  @override
+  String get scanFoodPhotoOption => 'फोटो स्कैन करें';
+
+  @override
+  String get photoAiHint => 'फोटो से AI कार्ब लेवल पता करता है';
 }

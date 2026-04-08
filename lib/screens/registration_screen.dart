@@ -32,33 +32,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'A+';
-  String _selectedTimezone = 'Asia/Kolkata'; // Default timezone for Bihar
   final List<String> _selectedConditions = [];
-
-  // Timezone options for global users
-  final List<Map<String, String>> _timezoneOptions = [
-    // India
-    {'display': 'India (IST)', 'value': 'Asia/Kolkata'},
-    // USA
-    {'display': 'USA - Eastern Time (EST/EDT)', 'value': 'America/New_York'},
-    {'display': 'USA - Central Time (CST/CDT)', 'value': 'America/Chicago'},
-    {'display': 'USA - Mountain Time (MST/MDT)', 'value': 'America/Denver'},
-    {'display': 'USA - Pacific Time (PST/PDT)', 'value': 'America/Los_Angeles'},
-    // Europe
-    {'display': 'Europe - London (GMT/BST)', 'value': 'Europe/London'},
-    {'display': 'Europe - Paris/Berlin (CET/CEST)', 'value': 'Europe/Paris'},
-    // Asia
-    {'display': 'Asia - Bangkok (ICT)', 'value': 'Asia/Bangkok'},
-    {'display': 'Asia - Singapore (SGT)', 'value': 'Asia/Singapore'},
-    {'display': 'Asia - Tokyo (JST)', 'value': 'Asia/Tokyo'},
-    {'display': 'Asia - Hong Kong (HKT)', 'value': 'Asia/Hong_Kong'},
-    {'display': 'Asia - Dubai (GST)', 'value': 'Asia/Dubai'},
-    // Australia
-    {'display': 'Australia - Sydney (AEST/AEDT)', 'value': 'Australia/Sydney'},
-    {'display': 'Australia - Melbourne (AEST/AEDT)', 'value': 'Australia/Melbourne'},
-    // Other
-    {'display': 'UTC (GMT)', 'value': 'UTC'},
-  ];
 
   // Medical condition values are API keys — do NOT translate
   final List<String> _medicalConditionsOptions = [
@@ -140,7 +114,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'confirm_password': _confirmPasswordController.text,
         'full_name': _fullNameController.text.trim(),
         'phone_number': _phoneController.text.trim(),
-        'timezone': _selectedTimezone,
         'profile_name': _profileNameController.text.trim(),
         'age': int.tryParse(_ageController.text),
         'gender': _selectedGender,
@@ -248,39 +221,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your phone number';
+                    return l10n.phoneValidationEmpty;
                   }
                   final stripped = value.replaceAll(RegExp(r'[\s\-]'), '');
                   if (!RegExp(r'^\+?[0-9]+$').hasMatch(stripped)) {
-                    return 'Phone number can only contain digits';
+                    return l10n.phoneValidationDigits;
                   }
                   if (stripped.length < 10 || stripped.length > 15) {
-                    return 'Phone number must be 10-15 digits';
+                    return l10n.phoneValidationLength;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // Timezone
-              DropdownButtonFormField<String>(
-                value: _selectedTimezone,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  labelText: 'Time Zone',
-                  prefixIcon: const Icon(Icons.public),
-                ),
-                items: _timezoneOptions
-                    .map((tz) => DropdownMenuItem(
-                          value: tz['value']!,
-                          child: Text(tz['display']!),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() => _selectedTimezone = value!);
-                },
-              ),
-              const SizedBox(height: 16),
+
 
               // Password
               TextFormField(

@@ -117,6 +117,10 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | D20 | Demo seed data | ✅ Done | `seed_demo_data.py` — 3 users (Ramesh/Sunita/Arjun) with 45 days of glucose + BP readings. Realistic patterns (diabetic/improving/healthy). |
 | D21 | CI/CD pipeline | ✅ Done | GitHub Actions (pytest + flutter analyze + flutter test). Pre-push git hook runs all tests locally before push. |
 | D22 | Home screen refactor | ✅ Done | 1,635 → 367 lines. 7 extracted widgets + utils/health_helpers.dart. |
+| D23 | AI responses in user's selected language | ❌ Not started | AI insight, trend summary, and health tips return English even when Hindi is selected. Need translation service (Google Translate API or Gemini) to convert AI-generated text to user's locale before displaying. Affects: ai-insight endpoint, trend-summary, meal tips. |
+| D24 | Food Photo Classification | ✅ Done | All 6 steps complete. Backend: model, API, 5 insight rules. Frontend: Quick Select, Food Photo, Meal Result, dashboard integration. 55 tests, 100% coverage on health_utils. PR #65. |
+| D25 | E2E integration tests (pre-prod gate) | ❌ Not started | Flutter integration_test: register → log reading → log meal → see insight. Network failure → offline queue → sync. Language switch mid-flow. Blocks production deployment. Use `integration_test` package. |
+| D26 | Boundary value tests for health classifications | ❌ Not started | classify_bp at 131/132 systolic, 86/87 diastolic boundaries. classify_glucose at 70, 130, 180 exact boundaries. carb_glucose_correlation timezone-aware vs naive datetime. |
 
 ---
 

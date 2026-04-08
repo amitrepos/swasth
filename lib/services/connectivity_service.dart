@@ -9,8 +9,8 @@ class ConnectivityService {
   /// Returns true if the backend server is reachable (2s timeout).
   Future<bool> isServerReachable() async {
     try {
-      final response = await http.head(
-        Uri.parse(AppConfig.serverHost),
+      final response = await http.get(
+        Uri.parse('${AppConfig.serverHost}/health'),
       ).timeout(const Duration(seconds: 2));
       return response.statusCode < 500;
     } catch (_) {

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, validator, Field
 from typing import Optional, List, Literal
 from datetime import datetime
+import re
 
 
 # Options
@@ -26,6 +27,15 @@ def _validate_password_strength(v: str) -> str:
     return v
 
 
+def _validate_phone_number(v: str) -> str:
+    """Shared phone validation used across all schemas."""
+    # Strip spaces and dashes
+    stripped = re.sub(r'[\s\-]', '', v)
+    if not re.match(r'^\+?[0-9]{10,15}$', stripped):
+        raise ValueError('Phone number must be between 10 and 15 digits')
+    return stripped
+
+
 # ---------------------------------------------------------------------------
 # Auth schemas
 # ---------------------------------------------------------------------------
@@ -35,7 +45,7 @@ class UserRegister(BaseModel):
     password: str
     confirm_password: str
     full_name: str = Field(..., min_length=2, max_length=100)
-    phone_number: str = Field(..., min_length=10, max_length=15, pattern=r"^\+?[0-9\s\-]+$")
+    phone_number: str
     timezone: str = "UTC"  # User's local timezone
     # Optional first-profile fields — used to auto-create "My Health" profile on register
     profile_name: Optional[str] = "My Health"
@@ -51,6 +61,14 @@ class UserRegister(BaseModel):
     consent_app_version: Optional[str] = None
     consent_language: Optional[str] = None
     ai_consent: Optional[bool] = None
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
+    @validator('phone_number')
+    def validate_phone(cls, v):
+        return _validate_phone_number(v)
 
     @validator('password')
     def validate_password(cls, v):
@@ -96,6 +114,10 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
 
 class Token(BaseModel):
     access_token: str
@@ -126,10 +148,18 @@ class UserResponse(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
 
 class VerifyOTPRequest(BaseModel):
     email: EmailStr
     otp: str = Field(..., min_length=6, max_length=6)
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
 
 
 class ResetPasswordRequest(BaseModel):
@@ -137,6 +167,10 @@ class ResetPasswordRequest(BaseModel):
     otp: str = Field(..., min_length=6, max_length=6)
     new_password: str
     confirm_password: str
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
 
     @validator('new_password')
     def validate_password(cls, v):
@@ -152,7 +186,7 @@ class ResetPasswordRequest(BaseModel):
 class UpdateUserRequest(BaseModel):
     """Auth-level user fields only — name, phone, password change."""
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)
-    phone_number: Optional[str] = Field(None, min_length=10, max_length=15)
+    phone_number: Optional[str] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
     confirm_password: Optional[str] = None
@@ -161,6 +195,12 @@ class UpdateUserRequest(BaseModel):
     def validate_new_password(cls, v):
         if v is not None:
             return _validate_password_strength(v)
+        return v
+
+    @validator('phone_number')
+    def validate_phone(cls, v):
+        if v is not None:
+            return _validate_phone_number(v)
         return v
 
     @validator('confirm_password')
@@ -408,3 +448,87 @@ class HealthReadingResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ---------------------------------------------------------------------------
+# Meal Logging schemas
+# ---------------------------------------------------------------------------
+
+MEAL_CATEGORIES = ["HIGH_CARB", "MODERATE_CARB", "LOW_CARB", "HIGH_PROTEIN", "SWEETS"]
+GLUCOSE_IMPACT_OPTIONS = ["HIGH", "MODERATE", "LOW", "VERY_HIGH"]
+MEAL_TYPE_OPTIONS = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"]
+MEAL_INPUT_METHODS = ["PHOTO_GEMINI", "QUICK_SELECT"]
+
+
+class MealLogCreate(BaseModel):
+    profile_id: int
+    category: str
+    glucose_impact: str
+    meal_type: str
+    input_method: str
+    timestamp: datetime
+    tip_en: Optional[str] = None
+    tip_hi: Optional[str] = None
+    confidence: Optional[float] = None
+    user_confirmed: bool = True
+    user_corrected_category: Optional[str] = None
+
+    @validator('category')
+    def validate_category(cls, v):
+        if v not in MEAL_CATEGORIES:
+            raise ValueError(f'category must be one of: {", ".join(MEAL_CATEGORIES)}')
+        return v
+
+    @validator('glucose_impact')
+    def validate_glucose_impact(cls, v):
+        if v not in GLUCOSE_IMPACT_OPTIONS:
+            raise ValueError(f'glucose_impact must be one of: {", ".join(GLUCOSE_IMPACT_OPTIONS)}')
+        return v
+
+    @validator('meal_type')
+    def validate_meal_type(cls, v):
+        if v not in MEAL_TYPE_OPTIONS:
+            raise ValueError(f'meal_type must be one of: {", ".join(MEAL_TYPE_OPTIONS)}')
+        return v
+
+    @validator('input_method')
+    def validate_input_method(cls, v):
+        if v not in MEAL_INPUT_METHODS:
+            raise ValueError(f'input_method must be one of: {", ".join(MEAL_INPUT_METHODS)}')
+        return v
+
+    @validator('user_corrected_category')
+    def validate_corrected_category(cls, v):
+        if v is not None and v not in MEAL_CATEGORIES:
+            raise ValueError(f'user_corrected_category must be one of: {", ".join(MEAL_CATEGORIES)}')
+        return v
+
+
+class MealLogResponse(BaseModel):
+    id: int
+    profile_id: int
+    logged_by: Optional[int] = None
+    category: str
+    glucose_impact: str
+    tip_en: Optional[str] = None
+    tip_hi: Optional[str] = None
+    meal_type: str
+    photo_path: Optional[str] = None
+    input_method: str
+    confidence: Optional[float] = None
+    user_confirmed: bool
+    user_corrected_category: Optional[str] = None
+    timestamp: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FoodClassificationResponse(BaseModel):
+    """Response from Gemini Vision food classification."""
+    category: str
+    glucose_impact: str
+    tip_en: str
+    tip_hi: str
+    confidence: float
