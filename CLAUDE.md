@@ -32,6 +32,7 @@ Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
 
 ### Domain Experts
 - `/ux-review` — Healthify's UX/accessibility review
+- `/qa-review` — Priya's QA testing strategy review (coverage quality, boundary tests, risk paths)
 - `/doctor-feedback` — Dr. Rajesh's product feedback (doctor persona)
 - `/legal-check` — India health-tech legal/compliance advisor
 - `/phi-compliance` — Health data (PHI) compliance audit (DPDPA, DISHA, encryption)
@@ -142,16 +143,32 @@ Is this a bug fix, refactor, or infra-only change?
 - Add localization strings to both `app_en.arb` + `app_hi.arb` if adding UI text
 **GATE:** All new tests pass. All existing tests still pass. Proceed.
 
-### Stage 5: VERIFY (6-phase quality gate)
-**Skills used:** `/verify`
-**Actions — run ALL 6 phases in order:**
+### Stage 5: VERIFY (7-phase quality gate)
+**Skills used:** `/verify` + `/qa-review`
+**Actions — run ALL 7 phases in order:**
 1. **BUILD:** `flutter analyze` + backend import check
 2. **LINT:** `flutter analyze` + `ruff check` (if installed)
 3. **TESTS:** `TESTING=true python -m pytest tests/ -v` + `flutter test`
-4. **COVERAGE (MANDATORY):** `pytest --cov` on each changed backend file — ≥85% per file, ≥90% on new code. Install `pytest-cov` if missing. This is a HARD GATE — do NOT skip or treat as WARN. Write tests until coverage passes.
-5. **SECURITY GREP:** scan for `print()`, hardcoded secrets, debug statements
-6. **DIFF REVIEW:** `git diff --stat` — only intended files changed?
-**GATE:** No FAIL in any phase. Coverage below 85% is a FAIL, not a WARN. If a phase fails, fix and re-run `/verify` from the beginning.
+4. **COVERAGE (MANDATORY):** `pytest --cov` on each changed backend file. Tiered targets:
+   - **Tier 1 (95%):** health_utils, routes_health, routes_meals, models, schemas — health-critical
+   - **Tier 2 (90%):** dependencies, routes (auth), encryption_service — auth/security
+   - **Tier 3 (85%):** all other backend files — general
+   - Install `pytest-cov` if missing. This is a HARD GATE — write tests until coverage passes.
+5. **QA REVIEW:** `/qa-review` — assess test QUALITY, not just coverage %. Check: boundary tests for health classifications, negative/error paths, timezone edge cases, network failure handling. List untested risk paths.
+6. **SECURITY GREP:** scan for `print()`, hardcoded secrets, debug statements
+7. **DIFF REVIEW:** `git diff --stat` — only intended files changed?
+**GATE:** No FAIL in any phase. Coverage below tier target is a FAIL. QA CRITICAL findings must be fixed. If a phase fails, fix and re-run `/verify` from the beginning.
+
+### Pre-Production Gate: E2E Tests
+**When:** Before deploying to production (not on every PR — only on release branches)
+**Actions:**
+- Run Flutter integration tests (`flutter test integration_test/`) that simulate real user flows:
+  - Register → log reading → log meal → see insight → check trend
+  - Network failure mid-save → offline queue → sync on reconnect
+  - Language switch mid-flow → all strings update correctly
+- These are automated UI tests (no manual doctor testing needed)
+- Use Flutter's `integration_test` package with `patrol` or `integration_test` driver
+**GATE:** All E2E smoke tests pass before any production deployment.
 
 ### Stage 6: SECURITY (OWASP + health data compliance)
 **Skills used:** `/security-audit` + `/phi-compliance` (conditional)
