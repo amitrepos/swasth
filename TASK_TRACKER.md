@@ -1,6 +1,6 @@
 # Swasth App — Phase 1 Task Tracker
 
-**Last Updated:** 2026-04-09
+**Last Updated:** 2026-03-31
 **Sprint:** 4 weeks + buffer | **Target:** Bihar pilot
 
 Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
@@ -128,22 +128,57 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 | # | Feature | Priority | Status | Notes |
 |---|---------|----------|--------|-------|
-| E1 | CORS: restrict allowed origins | 🔴 CRITICAL | ❌ Not started | `backend/main.py:25` — `allow_origins=["*"]` must be whitelist. Any website can make authenticated requests on behalf of users. |
-| E2 | Move SMTP credentials out of tracked files | 🔴 CRITICAL | ❌ Not started | `backend/.env` committed to repo. Inject via CI/CD secrets or `.env.local` in `.gitignore`. Rotate exposed credentials. |
-| E3 | Rate limiting on auth & OTP endpoints | 🟠 HIGH | ❌ Not started | `POST /api/auth/login`, `/register`, `/forgot-password`, `/verify-otp`. No limit = trivial brute-force. Use `slowapi`. |
-| E4 | Hash OTP before storing in DB | 🟠 HIGH | ❌ Not started | `backend/models.py:67` — OTP stored plain text. Store `sha256(otp).hexdigest()` and compare hashes. |
-| E5 | Implement token refresh (refresh tokens) | 🟠 HIGH | ❌ Not started | `backend/auth.py` — only 30-min access tokens. Users silently logged out. Add refresh token + `/api/auth/refresh` endpoint. |
-| E6 | Database connection pool config | 🟡 MEDIUM | ❌ Not started | `backend/database.py:7` — `create_engine()` has no pool settings. Add `pool_pre_ping=True, pool_size=10, max_overflow=20`. |
-| E7 | Add index on `(user_id, reading_timestamp)` | 🟡 MEDIUM | ❌ Not started | `backend/models.py` — no composite index on health readings. Queries will slow as data grows. |
-| E8 | Fix N+1 queries in `/readings/stats/summary` | 🟡 MEDIUM | ❌ Not started | `backend/routes_health.py` — runs 4 separate DB queries. Replace with single aggregation query. |
-| E9 | BLE packet bounds checking | 🟡 MEDIUM | ❌ Not started | `lib/ble/glucose_service.dart:57-118`, `bp_service.dart:116-186` — field accesses inside loop have no bounds guards. Malformed packet = crash. |
-| E10 | Cancel BLE subscriptions on screen disposal | 🟡 MEDIUM | ❌ Not started | `lib/screens/dashboard_screen.dart` — `onValueReceived.listen()` never cancelled. Memory leaks + stale callbacks. Store `StreamSubscription`, call `.cancel()` in `dispose()`. |
-| E11 | Add HTTP request timeouts in Flutter | 🟡 MEDIUM | ❌ Not started | `lib/services/api_service.dart`, `health_reading_service.dart` — no timeout on any HTTP call. Slow server = frozen UI. |
-| E12 | Wire up Riverpod for shared state | 🟢 LOW | ❌ Not started | `flutter_riverpod` in `pubspec.yaml` but unused. All screens use local state. Required before adding more screens. |
-| E13 | Add soft delete for users | 🟢 LOW | ❌ Not started | `backend/models.py` — no `deleted_at` field. Hard delete breaks foreign key references on `health_readings`. |
-| E14 | Make `ApiService` a singleton | 🟢 LOW | ❌ Not started | `ApiService()` instantiated per screen. Use top-level instance or Riverpod provider. |
-| E15 | Remove `ignore_for_file` suppressions | 🟢 LOW | ❌ Not started | `lib/screens/registration_screen.dart:2` — suppressed deprecation warnings hide future breakage. Fix underlying deprecated API. |
-| E16 | Add BLE reconnection logic | 🟢 LOW | ❌ Not started | No auto-reconnect when BLE device disconnects mid-session. Users must manually reconnect. |
+| E1 | CORS: restrict allowed origins | CRITICAL | Not started | `backend/main.py:25` — `allow_origins=["*"]` must be whitelist. Any website can make authenticated requests on behalf of users. |
+| E2 | Move SMTP credentials out of tracked files | CRITICAL | Not started | `backend/.env` committed to repo. Inject via CI/CD secrets or `.env.local` in `.gitignore`. Rotate exposed credentials. |
+| E3 | Rate limiting on auth & OTP endpoints | HIGH | Not started | `POST /api/auth/login`, `/register`, `/forgot-password`, `/verify-otp`. No limit = trivial brute-force. Use `slowapi`. |
+| E4 | Hash OTP before storing in DB | HIGH | Not started | `backend/models.py:67` — OTP stored plain text. Store `sha256(otp).hexdigest()` and compare hashes. |
+| E5 | Implement token refresh (refresh tokens) | HIGH | Not started | `backend/auth.py` — only 30-min access tokens. Users silently logged out. Add refresh token + `/api/auth/refresh` endpoint. |
+| E6 | Database connection pool config | MEDIUM | Not started | `backend/database.py:7` — `create_engine()` has no pool settings. Add `pool_pre_ping=True, pool_size=10, max_overflow=20`. |
+| E7 | Add index on `(user_id, reading_timestamp)` | MEDIUM | Not started | `backend/models.py` — no composite index on health readings. Queries will slow as data grows. |
+| E8 | Fix N+1 queries in `/readings/stats/summary` | MEDIUM | Not started | `backend/routes_health.py` — runs 4 separate DB queries. Replace with single aggregation query. |
+| E9 | BLE packet bounds checking | MEDIUM | Not started | `lib/ble/glucose_service.dart:57-118`, `bp_service.dart:116-186` — field accesses inside loop have no bounds guards. Malformed packet = crash. |
+| E10 | Cancel BLE subscriptions on screen disposal | MEDIUM | Not started | `lib/screens/dashboard_screen.dart` — `onValueReceived.listen()` never cancelled. Memory leaks + stale callbacks. |
+| E11 | Add HTTP request timeouts in Flutter | MEDIUM | Not started | `lib/services/api_service.dart`, `health_reading_service.dart` — no timeout on any HTTP call. Slow server = frozen UI. |
+| E12 | Wire up Riverpod for shared state | LOW | Not started | `flutter_riverpod` in `pubspec.yaml` but unused. All screens use local state. Required before adding more screens. |
+| E13 | Add soft delete for users | LOW | Not started | `backend/models.py` — no `deleted_at` field. Hard delete breaks foreign key references on `health_readings`. |
+| E14 | Make `ApiService` a singleton | LOW | Not started | `ApiService()` instantiated per screen. Use top-level instance or Riverpod provider. |
+| E15 | Remove `ignore_for_file` suppressions | LOW | Not started | `lib/screens/registration_screen.dart:2` — suppressed deprecation warnings hide future breakage. |
+| E16 | Add BLE reconnection logic | LOW | Not started | No auto-reconnect when BLE device disconnects mid-session. Users must manually reconnect. |
+
+---
+
+## MODULE F — Doctor Portal + Legal Compliance
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| E1 | Doctor role model (UserRole enum + DoctorProfile table) | ❌ Not started | Enum: patient/doctor/admin. DoctorProfile: NMC number, specialty, clinic, doctor_code, is_verified. Replaces is_admin boolean. See `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md`. |
+| E2 | Doctor registration + phone OTP login | ❌ Not started | Phone OTP via Gupshup SMS (TRAI DLT registration needed). NMC number verification (manual admin approval for pilot). 8-hour JWT for doctors. |
+| E3 | Doctor-patient linking (consent flow) | ❌ Not started | New `doctor_patient_links` table. Doctor code system ("DRRAJ52"). Patient enters code → Hindi consent screen → data shared. Revocable anytime. |
+| E4 | Doctor triage dashboard | ❌ Not started | Main screen: patients sorted by criticality (critical/attention/stable). Card-based layout. Cached triage columns on link table, async recompute on new reading. Web-first (responsive Flutter). |
+| E5 | Doctor patient detail view | ❌ Not started | 2-column layout: profile+stats left, trends+readings right. Quick stats (7d), trend chart (30d), reading history, medications, AI insights (not chats). |
+| E6 | Doctor clinical notes | ❌ Not started | Private notes on specific readings. Separate `doctor_notes` table. Patient cannot see unless doctor shares. 5-year retention per NMC. |
+| E7 | Doctor WhatsApp messaging | ❌ Not started | Hindi templates via Gupshup WhatsApp Business API. Pre-approved templates with variable substitution. Depends on D8. |
+| E8 | Doctor alert system | ❌ Not started | Critical alerts via WhatsApp (<5 min). Daily digest in-app. Weekly summary via WhatsApp+email. Depends on D8. |
+| E9 | Doctor follow-up flags | ❌ Not started | Flag patient for review in N days. Reminder in alert center. Auto-nudge patient if no reading by follow-up date. |
+| E10 | Doctor access audit trail | ❌ Not started | `doctor_access_log` table. Log every doctor access (who, what patient, what endpoint, when). DPDPA requirement. |
+| E11 | Doctor routes (backend) | ❌ Not started | `routes_doctor.py` — all doctor API endpoints. Separate from patient endpoints. Never joins with chat tables. |
+
+### Legal & Compliance (Pre-Launch Blockers)
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| L1 | **Server migration to India** | ❌ Not started | CRITICAL. Current: Hetzner Germany. Target: AWS Mumbai or DigitalOcean Bangalore. DPDPA Sec 16, CERT-In. Est. Rs. 3,000–5,000/mo. 1–2 day effort. |
+| L2 | **Doctor Platform Use Agreement** | ❌ Not started | CRITICAL. Lawyer must draft. Liability allocation, clinical responsibility, data terms. Est. Rs. 10,000–15,000. |
+| L3 | **Professional Indemnity Insurance** | ❌ Not started | CRITICAL. Rs. 25–50 lakh coverage. Est. Rs. 15,000–25,000/year. Covers data breach + negligence claims. |
+| L4 | **NMC disclaimers in UI** | ❌ Not started | CRITICAL. "Clinical observation, not prescription" on notes. "Yeh salah hai, prescription nahi" on WhatsApp. Engineering task, 2–3 hours. |
+| L5 | **Update Patient Terms of Service** | ❌ Not started | HIGH. Add platform liability, doctor data sharing, AI disclaimers. Self-draft or Rs. 5,000 lawyer review. |
+| L6 | **DLT registration for SMS OTP** | ❌ Not started | HIGH. TRAI requirement. Free registration, 3–5 day approval. Needed before phone OTP works. |
+| L7 | **Update Privacy Policy** | ❌ Not started | HIGH. Add doctor data sharing, clinical notes, WhatsApp messaging sections. |
+| L8 | **SaMD Class A assessment** | ❌ Not started | MEDIUM. Due within 90 days of launch. Engage regulatory consultant (Rs. 50,000–1,00,000). Triage = "inform" only, not "diagnose". |
+| L9 | **Data Processing Agreement with Gupshup** | ❌ Not started | MEDIUM. Standard DPA. Due within 30 days of launch. Free (Gupshup provides). |
+| L10 | **Clinical notes retention policy** | ❌ Not started | MEDIUM. 5-year retention. Anonymize on patient deletion (DPDPA vs NMC conflict — needs lawyer opinion). |
+
+> **Full legal details:** `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md` — share with lawyer for review.
 
 ---
 
@@ -155,8 +190,8 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | B — Data Input | 12 | 2 | 6 | 20 |
 | C — Dashboard | 19 | 0 | 5 | 24 |
 | D — AI + Notifications | 8 | 3 | 12 | 23 |
-| E — Security, Perf & Tech Debt | 0 | 0 | 16 | 16 |
-| **Total** | **47** | **7** | **42** | **96** |
+| F — Doctor Portal + Legal | 0 | 0 | 21 | 21 |
+| **Total** | **47** | **7** | **47** | **101** |
 
 ---
 
@@ -165,12 +200,14 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | Blocker | Blocks |
 |---|---|
 | No notification infrastructure (`flutter_local_notifications`, FCM) | D2, D7, D9, D13, D16 |
-| No WhatsApp API (Twilio/Gupshup) | D8, D10, D11, D12, D15 |
+| No WhatsApp API (Twilio/Gupshup) | D8, D10, D11, D12, D15, F7, F8 |
 | No weight tracking (B3, B6) | C8, D4, D5, D6 (full) |
 | No pedometer (B10) | C6, D1 (full), D2 |
-| No WhatsApp Business API (D8) | D15 (doctor alerts) — doctor_whatsapp field is ready |
-| CORS + SMTP credentials (E1, E2) | Production deployment — **must fix before any real user** |
-| No token refresh (E5) | Stable sessions — users currently logged out every 30 min |
+| No WhatsApp Business API (D8) | D15, F7, F8 — doctor_whatsapp field is ready |
+| **Server in Germany** | L1 — blocks doctor portal launch (DPDPA data localization) |
+| **No Doctor Platform Agreement** | L2 — blocks onboarding pilot doctors |
+| **No Professional Indemnity Insurance** | L3 — blocks doctor portal launch |
+| **No TRAI DLT registration** | L6 — blocks phone OTP for doctor login (E2) |
 
 ---
 

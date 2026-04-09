@@ -82,6 +82,37 @@ def get_profile_editor_or_403(
     return access
 
 
+def get_doctor_patient_access(
+    profile_id: int,
+    user: models.User,
+    db: Session,
+) -> models.DoctorPatientLink:
+    """Verify doctor has an active link to this patient profile.
+    Logs the access for DPDPA audit trail.
+    Raises 403 if the user is not a doctor or has no active link.
+    """
+    if user.role != models.UserRole.doctor:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only doctors can access this resource",
+        )
+    link = (
+        db.query(models.DoctorPatientLink)
+        .filter(
+            models.DoctorPatientLink.doctor_id == user.id,
+            models.DoctorPatientLink.profile_id == profile_id,
+            models.DoctorPatientLink.is_active == True,  # noqa: E712
+        )
+        .first()
+    )
+    if link is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No active access to this patient",
+        )
+    return link
+
+
 def get_profile_owner_or_403(
     profile_id: int,
     user: models.User,
