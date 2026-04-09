@@ -1223,4 +1223,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoAiHint => 'Photo lets AI detect carb level automatically';
+
+  @override
+  String wellnessHubTitle(String relationship) {
+    return '$relationship\'s Wellness Hub';
+  }
+
+  @override
+  String wellnessHubSubtitle(String name, String location) {
+    return '$name | $location';
+  }
+
+  @override
+  String caregiverStatusGreat(String relationship) {
+    return 'Your $relationship is doing great today. Vitals are stable.';
+  }
+
+  @override
+  String caregiverStatusCaution(String relationship) {
+    return 'Your $relationship needs attention today. Check vitals.';
+  }
+
+  @override
+  String caregiverStatusUrgent(String relationship) {
+    return 'Your $relationship needs immediate care. Call now.';
+  }
+
+  @override
+  String get activityFeedTitle => 'Activity Feed';
+
+  @override
+  String get careCircleTitle => 'Care Circle';
+
+  @override
+  String get priorityCall => 'Priority Call';
+
+  @override
+  String get noRecentActivity => 'No recent activity';
+
+  @override
+  String get wellnessRingTitle => 'Wellness Ring';
 }

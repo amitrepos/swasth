@@ -28,6 +28,9 @@ import '../widgets/home/reading_input_modal.dart';
 import '../widgets/home/meal_input_modal.dart';
 import '../widgets/home/meal_summary_card.dart';
 import '../widgets/home/device_status_card.dart';
+import '../widgets/home/activity_feed_card.dart';
+import '../widgets/home/care_circle_card.dart';
+import '../config/feature_flags.dart';
 import '../utils/health_helpers.dart' as helpers;
 import '../services/reminder_service.dart';
 import '../main.dart' show routeObserver;
@@ -57,6 +60,12 @@ class _HomeScreenState extends State<HomeScreen>
   int _streak = 0;
   int _pts = 0;
   bool _insightSaved = false;
+
+  // Caregiver dashboard state
+  List<HealthReading> _activityReadings = [];
+  List<Map<String, dynamic>> _careCircleMembers = [];
+  bool _careCircleLoading = false;
+  bool _activityLoading = false;
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -139,6 +148,39 @@ class _HomeScreenState extends State<HomeScreen>
       final profile = await _profileService.getProfile(token, profileId);
       if (mounted) setState(() => _activeProfile = profile);
     } catch (_) {}
+
+    // Load caregiver-specific data when viewing shared profile
+    if (_isCaregiverView) {
+      _loadCaregiverData(token, profileId);
+    }
+  }
+
+  bool get _isCaregiverView =>
+      FeatureFlags.caregiverDashboard && _accessLevel != 'owner';
+
+  Future<void> _loadCaregiverData(String token, int profileId) async {
+    setState(() {
+      _activityLoading = true;
+      _careCircleLoading = true;
+    });
+
+    // Load recent readings for activity feed
+    try {
+      final readings = await _readingService.getReadings(
+        token: token,
+        profileId: profileId,
+        limit: 10,
+      );
+      if (mounted) setState(() => _activityReadings = readings);
+    } catch (_) {}
+    if (mounted) setState(() => _activityLoading = false);
+
+    // Load care circle members
+    try {
+      final members = await _profileService.getProfileAccess(token, profileId);
+      if (mounted) setState(() => _careCircleMembers = members);
+    } catch (_) {}
+    if (mounted) setState(() => _careCircleLoading = false);
   }
 
   Future<void> _logout(BuildContext ctx) async {
@@ -291,6 +333,11 @@ class _HomeScreenState extends State<HomeScreen>
                       final data = snap.data;
                       final isLoading =
                           snap.connectionState == ConnectionState.waiting;
+
+                      if (_isCaregiverView) {
+                        return _buildCaregiverDashboard(data, isLoading, l10n);
+                      }
+
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -413,6 +460,166 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
     );
+  }
+
+  // ── Caregiver Dashboard ──────────────────────────────────────────────────
+
+  Widget _buildCaregiverDashboard(
+    Map<String, dynamic>? data,
+    bool isLoading,
+    AppLocalizations l10n,
+  ) {
+    final relationship = _activeProfile?.relationship ?? '';
+    final relDisplay = relationship.isNotEmpty
+        ? _capitalize(relationship)
+        : 'Family Member';
+    final profileName = _activeProfileName;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ① Caregiver header
+        GlassCard(
+          borderRadius: 20,
+          padding: const EdgeInsets.all(16),
+          margin: EdgeInsets.zero,
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.wellnessHubTitle(relDisplay),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      profileName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Priority call button
+              if (_activeProfile?.doctorWhatsapp?.isNotEmpty == true)
+                GestureDetector(
+                  onTap: () => _callDoctor(_activeProfile!.doctorWhatsapp!),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.statusCritical.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.phone,
+                          size: 16,
+                          color: AppColors.statusCritical,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.priorityCall,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.statusCritical,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ② Wellness Ring with personalized message
+        HealthScoreRing(
+          data: data,
+          isLoading: isLoading,
+          profileId: _activeProfileId,
+          relationship: relDisplay,
+          onTap: _activeProfileId != null
+              ? () async {
+                  final result = await Navigator.push<String>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          TrendChartScreen(profileId: _activeProfileId!),
+                    ),
+                  );
+                  if (result == 'open_chat' && mounted) {
+                    ShellScreen.switchToTab(4);
+                  }
+                }
+              : null,
+          onCallDoctor: _activeProfile?.doctorWhatsapp?.isNotEmpty == true
+              ? () => _callDoctor(_activeProfile!.doctorWhatsapp!)
+              : null,
+          onInfoTap: () {
+            final score = (data?['score'] as num?)?.toInt() ?? 50;
+            final flagData = helpers.computeFlag(
+              score: score,
+              bpStatus: data?['today_bp_status'] as String?,
+              glucoseStatus: data?['today_glucose_status'] as String?,
+              age: (data?['profile_age'] as num?)?.toInt(),
+            );
+            showStatusInfoSheet(context, flagData, l10n);
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // ③ Activity Feed
+        ActivityFeedCard(
+          readings: _activityReadings,
+          isLoading: _activityLoading,
+        ),
+        const SizedBox(height: 16),
+
+        // ④ 90-day Trends
+        VitalSummaryCard(data: data),
+        const SizedBox(height: 16),
+
+        // ⑤ Care Circle
+        CareCircleCard(
+          members: _careCircleMembers,
+          isLoading: _careCircleLoading,
+        ),
+        const SizedBox(height: 16),
+
+        // ⑥ Physician Card
+        if (_activeProfile?.doctorName?.isNotEmpty == true)
+          PhysicianCard(
+            profile: _activeProfile!,
+            onWhatsAppTap: _activeProfile!.doctorWhatsapp?.isNotEmpty == true
+                ? () => _openWhatsApp(_activeProfile!.doctorWhatsapp!)
+                : null,
+          ),
+        if (_activeProfile?.doctorName?.isNotEmpty == true)
+          const SizedBox(height: 16),
+
+        _buildFooter(l10n),
+      ],
+    );
+  }
+
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
   }
 
   Widget _buildQuickActions(AppLocalizations l10n) {

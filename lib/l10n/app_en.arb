@@ -518,5 +518,42 @@
   "logMealSubtitle": "How would you like to log?",
   "quickSelectOption": "Quick Select",
   "scanFoodPhotoOption": "Scan Food Photo",
-  "photoAiHint": "Photo lets AI detect carb level automatically"
+  "photoAiHint": "Photo lets AI detect carb level automatically",
+
+  "wellnessHubTitle": "{relationship}'s Wellness Hub",
+  "@wellnessHubTitle": {
+    "placeholders": {
+      "relationship": { "type": "String" }
+    }
+  },
+  "wellnessHubSubtitle": "{name} | {location}",
+  "@wellnessHubSubtitle": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "location": { "type": "String" }
+    }
+  },
+  "caregiverStatusGreat": "Your {relationship} is doing great today. Vitals are stable.",
+  "@caregiverStatusGreat": {
+    "placeholders": {
+      "relationship": { "type": "String" }
+    }
+  },
+  "caregiverStatusCaution": "Your {relationship} needs attention today. Check vitals.",
+  "@caregiverStatusCaution": {
+    "placeholders": {
+      "relationship": { "type": "String" }
+    }
+  },
+  "caregiverStatusUrgent": "Your {relationship} needs immediate care. Call now.",
+  "@caregiverStatusUrgent": {
+    "placeholders": {
+      "relationship": { "type": "String" }
+    }
+  },
+  "activityFeedTitle": "Activity Feed",
+  "careCircleTitle": "Care Circle",
+  "priorityCall": "Priority Call",
+  "noRecentActivity": "No recent activity",
+  "wellnessRingTitle": "Wellness Ring"
 }
