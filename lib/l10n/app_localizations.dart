@@ -1586,6 +1586,12 @@ abstract class AppLocalizations {
   /// **'Individual Metrics'**
   String get individualMetricsSection;
 
+  /// No description provided for @vitalsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals'**
+  String get vitalsSection;
+
   /// No description provided for @footerDisclaimer.
   ///
   /// In en, this message translates to:

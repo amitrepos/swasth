@@ -41,6 +41,7 @@ void showMealInputModal(
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
+              key: const Key('meal_quick_select_option'),
               icon: const Icon(Icons.restaurant_menu),
               label: Text(l10n.quickSelectOption),
               style: ElevatedButton.styleFrom(
@@ -62,6 +63,7 @@ void showMealInputModal(
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
+              key: const Key('meal_scan_photo_option'),
               icon: const Icon(Icons.camera_alt),
               label: Text(l10n.scanFoodPhotoOption),
               style: OutlinedButton.styleFrom(

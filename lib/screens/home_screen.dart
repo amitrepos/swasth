@@ -370,10 +370,6 @@ class _HomeScreenState extends State<HomeScreen>
                             profileId: _activeProfileId,
                             canEdit: _accessLevel != 'viewer',
                             onAddReading: _handleAddReading,
-                            onAddMeal: _handleAddMeal,
-                            todayMealCount:
-                                _mealSummaryKey.currentState?.todayMealCount ??
-                                0,
                           ),
                           const SizedBox(height: 16),
 
