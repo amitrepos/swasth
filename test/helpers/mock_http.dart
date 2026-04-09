@@ -138,6 +138,17 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
           'bmi_category': 'Overweight',
           'profile_height': 170.0,
           'profile_weight': 75.0,
+          'today_spo2_value': 97.0,
+          'today_spo2_status': 'NORMAL',
+          'last_spo2_value': 97.0,
+          'last_spo2_status': 'NORMAL',
+          'avg_spo2_90d': 96.8,
+          'spo2_data_days': 10,
+          'today_steps_count': 3240,
+          'today_steps_goal': 7500,
+          'last_steps_count': 3240,
+          'avg_steps_90d': 4200.0,
+          'steps_data_days': 14,
         }),
         200,
       );
@@ -166,6 +177,10 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
           'glucose_value': body['glucose_value'],
           'glucose_unit': body['glucose_unit'],
           'bp_unit': body['bp_unit'],
+          'spo2_value': body['spo2_value'],
+          'spo2_unit': body['spo2_unit'],
+          'steps_count': body['steps_count'],
+          'steps_goal': body['steps_goal'],
           'value_numeric':
               body['value_numeric'] ??
               body['systolic'] ??

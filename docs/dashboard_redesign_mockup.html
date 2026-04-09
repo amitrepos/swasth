@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swasth Dashboard — Layout Redesign Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f1f5f9;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+    color: #1e293b;
+    margin-bottom: 8px;
+    font-size: 24px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #64748b;
+    margin-bottom: 30px;
+    font-size: 14px;
+  }
+
+  .comparison {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .phone-frame {
+    width: 375px;
+    background: #F0F9FF;
+    border-radius: 40px;
+    border: 3px solid #334155;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    position: relative;
+  }
+
+  .phone-header {
+    background: #F0F9FF;
+    padding: 12px 20px 8px;
+    text-align: center;
+  }
+
+  .phone-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .phone-label-tag {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .tag-current { background: #FEE2E2; color: #DC2626; }
+  .tag-proposed { background: #D1FAE5; color: #059669; }
+
+  .screen-content {
+    padding: 16px;
+    height: 780px;
+    overflow-y: auto;
+  }
+  .screen-content::-webkit-scrollbar { width: 0; }
+
+  /* ── Shared component styles ──────────────────── */
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .glass-card {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid #BAE6FD;
+    border-radius: 24px;
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(31,38,135,0.06);
+  }
+
+  .glass-card-sm {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid #BAE6FD;
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+
+  /* ── Health Score Ring ────────────────────────── */
+
+  .health-ring {
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .heart-container {
+    width: 140px;
+    height: 140px;
+    margin: 0 auto;
+    background: radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .heart-emoji { font-size: 60px; }
+  .score-badge {
+    position: absolute;
+    bottom: 5px;
+    right: 10px;
+    background: #0EA5E9;
+    color: white;
+    font-size: 16px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 12px;
+  }
+  .ring-label {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 6px;
+  }
+  .ring-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1e293b;
+  }
+
+  /* ── Vital Summary ───────────────────────────── */
+
+  .vital-row {
+    display: flex;
+    gap: 8px;
+  }
+  .vital-tile {
+    flex: 1;
+    background: rgba(255,255,255,0.35);
+    border-radius: 16px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .vital-tile .label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 1px;
+  }
+  .vital-tile .sub {
+    font-size: 8px;
+    color: #0EA5E9;
+    font-weight: 600;
+  }
+  .vital-tile .value {
+    font-size: 14px;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 4px 0 2px;
+  }
+  .vital-tile .trend {
+    font-size: 9px;
+    font-weight: 700;
+  }
+  .trend-down { color: #10B981; }
+  .trend-stable { color: #64748b; }
+
+  /* ── AI Insight ──────────────────────────────── */
+
+  .ai-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .ai-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: #0EA5E9;
+  }
+  .ai-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .ai-dot {
+    width: 6px; height: 6px;
+    background: #0EA5E9;
+    border-radius: 50%;
+  }
+  .ai-sub {
+    font-size: 10px;
+    color: #64748b;
+    margin-bottom: 10px;
+  }
+  .ai-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .ai-star {
+    width: 40px; height: 40px;
+    background: #0EA5E9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 8px rgba(14,165,233,0.3);
+  }
+
+  /* ── Physician Card ──────────────────────────── */
+
+  .physician-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .physician-avatar {
+    width: 48px; height: 48px;
+    background: rgba(16,185,129,0.12);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .physician-info { flex: 1; }
+  .physician-info .name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1e293b;
+  }
+  .physician-info .specialty {
+    font-size: 12px;
+    color: #64748b;
+  }
+  .physician-info .status {
+    font-size: 11px;
+    font-weight: 700;
+    color: #10B981;
+  }
+  .whatsapp-btn {
+    width: 40px; height: 40px;
+    background: #10B981;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 8px rgba(16,185,129,0.3);
+  }
+
+  /* ── Meal Summary ────────────────────────────── */
+
+  .meal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .meal-add-btn {
+    width: 30px; height: 30px;
+    background: #0EA5E9;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .meal-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 0 6px 6px 0;
+  }
+  .badge-sweets { background: rgba(239,68,68,0.12); color: #EF4444; }
+  .badge-heavy { background: rgba(245,158,11,0.12); color: #F59E0B; }
+  .badge-light { background: rgba(16,185,129,0.12); color: #10B981; }
+
+  /* ── Metrics (BP + Sugar tiles) ──────────────── */
+
+  .metrics-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .metric-tile {
+    flex: 1;
+    background: rgba(255,255,255,0.8);
+    border: 1px solid #BAE6FD;
+    border-radius: 24px;
+    padding: 12px 14px;
+  }
+  .metric-tile .label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .metric-tile .val-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+  .metric-tile .val {
+    font-size: 15px;
+    font-weight: 800;
+  }
+  .val-amber { color: #F59E0B; }
+  .val-green { color: #10B981; }
+  .val-red { color: #EF4444; }
+  .add-btn {
+    width: 30px; height: 30px;
+    background: #1e293b;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+  }
+
+  /* ── BMI Bar ─────────────────────────────────── */
+
+  .bmi-bar {
+    background: rgba(245,158,11,0.08);
+    border: 1px solid #BAE6FD;
+    border-radius: 16px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .bmi-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 1px;
+  }
+  .bmi-dot {
+    width: 8px; height: 8px;
+    background: #F59E0B;
+    border-radius: 50%;
+  }
+  .bmi-value {
+    font-size: 15px;
+    font-weight: 800;
+    color: #F59E0B;
+  }
+  .bmi-category {
+    font-size: 12px;
+    font-weight: 600;
+    color: #F59E0B;
+  }
+  .bmi-tip {
+    font-size: 11px;
+    color: #F59E0B;
+    font-style: italic;
+    text-align: right;
+    flex: 1;
+  }
+
+  /* ── BMI Inline (compact for proposed) ───────── */
+
+  .bmi-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(245,158,11,0.06);
+    border-radius: 12px;
+    margin-top: 8px;
+  }
+  .bmi-inline .bmi-label { font-size: 10px; }
+  .bmi-inline .bmi-value { font-size: 13px; }
+  .bmi-inline .bmi-category { font-size: 11px; }
+
+  /* ── Quick Actions ───────────────────────────── */
+
+  .quick-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .quick-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.8);
+    border: 1px solid #BAE6FD;
+    border-radius: 16px;
+    padding: 14px;
+    text-align: center;
+    font-size: 12px;
+    color: #1e293b;
+    font-weight: 600;
+  }
+  .quick-btn .icon { font-size: 20px; margin-bottom: 4px; }
+
+  /* ── Footer ──────────────────────────────────── */
+
+  .footer {
+    text-align: center;
+    font-size: 10px;
+    color: #94a3b8;
+    padding: 8px 0 20px;
+  }
+
+  /* ── Annotations (problem callouts) ──────────── */
+
+  .annotation {
+    position: relative;
+    margin-bottom: 14px;
+  }
+  .annotation::after {
+    content: attr(data-note);
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%) translateX(100%);
+    background: #FEF3C7;
+    color: #92400E;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    display: none;
+  }
+
+  .problem-highlight {
+    outline: 2px dashed #EF4444;
+    outline-offset: 4px;
+    position: relative;
+  }
+  .problem-tag {
+    font-size: 9px;
+    font-weight: 700;
+    color: #EF4444;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .fix-tag {
+    font-size: 9px;
+    font-weight: 700;
+    color: #059669;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  /* ── Expanded Meal Card (proposed) ───────────── */
+
+  .meal-slot-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .meal-slot {
+    flex: 1;
+    background: rgba(14,165,233,0.06);
+    border: 1px dashed #BAE6FD;
+    border-radius: 14px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .meal-slot .slot-icon { font-size: 18px; margin-bottom: 2px; }
+  .meal-slot .slot-label {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 600;
+  }
+  .meal-slot .slot-time {
+    font-size: 8px;
+    color: #94a3b8;
+  }
+  .meal-slot.filled {
+    background: rgba(16,185,129,0.08);
+    border: 1px solid #10B981;
+  }
+  .meal-slot.filled .slot-label { color: #10B981; }
+
+  /* ── Collapsed AI (proposed) ─────────────────── */
+
+  .ai-collapsed {
+    position: relative;
+    overflow: hidden;
+  }
+  .ai-collapsed::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: #0EA5E9;
+  }
+  .ai-text-truncated {
+    font-size: 12px;
+    font-weight: 500;
+    color: #1e293b;
+    font-style: italic;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .read-more {
+    font-size: 11px;
+    color: #0EA5E9;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  /* ── Order number badges ─────────────────────── */
+  .order-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 800;
+    color: white;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
+  .order-current { background: #64748b; }
+  .order-proposed { background: #0EA5E9; }
+
+  /* ── Comparison legend ───────────────────────── */
+  .legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #475569;
+  }
+  .legend-box {
+    width: 14px; height: 14px;
+    border-radius: 4px;
+  }
+  .legend-problem { outline: 2px dashed #EF4444; outline-offset: 1px; background: #FEE2E2; }
+  .legend-fix { background: #D1FAE5; border: 1px solid #10B981; }
+  .legend-same { background: #E0F2FE; border: 1px solid #BAE6FD; }
+  .legend-moved { background: #FEF3C7; border: 1px solid #F59E0B; }
+
+  /* ── Change summary table ────────────────────── */
+  .changes-table {
+    width: 100%;
+    max-width: 800px;
+    margin: 30px auto;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .changes-table th {
+    background: #1e293b;
+    color: white;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .changes-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #E2E8F0;
+    color: #334155;
+  }
+  .changes-table tr:nth-child(even) { background: #F8FAFC; }
+  .change-up { color: #059669; font-weight: 700; }
+  .change-down { color: #DC2626; font-weight: 700; }
+  .change-same { color: #64748b; }
+  .change-new { color: #0EA5E9; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>Swasth Dashboard — Layout Redesign</h1>
+<p class="subtitle">Side-by-side comparison: Current vs Proposed layout for Bihar pilot</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-box legend-problem"></div> Problem area</div>
+  <div class="legend-item"><div class="legend-box legend-fix"></div> Fixed / improved</div>
+  <div class="legend-item"><div class="legend-box legend-same"></div> Unchanged</div>
+  <div class="legend-item"><div class="legend-box legend-moved"></div> Moved / resized</div>
+</div>
+
+<div class="comparison">
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- CURRENT LAYOUT                                  -->
+<!-- ═══════════════════════════════════════════════ -->
+<div>
+  <div class="phone-frame">
+    <div class="phone-header">
+      <span class="phone-label">Current Layout</span>
+      <span class="phone-label-tag tag-current">PROBLEMS MARKED</span>
+    </div>
+    <div class="screen-content">
+
+      <!-- 1. Health Score Ring -->
+      <div class="health-ring">
+        <div class="heart-container">
+          <span class="heart-emoji">&#10084;&#65039;</span>
+          <span class="score-badge">72</span>
+        </div>
+        <div class="ring-name">My Health</div>
+        <div class="ring-label">Good &middot; 65yo Male</div>
+      </div>
+
+      <!-- 2. Vital Summary Card -->
+      <div class="glass-card">
+        <div class="section-label">VITAL SUMMARY &middot; 90-DAY AVG</div>
+        <div class="vital-row">
+          <div class="vital-tile">
+            <div class="label">BP</div>
+            <div class="sub">7-day avg</div>
+            <div class="value">132/82</div>
+            <div class="trend trend-down">&#9660; 3 mmHg</div>
+          </div>
+          <div class="vital-tile">
+            <div class="label">SUGAR</div>
+            <div class="sub">5-day avg</div>
+            <div class="value">115 mg</div>
+            <div class="trend trend-down">&#9660; 4 mg/dL</div>
+          </div>
+          <div class="vital-tile">
+            <div class="label">STEPS</div>
+            <div class="sub">&mdash;</div>
+            <div class="value">&mdash;</div>
+            <div class="trend trend-stable">Stable</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. AI Insight Card — PROBLEM: too tall -->
+      <div class="problem-highlight">
+        <p class="problem-tag">&#9888; PROBLEM: Takes half the viewport</p>
+        <div class="glass-card ai-card" style="padding-left: 28px;">
+          <div class="ai-header">
+            <span class="section-label" style="margin-bottom:0">AI INSIGHT</span>
+            <span class="ai-dot"></span>
+          </div>
+          <div class="ai-sub">Based on your last 7 days of readings</div>
+          <div style="display:flex; gap:12px; align-items:start;">
+            <div class="ai-text" style="flex:1;">
+              "The patient shows consistently elevated blood pressure with Stage 2 readings. Consider reducing salt intake and walking 30 minutes daily. Monitor closely for the next 2 weeks."
+            </div>
+            <div class="ai-star">&#9734;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Physician Card -->
+      <div class="glass-card">
+        <div class="physician-row">
+          <div class="physician-avatar">&#128105;&#8205;&#9877;&#65039;</div>
+          <div class="physician-info">
+            <div class="section-label" style="margin-bottom:2px">PRIMARY PHYSICIAN</div>
+            <div class="name">Dr Vishal Kumar</div>
+            <div class="specialty">Neurosurgeon</div>
+            <div class="status">Connected</div>
+          </div>
+          <div class="whatsapp-btn">&#128172;</div>
+        </div>
+      </div>
+
+      <!-- 5. Meal Summary — PROBLEM: too small -->
+      <div class="problem-highlight">
+        <p class="problem-tag">&#9888; PROBLEM: Tiny — used 2-3x daily</p>
+        <div class="meal-header">
+          <span class="section-label" style="margin-bottom:0">TODAY'S MEALS</span>
+          <div class="meal-add-btn">+</div>
+        </div>
+        <div class="glass-card" style="padding: 12px 16px;">
+          <span class="meal-badge badge-sweets">&#10071; Breakfast (Sweets)</span>
+        </div>
+      </div>
+
+      <!-- 6. Metrics Grid (BP + Sugar) -->
+      <div class="section-label">VITALS</div>
+      <div class="metrics-row">
+        <div class="metric-tile">
+          <div class="label">LAST BP</div>
+          <div class="val-row">
+            <span class="val val-amber">136/85</span>
+            <div class="add-btn">+</div>
+          </div>
+        </div>
+        <div class="metric-tile">
+          <div class="label">LAST SUGAR</div>
+          <div class="val-row">
+            <span class="val val-green">108 mg</span>
+            <div class="add-btn">+</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. BMI Bar — PROBLEM: too large -->
+      <div class="problem-highlight">
+        <p class="problem-tag">&#9888; PROBLEM: Full-width — changes 1x/month</p>
+        <div class="bmi-bar">
+          <span class="bmi-label">BMI</span>
+          <span class="bmi-dot"></span>
+          <span class="bmi-value">25.8</span>
+          <span class="bmi-category">Overweight</span>
+          <span class="bmi-tip">Lose 2.4 kg to reach normal</span>
+        </div>
+      </div>
+
+      <!-- 8. Quick Actions -->
+      <div class="quick-actions">
+        <div class="quick-btn">
+          <div class="icon">&#9200;</div>
+          Set Reminder
+        </div>
+        <div class="quick-btn">
+          <div class="icon">&#128203;</div>
+          Share Summary
+        </div>
+      </div>
+
+      <div class="footer">
+        Not medical advice &middot; Always consult your doctor
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PROPOSED LAYOUT                                 -->
+<!-- ═══════════════════════════════════════════════ -->
+<div>
+  <div class="phone-frame">
+    <div class="phone-header">
+      <span class="phone-label">Proposed Layout</span>
+      <span class="phone-label-tag tag-proposed">OPTIMIZED FOR DAILY USE</span>
+    </div>
+    <div class="screen-content">
+
+      <!-- 1. Health Score Ring — UNCHANGED -->
+      <div class="health-ring">
+        <div class="heart-container">
+          <span class="heart-emoji">&#10084;&#65039;</span>
+          <span class="score-badge">72</span>
+        </div>
+        <div class="ring-name">My Health</div>
+        <div class="ring-label">Good &middot; 65yo Male</div>
+      </div>
+
+      <!-- 2. VITALS — MOVED UP (was #6) -->
+      <p class="fix-tag">&#9650; MOVED UP — most important daily data</p>
+      <div class="section-label">VITALS</div>
+      <div class="metrics-row">
+        <div class="metric-tile">
+          <div class="label">LAST BP</div>
+          <div class="val-row">
+            <span class="val val-amber">136/85</span>
+            <div class="add-btn">+</div>
+          </div>
+        </div>
+        <div class="metric-tile">
+          <div class="label">LAST SUGAR</div>
+          <div class="val-row">
+            <span class="val val-green">108 mg</span>
+            <div class="add-btn">+</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. TODAY'S MEALS — EXPANDED (was tiny at #5) -->
+      <p class="fix-tag">&#9650; EXPANDED — used 2-3x daily, now shows meal slots</p>
+      <div class="meal-header">
+        <span class="section-label" style="margin-bottom:0">TODAY'S MEALS</span>
+        <div class="meal-add-btn">+</div>
+      </div>
+      <div class="glass-card" style="padding: 14px 16px;">
+        <div style="margin-bottom: 8px;">
+          <span class="meal-badge badge-sweets">&#127836; Breakfast (Sweets)</span>
+        </div>
+        <div class="meal-slot-row">
+          <div class="meal-slot filled">
+            <div class="slot-icon">&#127789;</div>
+            <div class="slot-label">Breakfast</div>
+            <div class="slot-time">Logged</div>
+          </div>
+          <div class="meal-slot">
+            <div class="slot-icon">&#127858;</div>
+            <div class="slot-label">Lunch</div>
+            <div class="slot-time">Tap to log</div>
+          </div>
+          <div class="meal-slot">
+            <div class="slot-icon">&#127860;</div>
+            <div class="slot-label">Dinner</div>
+            <div class="slot-time">Tap to log</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. AI Insight — COLLAPSED to 2 lines -->
+      <p class="fix-tag">&#9660; COLLAPSED — 2 lines + Read more</p>
+      <div class="glass-card ai-collapsed" style="padding: 14px 14px 14px 20px;">
+        <div class="ai-header">
+          <span class="section-label" style="margin-bottom:0; font-size:9px;">AI INSIGHT</span>
+          <span class="ai-dot"></span>
+        </div>
+        <div class="ai-text-truncated">
+          "Your BP is slightly elevated. Consider reducing salt intake and walking 30 minutes daily..."
+        </div>
+        <div class="read-more">Read more &#8250;</div>
+      </div>
+
+      <!-- 5. Physician Card — with BMI merged in -->
+      <div class="glass-card">
+        <div class="physician-row">
+          <div class="physician-avatar">&#128105;&#8205;&#9877;&#65039;</div>
+          <div class="physician-info">
+            <div class="section-label" style="margin-bottom:2px">PRIMARY PHYSICIAN</div>
+            <div class="name">Dr Vishal Kumar</div>
+            <div class="specialty">Neurosurgeon</div>
+            <div class="status">Connected</div>
+          </div>
+          <div class="whatsapp-btn">&#128172;</div>
+        </div>
+        <!-- BMI merged as subtle inline within physician section -->
+        <p class="fix-tag" style="margin-top:10px">&#9660; BMI DEMOTED — merged here as inline badge</p>
+        <div class="bmi-inline">
+          <span class="bmi-label">BMI</span>
+          <span class="bmi-dot"></span>
+          <span class="bmi-value">25.8</span>
+          <span class="bmi-category">Overweight</span>
+        </div>
+      </div>
+
+      <!-- 6. Vital Summary (90-day trends) — pushed down -->
+      <div class="glass-card">
+        <div class="section-label">TRENDS &middot; 90-DAY AVG</div>
+        <div class="vital-row">
+          <div class="vital-tile">
+            <div class="label">BP</div>
+            <div class="sub">7-day avg</div>
+            <div class="value">132/82</div>
+            <div class="trend trend-down">&#9660; 3 mmHg</div>
+          </div>
+          <div class="vital-tile">
+            <div class="label">SUGAR</div>
+            <div class="sub">5-day avg</div>
+            <div class="value">115 mg</div>
+            <div class="trend trend-down">&#9660; 4 mg/dL</div>
+          </div>
+          <div class="vital-tile">
+            <div class="label">STEPS</div>
+            <div class="sub">&mdash;</div>
+            <div class="value">&mdash;</div>
+            <div class="trend trend-stable">Stable</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Quick Actions -->
+      <div class="quick-actions">
+        <div class="quick-btn">
+          <div class="icon">&#9200;</div>
+          Set Reminder
+        </div>
+        <div class="quick-btn">
+          <div class="icon">&#128203;</div>
+          Share Summary
+        </div>
+      </div>
+
+      <div class="footer">
+        Not medical advice &middot; Always consult your doctor
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- CHANGE SUMMARY TABLE                            -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<table class="changes-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Element</th>
+      <th>Current Position</th>
+      <th>Proposed Position</th>
+      <th>Size Change</th>
+      <th>Why</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>Health Score Ring</strong> (Heart)</td>
+      <td>#1</td>
+      <td class="change-same">#1 (unchanged)</td>
+      <td class="change-same">Same</td>
+      <td>Emotional anchor for elderly patients. Stays.</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>Vitals (BP + Sugar)</strong></td>
+      <td>#6</td>
+      <td class="change-up">#2 &#9650;</td>
+      <td class="change-same">Same</td>
+      <td>Most important daily data. Should be immediately visible.</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>Today's Meals</strong></td>
+      <td>#5 (tiny badge)</td>
+      <td class="change-up">#3 &#9650;</td>
+      <td class="change-up">2x bigger</td>
+      <td>Used 2-3x daily. Added meal slot prompts (Breakfast/Lunch/Dinner).</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>AI Insight</strong></td>
+      <td>#3 (half viewport)</td>
+      <td class="change-down">#4 &#9660;</td>
+      <td class="change-down">~60% smaller</td>
+      <td>Collapsed to 2 lines + "Read more". Stops dominating the screen.</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>Physician Card</strong></td>
+      <td>#4</td>
+      <td class="change-same">#5</td>
+      <td class="change-same">Same</td>
+      <td>Slightly lower but still prominent. Doctor connection matters.</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><strong>BMI Bar</strong></td>
+      <td>#7 (full-width)</td>
+      <td class="change-down">Merged into Physician</td>
+      <td class="change-down">~75% smaller</td>
+      <td>Changes 1x/month. Demoted to inline badge under physician card.</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><strong>Vital Summary (90-day)</strong></td>
+      <td>#2</td>
+      <td class="change-down">#6 &#9660;</td>
+      <td class="change-same">Same</td>
+      <td>Trends are "check weekly" not "check daily". Pushed below daily actions.</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><strong>Quick Actions</strong></td>
+      <td>#8</td>
+      <td class="change-same">#7</td>
+      <td class="change-same">Same</td>
+      <td>Footer utility actions stay at bottom.</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td><strong>Meal badge icon</strong></td>
+      <td>&#10071; (judgmental)</td>
+      <td class="change-new">&#127836; (food emoji)</td>
+      <td class="change-new">Icon swap</td>
+      <td>Per Dr. Rajesh + Healthify: exclamation is shaming. Use food emoji.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="max-width: 800px; margin: 20px auto; padding: 20px; background: #F0FDF4; border: 1px solid #86EFAC; border-radius: 12px;">
+  <h3 style="color: #166534; margin-bottom: 8px; font-size: 14px;">Key Design Principles</h3>
+  <ul style="font-size: 13px; color: #334155; line-height: 1.8; padding-left: 20px;">
+    <li><strong>Daily actions visible first</strong> — BP/Sugar readings + Meals are above the fold</li>
+    <li><strong>Heart stays</strong> — emotional anchor for 65yo patients in Bihar</li>
+    <li><strong>AI insight doesn't dominate</strong> — 2-line preview, expand on tap</li>
+    <li><strong>BMI shrinks</strong> — static metric doesn't deserve same space as daily vitals</li>
+    <li><strong>Meal slots guide behavior</strong> — empty slots prompt "Tap to log" for each meal</li>
+    <li><strong>No shaming icons</strong> — food emojis instead of exclamation marks</li>
+  </ul>
+</div>
+
+</body>
+</html>

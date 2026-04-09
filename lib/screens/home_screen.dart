@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
-import 'dashboard_screen.dart';
+
 import 'select_profile_screen.dart';
 import 'manage_access_screen.dart';
 import 'trend_chart_screen.dart';
+import 'scan_screen.dart';
 import 'shell_screen.dart';
 import '../services/storage_service.dart';
 import '../services/health_reading_service.dart';
@@ -26,6 +27,7 @@ import '../widgets/home/metrics_grid.dart';
 import '../widgets/home/reading_input_modal.dart';
 import '../widgets/home/meal_input_modal.dart';
 import '../widgets/home/meal_summary_card.dart';
+import '../widgets/home/device_status_card.dart';
 import '../utils/health_helpers.dart' as helpers;
 import '../services/reminder_service.dart';
 import '../main.dart' show routeObserver;
@@ -332,8 +334,38 @@ class _HomeScreenState extends State<HomeScreen>
                             },
                           ),
                           const SizedBox(height: 16),
-                          VitalSummaryCard(data: data),
+
+                          // ② Vitals 2x2 grid (BP, Sugar, SpO2, Steps)
+                          MetricsGrid(
+                            data: data,
+                            profileId: _activeProfileId,
+                            canEdit: _accessLevel != 'viewer',
+                            onAddReading: _handleAddReading,
+                          ),
+                          const SizedBox(height: 10),
+
+                          // ③ BMI compact row
+                          BmiCompactRow(
+                            bmi: (data?['bmi'] as num?)?.toDouble(),
+                            category: data?['bmi_category'] as String?,
+                            heightCm: (data?['profile_height'] as num?)
+                                ?.toDouble(),
+                            weightKg: (data?['profile_weight'] as num?)
+                                ?.toDouble(),
+                          ),
                           const SizedBox(height: 16),
+
+                          // ④ Today's Meals (expanded with slot prompts)
+                          if (_activeProfileId != null)
+                            MealSummaryCard(
+                              key: _mealSummaryKey,
+                              profileId: _activeProfileId!,
+                              onTapLogMeal: _handleAddMeal,
+                            ),
+                          if (_activeProfileId != null)
+                            const SizedBox(height: 16),
+
+                          // ⑤ AI Insight (collapsed, 2 lines + Read more)
                           if (_aiInsightFuture != null)
                             AiInsightCard(
                               insightFuture: _aiInsightFuture,
@@ -343,7 +375,10 @@ class _HomeScreenState extends State<HomeScreen>
                                 () => _insightSaved = !_insightSaved,
                               ),
                             ),
-                          const SizedBox(height: 16),
+                          if (_aiInsightFuture != null)
+                            const SizedBox(height: 16),
+
+                          // ⑥ Physician Card
                           if (_activeProfile?.doctorName?.isNotEmpty == true)
                             PhysicianCard(
                               profile: _activeProfile!,
@@ -357,23 +392,16 @@ class _HomeScreenState extends State<HomeScreen>
                             ),
                           if (_activeProfile?.doctorName?.isNotEmpty == true)
                             const SizedBox(height: 16),
-                          if (_activeProfileId != null)
-                            MealSummaryCard(
-                              key: _mealSummaryKey,
-                              profileId: _activeProfileId!,
-                              onTapLogMeal: _handleAddMeal,
-                            ),
-                          if (_activeProfileId != null)
-                            const SizedBox(height: 16),
-                          MetricsGrid(
-                            data: data,
-                            profileId: _activeProfileId,
-                            canEdit: _accessLevel != 'viewer',
-                            onAddReading: _handleAddReading,
-                          ),
+
+                          // ⑦ Device Status Card
+                          const DeviceStatusCard(),
                           const SizedBox(height: 16),
 
-                          // Quick actions: reminders + weekly summary
+                          // ⑧ 90-day Trends (pushed down)
+                          VitalSummaryCard(data: data),
+                          const SizedBox(height: 16),
+
+                          // ⑨ Quick actions
                           _buildQuickActions(l10n),
                           const SizedBox(height: 16),
 
@@ -401,23 +429,21 @@ class _HomeScreenState extends State<HomeScreen>
             onTap: () => _showReminderDialog(context),
             child: GlassCard(
               borderRadius: 16,
-              padding: const EdgeInsets.all(14),
-              child: Row(
+              padding: const EdgeInsets.all(12),
+              child: Column(
                 children: [
                   Icon(
                     Icons.notifications_active,
-                    size: 20,
+                    size: 18,
                     color: AppColors.primary,
                   ),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Set Reminder',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Reminder',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -425,26 +451,56 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         // Share weekly summary
         Expanded(
           child: GestureDetector(
             onTap: () => _shareWeeklySummary(),
             child: GlassCard(
               borderRadius: 16,
-              padding: const EdgeInsets.all(14),
-              child: Row(
+              padding: const EdgeInsets.all(12),
+              child: Column(
                 children: [
-                  Icon(Icons.share, size: 20, color: AppColors.success),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Share Summary',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                  Icon(Icons.share, size: 18, color: AppColors.success),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Summary',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Pair Device
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ScanScreen(profileId: _activeProfileId ?? 0),
+                ),
+              );
+            },
+            child: GlassCard(
+              borderRadius: 16,
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Icon(Icons.watch, size: 18, color: AppColors.amber),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.pairDevice,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],

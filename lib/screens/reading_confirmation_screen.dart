@@ -16,6 +16,13 @@ String classifyGlucose(double v) {
   return 'CRITICAL';
 }
 
+/// Classify SpO2 value into status — testable top-level function.
+String classifySpo2(double v) {
+  if (v >= 95) return 'NORMAL';
+  if (v >= 90) return 'LOW';
+  return 'CRITICAL';
+}
+
 /// Classify BP into status — testable top-level function.
 String classifyBp(double sys, double dia) {
   if (sys > 140 || dia > 90) return 'HIGH - STAGE 2';

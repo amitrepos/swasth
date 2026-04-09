@@ -321,6 +321,20 @@ void main() {
     );
   });
 
+  // ── SpO2 classification boundaries ─────────────────────────────────────
+
+  group('SpO2 Classification Boundaries', () {
+    test('SpO2 100 → NORMAL', () => expect(classifySpo2(100), 'NORMAL'));
+    test(
+      'SpO2 95 → NORMAL (boundary)',
+      () => expect(classifySpo2(95), 'NORMAL'),
+    );
+    test('SpO2 94 → LOW', () => expect(classifySpo2(94), 'LOW'));
+    test('SpO2 90 → LOW (boundary)', () => expect(classifySpo2(90), 'LOW'));
+    test('SpO2 89 → CRITICAL', () => expect(classifySpo2(89), 'CRITICAL'));
+    test('SpO2 80 → CRITICAL', () => expect(classifySpo2(80), 'CRITICAL'));
+  });
+
   // ── CRITICAL C2: Double-tap prevention ─────────────────────────────────
 
   group('Double-Tap Prevention (C2)', () {
