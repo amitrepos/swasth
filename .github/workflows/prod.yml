@@ -46,7 +46,7 @@ jobs:
       - name: Build Flutter Web
         run: |
           flutter build web --release \
-            --dart-define=SERVER_HOST=http://${{ secrets.SERVER_HOST }}:8011
+            --dart-define=SERVER_HOST=https://${{ secrets.SERVER_HOST }}:8444
 
       - name: Deploy web to server
         uses: appleboy/scp-action@v1.0.0
