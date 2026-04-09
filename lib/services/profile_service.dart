@@ -162,6 +162,25 @@ class ProfileService {
     }
   }
 
+  Future<void> updateRelationship(
+    String token,
+    int profileId,
+    int userId,
+    String relationship,
+  ) async {
+    final response = await ApiClient.httpClient.patch(
+      Uri.parse('$_baseUrl/$profileId/access/$userId'),
+      headers: ApiClient.headers(token: token),
+      body: json.encode({'relationship': relationship}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        ApiClient.errorDetail(response, 'Failed to update relationship'),
+      );
+    }
+  }
+
   Future<void> revokeAccess(String token, int profileId, int userId) async {
     final response = await ApiClient.httpClient.delete(
       Uri.parse('$_baseUrl/$profileId/access/$userId'),
