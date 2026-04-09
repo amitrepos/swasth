@@ -164,7 +164,7 @@ Is this a bug fix, refactor, or infra-only change?
 **When:** Every PR that touches Flutter code. No exceptions.
 **Philosophy:** Whatever feature we build, it must work E2E before we implement any new feature.
 **Run:** `flutter test test/flows/ --timeout 30s`
-**Current coverage (186 tests):**
+**Current coverage (82 flow tests, 187 total Flutter tests):**
 - `auth_flow_test.dart` — login, registration, validation, navigation (9 tests)
 - `dashboard_display_test.dart` — all screens render, no ErrorWidgets (6 tests)
 - `health_reading_flow_test.dart` — BP + glucose entry, validation, boundary, save (14 tests)
@@ -274,6 +274,43 @@ Is this a bug fix, refactor, or infra-only change?
 These are NOT auto-triggered but can be called anytime:
 - `/compact-now` — invoke when context window is getting full
 - `/council` — can also be invoked outside Stage 2 for any ad-hoc decision
+
+## Branch & Deployment Rules (ENFORCED)
+
+### Branch Hygiene
+- **ALWAYS** checkout master and pull before creating a new branch:
+  ```bash
+  git checkout master && git pull origin master
+  git checkout -b feature/your-feature-name
+  ```
+- **NEVER** create a new branch from another feature branch
+- **NEVER** cherry-pick across feature branches — causes merge conflicts and lost changes
+- If master has advanced while you're on a feature branch, rebase: `git rebase origin/master`
+
+### Server Deployment
+- **ALWAYS** build from master (or from a branch that is up-to-date with master)
+- **NEVER** deploy from a stale feature branch — this overwrites changes from other merged PRs
+- Deploy commands (run in order):
+  ```bash
+  git checkout master && git pull origin master
+  flutter build web --release --dart-define=SERVER_HOST=https://65.109.226.36:8443
+  scp -i ~/.ssh/new-server-key -r build/web/* root@65.109.226.36:/var/www/swasth/web/
+  ```
+- If backend files changed, also deploy and restart:
+  ```bash
+  scp -i ~/.ssh/new-server-key backend/<changed_file>.py root@65.109.226.36:/var/www/swasth/backend/
+  ssh -i ~/.ssh/new-server-key root@65.109.226.36 "kill \$(lsof -ti :8007); sleep 2; cd /var/www/swasth/backend && nohup python3 -B main.py > /var/log/swasth-backend.log 2>&1 &"
+  ```
+
+### Pre-PR Checklist (run ALL before pushing)
+```bash
+flutter analyze --no-pub                              # Zero errors
+flutter test test/flows/ --timeout 30s                # All E2E tests pass
+flutter test                                          # All Flutter tests pass
+cd backend && source venv/bin/activate
+TESTING=true python -m pytest tests/ -v               # All backend tests pass
+TESTING=true python -m pytest tests/ --cov=. --cov-report=term-missing  # Coverage >=85%
+```
 
 ## Architecture Decisions (do not change without discussion)
 - Auth: email + password + JWT (no Firebase for PoC)
