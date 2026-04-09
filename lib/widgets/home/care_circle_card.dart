@@ -98,8 +98,10 @@ class _MemberChip extends StatelessWidget {
     final accessLevel = member['access_level'] as String? ?? 'viewer';
     final phone = member['phone_number'] as String?;
     final email = member['email'] as String?;
+    final lastLogin = member['last_login_at'] as String?;
     final initials = _initials(name);
     final roleColor = _roleColor(accessLevel);
+    final lastActive = _lastActiveLabel(lastLogin);
 
     return GestureDetector(
       onTap: () =>
@@ -166,10 +168,34 @@ class _MemberChip extends StatelessWidget {
                 ),
               ),
             ),
+            // Last active
+            if (lastActive != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                lastActive,
+                style: TextStyle(
+                  fontSize: 7,
+                  color: lastActive == 'Active today'
+                      ? AppColors.statusNormal
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  String? _lastActiveLabel(String? isoDate) {
+    if (isoDate == null) return null;
+    final dt = DateTime.tryParse(isoDate);
+    if (dt == null) return null;
+    final diff = DateTime.now().difference(dt);
+    if (diff.inHours < 24) return 'Active today';
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${(diff.inDays / 7).floor()}w ago';
   }
 
   Color _roleColor(String level) {
