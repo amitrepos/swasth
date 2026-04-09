@@ -120,6 +120,7 @@ class UserResponse(BaseModel):
     full_name: str
     phone_number: str
     is_active: bool
+    is_admin: bool = False
     role: Optional[str] = "patient"
     timezone: str
     consent_timestamp: Optional[datetime] = None
@@ -545,6 +546,23 @@ class FoodClassificationResponse(BaseModel):
 class AdminStatusUpdate(BaseModel):
     """Request body for updating user admin status."""
     is_admin: bool
+
+
+class AdminSuspendUser(BaseModel):
+    """Request body for suspending/reactivating a user."""
+    suspend: bool
+    reason: str = Field(..., min_length=3, max_length=500)
+
+
+class AdminVerifyDoctor(BaseModel):
+    """Request body for verifying a doctor."""
+    notes: Optional[str] = None
+
+
+class AdminRejectDoctor(BaseModel):
+    """Request body for rejecting a doctor verification."""
+    reason: str = Field(..., min_length=3, max_length=200)
+    notes: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

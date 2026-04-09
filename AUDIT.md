@@ -3,6 +3,61 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-04-09 (evening) — CI/CD Fix + Coverage Boost + Session Close
+
+### CI/CD Pipeline Fix (PRs #86, #87)
+- **Root cause:** `appleboy/ssh-action@v1.0.3` and `scp-action@v0.1.7` don't support Ed25519 OpenSSH key format
+- Upgraded to `ssh-action@v1.2.5` + `scp-action@v1.0.0` (both workflows: dev.yml, prod.yml)
+- **Second issue:** Copy-paste corruption of SSH key in GitHub UI. Fixed via `gh secret set SSH_PRIVATE_KEY < ~/.ssh/swasth-deploy`
+- Generated new RSA 4096-bit PEM deploy key (`~/.ssh/swasth-deploy`) and added to server `authorized_keys`
+- Also set `SERVER_HOST` and `SERVER_USER` secrets via CLI
+- **Result:** Both DEV auto-deploy and PROD manual deploy now green
+
+### Coverage Boost (PR #85)
+- 40 new backend tests across 3 files: test_health_coverage.py, test_doctor_coverage.py, test_admin_coverage.py
+- routes_admin.py: 68% → 93%
+- Overall: 86% → 89%
+
+### Session End State
+- All PRs merged (#85–#88), no open PRs
+- DEV + PROD deployed and verified green
+- Tomorrow priorities: coverage gaps (routes_health.py 86→95%), doctor portal UI, D7 alerts
+
+---
+
+## 2026-04-09 — Doctor Portal (Design + Backend + Frontend + Legal)
+
+### Expert Consultations
+- **Dr. Rajesh**: triage priorities, WhatsApp templates, clinical workflow
+- **Healthify UX**: triage board layout, patient detail, consent flow, responsive design
+- **Architecture Council** (4-0): same app role-based routing, UserRole enum, DoctorProfile table, cached triage
+- **Legal Advisor**: 3 HIGH-risk items (server migration, doctor agreement, insurance), NMC/DPDPA/SaMD
+
+### Created
+- `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md` — 10-section legal checklist
+- `backend/routes_doctor.py` — 15 API endpoints (register, link, triage, readings, notes, verify, audit)
+- `backend/models.py` — UserRole enum + 4 new tables (DoctorProfile, DoctorPatientLink, DoctorNote, DoctorAccessLog)
+- `backend/schemas.py` — 8 doctor schemas
+- `backend/dependencies.py` — get_doctor_patient_access()
+- `backend/tests/test_doctor_models.py` — 30 tests
+- `backend/tests/test_doctor_routes.py` — 38 tests
+- `lib/services/doctor_service.dart` — API client for doctor endpoints
+- `lib/screens/doctor/doctor_triage_screen.dart` — triage dashboard
+- `lib/screens/doctor/doctor_patient_detail_screen.dart` — patient detail + notes
+
+### Modified
+- `lib/screens/splash_screen.dart` — role-based routing (doctors → triage)
+- `lib/screens/login_screen.dart` — role check after login (PR #88)
+- `lib/screens/select_profile_screen.dart` — added logout button (PR #84)
+- `backend/main.py` — registered doctor routes
+- `backend/tests/conftest.py` — SQLite Enum compatibility
+- `TASK_TRACKER.md` — added Module F (Doctor Portal + Legal)
+- `CLAUDE.md` — added legal doc reference
+
+### PRs: #78, #82, #84, #88 | Tests: 68 backend + 187 Flutter all passing
+
+---
+
 ## 2026-04-08 — Food Photo Classification feature (Steps 1-6) + pipeline improvements
 
 ### Food Photo Classification (PR #65)
@@ -1994,3 +2049,95 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 11:54:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
   - 12:00:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meals.py
   - 12:09:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 18:58:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 18:58:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 18:58:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/WORKING-CONTEXT.md
+  - 18:59:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:59:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:59:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:59:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 19:07:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_coverage.py
+  - 19:08:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_doctor_coverage.py
+  - 19:08:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_admin_coverage.py
+  - 19:20:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_coverage.py
+  - 19:21:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_doctor_coverage.py
+  - 19:21:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_admin_coverage.py
+  - 19:24:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_coverage.py
+  - 19:24:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_admin_coverage.py
+  - 19:25:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_doctor_coverage.py
+  - 19:25:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 19:25:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/select_profile_screen.dart
+  - 19:27:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.env
+  - 19:27:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_coverage.py
+  - 19:27:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_coverage.py
+  - 19:28:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_coverage.py
+  - 19:28:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_admin_coverage.py
+  - 19:32:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_doctor_coverage.py
+  - 19:32:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_doctor_coverage.py
+  - 19:33:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_admin_coverage.py
+  - 19:34:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_health_coverage.py
+  - 19:34:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_doctor_coverage.py
+  - 19:49:43 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_session_20260409.md
+  - 19:49:58 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
+  - 19:56:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.env
+  - 20:08:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 20:08:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 20:08:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 20:08:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 20:08:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 20:19:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 20:19:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 20:19:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 20:19:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 20:31:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 20:31:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/dev.yml
+  - 20:31:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 20:31:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+  - 20:45:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 20:45:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 20:45:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/login_screen.dart
+  - 21:10:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/WORKING-CONTEXT.md
+  - 21:10:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/WORKING-CONTEXT.md
+  - 21:11:12 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 21:17:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/WORKING-CONTEXT.md
+  - 21:17:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 21:17:31 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 21:17:51 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_session_20260409.md
+  - 21:18:02 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback_github_secrets.md
+  - 21:18:10 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
+  - 23:06:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_triage_screen.dart
+  - 23:06:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_triage_screen.dart
+  - 23:06:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_triage_screen.dart
+  - 23:07:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_patient_detail_screen.dart
+  - 23:07:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_patient_detail_screen.dart
+  - 23:07:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_patient_detail_screen.dart
+  - 23:07:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_patient_detail_screen.dart
+  - 23:07:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_patient_detail_screen.dart
+  - 23:07:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_patient_detail_screen.dart
+  - 23:07:49 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_patient_detail_screen.dart
+  - 23:20:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_doctor.py
+  - 23:20:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_triage_screen.dart
+  - 23:20:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_triage_screen.dart
+  - 23:22:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/ADMIN_USER_MANAGEMENT_BLUEPRINT.md
+  - 23:22:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 23:22:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 23:29:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 23:29:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 23:29:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 23:29:57 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/dependencies.py
+  - 23:30:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 23:30:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 23:31:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 23:31:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 23:31:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 23:33:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 23:34:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_admin.py
+  - 23:35:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_admin_coverage.py
+  - 23:36:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_doctor.py
+  - 23:36:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_doctor.py
+  - 23:36:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_doctor.py
+  - 23:37:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_doctor.py
+  - 23:37:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/schemas.py
+  - 23:37:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_triage_screen.dart
+  - 23:37:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_triage_screen.dart
+  - 23:43:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html

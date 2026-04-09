@@ -343,3 +343,27 @@ class DoctorAccessLog(Base):
     __table_args__ = (
         Index("ix_doctor_access_log_doctor_time", "doctor_id", "created_at"),
     )
+
+
+# ---------------------------------------------------------------------------
+# Admin Audit Log (CERT-In 180-day requirement, DPDPA S8(5))
+# ---------------------------------------------------------------------------
+
+class AdminAuditLog(Base):
+    """Immutable audit trail for every admin action. CERT-In requires 180-day retention."""
+    __tablename__ = "admin_audit_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    action_type = Column(String(50), nullable=False)                # VIEW_USER_DETAIL, SUSPEND_USER, VERIFY_DOCTOR, etc.
+    target_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    target_profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True)
+    details = Column(Text, nullable=True)                           # JSON-encoded extra context (reason, old/new values)
+    outcome = Column(String(20), nullable=False, default="SUCCESS") # SUCCESS, DENIED, ERROR
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_admin_audit_admin", "admin_user_id"),
+        Index("ix_admin_audit_target", "target_user_id"),
+        Index("ix_admin_audit_time", "created_at"),
+    )
