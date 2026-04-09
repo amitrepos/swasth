@@ -257,8 +257,8 @@ def list_profile_access(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """List all users who have access to this profile. Owner only."""
-    get_profile_owner_or_403(profile_id, user, db)
+    """List all users who have access to this profile. Any member can view."""
+    get_profile_access_or_403(profile_id, user, db)
 
     accesses = (
         db.query(models.ProfileAccess)
