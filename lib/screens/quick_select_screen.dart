@@ -150,6 +150,7 @@ class _QuickSelectScreenState extends State<QuickSelectScreen> {
 
                     // --- 3 primary buttons ---
                     _MealButton(
+                      key: const Key('meal_high_carb'),
                       emoji: '\uD83C\uDF5A', // rice bowl
                       label: l10n.mealHighCarb,
                       impact: impactIcon(glucoseImpactFor('HIGH_CARB')),
@@ -159,6 +160,7 @@ class _QuickSelectScreenState extends State<QuickSelectScreen> {
                     ),
                     const SizedBox(height: 12),
                     _MealButton(
+                      key: const Key('meal_low_carb'),
                       emoji: '\uD83E\uDD57', // salad
                       label: l10n.mealLowCarb,
                       impact: impactIcon(glucoseImpactFor('LOW_CARB')),
@@ -168,6 +170,7 @@ class _QuickSelectScreenState extends State<QuickSelectScreen> {
                     ),
                     const SizedBox(height: 12),
                     _MealButton(
+                      key: const Key('meal_sweets'),
                       emoji: '\uD83C\uDF6C', // candy
                       label: l10n.mealSweets,
                       impact: impactIcon(glucoseImpactFor('SWEETS')),
@@ -291,6 +294,7 @@ class _MealButton extends StatelessWidget {
   final bool saving;
 
   const _MealButton({
+    super.key,
     required this.emoji,
     required this.label,
     required this.impact,

@@ -73,17 +73,38 @@ class MealSummaryCardState extends State<MealSummaryCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
+    final hasMeals = _meals != null && _meals!.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          l10n.todaysMeals.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textSecondary,
-            letterSpacing: 2,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.todaysMeals.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 2,
+                ),
+              ),
+            ),
+            if (hasMeals && widget.onTapLogMeal != null)
+              GestureDetector(
+                onTap: widget.onTapLogMeal,
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 18),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 12),
         GlassCard(

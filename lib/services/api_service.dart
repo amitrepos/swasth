@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'api_client.dart';
 
@@ -10,11 +9,13 @@ class ApiService {
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/register'),
-        headers: ApiClient.headers(),
-        body: jsonEncode(userData),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .post(
+            Uri.parse('$baseUrl/register'),
+            headers: ApiClient.headers(),
+            body: jsonEncode(userData),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 201) return jsonDecode(response.body);
       throw Exception(ApiClient.errorDetail(response, 'Registration failed'));
     } catch (e) {
@@ -24,11 +25,13 @@ class ApiService {
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: ApiClient.headers(),
-        body: jsonEncode({'email': email, 'password': password}),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .post(
+            Uri.parse('$baseUrl/login'),
+            headers: ApiClient.headers(),
+            body: jsonEncode({'email': email, 'password': password}),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
       throw Exception(ApiClient.errorDetail(response, 'Login failed'));
     } catch (e) {
@@ -38,12 +41,16 @@ class ApiService {
 
   Future<Map<String, dynamic>> getCurrentUser(String token) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/me'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .get(
+            Uri.parse('$baseUrl/me'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
-      throw Exception(ApiClient.errorDetail(response, 'Failed to get user data'));
+      throw Exception(
+        ApiClient.errorDetail(response, 'Failed to get user data'),
+      );
     } catch (e) {
       throw Exception('Failed to get user data: $e');
     }
@@ -51,11 +58,13 @@ class ApiService {
 
   Future<void> requestPasswordReset(String email) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/forgot-password'),
-        headers: ApiClient.headers(),
-        body: jsonEncode({'email': email}),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .post(
+            Uri.parse('$baseUrl/forgot-password'),
+            headers: ApiClient.headers(),
+            body: jsonEncode({'email': email}),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode != 200) {
         throw Exception(ApiClient.errorDetail(response, 'Failed to send OTP'));
       }
@@ -66,11 +75,13 @@ class ApiService {
 
   Future<void> verifyOTP(String email, String otp) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/verify-otp'),
-        headers: ApiClient.headers(),
-        body: jsonEncode({'email': email, 'otp': otp}),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .post(
+            Uri.parse('$baseUrl/verify-otp'),
+            headers: ApiClient.headers(),
+            body: jsonEncode({'email': email, 'otp': otp}),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode != 200) {
         throw Exception(ApiClient.errorDetail(response, 'Invalid OTP'));
       }
@@ -86,18 +97,22 @@ class ApiService {
     String confirmPassword,
   ) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/reset-password'),
-        headers: ApiClient.headers(),
-        body: jsonEncode({
-          'email': email,
-          'otp': otp,
-          'new_password': newPassword,
-          'confirm_password': confirmPassword,
-        }),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .post(
+            Uri.parse('$baseUrl/reset-password'),
+            headers: ApiClient.headers(),
+            body: jsonEncode({
+              'email': email,
+              'otp': otp,
+              'new_password': newPassword,
+              'confirm_password': confirmPassword,
+            }),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode != 200) {
-        throw Exception(ApiClient.errorDetail(response, 'Failed to reset password'));
+        throw Exception(
+          ApiClient.errorDetail(response, 'Failed to reset password'),
+        );
       }
     } catch (e) {
       throw Exception('Failed to reset password: $e');
@@ -106,12 +121,16 @@ class ApiService {
 
   Future<void> deleteAccount(String token) async {
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/account'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .delete(
+            Uri.parse('$baseUrl/account'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode != 200) {
-        throw Exception(ApiClient.errorDetail(response, 'Failed to delete account'));
+        throw Exception(
+          ApiClient.errorDetail(response, 'Failed to delete account'),
+        );
       }
     } catch (e) {
       throw Exception('Failed to delete account: $e');
@@ -123,13 +142,17 @@ class ApiService {
     Map<String, dynamic> profileData,
   ) async {
     try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/profile'),
-        headers: ApiClient.headers(token: token),
-        body: jsonEncode(profileData),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .put(
+            Uri.parse('$baseUrl/profile'),
+            headers: ApiClient.headers(token: token),
+            body: jsonEncode(profileData),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
-      throw Exception(ApiClient.errorDetail(response, 'Failed to update profile'));
+      throw Exception(
+        ApiClient.errorDetail(response, 'Failed to update profile'),
+      );
     } catch (e) {
       throw Exception('Failed to update profile: $e');
     }

@@ -800,6 +800,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get individualMetricsSection => 'Individual Metrics';
 
   @override
+  String get vitalsSection => 'Vitals';
+
+  @override
   String get footerDisclaimer =>
       'Not a medical diagnosis. Consult your doctor for clinical advice. All AI insights are for informational purposes.';
 

@@ -798,6 +798,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get individualMetricsSection => 'व्यक्तिगत मेट्रिक्स';
 
   @override
+  String get vitalsSection => 'महत्वपूर्ण संकेत';
+
+  @override
   String get footerDisclaimer =>
       'यह चिकित्सा निदान नहीं है। नैदानिक सलाह के लिए अपने डॉक्टर से परामर्श करें।';
 

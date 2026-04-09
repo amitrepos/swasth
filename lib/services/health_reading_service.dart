@@ -9,12 +9,12 @@ class HealthReading {
   final int id;
   int profileId;
   final String readingType; // 'glucose' or 'blood_pressure'
-  
+
   // Glucose fields
   final double? glucoseValue;
   final String? glucoseUnit;
   final String? sampleType;
-  
+
   // BP fields
   final double? systolic;
   final double? diastolic;
@@ -22,7 +22,7 @@ class HealthReading {
   final double? pulseRate;
   final String? bpUnit;
   final String? bpStatus;
-  
+
   // Common fields
   final double valueNumeric;
   final String unitDisplay;
@@ -98,11 +98,7 @@ class HealthReading {
 
   /// Full JSON including server-assigned fields — used for local caching.
   Map<String, dynamic> toCacheJson() {
-    return {
-      'id': id,
-      ...toJson(),
-      'created_at': createdAt.toIso8601String(),
-    };
+    return {'id': id, ...toJson(), 'created_at': createdAt.toIso8601String()};
   }
 
   String get displayValue {
@@ -131,7 +127,7 @@ class HealthReading {
   // Factory method to create from GlucoseReading or BPReading
   factory HealthReading.fromGlucoseOrBP(dynamic reading, String deviceType) {
     final now = DateTime.now();
-    
+
     if (deviceType.toLowerCase().contains('glucose')) {
       // It's a GlucoseReading
       return HealthReading(
@@ -168,7 +164,7 @@ class HealthReading {
         createdAt: now,
       );
     }
-    
+
     throw Exception('Unknown device type: $deviceType');
   }
 }
@@ -176,16 +172,22 @@ class HealthReading {
 const _kTimeout = Duration(seconds: 20);
 
 class HealthReadingService {
-  static String baseUrl = '${AppConfig.serverHost}/api'; // Use /api prefix for health endpoints
+  static String baseUrl =
+      '${AppConfig.serverHost}/api'; // Use /api prefix for health endpoints
 
   /// Save a new health reading. Returns {reading, alert?} map.
-  Future<Map<String, dynamic>> saveReading(HealthReading reading, String token) async {
+  Future<Map<String, dynamic>> saveReading(
+    HealthReading reading,
+    String token,
+  ) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/readings'),
-        headers: ApiClient.headers(token: token),
-        body: jsonEncode(reading.toJson()),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .post(
+            Uri.parse('$baseUrl/readings'),
+            headers: ApiClient.headers(token: token),
+            body: jsonEncode(reading.toJson()),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 201) {
         final body = jsonDecode(response.body);
         return {
@@ -193,7 +195,9 @@ class HealthReadingService {
           'alert': body['alert'],
         };
       }
-      throw Exception(ApiClient.errorDetail(response, 'Failed to save reading'));
+      throw Exception(
+        ApiClient.errorDetail(response, 'Failed to save reading'),
+      );
     } catch (e) {
       throw Exception('Failed to save reading: $e');
     }
@@ -208,17 +212,21 @@ class HealthReadingService {
     int offset = 0,
   }) async {
     try {
-      String url = '$baseUrl/readings?profile_id=$profileId&limit=$limit&offset=$offset';
+      String url =
+          '$baseUrl/readings?profile_id=$profileId&limit=$limit&offset=$offset';
       if (readingType != null) url += '&reading_type=$readingType';
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .get(Uri.parse(url), headers: ApiClient.headers(token: token))
+          .timeout(_kTimeout);
       if (response.statusCode == 200) {
-        return (jsonDecode(response.body) as List).map((j) => HealthReading.fromJson(j)).toList();
+        return (jsonDecode(response.body) as List)
+            .map((j) => HealthReading.fromJson(j))
+            .toList();
       }
-      throw Exception(ApiClient.errorDetail(response, 'Failed to get readings'));
+      throw Exception(
+        ApiClient.errorDetail(response, 'Failed to get readings'),
+      );
     } catch (e) {
       throw Exception('Failed to get readings: $e');
     }
@@ -227,11 +235,14 @@ class HealthReadingService {
   /// Get a specific reading by ID
   Future<HealthReading> getReading(int readingId, String token) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/readings/$readingId'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
-      if (response.statusCode == 200) return HealthReading.fromJson(jsonDecode(response.body));
+      final response = await ApiClient.httpClient
+          .get(
+            Uri.parse('$baseUrl/readings/$readingId'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
+      if (response.statusCode == 200)
+        return HealthReading.fromJson(jsonDecode(response.body));
       throw Exception(ApiClient.errorDetail(response, 'Reading not found'));
     } catch (e) {
       throw Exception('Failed to get reading: $e');
@@ -241,12 +252,16 @@ class HealthReadingService {
   /// Delete a reading
   Future<void> deleteReading(int readingId, String token) async {
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/readings/$readingId'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .delete(
+            Uri.parse('$baseUrl/readings/$readingId'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode != 200) {
-        throw Exception(ApiClient.errorDetail(response, 'Failed to delete reading'));
+        throw Exception(
+          ApiClient.errorDetail(response, 'Failed to delete reading'),
+        );
       }
     } catch (e) {
       throw Exception('Failed to delete reading: $e');
@@ -256,10 +271,12 @@ class HealthReadingService {
   /// Get summary statistics
   Future<Map<String, dynamic>> getSummary(String token, int profileId) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/readings/stats/summary?profile_id=$profileId'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .get(
+            Uri.parse('$baseUrl/readings/stats/summary?profile_id=$profileId'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
       throw Exception(ApiClient.errorDetail(response, 'Failed to get summary'));
     } catch (e) {
@@ -270,10 +287,12 @@ class HealthReadingService {
   /// Get AI Doctor recommendation from Gemini via backend
   Future<String> getAiInsight(String token, int profileId) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/readings/ai-insight?profile_id=$profileId'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .get(
+            Uri.parse('$baseUrl/readings/ai-insight?profile_id=$profileId'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return (data['insight'] as String?) ?? '';
@@ -286,12 +305,20 @@ class HealthReadingService {
 
   /// Get AI trend summary for a period (7, 30, or 90 days).
   /// Combines health readings + chat memory + profile info for pattern analysis.
-  Future<String> getTrendSummary(String token, int profileId, int period) async {
+  Future<String> getTrendSummary(
+    String token,
+    int profileId,
+    int period,
+  ) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/readings/trend-summary?profile_id=$profileId&period=$period'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(const Duration(seconds: 45));
+      final response = await ApiClient.httpClient
+          .get(
+            Uri.parse(
+              '$baseUrl/readings/trend-summary?profile_id=$profileId&period=$period',
+            ),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(const Duration(seconds: 45));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return (data['summary'] as String?) ?? '';
@@ -311,12 +338,16 @@ class HealthReadingService {
     String token,
   ) async {
     try {
-      final uri = Uri.parse('$baseUrl/readings/parse-image?device_type=$deviceType');
+      final uri = Uri.parse(
+        '$baseUrl/readings/parse-image?device_type=$deviceType',
+      );
       final request = http.MultipartRequest('POST', uri)
         ..headers.addAll(ApiClient.headers(token: token))
         ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
 
-      final streamed = await request.send().timeout(const Duration(seconds: 20));
+      final streamed = await request.send().timeout(
+        const Duration(seconds: 20),
+      );
       final response = await http.Response.fromStream(streamed);
 
       if (response.statusCode != 200) return null;
@@ -351,14 +382,21 @@ class HealthReadingService {
   }
 
   /// Get computed health score, streak, and AI insight for the home screen
-  Future<Map<String, dynamic>> getHealthScore(String token, int profileId) async {
+  Future<Map<String, dynamic>> getHealthScore(
+    String token,
+    int profileId,
+  ) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/readings/health-score?profile_id=$profileId'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .get(
+            Uri.parse('$baseUrl/readings/health-score?profile_id=$profileId'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 200) return jsonDecode(response.body);
-      throw Exception(ApiClient.errorDetail(response, 'Failed to get health score'));
+      throw Exception(
+        ApiClient.errorDetail(response, 'Failed to get health score'),
+      );
     } catch (e) {
       throw Exception('Failed to get health score: $e');
     }
@@ -367,10 +405,12 @@ class HealthReadingService {
   /// Get streaks and points for all accessible profiles (family leaderboard).
   Future<List<Map<String, dynamic>>> getFamilyStreaks(String token) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/readings/family-streaks'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .get(
+            Uri.parse('$baseUrl/readings/family-streaks'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return List<Map<String, dynamic>>.from(data['leaderboard'] ?? []);
@@ -382,12 +422,17 @@ class HealthReadingService {
   }
 
   /// Get shareable weekly summary text for a profile.
-  Future<Map<String, dynamic>> getWeeklySummary(String token, int profileId) async {
+  Future<Map<String, dynamic>> getWeeklySummary(
+    String token,
+    int profileId,
+  ) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/readings/weekly-summary?profile_id=$profileId'),
-        headers: ApiClient.headers(token: token),
-      ).timeout(_kTimeout);
+      final response = await ApiClient.httpClient
+          .get(
+            Uri.parse('$baseUrl/readings/weekly-summary?profile_id=$profileId'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }

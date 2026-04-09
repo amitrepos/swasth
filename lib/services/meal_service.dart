@@ -16,7 +16,7 @@ class MealService {
   /// Save a new meal log via POST /api/meals.
   Future<MealLog> saveMeal(MealLogCreate data, String token) async {
     try {
-      final response = await http
+      final response = await ApiClient.httpClient
           .post(
             Uri.parse(_baseUrl),
             headers: ApiClient.headers(token: token),
@@ -39,7 +39,7 @@ class MealService {
     int days = 30,
   }) async {
     try {
-      final response = await http
+      final response = await ApiClient.httpClient
           .get(
             Uri.parse('$_baseUrl?profile_id=$profileId&days=$days'),
             headers: ApiClient.headers(token: token),
@@ -59,7 +59,7 @@ class MealService {
   /// Get today's meals via GET /api/meals/today?profile_id=X.
   Future<List<MealLog>> getTodayMeals(int profileId, String token) async {
     try {
-      final response = await http
+      final response = await ApiClient.httpClient
           .get(
             Uri.parse('$_baseUrl/today?profile_id=$profileId'),
             headers: ApiClient.headers(token: token),
@@ -81,7 +81,7 @@ class MealService {
   /// Delete a meal via DELETE /api/meals/{id}.
   Future<void> deleteMeal(int mealId, String token) async {
     try {
-      final response = await http
+      final response = await ApiClient.httpClient
           .delete(
             Uri.parse('$_baseUrl/$mealId'),
             headers: ApiClient.headers(token: token),
