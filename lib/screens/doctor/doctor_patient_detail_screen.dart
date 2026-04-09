@@ -111,8 +111,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: AppColors.bgPage,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
@@ -143,7 +142,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
                     _error!,
                     style: const TextStyle(color: AppColors.danger),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _loadAll,
                     child: const Text('Retry'),
@@ -157,22 +156,22 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
 
   Widget _buildContent() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
         // Patient profile card
         _buildProfileCard(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
         // Quick stats
         _buildQuickStats(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
         // NMC disclaimer
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: AppColors.bgGrouped,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: const Row(
             children: [
@@ -194,11 +193,11 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
         // Recent readings
         _buildReadingsSection(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
         // Doctor notes
         _buildNotesSection(),
@@ -380,7 +379,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
             subtitle,
             style: const TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 10,
+              fontSize: 11,
             ),
             textAlign: TextAlign.center,
           ),
@@ -445,7 +444,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
     valueColor = _flagColor(statusFlag);
 
     return GlassCard(
-      margin: const EdgeInsets.only(bottom: 6),
+      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
@@ -588,7 +587,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
     final createdAt = note['created_at'] as String?;
 
     return GlassCard(
-      margin: const EdgeInsets.only(bottom: 6),
+      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
