@@ -84,8 +84,7 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: AppColors.bgPage,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -205,17 +204,18 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
     final noData = _filterByStatus('no_data');
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
         // Summary bar
         _buildSummaryBar(
           critical.length,
           attention.length,
-          stable.length + noData.length,
+          stable.length,
+          noData.length,
         ),
         const SizedBox(height: 16),
 
-        // Critical section
+        // Critical section (expanded, red)
         if (critical.isNotEmpty) ...[
           _buildSectionHeader(
             'CRITICAL',
@@ -227,7 +227,7 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
           const SizedBox(height: 16),
         ],
 
-        // Attention section
+        // Attention section (expanded, amber)
         if (attention.isNotEmpty) ...[
           _buildSectionHeader(
             'NEEDS ATTENTION',
@@ -239,20 +239,31 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
           const SizedBox(height: 16),
         ],
 
-        // Stable section (collapsed by default)
-        if (stable.isNotEmpty || noData.isNotEmpty) ...[
+        // Stable section (collapsed by default, green)
+        if (stable.isNotEmpty) ...[
           _buildCollapsibleSection(
             'STABLE',
-            [...stable, ...noData],
+            stable,
             AppColors.success,
             Icons.check_circle,
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // No data section (collapsed by default, grey)
+        if (noData.isNotEmpty) ...[
+          _buildCollapsibleSection(
+            'NO DATA',
+            noData,
+            AppColors.textSecondary,
+            Icons.access_time,
           ),
         ],
       ],
     );
   }
 
-  Widget _buildSummaryBar(int critical, int attention, int stable) {
+  Widget _buildSummaryBar(int critical, int attention, int stable, int noData) {
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -271,6 +282,10 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
           _buildCountBadge(attention, AppColors.amber),
           const SizedBox(width: 8),
           _buildCountBadge(stable, AppColors.success),
+          if (noData > 0) ...[
+            const SizedBox(width: 8),
+            _buildCountBadge(noData, AppColors.textSecondary),
+          ],
         ],
       ),
     );
@@ -326,19 +341,24 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
     Color color,
     IconData icon,
   ) {
-    return ExpansionTile(
-      leading: Icon(icon, size: 18, color: color),
-      title: Text(
-        '$title (${patients.length})',
-        style: TextStyle(
-          color: color,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: ExpansionTile(
+        leading: Icon(icon, size: 18, color: color),
+        title: Text(
+          '$title (${patients.length})',
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
         ),
+        initiallyExpanded: false,
+        shape: const RoundedRectangleBorder(side: BorderSide.none),
+        collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
+        children: patients.map(_buildPatientCard).toList(),
       ),
-      initiallyExpanded: false,
-      children: patients.map(_buildPatientCard).toList(),
     );
   }
 

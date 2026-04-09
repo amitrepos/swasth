@@ -490,20 +490,33 @@ def get_triage_board(
             models.DoctorPatientLink.doctor_id == user.id,
             models.DoctorPatientLink.is_active == True,  # noqa: E712
         )
-        .order_by(
-            case(
-                (models.DoctorPatientLink.triage_status == "critical", 1),
-                (models.DoctorPatientLink.triage_status == "attention", 2),
-                (models.DoctorPatientLink.triage_status == "stable", 3),
-                else_=4,
-            ),
-            models.DoctorPatientLink.last_reading_at.desc().nulls_last(),
-        )
         .all()
     )
 
+    # Recompute triage live for every patient and update cache
+    now = datetime.now(timezone.utc)
+    for link, profile in links:
+        triage = _compute_triage_status(profile.id, db)
+        link.triage_status = triage["triage_status"]
+        link.last_reading_value = triage["last_reading_value"]
+        link.last_reading_type = triage["last_reading_type"]
+        link.last_reading_at = triage["last_reading_at"]
+        link.compliance_7d = triage["compliance_7d"]
+        link.trend_direction = triage["trend_direction"]
+        link.triage_updated_at = now
+
     _log_doctor_access(db, user.id, None, "viewed_triage_board", "/api/doctor/patients")
     db.commit()
+
+    # Sort: critical first, then attention, then stable, then no_data
+    status_order = {"critical": 1, "attention": 2, "stable": 3, "no_data": 4}
+    sorted_links = sorted(
+        links,
+        key=lambda lp: (
+            status_order.get(lp[0].triage_status or "no_data", 4),
+            -(lp[0].last_reading_at.timestamp() if lp[0].last_reading_at else 0),
+        ),
+    )
 
     return [
         schemas.TriagePatientCard(
@@ -520,7 +533,7 @@ def get_triage_board(
             trend_direction=link.trend_direction,
             link_id=link.id,
         )
-        for link, profile in links
+        for link, profile in sorted_links
     ]
 
 
