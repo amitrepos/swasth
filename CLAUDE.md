@@ -148,7 +148,7 @@ Is this a bug fix, refactor, or infra-only change?
 **Actions — run ALL 7 phases in order:**
 1. **BUILD:** `flutter analyze` + backend import check
 2. **LINT:** `flutter analyze` + `ruff check` (if installed)
-3. **TESTS:** `TESTING=true python -m pytest tests/ -v` + `flutter test`
+3. **TESTS:** `TESTING=true python -m pytest tests/ -v` + `flutter test test/` (includes E2E flow tests)
 4. **COVERAGE (MANDATORY):** `pytest --cov` on each changed backend file. Tiered targets:
    - **Tier 1 (95%):** health_utils, routes_health, routes_meals, models, schemas — health-critical
    - **Tier 2 (90%):** dependencies, routes (auth), encryption_service — auth/security
@@ -159,16 +159,38 @@ Is this a bug fix, refactor, or infra-only change?
 7. **DIFF REVIEW:** `git diff --stat` — only intended files changed?
 **GATE:** No FAIL in any phase. Coverage below tier target is a FAIL. QA CRITICAL findings must be fixed. If a phase fails, fix and re-run `/verify` from the beginning.
 
-### Pre-Production Gate: E2E Tests
-**When:** Before deploying to production (not on every PR — only on release branches)
-**Actions:**
-- Run Flutter integration tests (`flutter test integration_test/`) that simulate real user flows:
-  - Register → log reading → log meal → see insight → check trend
-  - Network failure mid-save → offline queue → sync on reconnect
-  - Language switch mid-flow → all strings update correctly
-- These are automated UI tests (no manual doctor testing needed)
-- Use Flutter's `integration_test` package with `patrol` or `integration_test` driver
-**GATE:** All E2E smoke tests pass before any production deployment.
+### E2E Flow Tests (MANDATORY on every PR — quality over quantity)
+**When:** Every PR that touches Flutter code. No exceptions.
+**Philosophy:** Whatever feature we build, it must work E2E before we implement any new feature.
+**Run:** `flutter test test/flows/ --timeout 30s`
+**Current coverage (186 tests):**
+- `auth_flow_test.dart` — login, registration, validation, navigation (9 tests)
+- `dashboard_display_test.dart` — all screens render, no ErrorWidgets (6 tests)
+- `health_reading_flow_test.dart` — BP + glucose entry, validation, boundary, save (14 tests)
+- `meal_logging_flow_test.dart` — quick select, meal type, API save (8 tests)
+- `chat_flow_test.dart` — input, send, response, quota (8 tests)
+- `profile_flow_test.dart` — selection, create, validate, API loads (9 tests)
+- `history_flow_test.dart` — readings list, data display (5 tests)
+- `error_handling_test.dart` — wrong creds, server errors, validation (5 tests)
+- `offline_sync_test.dart` — queue, sync, failed items, unreachable server (10 tests)
+- `boundary_tests.dart` — clinical classification (BP/glucose), double-tap, token expiry (36 tests)
+
+**Test infrastructure (must use):**
+- `test/helpers/test_app.dart` — `TestEnv` bootstrapper, `pumpN()` helper
+- `test/helpers/mock_http.dart` — mock HTTP for all 48 API endpoints
+- `test/helpers/finders.dart` — Key-based widget finders
+- NEVER use `pumpAndSettle()` — causes infinite hangs with animations. Always use `pumpN()`.
+- NEVER use `FlutterSecureStorage` directly in tests — use `StorageService.useInMemoryStorage()`.
+- Every new screen MUST get widget Keys on interactive elements.
+
+**When adding a new feature:**
+1. Add widget Keys to any new interactive elements
+2. Write E2E flow test BEFORE or WITH the feature (not after)
+3. Update mock_http.dart if new API endpoints are added
+4. Run `flutter test test/flows/ --timeout 30s` — all must pass
+5. If a test fails, fix the code, not the test (unless the test is wrong)
+
+**GATE:** All E2E tests pass. Zero failures. This blocks the PR.
 
 ### Stage 6: SECURITY (OWASP + health data compliance)
 **Skills used:** `/security-audit` + `/phi-compliance` (conditional)
