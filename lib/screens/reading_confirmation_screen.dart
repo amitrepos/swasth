@@ -34,7 +34,7 @@ String classifyBp(double sys, double dia) {
 class ReadingConfirmationScreen extends StatefulWidget {
   final OcrResult? ocrResult;
 
-  /// 'glucose' or 'blood_pressure'
+  /// 'glucose', 'blood_pressure', 'spo2', or 'steps'
   final String deviceType;
   final int profileId;
 
@@ -55,6 +55,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
   final _systolicController = TextEditingController();
   final _diastolicController = TextEditingController();
   final _pulseController = TextEditingController();
+  final _spo2Controller = TextEditingController();
+  final _stepsController = TextEditingController();
 
   String? _mealContext; // 'fasting', 'before_meal', 'after_meal'
   DateTime _readingTime = DateTime.now();
@@ -65,6 +67,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
   final _storageService = StorageService();
 
   bool get isGlucose => widget.deviceType == 'glucose';
+  bool get isSpo2 => widget.deviceType == 'spo2';
+  bool get isSteps => widget.deviceType == 'steps';
 
   @override
   void initState() {
@@ -129,6 +133,22 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
         ).showSnackBar(SnackBar(content: Text(l10n.glucoseValidation)));
         return;
       }
+    } else if (isSpo2) {
+      final v = double.tryParse(_spo2Controller.text.trim());
+      if (v == null || v < 50 || v > 100) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('SpO2 must be between 50-100%')),
+        );
+        return;
+      }
+    } else if (isSteps) {
+      final v = int.tryParse(_stepsController.text.trim());
+      if (v == null || v < 0 || v > 100000) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Steps must be between 0-100,000')),
+        );
+        return;
+      }
     } else {
       final sys = double.tryParse(_systolicController.text.trim());
       final dia = double.tryParse(_diastolicController.text.trim());
@@ -166,6 +186,33 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
           unitDisplay: 'mg/dL',
           statusFlag: _glucoseStatus(value),
           notes: _mealContext,
+          readingTimestamp: _readingTime,
+          createdAt: DateTime.now(),
+        );
+      } else if (isSpo2) {
+        final value = double.parse(_spo2Controller.text.trim());
+        reading = HealthReading(
+          id: 0,
+          profileId: widget.profileId,
+          readingType: 'spo2',
+          spo2Value: value,
+          spo2Unit: '%',
+          valueNumeric: value,
+          unitDisplay: '%',
+          statusFlag: classifySpo2(value),
+          readingTimestamp: _readingTime,
+          createdAt: DateTime.now(),
+        );
+      } else if (isSteps) {
+        final value = int.parse(_stepsController.text.trim());
+        reading = HealthReading(
+          id: 0,
+          profileId: widget.profileId,
+          readingType: 'steps',
+          stepsCount: value,
+          stepsGoal: 7500,
+          valueNumeric: value.toDouble(),
+          unitDisplay: 'steps',
           readingTimestamp: _readingTime,
           createdAt: DateTime.now(),
         );
@@ -323,12 +370,21 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
   String _glucoseStatus(double v) => classifyGlucose(v);
   String _bpStatus(double sys, double dia) => classifyBp(sys, dia);
 
+  String _screenTitle(AppLocalizations l10n) {
+    if (isGlucose) return l10n.glucoseReadingTitle;
+    if (isSpo2) return 'SpO2 Reading';
+    if (isSteps) return 'Steps Entry';
+    return l10n.bpReadingTitle;
+  }
+
   @override
   void dispose() {
     _glucoseController.dispose();
     _systolicController.dispose();
     _diastolicController.dispose();
     _pulseController.dispose();
+    _spo2Controller.dispose();
+    _stepsController.dispose();
     super.dispose();
   }
 
@@ -337,9 +393,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isGlucose ? l10n.glucoseReadingTitle : l10n.bpReadingTitle),
-      ),
+      appBar: AppBar(title: Text(_screenTitle(l10n))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -363,6 +417,22 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
                 label: l10n.glucoseValueLabel,
                 suffix: 'mg/dL',
                 hint: 'e.g. 153',
+              ),
+            ] else if (isSpo2) ...[
+              _inputField(
+                key: const Key('reading_spo2_value'),
+                controller: _spo2Controller,
+                label: l10n.lastSpO2,
+                suffix: '%',
+                hint: 'e.g. 97',
+              ),
+            ] else if (isSteps) ...[
+              _inputField(
+                key: const Key('reading_steps_count'),
+                controller: _stepsController,
+                label: l10n.lastSteps,
+                suffix: 'steps',
+                hint: 'e.g. 5000',
               ),
             ] else ...[
               _inputField(

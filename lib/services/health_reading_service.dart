@@ -8,7 +8,7 @@ import 'api_client.dart';
 class HealthReading {
   final int id;
   int profileId;
-  final String readingType; // 'glucose' or 'blood_pressure'
+  final String readingType; // 'glucose', 'blood_pressure', 'spo2', or 'steps'
 
   // Glucose fields
   final double? glucoseValue;
@@ -22,6 +22,14 @@ class HealthReading {
   final double? pulseRate;
   final String? bpUnit;
   final String? bpStatus;
+
+  // SpO2 fields
+  final double? spo2Value;
+  final String? spo2Unit;
+
+  // Steps fields
+  final int? stepsCount;
+  final int? stepsGoal;
 
   // Common fields
   final double valueNumeric;
@@ -44,6 +52,10 @@ class HealthReading {
     this.pulseRate,
     this.bpUnit,
     this.bpStatus,
+    this.spo2Value,
+    this.spo2Unit,
+    this.stepsCount,
+    this.stepsGoal,
     required this.valueNumeric,
     required this.unitDisplay,
     this.statusFlag,
@@ -66,6 +78,10 @@ class HealthReading {
       pulseRate: json['pulse_rate']?.toDouble(),
       bpUnit: json['bp_unit'],
       bpStatus: json['bp_status'],
+      spo2Value: json['spo2_value']?.toDouble(),
+      spo2Unit: json['spo2_unit'],
+      stepsCount: json['steps_count']?.toInt(),
+      stepsGoal: json['steps_goal']?.toInt(),
       valueNumeric: json['value_numeric'].toDouble(),
       unitDisplay: json['unit_display'],
       statusFlag: json['status_flag'],
@@ -88,6 +104,10 @@ class HealthReading {
       'pulse_rate': pulseRate,
       'bp_unit': bpUnit,
       'bp_status': bpStatus,
+      'spo2_value': spo2Value,
+      'spo2_unit': spo2Unit,
+      'steps_count': stepsCount,
+      'steps_goal': stepsGoal,
       'value_numeric': valueNumeric,
       'unit_display': unitDisplay,
       'status_flag': statusFlag,

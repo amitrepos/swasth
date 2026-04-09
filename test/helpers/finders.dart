@@ -41,6 +41,8 @@ final readingSystolic = find.byKey(const Key('reading_systolic'));
 final readingDiastolic = find.byKey(const Key('reading_diastolic'));
 final readingPulse = find.byKey(const Key('reading_pulse'));
 final readingGlucoseValue = find.byKey(const Key('reading_glucose_value'));
+final readingSpo2Value = find.byKey(const Key('reading_spo2_value'));
+final readingStepsCount = find.byKey(const Key('reading_steps_count'));
 final readingSaveButton = find.byKey(const Key('reading_save_button'));
 
 // ── Meal logging ────────────────────────────────────────────────────────────
