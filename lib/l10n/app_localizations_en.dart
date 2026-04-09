@@ -1263,4 +1263,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wellnessRingTitle => 'Wellness Ring';
+
+  @override
+  String get takeReadings => 'Take Readings';
+
+  @override
+  String get backToWellnessHub => 'Back to Wellness Hub';
 }

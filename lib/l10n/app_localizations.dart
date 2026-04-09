@@ -2449,6 +2449,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wellness Ring'**
   String get wellnessRingTitle;
+
+  /// No description provided for @takeReadings.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Readings'**
+  String get takeReadings;
+
+  /// No description provided for @backToWellnessHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Wellness Hub'**
+  String get backToWellnessHub;
 }
 
 class _AppLocalizationsDelegate
