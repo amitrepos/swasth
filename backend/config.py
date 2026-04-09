@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     WA_ACCESS_TOKEN: Optional[str] = None
     WA_VERIFY_TOKEN: Optional[str] = None
     
+    # Twilio Messaging
+    TWILIO_ACCOUNT_SID: Optional[str] = None
+    TWILIO_AUTH_TOKEN: Optional[str] = None
+    TWILIO_WHATSAPP_NUMBER: Optional[str] = None  # e.g. "whatsapp:+14155238886"
+    
     class Config:
         env_file = ".env"
 

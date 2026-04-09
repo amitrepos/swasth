@@ -190,7 +190,7 @@ def get_health_score(
 
     # Today's readings
     today_start = datetime.combine(today, datetime.min.time())
-    today_readings = [r for r in recent if r.reading_timestamp >= today_start]
+    today_readings = [r for r in recent if r.reading_timestamp.replace(tzinfo=None) >= today_start]
 
     today_glucose = next((r for r in today_readings if r.reading_type == 'glucose'), None)
     today_bp = next((r for r in today_readings if r.reading_type == 'blood_pressure'), None)
