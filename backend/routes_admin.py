@@ -2,12 +2,14 @@
 
 All endpoints require is_admin=True on the authenticated user.
 """
+import json
 import os
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import HTMLResponse, Response
 from sqlalchemy import func, distinct, case
 from sqlalchemy.orm import Session
 from datetime import datetime, date, timedelta
+from typing import Optional
 
 import models
 import schemas
@@ -17,6 +19,32 @@ from dependencies import get_current_user
 router = APIRouter()
 
 _DASHBOARD_HTML = os.path.join(os.path.dirname(__file__), "admin_dashboard.html")
+
+
+# ---------------------------------------------------------------------------
+# Audit helper — call from every admin action (CERT-In 180-day requirement)
+# ---------------------------------------------------------------------------
+
+def _audit_log(
+    db: Session,
+    admin: models.User,
+    action_type: str,
+    target_user_id: int = None,
+    target_profile_id: int = None,
+    details: dict = None,
+    outcome: str = "SUCCESS",
+):
+    """Append an immutable row to admin_audit_log."""
+    entry = models.AdminAuditLog(
+        admin_user_id=admin.id,
+        action_type=action_type,
+        target_user_id=target_user_id,
+        target_profile_id=target_profile_id,
+        details=json.dumps(details) if details else None,
+        outcome=outcome,
+    )
+    db.add(entry)
+    db.flush()  # flush so it persists even if caller commits later
 
 
 @router.get("/admin", response_class=HTMLResponse)
@@ -273,6 +301,8 @@ def list_users(
             "full_name": u.full_name,
             "phone_number": u.phone_number,
             "is_admin": u.is_admin,
+            "is_active": u.is_active,
+            "role": u.role.value if hasattr(u.role, 'value') else (u.role or "patient"),
             "ai_consent": u.ai_consent,
             "profiles_count": profile_count,
             "total_readings": total_readings,
@@ -431,6 +461,9 @@ def get_user_detail(
             "last_updated": ctx.last_updated.isoformat() if ctx and ctx.last_updated else None,
         })
 
+    _audit_log(db, user, "VIEW_USER_DETAIL", target_user_id=user_id)
+    db.commit()
+
     return {
         "user": {
             "id": target.id,
@@ -438,6 +471,8 @@ def get_user_detail(
             "full_name": target.full_name,
             "phone_number": target.phone_number,
             "is_admin": target.is_admin,
+            "is_active": target.is_active,
+            "role": target.role.value if hasattr(target.role, 'value') else (target.role or "patient"),
             "ai_consent": target.ai_consent,
             "timezone": target.timezone,
             "last_login": target.last_login_at.isoformat() if target.last_login_at else None,
@@ -473,6 +508,7 @@ def update_ai_memory(
     if not ctx:
         raise HTTPException(status_code=404, detail="No AI memory found for this profile")
     ctx.summary = payload.get("summary", ctx.summary)
+    _audit_log(db, user, "EDIT_AI_MEMORY", target_profile_id=profile_id)
     db.commit()
     return {"message": "AI memory updated", "profile_id": profile_id}
 
@@ -490,6 +526,7 @@ def reset_ai_memory(
     if ctx:
         ctx.summary = ""
         ctx.message_count = 0
+        _audit_log(db, user, "RESET_AI_MEMORY", target_profile_id=profile_id)
         db.commit()
     return Response(status_code=204)
 
@@ -507,7 +544,350 @@ def update_user_admin_status(
     target = db.query(models.User).filter(models.User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
+    old_status = target.is_admin
     target.is_admin = body.is_admin
+    if body.is_admin:
+        target.role = models.UserRole.admin
+    _audit_log(db, user, "TOGGLE_ADMIN", target_user_id=user_id,
+               details={"old": old_status, "new": body.is_admin})
     db.commit()
-    status = "now an admin" if body.is_admin else "no longer an admin"
-    return {"message": f"{target.email} is {status}"}
+    result_status = "now an admin" if body.is_admin else "no longer an admin"
+    return {"message": f"{target.email} is {result_status}"}
+
+
+# ---------------------------------------------------------------------------
+# G2: Account suspension
+# ---------------------------------------------------------------------------
+
+@router.patch("/admin/users/{user_id}/suspend")
+def suspend_user(
+    user_id: int,
+    body: schemas.AdminSuspendUser,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Suspend or reactivate a user account."""
+    if user_id == user.id:
+        raise HTTPException(status_code=400, detail="Cannot suspend your own account")
+    target = db.query(models.User).filter(models.User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    target.is_active = not body.suspend
+    action = "SUSPEND_USER" if body.suspend else "UNSUSPEND_USER"
+    _audit_log(db, user, action, target_user_id=user_id,
+               details={"reason": body.reason, "suspend": body.suspend})
+    db.commit()
+
+    word = "suspended" if body.suspend else "reactivated"
+    return {"message": f"{target.email} has been {word}"}
+
+
+# ---------------------------------------------------------------------------
+# G1: Doctor verification
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/doctors")
+def list_doctors(
+    verified: Optional[str] = Query(None, regex="^(true|false|all)$"),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """List all doctors with verification status and patient count."""
+    q = db.query(models.DoctorProfile, models.User).join(
+        models.User, models.DoctorProfile.user_id == models.User.id
+    )
+    if verified == "true":
+        q = q.filter(models.DoctorProfile.is_verified == True)  # noqa: E712
+    elif verified == "false":
+        q = q.filter(models.DoctorProfile.is_verified == False)  # noqa: E712
+
+    doctors = q.order_by(models.DoctorProfile.created_at.desc()).all()
+    result = []
+    for dp, u in doctors:
+        patient_count = db.query(func.count(models.DoctorPatientLink.id)).filter(
+            models.DoctorPatientLink.doctor_id == u.id,
+            models.DoctorPatientLink.is_active == True,  # noqa: E712
+        ).scalar() or 0
+
+        last_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(
+            models.DoctorAccessLog.doctor_id == u.id,
+        ).scalar()
+
+        result.append({
+            "user_id": u.id,
+            "email": u.email,
+            "full_name": u.full_name,
+            "phone_number": u.phone_number,
+            "nmc_number": dp.nmc_number,
+            "specialty": dp.specialty,
+            "clinic_name": dp.clinic_name,
+            "doctor_code": dp.doctor_code,
+            "is_verified": dp.is_verified,
+            "verified_at": dp.verified_at.isoformat() if dp.verified_at else None,
+            "created_at": dp.created_at.isoformat() if dp.created_at else None,
+            "patient_count": patient_count,
+            "last_access": last_access.isoformat() if last_access else None,
+            "time_in_queue_hours": round((datetime.utcnow() - dp.created_at.replace(tzinfo=None)).total_seconds() / 3600, 1) if dp.created_at and not dp.is_verified else None,
+        })
+
+    _audit_log(db, user, "VIEW_DOCTORS_LIST")
+    db.commit()
+    return {"doctors": result, "total": len(result)}
+
+
+@router.post("/admin/doctors/{user_id}/verify")
+def verify_doctor(
+    user_id: int,
+    body: schemas.AdminVerifyDoctor,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Approve a doctor's NMC verification."""
+    dp = db.query(models.DoctorProfile).filter(
+        models.DoctorProfile.user_id == user_id
+    ).first()
+    if not dp:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+    if dp.is_verified:
+        raise HTTPException(status_code=400, detail="Doctor is already verified")
+
+    dp.is_verified = True
+    dp.verified_at = datetime.utcnow()
+    dp.verified_by = user.id
+
+    _audit_log(db, user, "VERIFY_DOCTOR", target_user_id=user_id,
+               details={"nmc_number": dp.nmc_number, "notes": body.notes})
+    db.commit()
+    return {"message": f"Doctor {dp.nmc_number} verified successfully"}
+
+
+@router.post("/admin/doctors/{user_id}/reject")
+def reject_doctor(
+    user_id: int,
+    body: schemas.AdminRejectDoctor,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Reject a doctor's verification with reason."""
+    dp = db.query(models.DoctorProfile).filter(
+        models.DoctorProfile.user_id == user_id
+    ).first()
+    if not dp:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+
+    dp.is_verified = False
+
+    _audit_log(db, user, "REJECT_DOCTOR", target_user_id=user_id,
+               details={"nmc_number": dp.nmc_number, "reason": body.reason, "notes": body.notes})
+    db.commit()
+    return {"message": f"Doctor {dp.nmc_number} verification rejected", "reason": body.reason}
+
+
+# ---------------------------------------------------------------------------
+# G5: Consent dashboard
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/consent")
+def consent_dashboard(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Consent status for all users — DPDPA S6 compliance."""
+    users = db.query(models.User).order_by(models.User.created_at.desc()).all()
+
+    consented = []
+    not_consented = []
+    for u in users:
+        record = {
+            "id": u.id,
+            "email": u.email,
+            "full_name": u.full_name,
+            "consent_timestamp": u.consent_timestamp.isoformat() if u.consent_timestamp else None,
+            "consent_app_version": u.consent_app_version,
+            "consent_language": u.consent_language,
+            "ai_consent": u.ai_consent,
+            "ai_consent_timestamp": u.ai_consent_timestamp.isoformat() if u.ai_consent_timestamp else None,
+            "signed_up": u.created_at.isoformat() if u.created_at else None,
+        }
+        if u.consent_timestamp:
+            consented.append(record)
+        else:
+            not_consented.append(record)
+
+    _audit_log(db, user, "VIEW_CONSENT_DASHBOARD")
+    db.commit()
+    return {
+        "total_users": len(users),
+        "consented_count": len(consented),
+        "not_consented_count": len(not_consented),
+        "consented": consented,
+        "not_consented": not_consented,
+    }
+
+
+# ---------------------------------------------------------------------------
+# G4: Alerts center
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/alerts")
+def get_alerts(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Computed alerts — critical readings, pending doctors, AI fallback, inactivity."""
+    now = datetime.utcnow()
+    alerts = []
+
+    # 1. Critical readings unaddressed (no doctor note within 24h)
+    critical_readings = db.query(models.HealthReading).filter(
+        models.HealthReading.status_flag == "CRITICAL",
+        models.HealthReading.created_at >= now - timedelta(days=7),
+    ).all()
+    for r in critical_readings:
+        has_note = db.query(models.DoctorNote).filter(
+            models.DoctorNote.profile_id == r.profile_id,
+            models.DoctorNote.created_at >= r.created_at,
+        ).first()
+        if not has_note:
+            hours_ago = round((now - r.created_at.replace(tzinfo=None)).total_seconds() / 3600, 1)
+            if hours_ago >= 24:
+                alerts.append({
+                    "type": "CRITICAL_READING_UNADDRESSED",
+                    "severity": "HIGH",
+                    "message": f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) unaddressed for {hours_ago:.0f}h",
+                    "target_profile_id": r.profile_id,
+                    "reading_id": r.id,
+                    "created_at": r.created_at.isoformat(),
+                    "hours_elapsed": hours_ago,
+                })
+
+    # 2. Doctors pending verification > 48h
+    pending_doctors = db.query(models.DoctorProfile, models.User).join(
+        models.User, models.DoctorProfile.user_id == models.User.id
+    ).filter(
+        models.DoctorProfile.is_verified == False,  # noqa: E712
+    ).all()
+    for dp, u in pending_doctors:
+        if dp.created_at:
+            hours_pending = (now - dp.created_at.replace(tzinfo=None)).total_seconds() / 3600
+            severity = "MEDIUM" if hours_pending >= 48 else "INFO"
+            alerts.append({
+                "type": "DOCTOR_PENDING_VERIFICATION",
+                "severity": severity,
+                "message": f"Dr. {u.full_name} ({dp.nmc_number}) pending for {hours_pending:.0f}h",
+                "target_user_id": u.id,
+                "created_at": dp.created_at.isoformat(),
+                "hours_pending": round(hours_pending, 1),
+            })
+
+    # 3. AI fallback spike (> 20% in last 24h)
+    recent_ai = db.query(models.AiInsightLog).filter(
+        models.AiInsightLog.created_at >= now - timedelta(hours=24),
+    ).all()
+    if len(recent_ai) >= 5:
+        fallback_count = sum(1 for a in recent_ai if a.fallback_reason)
+        fallback_rate = fallback_count / len(recent_ai) * 100
+        if fallback_rate > 20:
+            alerts.append({
+                "type": "AI_FALLBACK_SPIKE",
+                "severity": "HIGH",
+                "message": f"AI fallback rate {fallback_rate:.0f}% in last 24h ({fallback_count}/{len(recent_ai)} calls)",
+                "fallback_rate": round(fallback_rate, 1),
+            })
+
+    # 4. Patient inactivity — high-risk patients inactive 7+ days
+    seven_days_ago = now - timedelta(days=7)
+    all_profiles = db.query(models.Profile).all()
+    for p in all_profiles:
+        last_reading = db.query(func.max(models.HealthReading.created_at)).filter(
+            models.HealthReading.profile_id == p.id,
+        ).scalar()
+        if last_reading is None:
+            continue
+
+        last_reading_naive = last_reading.replace(tzinfo=None) if last_reading.tzinfo else last_reading
+        if last_reading_naive >= seven_days_ago:
+            continue
+
+        # Check if high-risk (had critical readings recently)
+        had_critical = db.query(models.HealthReading).filter(
+            models.HealthReading.profile_id == p.id,
+            models.HealthReading.status_flag == "CRITICAL",
+        ).first()
+
+        days_inactive = (now - last_reading_naive).days
+        if had_critical and days_inactive >= 7:
+            alerts.append({
+                "type": "PATIENT_INACTIVE_HIGH_RISK",
+                "severity": "MEDIUM",
+                "message": f"{p.name} (high-risk) inactive for {days_inactive} days",
+                "target_profile_id": p.id,
+                "days_inactive": days_inactive,
+            })
+        elif days_inactive >= 14:
+            alerts.append({
+                "type": "PATIENT_INACTIVE",
+                "severity": "LOW",
+                "message": f"{p.name} inactive for {days_inactive} days",
+                "target_profile_id": p.id,
+                "days_inactive": days_inactive,
+            })
+
+    # Sort by severity
+    severity_order = {"HIGH": 0, "MEDIUM": 1, "INFO": 2, "LOW": 3}
+    alerts.sort(key=lambda a: severity_order.get(a["severity"], 9))
+
+    return {
+        "alerts": alerts,
+        "total": len(alerts),
+        "high_count": sum(1 for a in alerts if a["severity"] == "HIGH"),
+        "medium_count": sum(1 for a in alerts if a["severity"] == "MEDIUM"),
+    }
+
+
+# ---------------------------------------------------------------------------
+# G3: Audit log viewer
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/audit-log")
+def get_audit_log(
+    action_type: Optional[str] = None,
+    target_user_id: Optional[int] = None,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """View admin audit trail — CERT-In compliance."""
+    q = db.query(models.AdminAuditLog).order_by(models.AdminAuditLog.created_at.desc())
+    if action_type:
+        q = q.filter(models.AdminAuditLog.action_type == action_type)
+    if target_user_id:
+        q = q.filter(models.AdminAuditLog.target_user_id == target_user_id)
+
+    total = q.count()
+    entries = q.offset((page - 1) * per_page).limit(per_page).all()
+
+    # Resolve admin names
+    admin_ids = {e.admin_user_id for e in entries}
+    admin_map = {}
+    if admin_ids:
+        admins = db.query(models.User).filter(models.User.id.in_(admin_ids)).all()
+        admin_map = {a.id: a.full_name for a in admins}
+
+    result = []
+    for e in entries:
+        result.append({
+            "id": e.id,
+            "admin_name": admin_map.get(e.admin_user_id, "Unknown"),
+            "admin_user_id": e.admin_user_id,
+            "action_type": e.action_type,
+            "target_user_id": e.target_user_id,
+            "target_profile_id": e.target_profile_id,
+            "details": json.loads(e.details) if e.details else None,
+            "outcome": e.outcome,
+            "created_at": e.created_at.isoformat() if e.created_at else None,
+        })
+
+    return {"entries": result, "total": total, "page": page, "per_page": per_page}

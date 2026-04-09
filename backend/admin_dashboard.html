@@ -16,10 +16,25 @@
   .login-box button:hover { background: #0284c7; }
   .login-box .error { color: #ef4444; font-size: 13px; margin-bottom: 8px; display: none; }
 
-  .dashboard { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-  .header h1 { font-size: 24px; }
-  .header button { padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  /* Layout: sidebar + main */
+  .app-layout { display: none; min-height: 100vh; }
+  .sidebar { width: 220px; background: #0f172a; color: white; position: fixed; top: 0; left: 0; bottom: 0; padding: 20px 0; display: flex; flex-direction: column; z-index: 100; }
+  .sidebar-brand { padding: 0 20px 20px; border-bottom: 1px solid #1e293b; margin-bottom: 8px; }
+  .sidebar-brand h2 { font-size: 18px; font-weight: 800; }
+  .sidebar-brand small { font-size: 11px; color: #64748b; }
+  .sidebar-nav { flex: 1; }
+  .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #94a3b8; text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .sidebar-nav a:hover { background: #1e293b; color: white; }
+  .sidebar-nav a.active { background: #0ea5e9; color: white; border-radius: 0; }
+  .sidebar-nav .badge-count { background: #ef4444; color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
+  .sidebar-footer { padding: 12px 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; }
+  .sidebar-footer button { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 12px; font-weight: 600; margin-top: 4px; }
+
+  .main-content { margin-left: 220px; padding: 24px; max-width: 1100px; }
+
+  /* Sections — only one visible at a time */
+  .section-page { display: none; }
+  .section-page.active { display: block; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
   .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
@@ -30,6 +45,7 @@
   .card .value.blue { color: #0ea5e9; }
   .card .value.amber { color: #f59e0b; }
   .card .value.red { color: #ef4444; }
+  .card .value.purple { color: #8b5cf6; }
 
   .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
   .chart-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); }
@@ -44,7 +60,39 @@
   tr:hover td { background: #f8fafc; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
   .badge-admin { background: #dbeafe; color: #1d4ed8; }
+  .badge-doctor { background: #f3e8ff; color: #7c3aed; }
   .badge-user { background: #f1f5f9; color: #64748b; }
+  .badge-suspended { background: #fee2e2; color: #991b1b; }
+  .badge-pending { background: #fef3c7; color: #92400e; }
+  .badge-verified { background: #dcfce7; color: #166534; }
+
+  /* Alert items */
+  .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: white; border-radius: 10px; border-left: 4px solid #94a3b8; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .alert-item.HIGH { border-left-color: #ef4444; }
+  .alert-item.MEDIUM { border-left-color: #f59e0b; }
+  .alert-item.INFO { border-left-color: #0ea5e9; }
+  .alert-item.LOW { border-left-color: #94a3b8; }
+  .alert-severity { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+  .sev-HIGH { background: #fee2e2; color: #991b1b; }
+  .sev-MEDIUM { background: #fef3c7; color: #92400e; }
+  .sev-INFO { background: #dbeafe; color: #1d4ed8; }
+  .sev-LOW { background: #f1f5f9; color: #64748b; }
+  .alert-msg { font-size: 13px; flex: 1; }
+
+  /* Doctor queue */
+  .doctor-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .doctor-info { flex: 1; }
+  .doctor-info h4 { font-size: 15px; margin-bottom: 4px; }
+  .doctor-info .meta { font-size: 12px; color: #64748b; }
+  .doctor-actions { display: flex; gap: 8px; }
+  .btn { padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-approve { background: #10b981; color: white; }
+  .btn-approve:hover { background: #059669; }
+  .btn-reject { background: #ef4444; color: white; }
+  .btn-reject:hover { background: #dc2626; }
+  .btn-suspend { background: #f59e0b; color: white; }
+  .btn-secondary { background: #f1f5f9; color: #475569; }
+  .btn-secondary:hover { background: #e2e8f0; }
 
   /* User table clickable rows */
   #usersTable tbody tr { cursor: pointer; }
@@ -56,13 +104,12 @@
   .modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b; line-height: 1; }
   .modal-close:hover { color: #1e293b; }
 
-  /* Modal header */
   .user-header { margin-bottom: 20px; }
   .user-header h2 { font-size: 22px; margin-bottom: 4px; }
   .user-header .meta { font-size: 13px; color: #64748b; }
   .user-header .meta span { margin-right: 16px; }
+  .user-header .action-bar { margin-top: 10px; display: flex; gap: 8px; }
 
-  /* Tabs */
   .tab-bar { display: flex; gap: 0; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
   .tab-btn { padding: 10px 20px; border: none; background: none; font-size: 13px; font-weight: 600; color: #94a3b8; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
   .tab-btn:hover { color: #1e293b; }
@@ -70,7 +117,6 @@
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
-  /* Feature usage bars */
   .usage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
   .usage-item { display: flex; align-items: center; gap: 12px; }
   .usage-item .u-label { font-size: 12px; font-weight: 600; color: #64748b; min-width: 110px; }
@@ -78,7 +124,6 @@
   .usage-item .u-fill { height: 100%; border-radius: 6px; min-width: 2px; transition: width 0.3s; }
   .usage-item .u-count { font-size: 13px; font-weight: 700; min-width: 40px; text-align: right; }
 
-  /* Engagement grid */
   .engage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
   .engage-card { background: #f8fafc; border-radius: 10px; padding: 16px; text-align: center; }
   .engage-card .icon { font-size: 24px; margin-bottom: 4px; }
@@ -87,7 +132,6 @@
   .engage-card.active-feat { background: #f0fdf4; border: 1px solid #bbf7d0; }
   .engage-card.inactive-feat { opacity: 0.5; }
 
-  /* Profile cards */
   .profile-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
   .profile-card { background: #f8fafc; border-radius: 12px; padding: 16px; }
   .profile-card h4 { font-size: 15px; margin-bottom: 8px; }
@@ -95,14 +139,12 @@
   .profile-card .p-row strong { color: #1e293b; }
   .condition-pill { display: inline-block; padding: 2px 8px; background: #fef3c7; color: #92400e; border-radius: 10px; font-size: 11px; font-weight: 600; margin: 2px; }
 
-  /* Status badges */
   .status-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
   .status-NORMAL { background: #dcfce7; color: #166534; }
   .status-HIGH { background: #fef3c7; color: #92400e; }
   .status-CRITICAL { background: #fee2e2; color: #991b1b; }
   .status-LOW { background: #dbeafe; color: #1e40af; }
 
-  /* Chat bubbles */
   .chat-list { display: flex; flex-direction: column; gap: 16px; }
   .chat-entry { border-bottom: 1px solid #f1f5f9; padding-bottom: 16px; }
   .chat-entry:last-child { border-bottom: none; }
@@ -114,7 +156,6 @@
   .truncated.expanded { max-height: none; }
   .show-more-btn { font-size: 12px; color: #0ea5e9; cursor: pointer; border: none; background: none; padding: 4px 0; font-weight: 600; }
 
-  /* Insight cards */
   .insight-cards { display: flex; flex-direction: column; gap: 16px; }
   .insight-card { background: #f8fafc; border-radius: 12px; padding: 16px; }
   .insight-card .i-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -124,13 +165,14 @@
   .insight-card .i-text { font-size: 13px; color: #334155; }
   .insight-card .i-stats { font-size: 11px; color: #94a3b8; margin-top: 8px; }
 
-  /* Loading spinner */
   .modal-loading { display: flex; justify-content: center; align-items: center; min-height: 200px; font-size: 14px; color: #94a3b8; }
-
-  /* Empty state */
   .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 14px; }
 
   @media (max-width: 768px) {
+    .sidebar { width: 60px; }
+    .sidebar-brand h2, .sidebar-brand small, .sidebar-nav a span, .sidebar-footer span { display: none; }
+    .sidebar-nav a { justify-content: center; padding: 12px; }
+    .main-content { margin-left: 60px; }
     .charts { grid-template-columns: 1fr; }
     .grid { grid-template-columns: repeat(2, 1fr); }
     .usage-grid { grid-template-columns: 1fr; }
@@ -143,7 +185,7 @@
 <!-- Login -->
 <div class="login-container" id="loginSection">
   <div class="login-box">
-    <h2>🏥 Swasth Admin</h2>
+    <h2>Swasth Admin</h2>
     <div class="error" id="loginError">Invalid credentials or not an admin</div>
     <input type="email" id="email" placeholder="Email" value="">
     <input type="password" id="password" placeholder="Password">
@@ -151,51 +193,95 @@
   </div>
 </div>
 
-<!-- Dashboard -->
-<div class="dashboard" id="dashboard">
-  <div class="header">
-    <h1>📊 Swasth Admin Dashboard</h1>
-    <div>
-      <span id="genTime" style="font-size:12px;color:#94a3b8;margin-right:12px"></span>
-      <button onclick="logout()">Logout</button>
+<!-- App Layout: Sidebar + Main -->
+<div class="app-layout" id="appLayout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <h2>Swasth Admin</h2>
+      <small>Bihar Pilot v1</small>
+    </div>
+    <div class="sidebar-nav">
+      <a class="active" onclick="showSection('overview')"><span>Overview</span></a>
+      <a onclick="showSection('users')"><span>Users</span></a>
+      <a onclick="showSection('doctors')"><span>Doctors</span> <span class="badge-count" id="doctorBadge" style="display:none">0</span></a>
+      <a onclick="showSection('alerts')"><span>Alerts</span> <span class="badge-count" id="alertBadge" style="display:none">0</span></a>
+      <a onclick="showSection('consent')"><span>Consent</span></a>
+      <a onclick="showSection('audit')"><span>Audit Log</span></a>
+    </div>
+    <div class="sidebar-footer">
+      <span id="adminEmail"></span>
+      <br><button onclick="logout()">Logout</button>
     </div>
   </div>
 
-  <!-- KPI Cards -->
-  <div class="grid" id="kpiGrid"></div>
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Overview Section -->
+    <div class="section-page active" id="sec-overview">
+      <h1 style="font-size:22px;margin-bottom:20px">Overview</h1>
+      <div class="grid" id="kpiGrid"></div>
+      <div class="charts">
+        <div class="chart-card"><h3>Signups (30 days)</h3><canvas id="signupsChart"></canvas></div>
+        <div class="chart-card"><h3>Readings (30 days)</h3><canvas id="readingsChart"></canvas></div>
+      </div>
+      <div class="charts">
+        <div class="chart-card"><h3>Streak Distribution</h3><canvas id="streakChart"></canvas></div>
+        <div class="chart-card"><h3>Clinical Outcomes</h3><canvas id="clinicalChart"></canvas></div>
+      </div>
+    </div>
 
-  <!-- Charts -->
-  <div class="charts">
-    <div class="chart-card">
-      <h3>Signups (30 days)</h3>
-      <canvas id="signupsChart"></canvas>
+    <!-- Users Section -->
+    <div class="section-page" id="sec-users">
+      <h1 style="font-size:22px;margin-bottom:20px">Users</h1>
+      <div class="section">
+        <table id="usersTable">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Profiles</th><th>Readings</th><th>Last Login</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
-    <div class="chart-card">
-      <h3>Readings (30 days)</h3>
-      <canvas id="readingsChart"></canvas>
-    </div>
-  </div>
 
-  <div class="charts">
-    <div class="chart-card">
-      <h3>Streak Distribution</h3>
-      <canvas id="streakChart"></canvas>
+    <!-- Doctors Section -->
+    <div class="section-page" id="sec-doctors">
+      <h1 style="font-size:22px;margin-bottom:20px">Doctor Verification</h1>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-secondary" onclick="loadDoctors('false')" id="btnPending">Pending</button>
+        <button class="btn btn-secondary" onclick="loadDoctors('true')">Verified</button>
+        <button class="btn btn-secondary" onclick="loadDoctors('all')">All</button>
+      </div>
+      <div id="doctorsList"></div>
     </div>
-    <div class="chart-card">
-      <h3>Clinical Outcomes</h3>
-      <canvas id="clinicalChart"></canvas>
-    </div>
-  </div>
 
-  <!-- Users table -->
-  <div class="section">
-    <h3>Users</h3>
-    <table id="usersTable">
-      <thead>
-        <tr><th>Name</th><th>Email</th><th>Role</th><th>Profiles</th><th>Readings</th><th>Last Login</th><th>Signed Up</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <!-- Alerts Section -->
+    <div class="section-page" id="sec-alerts">
+      <h1 style="font-size:22px;margin-bottom:20px">Alerts</h1>
+      <div id="alertsList"></div>
+    </div>
+
+    <!-- Consent Section -->
+    <div class="section-page" id="sec-consent">
+      <h1 style="font-size:22px;margin-bottom:20px">Consent Dashboard</h1>
+      <div class="grid" id="consentKpis" style="margin-bottom:20px"></div>
+      <div class="section">
+        <h3>Users Without Consent</h3>
+        <table id="consentTable">
+          <thead><tr><th>Name</th><th>Email</th><th>Signed Up</th><th>Consent</th><th>AI Consent</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Audit Log Section -->
+    <div class="section-page" id="sec-audit">
+      <h1 style="font-size:22px;margin-bottom:20px">Admin Audit Log</h1>
+      <div class="section">
+        <table id="auditTable">
+          <thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th><th>Details</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -223,28 +309,29 @@
 
 <script>
 let TOKEN = '';
+let CURRENT_USER_ID = null;
 const API = window.location.origin;
 
+// ── Auth ────────────────────────────────────────────────────────────
 async function login() {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
   try {
     const resp = await fetch(`${API}/api/auth/login`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({email, password})
     });
     const data = await resp.json();
     if (!data.access_token) throw new Error('No token');
     TOKEN = data.access_token;
-
-    // Test admin access
     const test = await fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
     if (test.status === 403) throw new Error('Not admin');
-
     document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    loadDashboard();
+    document.getElementById('appLayout').style.display = 'flex';
+    document.getElementById('adminEmail').textContent = email;
+    loadOverview();
+    loadAlertBadge();
+    loadDoctorBadge();
   } catch(e) {
     document.getElementById('loginError').style.display = 'block';
   }
@@ -253,118 +340,214 @@ async function login() {
 function logout() {
   TOKEN = '';
   document.getElementById('loginSection').style.display = 'flex';
-  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('appLayout').style.display = 'none';
 }
 
-async function loadDashboard() {
-  const [metricsResp, usersResp] = await Promise.all([
-    fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}}),
-    fetch(`${API}/api/admin/users`, {headers: {'Authorization': `Bearer ${TOKEN}`}})
-  ]);
-  const metrics = await metricsResp.json();
-  const users = await usersResp.json();
+// ── Navigation ──────────────────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('.section-page').forEach(p => p.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+  event.currentTarget.classList.add('active');
 
-  document.getElementById('genTime').textContent = `Updated: ${new Date(metrics.generated_at).toLocaleString()}`;
+  if (name === 'overview') loadOverview();
+  else if (name === 'users') loadUsers();
+  else if (name === 'doctors') loadDoctors('false');
+  else if (name === 'alerts') loadAlerts();
+  else if (name === 'consent') loadConsent();
+  else if (name === 'audit') loadAuditLog();
+}
 
-  // KPI Cards
+// ── Overview ────────────────────────────────────────────────────────
+let chartsCreated = false;
+async function loadOverview() {
+  const resp = await fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+  const m = await resp.json();
+
   const kpis = [
-    {label: 'Total Users', value: metrics.total_users, color: 'blue'},
-    {label: 'DAU', value: metrics.dau, color: 'green'},
-    {label: 'MAU', value: metrics.mau, color: 'blue'},
-    {label: 'Stickiness (DAU/MAU)', value: metrics.stickiness_pct + '%', color: metrics.stickiness_pct > 20 ? 'green' : 'amber'},
-    {label: 'Total Readings', value: metrics.total_readings.toLocaleString(), color: 'blue'},
-    {label: 'Readings/User/Week', value: metrics.readings_per_user_week, color: 'blue'},
-    {label: 'D1 Retention', value: metrics.d1_retention_pct != null ? metrics.d1_retention_pct + '%' : '—', color: 'green'},
-    {label: 'D7 Retention', value: metrics.d7_retention_pct != null ? metrics.d7_retention_pct + '%' : '—', color: 'amber'},
-    {label: 'Chat Adoption', value: metrics.chat_adoption_pct + '%', color: 'blue'},
-    {label: 'Invite Accept Rate', value: metrics.invite_accept_rate_pct + '%', color: 'green'},
-    {label: 'AI Fallback Rate', value: metrics.ai_fallback_rate_pct + '%', color: metrics.ai_fallback_rate_pct < 20 ? 'green' : 'red'},
-    {label: 'Glucose Normal %', value: metrics.glucose_normal_pct + '%', color: metrics.glucose_normal_pct > 50 ? 'green' : 'red'},
+    {label: 'Total Users', value: m.total_users, color: 'blue'},
+    {label: 'DAU', value: m.dau, color: 'green'},
+    {label: 'MAU', value: m.mau, color: 'blue'},
+    {label: 'Stickiness', value: m.stickiness_pct + '%', color: m.stickiness_pct > 20 ? 'green' : 'amber'},
+    {label: 'Total Readings', value: m.total_readings.toLocaleString(), color: 'blue'},
+    {label: 'Readings/User/Week', value: m.readings_per_user_week, color: 'blue'},
+    {label: 'D1 Retention', value: m.d1_retention_pct != null ? m.d1_retention_pct + '%' : '--', color: 'green'},
+    {label: 'D7 Retention', value: m.d7_retention_pct != null ? m.d7_retention_pct + '%' : '--', color: 'amber'},
+    {label: 'Chat Adoption', value: m.chat_adoption_pct + '%', color: 'blue'},
+    {label: 'AI Fallback', value: m.ai_fallback_rate_pct + '%', color: m.ai_fallback_rate_pct < 20 ? 'green' : 'red'},
+    {label: 'Glucose Normal', value: m.glucose_normal_pct + '%', color: m.glucose_normal_pct > 50 ? 'green' : 'red'},
+    {label: 'Critical Readings', value: m.glucose_critical_count, color: m.glucose_critical_count > 0 ? 'red' : 'green'},
   ];
+  document.getElementById('kpiGrid').innerHTML = kpis.map(k => `<div class="card"><div class="label">${k.label}</div><div class="value ${k.color}">${k.value}</div></div>`).join('');
 
-  const grid = document.getElementById('kpiGrid');
-  grid.innerHTML = kpis.map(k => `
-    <div class="card">
-      <div class="label">${k.label}</div>
-      <div class="value ${k.color}">${k.value}</div>
-    </div>
-  `).join('');
+  if (!chartsCreated) {
+    chartsCreated = true;
+    new Chart(document.getElementById('signupsChart'), {type:'bar',data:{labels:m.signups_by_day.map(d=>d.date.slice(5)),datasets:[{label:'Signups',data:m.signups_by_day.map(d=>d.count),backgroundColor:'#0ea5e9'}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+    new Chart(document.getElementById('readingsChart'), {type:'line',data:{labels:m.readings_by_day.map(d=>d.date.slice(5)),datasets:[{label:'Readings',data:m.readings_by_day.map(d=>d.count),borderColor:'#10b981',fill:true,backgroundColor:'rgba(16,185,129,0.1)'}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+    const sd = m.streak_distribution;
+    new Chart(document.getElementById('streakChart'), {type:'doughnut',data:{labels:Object.keys(sd),datasets:[{data:Object.values(sd),backgroundColor:['#ef4444','#f59e0b','#eab308','#22c55e','#10b981','#059669']}]},options:{plugins:{legend:{position:'bottom'}}}});
+    new Chart(document.getElementById('clinicalChart'), {type:'bar',data:{labels:['Glucose Normal%','BP Normal%','Critical'],datasets:[{data:[m.glucose_normal_pct,m.bp_normal_pct,m.glucose_critical_count],backgroundColor:['#10b981','#0ea5e9','#ef4444']}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+  }
+}
 
-  // Signups chart
-  new Chart(document.getElementById('signupsChart'), {
-    type: 'bar',
-    data: {
-      labels: metrics.signups_by_day.map(d => d.date.slice(5)),
-      datasets: [{label: 'Signups', data: metrics.signups_by_day.map(d => d.count), backgroundColor: '#0ea5e9'}]
-    },
-    options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {stepSize: 1}}}}
-  });
-
-  // Readings chart
-  new Chart(document.getElementById('readingsChart'), {
-    type: 'line',
-    data: {
-      labels: metrics.readings_by_day.map(d => d.date.slice(5)),
-      datasets: [{label: 'Readings', data: metrics.readings_by_day.map(d => d.count), borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16,185,129,0.1)'}]
-    },
-    options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}}}
-  });
-
-  // Streak distribution
-  const sd = metrics.streak_distribution;
-  new Chart(document.getElementById('streakChart'), {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(sd),
-      datasets: [{data: Object.values(sd), backgroundColor: ['#ef4444','#f59e0b','#eab308','#22c55e','#10b981','#059669']}]
-    },
-    options: {plugins: {legend: {position: 'bottom'}}}
-  });
-
-  // Clinical outcomes
-  new Chart(document.getElementById('clinicalChart'), {
-    type: 'bar',
-    data: {
-      labels: ['Glucose Normal%', 'BP Normal%', 'Critical Readings'],
-      datasets: [{
-        data: [metrics.glucose_normal_pct, metrics.bp_normal_pct, metrics.glucose_critical_count],
-        backgroundColor: ['#10b981', '#0ea5e9', '#ef4444']
-      }]
-    },
-    options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}}}
-  });
-
-  // Users table
+// ── Users ───────────────────────────────────────────────────────────
+async function loadUsers() {
+  const resp = await fetch(`${API}/api/admin/users`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+  const data = await resp.json();
   const tbody = document.querySelector('#usersTable tbody');
-  tbody.innerHTML = users.users.map(u => `
-    <tr onclick="openUserDetail(${u.id})">
-      <td><strong>${u.full_name}</strong></td>
-      <td>${u.email}</td>
-      <td><span class="badge ${u.is_admin ? 'badge-admin' : 'badge-user'}">${u.is_admin ? 'Admin' : 'User'}</span></td>
+  tbody.innerHTML = data.users.map(u => {
+    const roleBadge = u.role === 'admin' ? 'badge-admin' : u.role === 'doctor' ? 'badge-doctor' : 'badge-user';
+    const roleLabel = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : 'Patient';
+    const statusBadge = u.is_active === false ? '<span class="badge badge-suspended">Suspended</span>' : '<span class="badge badge-verified">Active</span>';
+    return `<tr onclick="openUserDetail(${u.id})">
+      <td><strong>${esc(u.full_name)}</strong></td>
+      <td>${esc(u.email)}</td>
+      <td><span class="badge ${roleBadge}">${roleLabel}</span></td>
+      <td>${statusBadge}</td>
       <td>${u.profiles_count}</td>
       <td>${u.total_readings}</td>
-      <td>${u.last_login ? new Date(u.last_login).toLocaleDateString() : '—'}</td>
-      <td>${u.signed_up ? new Date(u.signed_up).toLocaleDateString() : '—'}</td>
+      <td>${u.last_login ? new Date(u.last_login).toLocaleDateString() : '--'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Doctors ─────────────────────────────────────────────────────────
+async function loadDoctors(filter) {
+  const resp = await fetch(`${API}/api/admin/doctors?verified=${filter}`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+  const data = await resp.json();
+  const list = document.getElementById('doctorsList');
+  if (!data.doctors.length) {
+    list.innerHTML = '<div class="empty-state">No doctors found.</div>';
+    return;
+  }
+  list.innerHTML = data.doctors.map(d => {
+    const statusBadge = d.is_verified
+      ? '<span class="badge badge-verified">Verified</span>'
+      : '<span class="badge badge-pending">Pending</span>';
+    const timeInfo = d.time_in_queue_hours ? ` | In queue: ${Math.round(d.time_in_queue_hours)}h` : '';
+    const actions = d.is_verified
+      ? ''
+      : `<div class="doctor-actions">
+           <button class="btn btn-approve" onclick="verifyDoctor(${d.user_id}, '${esc(d.full_name)}')">Approve</button>
+           <button class="btn btn-reject" onclick="rejectDoctor(${d.user_id}, '${esc(d.full_name)}')">Reject</button>
+         </div>`;
+    return `<div class="doctor-card">
+      <div class="doctor-info">
+        <h4>${esc(d.full_name)} ${statusBadge}</h4>
+        <div class="meta">NMC: ${esc(d.nmc_number)} | ${esc(d.specialty || 'N/A')} | ${esc(d.clinic_name || 'N/A')} | Code: ${esc(d.doctor_code)} | Patients: ${d.patient_count}${timeInfo}</div>
+      </div>
+      ${actions}
+    </div>`;
+  }).join('');
+}
+
+async function loadDoctorBadge() {
+  const resp = await fetch(`${API}/api/admin/doctors?verified=false`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+  const data = await resp.json();
+  const badge = document.getElementById('doctorBadge');
+  if (data.total > 0) { badge.textContent = data.total; badge.style.display = 'inline'; }
+  else { badge.style.display = 'none'; }
+}
+
+async function verifyDoctor(userId, name) {
+  const notes = prompt(`Verify Dr. ${name}?\n\nAdd notes (optional):`);
+  if (notes === null) return;
+  const resp = await fetch(`${API}/api/admin/doctors/${userId}/verify`, {
+    method: 'POST', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
+    body: JSON.stringify({notes: notes || ''})
+  });
+  if (resp.ok) { alert('Doctor verified!'); loadDoctors('false'); loadDoctorBadge(); }
+  else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
+}
+
+async function rejectDoctor(userId, name) {
+  const reason = prompt(`Reject Dr. ${name}?\n\nReason (required):`);
+  if (!reason) return;
+  const resp = await fetch(`${API}/api/admin/doctors/${userId}/reject`, {
+    method: 'POST', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
+    body: JSON.stringify({reason, notes: ''})
+  });
+  if (resp.ok) { alert('Doctor rejected.'); loadDoctors('false'); loadDoctorBadge(); }
+  else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
+}
+
+// ── Alerts ──────────────────────────────────────────────────────────
+async function loadAlerts() {
+  const resp = await fetch(`${API}/api/admin/alerts`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+  const data = await resp.json();
+  const list = document.getElementById('alertsList');
+  if (!data.alerts.length) {
+    list.innerHTML = '<div class="empty-state">No alerts. Everything looks good!</div>';
+    return;
+  }
+  list.innerHTML = data.alerts.map(a => `
+    <div class="alert-item ${a.severity}">
+      <span class="alert-severity sev-${a.severity}">${a.severity}</span>
+      <span class="alert-msg">${esc(a.message)}</span>
+    </div>
+  `).join('');
+}
+
+async function loadAlertBadge() {
+  const resp = await fetch(`${API}/api/admin/alerts`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+  const data = await resp.json();
+  const badge = document.getElementById('alertBadge');
+  const count = data.high_count + data.medium_count;
+  if (count > 0) { badge.textContent = count; badge.style.display = 'inline'; }
+  else { badge.style.display = 'none'; }
+}
+
+// ── Consent ─────────────────────────────────────────────────────────
+async function loadConsent() {
+  const resp = await fetch(`${API}/api/admin/consent`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+  const data = await resp.json();
+
+  document.getElementById('consentKpis').innerHTML = [
+    {label: 'Total Users', value: data.total_users, color: 'blue'},
+    {label: 'Consented', value: data.consented_count, color: 'green'},
+    {label: 'Not Consented', value: data.not_consented_count, color: data.not_consented_count > 0 ? 'red' : 'green'},
+  ].map(k => `<div class="card"><div class="label">${k.label}</div><div class="value ${k.color}">${k.value}</div></div>`).join('');
+
+  const allUsers = [...data.not_consented, ...data.consented];
+  document.querySelector('#consentTable tbody').innerHTML = allUsers.map(u => `
+    <tr>
+      <td>${esc(u.full_name)}</td>
+      <td>${esc(u.email)}</td>
+      <td>${u.signed_up ? new Date(u.signed_up).toLocaleDateString() : '--'}</td>
+      <td>${u.consent_timestamp ? '<span class="badge badge-verified">Yes</span> ' + new Date(u.consent_timestamp).toLocaleDateString() : '<span class="badge badge-suspended">No</span>'}</td>
+      <td>${u.ai_consent ? '<span class="badge badge-verified">Yes</span>' : '<span class="badge badge-user">No</span>'}</td>
     </tr>
   `).join('');
 }
 
-// ── User Detail Modal ─────────────────────────────────────────────
+// ── Audit Log ───────────────────────────────────────────────────────
+async function loadAuditLog() {
+  const resp = await fetch(`${API}/api/admin/audit-log?per_page=100`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+  const data = await resp.json();
+  document.querySelector('#auditTable tbody').innerHTML = data.entries.map(e => `
+    <tr>
+      <td>${e.created_at ? new Date(e.created_at).toLocaleString() : '--'}</td>
+      <td>${esc(e.admin_name)}</td>
+      <td><span class="badge badge-user">${esc(e.action_type)}</span></td>
+      <td>${e.target_user_id ? 'User #' + e.target_user_id : e.target_profile_id ? 'Profile #' + e.target_profile_id : '--'}</td>
+      <td style="font-size:12px;color:#64748b;max-width:300px;overflow:hidden;text-overflow:ellipsis">${e.details ? JSON.stringify(e.details).substring(0, 100) : '--'}</td>
+    </tr>
+  `).join('');
+}
 
+// ── User Detail Modal ───────────────────────────────────────────────
 async function openUserDetail(userId) {
+  CURRENT_USER_ID = userId;
   const modal = document.getElementById('userDetailModal');
   modal.classList.add('active');
-  // Show loading
   document.getElementById('userDetailHeader').innerHTML = '';
   document.querySelectorAll('.tab-panel').forEach(p => p.innerHTML = '');
-  document.getElementById('tabOverview').innerHTML = '<div class="modal-loading">Loading user data...</div>';
+  document.getElementById('tabOverview').innerHTML = '<div class="modal-loading">Loading...</div>';
   document.getElementById('tabOverview').classList.add('active');
 
   try {
-    const resp = await fetch(`${API}/api/admin/users/${userId}/detail`, {
-      headers: {'Authorization': `Bearer ${TOKEN}`}
-    });
-    if (!resp.ok) throw new Error('Failed to load');
+    const resp = await fetch(`${API}/api/admin/users/${userId}/detail`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+    if (!resp.ok) throw new Error('Failed');
     const data = await resp.json();
     renderUserHeader(data.user);
     renderOverviewTab(data.feature_usage);
@@ -373,37 +556,62 @@ async function openUserDetail(userId) {
     renderChatsTab(data.recent_chats);
     renderInsightsTab(data.recent_ai_insights);
     renderMemoryTab(data.ai_memory || []);
-    // Reset to Overview tab
     switchTab('Overview');
   } catch(e) {
-    document.getElementById('tabOverview').innerHTML = '<div class="modal-loading">Failed to load user data.</div>';
+    document.getElementById('tabOverview').innerHTML = '<div class="modal-loading">Failed to load.</div>';
   }
 }
 
-function closeUserDetail() {
-  document.getElementById('userDetailModal').classList.remove('active');
-}
+function closeUserDetail() { document.getElementById('userDetailModal').classList.remove('active'); }
 
 function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab' + name).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => {
-    if (b.textContent.includes(name) || (name === 'Readings' && b.textContent.includes('Health')) || (name === 'Chats' && b.textContent.includes('Chat')) || (name === 'Insights' && b.textContent.includes('AI'))) b.classList.add('active');
+    if (b.textContent.includes(name) || (name === 'Readings' && b.textContent.includes('Health')) || (name === 'Chats' && b.textContent.includes('Chat')) || (name === 'Insights' && b.textContent.includes('AI Ins'))) b.classList.add('active');
   });
 }
 
 function renderUserHeader(u) {
+  const roleBadge = u.role === 'admin' ? 'badge-admin' : u.role === 'doctor' ? 'badge-doctor' : 'badge-user';
+  const roleLabel = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : 'Patient';
+  const statusText = u.is_active === false ? '<span class="badge badge-suspended" style="margin-left:8px">Suspended</span>' : '';
   document.getElementById('userDetailHeader').innerHTML = `
-    <h2>${esc(u.full_name)} <span class="badge ${u.is_admin ? 'badge-admin' : 'badge-user'}" style="font-size:12px;vertical-align:middle">${u.is_admin ? 'Admin' : 'User'}</span></h2>
+    <h2>${esc(u.full_name)} <span class="badge ${roleBadge}" style="font-size:12px;vertical-align:middle">${roleLabel}</span>${statusText}</h2>
     <div class="meta">
       <span>${esc(u.email)}</span>
       ${u.phone_number ? `<span>${esc(u.phone_number)}</span>` : ''}
-      <span>Joined: ${u.signed_up ? new Date(u.signed_up).toLocaleDateString() : '—'}</span>
+      <span>Joined: ${u.signed_up ? new Date(u.signed_up).toLocaleDateString() : '--'}</span>
       <span>Last login: ${u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</span>
-      <span>AI consent: ${u.ai_consent ? 'Yes' : 'No'}</span>
+    </div>
+    <div class="action-bar">
+      ${u.is_active !== false
+        ? `<button class="btn btn-suspend" onclick="suspendUser(${u.id}, '${esc(u.full_name)}')">Suspend</button>`
+        : `<button class="btn btn-approve" onclick="unsuspendUser(${u.id}, '${esc(u.full_name)}')">Reactivate</button>`
+      }
     </div>
   `;
+}
+
+async function suspendUser(userId, name) {
+  const reason = prompt(`Suspend ${name}?\n\nReason (required):`);
+  if (!reason) return;
+  const resp = await fetch(`${API}/api/admin/users/${userId}/suspend`, {
+    method: 'PATCH', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
+    body: JSON.stringify({suspend: true, reason})
+  });
+  if (resp.ok) { alert('User suspended.'); openUserDetail(userId); loadUsers(); }
+  else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
+}
+
+async function unsuspendUser(userId, name) {
+  const resp = await fetch(`${API}/api/admin/users/${userId}/suspend`, {
+    method: 'PATCH', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
+    body: JSON.stringify({suspend: false, reason: 'Reactivated by admin'})
+  });
+  if (resp.ok) { alert('User reactivated.'); openUserDetail(userId); loadUsers(); }
+  else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
 }
 
 function renderOverviewTab(fu) {
@@ -416,172 +624,81 @@ function renderOverviewTab(fu) {
     {label: 'Invites Sent', count: fu.invites_sent, color: '#ec4899'},
     {label: 'Invites Accepted', count: fu.invites_accepted, color: '#06b6d4'},
   ];
-
-  const barsHtml = items.map(it => `
-    <div class="usage-item">
-      <span class="u-label">${it.label}</span>
-      <div class="u-bar"><div class="u-fill" style="width:${Math.max((it.count/maxVal)*100, it.count > 0 ? 5 : 0)}%;background:${it.color}"></div></div>
-      <span class="u-count">${it.count}</span>
-    </div>
-  `).join('');
-
-  const features = [
-    {icon: '💉', label: 'Health Tracking', val: fu.readings_logged, active: fu.readings_logged > 0},
-    {icon: '💬', label: 'AI Chat', val: fu.chat_messages, active: fu.chat_messages > 0},
-    {icon: '🧠', label: 'AI Insights', val: fu.ai_insights, active: fu.ai_insights > 0},
-    {icon: '👤', label: 'Profiles', val: fu.profiles_managed, active: fu.profiles_managed > 0},
-    {icon: '🔗', label: 'Sharing', val: fu.invites_sent, active: fu.invites_sent > 0},
-  ];
-
-  const engageHtml = features.map(f => `
-    <div class="engage-card ${f.active ? 'active-feat' : 'inactive-feat'}">
-      <div class="icon">${f.icon}</div>
-      <div class="e-val">${f.val}</div>
-      <div class="e-label">${f.label}</div>
-    </div>
-  `).join('');
-
-  document.getElementById('tabOverview').innerHTML = `
-    <h3 style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Feature Usage</h3>
-    <div class="usage-grid">${barsHtml}</div>
-    <h3 style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Feature Engagement</h3>
-    <div class="engage-grid">${engageHtml}</div>
-  `;
+  const barsHtml = items.map(it => `<div class="usage-item"><span class="u-label">${it.label}</span><div class="u-bar"><div class="u-fill" style="width:${Math.max((it.count/maxVal)*100,it.count>0?5:0)}%;background:${it.color}"></div></div><span class="u-count">${it.count}</span></div>`).join('');
+  document.getElementById('tabOverview').innerHTML = `<h3 style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Feature Usage</h3><div class="usage-grid">${barsHtml}</div>`;
 }
 
 function renderProfilesTab(profiles) {
-  if (!profiles.length) {
-    document.getElementById('tabProfiles').innerHTML = '<div class="empty-state">No profiles found.</div>';
-    return;
-  }
+  if (!profiles.length) { document.getElementById('tabProfiles').innerHTML = '<div class="empty-state">No profiles.</div>'; return; }
   document.getElementById('tabProfiles').innerHTML = '<div class="profile-cards">' + profiles.map(p => `
     <div class="profile-card">
-      <h4>${esc(p.name)} <span class="badge ${p.access_level === 'owner' ? 'badge-admin' : 'badge-user'}" style="font-size:11px">${p.access_level}</span></h4>
-      ${p.relationship ? `<div class="p-row"><strong>Relationship:</strong> ${esc(p.relationship)}</div>` : ''}
+      <h4>${esc(p.name)} <span class="badge ${p.access_level==='owner'?'badge-admin':'badge-user'}" style="font-size:11px">${p.access_level}</span></h4>
       ${p.age ? `<div class="p-row"><strong>Age:</strong> ${p.age}</div>` : ''}
       ${p.gender ? `<div class="p-row"><strong>Gender:</strong> ${esc(p.gender)}</div>` : ''}
-      ${p.height ? `<div class="p-row"><strong>Height:</strong> ${p.height} cm</div>` : ''}
-      ${p.blood_group ? `<div class="p-row"><strong>Blood Group:</strong> ${esc(p.blood_group)}</div>` : ''}
-      ${p.medical_conditions && p.medical_conditions.length ? `<div class="p-row"><strong>Conditions:</strong> ${p.medical_conditions.map(c => `<span class="condition-pill">${esc(c)}</span>`).join(' ')}</div>` : ''}
-      ${p.current_medications ? `<div class="p-row"><strong>Medications:</strong> ${esc(p.current_medications)}</div>` : ''}
-      ${p.doctor_name ? `<div class="p-row"><strong>Doctor:</strong> ${esc(p.doctor_name)}${p.doctor_specialty ? ' (' + esc(p.doctor_specialty) + ')' : ''}</div>` : ''}
+      ${p.medical_conditions && p.medical_conditions.length ? `<div class="p-row">${p.medical_conditions.map(c=>`<span class="condition-pill">${esc(c)}</span>`).join(' ')}</div>` : ''}
     </div>
   `).join('') + '</div>';
 }
 
 function renderReadingsTab(readings) {
-  if (!readings.length) {
-    document.getElementById('tabReadings').innerHTML = '<div class="empty-state">No health readings found.</div>';
-    return;
-  }
+  if (!readings.length) { document.getElementById('tabReadings').innerHTML = '<div class="empty-state">No readings.</div>'; return; }
   const rows = readings.map(r => {
-    let value = '';
-    if (r.reading_type === 'glucose') {
-      value = `${r.glucose_value} mg/dL` + (r.sample_type ? ` <span style="color:#94a3b8">(${esc(r.sample_type)})</span>` : '');
-    } else {
-      value = `${r.systolic}/${r.diastolic} mmHg` + (r.pulse_rate ? ` <span style="color:#94a3b8">${r.pulse_rate} bpm</span>` : '');
-    }
-    const statusCls = r.status_flag ? 'status-' + r.status_flag.replace(/ .*/,'') : '';
-    return `<tr>
-      <td>${r.reading_timestamp ? new Date(r.reading_timestamp).toLocaleString() : '—'}</td>
-      <td>${esc(r.profile_name)}</td>
-      <td>${r.reading_type === 'glucose' ? 'Glucose' : 'Blood Pressure'}</td>
-      <td>${value}</td>
-      <td>${r.status_flag ? `<span class="status-badge ${statusCls}">${esc(r.status_flag)}</span>` : '—'}</td>
-      <td>${r.notes ? esc(r.notes).substring(0, 60) : ''}</td>
-    </tr>`;
+    let value = r.reading_type === 'glucose' ? `${r.glucose_value} mg/dL` : `${r.systolic}/${r.diastolic} mmHg`;
+    const cls = r.status_flag ? 'status-' + r.status_flag.replace(/ .*/,'') : '';
+    return `<tr><td>${r.reading_timestamp?new Date(r.reading_timestamp).toLocaleString():'--'}</td><td>${r.reading_type==='glucose'?'Glucose':'BP'}</td><td>${value}</td><td>${r.status_flag?`<span class="status-badge ${cls}">${esc(r.status_flag)}</span>`:'--'}</td></tr>`;
   }).join('');
-
-  document.getElementById('tabReadings').innerHTML = `
-    <table><thead><tr><th>Time</th><th>Profile</th><th>Type</th><th>Value</th><th>Status</th><th>Notes</th></tr></thead>
-    <tbody>${rows}</tbody></table>
-  `;
+  document.getElementById('tabReadings').innerHTML = `<table><thead><tr><th>Time</th><th>Type</th><th>Value</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function renderChatsTab(chats) {
-  if (!chats.length) {
-    document.getElementById('tabChats').innerHTML = '<div class="empty-state">No chat messages found.</div>';
-    return;
-  }
-  document.getElementById('tabChats').innerHTML = '<div class="chat-list">' + chats.map((c, i) => `
+  if (!chats.length) { document.getElementById('tabChats').innerHTML = '<div class="empty-state">No chats.</div>'; return; }
+  document.getElementById('tabChats').innerHTML = '<div class="chat-list">' + chats.map((c,i) => `
     <div class="chat-entry">
-      <div class="chat-meta">${c.created_at ? new Date(c.created_at).toLocaleString() : ''} &middot; ${esc(c.profile_name)}</div>
+      <div class="chat-meta">${c.created_at?new Date(c.created_at).toLocaleString():''}</div>
       <div class="chat-user">${esc(c.user_message)}</div>
-      <div class="chat-ai truncated" id="chatAi${i}">${esc(c.ai_response || '')}</div>
-      ${(c.ai_response || '').length > 300 ? `<button class="show-more-btn" onclick="toggleExpand('chatAi${i}', this)">Show more</button>` : ''}
-      <div class="chat-ai-meta">${esc(c.model_used || '')} &middot; ${c.tokens_used || 0} tokens &middot; ${c.latency_ms || 0}ms</div>
+      <div class="chat-ai truncated" id="chatAi${i}">${esc(c.ai_response||'')}</div>
+      ${(c.ai_response||'').length>300?`<button class="show-more-btn" onclick="toggleExpand('chatAi${i}',this)">Show more</button>`:''}
+      <div class="chat-ai-meta">${esc(c.model_used||'')} | ${c.tokens_used||0} tokens | ${c.latency_ms||0}ms</div>
     </div>
   `).join('') + '</div>';
 }
 
 function renderInsightsTab(insights) {
-  if (!insights.length) {
-    document.getElementById('tabInsights').innerHTML = '<div class="empty-state">No AI insights found.</div>';
-    return;
-  }
-  document.getElementById('tabInsights').innerHTML = '<div class="insight-cards">' + insights.map((it, i) => `
+  if (!insights.length) { document.getElementById('tabInsights').innerHTML = '<div class="empty-state">No insights.</div>'; return; }
+  document.getElementById('tabInsights').innerHTML = '<div class="insight-cards">' + insights.map((it,i) => `
     <div class="insight-card">
-      <div class="i-header">
-        <span class="i-model">${esc(it.model_used || 'unknown')}</span>
-        <span class="i-time">${it.created_at ? new Date(it.created_at).toLocaleString() : ''} &middot; ${esc(it.profile_name)}</span>
-      </div>
-      ${it.fallback_reason ? `<div class="i-fallback">Fallback: ${esc(it.fallback_reason)}</div>` : ''}
-      ${it.prompt_summary ? `<details style="margin-bottom:8px"><summary style="font-size:12px;color:#64748b;cursor:pointer">Prompt summary</summary><div style="font-size:12px;color:#475569;margin-top:4px">${esc(it.prompt_summary)}</div></details>` : ''}
-      <div class="i-text truncated" id="insight${i}">${esc(it.response_text || '')}</div>
-      ${(it.response_text || '').length > 300 ? `<button class="show-more-btn" onclick="toggleExpand('insight${i}', this)">Show more</button>` : ''}
-      <div class="i-stats">${it.tokens_used || 0} tokens &middot; ${it.latency_ms || 0}ms</div>
+      <div class="i-header"><span class="i-model">${esc(it.model_used||'')}</span><span class="i-time">${it.created_at?new Date(it.created_at).toLocaleString():''}</span></div>
+      ${it.fallback_reason?`<div class="i-fallback">Fallback: ${esc(it.fallback_reason)}</div>`:''}
+      <div class="i-text truncated" id="insight${i}">${esc(it.response_text||'')}</div>
+      ${(it.response_text||'').length>300?`<button class="show-more-btn" onclick="toggleExpand('insight${i}',this)">Show more</button>`:''}
     </div>
   `).join('') + '</div>';
 }
 
 function renderMemoryTab(memories) {
-  if (!memories.length) {
-    document.getElementById('tabMemory').innerHTML = '<div class="empty-state">No AI memory found.</div>';
-    return;
-  }
+  if (!memories.length) { document.getElementById('tabMemory').innerHTML = '<div class="empty-state">No AI memory.</div>'; return; }
   document.getElementById('tabMemory').innerHTML = '<div class="insight-cards">' + memories.map(m => `
     <div class="insight-card">
-      <div class="i-header">
-        <span class="i-model">${esc(m.profile_name)}</span>
-        <span class="i-time">${m.message_count} messages &middot; ${m.last_updated ? 'Updated: ' + new Date(m.last_updated).toLocaleString() : 'Never'}</span>
-      </div>
-      <textarea id="memory_${m.profile_id}" style="width:100%;min-height:120px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;margin:8px 0">${esc(m.summary)}</textarea>
+      <div class="i-header"><span class="i-model">${esc(m.profile_name)}</span><span class="i-time">${m.message_count} msgs</span></div>
+      <textarea id="memory_${m.profile_id}" style="width:100%;min-height:100px;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;margin:8px 0">${esc(m.summary)}</textarea>
       <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button onclick="saveMemory(${m.profile_id})" style="padding:6px 16px;background:#0ea5e9;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Save</button>
-        <button onclick="resetMemory(${m.profile_id}, '${esc(m.profile_name)}')" style="padding:6px 16px;background:#ef4444;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Reset</button>
+        <button class="btn btn-approve" onclick="saveMemory(${m.profile_id})">Save</button>
+        <button class="btn btn-reject" onclick="resetMemory(${m.profile_id},'${esc(m.profile_name)}')">Reset</button>
       </div>
     </div>
   `).join('') + '</div>';
 }
 
-async function saveMemory(profileId) {
-  try {
-    const summary = document.getElementById('memory_' + profileId).value;
-    const resp = await fetch(`${API}/api/admin/profiles/${profileId}/ai-memory`, {
-      method: 'PUT',
-      headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
-      body: JSON.stringify({summary})
-    });
-    if (!resp.ok) throw new Error('Failed');
-    alert('AI memory saved.');
-  } catch(e) {
-    alert('Error saving AI memory: ' + e.message);
-  }
+async function saveMemory(pid) {
+  const summary = document.getElementById('memory_'+pid).value;
+  const r = await fetch(`${API}/api/admin/profiles/${pid}/ai-memory`, {method:'PUT',headers:{'Authorization':`Bearer ${TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({summary})});
+  alert(r.ok ? 'Saved.' : 'Error saving.');
 }
 
-async function resetMemory(profileId, name) {
-  if (!confirm(`Reset all AI memory for "${name}"? This clears the conversation context.`)) return;
-  try {
-    const resp = await fetch(`${API}/api/admin/profiles/${profileId}/ai-memory`, {
-      method: 'DELETE',
-      headers: {'Authorization': `Bearer ${TOKEN}`}
-    });
-    if (!resp.ok) throw new Error('Failed');
-    document.getElementById('memory_' + profileId).value = '';
-    alert('AI memory reset.');
-  } catch(e) {
-    alert('Error resetting AI memory: ' + e.message);
-  }
+async function resetMemory(pid, name) {
+  if (!confirm(`Reset AI memory for "${name}"?`)) return;
+  const r = await fetch(`${API}/api/admin/profiles/${pid}/ai-memory`, {method:'DELETE',headers:{'Authorization':`Bearer ${TOKEN}`}});
+  if (r.ok) { document.getElementById('memory_'+pid).value = ''; alert('Reset.'); }
 }
 
 function toggleExpand(id, btn) {
@@ -590,17 +707,9 @@ function toggleExpand(id, btn) {
   btn.textContent = el.classList.contains('expanded') ? 'Show less' : 'Show more';
 }
 
-function esc(str) {
-  if (!str) return '';
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
+function esc(str) { if (!str) return ''; const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
-// Close modal on Escape
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeUserDetail(); });
-
-// Enter key triggers login
 document.getElementById('password').addEventListener('keypress', (e) => { if (e.key === 'Enter') login(); });
 </script>
 </body>

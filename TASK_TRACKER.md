@@ -119,7 +119,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | D18 | Consent & Privacy notice | ✅ Done | Scroll-to-accept consent screen shown after registration. Stores consent_timestamp, app_version, language in users table. EN + HI. |
 | D19 | Relationship on profile sharing | ✅ Done | Dropdown (father/mother/spouse/son/daughter/etc.) on invite. Carried to ProfileAccess on accept. Shown on Select Profile + Manage Access screens. |
 | D20 | Demo seed data | ✅ Done | `seed_demo_data.py` — 3 users (Ramesh/Sunita/Arjun) with 45 days of glucose + BP readings. Realistic patterns (diabetic/improving/healthy). |
-| D21 | CI/CD pipeline | ✅ Done | GitHub Actions (pytest + flutter analyze + flutter test). Pre-push git hook runs all tests locally before push. |
+| D21 | CI/CD pipeline | ✅ Done | GitHub Actions: CI (pytest + flutter analyze + test), DEV auto-deploy on master push, PROD manual trigger. RSA deploy key. Pre-push git hook. PRs #86, #87. |
 | D22 | Home screen refactor | ✅ Done | 1,635 → 367 lines. 7 extracted widgets + utils/health_helpers.dart. |
 | D23 | AI responses in user's selected language | ❌ Not started | AI insight, trend summary, and health tips return English even when Hindi is selected. Need translation service (Google Translate API or Gemini) to convert AI-generated text to user's locale before displaying. Affects: ai-insight endpoint, trend-summary, meal tips. |
 | D24 | Food Photo Classification | ✅ Done | All 6 steps complete. Backend: model, API, 5 insight rules. Frontend: Quick Select, Food Photo, Meal Result, dashboard integration. 55 tests, 100% coverage on health_utils. PR #65. |
@@ -148,6 +148,51 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | E14 | Make `ApiService` a singleton | LOW | Not started | `ApiService()` instantiated per screen. Use top-level instance or Riverpod provider. |
 | E15 | Remove `ignore_for_file` suppressions | LOW | Not started | `lib/screens/registration_screen.dart:2` — suppressed deprecation warnings hide future breakage. |
 | E16 | Add BLE reconnection logic | LOW | Not started | No auto-reconnect when BLE device disconnects mid-session. Users must manually reconnect. |
+
+---
+
+## MODULE G — Admin Dashboard & User Management
+
+> **Blueprint:** `docs/ADMIN_USER_MANAGEMENT_BLUEPRINT.md`
+> **Expert Reviews:** Dr. Rajesh, Legal Advisor (DPDPA/NMC), Healthify UX
+
+### Phase 1 — Pre-Pilot Launch
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| G1 | Doctor verification queue (backend + UI) | ❌ Not started | NMC Act S29 blocker. POST verify/reject endpoints, two-column queue UI, NMC registry link, rejection email. |
+| G2 | Account suspension | ❌ Not started | PATCH suspend endpoint, enforce in get_current_user, mandatory reason, audit-logged. |
+| G3 | Admin audit trail | ❌ Not started | CERT-In 180-day legal blocker. New admin_audit_log table, append-only, all admin actions logged. |
+| G4 | Alerts center | ❌ Not started | GET /admin/alerts — critical readings, pending doctors, AI fallback, patient inactivity. Polling-based. |
+| G5 | Consent dashboard | ❌ Not started | DPDPA S6 legal blocker. Per-user consent records, withdrawal mechanism, policy version tracking. |
+| G6 | Sidebar navigation | ❌ Not started | 6-section IA: Overview, Users, Doctors, Clinical, Alerts, System. Responsive sidebar. |
+
+### Phase 2 — Month 1 Post-Launch
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| G7 | Role management + segregation | ❌ Not started | Unify is_admin + role enum. PATCH /role endpoint. Contextual warnings. Future: tiered admin roles. |
+| G8 | User search + filters + pagination | ❌ Not started | Search name/email, filter role/status/activity, paginate. Essential at 50+ users. |
+| G9 | Right to erasure workflow | ❌ Not started | DPDPA S12 legal blocker. Tiered anonymization, 72-hour SLA, erasure_requests table. |
+| G10 | Clinical overview section | ❌ Not started | Population health stats (aggregated, no PII). Condition profile, glycemic/BP control, engagement by age. |
+| G11 | Purpose limitation controls | ❌ Not started | DPDPA S4. Hide PHI by default, require reason to view, elevated audit logging. |
+
+### Phase 3 — Sprint 4+
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| G12 | Doctor performance metrics | ❌ Not started | Patient count, active sessions, critical reading response time. |
+| G13 | Caregiver linkage visibility | ❌ Not started | Per-patient caregiver info, "no caregiver" filter flag. |
+| G14 | Patient-to-doctor assignment | ❌ Not started | Admin assign/reassign, bulk reassignment for doctor leave. |
+| G15 | Bulk SMS/notification tool | ❌ Not started | Cohort selection, Hindi templates, re-engagement campaigns. |
+| G16 | Pilot cohort segmentation | ❌ Not started | Tag patients into groups, filter all metrics by cohort. |
+| G17 | Data export (CSV/PDF) | ❌ Not started | Non-PHI admin exports, doctor panel exports, audit-logged. |
+| G18 | Breach notification tooling | ❌ Not started | CERT-In 6-hour reporting, incident log, affected users report. |
+| G19 | Duplicate account detection | ❌ Not started | Same phone/NMC alert, manual review. |
+| G20 | System health section | ❌ Not started | AI latency, fallback rate, model usage, data volume. |
+| G21 | Admin mobile read-only view | ❌ Not started | Morning KPIs, critical count, pending doctors. Read-only. |
+| G22 | Grievance redressal queue | ❌ Not started | DPDPA S13. Grievance Officer designation, 30-day SLA. |
+| G23 | Minor user protections | ❌ Not started | DPDPA S9. Age flag, parental consent, block AI profiling for minors. |
 
 ---
 
@@ -195,7 +240,8 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | C — Dashboard | 23 | 0 | 5 | 28 |
 | D — AI + Notifications | 8 | 3 | 12 | 23 |
 | F — Doctor Portal + Legal | 0 | 0 | 21 | 21 |
-| **Total** | **51** | **7** | **47** | **105** |
+| G — Admin & User Mgmt | 0 | 0 | 23 | 23 |
+| **Total** | **51** | **7** | **70** | **128** |
 
 ---
 
