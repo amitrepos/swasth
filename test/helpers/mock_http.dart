@@ -164,8 +164,17 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
           'systolic': body['systolic'],
           'diastolic': body['diastolic'],
           'glucose_value': body['glucose_value'],
+          'glucose_unit': body['glucose_unit'],
+          'bp_unit': body['bp_unit'],
+          'value_numeric':
+              body['value_numeric'] ??
+              body['systolic'] ??
+              body['glucose_value'] ??
+              0,
+          'unit_display': body['unit_display'] ?? 'mg/dL',
           'status_flag': body['status_flag'] ?? 'NORMAL',
-          'reading_timestamp': DateTime.now().toIso8601String(),
+          'reading_timestamp':
+              body['reading_timestamp'] ?? DateTime.now().toIso8601String(),
           'created_at': DateTime.now().toIso8601String(),
         }),
         201,
