@@ -62,6 +62,21 @@ def classify_bp(sys: float, dia: float) -> str:
     return "NORMAL"
 
 
+def classify_spo2(value: float) -> str:
+    """Classify an SpO2 reading (percentage).
+
+    Clinical thresholds:
+    - >= 95%: NORMAL
+    - 90-94%: LOW (hypoxemia — needs monitoring)
+    - < 90%: CRITICAL (severe hypoxemia — medical attention)
+    """
+    if value >= 95:
+        return "NORMAL"
+    if value >= 90:
+        return "LOW"
+    return "CRITICAL"
+
+
 def classify_glucose(value: float) -> str:
     """Classify a glucose reading (mg/dL).
 

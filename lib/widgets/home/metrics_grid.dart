@@ -4,7 +4,6 @@ import '../../theme/app_theme.dart';
 import '../../utils/health_helpers.dart' as helpers;
 import '../glass_card.dart';
 
-/// Vitals row (BP, Sugar) + read-only BMI bar.
 class MetricsGrid extends StatelessWidget {
   final Map<String, dynamic>? data;
   final int? profileId;
@@ -35,8 +34,13 @@ class MetricsGrid extends StatelessWidget {
     final ageContextBp = data?['age_context_bp'] as String?;
     final ageContextGlucose = data?['age_context_glucose'] as String?;
 
-    final bmi = (data?['bmi'] as num?)?.toDouble();
-    final bmiCategory = data?['bmi_category'] as String?;
+    // SpO2 data
+    final lastSpo2 = (data?['last_spo2_value'] as num?)?.toDouble();
+    final lastSpo2Status = data?['last_spo2_status'] as String?;
+
+    // Steps data
+    final todaySteps = (data?['today_steps_count'] as num?)?.toInt();
+    final stepsGoal = (data?['today_steps_goal'] as num?)?.toInt() ?? 7500;
 
     final bpValue = lastBpSys != null && lastBpDia != null
         ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'
@@ -58,6 +62,7 @@ class MetricsGrid extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
+        // Row 1: BP + Sugar
         Row(
           children: [
             Expanded(
@@ -73,7 +78,7 @@ class MetricsGrid extends StatelessWidget {
                     : null,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _MetricTile(
                 label: l10n.lastSugar,
@@ -85,6 +90,31 @@ class MetricsGrid extends StatelessWidget {
                         btDeviceType: 'Glucose',
                       )
                     : null,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Row 2: SpO2 + Steps
+        Row(
+          children: [
+            Expanded(
+              child: _MetricTile(
+                label: l10n.lastSpO2,
+                value: lastSpo2 != null
+                    ? '${lastSpo2.toStringAsFixed(0)}%'
+                    : '—',
+                valueColor: helpers.statusTextColor(lastSpo2Status),
+                subtitle: l10n.viaArmband,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StepsTile(
+                label: l10n.lastSteps,
+                count: todaySteps,
+                goal: stepsGoal,
+                subtitle: l10n.viaPhone,
               ),
             ),
           ],
@@ -119,13 +149,6 @@ class MetricsGrid extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 12),
-        _BmiBar(
-          bmi: bmi,
-          category: bmiCategory,
-          heightCm: (data?['profile_height'] as num?)?.toDouble(),
-          weightKg: (data?['profile_weight'] as num?)?.toDouble(),
-        ),
       ],
     );
   }
@@ -136,12 +159,14 @@ class _MetricTile extends StatelessWidget {
   final String value;
   final Color valueColor;
   final VoidCallback? onAddTap;
+  final String? subtitle;
 
   const _MetricTile({
     required this.label,
     required this.value,
     required this.valueColor,
     this.onAddTap,
+    this.subtitle,
   });
 
   @override
@@ -163,6 +188,14 @@ class _MetricTile extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
+          if (subtitle != null)
+            Text(
+              subtitle!,
+              style: const TextStyle(
+                fontSize: 8,
+                color: AppColors.textSecondary,
+              ),
+            ),
           const SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -202,14 +235,115 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
-/// Full-width read-only BMI bar (derived metric, no entry point).
-class _BmiBar extends StatelessWidget {
+/// Steps tile with progress bar showing % of daily goal.
+class _StepsTile extends StatelessWidget {
+  final String label;
+  final int? count;
+  final int goal;
+  final String? subtitle;
+
+  const _StepsTile({
+    required this.label,
+    required this.count,
+    required this.goal,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displayValue = count != null ? _formatSteps(count!) : '—';
+    final progress = count != null && goal > 0
+        ? (count! / goal).clamp(0.0, 1.0)
+        : 0.0;
+    final pct = (progress * 100).toInt();
+
+    return GlassCard(
+      borderRadius: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 1,
+            ),
+          ),
+          if (subtitle != null)
+            Text(
+              subtitle!,
+              style: const TextStyle(
+                fontSize: 8,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          const SizedBox(height: 6),
+          Text(
+            displayValue,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: count != null
+                  ? AppColors.statusNormal
+                  : AppColors.textSecondary,
+            ),
+          ),
+          if (count != null) ...[
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: SizedBox(
+                height: 4,
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: const Color(0xFFE0E5EA),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppColors.statusNormal,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '$pct% of ${_formatSteps(goal)}',
+              style: const TextStyle(
+                fontSize: 8,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatSteps(int steps) {
+    if (steps >= 1000) {
+      return '${(steps / 1000).toStringAsFixed(1)}k';
+    }
+    return '$steps';
+  }
+}
+
+/// Compact BMI row — single line, not a full card.
+class BmiCompactRow extends StatelessWidget {
   final double? bmi;
   final String? category;
   final double? heightCm;
   final double? weightKg;
 
-  const _BmiBar({this.bmi, this.category, this.heightCm, this.weightKg});
+  const BmiCompactRow({
+    super.key,
+    this.bmi,
+    this.category,
+    this.heightCm,
+    this.weightKg,
+  });
 
   Color _bmiColor() {
     if (bmi == null) return AppColors.textSecondary;
@@ -227,12 +361,12 @@ class _BmiBar extends StatelessWidget {
     final hm2 = hm * hm;
     if (bmi! < 18.5) {
       final targetKg = (18.5 * hm2) - weightKg!;
-      return 'Gain ${targetKg.toStringAsFixed(1)} kg to reach normal';
+      return 'Gain ${targetKg.toStringAsFixed(1)} kg';
     } else if (bmi! >= 25) {
       final targetKg = weightKg! - (24.9 * hm2);
-      return 'Lose ${targetKg.toStringAsFixed(1)} kg to reach normal';
+      return 'Lose ${targetKg.toStringAsFixed(1)} kg';
     }
-    return 'Healthy BMI — keep it up!';
+    return null;
   }
 
   @override
@@ -243,8 +377,8 @@ class _BmiBar extends StatelessWidget {
     final tip = _tip();
 
     return GlassCard(
-      borderRadius: 16,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      borderRadius: 14,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       margin: EdgeInsets.zero,
       color: bmi != null ? color.withValues(alpha: 0.08) : null,
       child: Row(
@@ -252,33 +386,33 @@ class _BmiBar extends StatelessWidget {
           const Text(
             'BMI',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
               color: AppColors.textSecondary,
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Container(
-            width: 8,
-            height: 8,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           Text(
             displayValue,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w800,
               color: color,
             ),
           ),
           if (displayCategory.isNotEmpty) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               displayCategory,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: color,
               ),
@@ -286,16 +420,12 @@ class _BmiBar extends StatelessWidget {
           ],
           if (tip != null) ...[
             const Spacer(),
-            Flexible(
-              child: Text(
-                tip,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: color,
-                  fontStyle: FontStyle.italic,
-                ),
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
+            Text(
+              tip,
+              style: TextStyle(
+                fontSize: 10,
+                color: color,
+                fontStyle: FontStyle.italic,
               ),
             ),
           ],

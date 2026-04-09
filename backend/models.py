@@ -87,14 +87,14 @@ class ProfileInvite(Base):
 
 
 class HealthReading(Base):
-    """Glucose and blood pressure readings. Belongs to a profile, logged by a user."""
+    """Health readings (glucose, blood pressure, SpO2, steps). Belongs to a profile, logged by a user."""
     __tablename__ = "health_readings"
 
     id = Column(Integer, primary_key=True, index=True)
     profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    # Reading type: 'glucose' or 'blood_pressure'
+    # Reading type: 'glucose', 'blood_pressure', 'spo2', or 'steps'
     reading_type = Column(String, nullable=False)
 
     # Glucose specific fields
@@ -109,6 +109,15 @@ class HealthReading(Base):
     pulse_rate = Column(Float, nullable=True)                    # bpm
     bp_unit = Column(String, nullable=True)
     bp_status = Column(String, nullable=True)
+
+    # SpO2 fields
+    spo2_value = Column(Float, nullable=True)                    # percentage (0-100)
+    spo2_unit = Column(String, nullable=True)                    # '%'
+    spo2_enc = Column(Text, nullable=True)                       # AES-256-GCM
+
+    # Steps fields
+    steps_count = Column(Integer, nullable=True)
+    steps_goal = Column(Integer, nullable=True)                  # daily target
 
     # Common fields
     value_numeric = Column(Float, nullable=False)

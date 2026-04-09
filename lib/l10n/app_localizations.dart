@@ -1610,6 +1610,96 @@ abstract class AppLocalizations {
   /// **'Vitals'**
   String get vitalsSection;
 
+  /// No description provided for @trendsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Trends'**
+  String get trendsSection;
+
+  /// No description provided for @lastSpO2.
+  ///
+  /// In en, this message translates to:
+  /// **'Last SpO2'**
+  String get lastSpO2;
+
+  /// No description provided for @lastSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps Today'**
+  String get lastSteps;
+
+  /// No description provided for @spO2Unit.
+  ///
+  /// In en, this message translates to:
+  /// **'%'**
+  String get spO2Unit;
+
+  /// No description provided for @viaArmband.
+  ///
+  /// In en, this message translates to:
+  /// **'via Armband'**
+  String get viaArmband;
+
+  /// No description provided for @viaPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'via Phone / Armband'**
+  String get viaPhone;
+
+  /// No description provided for @pairDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair Device'**
+  String get pairDevice;
+
+  /// No description provided for @connectedDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected Devices'**
+  String get connectedDevices;
+
+  /// No description provided for @readMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get readMore;
+
+  /// No description provided for @mealSlotBreakfast.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakfast'**
+  String get mealSlotBreakfast;
+
+  /// No description provided for @mealSlotLunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch'**
+  String get mealSlotLunch;
+
+  /// No description provided for @mealSlotSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Snack'**
+  String get mealSlotSnack;
+
+  /// No description provided for @mealSlotDinner.
+  ///
+  /// In en, this message translates to:
+  /// **'Dinner'**
+  String get mealSlotDinner;
+
+  /// No description provided for @mealSlotLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged'**
+  String get mealSlotLogged;
+
+  /// No description provided for @mealSlotTapToLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to log'**
+  String get mealSlotTapToLog;
+
   /// No description provided for @footerDisclaimer.
   ///
   /// In en, this message translates to:

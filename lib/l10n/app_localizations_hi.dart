@@ -810,6 +810,51 @@ class AppLocalizationsHi extends AppLocalizations {
   String get vitalsSection => 'महत्वपूर्ण संकेत';
 
   @override
+  String get trendsSection => 'रुझान';
+
+  @override
+  String get lastSpO2 => 'अंतिम SpO2';
+
+  @override
+  String get lastSteps => 'आज के कदम';
+
+  @override
+  String get spO2Unit => '%';
+
+  @override
+  String get viaArmband => 'आर्मबैंड से';
+
+  @override
+  String get viaPhone => 'फ़ोन / आर्मबैंड से';
+
+  @override
+  String get pairDevice => 'डिवाइस जोड़ें';
+
+  @override
+  String get connectedDevices => 'जुड़े उपकरण';
+
+  @override
+  String get readMore => 'और पढ़ें';
+
+  @override
+  String get mealSlotBreakfast => 'नाश्ता';
+
+  @override
+  String get mealSlotLunch => 'दोपहर';
+
+  @override
+  String get mealSlotSnack => 'स्नैक';
+
+  @override
+  String get mealSlotDinner => 'रात का खाना';
+
+  @override
+  String get mealSlotLogged => 'दर्ज';
+
+  @override
+  String get mealSlotTapToLog => 'दर्ज करें';
+
+  @override
   String get footerDisclaimer =>
       'यह चिकित्सा निदान नहीं है। नैदानिक सलाह के लिए अपने डॉक्टर से परामर्श करें।';
 

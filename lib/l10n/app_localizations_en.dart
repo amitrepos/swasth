@@ -812,6 +812,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vitalsSection => 'Vitals';
 
   @override
+  String get trendsSection => 'Trends';
+
+  @override
+  String get lastSpO2 => 'Last SpO2';
+
+  @override
+  String get lastSteps => 'Steps Today';
+
+  @override
+  String get spO2Unit => '%';
+
+  @override
+  String get viaArmband => 'via Armband';
+
+  @override
+  String get viaPhone => 'via Phone / Armband';
+
+  @override
+  String get pairDevice => 'Pair Device';
+
+  @override
+  String get connectedDevices => 'Connected Devices';
+
+  @override
+  String get readMore => 'Read more';
+
+  @override
+  String get mealSlotBreakfast => 'Breakfast';
+
+  @override
+  String get mealSlotLunch => 'Lunch';
+
+  @override
+  String get mealSlotSnack => 'Snack';
+
+  @override
+  String get mealSlotDinner => 'Dinner';
+
+  @override
+  String get mealSlotLogged => 'Logged';
+
+  @override
+  String get mealSlotTapToLog => 'Tap to log';
+
+  @override
   String get footerDisclaimer =>
       'Not a medical diagnosis. Consult your doctor for clinical advice. All AI insights are for informational purposes.';
 

@@ -22,11 +22,11 @@ from health_utils import generate_meal_insights
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 from encryption_service import encrypt, encrypt_float
-from health_utils import age_context_bp, age_context_glucose
+from health_utils import age_context_bp, age_context_glucose, classify_spo2
 
 router = APIRouter()
 
-_VALID_READING_TYPES = {'glucose', 'blood_pressure'}
+_VALID_READING_TYPES = {'glucose', 'blood_pressure', 'spo2', 'steps'}
 
 # Cache: one Gemini call per (profile_id, date) — clears on server restart
 _insight_cache: dict[tuple[int, str], str] = {}
@@ -38,14 +38,14 @@ def save_reading(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Save a new health reading (glucose or blood pressure) for a specific profile."""
+    """Save a new health reading (glucose, blood pressure, SpO2, or steps) for a specific profile."""
     # Verify editor/owner access (viewers cannot create readings)
     get_profile_editor_or_403(reading.profile_id, user, db)
 
     if reading.reading_type not in _VALID_READING_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid reading type. Must be 'glucose' or 'blood_pressure'",
+            detail=f"Invalid reading type. Must be one of: {', '.join(sorted(_VALID_READING_TYPES))}",
         )
 
     db_reading = models.HealthReading(
@@ -61,6 +61,10 @@ def save_reading(
         pulse_rate=reading.pulse_rate,
         bp_unit=reading.bp_unit,
         bp_status=reading.bp_status,
+        spo2_value=reading.spo2_value,
+        spo2_unit=reading.spo2_unit,
+        steps_count=reading.steps_count,
+        steps_goal=reading.steps_goal,
         value_numeric=reading.value_numeric,
         unit_display=reading.unit_display,
         status_flag=reading.status_flag,
@@ -76,6 +80,8 @@ def save_reading(
         db_reading.diastolic_enc = encrypt_float(reading.diastolic)
     if reading.pulse_rate is not None:
         db_reading.pulse_rate_enc = encrypt_float(reading.pulse_rate)
+    if reading.spo2_value is not None:
+        db_reading.spo2_enc = encrypt_float(reading.spo2_value)
     if reading.notes is not None:
         db_reading.notes_enc = encrypt(reading.notes)
 
@@ -98,6 +104,8 @@ def save_reading(
             alert_msg = f"🚨 {profile_name}'s glucose is {reading.glucose_value:.0f} mg/dL ({reading.status_flag}). Please check on them immediately."
         elif reading.reading_type == "blood_pressure" and reading.systolic:
             alert_msg = f"🚨 {profile_name}'s BP is {reading.systolic:.0f}/{reading.diastolic:.0f} mmHg ({reading.status_flag}). Please check on them immediately."
+        elif reading.reading_type == "spo2" and reading.spo2_value:
+            alert_msg = f"🚨 {profile_name}'s SpO2 is {reading.spo2_value:.0f}% ({reading.status_flag}). Please check on them immediately."
         else:
             alert_msg = f"🚨 {profile_name} has a {reading.status_flag} health reading. Please check on them."
 
@@ -146,7 +154,7 @@ def get_readings(
         if reading_type not in _VALID_READING_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid reading type. Must be 'glucose' or 'blood_pressure'",
+                detail=f"Invalid reading type. Must be one of: {', '.join(sorted(_VALID_READING_TYPES))}",
             )
         query = query.filter(models.HealthReading.reading_type == reading_type)
 
@@ -186,6 +194,12 @@ def get_health_score(
 
     today_glucose = next((r for r in today_readings if r.reading_type == 'glucose'), None)
     today_bp = next((r for r in today_readings if r.reading_type == 'blood_pressure'), None)
+    today_spo2 = next((r for r in today_readings if r.reading_type == 'spo2'), None)
+
+    # Steps: sum all step entries today (may have multiple syncs)
+    today_steps_readings = [r for r in today_readings if r.reading_type == 'steps']
+    today_steps_count = sum(r.steps_count or 0 for r in today_steps_readings) if today_steps_readings else None
+    today_steps_goal = next((r.steps_goal for r in today_steps_readings if r.steps_goal), None)
 
     # --- Streak calculation ---
     days_with_readings = set()
@@ -401,6 +415,61 @@ def get_health_score(
         else:
             bmi_category = "Obese"
 
+    # --- SpO2 data ---
+    last_spo2 = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'spo2',
+        )
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
+    avg_spo2_90d = db.query(func.avg(models.HealthReading.spo2_value)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'spo2',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.spo2_value.isnot(None),
+    ).scalar()
+    spo2_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'spo2',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.spo2_value.isnot(None),
+    ).scalar() or 0
+
+    # --- Steps data ---
+    last_steps = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'steps',
+        )
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
+    avg_steps_90d = db.query(func.avg(models.HealthReading.steps_count)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'steps',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.steps_count.isnot(None),
+    ).scalar()
+    steps_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'steps',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.steps_count.isnot(None),
+    ).scalar() or 0
+
+    # SpO2 classification for today's reading
+    today_spo2_status = None
+    if today_spo2 and today_spo2.spo2_value is not None:
+        today_spo2_status = classify_spo2(today_spo2.spo2_value)
+
     return schemas.HealthScoreResponse(
         score=score,
         color=color,
@@ -432,6 +501,19 @@ def get_health_score(
         bmi_category=bmi_category,
         profile_height=p_height,
         profile_weight=p_weight,
+        # SpO2
+        today_spo2_value=today_spo2.spo2_value if today_spo2 else None,
+        today_spo2_status=today_spo2_status,
+        last_spo2_value=last_spo2.spo2_value if last_spo2 else None,
+        last_spo2_status=classify_spo2(last_spo2.spo2_value) if last_spo2 and last_spo2.spo2_value else None,
+        avg_spo2_90d=float(avg_spo2_90d) if avg_spo2_90d is not None else None,
+        spo2_data_days=int(spo2_data_days),
+        # Steps
+        today_steps_count=today_steps_count,
+        today_steps_goal=today_steps_goal,
+        last_steps_count=last_steps.steps_count if last_steps else None,
+        avg_steps_90d=float(avg_steps_90d) if avg_steps_90d is not None else None,
+        steps_data_days=int(steps_data_days),
     )
 
 
