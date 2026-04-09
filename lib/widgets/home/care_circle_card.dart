@@ -75,10 +75,10 @@ class CareCircleCard extends StatelessWidget {
               ),
             )
           else
-            Wrap(
-              spacing: 16,
-              runSpacing: 12,
-              children: visible.map((m) => _MemberChip(member: m)).toList(),
+            Row(
+              children: visible
+                  .map((m) => Expanded(child: _MemberChip(member: m)))
+                  .toList(),
             ),
         ],
       ),
@@ -106,8 +106,8 @@ class _MemberChip extends StatelessWidget {
     return GestureDetector(
       onTap: () =>
           _showContactOptions(context, name, email, phone, accessLevel),
-      child: SizedBox(
-        width: 72,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
