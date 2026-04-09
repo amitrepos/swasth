@@ -6,7 +6,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/profile_model.dart';
 import '../models/invite_model.dart';
-import '../services/api_client.dart';
+import '../config/app_config.dart';
 import '../theme/app_theme.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
