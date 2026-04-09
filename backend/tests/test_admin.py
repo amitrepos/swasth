@@ -130,14 +130,14 @@ class TestAdminUsers:
         assert resp.status_code == 403
 
 
-class TestMakeAdmin:
+class TestAdminStatus:
 
-    def test_make_admin(self, client, admin_user, admin_headers, db, test_user):
-        resp = client.post(f"/api/admin/users/{test_user.id}/make-admin", headers=admin_headers)
+    def test_grant_admin(self, client, admin_user, admin_headers, db, test_user):
+        resp = client.patch(f"/api/admin/users/{test_user.id}", json={"is_admin": True}, headers=admin_headers)
         assert resp.status_code == 200
         assert "admin" in resp.json()["message"].lower()
 
-    def test_remove_admin(self, client, admin_user, admin_headers, db):
+    def test_revoke_admin(self, client, admin_user, admin_headers, db):
         # Create another admin
         other = models.User(
             email="other_admin@test.com",
@@ -149,13 +149,13 @@ class TestMakeAdmin:
         db.add(other)
         db.flush()
 
-        resp = client.post(f"/api/admin/users/{other.id}/remove-admin", headers=admin_headers)
+        resp = client.patch(f"/api/admin/users/{other.id}", json={"is_admin": False}, headers=admin_headers)
         assert resp.status_code == 200
 
     def test_cannot_remove_own_admin(self, client, admin_user, admin_headers):
-        resp = client.post(f"/api/admin/users/{admin_user.id}/remove-admin", headers=admin_headers)
+        resp = client.patch(f"/api/admin/users/{admin_user.id}", json={"is_admin": False}, headers=admin_headers)
         assert resp.status_code == 400
 
-    def test_make_admin_nonexistent_user(self, client, admin_user, admin_headers):
-        resp = client.post("/api/admin/users/99999/make-admin", headers=admin_headers)
+    def test_nonexistent_user(self, client, admin_user, admin_headers):
+        resp = client.patch("/api/admin/users/99999", json={"is_admin": True}, headers=admin_headers)
         assert resp.status_code == 404

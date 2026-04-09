@@ -221,7 +221,7 @@ class TestChatContextAndSummary:
 
         # Send 5 messages (default interval)
         for i in range(5):
-            client.post("/api/chat/send", json={
+            client.post("/api/chat/messages", json={
                 "profile_id": pid,
                 "message": f"Question {i+1}",
             }, headers=auth_headers)
@@ -238,7 +238,7 @@ class TestChatContextAndSummary:
             models.ProfileAccess.access_level == "owner",
         ).first().profile_id
 
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "Hello",
         }, headers=auth_headers)
@@ -269,7 +269,7 @@ class TestChatContextAndSummary:
         db.add(reading)
         db.flush()
 
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "How is my glucose?",
         }, headers=auth_headers)
@@ -287,13 +287,13 @@ class TestChatContextAndSummary:
         # Exhaust quota (default 5)
         with patch("ai_service.generate_health_insight", return_value="Response."):
             for i in range(5):
-                client.post("/api/chat/send", json={
+                client.post("/api/chat/messages", json={
                     "profile_id": pid,
                     "message": f"Msg {i}",
                 }, headers=auth_headers)
 
         # 6th message should be rejected
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "One more",
         }, headers=auth_headers)
@@ -320,7 +320,7 @@ class TestChatContextAndSummary:
         db.flush()
 
         viewer_headers = {"Authorization": f"Bearer {create_access_token(data={'sub': viewer.email})}"}
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "Should be blocked",
         }, headers=viewer_headers)

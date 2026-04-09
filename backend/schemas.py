@@ -512,3 +512,8 @@ class FoodClassificationResponse(BaseModel):
     tip_en: str
     tip_hi: str
     confidence: float
+
+
+class AdminStatusUpdate(BaseModel):
+    """Request body for updating user admin status."""
+    is_admin: bool

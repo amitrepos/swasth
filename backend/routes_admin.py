@@ -4,12 +4,13 @@ All endpoints require is_admin=True on the authenticated user.
 """
 import os
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from sqlalchemy import func, distinct, case
 from sqlalchemy.orm import Session
 from datetime import datetime, date, timedelta
 
 import models
+import schemas
 from database import get_db
 from dependencies import get_current_user
 
@@ -476,7 +477,7 @@ def update_ai_memory(
     return {"message": "AI memory updated", "profile_id": profile_id}
 
 
-@router.delete("/admin/profiles/{profile_id}/ai-memory")
+@router.delete("/admin/profiles/{profile_id}/ai-memory", status_code=status.HTTP_204_NO_CONTENT)
 def reset_ai_memory(
     profile_id: int,
     db: Session = Depends(get_db),
@@ -490,36 +491,23 @@ def reset_ai_memory(
         ctx.summary = ""
         ctx.message_count = 0
         db.commit()
-    return {"message": "AI memory reset", "profile_id": profile_id}
+    return Response(status_code=204)
 
 
-@router.post("/admin/users/{user_id}/make-admin")
-def make_admin(
+@router.patch("/admin/users/{user_id}")
+def update_user_admin_status(
     user_id: int,
+    body: schemas.AdminStatusUpdate,
     db: Session = Depends(get_db),
     user: models.User = Depends(_require_admin),
 ):
-    """Grant admin access to a user."""
-    target = db.query(models.User).filter(models.User.id == user_id).first()
-    if not target:
-        raise HTTPException(status_code=404, detail="User not found")
-    target.is_admin = True
-    db.commit()
-    return {"message": f"{target.email} is now an admin"}
-
-
-@router.post("/admin/users/{user_id}/remove-admin")
-def remove_admin(
-    user_id: int,
-    db: Session = Depends(get_db),
-    user: models.User = Depends(_require_admin),
-):
-    """Remove admin access from a user."""
-    if user_id == user.id:
+    """Update admin status for a user."""
+    if not body.is_admin and user_id == user.id:
         raise HTTPException(status_code=400, detail="Cannot remove your own admin access")
     target = db.query(models.User).filter(models.User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
-    target.is_admin = False
+    target.is_admin = body.is_admin
     db.commit()
-    return {"message": f"{target.email} is no longer an admin"}
+    status = "now an admin" if body.is_admin else "no longer an admin"
+    return {"message": f"{target.email} is {status}"}

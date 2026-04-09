@@ -1,6 +1,6 @@
 # Swasth App — Phase 1 Task Tracker
 
-**Last Updated:** 2026-03-31
+**Last Updated:** 2026-04-09
 **Sprint:** 4 weeks + buffer | **Target:** Bihar pilot
 
 Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
@@ -124,6 +124,29 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 ---
 
+## MODULE E — Security, Performance & Tech Debt
+
+| # | Feature | Priority | Status | Notes |
+|---|---------|----------|--------|-------|
+| E1 | CORS: restrict allowed origins | 🔴 CRITICAL | ❌ Not started | `backend/main.py:25` — `allow_origins=["*"]` must be whitelist. Any website can make authenticated requests on behalf of users. |
+| E2 | Move SMTP credentials out of tracked files | 🔴 CRITICAL | ❌ Not started | `backend/.env` committed to repo. Inject via CI/CD secrets or `.env.local` in `.gitignore`. Rotate exposed credentials. |
+| E3 | Rate limiting on auth & OTP endpoints | 🟠 HIGH | ❌ Not started | `POST /api/auth/login`, `/register`, `/forgot-password`, `/verify-otp`. No limit = trivial brute-force. Use `slowapi`. |
+| E4 | Hash OTP before storing in DB | 🟠 HIGH | ❌ Not started | `backend/models.py:67` — OTP stored plain text. Store `sha256(otp).hexdigest()` and compare hashes. |
+| E5 | Implement token refresh (refresh tokens) | 🟠 HIGH | ❌ Not started | `backend/auth.py` — only 30-min access tokens. Users silently logged out. Add refresh token + `/api/auth/refresh` endpoint. |
+| E6 | Database connection pool config | 🟡 MEDIUM | ❌ Not started | `backend/database.py:7` — `create_engine()` has no pool settings. Add `pool_pre_ping=True, pool_size=10, max_overflow=20`. |
+| E7 | Add index on `(user_id, reading_timestamp)` | 🟡 MEDIUM | ❌ Not started | `backend/models.py` — no composite index on health readings. Queries will slow as data grows. |
+| E8 | Fix N+1 queries in `/readings/stats/summary` | 🟡 MEDIUM | ❌ Not started | `backend/routes_health.py` — runs 4 separate DB queries. Replace with single aggregation query. |
+| E9 | BLE packet bounds checking | 🟡 MEDIUM | ❌ Not started | `lib/ble/glucose_service.dart:57-118`, `bp_service.dart:116-186` — field accesses inside loop have no bounds guards. Malformed packet = crash. |
+| E10 | Cancel BLE subscriptions on screen disposal | 🟡 MEDIUM | ❌ Not started | `lib/screens/dashboard_screen.dart` — `onValueReceived.listen()` never cancelled. Memory leaks + stale callbacks. Store `StreamSubscription`, call `.cancel()` in `dispose()`. |
+| E11 | Add HTTP request timeouts in Flutter | 🟡 MEDIUM | ❌ Not started | `lib/services/api_service.dart`, `health_reading_service.dart` — no timeout on any HTTP call. Slow server = frozen UI. |
+| E12 | Wire up Riverpod for shared state | 🟢 LOW | ❌ Not started | `flutter_riverpod` in `pubspec.yaml` but unused. All screens use local state. Required before adding more screens. |
+| E13 | Add soft delete for users | 🟢 LOW | ❌ Not started | `backend/models.py` — no `deleted_at` field. Hard delete breaks foreign key references on `health_readings`. |
+| E14 | Make `ApiService` a singleton | 🟢 LOW | ❌ Not started | `ApiService()` instantiated per screen. Use top-level instance or Riverpod provider. |
+| E15 | Remove `ignore_for_file` suppressions | 🟢 LOW | ❌ Not started | `lib/screens/registration_screen.dart:2` — suppressed deprecation warnings hide future breakage. Fix underlying deprecated API. |
+| E16 | Add BLE reconnection logic | 🟢 LOW | ❌ Not started | No auto-reconnect when BLE device disconnects mid-session. Users must manually reconnect. |
+
+---
+
 ## PROGRESS SUMMARY
 
 | Module | Done | Partial | Not Started | Total |
@@ -132,7 +155,8 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | B — Data Input | 12 | 2 | 6 | 20 |
 | C — Dashboard | 19 | 0 | 5 | 24 |
 | D — AI + Notifications | 8 | 3 | 12 | 23 |
-| **Total** | **47** | **7** | **26** | **80** |
+| E — Security, Perf & Tech Debt | 0 | 0 | 16 | 16 |
+| **Total** | **47** | **7** | **42** | **96** |
 
 ---
 
@@ -145,6 +169,8 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | No weight tracking (B3, B6) | C8, D4, D5, D6 (full) |
 | No pedometer (B10) | C6, D1 (full), D2 |
 | No WhatsApp Business API (D8) | D15 (doctor alerts) — doctor_whatsapp field is ready |
+| CORS + SMTP credentials (E1, E2) | Production deployment — **must fix before any real user** |
+| No token refresh (E5) | Stable sessions — users currently logged out every 30 min |
 
 ---
 

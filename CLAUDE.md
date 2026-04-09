@@ -15,7 +15,6 @@ Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
 - `WORKING-CONTEXT.md` — **live sprint board** (current branch, PRs, blockers, priorities)
 - `RULES.md` — **Must Always / Must Never rules**, commit style, model routing
 - `TASK_TRACKER.md` — full feature status across all modules (A–D)
-- `KNOWN_ISSUES.md` — deferred issues tracked for pre-production
 - `AUDIT.md` — change log (update on every session)
 - `.claude/sessions/latest.md` — previous session summary (auto-loaded)
 - `.claude/learnings/*.md` — project patterns discovered over time (auto-loaded)

@@ -192,7 +192,7 @@ class TestProfileSharingFlow:
         invite_id = invite.json()["invite_id"]
 
         # 4. Viewer accepts invite
-        accept = client.post(f"/api/invites/{invite_id}/respond", json={
+        accept = client.patch(f"/api/invites/{invite_id}", json={
             "action": "accept",
         }, headers=viewer_headers)
         assert accept.status_code == 200
@@ -276,14 +276,14 @@ class TestChatFlow:
             models.ProfileAccess.access_level == "owner",
         ).first().profile_id
 
-        # 1. Check quota first
-        quota = client.get(f"/api/chat/quota?profile_id={profile_id}", headers=auth_headers)
-        assert quota.status_code == 200
-        remaining = quota.json()["remaining"]
+        # 1. Check quota via chat messages endpoint
+        msgs = client.get(f"/api/chat/messages?profile_id={profile_id}", headers=auth_headers)
+        assert msgs.status_code == 200
+        remaining = msgs.json()["quota"]["remaining"]
         assert remaining > 0
 
         # 2. Send message
-        send = client.post("/api/chat/send", json={
+        send = client.post("/api/chat/messages", json={
             "profile_id": profile_id,
             "message": "How is my health?",
         }, headers=auth_headers)
@@ -297,6 +297,6 @@ class TestChatFlow:
         messages = history.json()["messages"]
         assert any(m["user_message"] == "How is my health?" for m in messages)
 
-        # 4. Quota decreased
-        quota2 = client.get(f"/api/chat/quota?profile_id={profile_id}", headers=auth_headers)
-        assert quota2.json()["remaining"] == remaining - 1
+        # 4. Quota decreased (check via chat messages endpoint)
+        msgs2 = client.get(f"/api/chat/messages?profile_id={profile_id}", headers=auth_headers)
+        assert msgs2.json()["quota"]["remaining"] == remaining - 1

@@ -336,7 +336,7 @@ class TestPendingInvites:
 
 
 # ===========================================================================
-# POST /api/invites/{invite_id}/respond
+# PATCH /api/invites/{invite_id}
 # ===========================================================================
 
 class TestRespondToInvite:
@@ -360,7 +360,7 @@ class TestRespondToInvite:
         db.flush()
         invite_id = invite.id
 
-        resp = client.post(f"/api/invites/{invite_id}/respond", json={"action": "accept"}, headers=auth_headers)
+        resp = client.patch(f"/api/invites/{invite_id}", json={"action": "accept"}, headers=auth_headers)
         assert resp.status_code == 200
         assert "accepted" in resp.json()["message"].lower()
 
@@ -381,7 +381,7 @@ class TestRespondToInvite:
         db.add(invite)
         db.flush()
 
-        resp = client.post(f"/api/invites/{invite.id}/respond", json={"action": "reject"}, headers=auth_headers)
+        resp = client.patch(f"/api/invites/{invite.id}", json={"action": "reject"}, headers=auth_headers)
         assert resp.status_code == 200
         assert "rejected" in resp.json()["message"].lower()
 
@@ -402,16 +402,16 @@ class TestRespondToInvite:
         db.add(invite)
         db.flush()
 
-        resp = client.post(f"/api/invites/{invite.id}/respond", json={"action": "accept"}, headers=auth_headers)
+        resp = client.patch(f"/api/invites/{invite.id}", json={"action": "accept"}, headers=auth_headers)
         assert resp.status_code == 410
 
 
 # ===========================================================================
-# PUT /api/auth/profile — user profile update
+# PUT /api/auth/me — user profile update
 # ===========================================================================
 
 class TestUserProfileUpdate:
-    URL = "/api/auth/profile"
+    URL = "/api/auth/me"
 
     def test_update_name(self, client, test_user, auth_headers):
         resp = client.put(self.URL, json={"full_name": "New Name"}, headers=auth_headers)
