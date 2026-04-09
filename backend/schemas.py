@@ -120,6 +120,7 @@ class UserResponse(BaseModel):
     full_name: str
     phone_number: str
     is_active: bool
+    is_admin: bool = False
     role: Optional[str] = "patient"
     timezone: str
     consent_timestamp: Optional[datetime] = None
