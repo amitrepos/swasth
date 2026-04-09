@@ -547,6 +547,23 @@ class AdminStatusUpdate(BaseModel):
     is_admin: bool
 
 
+class AdminSuspendUser(BaseModel):
+    """Request body for suspending/reactivating a user."""
+    suspend: bool
+    reason: str = Field(..., min_length=3, max_length=500)
+
+
+class AdminVerifyDoctor(BaseModel):
+    """Request body for verifying a doctor."""
+    notes: Optional[str] = None
+
+
+class AdminRejectDoctor(BaseModel):
+    """Request body for rejecting a doctor verification."""
+    reason: str = Field(..., min_length=3, max_length=200)
+    notes: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # Doctor Portal schemas (Module F)
 # ---------------------------------------------------------------------------
