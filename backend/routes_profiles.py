@@ -265,18 +265,24 @@ def list_profile_access(
         .filter(models.ProfileAccess.profile_id == profile_id)
         .all()
     )
+    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
     result = []
     for a in accesses:
         u = db.query(models.User).filter(models.User.id == a.user_id).first()
         if u:
+            # For owners, fall back to Profile.relationship (e.g. "father")
+            rel = a.relationship
+            if not rel and a.access_level == "owner" and profile:
+                rel = profile.relationship
             result.append({
                 "user_id": u.id,
                 "full_name": u.full_name,
                 "email": u.email,
                 "phone_number": u.phone_number,
                 "access_level": a.access_level,
-                "relationship": a.relationship,
+                "relationship": rel,
                 "granted_at": a.created_at,
+                "last_login_at": u.last_login_at,
             })
     return result
 
@@ -318,12 +324,17 @@ def update_access_level(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Update a user's access level (viewer <-> editor). Owner only."""
+    """Update a user's access level and/or relationship. Owner only."""
     get_profile_owner_or_403(profile_id, user, db)
 
-    new_level = data.get("access_level", "").strip().lower()
-    if new_level not in ("viewer", "editor"):
+    new_level = data.get("access_level", "").strip().lower() if data.get("access_level") else None
+    new_relationship = data.get("relationship")
+
+    if new_level and new_level not in ("viewer", "editor"):
         raise HTTPException(status_code=400, detail="access_level must be 'viewer' or 'editor'")
+
+    if not new_level and new_relationship is None:
+        raise HTTPException(status_code=400, detail="Provide access_level and/or relationship")
 
     if target_user_id == user.id:
         raise HTTPException(status_code=400, detail="Cannot change your own owner access")
@@ -340,7 +351,10 @@ def update_access_level(
     if not access:
         raise HTTPException(status_code=404, detail="Non-owner access not found")
 
-    access.access_level = new_level
+    if new_level:
+        access.access_level = new_level
+    if new_relationship is not None:
+        access.relationship = new_relationship.strip() if new_relationship else None
     db.commit()
 
     u = db.query(models.User).filter(models.User.id == target_user_id).first()
@@ -348,7 +362,8 @@ def update_access_level(
         "user_id": target_user_id,
         "full_name": u.full_name if u else None,
         "email": u.email if u else None,
-        "access_level": new_level,
+        "access_level": access.access_level,
+        "relationship": access.relationship,
     }
 
 
