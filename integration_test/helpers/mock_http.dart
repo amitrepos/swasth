@@ -164,8 +164,17 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
           'systolic': body['systolic'],
           'diastolic': body['diastolic'],
           'glucose_value': body['glucose_value'],
+          'glucose_unit': body['glucose_unit'],
+          'bp_unit': body['bp_unit'],
+          'value_numeric':
+              body['value_numeric'] ??
+              body['systolic'] ??
+              body['glucose_value'] ??
+              0,
+          'unit_display': body['unit_display'] ?? 'mg/dL',
           'status_flag': body['status_flag'] ?? 'NORMAL',
-          'reading_timestamp': DateTime.now().toIso8601String(),
+          'reading_timestamp':
+              body['reading_timestamp'] ?? DateTime.now().toIso8601String(),
           'created_at': DateTime.now().toIso8601String(),
         }),
         201,
@@ -181,6 +190,9 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
             'reading_type': 'blood_pressure',
             'systolic': 136.0,
             'diastolic': 85.0,
+            'bp_unit': 'mmHg',
+            'value_numeric': 136.0,
+            'unit_display': 'mmHg',
             'status_flag': 'HIGH - STAGE 1',
             'reading_timestamp': DateTime.now().toIso8601String(),
             'created_at': DateTime.now().toIso8601String(),
@@ -191,6 +203,8 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
             'reading_type': 'glucose',
             'glucose_value': 108.0,
             'glucose_unit': 'mg/dL',
+            'value_numeric': 108.0,
+            'unit_display': 'mg/dL',
             'status_flag': 'NORMAL',
             'reading_timestamp': DateTime.now().toIso8601String(),
             'created_at': DateTime.now().toIso8601String(),
@@ -244,9 +258,12 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
       return http.Response(
         jsonEncode({
           'id': 10,
-          'role': 'assistant',
-          'content':
+          'ai_response':
               'Based on your recent readings, your blood pressure is slightly elevated. I recommend reducing sodium intake.',
+          'remaining_quota': 4,
+          'resets_at': DateTime.now()
+              .add(const Duration(hours: 24))
+              .toIso8601String(),
           'created_at': DateTime.now().toIso8601String(),
         }),
         200,
@@ -254,7 +271,18 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
     }
 
     if (path.contains('/chat/messages') && method == 'GET') {
-      return http.Response(jsonEncode([]), 200);
+      return http.Response(
+        jsonEncode({
+          'messages': [],
+          'quota': {
+            'remaining': 5,
+            'resets_at': DateTime.now()
+                .add(const Duration(hours: 24))
+                .toIso8601String(),
+          },
+        }),
+        200,
+      );
     }
 
     if (path.contains('/chat/quota') && method == 'GET') {

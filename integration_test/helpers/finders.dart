@@ -51,12 +51,17 @@ final mealHighCarb = find.byKey(const Key('meal_high_carb'));
 final mealLowCarb = find.byKey(const Key('meal_low_carb'));
 final mealSweets = find.byKey(const Key('meal_sweets'));
 
+// ── Chat ────────────────────────────────────────────────────────────────────
+
+final chatInput = find.byKey(const Key('chat_input'));
+final chatSendButton = find.byKey(const Key('chat_send_button'));
+
 // ── Helper: wait for widget then tap ────────────────────────────────────────
 
 /// Taps a widget found by [finder], pumps, and settles.
 Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
   await tester.tap(finder);
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 /// Enters text into a field found by [finder], pumps, and settles.
@@ -66,17 +71,12 @@ Future<void> enterTextAndSettle(
   String text,
 ) async {
   await tester.enterText(finder, text);
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
-/// Scrolls until [finder] is visible, then returns it.
-Future<void> scrollUntilVisible(
-  WidgetTester tester,
-  Finder finder, {
-  Finder? scrollable,
-  double delta = -200,
-}) async {
-  final scroll = scrollable ?? find.byType(Scrollable).first;
-  await tester.scrollUntilVisible(finder, delta, scrollable: scroll);
-  await tester.pumpAndSettle();
+/// Scrolls to make [finder] visible using ensureVisible + pump.
+/// Uses pump() instead of pumpAndSettle() to avoid animation hangs.
+Future<void> scrollUntilVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pump(const Duration(milliseconds: 300));
 }

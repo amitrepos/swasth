@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:swasth_app/screens/login_screen.dart';
 import 'package:swasth_app/screens/select_profile_screen.dart';
-import 'package:swasth_app/screens/reading_confirmation_screen.dart';
 import 'package:swasth_app/services/api_client.dart';
 import 'package:swasth_app/services/storage_service.dart';
 

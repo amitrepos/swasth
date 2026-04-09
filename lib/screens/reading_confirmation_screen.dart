@@ -8,6 +8,22 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import 'shell_screen.dart';
 
+/// Classify glucose value into status — testable top-level function.
+String classifyGlucose(double v) {
+  if (v < 70) return 'LOW';
+  if (v <= 130) return 'NORMAL';
+  if (v <= 180) return 'HIGH';
+  return 'CRITICAL';
+}
+
+/// Classify BP into status — testable top-level function.
+String classifyBp(double sys, double dia) {
+  if (sys > 140 || dia > 90) return 'HIGH - STAGE 2';
+  if (sys > 131 || dia > 86) return 'HIGH - STAGE 1';
+  if (sys < 90 || dia < 60) return 'LOW';
+  return 'NORMAL';
+}
+
 class ReadingConfirmationScreen extends StatefulWidget {
   final OcrResult? ocrResult;
 
@@ -297,19 +313,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     );
   }
 
-  String _glucoseStatus(double v) {
-    if (v < 70) return 'LOW';
-    if (v <= 130) return 'NORMAL';
-    if (v <= 180) return 'HIGH';
-    return 'CRITICAL';
-  }
-
-  String _bpStatus(double sys, double dia) {
-    if (sys > 140 || dia > 90) return 'HIGH - STAGE 2';
-    if (sys > 131 || dia > 86) return 'HIGH - STAGE 1';
-    if (sys < 90 || dia < 60) return 'LOW';
-    return 'NORMAL';
-  }
+  String _glucoseStatus(double v) => classifyGlucose(v);
+  String _bpStatus(double sys, double dia) => classifyBp(sys, dia);
 
   @override
   void dispose() {
