@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr, validator, Field
 from typing import Optional, List, Literal
 from datetime import datetime
-import re
 
 
 # Options
@@ -27,15 +26,6 @@ def _validate_password_strength(v: str) -> str:
     return v
 
 
-def _validate_phone_number(v: str) -> str:
-    """Shared phone validation used across all schemas."""
-    # Strip spaces and dashes
-    stripped = re.sub(r'[\s\-]', '', v)
-    if not re.match(r'^\+?[0-9]{10,15}$', stripped):
-        raise ValueError('Phone number must be between 10 and 15 digits')
-    return stripped
-
-
 # ---------------------------------------------------------------------------
 # Auth schemas
 # ---------------------------------------------------------------------------
@@ -45,7 +35,7 @@ class UserRegister(BaseModel):
     password: str
     confirm_password: str
     full_name: str = Field(..., min_length=2, max_length=100)
-    phone_number: str
+    phone_number: str = Field(..., min_length=10, max_length=15)
     timezone: str = "UTC"  # User's local timezone
     # Optional first-profile fields — used to auto-create "My Health" profile on register
     profile_name: Optional[str] = "My Health"
@@ -65,10 +55,6 @@ class UserRegister(BaseModel):
     @validator('email')
     def normalize_email(cls, v):
         return v.strip().lower()
-
-    @validator('phone_number')
-    def validate_phone(cls, v):
-        return _validate_phone_number(v)
 
     @validator('password')
     def validate_password(cls, v):
@@ -134,6 +120,7 @@ class UserResponse(BaseModel):
     full_name: str
     phone_number: str
     is_active: bool
+    role: Optional[str] = "patient"
     timezone: str
     consent_timestamp: Optional[datetime] = None
     consent_app_version: Optional[str] = None
@@ -186,7 +173,7 @@ class ResetPasswordRequest(BaseModel):
 class UpdateUserRequest(BaseModel):
     """Auth-level user fields only — name, phone, password change."""
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)
-    phone_number: Optional[str] = None
+    phone_number: Optional[str] = Field(None, min_length=10, max_length=15)
     current_password: Optional[str] = None
     new_password: Optional[str] = None
     confirm_password: Optional[str] = None
@@ -195,12 +182,6 @@ class UpdateUserRequest(BaseModel):
     def validate_new_password(cls, v):
         if v is not None:
             return _validate_password_strength(v)
-        return v
-
-    @validator('phone_number')
-    def validate_phone(cls, v):
-        if v is not None:
-            return _validate_phone_number(v)
         return v
 
     @validator('confirm_password')
@@ -564,3 +545,139 @@ class FoodClassificationResponse(BaseModel):
 class AdminStatusUpdate(BaseModel):
     """Request body for updating user admin status."""
     is_admin: bool
+
+
+# ---------------------------------------------------------------------------
+# Doctor Portal schemas (Module F)
+# ---------------------------------------------------------------------------
+
+DOCTOR_SPECIALTY_OPTIONS = [
+    "General Physician", "Endocrinologist", "Cardiologist", "Diabetologist",
+    "Internal Medicine", "Family Medicine", "Other",
+]
+
+CONSENT_TYPE_OPTIONS = ["in_person_exam", "video_consult"]
+
+
+class DoctorRegister(BaseModel):
+    """Doctor registration — extends normal user registration."""
+    email: EmailStr
+    password: str
+    confirm_password: str
+    full_name: str = Field(..., min_length=2, max_length=100)
+    phone_number: str = Field(..., min_length=10, max_length=15)
+    nmc_number: str = Field(..., min_length=4, max_length=20)
+    specialty: Optional[str] = None
+    clinic_name: Optional[str] = None
+    timezone: str = "Asia/Kolkata"
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
+    @validator('password')
+    def validate_password(cls, v):
+        return _validate_password_strength(v)
+
+    @validator('confirm_password')
+    def passwords_match(cls, v, values):
+        if 'password' in values and v != values['password']:
+            raise ValueError('Passwords do not match')
+        return v
+
+    @validator('specialty')
+    def validate_specialty(cls, v):
+        if v is not None and v not in DOCTOR_SPECIALTY_OPTIONS:
+            raise ValueError(f'Specialty must be one of: {", ".join(DOCTOR_SPECIALTY_OPTIONS)}')
+        return v
+
+
+class DoctorProfileResponse(BaseModel):
+    """Doctor profile info returned after registration or lookup."""
+    user_id: int
+    full_name: str
+    nmc_number: str
+    specialty: Optional[str] = None
+    clinic_name: Optional[str] = None
+    doctor_code: str
+    is_verified: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DoctorCodeLookupResponse(BaseModel):
+    """Returned when a patient looks up a doctor code to link."""
+    doctor_name: str
+    specialty: Optional[str] = None
+    clinic_name: Optional[str] = None
+    doctor_code: str
+    is_verified: bool
+
+
+class DoctorPatientLinkRequest(BaseModel):
+    """Patient requests to link with a doctor."""
+    doctor_code: str = Field(..., min_length=4, max_length=8)
+    consent_type: str
+
+    @validator('consent_type')
+    def validate_consent_type(cls, v):
+        if v not in CONSENT_TYPE_OPTIONS:
+            raise ValueError(f'consent_type must be one of: {", ".join(CONSENT_TYPE_OPTIONS)}')
+        return v
+
+
+class DoctorPatientLinkResponse(BaseModel):
+    """Response after linking patient to doctor."""
+    id: int
+    doctor_id: int
+    doctor_name: str
+    profile_id: int
+    profile_name: str
+    consent_type: str
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DoctorNoteCreate(BaseModel):
+    """Doctor creates a clinical note on a reading."""
+    note_text: str = Field(..., min_length=1, max_length=2000)
+    reading_id: Optional[int] = None          # null = general note on the profile
+    is_shared_with_patient: bool = False
+
+
+class DoctorNoteResponse(BaseModel):
+    id: int
+    doctor_id: int
+    profile_id: int
+    reading_id: Optional[int] = None
+    note_text: str
+    is_shared_with_patient: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TriagePatientCard(BaseModel):
+    """Patient card on the doctor's triage dashboard."""
+    profile_id: int
+    profile_name: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    medical_conditions: Optional[List[str]] = None
+    triage_status: str                         # critical / attention / stable / no_data
+    last_reading_value: Optional[str] = None
+    last_reading_type: Optional[str] = None
+    last_reading_at: Optional[datetime] = None
+    compliance_7d: int = 0
+    trend_direction: Optional[str] = None
+    link_id: int
+
+    class Config:
+        from_attributes = True
