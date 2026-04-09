@@ -1,6 +1,6 @@
 # Swasth App — Phase 1 Task Tracker
 
-**Last Updated:** 2026-03-31
+**Last Updated:** 2026-04-09
 **Sprint:** 4 weeks + buffer | **Target:** Bihar pilot
 
 Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
@@ -88,6 +88,10 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 | C22 | Glassmorphism visual theme | ✅ Done | Sky-blue glassmorphism theme (Phase 1-4). GlassCard widget, Plus Jakarta Sans font. All screens migrated. |
 | C23 | Dynamic health status flag | ✅ Done | `_StatusFlag` widget in health score card header. Four states: 🟢 Fit & Fine / 🟡 Caution / 🟠 At Risk / 🚨 Urgent. Age-adjusted thresholds (strict <30, lenient 60+). |
 | C24 | Gamification — streak points + leaderboard | ✅ Done | `_GamificationPanel`: points tiers (1d=10, 3d=100, 7d=300, 14d=700, 30d=1500), Weekly Winners placeholder with 3 avatar chips (coming soon). |
+| C25 | Caregiver Wellness Hub dashboard | ✅ Done | Behind `FeatureFlags.caregiverDashboard`. Shows when viewing shared profile. Wellness Hub header, personalized messages, activity feed, care circle, priority call. "Take Readings" toggle. PRs #75, #77, #79. |
+| C26 | Care Circle widget | ✅ Done | Family avatars with role badges (Owner/Editor/Viewer), relationship, last active, Call/WhatsApp/Email. Full-width. Both dashboards. PRs #77, #79, #80. |
+| C27 | Manage Access UX | ✅ Done | "PROFILE SHARED WITH" header, empty state, colored initials, edit relationship dialog. PR #81. |
+| C28 | BMI in vitals grid | ✅ Done | Moved BMI from full-width row into 2x2 grid replacing SpO2. PR #74. |
 
 ---
 
@@ -188,10 +192,10 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 |--------|------|---------|-------------|-------|
 | A — Auth + Profiles | 8 | 2 | 3 | 13 |
 | B — Data Input | 12 | 2 | 6 | 20 |
-| C — Dashboard | 19 | 0 | 5 | 24 |
+| C — Dashboard | 23 | 0 | 5 | 28 |
 | D — AI + Notifications | 8 | 3 | 12 | 23 |
 | F — Doctor Portal + Legal | 0 | 0 | 21 | 21 |
-| **Total** | **47** | **7** | **47** | **101** |
+| **Total** | **51** | **7** | **47** | **105** |
 
 ---
 
