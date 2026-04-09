@@ -8,6 +8,22 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import 'shell_screen.dart';
 
+/// Classify glucose value into status — testable top-level function.
+String classifyGlucose(double v) {
+  if (v < 70) return 'LOW';
+  if (v <= 130) return 'NORMAL';
+  if (v <= 180) return 'HIGH';
+  return 'CRITICAL';
+}
+
+/// Classify BP into status — testable top-level function.
+String classifyBp(double sys, double dia) {
+  if (sys > 140 || dia > 90) return 'HIGH - STAGE 2';
+  if (sys > 131 || dia > 86) return 'HIGH - STAGE 1';
+  if (sys < 90 || dia < 60) return 'LOW';
+  return 'NORMAL';
+}
+
 class ReadingConfirmationScreen extends StatefulWidget {
   final OcrResult? ocrResult;
 
@@ -23,7 +39,8 @@ class ReadingConfirmationScreen extends StatefulWidget {
   });
 
   @override
-  State<ReadingConfirmationScreen> createState() => _ReadingConfirmationScreenState();
+  State<ReadingConfirmationScreen> createState() =>
+      _ReadingConfirmationScreenState();
 }
 
 class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
@@ -55,8 +72,10 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     if (isGlucose && r.glucoseValue != null) {
       _glucoseController.text = r.glucoseValue!.toStringAsFixed(0);
     } else if (!isGlucose) {
-      if (r.systolic != null) _systolicController.text = r.systolic!.toStringAsFixed(0);
-      if (r.diastolic != null) _diastolicController.text = r.diastolic!.toStringAsFixed(0);
+      if (r.systolic != null)
+        _systolicController.text = r.systolic!.toStringAsFixed(0);
+      if (r.diastolic != null)
+        _diastolicController.text = r.diastolic!.toStringAsFixed(0);
       if (r.pulse != null) _pulseController.text = r.pulse!.toStringAsFixed(0);
     }
   }
@@ -82,7 +101,13 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     if (time == null || !mounted) return;
 
     setState(() {
-      _readingTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      _readingTime = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
     });
   }
 
@@ -92,24 +117,24 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     if (isGlucose) {
       final v = double.tryParse(_glucoseController.text.trim());
       if (v == null || v < 20 || v > 600) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.glucoseValidation)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.glucoseValidation)));
         return;
       }
     } else {
       final sys = double.tryParse(_systolicController.text.trim());
       final dia = double.tryParse(_diastolicController.text.trim());
       if (sys == null || sys < 60 || sys > 250) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.systolicValidation)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.systolicValidation)));
         return;
       }
       if (dia == null || dia < 40 || dia > 150) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.diastolicValidation)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.diastolicValidation)));
         return;
       }
     }
@@ -180,7 +205,9 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
             ),
           );
           Navigator.of(context).popUntil((route) => route.isFirst);
-          try { ShellScreen.switchToTab(0); } catch (_) {}
+          try {
+            ShellScreen.switchToTab(0);
+          } catch (_) {}
           return;
         }
         rethrow;
@@ -195,28 +222,31 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.readingSavedSuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.readingSavedSuccess)));
 
       // Pop back to the Shell and switch to Home tab (refreshes data)
       Navigator.of(context).popUntil((route) => route.isFirst);
       // Trigger Shell to refresh and switch to Home
       try {
         ShellScreen.switchToTab(0);
-      } catch (_) {}  // ShellScreen may not be available in all nav contexts
+      } catch (_) {} // ShellScreen may not be available in all nav contexts
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.saveFailed(e.toString()))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.saveFailed(e.toString()))));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
-  Future<void> _showCriticalAlert(BuildContext ctx, Map<String, dynamic> alert) async {
+  Future<void> _showCriticalAlert(
+    BuildContext ctx,
+    Map<String, dynamic> alert,
+  ) async {
     final message = alert['message'] as String? ?? 'Critical reading detected.';
     final profileName = alert['profile_name'] as String? ?? 'Patient';
 
@@ -230,7 +260,13 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
             const Text('🚨', style: TextStyle(fontSize: 28)),
             const SizedBox(width: 8),
             const Expanded(
-              child: Text('Critical Alert', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.statusCritical)),
+              child: Text(
+                'Critical Alert',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.statusCritical,
+                ),
+              ),
             ),
           ],
         ),
@@ -267,7 +303,9 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF25D366),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],
@@ -275,19 +313,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     );
   }
 
-  String _glucoseStatus(double v) {
-    if (v < 70) return 'LOW';
-    if (v <= 130) return 'NORMAL';
-    if (v <= 180) return 'HIGH';
-    return 'CRITICAL';
-  }
-
-  String _bpStatus(double sys, double dia) {
-    if (sys > 140 || dia > 90) return 'HIGH - STAGE 2';
-    if (sys > 131 || dia > 86) return 'HIGH - STAGE 1';
-    if (sys < 90 || dia < 60) return 'LOW';
-    return 'NORMAL';
-  }
+  String _glucoseStatus(double v) => classifyGlucose(v);
+  String _bpStatus(double sys, double dia) => classifyBp(sys, dia);
 
   @override
   void dispose() {
@@ -324,6 +351,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
 
             if (isGlucose) ...[
               _inputField(
+                key: const Key('reading_glucose_value'),
                 controller: _glucoseController,
                 label: l10n.glucoseValueLabel,
                 suffix: 'mg/dL',
@@ -331,6 +359,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
               ),
             ] else ...[
               _inputField(
+                key: const Key('reading_systolic'),
                 controller: _systolicController,
                 label: l10n.systolicLabel,
                 suffix: 'mmHg',
@@ -338,6 +367,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
               ),
               const SizedBox(height: 12),
               _inputField(
+                key: const Key('reading_diastolic'),
                 controller: _diastolicController,
                 label: l10n.diastolicLabel,
                 suffix: 'mmHg',
@@ -345,6 +375,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
               ),
               const SizedBox(height: 12),
               _inputField(
+                key: const Key('reading_pulse'),
                 controller: _pulseController,
                 label: l10n.pulseLabel,
                 suffix: 'bpm',
@@ -356,7 +387,9 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
               const SizedBox(height: 24),
               Text(
                 l10n.mealContextSection,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -382,20 +415,35 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.access_time, color: Theme.of(context).colorScheme.primary),
+                    Icon(
+                      Icons.access_time,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(l10n.readingTime, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                         Text(
-                          DateFormat('MMM d, yyyy  h:mm a').format(_readingTime),
+                          l10n.readingTime,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          DateFormat(
+                            'MMM d, yyyy  h:mm a',
+                          ).format(_readingTime),
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
                     const Spacer(),
-                    const Icon(Icons.edit, size: 16, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                   ],
                 ),
               ),
@@ -404,10 +452,13 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
             const SizedBox(height: 32),
 
             ElevatedButton(
+              key: const Key('reading_save_button'),
               onPressed: _isSaving ? null : _save,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: _isSaving
                   ? const SizedBox(
@@ -415,7 +466,13 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(l10n.saveReading, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  : Text(
+                      l10n.saveReading,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -424,12 +481,14 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
   }
 
   Widget _inputField({
+    Key? key,
     required TextEditingController controller,
     required String label,
     required String suffix,
     required String hint,
   }) {
     return TextFormField(
+      key: key,
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
@@ -437,7 +496,10 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
         hintText: hint,
         suffixText: suffix,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -471,7 +533,9 @@ class _OcrResultBanner extends StatelessWidget {
     String valueText;
     if (deviceType == 'glucose') {
       valueText = ocrResult.isHiLo
-          ? (ocrResult.glucoseValue! >= 600 ? 'HI (>600 mg/dL)' : 'LO (<20 mg/dL)')
+          ? (ocrResult.glucoseValue! >= 600
+                ? 'HI (>600 mg/dL)'
+                : 'LO (<20 mg/dL)')
           : '${ocrResult.glucoseValue!.toStringAsFixed(0)} mg/dL';
     } else {
       valueText =
@@ -492,8 +556,13 @@ class _OcrResultBanner extends StatelessWidget {
             children: [
               const Icon(Icons.check_circle, color: AppColors.statusNormal),
               const SizedBox(width: 8),
-              Text(l10n.ocrSuccessPrefix,
-                  style: const TextStyle(color: AppColors.statusNormal, fontWeight: FontWeight.w500)),
+              Text(
+                l10n.ocrSuccessPrefix,
+                style: const TextStyle(
+                  color: AppColors.statusNormal,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const Spacer(),
               TextButton.icon(
                 icon: const Icon(Icons.edit, size: 14),
@@ -518,7 +587,10 @@ class _OcrResultBanner extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             l10n.ocrConfirmHint,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -536,7 +608,9 @@ class _ManualEntryHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final color = ocrFailed ? AppColors.iosOrange : Theme.of(context).colorScheme.primary;
+    final color = ocrFailed
+        ? AppColors.iosOrange
+        : Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(16),

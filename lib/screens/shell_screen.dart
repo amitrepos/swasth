@@ -90,7 +90,10 @@ class _ShellScreenState extends State<ShellScreen> {
     if (id != null && id != _profileId) {
       final name = await storage.getActiveProfileName() ?? 'Health';
       if (!mounted) return;
-      setState(() { _profileId = id; _profileName = name; });
+      setState(() {
+        _profileId = id;
+        _profileName = name;
+      });
     }
   }
 
@@ -152,29 +155,32 @@ class _ShellScreenState extends State<ShellScreen> {
         statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
-      body: Column(
-        children: [
-          if (_isOffline) const OfflineBanner(),
-          Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: [
-                const HomeScreen(),
-                HistoryScreen(key: _historyKey, profileId: _profileId!),
-                StreaksScreen(key: ValueKey('streaks_$_profileId')),
-                InsightsScreen(key: ValueKey('insights_$_profileId'), profileId: _profileId!),
-                ChatScreen(
-                  key: ValueKey('chat_${_profileId}_$_chatRebuildKey'),
-                  profileId: _profileId!,
-                  initialMessage: _chatInitialMessage,
-                ),
-              ],
+        body: Column(
+          children: [
+            if (_isOffline) const OfflineBanner(),
+            Expanded(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: [
+                  const HomeScreen(),
+                  HistoryScreen(key: _historyKey, profileId: _profileId!),
+                  StreaksScreen(key: ValueKey('streaks_$_profileId')),
+                  InsightsScreen(
+                    key: ValueKey('insights_$_profileId'),
+                    profileId: _profileId!,
+                  ),
+                  ChatScreen(
+                    key: ValueKey('chat_${_profileId}_$_chatRebuildKey'),
+                    profileId: _profileId!,
+                    initialMessage: _chatInitialMessage,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        bottomNavigationBar: _buildBottomNav(),
       ),
-      bottomNavigationBar: _buildBottomNav(),
-    ),
     );
   }
 
@@ -192,11 +198,46 @@ class _ShellScreenState extends State<ShellScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _NavItem(index: 0, current: _currentIndex, emoji: '🏠', label: 'HOME', onTap: _onTap),
-              _NavItem(index: 1, current: _currentIndex, emoji: '📊', label: 'HISTORY', onTap: _onTap),
-              _NavItem(index: 2, current: _currentIndex, emoji: '🔥', label: 'STREAKS', onTap: _onTap),
-              _NavItem(index: 3, current: _currentIndex, emoji: '📈', label: 'INSIGHTS', onTap: _onTap),
-              _NavItem(index: 4, current: _currentIndex, emoji: '💬', label: 'CHAT', onTap: _onTap),
+              _NavItem(
+                key: const Key('nav_home'),
+                index: 0,
+                current: _currentIndex,
+                emoji: '🏠',
+                label: 'HOME',
+                onTap: _onTap,
+              ),
+              _NavItem(
+                key: const Key('nav_history'),
+                index: 1,
+                current: _currentIndex,
+                emoji: '📊',
+                label: 'HISTORY',
+                onTap: _onTap,
+              ),
+              _NavItem(
+                key: const Key('nav_streaks'),
+                index: 2,
+                current: _currentIndex,
+                emoji: '🔥',
+                label: 'STREAKS',
+                onTap: _onTap,
+              ),
+              _NavItem(
+                key: const Key('nav_insights'),
+                index: 3,
+                current: _currentIndex,
+                emoji: '📈',
+                label: 'INSIGHTS',
+                onTap: _onTap,
+              ),
+              _NavItem(
+                key: const Key('nav_chat'),
+                index: 4,
+                current: _currentIndex,
+                emoji: '💬',
+                label: 'CHAT',
+                onTap: _onTap,
+              ),
             ],
           ),
         ),
@@ -223,6 +264,7 @@ class _NavItem extends StatelessWidget {
   final void Function(int) onTap;
 
   const _NavItem({
+    super.key,
     required this.index,
     required this.current,
     required this.emoji,

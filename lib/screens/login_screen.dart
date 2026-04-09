@@ -153,9 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.loginTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.loginTitle)),
       body: AuthFormScrollBody(
         child: Form(
           key: _formKey,
@@ -182,6 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Email
               TextFormField(
+                key: const Key('login_email'),
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
@@ -202,6 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Password
               TextFormField(
+                key: const Key('login_password'),
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
@@ -209,7 +209,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                     onPressed: () {
                       setState(() => _obscurePassword = !_obscurePassword);
@@ -259,12 +261,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Login Button
               ElevatedButton(
+                key: const Key('login_button'),
                 onPressed: _isLoading ? null : _login,
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : Text(l10n.loginButton),
               ),
@@ -276,6 +282,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Text(l10n.noAccount),
                   TextButton(
+                    key: const Key('login_register_link'),
                     onPressed: () {
                       Navigator.push(
                         context,

@@ -14,7 +14,9 @@ void showReadingInputModal(
   required VoidCallback onReadingSaved,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  final localizedLabel = deviceType == 'glucose' ? l10n.glucometer : l10n.bpMeter;
+  final localizedLabel = deviceType == 'glucose'
+      ? l10n.glucometer
+      : l10n.bpMeter;
 
   showModalBottomSheet(
     context: context,
@@ -30,28 +32,29 @@ void showReadingInputModal(
           children: [
             Text(
               l10n.logReading(localizedLabel),
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               l10n.howToLog,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
+              key: const Key('reading_scan_camera'),
               icon: const Icon(Icons.camera_alt),
               label: Text(l10n.scanWithCamera),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onPressed: () async {
                 Navigator.pop(context);
@@ -69,11 +72,14 @@ void showReadingInputModal(
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
+              key: const Key('reading_bluetooth'),
               icon: const Icon(Icons.bluetooth),
               label: Text(l10n.connectViaBluetooth),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onPressed: () async {
                 Navigator.pop(context);
@@ -94,11 +100,14 @@ void showReadingInputModal(
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
+              key: const Key('reading_manual_entry'),
               icon: const Icon(Icons.edit_note),
               label: Text(l10n.enterManually),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onPressed: () async {
                 Navigator.pop(context);

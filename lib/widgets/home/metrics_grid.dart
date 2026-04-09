@@ -4,7 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/health_helpers.dart' as helpers;
 import '../glass_card.dart';
 
-/// 2x2 grid of individual metric tiles (BP, Sugar, Meals, BMI).
+/// Vitals row (BP, Sugar) + read-only BMI bar.
 class MetricsGrid extends StatelessWidget {
   final Map<String, dynamic>? data;
   final int? profileId;
@@ -13,18 +13,14 @@ class MetricsGrid extends StatelessWidget {
     required String btDeviceType,
   })
   onAddReading;
-  final VoidCallback? onAddMeal;
   final bool canEdit;
-  final int todayMealCount;
 
   const MetricsGrid({
     super.key,
     required this.data,
     required this.profileId,
     required this.onAddReading,
-    this.onAddMeal,
     this.canEdit = true,
-    this.todayMealCount = 0,
   });
 
   @override
@@ -53,7 +49,7 @@ class MetricsGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n.individualMetricsSection.toUpperCase(),
+          l10n.vitalsSection.toUpperCase(),
           style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -124,32 +120,11 @@ class MetricsGrid extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _MetricTile(
-                label: l10n.mealsTileLabel,
-                value: todayMealCount > 0
-                    ? l10n.mealsTodayCount(todayMealCount)
-                    : '—',
-                valueColor: todayMealCount > 0
-                    ? AppColors.amber
-                    : AppColors.textPrimary,
-                addButtonColor: AppColors.amber,
-                emoji: '\uD83C\uDF5A', // 🍚
-                onAddTap: canEdit ? onAddMeal : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _BmiTile(
-                bmi: bmi,
-                category: bmiCategory,
-                heightCm: (data?['profile_height'] as num?)?.toDouble(),
-                weightKg: (data?['profile_weight'] as num?)?.toDouble(),
-              ),
-            ),
-          ],
+        _BmiBar(
+          bmi: bmi,
+          category: bmiCategory,
+          heightCm: (data?['profile_height'] as num?)?.toDouble(),
+          weightKg: (data?['profile_weight'] as num?)?.toDouble(),
         ),
       ],
     );
@@ -160,16 +135,12 @@ class _MetricTile extends StatelessWidget {
   final String label;
   final String value;
   final Color valueColor;
-  final Color addButtonColor;
-  final String? emoji;
   final VoidCallback? onAddTap;
 
   const _MetricTile({
     required this.label,
     required this.value,
     required this.valueColor,
-    this.addButtonColor = AppColors.textPrimary,
-    this.emoji,
     this.onAddTap,
   });
 
@@ -183,22 +154,14 @@ class _MetricTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              if (emoji != null) ...[
-                Text(emoji!, style: const TextStyle(fontSize: 14)),
-                const SizedBox(width: 4),
-              ],
-              Text(
-                label.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 1,
+            ),
           ),
           const SizedBox(height: 6),
           Row(
@@ -224,7 +187,7 @@ class _MetricTile extends StatelessWidget {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: addButtonColor,
+                      color: AppColors.textPrimary,
                       borderRadius: BorderRadius.circular(9),
                     ),
                     child: const Icon(Icons.add, color: Colors.white, size: 18),
@@ -239,13 +202,14 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
-class _BmiTile extends StatelessWidget {
+/// Full-width read-only BMI bar (derived metric, no entry point).
+class _BmiBar extends StatelessWidget {
   final double? bmi;
   final String? category;
   final double? heightCm;
   final double? weightKg;
 
-  const _BmiTile({this.bmi, this.category, this.heightCm, this.weightKg});
+  const _BmiBar({this.bmi, this.category, this.heightCm, this.weightKg});
 
   Color _bmiColor() {
     if (bmi == null) return AppColors.textSecondary;
@@ -256,17 +220,15 @@ class _BmiTile extends StatelessWidget {
   }
 
   String? _tip() {
-    if (bmi == null || heightCm == null || weightKg == null || heightCm! <= 0)
+    if (bmi == null || heightCm == null || weightKg == null || heightCm! <= 0) {
       return null;
+    }
     final hm = heightCm! / 100.0;
     final hm2 = hm * hm;
     if (bmi! < 18.5) {
       final targetKg = (18.5 * hm2) - weightKg!;
       return 'Gain ${targetKg.toStringAsFixed(1)} kg to reach normal';
-    } else if (bmi! >= 25 && bmi! < 30) {
-      final targetKg = weightKg! - (24.9 * hm2);
-      return 'Lose ${targetKg.toStringAsFixed(1)} kg to reach normal';
-    } else if (bmi! >= 30) {
+    } else if (bmi! >= 25) {
       final targetKg = weightKg! - (24.9 * hm2);
       return 'Lose ${targetKg.toStringAsFixed(1)} kg to reach normal';
     }
@@ -281,68 +243,60 @@ class _BmiTile extends StatelessWidget {
     final tip = _tip();
 
     return GlassCard(
-      borderRadius: 24,
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+      borderRadius: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       margin: EdgeInsets.zero,
       color: bmi != null ? color.withValues(alpha: 0.08) : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
           const Text(
             'BMI',
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppColors.textSecondary,
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                displayValue,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                ),
-              ),
-              if (displayCategory.isNotEmpty) ...[
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    displayCategory,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: color,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ],
+          const SizedBox(width: 12),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          if (tip != null) ...[
-            const SizedBox(height: 4),
+          const SizedBox(width: 6),
+          Text(
+            displayValue,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          if (displayCategory.isNotEmpty) ...[
+            const SizedBox(width: 8),
             Text(
-              tip,
+              displayCategory,
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
                 color: color,
-                fontStyle: FontStyle.italic,
-                height: 1.2,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (tip != null) ...[
+            const Spacer(),
+            Flexible(
+              child: Text(
+                tip,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: color,
+                  fontStyle: FontStyle.italic,
+                ),
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+              ),
             ),
           ],
         ],

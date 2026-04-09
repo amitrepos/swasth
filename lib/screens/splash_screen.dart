@@ -66,7 +66,6 @@ class _SplashScreenState extends State<SplashScreen> {
         if (newToken != null) {
           await _storage.saveToken(newToken);
           await _storage.saveLastLoginTimestamp(); // Extend grace period only on re-auth
-          
           try {
             final userData = await ApiService().getCurrentUser(newToken);
             await _storage.saveUserData(userData);
@@ -81,7 +80,7 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     }
 
-    // SCENARIO 4: NO SESSION
+    // SCENARIO 4: NO SESSION (or all above failed)
     _goToLogin();
   }
 

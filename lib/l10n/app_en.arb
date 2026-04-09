@@ -380,6 +380,7 @@
   "aiInsightSection": "AI Health Insight",
   "primaryPhysicianSection": "Primary Physician",
   "individualMetricsSection": "Individual Metrics",
+  "vitalsSection": "Vitals",
   "footerDisclaimer": "Not a medical diagnosis. Consult your doctor for clinical advice. All AI insights are for informational purposes.",
   "goodMorning": "Good morning,",
   "goodAfternoon": "Good afternoon,",
