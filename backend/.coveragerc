@@ -2,6 +2,7 @@
 source = .
 omit =
     tests/*
+    test_whatsapp_report.py
     migrate_*.py
     init_db.py
     seed_demo_data.py
