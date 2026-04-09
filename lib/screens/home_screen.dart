@@ -335,19 +335,14 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                           const SizedBox(height: 16),
 
-                          // ② Vitals 2x2 grid (BP, Sugar, SpO2, Steps)
+                          // ② Vitals 2x2 grid (BP, Sugar, BMI, Steps)
                           MetricsGrid(
                             data: data,
                             profileId: _activeProfileId,
                             canEdit: _accessLevel != 'viewer',
                             onAddReading: _handleAddReading,
-                          ),
-                          const SizedBox(height: 10),
-
-                          // ③ BMI compact row
-                          BmiCompactRow(
                             bmi: (data?['bmi'] as num?)?.toDouble(),
-                            category: data?['bmi_category'] as String?,
+                            bmiCategory: data?['bmi_category'] as String?,
                             heightCm: (data?['profile_height'] as num?)
                                 ?.toDouble(),
                             weightKg: (data?['profile_weight'] as num?)

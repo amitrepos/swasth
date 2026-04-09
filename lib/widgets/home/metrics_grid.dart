@@ -14,12 +14,22 @@ class MetricsGrid extends StatelessWidget {
   onAddReading;
   final bool canEdit;
 
+  /// BMI fields (passed from home screen's health-score data).
+  final double? bmi;
+  final String? bmiCategory;
+  final double? heightCm;
+  final double? weightKg;
+
   const MetricsGrid({
     super.key,
     required this.data,
     required this.profileId,
     required this.onAddReading,
     this.canEdit = true,
+    this.bmi,
+    this.bmiCategory,
+    this.heightCm,
+    this.weightKg,
   });
 
   @override
@@ -33,10 +43,6 @@ class MetricsGrid extends StatelessWidget {
     final lastGlucoseStatus = data?['last_glucose_status'] as String?;
     final ageContextBp = data?['age_context_bp'] as String?;
     final ageContextGlucose = data?['age_context_glucose'] as String?;
-
-    // SpO2 data
-    final lastSpo2 = (data?['last_spo2_value'] as num?)?.toDouble();
-    final lastSpo2Status = data?['last_spo2_status'] as String?;
 
     // Steps data
     final todaySteps = (data?['today_steps_count'] as num?)?.toInt();
@@ -95,17 +101,15 @@ class MetricsGrid extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        // Row 2: SpO2 + Steps
+        // Row 2: BMI + Steps
         Row(
           children: [
             Expanded(
-              child: _MetricTile(
-                label: l10n.lastSpO2,
-                value: lastSpo2 != null
-                    ? '${lastSpo2.toStringAsFixed(0)}%'
-                    : '—',
-                valueColor: helpers.statusTextColor(lastSpo2Status),
-                subtitle: l10n.viaArmband,
+              child: _BmiTile(
+                bmi: bmi,
+                category: bmiCategory,
+                heightCm: heightCm,
+                weightKg: weightKg,
               ),
             ),
             const SizedBox(width: 10),
@@ -330,20 +334,14 @@ class _StepsTile extends StatelessWidget {
   }
 }
 
-/// Compact BMI row — single line, not a full card.
-class BmiCompactRow extends StatelessWidget {
+/// BMI tile — same shape/size as Steps tile.
+class _BmiTile extends StatelessWidget {
   final double? bmi;
   final String? category;
   final double? heightCm;
   final double? weightKg;
 
-  const BmiCompactRow({
-    super.key,
-    this.bmi,
-    this.category,
-    this.heightCm,
-    this.weightKg,
-  });
+  const _BmiTile({this.bmi, this.category, this.heightCm, this.weightKg});
 
   Color _bmiColor() {
     if (bmi == null) return AppColors.textSecondary;
@@ -377,58 +375,54 @@ class BmiCompactRow extends StatelessWidget {
     final tip = _tip();
 
     return GlassCard(
-      borderRadius: 14,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      borderRadius: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       margin: EdgeInsets.zero,
-      color: bmi != null ? color.withValues(alpha: 0.08) : null,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'BMI',
-            style: TextStyle(
-              fontSize: 10,
+            style: const TextStyle(
+              fontSize: 9,
               fontWeight: FontWeight.w700,
               color: AppColors.textSecondary,
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(width: 10),
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            displayValue,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-          if (displayCategory.isNotEmpty) ...[
-            const SizedBox(width: 6),
-            Text(
-              displayCategory,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: color,
+          if (displayCategory.isNotEmpty)
+            Text(displayCategory, style: TextStyle(fontSize: 8, color: color)),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
-            ),
-          ],
-          if (tip != null) ...[
-            const Spacer(),
-            Text(
-              tip,
-              style: TextStyle(
-                fontSize: 10,
-                color: color,
-                fontStyle: FontStyle.italic,
+              const SizedBox(width: 6),
+              Text(
+                displayValue,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
               ),
-            ),
-          ],
+              if (tip != null) ...[
+                const Spacer(),
+                Text(
+                  tip,
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: color,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );
