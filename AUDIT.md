@@ -3,6 +3,50 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+---
+
+## 2026-04-09 — Caregiver Dashboard + Care Circle + Deployment Rules
+
+### Session Summary
+Built the complete caregiver "Wellness Hub" dashboard, Care Circle with Phase 1+2 enhancements, Manage Access UX improvements, and established branch/deployment hygiene rules.
+
+### PRs Created/Merged
+- PR #74 — BMI into vitals grid (merged)
+- PR #75 — Caregiver Wellness Hub behind feature flag (merged)
+- PR #77 — Care Circle enhancements + Take Readings toggle (merged)
+- PR #78 — Doctor portal backend (merged by other session)
+- PR #79 — Phase 2: last active, edit relationship (merged)
+- PR #80 — Access API fix + full-width care circle (merged)
+- PR #81 — Manage Access UX + edit relationship dialog (open)
+
+### Files Changed
+- `lib/config/feature_flags.dart` — NEW: feature flag for caregiver dashboard
+- `lib/widgets/home/activity_feed_card.dart` — NEW: timestamped activity timeline
+- `lib/widgets/home/care_circle_card.dart` — NEW: family avatars, roles, contact, full-width
+- `lib/widgets/home/metrics_grid.dart` — BMI tile replaces SpO2 in 2x2 grid
+- `lib/widgets/home/health_score_ring.dart` — relationship-aware wellness messages
+- `lib/screens/home_screen.dart` — caregiver layout, Take Readings toggle, care circle on all dashboards
+- `lib/screens/manage_access_screen.dart` — section header, empty state, initials, edit relationship
+- `lib/services/profile_service.dart` — updateRelationship() method
+- `backend/routes_profiles.py` — access API open to all members, phone_number, last_login_at, relationship edit
+- `lib/l10n/app_en.arb` + `app_hi.arb` — 14 new localization strings
+- `CLAUDE.md` — deployment rules, branch hygiene, pre-PR checklist
+- `WORKING-CONTEXT.md` — updated to reflect current state
+- `TASK_TRACKER.md` — added C25-C28, updated progress summary
+
+### Server Deployment
+- Frontend: `https://65.109.226.36:8443` (Nginx on port 8443)
+- Backend: port 8007 (restarted with routes_profiles.py fix)
+- Nginx cache-busting headers added
+
+### Test Status
+- Backend: 488 tests, 86.23% coverage
+- Flutter: 187 tests (82 E2E flow)
+- Coverage gaps: routes_health.py 80%, routes_doctor.py 69%, routes_admin.py 68%
+
+### Compliance Audit
+Full CLAUDE.md audit performed. Found: WORKING-CONTEXT stale, TASK_TRACKER stale, AUDIT.md missing session entry, no deployment rules. All fixed this session.
+
 ## 2026-04-08 — Food Photo Classification feature (Steps 1-6) + pipeline improvements
 
 ### Food Photo Classification (PR #65)
@@ -1994,3 +2038,23 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 11:54:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
   - 12:00:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_meals.py
   - 12:09:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 18:15:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.env
+  - 18:17:06 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback_branch_per_push.md
+  - 18:17:09 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
+  - 18:17:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.env
+  - 18:25:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/care_circle_card.dart
+  - 18:25:55 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/care_circle_card.dart
+  - 18:29:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/routes_profiles.py
+  - 18:30:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/care_circle_card.dart
+  - 18:30:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/home/care_circle_card.dart
+  - 18:37:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/services/profile_service.dart
+  - 18:37:35 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 18:38:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/manage_access_screen.dart
+  - 18:41:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test/screens/manage_access_screen_test.dart
+  - 18:52:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 18:52:39 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 18:53:02 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/WORKING-CONTEXT.md
+  - 18:53:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:53:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:53:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 18:54:18 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
