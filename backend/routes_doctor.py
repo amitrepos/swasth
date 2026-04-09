@@ -110,41 +110,51 @@ def _compute_triage_status(profile_id: int, db: Session) -> dict:
     )
 
     triage_status = "stable"
+    triage_reason = None
 
     for r in recent_readings:
         if r.reading_type == "blood_pressure" and r.systolic and r.diastolic:
             if r.systolic > 180 or r.diastolic > 120:
                 triage_status = "critical"
+                triage_reason = f"BP {int(r.systolic)}/{int(r.diastolic)} — hypertensive crisis"
                 break
             if r.systolic < 90 or r.diastolic < 60:
                 triage_status = "critical"
+                triage_reason = f"BP {int(r.systolic)}/{int(r.diastolic)} — hypotension"
                 break
         if r.reading_type == "glucose" and r.glucose_value:
-            if r.glucose_value < 70 or r.glucose_value > 300:
+            if r.glucose_value < 70:
                 triage_status = "critical"
+                triage_reason = f"Glucose {int(r.glucose_value)} — hypoglycemia"
+                break
+            if r.glucose_value > 300:
+                triage_status = "critical"
+                triage_reason = f"Glucose {int(r.glucose_value)} — severe hyperglycemia"
                 break
 
     # Check for attention-level issues
     if triage_status != "critical":
         # Non-compliance: no reading in 3+ days
         if last_reading.reading_timestamp:
-            # Handle both naive and aware datetimes
             last_ts = last_reading.reading_timestamp
             if last_ts.tzinfo is None:
                 last_ts = last_ts.replace(tzinfo=timezone.utc)
             days_since = (now - last_ts).days
             if days_since >= 3:
                 triage_status = "attention"
+                triage_reason = f"No reading for {days_since}d"
 
-        # Check for worsening trend (simplified: compare last 3 days avg to prior 4 days)
+        # Check for elevated readings in last 24h
         for r in recent_readings:
             if r.reading_type == "blood_pressure" and r.systolic:
                 if r.systolic > 140 or r.diastolic > 90:
                     triage_status = "attention"
+                    triage_reason = f"BP elevated {int(r.systolic)}/{int(r.diastolic)}"
                     break
             if r.reading_type == "glucose" and r.glucose_value:
                 if r.glucose_value > 180:
                     triage_status = "attention"
+                    triage_reason = f"Glucose high {int(r.glucose_value)}"
                     break
 
     # Compliance: count unique days with readings in last 7 days
@@ -195,6 +205,7 @@ def _compute_triage_status(profile_id: int, db: Session) -> dict:
 
     return {
         "triage_status": triage_status,
+        "triage_reason": triage_reason,
         "last_reading_value": last_value,
         "last_reading_type": last_reading.reading_type,
         "last_reading_at": last_reading.reading_timestamp,
@@ -495,6 +506,7 @@ def get_triage_board(
 
     # Recompute triage live for every patient and update cache
     now = datetime.now(timezone.utc)
+    triage_reasons = {}  # profile_id -> reason string
     for link, profile in links:
         triage = _compute_triage_status(profile.id, db)
         link.triage_status = triage["triage_status"]
@@ -504,6 +516,7 @@ def get_triage_board(
         link.compliance_7d = triage["compliance_7d"]
         link.trend_direction = triage["trend_direction"]
         link.triage_updated_at = now
+        triage_reasons[profile.id] = triage.get("triage_reason")
 
     _log_doctor_access(db, user.id, None, "viewed_triage_board", "/api/doctor/patients")
     db.commit()
@@ -526,6 +539,7 @@ def get_triage_board(
             gender=profile.gender,
             medical_conditions=profile.medical_conditions,
             triage_status=link.triage_status or "no_data",
+            triage_reason=triage_reasons.get(profile.id),
             last_reading_value=link.last_reading_value,
             last_reading_type=link.last_reading_type,
             last_reading_at=link.last_reading_at,
