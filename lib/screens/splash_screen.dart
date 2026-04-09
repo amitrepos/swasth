@@ -6,6 +6,7 @@ import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'select_profile_screen.dart';
+import 'doctor/doctor_triage_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -48,7 +49,7 @@ class _SplashScreenState extends State<SplashScreen> {
         await _storage.saveUserData(userData);
         // Note: We intentionally do NOT call saveLastLoginTimestamp here
         // to maintain the 7-day credential requirement.
-        
+
         SyncService().syncPendingReadings();
         _goToProfiles();
         return;
@@ -65,12 +66,13 @@ class _SplashScreenState extends State<SplashScreen> {
         final newToken = resp['access_token'] as String?;
         if (newToken != null) {
           await _storage.saveToken(newToken);
-          await _storage.saveLastLoginTimestamp(); // Extend grace period only on re-auth
+          await _storage
+              .saveLastLoginTimestamp(); // Extend grace period only on re-auth
           try {
             final userData = await ApiService().getCurrentUser(newToken);
             await _storage.saveUserData(userData);
           } catch (_) {}
-          
+
           SyncService().syncPendingReadings();
           _goToProfiles();
           return;
@@ -92,8 +94,18 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  void _goToProfiles() {
+  Future<void> _goToProfiles() async {
     if (!mounted) return;
+    // Check if user is a doctor — route to triage board instead
+    final userData = await _storage.getUserData();
+    final role = userData?['role'] as String?;
+    if (role == 'doctor') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DoctorTriageScreen()),
+      );
+      return;
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
@@ -108,11 +120,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.health_and_safety,
-              size: 80,
-              color: AppColors.primary,
-            ),
+            Icon(Icons.health_and_safety, size: 80, color: AppColors.primary),
             const SizedBox(height: 16),
             Text(
               'Swasth',
