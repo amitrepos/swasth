@@ -35,9 +35,11 @@ void main() {
   });
 
   testWidgets('renders app bar with manage access title', (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
+      ),
+    );
     // Use pump instead of pumpAndSettle to avoid infinite animation hangs
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -45,28 +47,36 @@ void main() {
   });
 
   testWidgets('renders email text field for inviting', (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(TextField), findsOneWidget);
   });
 
   testWidgets('renders relationship dropdown', (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
 
     // Should have 2 dropdowns: relationship and access level
     expect(find.byType(DropdownButtonFormField<String>), findsNWidgets(2));
   });
 
-  testWidgets('renders access level dropdown with viewer and editor options', (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
-    ));
+  testWidgets('renders access level dropdown with viewer and editor options', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
 
     // Access level dropdown should show default "Viewer" text
@@ -74,27 +84,35 @@ void main() {
   });
 
   testWidgets('renders invite button', (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(ElevatedButton), findsOneWidget);
   });
 
-  testWidgets('renders divider between invite form and access list', (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
-    ));
+  testWidgets('renders section header between invite form and access list', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byType(Divider), findsOneWidget);
+    expect(find.text('PROFILE SHARED WITH'), findsOneWidget);
   });
 
   testWidgets('screen renders without crashing', (tester) async {
-    await tester.pumpWidget(_wrap(
-      const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const ManageAccessScreen(profileId: 1, profileName: 'Test Profile'),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
 
     // Screen should render (AppBar + body)
