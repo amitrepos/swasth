@@ -160,12 +160,44 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| G1 | Doctor verification queue (backend + UI) | ❌ Not started | NMC Act S29 blocker. POST verify/reject endpoints, two-column queue UI, NMC registry link, rejection email. |
-| G2 | Account suspension | ❌ Not started | PATCH suspend endpoint, enforce in get_current_user, mandatory reason, audit-logged. |
-| G3 | Admin audit trail | ❌ Not started | CERT-In 180-day legal blocker. New admin_audit_log table, append-only, all admin actions logged. |
-| G4 | Alerts center | ❌ Not started | GET /admin/alerts — critical readings, pending doctors, AI fallback, patient inactivity. Polling-based. |
-| G5 | Consent dashboard | ❌ Not started | DPDPA S6 legal blocker. Per-user consent records, withdrawal mechanism, policy version tracking. |
-| G6 | Sidebar navigation | ❌ Not started | 6-section IA: Overview, Users, Doctors, Clinical, Alerts, System. Responsive sidebar. |
+| G1 | Doctor verification queue (backend + UI) | ✅ Done | PR #90. POST verify/reject endpoints, doctor cards with Approve/Reject, NMC filter. |
+| G2 | Account suspension | ✅ Done | PR #90. PATCH suspend endpoint, enforced in get_current_user (403), mandatory reason, audit-logged. |
+| G3 | Admin audit trail | ✅ Done | PR #90. AdminAuditLog table, append-only, all admin actions logged. CERT-In 180-day. |
+| G4 | Alerts center | ✅ Done | PR #90. GET /admin/alerts — critical readings, pending doctors, AI fallback, inactivity. |
+| G5 | Consent dashboard | ✅ Done | PR #90. Per-user consent records, consented vs not-consented KPIs + table. |
+| G6 | Sidebar navigation + admin toggle | ✅ Done | PR #90, #95. 6-section sidebar, Make Admin/Remove Admin button, responsive. |
+
+### Healthify UX Review Fixes (from 2026-04-10 review)
+
+**Must Fix:**
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| G6a | Destructive actions need confirmation modal + reason | ❌ Not started | Suspend/Reject use prompt() — need proper modal with required reason field, preset dropdown for rejections, 1-sec delay on confirm. |
+| G6b | Doctor verification needs pre-approval checklist | ❌ Not started | Expandable checklist (NMC registry link, license doc, clinic proof, no duplicates). Approve disabled until all checked. |
+| G6c | Consent "Not Consented" needs action path | ❌ Not started | "Send Consent Reminder" per-row, bulk reminder, "Last Reminder Sent" column. Clickable KPI card to filter. |
+
+**Should Fix:**
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| G6d | Alerts need resolution workflow | ❌ Not started | New/Acknowledged/Resolved states, filter bar, auto-resolve on reading addressed. Needs alert_state backend table. |
+| G6e | KPI cards need trend indicators | ❌ Not started | Sparkline or delta indicator (up/down % vs last week) under each KPI number. |
+| G6f | Users table needs bulk actions | ❌ Not started | Checkbox column, sticky action bar (Export CSV, Suspend Selected). |
+| G6g | Collapsed sidebar needs icons | ❌ Not started | Icon-only mode for tablet (60px sidebar currently blank). Add Material/SVG icons. |
+| G6h | Badge color simplification | ❌ Not started | Role badges → neutral grey tones. Reserve red/amber/green for severity only. Color-blind safe. |
+| G6i | AI Memory edits need version history | ❌ Not started | Show "Last modified by/when", keep 1 previous snapshot, revert option. |
+| G6j | Audit Log needs filter + export | ❌ Not started | Date range picker, admin filter, action type checkboxes, Export CSV button. |
+
+**Nice to Have:**
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| G6k | Chart drill-down interactivity | ❌ Not started | Click chart bar → filter Users table to that cohort. |
+| G6l | Global search (Cmd+K) | ❌ Not started | Spotlight search by name/email/NMC across all sections. |
+| G6m | Empty states with illustrations | ❌ Not started | SVG + explanation + action button for zero-data sections. |
+| G6n | Critical Readings KPI → Alerts link | ❌ Not started | Click "Critical Readings" card → navigate to Alerts filtered to HIGH. |
+| G6o | Session timeout warning | ❌ Not started | Auto-logout after inactivity, "Session expires in 5 min" banner. DPDPA PHI compliance. |
 
 ### Phase 2 — Month 1 Post-Launch
 

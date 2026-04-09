@@ -168,6 +168,27 @@
   .modal-loading { display: flex; justify-content: center; align-items: center; min-height: 200px; font-size: 14px; color: #94a3b8; }
   .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; font-size: 14px; }
 
+  /* Confirmation modal */
+  .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
+  .confirm-overlay.active { display: flex; }
+  .confirm-box { background: white; border-radius: 16px; padding: 28px; width: 420px; max-width: 90vw; }
+  .confirm-box h3 { font-size: 16px; margin-bottom: 16px; }
+  .confirm-box .warn { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #92400e; margin-bottom: 16px; }
+  .confirm-box label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  .confirm-box select, .confirm-box textarea { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; margin-bottom: 12px; font-family: inherit; }
+  .confirm-box textarea { min-height: 60px; resize: vertical; }
+  .confirm-box .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+  .confirm-box .btn-danger { background: #dc2626; color: white; padding: 8px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .confirm-box .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+  .confirm-box .btn-cancel { background: #f1f5f9; color: #475569; padding: 8px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  /* Doctor checklist */
+  .doc-checklist { background: #f8fafc; border-radius: 8px; padding: 12px; margin: 8px 0 12px; }
+  .doc-checklist label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; padding: 4px 0; cursor: pointer; }
+  .doc-checklist input[type=checkbox] { width: 16px; height: 16px; }
+  .doc-checklist a { color: #0ea5e9; text-decoration: none; font-size: 12px; }
+  .doc-checklist a:hover { text-decoration: underline; }
+
   @media (max-width: 768px) {
     .sidebar { width: 60px; }
     .sidebar-brand h2, .sidebar-brand small, .sidebar-nav a span, .sidebar-footer span { display: none; }
@@ -263,8 +284,13 @@
     <div class="section-page" id="sec-consent">
       <h1 style="font-size:22px;margin-bottom:20px">Consent Dashboard</h1>
       <div class="grid" id="consentKpis" style="margin-bottom:20px"></div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-secondary" onclick="filterConsent('all')" id="btnConsentAll">All Users</button>
+        <button class="btn btn-reject" onclick="filterConsent('missing')" id="btnConsentMissing" style="font-size:12px">Not Consented</button>
+        <button class="btn btn-approve" onclick="filterConsent('consented')" style="font-size:12px">Consented</button>
+        <button class="btn btn-secondary" onclick="exportConsent()" style="margin-left:auto">Export CSV</button>
+      </div>
       <div class="section">
-        <h3>Users Without Consent</h3>
         <table id="consentTable">
           <thead><tr><th>Name</th><th>Email</th><th>Signed Up</th><th>Consent</th><th>AI Consent</th></tr></thead>
           <tbody></tbody>
@@ -281,6 +307,19 @@
           <tbody></tbody>
         </table>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal (reusable) -->
+<div class="confirm-overlay" id="confirmModal">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Confirm Action</h3>
+    <div class="warn" id="confirmWarn"></div>
+    <div id="confirmFields"></div>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-danger" id="confirmBtn" onclick="executeConfirm()">Confirm</button>
     </div>
   </div>
 </div>
@@ -425,18 +464,31 @@ async function loadDoctors(filter) {
       ? '<span class="badge badge-verified">Verified</span>'
       : '<span class="badge badge-pending">Pending</span>';
     const timeInfo = d.time_in_queue_hours ? ` | In queue: ${Math.round(d.time_in_queue_hours)}h` : '';
+    const urgentBadge = d.time_in_queue_hours && d.time_in_queue_hours > 48 && !d.is_verified
+      ? ' <span class="badge badge-suspended">OVERDUE >48h</span>' : '';
+    const nmcLink = `https://www.nmc.org.in/information-desk/indian-medical-register/`;
+    const checklist = d.is_verified ? '' : `
+      <div class="doc-checklist" id="checklist_${d.user_id}">
+        <label><input type="checkbox" onchange="updateDoctorChecklist(${d.user_id})"> NMC number verified on <a href="${nmcLink}" target="_blank">NMC Registry</a></label>
+        <label><input type="checkbox" onchange="updateDoctorChecklist(${d.user_id})"> Name on NMC matches account name</label>
+        <label><input type="checkbox" onchange="updateDoctorChecklist(${d.user_id})"> Specialty matches registration</label>
+        <label><input type="checkbox" onchange="updateDoctorChecklist(${d.user_id})"> No duplicate registration in system</label>
+      </div>`;
     const actions = d.is_verified
       ? ''
       : `<div class="doctor-actions">
-           <button class="btn btn-approve" onclick="verifyDoctor(${d.user_id}, '${esc(d.full_name)}')">Approve</button>
+           <button class="btn btn-approve" id="approveBtn_${d.user_id}" disabled style="opacity:0.5;cursor:not-allowed" onclick="verifyDoctor(${d.user_id}, '${esc(d.full_name)}')">Approve</button>
            <button class="btn btn-reject" onclick="rejectDoctor(${d.user_id}, '${esc(d.full_name)}')">Reject</button>
          </div>`;
-    return `<div class="doctor-card">
-      <div class="doctor-info">
-        <h4>${esc(d.full_name)} ${statusBadge}</h4>
-        <div class="meta">NMC: ${esc(d.nmc_number)} | ${esc(d.specialty || 'N/A')} | ${esc(d.clinic_name || 'N/A')} | Code: ${esc(d.doctor_code)} | Patients: ${d.patient_count}${timeInfo}</div>
+    return `<div class="doctor-card" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="doctor-info">
+          <h4>${esc(d.full_name)} ${statusBadge}${urgentBadge}</h4>
+          <div class="meta">NMC: ${esc(d.nmc_number)} | ${esc(d.specialty || 'N/A')} | ${esc(d.clinic_name || 'N/A')} | Code: ${esc(d.doctor_code)} | Patients: ${d.patient_count}${timeInfo}</div>
+        </div>
+        ${actions}
       </div>
-      ${actions}
+      ${checklist}
     </div>`;
   }).join('');
 }
@@ -449,26 +501,55 @@ async function loadDoctorBadge() {
   else { badge.style.display = 'none'; }
 }
 
-async function verifyDoctor(userId, name) {
-  const notes = prompt(`Verify Dr. ${name}?\n\nAdd notes (optional):`);
-  if (notes === null) return;
-  const resp = await fetch(`${API}/api/admin/doctors/${userId}/verify`, {
-    method: 'POST', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
-    body: JSON.stringify({notes: notes || ''})
-  });
-  if (resp.ok) { alert('Doctor verified!'); loadDoctors('false'); loadDoctorBadge(); }
-  else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
+function updateDoctorChecklist(userId) {
+  const cl = document.getElementById('checklist_' + userId);
+  if (!cl) return;
+  const boxes = cl.querySelectorAll('input[type=checkbox]');
+  const allChecked = Array.from(boxes).every(b => b.checked);
+  const btn = document.getElementById('approveBtn_' + userId);
+  if (btn) { btn.disabled = !allChecked; btn.style.opacity = allChecked ? '1' : '0.5'; btn.style.cursor = allChecked ? 'pointer' : 'not-allowed'; }
 }
 
-async function rejectDoctor(userId, name) {
-  const reason = prompt(`Reject Dr. ${name}?\n\nReason (required):`);
-  if (!reason) return;
-  const resp = await fetch(`${API}/api/admin/doctors/${userId}/reject`, {
-    method: 'POST', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
-    body: JSON.stringify({reason, notes: ''})
+function verifyDoctor(userId, name) {
+  showConfirm({
+    title: `Approve Dr. ${name}?`,
+    warn: 'This grants the doctor access to patient health data. Ensure all checklist items are verified.',
+    fields: '<label>Notes (optional)</label><textarea id="confirmInput" placeholder="Verification notes..."></textarea>',
+    btnText: 'Approve Doctor',
+    btnClass: 'background:#10b981',
+    onConfirm: async () => {
+      const notes = document.getElementById('confirmInput').value;
+      const resp = await fetch(`${API}/api/admin/doctors/${userId}/verify`, {
+        method: 'POST', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
+        body: JSON.stringify({notes: notes || ''})
+      });
+      if (resp.ok) { closeConfirm(); loadDoctors('false'); loadDoctorBadge(); }
+      else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
+    }
   });
-  if (resp.ok) { alert('Doctor rejected.'); loadDoctors('false'); loadDoctorBadge(); }
-  else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
+}
+
+function rejectDoctor(userId, name) {
+  showConfirm({
+    title: `Reject Dr. ${name}?`,
+    warn: 'The doctor will be notified of the rejection with the reason provided.',
+    fields: `<label>Reason (required)</label>
+      <select id="confirmSelect"><option value="">Select reason...</option><option value="Invalid NMC number">Invalid NMC number</option><option value="Name mismatch">Name mismatch</option><option value="Specialty mismatch">Specialty mismatch</option><option value="Suspected fraud">Suspected fraud</option><option value="Duplicate registration">Duplicate registration</option><option value="Other">Other</option></select>
+      <label>Additional notes</label><textarea id="confirmInput" placeholder="Details..."></textarea>`,
+    btnText: 'Reject Doctor',
+    requireSelect: true,
+    onConfirm: async () => {
+      const reason = document.getElementById('confirmSelect').value;
+      const notes = document.getElementById('confirmInput').value;
+      if (!reason) { alert('Please select a reason.'); return; }
+      const resp = await fetch(`${API}/api/admin/doctors/${userId}/reject`, {
+        method: 'POST', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
+        body: JSON.stringify({reason, notes})
+      });
+      if (resp.ok) { closeConfirm(); loadDoctors('false'); loadDoctorBadge(); }
+      else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
+    }
+  });
 }
 
 // ── Alerts ──────────────────────────────────────────────────────────
@@ -498,18 +579,28 @@ async function loadAlertBadge() {
 }
 
 // ── Consent ─────────────────────────────────────────────────────────
+let _consentData = null;
 async function loadConsent() {
   const resp = await fetch(`${API}/api/admin/consent`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
-  const data = await resp.json();
+  _consentData = await resp.json();
 
   document.getElementById('consentKpis').innerHTML = [
-    {label: 'Total Users', value: data.total_users, color: 'blue'},
-    {label: 'Consented', value: data.consented_count, color: 'green'},
-    {label: 'Not Consented', value: data.not_consented_count, color: data.not_consented_count > 0 ? 'red' : 'green'},
-  ].map(k => `<div class="card"><div class="label">${k.label}</div><div class="value ${k.color}">${k.value}</div></div>`).join('');
+    {label: 'Total Users', value: _consentData.total_users, color: 'blue'},
+    {label: 'Consented', value: _consentData.consented_count, color: 'green', click: "filterConsent('consented')"},
+    {label: 'Not Consented', value: _consentData.not_consented_count, color: _consentData.not_consented_count > 0 ? 'red' : 'green', click: "filterConsent('missing')"},
+  ].map(k => `<div class="card" style="cursor:pointer" onclick="${k.click || ''}"><div class="label">${k.label}</div><div class="value ${k.color}">${k.value}</div></div>`).join('');
 
-  const allUsers = [...data.not_consented, ...data.consented];
-  document.querySelector('#consentTable tbody').innerHTML = allUsers.map(u => `
+  filterConsent('all');
+}
+
+function filterConsent(filter) {
+  if (!_consentData) return;
+  let users;
+  if (filter === 'missing') users = _consentData.not_consented;
+  else if (filter === 'consented') users = _consentData.consented;
+  else users = [..._consentData.not_consented, ..._consentData.consented];
+
+  document.querySelector('#consentTable tbody').innerHTML = users.length ? users.map(u => `
     <tr>
       <td>${esc(u.full_name)}</td>
       <td>${esc(u.email)}</td>
@@ -517,7 +608,19 @@ async function loadConsent() {
       <td>${u.consent_timestamp ? '<span class="badge badge-verified">Yes</span> ' + new Date(u.consent_timestamp).toLocaleDateString() : '<span class="badge badge-suspended">No</span>'}</td>
       <td>${u.ai_consent ? '<span class="badge badge-verified">Yes</span>' : '<span class="badge badge-user">No</span>'}</td>
     </tr>
-  `).join('');
+  `).join('') : '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">No users in this category.</td></tr>';
+}
+
+function exportConsent() {
+  if (!_consentData) return;
+  const all = [..._consentData.not_consented, ..._consentData.consented];
+  const csv = 'Name,Email,Signed Up,Consent Date,AI Consent\n' + all.map(u =>
+    `"${u.full_name}","${u.email}","${u.signed_up || ''}","${u.consent_timestamp || 'No'}","${u.ai_consent ? 'Yes' : 'No'}"`
+  ).join('\n');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'consent_report_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
 }
 
 // ── Audit Log ───────────────────────────────────────────────────────
@@ -586,6 +689,10 @@ function renderUserHeader(u) {
       <span>Last login: ${u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</span>
     </div>
     <div class="action-bar">
+      ${u.is_admin
+        ? `<button class="btn btn-reject" onclick="toggleAdmin(${u.id}, '${esc(u.full_name)}', false)">Remove Admin</button>`
+        : `<button class="btn btn-secondary" onclick="toggleAdmin(${u.id}, '${esc(u.full_name)}', true)">Make Admin</button>`
+      }
       ${u.is_active !== false
         ? `<button class="btn btn-suspend" onclick="suspendUser(${u.id}, '${esc(u.full_name)}')">Suspend</button>`
         : `<button class="btn btn-approve" onclick="unsuspendUser(${u.id}, '${esc(u.full_name)}')">Reactivate</button>`
@@ -594,15 +701,24 @@ function renderUserHeader(u) {
   `;
 }
 
-async function suspendUser(userId, name) {
-  const reason = prompt(`Suspend ${name}?\n\nReason (required):`);
-  if (!reason) return;
-  const resp = await fetch(`${API}/api/admin/users/${userId}/suspend`, {
-    method: 'PATCH', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
-    body: JSON.stringify({suspend: true, reason})
+function suspendUser(userId, name) {
+  showConfirm({
+    title: `Suspend ${name}?`,
+    warn: 'This will immediately block the user from accessing the app. They will see a "suspended" message on login.',
+    fields: '<label>Reason (required)</label><textarea id="confirmInput" placeholder="Why is this user being suspended?" required></textarea>',
+    btnText: 'Suspend User',
+    requireInput: true,
+    onConfirm: async () => {
+      const reason = document.getElementById('confirmInput').value;
+      if (!reason || reason.length < 3) { alert('Please provide a reason (min 3 characters).'); return; }
+      const resp = await fetch(`${API}/api/admin/users/${userId}/suspend`, {
+        method: 'PATCH', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
+        body: JSON.stringify({suspend: true, reason})
+      });
+      if (resp.ok) { closeConfirm(); openUserDetail(userId); loadUsers(); }
+      else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
+    }
   });
-  if (resp.ok) { alert('User suspended.'); openUserDetail(userId); loadUsers(); }
-  else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
 }
 
 async function unsuspendUser(userId, name) {
@@ -611,6 +727,17 @@ async function unsuspendUser(userId, name) {
     body: JSON.stringify({suspend: false, reason: 'Reactivated by admin'})
   });
   if (resp.ok) { alert('User reactivated.'); openUserDetail(userId); loadUsers(); }
+  else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
+}
+
+async function toggleAdmin(userId, name, makeAdmin) {
+  const action = makeAdmin ? 'grant admin access to' : 'remove admin access from';
+  if (!confirm(`Are you sure you want to ${action} ${name}?`)) return;
+  const resp = await fetch(`${API}/api/admin/users/${userId}`, {
+    method: 'PATCH', headers: {'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json'},
+    body: JSON.stringify({is_admin: makeAdmin})
+  });
+  if (resp.ok) { alert(resp.ok ? (makeAdmin ? 'Admin access granted.' : 'Admin access removed.') : 'Failed'); openUserDetail(userId); loadUsers(); }
   else { const e = await resp.json(); alert('Error: ' + (e.detail || 'Failed')); }
 }
 
@@ -706,6 +833,21 @@ function toggleExpand(id, btn) {
   el.classList.toggle('expanded');
   btn.textContent = el.classList.contains('expanded') ? 'Show less' : 'Show more';
 }
+
+// ── Confirmation Modal ──────────────────────────────────────────────
+let _confirmCallback = null;
+function showConfirm({title, warn, fields, btnText, btnClass, onConfirm, requireInput, requireSelect}) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmWarn').textContent = warn;
+  document.getElementById('confirmFields').innerHTML = fields || '';
+  const btn = document.getElementById('confirmBtn');
+  btn.textContent = btnText || 'Confirm';
+  if (btnClass) btn.style.cssText = btnClass + ';color:white;padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer';
+  _confirmCallback = onConfirm;
+  document.getElementById('confirmModal').classList.add('active');
+}
+function closeConfirm() { document.getElementById('confirmModal').classList.remove('active'); _confirmCallback = null; }
+async function executeConfirm() { if (_confirmCallback) await _confirmCallback(); }
 
 function esc(str) { if (!str) return ''; const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
