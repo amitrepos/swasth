@@ -66,6 +66,8 @@ class _HomeScreenState extends State<HomeScreen>
   List<Map<String, dynamic>> _careCircleMembers = [];
   bool _careCircleLoading = false;
   bool _activityLoading = false;
+  String? _currentUserEmail;
+  bool _showFullDashboard = false;
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -107,11 +109,14 @@ class _HomeScreenState extends State<HomeScreen>
     final name = await _storageService.getActiveProfileName();
     final id = await _storageService.getActiveProfileId();
     final level = await _storageService.getActiveProfileAccessLevel();
+    final userData = await _storageService.getUserData();
     if (mounted) {
       setState(() {
         if (name != null) _activeProfileName = name;
         _activeProfileId = id;
         _accessLevel = level ?? 'owner';
+        _currentUserEmail = userData?['email'] as String?;
+        _showFullDashboard = false; // Reset on profile switch
         if (id != null) _refreshHealthScore(id);
       });
     }
@@ -156,7 +161,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   bool get _isCaregiverView =>
-      FeatureFlags.caregiverDashboard && _accessLevel != 'owner';
+      FeatureFlags.caregiverDashboard &&
+      _accessLevel != 'owner' &&
+      !_showFullDashboard;
 
   Future<void> _loadCaregiverData(String token, int profileId) async {
     setState(() {
@@ -341,6 +348,59 @@ class _HomeScreenState extends State<HomeScreen>
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // "Back to Wellness Hub" banner when in full dashboard mode
+                          if (_showFullDashboard &&
+                              FeatureFlags.caregiverDashboard &&
+                              _accessLevel != 'owner')
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: GestureDetector(
+                                onTap: () =>
+                                    setState(() => _showFullDashboard = false),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.arrow_back_rounded,
+                                        size: 18,
+                                        color: AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          l10n.backToWellnessHub,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.monitor_heart_outlined,
+                                        size: 18,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           HealthScoreRing(
                             data: data,
                             isLoading: isLoading,
@@ -508,40 +568,85 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
               ),
-              // Priority call button
-              if (_activeProfile?.doctorWhatsapp?.isNotEmpty == true)
-                GestureDetector(
-                  onTap: () => _callDoctor(_activeProfile!.doctorWhatsapp!),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.statusCritical.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.phone,
-                          size: 16,
-                          color: AppColors.statusCritical,
+              // Action buttons (right side)
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Take Readings button
+                  if (_accessLevel == 'editor' || _accessLevel == 'owner')
+                    GestureDetector(
+                      onTap: () => setState(() => _showFullDashboard = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.priorityCall,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.statusCritical,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add_circle_outline,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              l10n.takeReadings,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (_activeProfile?.doctorWhatsapp?.isNotEmpty == true)
+                    const SizedBox(height: 8),
+                  // Priority call button
+                  if (_activeProfile?.doctorWhatsapp?.isNotEmpty == true)
+                    GestureDetector(
+                      onTap: () => _callDoctor(_activeProfile!.doctorWhatsapp!),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.statusCritical.withValues(
+                            alpha: 0.1,
                           ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.phone,
+                              size: 16,
+                              color: AppColors.statusCritical,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              l10n.priorityCall,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.statusCritical,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                ],
+              ),
             ],
           ),
         ),
@@ -598,6 +703,7 @@ class _HomeScreenState extends State<HomeScreen>
         CareCircleCard(
           members: _careCircleMembers,
           isLoading: _careCircleLoading,
+          currentUserEmail: _currentUserEmail,
         ),
         const SizedBox(height: 16),
 

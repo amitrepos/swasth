@@ -1272,4 +1272,10 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get wellnessRingTitle => 'वेलनेस रिंग';
+
+  @override
+  String get takeReadings => 'रीडिंग लें';
+
+  @override
+  String get backToWellnessHub => 'वेलनेस हब पर वापस जाएं';
 }

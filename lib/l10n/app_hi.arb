@@ -419,5 +419,7 @@
   "careCircleTitle": "केयर सर्कल",
   "priorityCall": "प्राथमिकता कॉल",
   "noRecentActivity": "कोई हालिया गतिविधि नहीं",
-  "wellnessRingTitle": "वेलनेस रिंग"
+  "wellnessRingTitle": "वेलनेस रिंग",
+  "takeReadings": "रीडिंग लें",
+  "backToWellnessHub": "वेलनेस हब पर वापस जाएं"
 }

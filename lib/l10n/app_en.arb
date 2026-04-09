@@ -558,5 +558,7 @@
   "careCircleTitle": "Care Circle",
   "priorityCall": "Priority Call",
   "noRecentActivity": "No recent activity",
-  "wellnessRingTitle": "Wellness Ring"
+  "wellnessRingTitle": "Wellness Ring",
+  "takeReadings": "Take Readings",
+  "backToWellnessHub": "Back to Wellness Hub"
 }

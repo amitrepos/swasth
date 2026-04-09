@@ -273,6 +273,7 @@ def list_profile_access(
                 "user_id": u.id,
                 "full_name": u.full_name,
                 "email": u.email,
+                "phone_number": u.phone_number,
                 "access_level": a.access_level,
                 "relationship": a.relationship,
                 "granted_at": a.created_at,
