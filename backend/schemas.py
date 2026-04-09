@@ -547,6 +547,23 @@ class AdminStatusUpdate(BaseModel):
     is_admin: bool
 
 
+class AdminSuspendUser(BaseModel):
+    """Request body for suspending/reactivating a user."""
+    suspend: bool
+    reason: str = Field(..., min_length=3, max_length=500)
+
+
+class AdminVerifyDoctor(BaseModel):
+    """Request body for verifying a doctor."""
+    notes: Optional[str] = None
+
+
+class AdminRejectDoctor(BaseModel):
+    """Request body for rejecting a doctor verification."""
+    reason: str = Field(..., min_length=3, max_length=200)
+    notes: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # Doctor Portal schemas (Module F)
 # ---------------------------------------------------------------------------
@@ -672,6 +689,7 @@ class TriagePatientCard(BaseModel):
     gender: Optional[str] = None
     medical_conditions: Optional[List[str]] = None
     triage_status: str                         # critical / attention / stable / no_data
+    triage_reason: Optional[str] = None        # human-readable reason for status
     last_reading_value: Optional[str] = None
     last_reading_type: Optional[str] = None
     last_reading_at: Optional[datetime] = None
