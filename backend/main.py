@@ -16,6 +16,7 @@ import routes_admin
 import routes_meals
 import os
 from dotenv import load_dotenv
+from scheduler import start_scheduler, stop_scheduler
 
 # Load environment variables
 load_dotenv()
@@ -36,6 +37,14 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.on_event("startup")
+async def startup_event():
+    start_scheduler()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    stop_scheduler()
 
 # ---------------------------------------------------------------------------
 # HTTPS redirect (enable in production via REQUIRE_HTTPS=true in .env)
