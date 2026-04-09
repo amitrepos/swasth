@@ -2407,6 +2407,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photo lets AI detect carb level automatically'**
   String get photoAiHint;
+
+  /// No description provided for @wellnessHubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{relationship}\'s Wellness Hub'**
+  String wellnessHubTitle(String relationship);
+
+  /// No description provided for @wellnessHubSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} | {location}'**
+  String wellnessHubSubtitle(String name, String location);
+
+  /// No description provided for @caregiverStatusGreat.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {relationship} is doing great today. Vitals are stable.'**
+  String caregiverStatusGreat(String relationship);
+
+  /// No description provided for @caregiverStatusCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {relationship} needs attention today. Check vitals.'**
+  String caregiverStatusCaution(String relationship);
+
+  /// No description provided for @caregiverStatusUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {relationship} needs immediate care. Call now.'**
+  String caregiverStatusUrgent(String relationship);
+
+  /// No description provided for @activityFeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Feed'**
+  String get activityFeedTitle;
+
+  /// No description provided for @careCircleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Care Circle'**
+  String get careCircleTitle;
+
+  /// No description provided for @priorityCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority Call'**
+  String get priorityCall;
+
+  /// No description provided for @noRecentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent activity'**
+  String get noRecentActivity;
+
+  /// No description provided for @wellnessRingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wellness Ring'**
+  String get wellnessRingTitle;
 }
 
 class _AppLocalizationsDelegate

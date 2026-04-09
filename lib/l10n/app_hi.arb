@@ -408,5 +408,16 @@
   "logMealSubtitle": "कैसे दर्ज करें?",
   "quickSelectOption": "तुरंत चुनें",
   "scanFoodPhotoOption": "फोटो स्कैन करें",
-  "photoAiHint": "फोटो से AI कार्ब लेवल पता करता है"
+  "photoAiHint": "फोटो से AI कार्ब लेवल पता करता है",
+
+  "wellnessHubTitle": "{relationship} का वेलनेस हब",
+  "wellnessHubSubtitle": "{name} | {location}",
+  "caregiverStatusGreat": "आपकी {relationship} आज ठीक हैं। सभी रीडिंग सामान्य हैं।",
+  "caregiverStatusCaution": "आपकी {relationship} को आज ध्यान देने की ज़रूरत है। रीडिंग देखें।",
+  "caregiverStatusUrgent": "आपकी {relationship} को तुरंत देखभाल चाहिए। अभी कॉल करें।",
+  "activityFeedTitle": "गतिविधि फ़ीड",
+  "careCircleTitle": "केयर सर्कल",
+  "priorityCall": "प्राथमिकता कॉल",
+  "noRecentActivity": "कोई हालिया गतिविधि नहीं",
+  "wellnessRingTitle": "वेलनेस रिंग"
 }

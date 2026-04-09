@@ -20,6 +20,9 @@ class HealthScoreRing extends StatefulWidget {
   final VoidCallback onInfoTap;
   final VoidCallback? onCallDoctor;
 
+  /// If set, shows caregiver-style messages (e.g. "Your Mother is doing great").
+  final String? relationship;
+
   const HealthScoreRing({
     super.key,
     required this.data,
@@ -28,6 +31,7 @@ class HealthScoreRing extends StatefulWidget {
     required this.onTap,
     required this.onInfoTap,
     this.onCallDoctor,
+    this.relationship,
   });
 
   @override
@@ -86,8 +90,10 @@ class _HealthScoreRingState extends State<HealthScoreRing>
       parent: _pulseController,
       curve: Curves.easeInOut,
     );
-    _pulseAnimation = Tween<double>(begin: 1.0, end: maxScale)
-        .animate(_curvedAnimation!);
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: maxScale,
+    ).animate(_curvedAnimation!);
     _pulseController.repeat(reverse: true);
   }
 
@@ -274,7 +280,11 @@ class _HealthScoreRingState extends State<HealthScoreRing>
                     height: 56,
                     child: ElevatedButton.icon(
                       onPressed: widget.onCallDoctor ?? widget.onTap,
-                      icon: const Icon(Icons.phone, color: Colors.white, size: 22),
+                      icon: const Icon(
+                        Icons.phone,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                       label: Text(
                         l10n.heartCallDoctor,
                         style: const TextStyle(
@@ -312,8 +322,11 @@ class _HealthScoreRingState extends State<HealthScoreRing>
                       width: 1.5,
                     ),
                   ),
-                  child: const Icon(Icons.question_mark_rounded,
-                      size: 14, color: AppColors.primary),
+                  child: const Icon(
+                    Icons.question_mark_rounded,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ),
@@ -324,6 +337,12 @@ class _HealthScoreRingState extends State<HealthScoreRing>
   }
 
   String _statusText(int score, AppLocalizations l10n) {
+    final rel = widget.relationship;
+    if (rel != null && rel.isNotEmpty) {
+      if (score >= kHealthyThreshold) return l10n.caregiverStatusGreat(rel);
+      if (score >= kCautionThreshold) return l10n.caregiverStatusCaution(rel);
+      return l10n.caregiverStatusUrgent(rel);
+    }
     if (score >= kHealthyThreshold) return l10n.heartStatusHealthy;
     if (score >= kCautionThreshold) return l10n.heartStatusCaution;
     return l10n.heartStatusUrgent;
@@ -442,11 +461,15 @@ class FacePainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
     canvas.drawCircle(
-        Offset(center.dx - radius * 0.3, center.dy - radius * 0.15),
-        2.5, eyePaint);
+      Offset(center.dx - radius * 0.3, center.dy - radius * 0.15),
+      2.5,
+      eyePaint,
+    );
     canvas.drawCircle(
-        Offset(center.dx + radius * 0.3, center.dy - radius * 0.15),
-        2.5, eyePaint);
+      Offset(center.dx + radius * 0.3, center.dy - radius * 0.15),
+      2.5,
+      eyePaint,
+    );
 
     final mouthPaint = Paint()
       ..color = color
@@ -462,14 +485,22 @@ class FacePainter extends CustomPainter {
       case FaceState.happy:
         mouthPath.moveTo(mx - radius * 0.35, my - radius * 0.05);
         mouthPath.quadraticBezierTo(
-            mx, my + radius * 0.35, mx + radius * 0.35, my - radius * 0.05);
+          mx,
+          my + radius * 0.35,
+          mx + radius * 0.35,
+          my - radius * 0.05,
+        );
       case FaceState.neutral:
         mouthPath.moveTo(mx - radius * 0.3, my + radius * 0.05);
         mouthPath.lineTo(mx + radius * 0.3, my + radius * 0.05);
       case FaceState.worried:
         mouthPath.moveTo(mx - radius * 0.35, my + radius * 0.15);
         mouthPath.quadraticBezierTo(
-            mx, my - radius * 0.2, mx + radius * 0.35, my + radius * 0.15);
+          mx,
+          my - radius * 0.2,
+          mx + radius * 0.35,
+          my + radius * 0.15,
+        );
     }
 
     canvas.drawPath(mouthPath, mouthPaint);
@@ -502,14 +533,34 @@ class StatusInfoSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const levels = [
-      (emoji: '🟢', label: 'Fit & Fine', color: AppColors.statusNormal,
-       desc: 'All your readings are within healthy ranges. Keep up the great habits!'),
-      (emoji: '🟡', label: 'Caution', color: AppColors.amber,
-       desc: 'One or more readings are slightly elevated. Monitor them daily and stay hydrated.'),
-      (emoji: '🟠', label: 'At Risk', color: AppColors.statusElevated,
-       desc: 'Your readings suggest increased risk. Consider lifestyle changes and consult your doctor.'),
-      (emoji: '🚨', label: 'Urgent', color: AppColors.statusCritical,
-       desc: 'A critical reading was detected. Please contact your doctor or family member immediately.'),
+      (
+        emoji: '🟢',
+        label: 'Fit & Fine',
+        color: AppColors.statusNormal,
+        desc:
+            'All your readings are within healthy ranges. Keep up the great habits!',
+      ),
+      (
+        emoji: '🟡',
+        label: 'Caution',
+        color: AppColors.amber,
+        desc:
+            'One or more readings are slightly elevated. Monitor them daily and stay hydrated.',
+      ),
+      (
+        emoji: '🟠',
+        label: 'At Risk',
+        color: AppColors.statusElevated,
+        desc:
+            'Your readings suggest increased risk. Consider lifestyle changes and consult your doctor.',
+      ),
+      (
+        emoji: '🚨',
+        label: 'Urgent',
+        color: AppColors.statusCritical,
+        desc:
+            'A critical reading was detected. Please contact your doctor or family member immediately.',
+      ),
     ];
 
     return Container(
@@ -518,14 +569,19 @@ class StatusInfoSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(
-          20, 16, 20, MediaQuery.of(context).padding.bottom + 24),
+        20,
+        16,
+        20,
+        MediaQuery.of(context).padding.bottom + 24,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
             child: Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               decoration: BoxDecoration(
                 color: AppColors.textTertiary,
                 borderRadius: BorderRadius.circular(2),
@@ -533,9 +589,15 @@ class StatusInfoSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('WELLNESS STATUS',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary, letterSpacing: 2)),
+          const Text(
+            'WELLNESS STATUS',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 2,
+            ),
+          ),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -545,43 +607,86 @@ class StatusInfoSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: current.color.withValues(alpha: 0.35)),
             ),
-            child: Row(children: [
-              Text(current.emoji, style: const TextStyle(fontSize: 22)),
-              const SizedBox(width: 12),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Your current status',
-                    style: TextStyle(fontSize: 11,
-                        color: current.color.withValues(alpha: 0.8))),
-                Text(current.label,
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
-                        color: current.color)),
-                if (current.subLabel != null)
-                  Text(current.subLabel!,
-                      style: TextStyle(fontSize: 12,
-                          color: current.color.withValues(alpha: 0.8))),
-              ]),
-            ]),
+            child: Row(
+              children: [
+                Text(current.emoji, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your current status',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: current.color.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    Text(
+                      current.label,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: current.color,
+                      ),
+                    ),
+                    if (current.subLabel != null)
+                      Text(
+                        current.subLabel!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: current.color.withValues(alpha: 0.8),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const Text('WHAT EACH LEVEL MEANS',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary, letterSpacing: 2)),
+          const Text(
+            'WHAT EACH LEVEL MEANS',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 2,
+            ),
+          ),
           const SizedBox(height: 12),
-          ...levels.map((lvl) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(lvl.emoji, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 12),
-              Expanded(child: Column(
+          ...levels.map(
+            (lvl) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(lvl.label, style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700, color: lvl.color)),
-                  Text(lvl.desc, style: const TextStyle(
-                      fontSize: 13, color: AppColors.textSecondary, height: 1.4)),
+                  Text(lvl.emoji, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lvl.label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: lvl.color,
+                          ),
+                        ),
+                        Text(
+                          lvl.desc,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-              )),
-            ]),
-          )),
+              ),
+            ),
+          ),
         ],
       ),
     );

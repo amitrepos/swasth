@@ -1232,4 +1232,44 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get photoAiHint => 'फोटो से AI कार्ब लेवल पता करता है';
+
+  @override
+  String wellnessHubTitle(String relationship) {
+    return '$relationship का वेलनेस हब';
+  }
+
+  @override
+  String wellnessHubSubtitle(String name, String location) {
+    return '$name | $location';
+  }
+
+  @override
+  String caregiverStatusGreat(String relationship) {
+    return 'आपकी $relationship आज ठीक हैं। सभी रीडिंग सामान्य हैं।';
+  }
+
+  @override
+  String caregiverStatusCaution(String relationship) {
+    return 'आपकी $relationship को आज ध्यान देने की ज़रूरत है। रीडिंग देखें।';
+  }
+
+  @override
+  String caregiverStatusUrgent(String relationship) {
+    return 'आपकी $relationship को तुरंत देखभाल चाहिए। अभी कॉल करें।';
+  }
+
+  @override
+  String get activityFeedTitle => 'गतिविधि फ़ीड';
+
+  @override
+  String get careCircleTitle => 'केयर सर्कल';
+
+  @override
+  String get priorityCall => 'प्राथमिकता कॉल';
+
+  @override
+  String get noRecentActivity => 'कोई हालिया गतिविधि नहीं';
+
+  @override
+  String get wellnessRingTitle => 'वेलनेस रिंग';
 }
