@@ -3,8 +3,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/profile_model.dart';
 import '../models/invite_model.dart';
+import '../config/app_config.dart';
 import '../theme/app_theme.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
@@ -32,6 +34,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   List<InviteModel> _pendingInvites = [];
   bool _isLoading = true;
   bool _isOffline = false;
+  bool _isAdmin = false;
   String? _error;
 
   @override
@@ -56,6 +59,10 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       final profiles = await _profileService.getProfiles(token);
       final invites = await _profileService.getPendingInvites(token);
 
+      // Check admin status
+      final userData = await _storageService.getUserData();
+      final isAdmin = userData?['is_admin'] == true;
+
       // Cache profiles for offline use
       await _storageService.saveProfiles(
         profiles.map((p) => p.toJson()).toList(),
@@ -66,6 +73,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
         _pendingInvites = invites;
         _isLoading = false;
         _isOffline = false;
+        _isAdmin = isAdmin;
       });
     } catch (e) {
       // Try loading cached profiles for offline use
@@ -116,6 +124,18 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       appBar: AppBar(
         title: Text(l10n.selectProfileTitle),
         actions: [
+          if (_isAdmin)
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings),
+              onPressed: () {
+                final baseUrl = AppConfig.serverHost;
+                launchUrl(
+                  Uri.parse('$baseUrl/api/admin'),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+              tooltip: 'Admin Dashboard',
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,

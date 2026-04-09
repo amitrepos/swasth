@@ -366,6 +366,7 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
     final status = patient['triage_status'] as String? ?? 'no_data';
     final statusColor = _statusColor(status);
     final statusIcon = _statusIcon(status);
+    final triageReason = patient['triage_reason'] as String?;
 
     final conditions = patient['medical_conditions'] as List<dynamic>?;
     final conditionsText = conditions?.join(', ') ?? '';
@@ -448,6 +449,26 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
               ),
               overflow: TextOverflow.ellipsis,
             ),
+
+            // Triage reason tag
+            if (triageReason != null) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  triageReason,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
 
             if (lastValue != null) ...[
               const SizedBox(height: 8),

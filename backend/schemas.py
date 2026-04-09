@@ -120,6 +120,7 @@ class UserResponse(BaseModel):
     full_name: str
     phone_number: str
     is_active: bool
+    is_admin: bool = False
     role: Optional[str] = "patient"
     timezone: str
     consent_timestamp: Optional[datetime] = None
@@ -689,6 +690,7 @@ class TriagePatientCard(BaseModel):
     gender: Optional[str] = None
     medical_conditions: Optional[List[str]] = None
     triage_status: str                         # critical / attention / stable / no_data
+    triage_reason: Optional[str] = None        # human-readable reason for status
     last_reading_value: Optional[str] = None
     last_reading_type: Optional[str] = None
     last_reading_at: Optional[datetime] = None
