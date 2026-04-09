@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Deploy PROD FastAPI
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -49,7 +49,7 @@ jobs:
             --dart-define=SERVER_HOST=http://${{ secrets.SERVER_HOST }}:8011
 
       - name: Deploy web to server
-        uses: appleboy/scp-action@v0.2.0
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -60,7 +60,7 @@ jobs:
           overwrite: true
 
       - name: Reload Nginx
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
