@@ -7,6 +7,7 @@ import '../widgets/auth_form_scroll_body.dart';
 import 'registration_screen.dart';
 import 'select_profile_screen.dart';
 import 'forgot_password_screen.dart';
+import 'doctor/doctor_triage_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -95,9 +96,15 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
+        // Route based on role: doctors go to triage, patients to profiles
+        final userData = await StorageService().getUserData();
+        final role = userData?['role'] as String?;
+        final destination = role == 'doctor'
+            ? const DoctorTriageScreen()
+            : const SelectProfileScreen();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const SelectProfileScreen()),
+          MaterialPageRoute(builder: (_) => destination),
         );
       }
     } catch (e) {
@@ -125,9 +132,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   backgroundColor: AppColors.amber,
                 ),
               );
+              final offlineData = await StorageService().getUserData();
+              final offlineRole = offlineData?['role'] as String?;
+              final offlineDest = offlineRole == 'doctor'
+                  ? const DoctorTriageScreen()
+                  : const SelectProfileScreen();
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
+                MaterialPageRoute(builder: (_) => offlineDest),
               );
             }
             return;
