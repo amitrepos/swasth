@@ -231,14 +231,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 validator: (value) {
                   final l10n = AppLocalizations.of(context)!;
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your phone number';
+                    return l10n.phoneValidationEmpty;
                   }
                   final stripped = value.replaceAll(RegExp(r'[\s\-]'), '');
                   if (!RegExp(r'^\+?[0-9]+$').hasMatch(stripped)) {
-                    return 'Phone number can only contain digits';
+                    return l10n.phoneValidationDigits;
                   }
                   if (stripped.length < 10 || stripped.length > 15) {
-                    return 'Phone number must be 10-15 digits';
+                    return l10n.phoneValidationLength;
                   }
                   return null;
                 },

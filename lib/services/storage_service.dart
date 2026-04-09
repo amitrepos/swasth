@@ -98,6 +98,10 @@ class StorageService {
     return await _store.read(_tokenKey);
   }
 
+  // Delete authentication token (used when token is expired/invaild)
+  Future<void> deleteToken() async {
+    await _store.delete(_tokenKey);
+  }
   Future<void> saveUserData(Map<String, dynamic> userData) async {
     await _store.write(_userKey, jsonEncode(userData));
   }

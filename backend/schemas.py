@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, validator, Field
 from typing import Optional, List, Literal
 from datetime import datetime
+import re
 
 
 # Options
@@ -26,6 +27,15 @@ def _validate_password_strength(v: str) -> str:
     return v
 
 
+def _validate_phone_number(v: str) -> str:
+    """Shared phone validation used across all schemas."""
+    # Strip spaces and dashes
+    stripped = re.sub(r'[\s\-]', '', v)
+    if not re.match(r'^\+?[0-9]{10,15}$', stripped):
+        raise ValueError('Phone number must be between 10 and 15 digits')
+    return stripped
+
+
 # ---------------------------------------------------------------------------
 # Auth schemas
 # ---------------------------------------------------------------------------
@@ -35,7 +45,7 @@ class UserRegister(BaseModel):
     password: str
     confirm_password: str
     full_name: str = Field(..., min_length=2, max_length=100)
-    phone_number: str = Field(..., min_length=10, max_length=15, pattern=r"^\+?[0-9\s\-]+$")
+    phone_number: str
     timezone: str = "UTC"  # User's local timezone
     # Optional first-profile fields — used to auto-create "My Health" profile on register
     profile_name: Optional[str] = "My Health"
@@ -55,6 +65,10 @@ class UserRegister(BaseModel):
     @validator('email')
     def normalize_email(cls, v):
         return v.strip().lower()
+
+    @validator('phone_number')
+    def validate_phone(cls, v):
+        return _validate_phone_number(v)
 
     @validator('password')
     def validate_password(cls, v):
@@ -172,7 +186,7 @@ class ResetPasswordRequest(BaseModel):
 class UpdateUserRequest(BaseModel):
     """Auth-level user fields only — name, phone, password change."""
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)
-    phone_number: Optional[str] = Field(None, min_length=10, max_length=15)
+    phone_number: Optional[str] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
     confirm_password: Optional[str] = None
@@ -181,6 +195,12 @@ class UpdateUserRequest(BaseModel):
     def validate_new_password(cls, v):
         if v is not None:
             return _validate_password_strength(v)
+        return v
+
+    @validator('phone_number')
+    def validate_phone(cls, v):
+        if v is not None:
+            return _validate_phone_number(v)
         return v
 
     @validator('confirm_password')
