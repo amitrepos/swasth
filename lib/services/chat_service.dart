@@ -72,17 +72,4 @@ class ChatService {
     throw Exception(ApiClient.errorDetail(response, 'Failed to load messages'));
   }
 
-  Future<Map<String, dynamic>> getQuota(String token) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$baseUrl/chat/quota'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    throw Exception(ApiClient.errorDetail(response, 'Failed to load quota'));
-  }
 }

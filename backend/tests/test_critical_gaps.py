@@ -225,7 +225,7 @@ class TestChatImageUpload:
         import base64
         fake_image = base64.b64encode(b"fake_image_bytes").decode()
 
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "What does this report say?",
             "image_base64": fake_image,
@@ -241,7 +241,7 @@ class TestChatImageUpload:
             models.ProfileAccess.access_level == "owner",
         ).first().profile_id
 
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "How am I doing?",
         }, headers=auth_headers)
@@ -261,8 +261,8 @@ class TestAdminEdgeCases:
         resp = client.get("/api/admin/users", headers=auth_headers)
         assert resp.status_code == 403
 
-    def test_non_admin_cannot_make_admin(self, client, test_user, auth_headers):
-        resp = client.post("/api/admin/users/1/make-admin", headers=auth_headers)
+    def test_non_admin_cannot_update_admin_status(self, client, test_user, auth_headers):
+        resp = client.patch("/api/admin/users/1", json={"is_admin": True}, headers=auth_headers)
         assert resp.status_code == 403
 
     def test_admin_users_list_has_all_fields(self, client, db):

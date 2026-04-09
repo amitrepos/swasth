@@ -56,19 +56,22 @@ class MealService {
     }
   }
 
-  /// Get today's meals via GET /api/meals/today?profile_id=X.
+  /// Get today's meals via GET /api/meals?profile_id=X&days=1.
   Future<List<MealLog>> getTodayMeals(int profileId, String token) async {
     try {
       final response = await ApiClient.httpClient
           .get(
-            Uri.parse('$_baseUrl/today?profile_id=$profileId'),
+            Uri.parse('$_baseUrl?profile_id=$profileId&days=1'),
             headers: ApiClient.headers(token: token),
           )
           .timeout(_kTimeout);
       if (response.statusCode == 200) {
-        return (jsonDecode(response.body) as List)
+        final meals = (jsonDecode(response.body) as List)
             .map((j) => MealLog.fromJson(j))
             .toList();
+        // Sort ascending by timestamp for dashboard display
+        meals.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        return meals;
       }
       throw Exception(
         ApiClient.errorDetail(response, 'Failed to get today meals'),

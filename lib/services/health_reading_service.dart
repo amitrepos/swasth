@@ -268,21 +268,6 @@ class HealthReadingService {
     }
   }
 
-  /// Get summary statistics
-  Future<Map<String, dynamic>> getSummary(String token, int profileId) async {
-    try {
-      final response = await ApiClient.httpClient
-          .get(
-            Uri.parse('$baseUrl/readings/stats/summary?profile_id=$profileId'),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 200) return jsonDecode(response.body);
-      throw Exception(ApiClient.errorDetail(response, 'Failed to get summary'));
-    } catch (e) {
-      throw Exception('Failed to get summary: $e');
-    }
-  }
 
   /// Get AI Doctor recommendation from Gemini via backend
   Future<String> getAiInsight(String token, int profileId) async {
@@ -429,7 +414,7 @@ class HealthReadingService {
     try {
       final response = await ApiClient.httpClient
           .get(
-            Uri.parse('$baseUrl/readings/weekly-summary?profile_id=$profileId'),
+            Uri.parse('$baseUrl/readings/trend-summary?profile_id=$profileId&period=7&format=text'),
             headers: ApiClient.headers(token: token),
           )
           .timeout(_kTimeout);

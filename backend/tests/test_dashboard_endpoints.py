@@ -6,7 +6,7 @@ Ensures every section on the home screen has a working API behind it:
 - Vital Summary → GET /readings/health-score (90d averages)
 - Readings CRUD → POST/GET/DELETE /readings
 - Stats Summary → GET /readings/stats/summary
-- Chat → POST /chat/send (covered in test_chat.py, verified here)
+- Chat → POST /chat/messages (covered in test_chat.py, verified here)
 """
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -379,46 +379,6 @@ class TestAiInsightEndpoint:
         assert resp.status_code == 401
 
 
-# ===========================================================================
-# GET /api/readings/stats/summary — Sidebar statistics
-# ===========================================================================
-
-class TestReadingsSummary:
-    URL = "/api/readings/stats/summary"
-
-    def test_summary_empty(self, client, test_user, auth_headers, db):
-        profile = db.query(models.ProfileAccess).filter(
-            models.ProfileAccess.user_id == test_user.id,
-        ).first()
-
-        resp = client.get(self.URL, params={"profile_id": profile.profile_id}, headers=auth_headers)
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["total_readings"] == 0
-        assert body["glucose_readings"] == 0
-        assert body["bp_readings"] == 0
-
-    def test_summary_with_data(self, client, test_user, auth_headers, db):
-        profile = db.query(models.ProfileAccess).filter(
-            models.ProfileAccess.user_id == test_user.id,
-        ).first()
-
-        _add_glucose_reading(db, profile.profile_id, test_user.id, 100.0)
-        _add_glucose_reading(db, profile.profile_id, test_user.id, 110.0, hours_ago=24)
-        _add_bp_reading(db, profile.profile_id, test_user.id, 120, 80)
-
-        resp = client.get(self.URL, params={"profile_id": profile.profile_id}, headers=auth_headers)
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["total_readings"] == 3
-        assert body["glucose_readings"] == 2
-        assert body["bp_readings"] == 1
-        assert body["latest_reading"] is not None
-
-    def test_summary_unauthenticated(self, client):
-        resp = client.get(self.URL, params={"profile_id": 1})
-        assert resp.status_code == 401
-
 
 # ===========================================================================
 # DELETE /api/readings/{reading_id} — Delete a reading
@@ -435,7 +395,7 @@ class TestDeleteReading:
         reading_id = reading.id
 
         resp = client.delete(f"/api/readings/{reading_id}", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 204
 
     def test_delete_nonexistent_reading(self, client, test_user, auth_headers):
         resp = client.delete("/api/readings/99999", headers=auth_headers)
@@ -458,7 +418,7 @@ class TestChatSmoke:
             models.ProfileAccess.user_id == test_user.id,
         ).first()
 
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": profile.profile_id,
             "message": "How is my health?",
         }, headers=auth_headers)

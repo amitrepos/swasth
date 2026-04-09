@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi import Limiter
@@ -173,7 +174,8 @@ def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Ses
     return {"message": "Password reset successfully"}
 
 
-@router.put("/profile", response_model=schemas.UserResponse)
+@router.put("/me", response_model=schemas.UserResponse)
+@router.put("/profile", response_model=schemas.UserResponse, deprecated=True)
 def update_profile(
     user_update: schemas.UpdateUserRequest,
     db: Session = Depends(get_db),
@@ -225,7 +227,7 @@ def grant_ai_consent(
 # Account deletion — DPDP Act right to erasure
 # ---------------------------------------------------------------------------
 
-@router.delete("/account")
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
 def delete_account(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
@@ -274,7 +276,7 @@ def delete_account(
     db.query(models.User).filter(models.User.id == user.id).delete()
 
     db.commit()
-    return {"message": "Account and all associated data have been permanently deleted"}
+    return Response(status_code=204)
 
 
 # ---------------------------------------------------------------------------

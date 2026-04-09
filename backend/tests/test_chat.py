@@ -16,14 +16,14 @@ def _get_profile_id(db, user_id):
 
 
 class TestChatSend:
-    """POST /api/chat/send — send message, get AI response."""
+    """POST /api/chat/messages — send message, get AI response."""
 
     @patch("routes_chat.ai_service")
     def test_send_message_success(self, mock_ai, client, test_user, auth_headers, db):
         mock_ai.generate_health_insight.return_value = "Drink more water!"
         pid = _get_profile_id(db, test_user.id)
 
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "What should I eat for breakfast?",
         }, headers=auth_headers)
@@ -39,7 +39,7 @@ class TestChatSend:
         mock_ai.generate_health_insight.return_value = "Stay hydrated."
         pid = _get_profile_id(db, test_user.id)
 
-        client.post("/api/chat/send", json={
+        client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "How much water?",
         }, headers=auth_headers)
@@ -51,63 +51,19 @@ class TestChatSend:
 
     def test_empty_message_rejected(self, client, test_user, auth_headers, db):
         pid = _get_profile_id(db, test_user.id)
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "",
         }, headers=auth_headers)
         assert resp.status_code == 400
 
     def test_unauthenticated_rejected(self, client):
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": 1,
             "message": "Hello",
         })
         assert resp.status_code in (401, 403)
 
-
-class TestChatQuota:
-    """Rate limiting — per profile, configurable period."""
-
-    def test_quota_info_structure(self, client, test_user, auth_headers, db):
-        """Verify quota endpoint returns correct structure."""
-        pid = _get_profile_id(db, test_user.id)
-        resp = client.get(f"/api/chat/quota?profile_id={pid}", headers=auth_headers)
-        assert resp.status_code == 200
-        body = resp.json()
-        assert "limit" in body
-        assert "used" in body
-        assert "remaining" in body
-        assert "period" in body
-        assert "resets_at" in body
-        assert body["remaining"] == body["limit"] - body["used"]
-
-    @patch("routes_chat.ai_service")
-    def test_quota_per_profile_not_user(self, mock_ai, client, test_user, auth_headers, db):
-        """Different profiles have separate quotas."""
-        mock_ai.generate_health_insight.return_value = "Response"
-        pid1 = _get_profile_id(db, test_user.id)
-
-        # Create second profile
-        p2 = models.Profile(name="Papa")
-        db.add(p2)
-        db.flush()
-        db.add(models.ProfileAccess(user_id=test_user.id, profile_id=p2.id, access_level="owner"))
-        db.flush()
-
-        # Send to profile 1
-        resp1 = client.post("/api/chat/send", json={
-            "profile_id": pid1,
-            "message": "Question for profile 1",
-        }, headers=auth_headers)
-        assert resp1.status_code == 200
-
-        # Send to profile 2 — should have full quota
-        resp2 = client.post("/api/chat/send", json={
-            "profile_id": p2.id,
-            "message": "Question for profile 2",
-        }, headers=auth_headers)
-        assert resp2.status_code == 200
-        assert "error" not in resp2.json()
 
 
 class TestChatMessages:
@@ -119,7 +75,7 @@ class TestChatMessages:
         pid = _get_profile_id(db, test_user.id)
 
         # Send a message first
-        client.post("/api/chat/send", json={
+        client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "My sugar is high",
         }, headers=auth_headers)
@@ -143,13 +99,3 @@ class TestChatMessages:
         assert resp.status_code in (401, 403)
 
 
-class TestChatQuotaEndpoint:
-    """GET /api/chat/quota — check remaining quota."""
-
-    def test_quota_fresh_user(self, client, test_user, auth_headers, db):
-        pid = _get_profile_id(db, test_user.id)
-        resp = client.get(f"/api/chat/quota?profile_id={pid}", headers=auth_headers)
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["remaining"] == body["limit"]
-        assert body["used"] == 0

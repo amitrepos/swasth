@@ -389,7 +389,8 @@ def list_pending_invites(
     return result
 
 
-@router.post("/invites/{invite_id}/respond")
+@router.patch("/invites/{invite_id}")
+@router.post("/invites/{invite_id}/respond", deprecated=True)
 def respond_to_invite(
     invite_id: int,
     data: schemas.InviteRespondRequest,

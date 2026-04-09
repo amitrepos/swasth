@@ -1,5 +1,6 @@
 """Meal Logging API Routes — Food photo classification and carb tracking."""
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date, timedelta, timezone
@@ -127,7 +128,7 @@ async def list_meals(
 # GET /meals/today — today's meals for dashboard summary
 # ---------------------------------------------------------------------------
 
-@router.get("/meals/today", response_model=List[schemas.MealLogResponse])
+@router.get("/meals/today", response_model=List[schemas.MealLogResponse], deprecated=True)
 @limiter.limit("20/minute")
 async def today_meals(
     request: Request,
@@ -135,7 +136,7 @@ async def today_meals(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Get today's meals for the dashboard summary card."""
+    """Deprecated: use GET /meals?days=1 instead."""
     get_profile_access_or_403(profile_id, user, db)
 
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -155,7 +156,7 @@ async def today_meals(
 # DELETE /meals/{id}
 # ---------------------------------------------------------------------------
 
-@router.delete("/meals/{meal_id}")
+@router.delete("/meals/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("20/minute")
 async def delete_meal(
     request: Request,
@@ -172,7 +173,7 @@ async def delete_meal(
 
     db.delete(meal)
     db.commit()
-    return {"detail": "Meal deleted"}
+    return Response(status_code=204)
 
 
 # ---------------------------------------------------------------------------

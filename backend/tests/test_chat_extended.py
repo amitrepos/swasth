@@ -43,7 +43,7 @@ class TestChatContextSummarization:
 
         # This 5th message should trigger summarization
         with patch("routes_chat.ai_service.generate_health_insight", return_value="Summary text."):
-            resp = client.post("/api/chat/send", json={
+            resp = client.post("/api/chat/messages", json={
                 "profile_id": pid,
                 "message": "Trigger summary",
             }, headers=auth_headers)
@@ -68,7 +68,7 @@ class TestChatContextSummarization:
         db.add(reading)
         db.flush()
 
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "How is my glucose?",
         }, headers=auth_headers)
@@ -79,7 +79,7 @@ class TestChatContextSummarization:
     def test_chat_ai_unavailable_returns_fallback(self, mock_ai, client, test_user, auth_headers, db):
         """When AI is unavailable, should return a friendly fallback message."""
         pid = _get_profile_id(db, test_user.id)
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "Hello",
         }, headers=auth_headers)
@@ -97,17 +97,6 @@ class TestChatQuotaPeriods:
         assert start.date() == date.today()
         assert end.date() == date.today() + timedelta(days=1)
 
-    def test_quota_structure(self, client, test_user, auth_headers, db):
-        pid = _get_profile_id(db, test_user.id)
-        resp = client.get("/api/chat/quota", params={"profile_id": pid}, headers=auth_headers)
-        assert resp.status_code == 200
-        body = resp.json()
-        assert "limit" in body
-        assert "used" in body
-        assert "remaining" in body
-        assert "period" in body
-        assert "resets_at" in body
-
 
 class TestChatHistory:
 
@@ -116,8 +105,8 @@ class TestChatHistory:
         pid = _get_profile_id(db, test_user.id)
 
         # Send two messages
-        client.post("/api/chat/send", json={"profile_id": pid, "message": "First"}, headers=auth_headers)
-        client.post("/api/chat/send", json={"profile_id": pid, "message": "Second"}, headers=auth_headers)
+        client.post("/api/chat/messages", json={"profile_id": pid, "message": "First"}, headers=auth_headers)
+        client.post("/api/chat/messages", json={"profile_id": pid, "message": "Second"}, headers=auth_headers)
 
         resp = client.get("/api/chat/messages", params={"profile_id": pid}, headers=auth_headers)
         assert resp.status_code == 200
@@ -154,7 +143,7 @@ class TestChatAccessControl:
         db.flush()
 
         viewer_headers = {"Authorization": f"Bearer {create_access_token(data={'sub': viewer.email})}"}
-        resp = client.post("/api/chat/send", json={
+        resp = client.post("/api/chat/messages", json={
             "profile_id": pid,
             "message": "Should be blocked",
         }, headers=viewer_headers)

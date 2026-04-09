@@ -3,6 +3,7 @@
 
 """Health Readings API Routes"""
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -151,40 +152,6 @@ def get_readings(
 
     return query.order_by(models.HealthReading.reading_timestamp.desc()).offset(offset).limit(limit).all()
 
-
-@router.get("/readings/stats/summary")
-def get_readings_summary(
-    profile_id: int,
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
-):
-    """Get summary statistics for readings of a specific profile."""
-    get_profile_access_or_403(profile_id, user, db)
-
-    total_readings = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id
-    ).count()
-
-    glucose_count = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'glucose',
-    ).count()
-
-    bp_count = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'blood_pressure',
-    ).count()
-
-    latest_reading = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id
-    ).order_by(models.HealthReading.reading_timestamp.desc()).first()
-
-    return {
-        "total_readings": total_readings,
-        "glucose_readings": glucose_count,
-        "bp_readings": bp_count,
-        "latest_reading": schemas.HealthReadingResponse.from_orm(latest_reading) if latest_reading else None,
-    }
 
 
 @router.get("/readings/health-score", response_model=schemas.HealthScoreResponse)
@@ -643,18 +610,98 @@ Write exactly 2-3 short sentences: one about their status, one actionable tip. U
     return {"insight": fallback}
 
 
+def _build_shareable_summary(profile_id: int, period: int, db: Session):
+    """Build a shareable text summary for the given profile and period."""
+    today = date.today()
+    period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time())
+
+    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
+    profile_name = profile.name if profile else "Patient"
+
+    readings = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_timestamp >= period_start,
+        )
+        .order_by(models.HealthReading.reading_timestamp.asc())
+        .all()
+    )
+
+    glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
+    bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+
+    lines = [f"\U0001f4ca Weekly Health Summary \u2014 {profile_name}"]
+    start_date = (today - timedelta(days=period - 1)).strftime('%b %d')
+    end_date = today.strftime('%b %d, %Y')
+    lines.append(f"Period: {start_date} \u2013 {end_date}")
+    lines.append("")
+
+    if glucose_vals:
+        avg_g = sum(glucose_vals) / len(glucose_vals)
+        normal_pct = sum(1 for v in glucose_vals if 70 <= v <= 130) * 100 // len(glucose_vals)
+        lines.append(f"\U0001fa78 Glucose: {len(glucose_vals)} readings")
+        lines.append(f"   Avg: {avg_g:.0f} mg/dL | Range: {min(glucose_vals):.0f}\u2013{max(glucose_vals):.0f}")
+        lines.append(f"   Normal: {normal_pct}%")
+    else:
+        lines.append("\U0001fa78 Glucose: No readings this week")
+
+    lines.append("")
+
+    if bp_readings:
+        sys_vals = [s for s, _ in bp_readings]
+        dia_vals = [d for _, d in bp_readings]
+        avg_sys = sum(sys_vals) / len(sys_vals)
+        avg_dia = sum(dia_vals) / len(dia_vals)
+        elevated = sum(1 for s, d in bp_readings if s > 140 or d > 90)
+        lines.append(f"\u2764\ufe0f Blood Pressure: {len(bp_readings)} readings")
+        lines.append(f"   Avg: {avg_sys:.0f}/{avg_dia:.0f} mmHg")
+        lines.append(f"   Elevated: {elevated}")
+    else:
+        lines.append("\u2764\ufe0f Blood Pressure: No readings this week")
+
+    days_with = set()
+    for r in readings:
+        days_with.add(r.reading_timestamp.date())
+    days_logged = len(days_with)
+    lines.append("")
+    lines.append(f"\U0001f4c5 Days logged: {days_logged}/{period}")
+    lines.append("")
+    lines.append("\u2014 Sent from Swasth Health App")
+
+    summary_text = "\n".join(lines)
+
+    return {
+        "summary_text": summary_text,
+        "profile_name": profile_name,
+        "glucose_count": len(glucose_vals),
+        "glucose_avg": round(sum(glucose_vals) / len(glucose_vals), 1) if glucose_vals else None,
+        "bp_count": len(bp_readings),
+        "bp_avg_sys": round(sum(s for s, _ in bp_readings) / len(bp_readings), 1) if bp_readings else None,
+        "bp_avg_dia": round(sum(d for _, d in bp_readings) / len(bp_readings), 1) if bp_readings else None,
+        "days_logged": days_logged,
+        "total_readings": len(readings),
+    }
+
+
 @router.get("/readings/trend-summary")
 def get_trend_summary(
     profile_id: int,
     period: int = Query(default=7, ge=7, le=90),
+    format: str = Query(default="json", pattern="^(json|text)$"),
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
     """Layered trend summary: reuses dashboard AI insight + appends period-specific data.
 
     No extra Gemini calls — consistent messaging across all views, instant response.
+    When format=text, returns a shareable weekly summary with emoji formatting.
     """
     get_profile_access_or_403(profile_id, user, db)
+
+    # If text format requested, return shareable summary
+    if format == "text":
+        return _build_shareable_summary(profile_id, period, db)
 
     today = date.today()
 
@@ -869,85 +916,15 @@ def get_family_streaks(
     return {"leaderboard": board}
 
 
-@router.get("/readings/weekly-summary")
+@router.get("/readings/weekly-summary", deprecated=True)
 def get_weekly_summary(
     profile_id: int,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Generate a shareable weekly health summary for the doctor or family."""
+    """Deprecated: use GET /readings/trend-summary?period=7&format=text instead."""
     get_profile_access_or_403(profile_id, user, db)
-
-    today = date.today()
-    week_start = datetime.combine(today - timedelta(days=6), datetime.min.time())
-
-    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
-    profile_name = profile.name if profile else "Patient"
-
-    readings = (
-        db.query(models.HealthReading)
-        .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_timestamp >= week_start,
-        )
-        .order_by(models.HealthReading.reading_timestamp.asc())
-        .all()
-    )
-
-    glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
-    bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
-
-    # Build summary text
-    lines = [f"📊 Weekly Health Summary — {profile_name}"]
-    lines.append(f"Period: {(today - timedelta(days=6)).strftime('%b %d')} – {today.strftime('%b %d, %Y')}")
-    lines.append("")
-
-    if glucose_vals:
-        avg_g = sum(glucose_vals) / len(glucose_vals)
-        normal_pct = sum(1 for v in glucose_vals if 70 <= v <= 130) * 100 // len(glucose_vals)
-        lines.append(f"🩸 Glucose: {len(glucose_vals)} readings")
-        lines.append(f"   Avg: {avg_g:.0f} mg/dL | Range: {min(glucose_vals):.0f}–{max(glucose_vals):.0f}")
-        lines.append(f"   Normal: {normal_pct}%")
-    else:
-        lines.append("🩸 Glucose: No readings this week")
-
-    lines.append("")
-
-    if bp_readings:
-        sys_vals = [s for s, _ in bp_readings]
-        dia_vals = [d for _, d in bp_readings]
-        avg_sys = sum(sys_vals) / len(sys_vals)
-        avg_dia = sum(dia_vals) / len(dia_vals)
-        elevated = sum(1 for s, d in bp_readings if s > 140 or d > 90)
-        lines.append(f"❤️ Blood Pressure: {len(bp_readings)} readings")
-        lines.append(f"   Avg: {avg_sys:.0f}/{avg_dia:.0f} mmHg")
-        lines.append(f"   Elevated: {elevated}")
-    else:
-        lines.append("❤️ Blood Pressure: No readings this week")
-
-    # Streak
-    days_with = set()
-    for r in readings:
-        days_with.add(r.reading_timestamp.date())
-    days_logged = len(days_with)
-    lines.append("")
-    lines.append(f"📅 Days logged: {days_logged}/7")
-    lines.append("")
-    lines.append("— Sent from Swasth Health App")
-
-    summary_text = "\n".join(lines)
-
-    return {
-        "summary_text": summary_text,
-        "profile_name": profile_name,
-        "glucose_count": len(glucose_vals),
-        "glucose_avg": round(sum(glucose_vals) / len(glucose_vals), 1) if glucose_vals else None,
-        "bp_count": len(bp_readings),
-        "bp_avg_sys": round(sum(s for s, _ in bp_readings) / len(bp_readings), 1) if bp_readings else None,
-        "bp_avg_dia": round(sum(d for _, d in bp_readings) / len(bp_readings), 1) if bp_readings else None,
-        "days_logged": days_logged,
-        "total_readings": len(readings),
-    }
+    return _build_shareable_summary(profile_id, 7, db)
 
 
 @router.get("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
@@ -967,7 +944,7 @@ def get_reading(
     return db_reading
 
 
-@router.delete("/readings/{reading_id}")
+@router.delete("/readings/{reading_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_reading(
     reading_id: int,
     db: Session = Depends(get_db),
@@ -983,7 +960,7 @@ def delete_reading(
     
     db.delete(db_reading)
     db.commit()
-    return {"message": "Reading deleted successfully"}
+    return Response(status_code=204)
 
 
 @router.post("/readings/parse-image")

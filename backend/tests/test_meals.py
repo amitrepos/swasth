@@ -347,7 +347,7 @@ class TestMealDeleteEndpoint:
         meal_id = create_resp.json()["id"]
 
         del_resp = client.delete(f"/api/meals/{meal_id}", headers=auth_headers)
-        assert del_resp.status_code == 200
+        assert del_resp.status_code == 204
 
     def test_delete_nonexistent_meal(self, client, auth_headers):
         resp = client.delete("/api/meals/99999", headers=auth_headers)
