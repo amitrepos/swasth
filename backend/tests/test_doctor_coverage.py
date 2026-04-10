@@ -102,7 +102,7 @@ def test_triage_empty(client, db):
     db.add(pu); db.flush()
     p = models.Profile(name="Empty"); db.add(p); db.flush()
     db.add(models.ProfileAccess(user_id=pu.id, profile_id=p.id, access_level="owner"))
-    db.add(models.DoctorPatientLink(doctor_id=doc.user_id, profile_id=p.id, consent_granted_at=datetime.now(timezone.utc), consent_type="in_person_exam", is_active=True))
+    db.add(models.DoctorPatientLink(doctor_id=doc.user_id, profile_id=p.id, consent_granted_at=datetime.now(timezone.utc), consent_type="in_person_exam", is_active=True, status="active"))
     db.flush()
     assert client.get("/api/doctor/patients", headers=h).status_code == 200
 
@@ -116,7 +116,7 @@ def test_triage_critical(client, db):
         unit_display="mmHg", systolic=190.0, diastolic=110.0,
         reading_timestamp=ts, created_at=ts, status_flag="HIGH - STAGE 2",
     ))
-    db.add(models.DoctorPatientLink(doctor_id=doc.user_id, profile_id=pp.id, consent_granted_at=datetime.now(timezone.utc), consent_type="in_person_exam", is_active=True))
+    db.add(models.DoctorPatientLink(doctor_id=doc.user_id, profile_id=pp.id, consent_granted_at=datetime.now(timezone.utc), consent_type="in_person_exam", is_active=True, status="active"))
     db.flush()
     assert client.get("/api/doctor/patients", headers=h).status_code == 200
 
@@ -124,7 +124,7 @@ def test_triage_critical(client, db):
 def test_patient_summary(client, db):
     _, doc, h = _doc(db, "sum@test.com", "NMC500")
     _, pp = _patient(db, "summary@test.com")
-    db.add(models.DoctorPatientLink(doctor_id=doc.user_id, profile_id=pp.id, consent_granted_at=datetime.now(timezone.utc), consent_type="in_person_exam", is_active=True))
+    db.add(models.DoctorPatientLink(doctor_id=doc.user_id, profile_id=pp.id, consent_granted_at=datetime.now(timezone.utc), consent_type="in_person_exam", is_active=True, status="active"))
     db.flush()
     assert client.get(f"/api/doctor/patients/{pp.id}/summary", headers=h).status_code == 200
 
@@ -281,7 +281,7 @@ def test_refresh_triage_updates_active_links(db):
     link = models.DoctorPatientLink(
         doctor_id=doc.user_id, profile_id=p.id,
         consent_granted_at=datetime.now(timezone.utc),
-        consent_type="in_person_exam", is_active=True,
+        consent_type="in_person_exam", is_active=True, status="active",
         triage_status="stale",
     )
     db.add(link); db.flush()

@@ -1,7 +1,7 @@
 import re
 from pydantic import BaseModel, EmailStr, validator, Field
 from typing import Optional, List, Literal
-from datetime import datetime
+from datetime import date, datetime
 
 
 # Options
@@ -739,7 +739,63 @@ class DoctorPatientLinkResponse(BaseModel):
     profile_name: str
     consent_type: str
     is_active: bool
+    status: str  # pending_doctor_accept | active | revoked
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 — doctor-side accept flow
+# ---------------------------------------------------------------------------
+
+class DoctorAcceptRequest(BaseModel):
+    """Doctor's NMC attestation when accepting a pending patient link.
+
+    Per NMC 2020 Telemedicine Guidelines § 1.4.1, a Follow-up Consult
+    requires that the RMP has examined the patient in-person within the
+    last 6 months for the same condition. This schema captures that
+    attestation: the doctor declares when the exam happened and what
+    was examined.
+    """
+    examined_on: date = Field(..., description="Date the doctor examined the patient in person")
+    examined_for_condition: str = Field(..., min_length=3, max_length=200)
+
+    @validator('examined_on')
+    def exam_must_be_recent_and_not_future(cls, v):
+        from datetime import date as _date, timedelta as _td
+        today = _date.today()
+        if v > today:
+            raise ValueError('Exam date cannot be in the future')
+        if (today - v) > _td(days=183):
+            # ~6 months — NMC Follow-up Consult window
+            raise ValueError('Exam date must be within the last 6 months')
+        return v
+
+    @validator('examined_for_condition')
+    def strip_condition(cls, v):
+        stripped = v.strip()
+        if len(stripped) < 3:
+            raise ValueError('Condition must be at least 3 characters')
+        return stripped
+
+
+class DoctorDeclineRequest(BaseModel):
+    """Doctor declines a pending patient link request."""
+    reason: Optional[str] = Field(None, max_length=500)
+
+
+class PendingLinkRequest(BaseModel):
+    """Row returned by GET /api/doctor/patients/pending."""
+    link_id: int
+    profile_id: int
+    profile_name: str
+    profile_age: Optional[int] = None
+    profile_gender: Optional[str] = None
+    consent_type: str
+    consent_granted_at: datetime
+    doctor_code_used: Optional[str] = None
 
     class Config:
         from_attributes = True

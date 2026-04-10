@@ -216,7 +216,10 @@ class TestDoctorPatientLink:
         db.add(link)
         db.flush()
         assert link.id is not None
-        assert link.is_active is True
+        # Post-Phase-4: new links default to pending_doctor_accept
+        # and is_active=False until the doctor explicitly accepts.
+        assert link.status == "pending_doctor_accept"
+        assert link.is_active is False
         assert link.triage_status == "no_data"
         assert link.compliance_7d == 0
 
@@ -526,6 +529,10 @@ class TestDoctorDependencies:
             consent_granted_at=datetime.now(timezone.utc),
             consent_granted_by=doctor.id,
             consent_type="in_person_exam",
+            # Post-Phase-4 this fixture builds an already-active link
+            # (the dependency test asserts the doctor can access it)
+            status="active",
+            is_active=True,
         )
         db.add(link)
         db.flush()
@@ -582,7 +589,11 @@ class TestDoctorDependencies:
         from dependencies import get_doctor_patient_access
         from fastapi import HTTPException
         doctor, profile, link = self._make_doctor_with_link(db)
+        # Post-Phase-4: access is gated on status='active', so
+        # setting is_active alone is no longer sufficient to simulate
+        # a revoked link — must also flip status.
         link.is_active = False
+        link.status = "revoked"
         link.revoked_at = datetime.now(timezone.utc)
         db.flush()
 

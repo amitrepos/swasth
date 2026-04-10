@@ -223,12 +223,15 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
         _consentType,
       );
       if (!mounted) return;
+      // Phase 4: the link is now pending doctor acceptance. Show the
+      // patient a clearer message so they don't expect immediate access.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            l10n.linkDoctorSuccess(doctor['doctor_name'] as String),
+            l10n.linkDoctorRequestSent(doctor['doctor_name'] as String),
           ),
           backgroundColor: AppColors.statusNormal,
+          duration: const Duration(seconds: 4),
         ),
       );
       Navigator.pop(context, true);

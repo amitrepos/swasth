@@ -994,8 +994,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final name = (doctor['doctor_name'] as String?) ?? '';
     final specialty = doctor['specialty'] as String?;
     final code = (doctor['doctor_code'] as String?) ?? '';
+    final status = (doctor['status'] as String?) ?? 'active';
+    final isPending = status == 'pending_doctor_accept';
     final isRevoking = _revokingCodes.contains(code);
     final initial = name.isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+
+    final avatarBg = isPending
+        ? AppColors.statusElevated.withOpacity(0.15)
+        : AppColors.primary.withOpacity(0.15);
+    final avatarFg = isPending ? AppColors.statusElevated : AppColors.primary;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1009,11 +1016,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: AppColors.primary.withOpacity(0.15),
+                backgroundColor: avatarBg,
                 child: Text(
                   initial,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: AppColors.primary,
+                    color: avatarFg,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1036,12 +1043,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                    if (isPending)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.hourglass_top,
+                              size: 14,
+                              color: AppColors.statusElevated,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              l10n.linkedDoctorsWaitingForDoctor,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColors.statusElevated,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
               IconButton(
                 key: Key('profile_revoke_button_$code'),
-                tooltip: l10n.linkedDoctorsRevoke,
+                tooltip: isPending
+                    ? l10n.linkedDoctorsCancelRequest
+                    : l10n.linkedDoctorsRevoke,
                 onPressed: isRevoking
                     ? null
                     : () => _revokeLinkedDoctor(doctor),
@@ -1051,8 +1081,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         width: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(
-                        Icons.link_off,
+                    : Icon(
+                        isPending ? Icons.close : Icons.link_off,
                         color: AppColors.statusCritical,
                       ),
               ),

@@ -594,6 +594,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get linkedDoctorsRevoke => 'साझा करना बंद करें';
 
   @override
+  String get linkedDoctorsWaitingForDoctor => 'डॉक्टर के जवाब का इंतज़ार';
+
+  @override
+  String get linkedDoctorsCancelRequest => 'अनुरोध रद्द करें';
+
+  @override
   String linkedDoctorsRevokeDialogTitle(String name) {
     return '$name के साथ साझा करना बंद करें?';
   }
@@ -1510,6 +1516,11 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get linkDoctorNmcDisclaimer =>
       'रीडिंग साझा करने से डॉक्टर-मरीज़ का रिश्ता नहीं बनता। इलाज के लिए आपके डॉक्टर को अलग से पुष्टि करनी होगी। आपात स्थिति में 108 पर कॉल करें।';
+
+  @override
+  String linkDoctorRequestSent(String name) {
+    return '$name को आपका अनुरोध भेज दिया गया है। डॉक्टर के स्वीकार करने पर आपको पहुँच मिल जाएगी।';
+  }
 
   @override
   String linkDoctorSuccess(String name) {

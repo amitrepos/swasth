@@ -345,14 +345,30 @@ def link_doctor_to_patient(
         models.DoctorPatientLink.profile_id == profile_id,
     ).first()
 
-    if existing and existing.is_active:
+    if existing and existing.status == "active":
         raise HTTPException(status_code=400, detail="Already linked to this doctor")
+    if existing and existing.status == "pending_doctor_accept":
+        raise HTTPException(
+            status_code=400,
+            detail="A link request for this doctor is already waiting for their review",
+        )
 
-    # Reactivate revoked link or create new
+    # NMC 2020: new links start in PENDING state. The doctor must
+    # explicitly accept (with an exam-date attestation) before the
+    # link becomes active and data starts flowing.
+    now_utc = datetime.now(timezone.utc)
     if existing:
-        existing.is_active = True
+        # Reactivate revoked link — but still through the pending flow,
+        # not straight to active. The doctor must re-attest.
+        existing.status = "pending_doctor_accept"
+        existing.is_active = False
         existing.revoked_at = None
-        existing.consent_granted_at = datetime.now(timezone.utc)
+        existing.revoke_reason = None
+        existing.accepted_at = None
+        existing.accepted_by_doctor_id = None
+        existing.examined_on = None
+        existing.examined_for_condition = None
+        existing.consent_granted_at = now_utc
         existing.consent_granted_by = user.id
         existing.consent_type = data.consent_type
         existing.doctor_code_used = data.doctor_code.upper()
@@ -362,23 +378,15 @@ def link_doctor_to_patient(
         link = models.DoctorPatientLink(
             doctor_id=dp.user_id,
             profile_id=profile_id,
-            consent_granted_at=datetime.now(timezone.utc),
+            consent_granted_at=now_utc,
             consent_granted_by=user.id,
             consent_type=data.consent_type,
             doctor_code_used=data.doctor_code.upper(),
+            status="pending_doctor_accept",
+            is_active=False,
         )
         db.add(link)
         db.flush()
-
-    # Compute initial triage
-    triage = _compute_triage_status(profile_id, db)
-    link.triage_status = triage["triage_status"]
-    link.last_reading_value = triage["last_reading_value"]
-    link.last_reading_type = triage["last_reading_type"]
-    link.last_reading_at = triage["last_reading_at"]
-    link.compliance_7d = triage["compliance_7d"]
-    link.trend_direction = triage["trend_direction"]
-    link.triage_updated_at = datetime.now(timezone.utc)
 
     db.commit()
     db.refresh(link)
@@ -393,6 +401,7 @@ def link_doctor_to_patient(
         profile_name=profile.name if profile else "Unknown",
         consent_type=link.consent_type,
         is_active=link.is_active,
+        status=link.status,
         created_at=link.created_at,
     )
 
@@ -415,14 +424,17 @@ def revoke_doctor_link(
     if not dp:
         raise HTTPException(status_code=404, detail="Doctor code not found")
 
+    # Allow revoking either an active link OR a pending-accept link
+    # (patient withdraws their request before the doctor reviews it).
     link = db.query(models.DoctorPatientLink).filter(
         models.DoctorPatientLink.doctor_id == dp.user_id,
         models.DoctorPatientLink.profile_id == profile_id,
-        models.DoctorPatientLink.is_active == True,  # noqa: E712
+        models.DoctorPatientLink.status.in_(["active", "pending_doctor_accept"]),
     ).first()
     if not link:
-        raise HTTPException(status_code=404, detail="No active link found")
+        raise HTTPException(status_code=404, detail="No link found to revoke")
 
+    link.status = "revoked"
     link.is_active = False
     link.revoked_at = datetime.now(timezone.utc)
     db.commit()
@@ -436,7 +448,12 @@ def list_linked_doctors(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """List all doctors linked to a patient profile (for patient app)."""
+    """List doctors linked to a patient profile (for patient app).
+
+    Includes both `active` and `pending_doctor_accept` rows so the
+    patient can see a "waiting for doctor" badge in the UI. Revoked
+    rows are excluded.
+    """
     get_profile_access_or_403(profile_id, user, db)
 
     links = (
@@ -445,7 +462,7 @@ def list_linked_doctors(
         .join(models.User, models.User.id == models.DoctorPatientLink.doctor_id)
         .filter(
             models.DoctorPatientLink.profile_id == profile_id,
-            models.DoctorPatientLink.is_active == True,  # noqa: E712
+            models.DoctorPatientLink.status.in_(["active", "pending_doctor_accept"]),
         )
         .all()
     )
@@ -457,6 +474,7 @@ def list_linked_doctors(
             "doctor_code": dp.doctor_code,
             "is_verified": dp.is_verified,
             "linked_since": link.consent_granted_at,
+            "status": link.status,
         }
         for link, dp, u in links
     ]
@@ -511,7 +529,7 @@ def list_known_doctors(
         .join(models.User, models.User.id == models.DoctorPatientLink.doctor_id)
         .filter(
             models.DoctorPatientLink.profile_id.in_(owned_profile_ids),
-            models.DoctorPatientLink.is_active == True,  # noqa: E712
+            models.DoctorPatientLink.status == "active",
         )
         .all()
     )
@@ -538,6 +556,158 @@ def list_known_doctors(
 
 
 # ---------------------------------------------------------------------------
+# Phase 4 — doctor-side accept flow (NMC 2020 § 1.4.1)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/patients/pending", response_model=list[schemas.PendingLinkRequest])
+def list_pending_link_requests(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return pending patient-initiated link requests awaiting this
+    doctor's review + attestation. Doctors only.
+    """
+    if user.role != UserRole.doctor:
+        raise HTTPException(status_code=403, detail="Only doctors can access this")
+
+    rows = (
+        db.query(models.DoctorPatientLink, models.Profile)
+        .join(models.Profile, models.Profile.id == models.DoctorPatientLink.profile_id)
+        .filter(
+            models.DoctorPatientLink.doctor_id == user.id,
+            models.DoctorPatientLink.status == "pending_doctor_accept",
+        )
+        .order_by(models.DoctorPatientLink.consent_granted_at.desc())
+        .all()
+    )
+
+    return [
+        schemas.PendingLinkRequest(
+            link_id=link.id,
+            profile_id=profile.id,
+            profile_name=profile.name,
+            profile_age=profile.age,
+            profile_gender=profile.gender,
+            consent_type=link.consent_type,
+            consent_granted_at=link.consent_granted_at,
+            doctor_code_used=link.doctor_code_used,
+        )
+        for link, profile in rows
+    ]
+
+
+@router.post("/patients/{profile_id}/accept")
+def accept_patient_link(
+    profile_id: int,
+    data: schemas.DoctorAcceptRequest,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Doctor accepts a pending patient link with an NMC attestation.
+
+    Transitions `pending_doctor_accept → active`. Once this returns
+    200, the doctor gains read access to the patient's readings via
+    all the existing `/patients/{id}/*` endpoints.
+    """
+    if user.role != UserRole.doctor:
+        raise HTTPException(status_code=403, detail="Only doctors can access this")
+
+    link = (
+        db.query(models.DoctorPatientLink)
+        .filter(
+            models.DoctorPatientLink.doctor_id == user.id,
+            models.DoctorPatientLink.profile_id == profile_id,
+            models.DoctorPatientLink.status == "pending_doctor_accept",
+        )
+        .first()
+    )
+    if link is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No pending link request found for this patient",
+        )
+
+    now_utc = datetime.now(timezone.utc)
+    link.status = "active"
+    link.is_active = True
+    link.accepted_at = now_utc
+    link.accepted_by_doctor_id = user.id
+    link.examined_on = data.examined_on
+    link.examined_for_condition = data.examined_for_condition
+
+    # Populate initial triage snapshot now that the link is live.
+    triage = _compute_triage_status(profile_id, db)
+    link.triage_status = triage["triage_status"]
+    link.last_reading_value = triage["last_reading_value"]
+    link.last_reading_type = triage["last_reading_type"]
+    link.last_reading_at = triage["last_reading_at"]
+    link.compliance_7d = triage["compliance_7d"]
+    link.trend_direction = triage["trend_direction"]
+    link.triage_updated_at = now_utc
+
+    _log_doctor_access(
+        db,
+        doctor_id=user.id,
+        profile_id=profile_id,
+        action="accepted_link",
+        endpoint="POST /api/doctor/patients/{id}/accept",
+    )
+    db.commit()
+
+    return {
+        "detail": "Link accepted",
+        "status": "active",
+        "examined_on": str(link.examined_on),
+        "examined_for_condition": link.examined_for_condition,
+    }
+
+
+@router.post("/patients/{profile_id}/decline")
+def decline_patient_link(
+    profile_id: int,
+    data: schemas.DoctorDeclineRequest,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Doctor declines a pending patient link. Transitions
+    `pending_doctor_accept → revoked` with an optional reason."""
+    if user.role != UserRole.doctor:
+        raise HTTPException(status_code=403, detail="Only doctors can access this")
+
+    link = (
+        db.query(models.DoctorPatientLink)
+        .filter(
+            models.DoctorPatientLink.doctor_id == user.id,
+            models.DoctorPatientLink.profile_id == profile_id,
+            models.DoctorPatientLink.status == "pending_doctor_accept",
+        )
+        .first()
+    )
+    if link is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No pending link request found for this patient",
+        )
+
+    link.status = "revoked"
+    link.is_active = False
+    link.revoked_at = datetime.now(timezone.utc)
+    link.revoke_reason = data.reason
+
+    _log_doctor_access(
+        db,
+        doctor_id=user.id,
+        profile_id=profile_id,
+        action="declined_link",
+        endpoint="POST /api/doctor/patients/{id}/decline",
+    )
+    db.commit()
+
+    return {"detail": "Link declined", "status": "revoked"}
+
+
+# ---------------------------------------------------------------------------
 # Triage Dashboard (doctor view)
 # ---------------------------------------------------------------------------
 
@@ -558,7 +728,7 @@ def get_triage_board(
         .join(models.Profile, models.Profile.id == models.DoctorPatientLink.profile_id)
         .filter(
             models.DoctorPatientLink.doctor_id == user.id,
-            models.DoctorPatientLink.is_active == True,  # noqa: E712
+            models.DoctorPatientLink.status == "active",
         )
         .all()
     )
@@ -840,7 +1010,7 @@ def refresh_triage_for_profile(profile_id: int, db: Session):
         db.query(models.DoctorPatientLink)
         .filter(
             models.DoctorPatientLink.profile_id == profile_id,
-            models.DoctorPatientLink.is_active == True,  # noqa: E712
+            models.DoctorPatientLink.status == "active",
         )
         .all()
     )

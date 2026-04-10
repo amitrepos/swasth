@@ -19,6 +19,8 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
   final _storage = StorageService();
 
   List<Map<String, dynamic>> _patients = [];
+  List<Map<String, dynamic>> _pendingRequests = [];
+  final Set<int> _processingProfileIds = <int>{};
   Map<String, dynamic>? _doctorProfile;
   bool _loading = true;
   String? _error;
@@ -49,12 +51,14 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
       final results = await Future.wait([
         _doctorService.getMyProfile(token),
         _doctorService.getTriageBoard(token),
+        _doctorService.getPendingRequests(token),
       ]);
 
       if (!mounted) return;
       setState(() {
         _doctorProfile = results[0] as Map<String, dynamic>;
         _patients = (results[1] as List).cast<Map<String, dynamic>>();
+        _pendingRequests = (results[2] as List).cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
@@ -124,7 +128,7 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? _buildError()
-          : _patients.isEmpty
+          : (_patients.isEmpty && _pendingRequests.isEmpty)
           ? _buildEmptyState()
           : RefreshIndicator(onRefresh: _loadData, child: _buildTriageBoard()),
     );
@@ -206,6 +210,19 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
+        // Pending requests section (above the summary bar so new
+        // doctor actions are the first thing the doctor sees)
+        if (_pendingRequests.isNotEmpty) ...[
+          _buildSectionHeader(
+            'PENDING REQUESTS',
+            _pendingRequests.length,
+            AppColors.primary,
+            Icons.person_add_alt_1_rounded,
+          ),
+          ..._pendingRequests.map(_buildPendingRequestCard),
+          const SizedBox(height: 16),
+        ],
+
         // Summary bar
         _buildSummaryBar(
           critical.length,
@@ -360,6 +377,222 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
         children: patients.map(_buildPatientCard).toList(),
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------
+  // Phase 4 — pending request card + accept/decline flows
+  // ---------------------------------------------------------------------
+
+  Widget _buildPendingRequestCard(Map<String, dynamic> req) {
+    final profileId = req['profile_id'] as int;
+    final profileName = (req['profile_name'] as String?) ?? 'Unknown';
+    final age = req['profile_age'] as int?;
+    final gender = req['profile_gender'] as String?;
+    final consentType = (req['consent_type'] as String?) ?? '';
+    final isProcessing = _processingProfileIds.contains(profileId);
+
+    final subtitleBits = <String>[
+      if (age != null) '$age yrs',
+      if (gender != null && gender.isNotEmpty) gender,
+      if (consentType == 'in_person_exam')
+        'In-person visit'
+      else if (consentType == 'video_consult')
+        'Video / phone'
+      else
+        consentType,
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GlassCard(
+        borderRadius: 16,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            key: Key('pending_request_$profileId'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    child: Text(
+                      profileName.isNotEmpty
+                          ? profileName.trim()[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          profileName,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (subtitleBits.isNotEmpty)
+                          Text(
+                            subtitleBits.join(' • '),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'The patient is requesting access. Confirm when and what you examined them for to accept (NMC 2020 § 1.4.1).',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    key: Key('pending_decline_$profileId'),
+                    onPressed: isProcessing
+                        ? null
+                        : () => _onDeclineTapped(req),
+                    child: const Text(
+                      'Decline',
+                      style: TextStyle(color: AppColors.statusCritical),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    key: Key('pending_accept_$profileId'),
+                    onPressed: isProcessing ? null : () => _onAcceptTapped(req),
+                    child: isProcessing
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Accept'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onAcceptTapped(Map<String, dynamic> req) async {
+    final profileId = req['profile_id'] as int;
+    final profileName = (req['profile_name'] as String?) ?? 'this patient';
+
+    final result = await showDialog<_AcceptDialogResult>(
+      context: context,
+      builder: (ctx) => _AcceptAttestationDialog(profileName: profileName),
+    );
+    if (result == null || !mounted) return;
+
+    setState(() => _processingProfileIds.add(profileId));
+    try {
+      final token = await _storage.getToken();
+      if (token == null) throw Exception('Not authenticated');
+      await _doctorService.acceptPatientLink(
+        token,
+        profileId,
+        examinedOn: result.examinedOn,
+        condition: result.condition,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$profileName added to your patient list'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      await _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.statusCritical,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _processingProfileIds.remove(profileId));
+      }
+    }
+  }
+
+  Future<void> _onDeclineTapped(Map<String, dynamic> req) async {
+    final profileId = req['profile_id'] as int;
+    final profileName = (req['profile_name'] as String?) ?? 'this patient';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Decline $profileName?'),
+        content: const Text(
+          'The patient will not gain access to share their readings with you. '
+          'They can request again later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            key: const Key('decline_dialog_confirm'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusCritical,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Decline'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _processingProfileIds.add(profileId));
+    try {
+      final token = await _storage.getToken();
+      if (token == null) throw Exception('Not authenticated');
+      await _doctorService.declinePatientLink(token, profileId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Declined request from $profileName')),
+      );
+      await _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.statusCritical,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _processingProfileIds.remove(profileId));
+      }
+    }
   }
 
   Widget _buildPatientCard(Map<String, dynamic> patient) {
@@ -604,5 +837,143 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
     } catch (_) {
       return '';
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4 — accept attestation dialog
+// ---------------------------------------------------------------------------
+
+/// Result of the accept dialog — both fields are validated before pop.
+class _AcceptDialogResult {
+  final DateTime examinedOn;
+  final String condition;
+
+  _AcceptDialogResult({required this.examinedOn, required this.condition});
+}
+
+class _AcceptAttestationDialog extends StatefulWidget {
+  final String profileName;
+
+  const _AcceptAttestationDialog({required this.profileName});
+
+  @override
+  State<_AcceptAttestationDialog> createState() =>
+      _AcceptAttestationDialogState();
+}
+
+class _AcceptAttestationDialogState extends State<_AcceptAttestationDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _conditionController = TextEditingController();
+  DateTime? _examinedOn;
+
+  @override
+  void dispose() {
+    _conditionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final sixMonthsAgo = now.subtract(const Duration(days: 183));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _examinedOn ?? now,
+      firstDate: sixMonthsAgo,
+      lastDate: now,
+      helpText: 'When did you examine this patient?',
+    );
+    if (picked != null) {
+      setState(() => _examinedOn = picked);
+    }
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    if (_examinedOn == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select the exam date')),
+      );
+      return;
+    }
+    Navigator.of(context).pop(
+      _AcceptDialogResult(
+        examinedOn: _examinedOn!,
+        condition: _conditionController.text.trim(),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    return '${dt.day.toString().padLeft(2, '0')}/'
+        '${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Accept ${widget.profileName}?'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'NMC 2020 Telemedicine Guidelines require you to attest that '
+              'you have examined this patient in person within the last 6 '
+              'months, and for what condition.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            InkWell(
+              key: const Key('accept_dialog_date_picker'),
+              onTap: _pickDate,
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Exam date',
+                  prefixIcon: Icon(Icons.calendar_today),
+                  border: OutlineInputBorder(),
+                ),
+                child: Text(
+                  _examinedOn != null
+                      ? _formatDate(_examinedOn!)
+                      : 'Tap to choose',
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              key: const Key('accept_dialog_condition'),
+              controller: _conditionController,
+              maxLength: 200,
+              decoration: const InputDecoration(
+                labelText: 'Examined for condition',
+                hintText: 'e.g. Type 2 diabetes, Hypertension',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().length < 3) {
+                  return 'Please describe the condition (min 3 characters)';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: const Key('accept_dialog_cancel'),
+          onPressed: () => Navigator.of(context).pop(null),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          key: const Key('accept_dialog_submit'),
+          onPressed: _submit,
+          child: const Text('Confirm and accept'),
+        ),
+      ],
+    );
   }
 }

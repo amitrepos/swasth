@@ -210,6 +210,8 @@
     }
   },
   "linkedDoctorsRevoke": "साझा करना बंद करें",
+  "linkedDoctorsWaitingForDoctor": "डॉक्टर के जवाब का इंतज़ार",
+  "linkedDoctorsCancelRequest": "अनुरोध रद्द करें",
   "linkedDoctorsRevokeDialogTitle": "{name} के साथ साझा करना बंद करें?",
   "@linkedDoctorsRevokeDialogTitle": {
     "placeholders": {
@@ -579,6 +581,12 @@
   },
   "linkDoctorConfirmDialogShare": "हाँ, साझा करें",
   "linkDoctorNmcDisclaimer": "रीडिंग साझा करने से डॉक्टर-मरीज़ का रिश्ता नहीं बनता। इलाज के लिए आपके डॉक्टर को अलग से पुष्टि करनी होगी। आपात स्थिति में 108 पर कॉल करें।",
+  "linkDoctorRequestSent": "{name} को आपका अनुरोध भेज दिया गया है। डॉक्टर के स्वीकार करने पर आपको पहुँच मिल जाएगी।",
+  "@linkDoctorRequestSent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "linkDoctorSuccess": "आप अब {name} से जुड़ गए हैं।",
   "@linkDoctorSuccess": {
     "placeholders": {

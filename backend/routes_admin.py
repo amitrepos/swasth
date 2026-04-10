@@ -683,7 +683,7 @@ def list_doctors(
     for dp, u in doctors:
         patient_count = db.query(func.count(models.DoctorPatientLink.id)).filter(
             models.DoctorPatientLink.doctor_id == u.id,
-            models.DoctorPatientLink.is_active == True,  # noqa: E712
+            models.DoctorPatientLink.status == "active",
         ).scalar() or 0
 
         last_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(

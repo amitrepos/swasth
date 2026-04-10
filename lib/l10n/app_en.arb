@@ -266,6 +266,8 @@
     }
   },
   "linkedDoctorsRevoke": "Stop sharing",
+  "linkedDoctorsWaitingForDoctor": "Waiting for doctor",
+  "linkedDoctorsCancelRequest": "Cancel request",
   "linkedDoctorsRevokeDialogTitle": "Stop sharing with {name}?",
   "@linkedDoctorsRevokeDialogTitle": {
     "placeholders": {
@@ -732,6 +734,12 @@
   },
   "linkDoctorConfirmDialogShare": "Yes, share",
   "linkDoctorNmcDisclaimer": "Sharing readings does not create a doctor-patient relationship. Your doctor must confirm any treatment separately. In an emergency, call 108.",
+  "linkDoctorRequestSent": "Request sent to {name}. You will get access once the doctor accepts.",
+  "@linkDoctorRequestSent": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "linkDoctorSuccess": "You are now linked to {name}.",
   "@linkDoctorSuccess": {
     "placeholders": {

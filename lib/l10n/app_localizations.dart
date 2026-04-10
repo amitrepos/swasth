@@ -1202,6 +1202,18 @@ abstract class AppLocalizations {
   /// **'Stop sharing'**
   String get linkedDoctorsRevoke;
 
+  /// No description provided for @linkedDoctorsWaitingForDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for doctor'**
+  String get linkedDoctorsWaitingForDoctor;
+
+  /// No description provided for @linkedDoctorsCancelRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request'**
+  String get linkedDoctorsCancelRequest;
+
   /// No description provided for @linkedDoctorsRevokeDialogTitle.
   ///
   /// In en, this message translates to:
@@ -2875,6 +2887,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sharing readings does not create a doctor-patient relationship. Your doctor must confirm any treatment separately. In an emergency, call 108.'**
   String get linkDoctorNmcDisclaimer;
+
+  /// No description provided for @linkDoctorRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent to {name}. You will get access once the doctor accepts.'**
+  String linkDoctorRequestSent(String name);
 
   /// No description provided for @linkDoctorSuccess.
   ///
