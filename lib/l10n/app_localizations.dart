@@ -242,6 +242,12 @@ abstract class AppLocalizations {
   /// **'Don\'t have an account?'**
   String get noAccount;
 
+  /// No description provided for @loginDoctorRegisterLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you a doctor? Register here'**
+  String get loginDoctorRegisterLink;
+
   /// No description provided for @register.
   ///
   /// In en, this message translates to:
@@ -1111,6 +1117,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account Settings'**
   String get accountSettingsSection;
+
+  /// No description provided for @shareWithDoctorSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with a Doctor'**
+  String get shareWithDoctorSection;
+
+  /// No description provided for @adminMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get adminMenuTooltip;
+
+  /// No description provided for @adminMenuDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Open dashboard'**
+  String get adminMenuDashboard;
+
+  /// No description provided for @adminMenuCreateUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Create user'**
+  String get adminMenuCreateUser;
 
   /// No description provided for @linkedEmail.
   ///

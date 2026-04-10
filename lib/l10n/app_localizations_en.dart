@@ -81,6 +81,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noAccount => 'Don\'t have an account?';
 
   @override
+  String get loginDoctorRegisterLink => 'Are you a doctor? Register here';
+
+  @override
   String get register => 'Register';
 
   @override
@@ -542,6 +545,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountSettingsSection => 'Account Settings';
+
+  @override
+  String get shareWithDoctorSection => 'Share with a Doctor';
+
+  @override
+  String get adminMenuTooltip => 'Admin';
+
+  @override
+  String get adminMenuDashboard => 'Open dashboard';
+
+  @override
+  String get adminMenuCreateUser => 'Create user';
 
   @override
   String get linkedEmail => 'Linked Email';

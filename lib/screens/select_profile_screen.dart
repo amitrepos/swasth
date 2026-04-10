@@ -10,6 +10,7 @@ import '../config/app_config.dart';
 import '../theme/app_theme.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
+import 'admin_create_user_screen.dart';
 import 'shell_screen.dart';
 import 'create_profile_screen.dart';
 import 'login_screen.dart';
@@ -125,16 +126,53 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
         title: Text(l10n.selectProfileTitle),
         actions: [
           if (_isAdmin)
-            IconButton(
+            PopupMenuButton<String>(
+              key: const Key('admin_menu'),
               icon: const Icon(Icons.admin_panel_settings),
-              onPressed: () {
-                final baseUrl = AppConfig.serverHost;
-                launchUrl(
-                  Uri.parse('$baseUrl/api/admin'),
-                  mode: LaunchMode.externalApplication,
-                );
+              tooltip: l10n.adminMenuTooltip,
+              onSelected: (value) {
+                switch (value) {
+                  case 'dashboard':
+                    final baseUrl = AppConfig.serverHost;
+                    launchUrl(
+                      Uri.parse('$baseUrl/api/admin'),
+                      mode: LaunchMode.externalApplication,
+                    );
+                    break;
+                  case 'create_user':
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AdminCreateUserScreen(),
+                      ),
+                    );
+                    break;
+                }
               },
-              tooltip: 'Admin Dashboard',
+              itemBuilder: (_) => [
+                PopupMenuItem<String>(
+                  key: const Key('admin_menu_dashboard'),
+                  value: 'dashboard',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.dashboard_outlined, size: 20),
+                      const SizedBox(width: 12),
+                      Text(l10n.adminMenuDashboard),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  key: const Key('admin_menu_create_user'),
+                  value: 'create_user',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person_add_outlined, size: 20),
+                      const SizedBox(width: 12),
+                      Text(l10n.adminMenuCreateUser),
+                    ],
+                  ),
+                ),
+              ],
             ),
           IconButton(
             icon: const Icon(Icons.refresh),

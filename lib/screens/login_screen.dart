@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_form_scroll_body.dart';
+import 'doctor_registration_screen.dart';
 import 'registration_screen.dart';
 import 'select_profile_screen.dart';
 import 'forgot_password_screen.dart';
@@ -306,6 +307,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text(l10n.register),
                   ),
                 ],
+              ),
+
+              // Doctor registration link — separate flow for doctors
+              // because their account creation requires NMC + verification
+              // and must route to /api/doctor/register, not /api/register.
+              TextButton(
+                key: const Key('login_doctor_register_link'),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DoctorRegistrationScreen(),
+                    ),
+                  );
+                },
+                child: Text(l10n.loginDoctorRegisterLink),
               ),
             ],
           ),

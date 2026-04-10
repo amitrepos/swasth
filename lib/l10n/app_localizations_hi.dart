@@ -81,6 +81,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get noAccount => 'खाता नहीं है?';
 
   @override
+  String get loginDoctorRegisterLink => 'क्या आप डॉक्टर हैं? यहाँ रजिस्टर करें';
+
+  @override
   String get register => 'रजिस्टर करें';
 
   @override
@@ -540,6 +543,18 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get accountSettingsSection => 'खाता सेटिंग';
+
+  @override
+  String get shareWithDoctorSection => 'डॉक्टर के साथ साझा करें';
+
+  @override
+  String get adminMenuTooltip => 'एडमिन';
+
+  @override
+  String get adminMenuDashboard => 'डैशबोर्ड खोलें';
+
+  @override
+  String get adminMenuCreateUser => 'यूज़र बनाएं';
 
   @override
   String get linkedEmail => 'लिंक ईमेल';
