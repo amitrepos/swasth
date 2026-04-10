@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Text, ARRAY, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index, Enum
+from sqlalchemy import Column, Integer, String, Float, Text, ARRAY, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index, Enum, JSON
 from sqlalchemy.sql import func
 from database import Base
 import enum
@@ -367,3 +367,56 @@ class AdminAuditLog(Base):
         Index("ix_admin_audit_target", "target_user_id"),
         Index("ix_admin_audit_time", "created_at"),
     )
+
+class WhatsAppMessageStatus(str, enum.Enum):
+    QUEUED = "queued"
+    SENT = "sent"
+    DELIVERED = "delivered"
+    FAILED = "failed"
+
+class ReportTriggerType(str, enum.Enum):
+    SCHEDULED = "scheduled"
+    MANUAL = "manual"
+
+class ReportGenerationStatus(str, enum.Enum):
+    SUCCESS = "success"
+    PARTIAL = "partial"
+    FAILED = "failed"
+
+class ReportGenerationLog(Base):
+    """Log for the data aggregation phase of a report."""
+    __tablename__ = "report_generation_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    trigger_type = Column(Enum(ReportTriggerType), nullable=False)
+    report_date = Column(Date, nullable=False, default=func.current_date())
+    generated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    members_requested = Column(JSON, nullable=False)    # List of profile IDs expected
+    members_with_data = Column(JSON, nullable=False)     # List of profile IDs found with data
+    members_skipped = Column(JSON, nullable=True)       # List of profile IDs with no data
+    
+    status = Column(Enum(ReportGenerationStatus), nullable=False)
+    error_message = Column(Text, nullable=True)
+
+class WhatsAppMessageLog(Base):
+    """Log for the actual delivery phase of a WhatsApp message."""
+    __tablename__ = "whatsapp_message_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    phone_number = Column(String, nullable=False)
+    
+    trigger_type = Column(Enum(ReportTriggerType), nullable=False)
+    report_date = Column(Date, nullable=False)
+    sent_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    member_ids_included = Column(JSON, nullable=False)
+    reading_ids_included = Column(JSON, nullable=True)
+    
+    status = Column(Enum(WhatsAppMessageStatus), nullable=False, default=WhatsAppMessageStatus.QUEUED)
+    twilio_sid = Column(String, nullable=True, index=True)
+    error_message = Column(Text, nullable=True)
+    message_snapshot = Column(Text, nullable=True)

@@ -18,6 +18,8 @@ from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
 from health_utils import generate_meal_insights
+from report_service import trigger_single_user_report
+from models import ReportTriggerType
 
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
@@ -1173,3 +1175,25 @@ def _rule_based_insight(recent: list, total_count: int = 0) -> str:
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
+@router.post("/report/manual-trigger")
+def manually_trigger_whatsapp_report(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Manually request a daily-style health report to be sent via WhatsApp."""
+    if not user.phone_number:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have a phone number configured."
+        )
+        
+    success = trigger_single_user_report(db, user, trigger_type=ReportTriggerType.MANUAL)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate or send report. Check if there are any health readings for the last 24h."
+        )
+        
+    return {"message": "Report generated and queued for delivery via WhatsApp."}

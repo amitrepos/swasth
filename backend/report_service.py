@@ -1,9 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pytz
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import User, Profile, HealthReading, ProfileAccess
+from models import (
+    User, Profile, HealthReading, ProfileAccess,
+    ReportGenerationLog, WhatsAppMessageLog,
+    ReportTriggerType, WhatsAppMessageStatus, ReportGenerationStatus
+)
 from health_utils import classify_bp, classify_glucose
 from twilio_service import whatsapp_service
 
@@ -16,6 +20,7 @@ def format_report_message(user: User, profiles_data: list) -> str:
     except Exception:
         tz = pytz.timezone("Asia/Kolkata")
         
+    # Use the current time in user's timezone for the report header date
     now = datetime.now(tz)
     date_str = now.strftime("%A, %d %b %Y")
     
@@ -54,8 +59,128 @@ def format_report_message(user: User, profiles_data: list) -> str:
     msg.append("💚 Stay healthy! — *Swasth*")
     return "\n".join(msg)
 
-def send_daily_reports(db: Optional[Session] = None):
-    """Main task to aggregate data and send WhatsApp reports to all users with phone numbers."""
+def trigger_single_user_report(db: Session, user: User, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED) -> bool:
+    """
+    Generates and sends a report for a single user with full auditing.
+    Returns True if a message was successfully attempted.
+    """
+    controlled_profiles = db.query(Profile).join(ProfileAccess).filter(
+        ProfileAccess.user_id == user.id,
+        ProfileAccess.access_level == 'owner'
+    ).all()
+    
+    requested_ids = [p.id for p in controlled_profiles]
+    
+    # 1. Initialize Generation Log
+    gen_log = ReportGenerationLog(
+        user_id=user.id,
+        trigger_type=trigger_type,
+        report_date=date.today(),
+        members_requested=requested_ids,
+        members_with_data=[],
+        members_skipped=[],
+        status=ReportGenerationStatus.FAILED
+    )
+    db.add(gen_log)
+    db.commit()
+    db.refresh(gen_log)
+
+    try:
+        if not controlled_profiles:
+            gen_log.error_message = "No controlled profiles found for user."
+            db.commit()
+            return False
+
+        profiles_data = []
+        with_data_ids = []
+        skipped_ids = []
+        all_reading_ids = []
+
+        last_24h = datetime.utcnow() - timedelta(hours=24)
+
+        for profile in controlled_profiles:
+            # Latest Glucose
+            glucose = db.query(HealthReading).filter(
+                HealthReading.profile_id == profile.id,
+                HealthReading.reading_type == "glucose",
+                HealthReading.reading_timestamp >= last_24h
+            ).order_by(HealthReading.reading_timestamp.desc()).first()
+            
+            # Latest BP
+            bp = db.query(HealthReading).filter(
+                HealthReading.profile_id == profile.id,
+                HealthReading.reading_type == "blood_pressure",
+                HealthReading.reading_timestamp >= last_24h
+            ).order_by(HealthReading.reading_timestamp.desc()).first()
+            
+            if glucose or bp:
+                profiles_data.append({
+                    "name": profile.name,
+                    "glucose": glucose,
+                    "bp": bp
+                })
+                with_data_ids.append(profile.id)
+                if glucose: all_reading_ids.append(glucose.id)
+                if bp: all_reading_ids.append(bp.id)
+            else:
+                skipped_ids.append(profile.id)
+
+        # Update Generation Log status
+        gen_log.members_with_data = with_data_ids
+        gen_log.members_skipped = skipped_ids
+        
+        if not profiles_data:
+            gen_log.status = ReportGenerationStatus.FAILED
+            gen_log.error_message = "No data found for any profile in the last 24h."
+            db.commit()
+            return False
+
+        gen_log.status = ReportGenerationStatus.PARTIAL if skipped_ids else ReportGenerationStatus.SUCCESS
+        db.commit()
+
+        # 2. Build Message and Start Delivery Log
+        message_text = format_report_message(user, profiles_data)
+        
+        # Normalize phone
+        phone = user.phone_number.strip()
+        for char in [" ", "-", "(", ")"]: phone = phone.replace(char, "")
+        if len(phone) == 10 and phone.isdigit(): phone = f"+91{phone}"
+        elif not phone.startswith("+") and phone.startswith("91") and len(phone) == 12: phone = f"+{phone}"
+
+        delivery_log = WhatsAppMessageLog(
+            user_id=user.id,
+            phone_number=phone,
+            trigger_type=trigger_type,
+            report_date=date.today(),
+            member_ids_included=with_data_ids,
+            reading_ids_included=all_reading_ids,
+            message_snapshot=message_text,
+            status=WhatsAppMessageStatus.QUEUED
+        )
+        db.add(delivery_log)
+        db.commit()
+        db.refresh(delivery_log)
+
+        # 3. Call Twilio
+        success, sid, twilio_error = whatsapp_service.send_whatsapp(phone, message_text)
+        
+        delivery_log.twilio_sid = sid
+        delivery_log.error_message = twilio_error
+        delivery_log.status = WhatsAppMessageStatus.SENT if success else WhatsAppMessageStatus.FAILED
+        db.commit()
+        
+        return success
+
+    except Exception as e:
+        error_msg = str(e)
+        print(f"Error generating report for user {user.id}: {error_msg}")
+        gen_log.status = ReportGenerationStatus.FAILED
+        gen_log.error_message = error_msg
+        db.commit()
+        return False
+
+def send_daily_reports(db: Optional[Session] = None, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED):
+    """Main task to aggregate data and send WhatsApp reports to all users."""
     managed_session = False
     if db is None:
         db = SessionLocal()
@@ -66,70 +191,14 @@ def send_daily_reports(db: Optional[Session] = None):
         users = db.query(User).filter(User.phone_number != None, User.phone_number != "").all()
         
         for user in users:
-            # Normalize phone number for Twilio (E.164 format)
-            phone = user.phone_number.strip()
-            # Strip common characters
-            for char in [" ", "-", "(", ")"]:
-                phone = phone.replace(char, "")
-                
-            # Assume India (+91) if it's 10 digits without a prefix
-            if len(phone) == 10 and phone.isdigit():
-                phone = f"+91{phone}"
-            elif not phone.startswith("+"):
-                # If it's something like 91870..., add the +
-                if phone.startswith("91") and len(phone) == 12:
-                    phone = f"+{phone}"
-                else:
-                    # Fallback to current behavior but logging it
-                    pass
-            profiles_data = []
-            
-            # Find profiles where user is owner (Primary controlled profiles)
-            controlled_profiles = db.query(Profile).join(ProfileAccess).filter(
-                ProfileAccess.user_id == user.id,
-                ProfileAccess.access_level == 'owner'
-            ).all()
-            
-            if not controlled_profiles:
-                continue
-                
-            # Aggregate latest readings from last 24 hours
-            last_24h = datetime.utcnow() - timedelta(hours=24)
-            
-            for profile in controlled_profiles:
-                # Latest Glucose
-                glucose = db.query(HealthReading).filter(
-                    HealthReading.profile_id == profile.id,
-                    HealthReading.reading_type == "glucose",
-                    HealthReading.reading_timestamp >= last_24h
-                ).order_by(HealthReading.reading_timestamp.desc()).first()
-                
-                # Latest BP
-                bp = db.query(HealthReading).filter(
-                    HealthReading.profile_id == profile.id,
-                    HealthReading.reading_type == "blood_pressure",
-                    HealthReading.reading_timestamp >= last_24h
-                ).order_by(HealthReading.reading_timestamp.desc()).first()
-                
-                if glucose or bp:
-                    profiles_data.append({
-                        "name": profile.name,
-                        "glucose": glucose,
-                        "bp": bp
-                    })
-            
-            if profiles_data:
-                message_text = format_report_message(user, profiles_data)
-                # Note: Prefix with whatsapp: is handled in twilio_service.py
-                whatsapp_service.send_whatsapp(phone, message_text)
-                print(f"Daily report sent to {user.full_name} ({phone})")
+            trigger_single_user_report(db, user, trigger_type=trigger_type)
                 
     except Exception as e:
-        print(f"Error in send_daily_reports task: {e}")
+        print(f"Error in global send_daily_reports task: {e}")
     finally:
         if managed_session:
             db.close()
 
 if __name__ == "__main__":
     # For quick manual testing
-    send_daily_reports()
+    send_daily_reports(trigger_type=ReportTriggerType.MANUAL)
