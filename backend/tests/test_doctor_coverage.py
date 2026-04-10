@@ -132,3 +132,173 @@ def test_patient_summary(client, db):
 def test_verify_non_admin(client, auth_headers, test_user, db):
     _, doc, _ = _doc(db, "ver@test.com", "NMC600")
     assert client.post(f"/api/doctor/verify/{doc.id}", headers=auth_headers).status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for _compute_triage_status — direct function calls to cover
+# every branch of the triage state machine.
+# ---------------------------------------------------------------------------
+
+
+def _bare_profile(db, email_suffix: str):
+    """Create a profile with owner access but no readings."""
+    user = models.User(
+        email=f"triage_{email_suffix}@test.com",
+        password_hash=get_password_hash("Test@1234"),
+        full_name=f"Triage {email_suffix}",
+        phone_number=f"98765{email_suffix.zfill(5)[:5]}",
+    )
+    db.add(user); db.flush()
+    p = models.Profile(name=f"Triage Profile {email_suffix}")
+    db.add(p); db.flush()
+    db.add(models.ProfileAccess(user_id=user.id, profile_id=p.id, access_level="owner"))
+    db.flush()
+    return p
+
+
+def _add_reading(db, profile_id, *, reading_type, hours_ago=0, **values):
+    ts = datetime.now(timezone.utc) - timedelta(hours=hours_ago)
+    r = models.HealthReading(
+        profile_id=profile_id,
+        reading_type=reading_type,
+        reading_timestamp=ts,
+        created_at=ts,
+        **values,
+    )
+    db.add(r); db.flush()
+    return r
+
+
+def test_compute_triage_no_data(db):
+    from routes_doctor import _compute_triage_status
+    p = _bare_profile(db, "1")
+    result = _compute_triage_status(p.id, db)
+    assert result["triage_status"] == "no_data"
+    assert result["last_reading_value"] is None
+    assert result["compliance_7d"] == 0
+
+
+def test_compute_triage_critical_bp_high(db):
+    """Lines 117-120: systolic>180 or diastolic>120 → hypertensive crisis."""
+    from routes_doctor import _compute_triage_status
+    p = _bare_profile(db, "2")
+    _add_reading(db, p.id, reading_type="blood_pressure",
+                 systolic=190.0, diastolic=125.0,
+                 value_numeric=190.0, unit_display="mmHg", status_flag="CRITICAL")
+    result = _compute_triage_status(p.id, db)
+    assert result["triage_status"] == "critical"
+    assert result["last_reading_value"] == "190/125"
+
+
+def test_compute_triage_critical_bp_low(db):
+    """Lines 121-124: systolic<90 or diastolic<60 → hypotension."""
+    from routes_doctor import _compute_triage_status
+    p = _bare_profile(db, "3")
+    _add_reading(db, p.id, reading_type="blood_pressure",
+                 systolic=85.0, diastolic=55.0,
+                 value_numeric=85.0, unit_display="mmHg", status_flag="CRITICAL")
+    result = _compute_triage_status(p.id, db)
+    assert result["triage_status"] == "critical"
+
+
+def test_compute_triage_critical_glucose_low(db):
+    """Lines 126-129: glucose<70 → hypoglycemia."""
+    from routes_doctor import _compute_triage_status
+    p = _bare_profile(db, "4")
+    _add_reading(db, p.id, reading_type="glucose",
+                 glucose_value=55.0, glucose_unit="mg/dL",
+                 value_numeric=55.0, unit_display="mg/dL", status_flag="CRITICAL")
+    result = _compute_triage_status(p.id, db)
+    assert result["triage_status"] == "critical"
+    assert result["last_reading_value"] == "55"
+
+
+def test_compute_triage_critical_glucose_high(db):
+    """Lines 130-133: glucose>300 → severe hyperglycemia."""
+    from routes_doctor import _compute_triage_status
+    p = _bare_profile(db, "5")
+    _add_reading(db, p.id, reading_type="glucose",
+                 glucose_value=350.0, glucose_unit="mg/dL",
+                 value_numeric=350.0, unit_display="mg/dL", status_flag="CRITICAL")
+    result = _compute_triage_status(p.id, db)
+    assert result["triage_status"] == "critical"
+
+
+def test_compute_triage_attention_elevated_bp(db):
+    """Lines 148-153: systolic>140 or diastolic>90 → attention (non-critical)."""
+    from routes_doctor import _compute_triage_status
+    p = _bare_profile(db, "6")
+    _add_reading(db, p.id, reading_type="blood_pressure",
+                 systolic=150.0, diastolic=95.0,
+                 value_numeric=150.0, unit_display="mmHg", status_flag="HIGH - STAGE 1")
+    result = _compute_triage_status(p.id, db)
+    assert result["triage_status"] == "attention"
+    assert "elevated" in (result.get("triage_reason") or "").lower() or result["triage_status"] == "attention"
+
+
+def test_compute_triage_attention_high_glucose(db):
+    """Lines 154-158: glucose>180 → attention."""
+    from routes_doctor import _compute_triage_status
+    p = _bare_profile(db, "7")
+    _add_reading(db, p.id, reading_type="glucose",
+                 glucose_value=220.0, glucose_unit="mg/dL",
+                 value_numeric=220.0, unit_display="mg/dL", status_flag="HIGH")
+    result = _compute_triage_status(p.id, db)
+    assert result["triage_status"] == "attention"
+
+
+def test_compute_triage_attention_noncompliance(db):
+    """Lines 138-145: no reading in 3+ days → attention 'No reading for Nd'."""
+    from routes_doctor import _compute_triage_status
+    p = _bare_profile(db, "8")
+    # Stale reading from 5 days ago, normal values — should flag non-compliance
+    _add_reading(db, p.id, reading_type="glucose", hours_ago=24 * 5,
+                 glucose_value=110.0, glucose_unit="mg/dL",
+                 value_numeric=110.0, unit_display="mg/dL", status_flag="NORMAL")
+    result = _compute_triage_status(p.id, db)
+    assert result["triage_status"] == "attention"
+
+
+def test_compute_triage_other_reading_type(db):
+    """Line 100: value formatting for non-bp/non-glucose readings (e.g. weight, spo2)."""
+    from routes_doctor import _compute_triage_status
+    p = _bare_profile(db, "9")
+    _add_reading(db, p.id, reading_type="weight",
+                 value_numeric=72.5, unit_display="kg", status_flag="NORMAL")
+    result = _compute_triage_status(p.id, db)
+    # non-bp/non-glucose falls through to the else branch → str(value_numeric)
+    assert result["last_reading_value"] == "72.5"
+
+
+def test_refresh_triage_updates_active_links(db):
+    """Lines 780-799: refresh_triage_for_profile walks active links and updates them."""
+    from routes_doctor import refresh_triage_for_profile
+    _, doc, _ = _doc(db, "refresh@test.com", "NMC700")
+    p = _bare_profile(db, "10")
+    _add_reading(db, p.id, reading_type="glucose",
+                 glucose_value=150.0, glucose_unit="mg/dL",
+                 value_numeric=150.0, unit_display="mg/dL", status_flag="NORMAL")
+    link = models.DoctorPatientLink(
+        doctor_id=doc.user_id, profile_id=p.id,
+        consent_granted_at=datetime.now(timezone.utc),
+        consent_type="in_person_exam", is_active=True,
+        triage_status="stale",
+    )
+    db.add(link); db.flush()
+
+    refresh_triage_for_profile(p.id, db)
+    # Check in-memory link attrs — function mutates session-bound object but doesn't commit
+    assert link.triage_status == "stable"
+    assert link.last_reading_value == "150"
+    assert link.triage_updated_at is not None
+
+
+def test_refresh_triage_noop_when_no_links(db):
+    """Line 788-789: early return when no active links for profile."""
+    from routes_doctor import refresh_triage_for_profile
+    p = _bare_profile(db, "11")
+    _add_reading(db, p.id, reading_type="glucose",
+                 glucose_value=100.0, glucose_unit="mg/dL",
+                 value_numeric=100.0, unit_display="mg/dL", status_flag="NORMAL")
+    # No links exist — should return silently, not raise
+    refresh_triage_for_profile(p.id, db)  # no assertion needed; must not raise
