@@ -1278,4 +1278,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backToWellnessHub => 'Back to Wellness Hub';
+
+  @override
+  String get glucometerPrerequisites => 'Glucometer – Prerequisites:';
+
+  @override
+  String get tapDeviceToConnect => 'Tap a device icon above to connect';
+
+  @override
+  String get tapToConnectDevice => 'Tap to connect device';
+
+  @override
+  String alreadyConnectedMessage(Object deviceType) {
+    return '$deviceType is already connected. Scan for another $deviceType?';
+  }
+
+  @override
+  String scanForDeviceMessage(Object deviceType) {
+    return 'Scan for $deviceType?';
+  }
+
+  @override
+  String get bpTransferHint =>
+      '\n\nPress BT on the device once first (slow LED = transfer mode).';
+
+  @override
+  String connectDeviceType(Object deviceType) {
+    return 'Connect $deviceType';
+  }
+
+  @override
+  String get scan => 'Scan';
+
+  @override
+  String get bpHistory => 'BP History';
+
+  @override
+  String recordsCount(int count) {
+    return '$count records';
+  }
+
+  @override
+  String get allRecords => 'All Records';
+
+  @override
+  String get viewAllHistory => 'View All History';
+
+  @override
+  String get deviceDisconnected => 'Device disconnected';
+
+  @override
+  String get unknownDevice => 'Unknown Device';
+
+  @override
+  String signalStrength(int rssi) {
+    return 'Signal: $rssi dBm';
+  }
+
+  @override
+  String get rescan => 'Rescan';
 }

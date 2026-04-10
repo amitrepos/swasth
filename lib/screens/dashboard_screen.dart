@@ -63,6 +63,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _startAutoConnect();
     } else if (widget.device != null) {
       _fetchReadings();
+    } else {
+      // No device and no auto-connect - let user tap device panel to connect
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          setState(() {
+            _loading = false;
+            _status = l10n.tapDeviceToConnect;
+          });
+        }
+      });
     }
   }
 
@@ -92,6 +103,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await _requestPermissions();
 
       bool found = false;
+      
+      // Scan for devices matching the widget.deviceType
       BleManager.startScan().listen((results) async {
         if (results.isNotEmpty && !found) {
           ScanResult? target;
@@ -151,6 +164,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _armbandConnected       = type == 'Unknown';
         _connectedDeviceType    = type;
         _loading                = false;
+        
+        // Clear readings from OTHER device types to avoid confusion
+        // Only keep readings that match the currently connected device
+        if (type == 'Glucose') {
+          // Connected to glucose - clear BP readings from display
+          _latestBPReading = null;
+          _allBPReadings = [];
+        } else if (type == 'Blood Pressure') {
+          // Connected to BP - clear glucose readings from display
+          _latestGlucoseReading = null;
+          _allGlucoseReadings = [];
+        }
       });
 
       if (type == 'Blood Pressure') {
@@ -314,68 +339,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
 
   Future<void> _startScanForDevice(String deviceType) async {
-    setState(() {
-      _status  = 'Scanning for $deviceType…';
-      _loading = true;
-    });
+    // Show device selection dialog
+    await _showDeviceSelectionDialog(deviceType);
+  }
 
+  Future<void> _showDeviceSelectionDialog(String deviceType) async {
+    // Request permissions first
     try {
       await _requestPermissions();
-
-      bool found = false;
-
-      BleManager.startScan(timeout: const Duration(seconds: 20))
-          .listen((results) async {
-        if (results.isNotEmpty && !found) {
-          ScanResult? selected;
-
-          if (deviceType == 'Blood Pressure') {
-            // ── Match exactly like Python: BLESMART / HEM / OMRON name first,
-            //    then standard 0x1810 as fallback.
-            selected = results.firstWhere(
-              (r) => BleManager.isOmronDevice(r),
-              orElse: () => results.firstWhere(
-                (r) => BleManager.deviceType(r) == 'Blood Pressure',
-                orElse: () => results.first,
-              ),
-            );
-          } else if (deviceType == 'Glucose') {
-            selected = results.firstWhere(
-              (r) => BleManager.deviceType(r) == 'Glucose',
-              orElse: () => results.first,
-            );
-          } else {
-            selected = results.first;
-          }
-
-          found = true;
-          _connectToDevice(selected);
+      
+      // Check if permissions were granted
+      final bleStatus = await FlutterBluePlus.adapterState.first;
+      if (bleStatus != BluetoothAdapterState.on) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bluetooth is not enabled. Please enable Bluetooth and try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
-      });
-
-      await Future.delayed(const Duration(seconds: 20));
-      await BleManager.stopScan();
-
-      if (!found && mounted) {
-        setState(() {
-          _status  = 'No $deviceType found. '
-                     '${deviceType == 'Blood Pressure' ? 'Press BT on device first.' : 'Turn on your device.'}';
-          _loading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('No $deviceType found nearby'),
-          backgroundColor: AppColors.statusElevated,
-        ));
+        return;
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _status  = 'Scan error: $e';
-          _loading = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Permission error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
       }
     }
+    
+    // Show loading dialog
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return _DeviceSelectionDialog(
+          deviceType: deviceType,
+          onDeviceSelected: (device) {
+            Navigator.pop(dialogContext);
+            _connectToDevice(device);
+          },
+        );
+      },
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -561,6 +572,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDevicePanel() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -573,7 +585,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Text('Tap to connect a device',
+          child: Text(l10n.tapToConnectDevice,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   color: Theme.of(context)
                       .colorScheme
@@ -615,6 +627,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _handleDeviceTap(String deviceType) {
+    final l10n = AppLocalizations.of(context)!;
     final isConnected = deviceType == 'Glucose'
         ? _glucometerConnected
         : deviceType == 'Blood Pressure'
@@ -622,29 +635,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
             : _armbandConnected;
 
     final message = isConnected
-        ? '$_connectedDeviceType already connected. Scan for another $deviceType?'
-        : 'Scan for $deviceType?';
+        ? l10n.alreadyConnectedMessage(deviceType)
+        : l10n.scanForDeviceMessage(deviceType);
 
     // Extra hint for Omron users
-    final hint = deviceType == 'Blood Pressure'
-        ? '\n\nPress BT on the device once first (slow LED = transfer mode).'
-        : '';
+    final hint = deviceType == 'Blood Pressure' ? l10n.bpTransferHint : '';
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Connect $deviceType'),
+        title: Text(l10n.connectDeviceType(deviceType)),
         content: Text('$message$hint'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              child: Text(l10n.cancel)),
           ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 _startScanForDevice(deviceType);
               },
-              child: const Text('Scan')),
+              child: Text(l10n.scan)),
         ],
       ),
     );
@@ -807,17 +818,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildBPHistoryList() {
     if (_allBPReadings.length <= 1) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(children: [
-          Text('BP History',
+          Text(l10n.bpHistory,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
                   ?.copyWith(fontWeight: FontWeight.w600)),
           const Spacer(),
-          Text('${_allBPReadings.length} records',
+          Text(l10n.recordsCount(_allBPReadings.length),
               style: Theme.of(context).textTheme.bodySmall),
         ]),
       ),
@@ -881,6 +893,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildGlucoseHistoryList() {
+    final l10n = AppLocalizations.of(context)!;
     final unique = _removeDuplicateReadings(_allGlucoseReadings);
     final sorted = _sortReadingsBySequence(unique);
     if (sorted.length <= 1) return const SizedBox.shrink();
@@ -888,13 +901,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(children: [
-          Text('All Records',
+          Text(l10n.allRecords,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
                   ?.copyWith(fontWeight: FontWeight.w600)),
           const Spacer(),
-          Text('${sorted.length} records',
+          Text(l10n.recordsCount(sorted.length),
               style: Theme.of(context).textTheme.bodySmall),
         ]),
       ),
@@ -947,15 +960,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final deviceName = widget.device?.platformName.isNotEmpty == true
         ? widget.device!.platformName
         : 'Swasth Health Monitor';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final showBPCard     = _latestBPReading != null;
-    final showGlucCard   = _latestGlucoseReading != null;
-    final showBPHistory  = _allBPReadings.isNotEmpty;
-    final showGlucHistory= _allGlucoseReadings.isNotEmpty;
+    final showBPCard     = _latestBPReading != null && _connectedDeviceType == 'Blood Pressure';
+    final showGlucCard   = _latestGlucoseReading != null && _connectedDeviceType == 'Glucose';
+    final showBPHistory  = _allBPReadings.isNotEmpty && _connectedDeviceType == 'Blood Pressure';
+    final showGlucHistory= _allGlucoseReadings.isNotEmpty && _connectedDeviceType == 'Glucose';
 
     return Scaffold(
       appBar: AppBar(
@@ -965,7 +979,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             IconButton(
               icon: const Icon(Icons.history),
               onPressed: _showFullHistory,
-              tooltip: 'View All History',
+              tooltip: l10n.viewAllHistory,
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -1006,7 +1020,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _status              = 'Disconnected';
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Device disconnected')));
+                      SnackBar(content: Text(l10n.deviceDisconnected)));
                   });
                 }
               },
@@ -1088,6 +1102,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showFullHistory() {
+    final l10n = AppLocalizations.of(context)!;
+    final historyTitle = _connectedDeviceType == 'Blood Pressure' 
+        ? l10n.bpHistory 
+        : _connectedDeviceType == 'Glucose' 
+            ? l10n.allRecords 
+            : '$_connectedDeviceType Records';
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1103,7 +1124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Icon(_getDeviceIcon(_connectedDeviceType),
                   color: _getDeviceColor(_connectedDeviceType)),
               const SizedBox(width: 8),
-              Text('All $_connectedDeviceType Records',
+              Text(historyTitle,
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
@@ -1118,27 +1139,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
               controller: sc,
               padding: const EdgeInsets.all(16),
               children: [
-                if (_allBPReadings.isNotEmpty) ..._allBPReadings.map((r) {
-                  final color = _bpCategoryColor(r.bpCategory);
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                          backgroundColor: color,
-                          child: const Icon(Icons.favorite,
-                              color: Colors.white, size: 18)),
-                      title: Text(
-                          '${r.systolicMmhg}/${r.diastolicMmhg} mmHg'),
-                      subtitle: Text(
-                          '${r.pulseBpm} bpm · User ${r.user} · ${r.bpCategory}'),
-                      trailing: Text(r.timestamp.length > 16
-                          ? r.timestamp.substring(0, 16)
-                          : r.timestamp,
-                          style: const TextStyle(fontSize: 11)),
-                    ),
-                  );
-                }),
-                if (_allGlucoseReadings.isNotEmpty)
+                if (_connectedDeviceType == 'Blood Pressure' && _allBPReadings.isNotEmpty)
+                  ..._allBPReadings.map((r) {
+                    final color = _bpCategoryColor(r.bpCategory);
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                            backgroundColor: color,
+                            child: const Icon(Icons.favorite,
+                                color: Colors.white, size: 18)),
+                        title: Text(
+                            '${r.systolicMmhg}/${r.diastolicMmhg} mmHg'),
+                        subtitle: Text(
+                            '${r.pulseBpm} bpm · User ${r.user} · ${r.bpCategory}'),
+                        trailing: Text(r.timestamp.length > 16
+                            ? r.timestamp.substring(0, 16)
+                            : r.timestamp,
+                            style: const TextStyle(fontSize: 11)),
+                      ),
+                    );
+                  }),
+                if (_connectedDeviceType == 'Glucose' && _allGlucoseReadings.isNotEmpty)
                   ..._sortReadingsBySequence(
                           _removeDuplicateReadings(_allGlucoseReadings))
                       .map((r) {
@@ -1170,6 +1192,248 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     if (widget.device != null) BleManager.disconnect(widget.device!);
+    super.dispose();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Device Selection Dialog Widget
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _DeviceSelectionDialog extends StatefulWidget {
+  final String deviceType;
+  final Function(ScanResult) onDeviceSelected;
+
+  const _DeviceSelectionDialog({
+    required this.deviceType,
+    required this.onDeviceSelected,
+  });
+
+  @override
+  State<_DeviceSelectionDialog> createState() => _DeviceSelectionDialogState();
+}
+
+class _DeviceSelectionDialogState extends State<_DeviceSelectionDialog> {
+  List<ScanResult> _devices = [];
+  bool _isScanning = true;
+  int _scanGeneration = 0; // Track scan sessions to avoid race conditions
+
+  @override
+  void initState() {
+    super.initState();
+    _startScanning();
+  }
+
+  void _startScanning() {
+    final currentGeneration = ++_scanGeneration;
+    
+    setState(() {
+      _isScanning = true;
+      _devices = [];
+    });
+
+    // Start scan with shorter timeout for faster results
+    final subscription = BleManager.startScan(timeout: const Duration(seconds: 10)).listen((results) {
+      if (mounted && currentGeneration == _scanGeneration) {
+        setState(() {
+          // Filter devices based on type
+          _devices = results.where((r) {
+            if (widget.deviceType == 'Glucose') {
+              return BleManager.deviceType(r) == 'Glucose';
+            } else if (widget.deviceType == 'Blood Pressure') {
+              return BleManager.deviceType(r) == 'Blood Pressure';
+            }
+            return true; // For armband or other types - show all
+          }).toList();
+          // Device list updates in real-time as scan results come in
+        });
+      }
+    });
+
+    // Auto-stop scanning after 10 seconds
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted && currentGeneration == _scanGeneration) {
+        BleManager.stopScan();
+        subscription.cancel();
+        setState(() {
+          _isScanning = false;
+        });
+      }
+    });
+  }
+
+  void _rescan() {
+    // Increment generation to invalidate previous scan callbacks
+    _scanGeneration++;
+    BleManager.stopScan();
+    _startScanning();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.selectDevice),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Show device-specific instructions
+            _buildInstructionsCard(),
+            const SizedBox(height: 12),
+            if (_isScanning)
+              const Column(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Scanning for devices...'),
+                ],
+              )
+            else if (_devices.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(l10n.noDevicesFound, textAlign: TextAlign.center),
+              )
+            else
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _devices.length,
+                  itemBuilder: (ctx, index) {
+                    final device = _devices[index];
+                    final name = device.device.platformName.isNotEmpty
+                        ? device.device.platformName
+                        : l10n.unknownDevice;
+                    
+                    return ListTile(
+                      leading: Icon(
+                        widget.deviceType == 'Glucose' ? Icons.water_drop : Icons.favorite,
+                        color: widget.deviceType == 'Glucose' ? AppColors.glucose : AppColors.bloodPressure,
+                      ),
+                      title: Text(name),
+                      subtitle: Text(l10n.signalStrength(device.rssi)),
+                      onTap: () {
+                        widget.onDeviceSelected(device);
+                      },
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            BleManager.stopScan();
+            Navigator.pop(context);
+          },
+          child: Text(l10n.cancel),
+        ),
+        if (!_isScanning)
+          TextButton(
+            onPressed: _rescan,
+            child: Text(l10n.rescan),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInstructionsCard() {
+    final isGlucose = widget.deviceType == 'Glucose';
+    
+    return Card(
+      color: (isGlucose ? AppColors.glucose : AppColors.bloodPressure).withValues(alpha: 0.08),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: isGlucose ? AppColors.glucose : AppColors.bloodPressure,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isGlucose ? 'Glucometer – Prerequisites:' : 'BP Meter – Prerequisites:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: isGlucose ? AppColors.glucose : AppColors.bloodPressure,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (isGlucose) ...[
+              const Text(
+                'For the first time:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '1. Pair the device via Bluetooth. The glucometer will display "OK" once connected.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Always:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '2. Take a sugar test, or press the bottom-right button to view history on the device screen.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '3. The app will scan and display the current reading or history.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+            ] else ...[
+              const Text(
+                'For the first time:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '1. Press and hold the Bluetooth button on the Omron HEM-7140T1 until \'P\' starts blinking.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '2. Pair the device manually via Bluetooth. After pairing, \'P\' will continue blinking.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '3. Click the \' + \' icon. The device will display "OK", and the app will show readings.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Always:',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '4. Click the \' + \' icon. The app will scan and display current and previous readings.',
+                style: TextStyle(fontSize: 11, height: 1.4),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    BleManager.stopScan();
     super.dispose();
   }
 }

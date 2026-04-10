@@ -39,7 +39,7 @@
   "phoneValidationLength": "फोन नंबर 10-15 अंकों का होना चाहिए",
   "confirmPasswordLabel": "पासवर्ड दोबारा डालें",
   "profileNameLabel": "प्रोफाइल नाम",
-  "relationshipLabel": "रिश्ता",
+  "relationshipLabel": "रोगी से संबंध",
   "ageLabel": "उम्र",
   "genderLabel": "लिंग",
   "heightLabel": "लंबाई (सेमी)",
@@ -302,7 +302,6 @@
   "lastBP": "पिछला BP",
   "lastSugar": "पिछला शुगर",
   "liveSteps": "कदम",
-  "relationshipLabel": "रोगी से संबंध",
   "relationshipFather": "पिता",
   "relationshipMother": "माता",
   "relationshipSpouse": "पति/पत्नी",
@@ -359,7 +358,13 @@
   "loggedInOffline": "ऑफ़लाइन लॉगिन हुआ",
   "readingSavedOffline": "रीडिंग ऑफ़लाइन सहेजी गई। कनेक्ट होने पर सिंक होगी।",
   "syncComplete": "{count} रीडिंग सिंक हुईं",
-  "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
+  "@syncComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "offlineLoginExpired": "लॉगिन करने के लिए इंटरनेट से कनेक्ट करें",
   "heartStatusHealthy": "बहुत अच्छा!",
   "heartStatusCaution": "आज ध्यान रखें",
@@ -398,7 +403,6 @@
   "foodDisclaimer": "सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं",
   "foodPhotoSaved": "खाना दर्ज हो गया!",
   "foodPhotoSaveFailed": "खाना सेव नहीं हुआ। कृपया दोबारा कोशिश करें।",
-
   "mealsTileLabel": "खाना",
   "mealsTodayCount": "{count} आज",
   "todaysMeals": "आज का खाना",
@@ -409,7 +413,6 @@
   "quickSelectOption": "तुरंत चुनें",
   "scanFoodPhotoOption": "फोटो स्कैन करें",
   "photoAiHint": "फोटो से AI कार्ब लेवल पता करता है",
-
   "wellnessHubTitle": "{relationship} का वेलनेस हब",
   "wellnessHubSubtitle": "{name} | {location}",
   "caregiverStatusGreat": "आपकी {relationship} आज ठीक हैं। सभी रीडिंग सामान्य हैं।",
@@ -421,5 +424,88 @@
   "noRecentActivity": "कोई हालिया गतिविधि नहीं",
   "wellnessRingTitle": "वेलनेस रिंग",
   "takeReadings": "रीडिंग लें",
-  "backToWellnessHub": "वेलनेस हब पर वापस जाएं"
+  "backToWellnessHub": "वेलनेस हब पर वापस जाएं",
+  "glucometerPrerequisites": "ग्लूकोमीटर – पूर्वापेक्षाएं:",
+  "@glucometerPrerequisites": {
+    "description": "Title for glucometer prerequisites section"
+  },
+  "tapDeviceToConnect": "कनेक्ट करने के लिए ऊपर डिवाइस आइकन टैप करें",
+  "@tapDeviceToConnect": {
+    "description": "Status message when no device is connected"
+  },
+  "tapToConnectDevice": "कनेक्ट करने के लिए टैप करें",
+  "@tapToConnectDevice": {
+    "description": "Instruction to tap and connect device"
+  },
+  "alreadyConnectedMessage": "{deviceType} पहले से कनेक्टेड है। दूसरे {deviceType} की खोज करें?",
+  "@alreadyConnectedMessage": {
+    "description": "Message when device is already connected",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scanForDeviceMessage": "{deviceType} की खोज करें?",
+  "@scanForDeviceMessage": {
+    "description": "Confirmation message to scan for device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "bpTransferHint": "\n\nडिवाइस पर BT बटन एक बार दबाएं (धीमी LED = ट्रांसफर मोड)।",
+  "@bpTransferHint": {
+    "description": "Hint for BP device transfer mode"
+  },
+  "connectDeviceType": "{deviceType} कनेक्ट करें",
+  "@connectDeviceType": {
+    "description": "Button to connect device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scan": "खोजें",
+  "@scan": {
+    "description": "Button to start scanning"
+  },
+  "bpHistory": "BP इतिहास",
+  "@bpHistory": {
+    "description": "Title for BP history section"
+  },
+  "recordsCount": "{count} रिकॉर्ड",
+  "@recordsCount": {
+    "description": "Count of records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allRecords": "सभी रिकॉर्ड",
+  "@allRecords": {
+    "description": "Title for all records section"
+  },
+  "viewAllHistory": "संपूर्ण इतिहास देखें",
+  "@viewAllHistory": {
+    "description": "Tooltip for history button"
+  },
+  "deviceDisconnected": "डिवाइस डिस्कनेक्ट हो गया",
+  "@deviceDisconnected": {
+    "description": "Message shown when device is disconnected"
+  },
+  "unknownDevice": "अज्ञात डिवाइस",
+  "@unknownDevice": {
+    "description": "Default name for unnamed BLE devices"
+  },
+  "signalStrength": "सिग्नल: {rssi} dBm",
+  "@signalStrength": {
+    "description": "BLE device signal strength",
+    "placeholders": {
+      "rssi": {
+        "type": "int"
+      }
+    }
+  },
+  "rescan": "पुनः खोजें",
+  "@rescan": {
+    "description": "Button to rescan for devices"
+  }
 }

@@ -2479,6 +2479,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to Wellness Hub'**
   String get backToWellnessHub;
+
+  /// Title for glucometer prerequisites section
+  ///
+  /// In en, this message translates to:
+  /// **'Glucometer – Prerequisites:'**
+  String get glucometerPrerequisites;
+
+  /// Status message when no device is connected
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a device icon above to connect'**
+  String get tapDeviceToConnect;
+
+  /// Instruction to tap and connect device
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to connect device'**
+  String get tapToConnectDevice;
+
+  /// Message when device is already connected
+  ///
+  /// In en, this message translates to:
+  /// **'{deviceType} is already connected. Scan for another {deviceType}?'**
+  String alreadyConnectedMessage(Object deviceType);
+
+  /// Confirmation message to scan for device
+  ///
+  /// In en, this message translates to:
+  /// **'Scan for {deviceType}?'**
+  String scanForDeviceMessage(Object deviceType);
+
+  /// Hint for BP device transfer mode
+  ///
+  /// In en, this message translates to:
+  /// **'\n\nPress BT on the device once first (slow LED = transfer mode).'**
+  String get bpTransferHint;
+
+  /// Button to connect device
+  ///
+  /// In en, this message translates to:
+  /// **'Connect {deviceType}'**
+  String connectDeviceType(Object deviceType);
+
+  /// Button to start scanning
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get scan;
+
+  /// Title for BP history section
+  ///
+  /// In en, this message translates to:
+  /// **'BP History'**
+  String get bpHistory;
+
+  /// Count of records
+  ///
+  /// In en, this message translates to:
+  /// **'{count} records'**
+  String recordsCount(int count);
+
+  /// Title for all records section
+  ///
+  /// In en, this message translates to:
+  /// **'All Records'**
+  String get allRecords;
+
+  /// Tooltip for history button
+  ///
+  /// In en, this message translates to:
+  /// **'View All History'**
+  String get viewAllHistory;
+
+  /// Message shown when device is disconnected
+  ///
+  /// In en, this message translates to:
+  /// **'Device disconnected'**
+  String get deviceDisconnected;
+
+  /// Default name for unnamed BLE devices
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Device'**
+  String get unknownDevice;
+
+  /// BLE device signal strength
+  ///
+  /// In en, this message translates to:
+  /// **'Signal: {rssi} dBm'**
+  String signalStrength(int rssi);
+
+  /// Button to rescan for devices
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan'**
+  String get rescan;
 }
 
 class _AppLocalizationsDelegate

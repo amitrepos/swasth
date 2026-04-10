@@ -1278,4 +1278,64 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get backToWellnessHub => 'वेलनेस हब पर वापस जाएं';
+
+  @override
+  String get glucometerPrerequisites => 'ग्लूकोमीटर – पूर्वापेक्षाएं:';
+
+  @override
+  String get tapDeviceToConnect =>
+      'कनेक्ट करने के लिए ऊपर डिवाइस आइकन टैप करें';
+
+  @override
+  String get tapToConnectDevice => 'कनेक्ट करने के लिए टैप करें';
+
+  @override
+  String alreadyConnectedMessage(Object deviceType) {
+    return '$deviceType पहले से कनेक्टेड है। दूसरे $deviceType की खोज करें?';
+  }
+
+  @override
+  String scanForDeviceMessage(Object deviceType) {
+    return '$deviceType की खोज करें?';
+  }
+
+  @override
+  String get bpTransferHint =>
+      '\n\nडिवाइस पर BT बटन एक बार दबाएं (धीमी LED = ट्रांसफर मोड)।';
+
+  @override
+  String connectDeviceType(Object deviceType) {
+    return '$deviceType कनेक्ट करें';
+  }
+
+  @override
+  String get scan => 'खोजें';
+
+  @override
+  String get bpHistory => 'BP इतिहास';
+
+  @override
+  String recordsCount(int count) {
+    return '$count रिकॉर्ड';
+  }
+
+  @override
+  String get allRecords => 'सभी रिकॉर्ड';
+
+  @override
+  String get viewAllHistory => 'संपूर्ण इतिहास देखें';
+
+  @override
+  String get deviceDisconnected => 'डिवाइस डिस्कनेक्ट हो गया';
+
+  @override
+  String get unknownDevice => 'अज्ञात डिवाइस';
+
+  @override
+  String signalStrength(int rssi) {
+    return 'सिग्नल: $rssi dBm';
+  }
+
+  @override
+  String get rescan => 'पुनः खोजें';
 }
