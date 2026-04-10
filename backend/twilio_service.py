@@ -22,7 +22,7 @@ class TwilioWhatsAppService:
                 print(f"Failed to initialize Twilio client: {e}")
         return self._client
 
-    def send_whatsapp(self, to_number: str, body: str) -> bool:
+    def send_whatsapp(self, to_number: str, body: str) -> tuple[bool, Optional[str], Optional[str]]:
         """
         Send a WhatsApp message via Twilio.
         
@@ -31,11 +31,12 @@ class TwilioWhatsAppService:
             body: The message text
             
         Returns:
-            True if sent successfully, False otherwise
+            A tuple of (success, twilio_sid, error_message)
         """
         if not self.client or not self.from_number:
-            print("Twilio credentials or from_number not configured.")
-            return False
+            error_msg = "Twilio credentials or from_number not configured."
+            print(error_msg)
+            return False, None, error_msg
             
         # Ensure 'whatsapp:' prefix is present for both to and from
         final_to = to_number if to_number.startswith("whatsapp:") else f"whatsapp:{to_number}"
@@ -47,11 +48,12 @@ class TwilioWhatsAppService:
                 from_=final_from,
                 to=final_to
             )
-            return True if message.sid else False
+            return True, message.sid, None
         except Exception as e:
+            error_msg = str(e)
             # Note: In production, use a proper logger
-            print(f"Error sending Twilio WhatsApp message: {e}")
-            return False
+            print(f"Error sending Twilio WhatsApp message: {error_msg}")
+            return False, None, error_msg
 
     def send_critical_alert_whatsapp(
         self,

@@ -19,6 +19,8 @@ def test_send_daily_reports_phone_normalization(mock_whatsapp, db):
     db.add(user)
     db.flush()
     
+    mock_whatsapp.send_whatsapp.return_value = (True, "SMxxx", None)
+    
     profile = Profile(name="Self")
     db.add(profile)
     db.flush()
@@ -52,6 +54,8 @@ def test_send_daily_reports_multi_profile(mock_whatsapp, db):
     )
     db.add(user)
     db.flush()
+    
+    mock_whatsapp.send_whatsapp.return_value = (True, "SMxxx", None)
     
     p1 = Profile(name="Deepak")
     p2 = Profile(name="Papa")
@@ -89,6 +93,8 @@ def test_send_daily_reports_excludes_viewed_profiles(mock_whatsapp, db):
     user_b = User(email="viewer@test.com", phone_number="+912222222222", password_hash="hash_b", full_name="Viewer B")
     db.add_all([user_a, user_b])
     db.flush()
+    
+    mock_whatsapp.send_whatsapp.return_value = (True, "SMxxx", None)
     
     shared_profile = Profile(name="Shared Profile")
     db.add(shared_profile)
