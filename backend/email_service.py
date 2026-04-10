@@ -299,6 +299,68 @@ class BrevoEmailService:
             print(f"Error sending invite email: {e}")
             return False
 
+    def send_critical_alert_email(
+        self,
+        recipient_email: str,
+        recipient_name: str,
+        patient_name: str,
+        alert_text_en: str,
+        alert_text_hi: str,
+    ) -> bool:
+        """Send a bilingual (EN + HI) critical health alert to a family member.
+
+        Returns True on success, False on any failure (SMTP down, auth error,
+        not configured, rejected recipient). Callers log the failure and try
+        other channels.
+        """
+        if not self.smtp_login or not self.sender_password:
+            return False
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = f"{self.sender_name} <{self.sender_email}>"
+            msg['To'] = recipient_email
+            msg['Subject'] = f"🚨 Health Alert — {patient_name} needs attention"
+
+            body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .alert {{ background: #fff5f5; border-left: 4px solid #dc2626; padding: 16px; margin: 16px 0; }}
+        .lang {{ margin: 12px 0; }}
+        .footer {{ font-size: 12px; color: #666; margin-top: 32px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🚨 Swasth Health Alert</h2>
+        <p>Dear {recipient_name},</p>
+        <div class="alert">
+            <div class="lang"><strong>English:</strong><br>{alert_text_en}</div>
+            <div class="lang"><strong>हिन्दी:</strong><br>{alert_text_hi}</div>
+        </div>
+        <p>Please check on {patient_name} immediately and contact their doctor if needed.</p>
+        <p class="footer">
+            You received this alert because you have access to {patient_name}'s health profile on Swasth.
+            To stop receiving alerts, revoke your access in the Swasth app.
+            <br><br>— Swasth Health App
+        </p>
+    </div>
+</body>
+</html>
+"""
+            msg.attach(MIMEText(body, 'html'))
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.smtp_login, self.sender_password)
+                server.send_message(msg)
+            return True
+        except Exception as e:
+            print(f"Failed to send critical alert email to {recipient_email}: {e}")
+            return False
+
 
 # Create singleton instance
 email_service = BrevoEmailService()

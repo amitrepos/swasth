@@ -151,6 +151,31 @@ class HealthReading(Base):
     )
 
 
+class CriticalAlertLog(Base):
+    """Audit log for every critical-value alert dispatch attempt.
+
+    One row per (recipient, channel) per dispatch call. Does not store
+    the message body to minimize PHI exposure — only who was notified,
+    via which channel, and whether delivery succeeded. See legal doc
+    section 11.3 / Q11.9 for retention analysis.
+    """
+    __tablename__ = "critical_alert_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    reading_id = Column(Integer, ForeignKey("health_readings.id", ondelete="SET NULL"), nullable=True)
+    recipient_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    channel = Column(String, nullable=False)              # "email" | "whatsapp" | "sms"
+    status = Column(String, nullable=False)               # "sent" | "failed" | "skipped"
+    error = Column(Text, nullable=True)                    # populated when status="failed"
+    severity = Column(String, nullable=False)              # "CRITICAL" | "HIGH - STAGE 2"
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    __table_args__ = (
+        Index("ix_critical_alerts_profile_time", "profile_id", "created_at"),
+    )
+
+
 class AiInsightLog(Base):
     """Audit log for every AI-generated health insight."""
     __tablename__ = "ai_insight_logs"
