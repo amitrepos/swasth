@@ -202,7 +202,8 @@ Write a single cohesive summary. Keep only the most important and actionable inf
 # Endpoints
 # ---------------------------------------------------------------------------
 
-@router.post("/chat/send")
+@router.post("/chat/messages")
+@router.post("/chat/send", deprecated=True)
 @limiter.limit("10/minute")
 def send_chat_message(
     request: Request,
@@ -394,12 +395,3 @@ def get_chat_messages(
     }
 
 
-@router.get("/chat/quota")
-def get_chat_quota(
-    profile_id: int,
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
-):
-    """Check remaining chat quota for a profile."""
-    get_profile_access_or_403(profile_id, user, db)
-    return _get_quota_info(profile_id, db)

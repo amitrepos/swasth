@@ -30,14 +30,38 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   bool _isLoading = false;
 
   final List<String> _relationshipOptions = [
-    "myself", "father", "mother", "spouse", "son", "daughter",
-    "brother", "sister", "uncle", "aunt", "friend", "other",
+    "myself",
+    "father",
+    "mother",
+    "spouse",
+    "son",
+    "daughter",
+    "brother",
+    "sister",
+    "uncle",
+    "aunt",
+    "friend",
+    "other",
   ];
   final List<String> _genderOptions = ["Male", "Female", "Other"];
-  final List<String> _bloodGroupOptions = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
+  final List<String> _bloodGroupOptions = [
+    "A+",
+    "A-",
+    "B+",
+    "B-",
+    "O+",
+    "O-",
+    "AB+",
+    "AB-",
+  ];
   // Medical condition values are API keys — do NOT translate
   final List<String> _medicalConditionOptions = [
-    "Diabetes T1", "Diabetes T2", "Hypertension", "Heart Disease", "None", "Other"
+    "Diabetes T1",
+    "Diabetes T2",
+    "Hypertension",
+    "Heart Disease",
+    "None",
+    "Other",
   ];
 
   @override
@@ -83,7 +107,10 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.statusCritical),
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppColors.statusCritical,
+          ),
         );
       }
     } finally {
@@ -96,9 +123,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.addHealthProfileTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.addHealthProfileTitle)),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -110,18 +135,24 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                   children: [
                     Text(
                       l10n.createProfileSubtitle,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 24),
 
                     TextFormField(
+                      key: const Key('profile_name'),
                       controller: _nameController,
                       decoration: InputDecoration(
                         labelText: l10n.profileNameLabel,
                         hintText: l10n.profileNameHint,
                         prefixIcon: const Icon(Icons.person_outline),
                       ),
-                      validator: (value) => (value == null || value.isEmpty) ? 'Enter a name' : null,
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? 'Enter a name'
+                          : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -131,11 +162,16 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                         labelText: l10n.relationshipLabel,
                         prefixIcon: const Icon(Icons.family_restroom),
                       ),
-                      items: _relationshipOptions.map((r) => DropdownMenuItem(
-                        value: r,
-                        child: Text(r[0].toUpperCase() + r.substring(1)),
-                      )).toList(),
-                      onChanged: (v) => setState(() => _selectedRelationship = v),
+                      items: _relationshipOptions
+                          .map(
+                            (r) => DropdownMenuItem(
+                              value: r,
+                              child: Text(r[0].toUpperCase() + r.substring(1)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) =>
+                          setState(() => _selectedRelationship = v),
                     ),
                     const SizedBox(height: 16),
 
@@ -147,7 +183,9 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                             keyboardType: TextInputType.number,
                             decoration: InputDecoration(
                               labelText: l10n.ageLabel,
-                              prefixIcon: const Icon(Icons.calendar_today_outlined),
+                              prefixIcon: const Icon(
+                                Icons.calendar_today_outlined,
+                              ),
                             ),
                           ),
                         ),
@@ -155,9 +193,19 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: _selectedGender,
-                            decoration: InputDecoration(labelText: l10n.genderLabel),
-                            items: _genderOptions.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
-                            onChanged: (v) => setState(() => _selectedGender = v),
+                            decoration: InputDecoration(
+                              labelText: l10n.genderLabel,
+                            ),
+                            items: _genderOptions
+                                .map(
+                                  (g) => DropdownMenuItem(
+                                    value: g,
+                                    child: Text(g),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) =>
+                                setState(() => _selectedGender = v),
                           ),
                         ),
                       ],
@@ -196,17 +244,27 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                         labelText: l10n.bloodGroupLabel,
                         prefixIcon: const Icon(Icons.bloodtype),
                       ),
-                      items: _bloodGroupOptions.map((bg) => DropdownMenuItem(value: bg, child: Text(bg))).toList(),
+                      items: _bloodGroupOptions
+                          .map(
+                            (bg) =>
+                                DropdownMenuItem(value: bg, child: Text(bg)),
+                          )
+                          .toList(),
                       onChanged: (v) => setState(() => _selectedBloodGroup = v),
                     ),
                     const SizedBox(height: 24),
 
-                    Text(l10n.medicalConditionsSection, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      l10n.medicalConditionsSection,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       children: _medicalConditionOptions.map((condition) {
-                        final isSelected = _selectedConditions.contains(condition);
+                        final isSelected = _selectedConditions.contains(
+                          condition,
+                        );
                         return FilterChip(
                           label: Text(condition),
                           selected: isSelected,
@@ -227,7 +285,9 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _otherConditionController,
-                        decoration: InputDecoration(labelText: l10n.specifyOtherCondition),
+                        decoration: InputDecoration(
+                          labelText: l10n.specifyOtherCondition,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 16),
@@ -243,9 +303,15 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
 
                     const SizedBox(height: 32),
                     ElevatedButton(
+                      key: const Key('profile_create_button'),
                       onPressed: _submit,
-                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                      child: Text(l10n.createProfile, style: const TextStyle(fontSize: 16)),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: Text(
+                        l10n.createProfile,
+                        style: const TextStyle(fontSize: 16),
+                      ),
                     ),
                   ],
                 ),

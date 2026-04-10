@@ -34,9 +34,12 @@
   "healthProfileSection": "Initial Health Profile",
   "fullNameLabel": "Full Name",
   "phoneLabel": "Phone Number",
+  "phoneValidationEmpty": "Please enter your phone number",
+  "phoneValidationDigits": "Phone number can only contain digits",
+  "phoneValidationLength": "Phone number must be 10-15 digits",
   "confirmPasswordLabel": "Confirm Password",
   "profileNameLabel": "Profile Name",
-  "relationshipLabel": "Relationship",
+  "relationshipLabel": "Relationship to patient",
   "ageLabel": "Age",
   "genderLabel": "Gender",
   "heightLabel": "Height (cm)",
@@ -377,6 +380,22 @@
   "aiInsightSection": "AI Health Insight",
   "primaryPhysicianSection": "Primary Physician",
   "individualMetricsSection": "Individual Metrics",
+  "vitalsSection": "Vitals",
+  "trendsSection": "Trends",
+  "lastSpO2": "Last SpO2",
+  "lastSteps": "Steps Today",
+  "spO2Unit": "%",
+  "viaArmband": "via Armband",
+  "viaPhone": "via Phone / Armband",
+  "pairDevice": "Pair Device",
+  "connectedDevices": "Connected Devices",
+  "readMore": "Read more",
+  "mealSlotBreakfast": "Breakfast",
+  "mealSlotLunch": "Lunch",
+  "mealSlotSnack": "Snack",
+  "mealSlotDinner": "Dinner",
+  "mealSlotLogged": "Logged",
+  "mealSlotTapToLog": "Tap to log",
   "footerDisclaimer": "Not a medical diagnosis. Consult your doctor for clinical advice. All AI insights are for informational purposes.",
   "goodMorning": "Good morning,",
   "goodAfternoon": "Good afternoon,",
@@ -391,7 +410,6 @@
   "lastBP": "Last BP",
   "lastSugar": "Last Sugar",
   "liveSteps": "Live Steps",
-  "relationshipLabel": "Relationship to patient",
   "relationshipFather": "Father",
   "relationshipMother": "Mother",
   "relationshipSpouse": "Spouse",
@@ -448,151 +466,120 @@
   "loggedInOffline": "Logged in offline",
   "readingSavedOffline": "Reading saved offline. Will sync when connected.",
   "syncComplete": "Synced {count} readings",
-  "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
-  "offlineLoginExpired": "Please connect to the internet to log in",
-  "glucometerPrerequisites": "Glucometer – Prerequisites:",
-  "@glucometerPrerequisites": {
-    "description": "Title for glucometer prerequisites section"
-  },
-  "bpMeterPrerequisites": "BP Meter – Prerequisites:",
-  "@bpMeterPrerequisites": {
-    "description": "Title for BP meter prerequisites section"
-  },
-  "forTheFirstTime": "For the first time:",
-  "@forTheFirstTime": {
-    "description": "Section header for first-time setup instructions"
-  },
-  "always": "Always:",
-  "@always": {
-    "description": "Section header for regular usage instructions"
-  },
-  "glucoseFirstTimeStep1": "1. Pair the device via Bluetooth. The glucometer will display \"OK\" once connected.",
-  "@glucoseFirstTimeStep1": {
-    "description": "First time setup step 1 for glucose meter"
-  },
-  "glucoseAlwaysStep1": "2. Take a sugar test, or press the bottom-right button to view history on the device screen.",
-  "@glucoseAlwaysStep1": {
-    "description": "Regular usage step 1 for glucose meter"
-  },
-  "glucoseAlwaysStep2": "3. The app will scan and display the current reading or history.",
-  "@glucoseAlwaysStep2": {
-    "description": "Regular usage step 2 for glucose meter"
-  },
-  "bpFirstTimeStep1": "1. Press and hold the Bluetooth button on the Omron HEM-7140T1 until 'P' starts blinking.",
-  "@bpFirstTimeStep1": {
-    "description": "First time setup step 1 for BP meter"
-  },
-  "bpFirstTimeStep2": "2. Pair the device manually via Bluetooth. After pairing, 'P' will continue blinking.",
-  "@bpFirstTimeStep2": {
-    "description": "First time setup step 2 for BP meter"
-  },
-  "bpFirstTimeStep3": "3. Click the '+' icon. The device will display \"OK\", and the app will show readings.",
-  "@bpFirstTimeStep3": {
-    "description": "First time setup step 3 for BP meter"
-  },
-  "bpAlwaysStep1": "4. Click the '+' icon. The app will scan and display current and previous readings.",
-  "@bpAlwaysStep1": {
-    "description": "Regular usage step 1 for BP meter"
-  },
-  "selectDevice": "Select Device",
-  "@selectDevice": {
-    "description": "Title for device selection dialog"
-  },
-  "scanningForDevices": "Scanning for devices...",
-  "@scanningForDevices": {
-    "description": "Message shown while scanning for BLE devices"
-  },
-  "noDevicesFound": "No devices found.\nMake sure your device is turned on and in pairing mode.",
-  "@noDevicesFound": {
-    "description": "Message shown when no BLE devices are found"
-  },
-  "rescan": "Rescan",
-  "@rescan": {
-    "description": "Button to rescan for BLE devices"
-  },
-  "cancel": "Cancel",
-  "@cancel": {
-    "description": "Button to cancel dialog"
-  },
-  "tapToConnectDevice": "Tap to connect a device",
-  "@tapToConnectDevice": {
-    "description": "Instruction text in device panel"
-  },
-  "connectDeviceType": "Connect {deviceType}",
-  "@connectDeviceType": {
-    "description": "Title for connect device dialog",
-    "placeholders": {
-      "deviceType": {
-        "type": "String"
-      }
-    }
-  },
-  "alreadyConnectedMessage": "{deviceType} already connected. Scan for another {deviceType}?",
-  "@alreadyConnectedMessage": {
-    "description": "Message when device is already connected",
-    "placeholders": {
-      "deviceType": {
-        "type": "String"
-      }
-    }
-  },
-  "scanForDeviceMessage": "Scan for {deviceType}?",
-  "@scanForDeviceMessage": {
-    "description": "Message to scan for device",
-    "placeholders": {
-      "deviceType": {
-        "type": "String"
-      }
-    }
-  },
-  "bpTransferHint": "\n\nPress BT on the device once first (slow LED = transfer mode).",
-  "@bpTransferHint": {
-    "description": "Hint for Omron BP device transfer mode"
-  },
-  "scan": "Scan",
-  "@scan": {
-    "description": "Button to start scanning"
-  },
-  "signalStrength": "Signal: {rssi} dBm",
-  "@signalStrength": {
-    "description": "BLE device signal strength",
-    "placeholders": {
-      "rssi": {
-        "type": "int"
-      }
-    }
-  },
-  "bpHistory": "BP History",
-  "@bpHistory": {
-    "description": "Title for BP history section"
-  },
-  "allRecords": "All Records",
-  "@allRecords": {
-    "description": "Title for all glucose records section"
-  },
-  "recordsCount": "{count} records",
-  "@recordsCount": {
-    "description": "Count of records",
+  "@syncComplete": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "viewAllHistory": "View All History",
-  "@viewAllHistory": {
-    "description": "Tooltip for history button"
+  "offlineLoginExpired": "Please connect to the internet to log in",
+  "heartStatusHealthy": "You're doing great",
+  "heartStatusCaution": "Monitor closely today",
+  "heartStatusUrgent": "Call your doctor today",
+  "heartFaceHealthy": "All is well",
+  "heartFaceCaution": "Stay alert today",
+  "heartFaceUrgent": "Need doctor's help",
+  "heartCallDoctor": "Call your doctor now",
+  "quickSelectTitle": "Log Meal",
+  "mealHighCarb": "Heavy — Rice / Roti",
+  "mealLowCarb": "Light — Sabzi / Dal",
+  "mealSweets": "Sweets / Meetha",
+  "mealHighProtein": "Protein — Egg / Paneer",
+  "mealModerateCarb": "Mixed / Balanced",
+  "mealMoreOptions": "More options",
+  "mealLessOptions": "Less options",
+  "mealSavedSuccess": "Meal logged!",
+  "mealTypeBreakfast": "Breakfast",
+  "mealTypeLunch": "Lunch",
+  "mealTypeSnack": "Snack",
+  "mealTypeDinner": "Dinner",
+  "mealDisclaimer": "For general wellness, not medical advice",
+  "foodPhotoTitle": "Take Food Photo",
+  "foodPhotoHint": "Point camera at your food",
+  "foodPhotoGallery": "Choose from Gallery",
+  "foodPhotoAnalyzing": "Analyzing your food...",
+  "foodPhotoFailed": "Could not classify food. Please select manually.",
+  "foodResultTitle": "Meal Result",
+  "foodCategoryHighCarb": "High Carb",
+  "foodCategoryModerateCarb": "Moderate Carb",
+  "foodCategoryLowCarb": "Low Carb",
+  "foodCategoryHighProtein": "High Protein",
+  "foodCategorySweets": "Sweets",
+  "foodMealTypeLabel": "Meal Type",
+  "foodNotCorrectChange": "Not correct? Change",
+  "foodDisclaimer": "For general wellness, not medical advice",
+  "foodPhotoSaved": "Meal saved!",
+  "foodPhotoSaveFailed": "Could not save meal. Please try again.",
+  "mealsTileLabel": "Meals",
+  "mealsTodayCount": "{count} today",
+  "@mealsTodayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
-  "deviceDisconnected": "Device disconnected",
-  "@deviceDisconnected": {
-    "description": "Message shown when device is disconnected"
+  "todaysMeals": "Today's Meals",
+  "noMealsToday": "No meals logged today",
+  "tapToLogMeal": "Tap to log",
+  "logMeal": "Log Meal",
+  "logMealSubtitle": "How would you like to log?",
+  "quickSelectOption": "Quick Select",
+  "scanFoodPhotoOption": "Scan Food Photo",
+  "photoAiHint": "Photo lets AI detect carb level automatically",
+  "wellnessHubTitle": "{relationship}'s Wellness Hub",
+  "@wellnessHubTitle": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
   },
-  "tapDeviceToConnect": "Tap a device icon above to connect",
-  "@tapDeviceToConnect": {
-    "description": "Status message when no device is connected"
+  "wellnessHubSubtitle": "{name} | {location}",
+  "@wellnessHubSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
   },
-  "unknownDevice": "Unknown Device",
-  "@unknownDevice": {
-    "description": "Default name for unnamed BLE devices"
+  "caregiverStatusGreat": "Your {relationship} is doing great today. Vitals are stable.",
+  "@caregiverStatusGreat": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "caregiverStatusCaution": "Your {relationship} needs attention today. Check vitals.",
+  "@caregiverStatusCaution": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "caregiverStatusUrgent": "Your {relationship} needs immediate care. Call now.",
+  "@caregiverStatusUrgent": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "activityFeedTitle": "Activity Feed",
+  "careCircleTitle": "Care Circle",
+  "priorityCall": "Priority Call",
+  "noRecentActivity": "No recent activity",
+  "wellnessRingTitle": "Wellness Ring",
+  "takeReadings": "Take Readings",
+  "backToWellnessHub": "Back to Wellness Hub",
+  "glucometerPrerequisites": "Glucometer – Prerequisites:",
+  "@glucometerPrerequisites": {
+    "description": "Title for glucometer prerequisites section"
   }
 }

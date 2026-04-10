@@ -4,42 +4,313 @@
 Flutter + FastAPI health monitoring app. Target: Bihar pilot.
 Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
 
-## Key Directories
-- `backend/` — FastAPI backend (Python)
-- `lib/` — Flutter frontend (Dart)
-- `lib/theme/app_theme.dart` — AppColors (iOS system color palette)
-- `lib/screens/trend_chart_screen.dart` — 7/30-day glucose + BP charts
+## Session Start Protocol
+**At the start of every session, automatically:**
+1. The SessionStart hook loads previous session context + learnings (from `.claude/sessions/latest.md`)
+2. Read `WORKING-CONTEXT.md` for current sprint state
+3. Read `.claude/compact-state.md` if it exists (resume after compaction)
+4. Check `.claude/learnings/` for project-specific patterns to follow
+
+## Key Files (read these first)
+- `WORKING-CONTEXT.md` — **live sprint board** (current branch, PRs, blockers, priorities)
+- `RULES.md` — **Must Always / Must Never rules**, commit style, model routing
 - `TASK_TRACKER.md` — full feature status across all modules (A–D)
 - `KNOWN_ISSUES.md` — deferred issues tracked for pre-production
+- `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md` — **legal checklist for doctor portal** (NMC, DPDPA, SaMD, liability)
 - `AUDIT.md` — change log (update on every session)
+- `.claude/sessions/latest.md` — previous session summary (auto-loaded)
+- `.claude/learnings/*.md` — project patterns discovered over time (auto-loaded)
 
-## Mandatory: Audit Log
-**Every session, before ending, append a summary of all changes made to `AUDIT.md`.**
+## Slash Commands
 
-Format:
+### Development Workflow
+- `/blueprint` — Multi-session feature planner (for big features spanning multiple PRs)
+- `/tdd` — Test-driven development (RED → GREEN → REFACTOR)
+- `/verify` — 6-phase pre-PR quality gate (build, lint, test, security, coverage, diff)
+- `/security-audit` — OWASP Top 10 security scan on changed files
+- `/review` — Daniel's senior engineer code review
+- `/ship` — Full pipeline: test → security → review → commit → PR
+
+### Domain Experts
+- `/ux-review` — Healthify's UX/accessibility review
+- `/qa-review` — Priya's QA testing strategy review (coverage quality, boundary tests, risk paths)
+- `/doctor-feedback` — Dr. Rajesh's product feedback (doctor persona)
+- `/legal-check` — India health-tech legal/compliance advisor
+- `/phi-compliance` — Health data (PHI) compliance audit (DPDPA, DISHA, encryption)
+
+### Decision Support
+- `/council` — 4-voice decision panel (Architect, Skeptic, Pragmatist, Critic)
+- `/safety-guard` — Review planned operations for destructive risk
+
+### Session Management
+- `/learn` — Capture a project pattern or insight for future sessions
+- `/compact-now` — Save full state + suggest optimal compaction point
+
+## Development Pipeline (ENFORCED — no step is optional)
+
+**This pipeline runs for EVERY feature, bug fix, or refactor. Each stage has a GATE that must pass before proceeding. If a gate fails, fix the issue and re-run that stage. Never skip ahead.**
+
 ```
-## YYYY-MM-DD — <one line summary of session work>
-- Changed `file/path.py`: what and why
-- Created `file/path.dart`: what and why
+┌───────────┐ ┌──────┐ ┌────────┐ ┌───────────┐ ┌────────┐ ┌────────┐ ┌─────────┐ ┌────────┐ ┌──────┐
+│1.UNDERSTAND│▶│2.PLAN│▶│3.VALID.│▶│4.IMPLEMENT│▶│5.VERIFY│▶│6.SECURE│▶│7.EXPERT │▶│8.REVIEW│▶│9.SHIP│
+│            │ │      │ │        │ │           │ │        │ │        │ │   QA    │ │        │ │      │
+│ auto       │ │/bluep│ │/dr-feed│ │ /tdd      │ │/verify │ │/sec-aud│ │/ux-rev  │ │/review │ │commit│
+│            │ │/cncil│ │/legal  │ │           │ │6 phase │ │/phi-com│ │/safe-grd│ │(Daniel)│ │PR    │
+│            │ │      │ │        │ │           │ │        │ │        │ │/legal   │ │        │ │audit │
+│            │ │      │ │        │ │           │ │        │ │        │ │/dr-feed │ │        │ │learn │
+└────────────┘ └──────┘ └────────┘ └───────────┘ └────────┘ └────────┘ └─────────┘ └────────┘ └──────┘
+    GATE:        GATE:     GATE:       GATE:        GATE:      GATE:      GATE:       GATE:
+  context     user approves no show-  tests pass  6 phases  no CRITICAL no Must-Fix no CRITICAL
+  loaded        plan      stoppers                  pass     findings    issues      issues
 ```
 
-## Active Branch
-`feature/phase1-dashboard-complete` — Phase 1 dashboard pushed to GitHub (2026-03-28).
+**KEY: Domain experts fire TWICE — once to validate the idea (Stage 3), once to QA the code (Stage 7).**
 
-## Completed Milestones (do not re-implement)
-- **A2** — Multi-profile + cross-user sharing (all 22 steps done)
-- **A6** — Hindi/English language toggle (gen-l10n, `.arb` files, toggle in settings)
-- **B20** — Direct manual entry for glucose + BP (no camera/BLE required)
-- **C4/C5/C21** — 7/30-day glucose + BP trend charts with correlation (`fl_chart`)
-- **C18/C19/C20** — Health score ring, streak counter, AI insight on home screen
-- **C22** — Apple Health-inspired visual theme (`AppColors` in `lib/theme/app_theme.dart`)
+### Stage 1: UNDERSTAND (automatic — runs before anything else)
+**Skills used:** none (reads files)
+**Actions:**
+- Read `WORKING-CONTEXT.md` — what sprint, what branch, what blockers
+- Read `TASK_TRACKER.md` — does this feature exist? what's its status?
+- Read `.claude/learnings/` — any past patterns relevant to this work?
+- Ask clarifying questions ONLY if genuinely ambiguous
+**GATE:** Context is loaded. Proceed.
 
-## Next Priorities (Bihar Pilot Blockers)
-- **D7** — Abnormal value alert: when a reading is CRITICAL, notify family (safety critical)
-- **D8** — WhatsApp Business API: needs Meta approval — start ASAP (2–5 day wait)
-- **A6** — Language toggle already implemented; verify end-to-end on device
-- **A12** — First-time onboarding screens (welcome → create profile → how to photograph → invite)
-- **A9** — Offline mode: add local cache (`hive` or `sqflite`) + sync queue
+### Stage 2: PLAN (automatic for >50 lines; ask user for <50)
+**Skills used:** `/blueprint` (multi-PR features) | `/council` (ambiguous decisions)
+**Actions:**
+- For trivial changes (<50 lines): state the approach in 2-3 bullets, proceed
+- For non-trivial changes: run `/blueprint` — produce step-by-step plan with file list
+- If the approach has multiple valid options: run `/council` — 4-voice debate
+- Present plan to user
+**GATE:** User says "go" or approves the plan. Do NOT proceed without approval.
+
+### Stage 3: VALIDATE (domain experts review the PLAN before coding)
+
+**Purpose: Catch "should we build this?" problems BEFORE writing code. This prevents rework.**
+
+**This stage fires based on what KIND of work is planned, not what files changed (files don't exist yet).**
+
+#### 3a — Doctor Validation (`/doctor-feedback`)
+**Auto-triggers when ANY of these are true:**
+- A new feature is being planned (blueprint produced in Stage 2)
+- The feature touches patient-facing health flows, clinical data, or AI insights
+- The feature changes how patients interact with the app
+
+**What Dr. Rajesh validates:**
+- Will Bihar patients actually use this daily?
+- Is the clinical approach accurate and not misleading?
+- Any NMC compliance or liability concerns?
+- What should change in the plan before we build?
+
+#### 3b — Legal Validation (`/legal-check`)
+**Auto-triggers when ANY of these are true:**
+- The feature involves new data collection (new DB tables, new user input)
+- The feature involves AI generating health advice
+- The feature involves sharing data between users
+- The feature involves consent, terms, or communications
+- The work produces non-code documents (pitch decks, contracts, agreements)
+
+**What Legal validates:**
+- DPDPA 2023 compliance for new data collection
+- NMC guidelines for health advice
+- SaMD classification risk for AI features
+- Data sharing and consent requirements
+
+#### 3c — Trigger Decision Flow:
+```
+Is this a new feature (blueprint produced)?
+  AND touches health/patient/AI/clinical?
+  → YES: run /doctor-feedback
+
+Does this involve new data collection, AI advice, sharing, consent, or legal docs?
+  → YES: run /legal-check
+
+Is this a bug fix, refactor, or infra-only change?
+  → SKIP Stage 3 entirely. Proceed to Stage 4.
+```
+
+**GATE:** No showstoppers from experts. If Must Fix items raised:
+1. Update the blueprint/spec with their recommendations
+2. Get user approval on the updated plan
+3. THEN proceed to Stage 4
+
+### Stage 4: IMPLEMENT (TDD approach — mandatory)
+**Skills used:** `/tdd`
+**Actions:**
+- **RED:** Write failing tests FIRST — cover happy path, edge cases, error cases
+- **GREEN:** Write minimum code to make tests pass
+- **REFACTOR:** Clean up while tests stay green
+- Follow `RULES.md`: AppColors, AppLocalizations, ApiClient, Depends(get_current_user)
+- Add localization strings to both `app_en.arb` + `app_hi.arb` if adding UI text
+**GATE:** All new tests pass. All existing tests still pass. Proceed.
+
+### Stage 5: VERIFY (7-phase quality gate)
+**Skills used:** `/verify` + `/qa-review`
+**Actions — run ALL 7 phases in order:**
+1. **BUILD:** `flutter analyze` + backend import check
+2. **LINT:** `flutter analyze` + `ruff check` (if installed)
+3. **TESTS:** `TESTING=true python -m pytest tests/ -v` + `flutter test test/` (includes E2E flow tests)
+4. **COVERAGE (MANDATORY):** `pytest --cov` on each changed backend file. Tiered targets:
+   - **Tier 1 (95%):** health_utils, routes_health, routes_meals, models, schemas — health-critical
+   - **Tier 2 (90%):** dependencies, routes (auth), encryption_service — auth/security
+   - **Tier 3 (85%):** all other backend files — general
+   - Install `pytest-cov` if missing. This is a HARD GATE — write tests until coverage passes.
+5. **QA REVIEW:** `/qa-review` — assess test QUALITY, not just coverage %. Check: boundary tests for health classifications, negative/error paths, timezone edge cases, network failure handling. List untested risk paths.
+6. **SECURITY GREP:** scan for `print()`, hardcoded secrets, debug statements
+7. **DIFF REVIEW:** `git diff --stat` — only intended files changed?
+**GATE:** No FAIL in any phase. Coverage below tier target is a FAIL. QA CRITICAL findings must be fixed. If a phase fails, fix and re-run `/verify` from the beginning.
+
+### E2E Flow Tests (MANDATORY on every PR — quality over quantity)
+**When:** Every PR that touches Flutter code. No exceptions.
+**Philosophy:** Whatever feature we build, it must work E2E before we implement any new feature.
+**Run:** `flutter test test/flows/ --timeout 30s`
+**Current coverage (82 flow tests, 187 total Flutter tests):**
+- `auth_flow_test.dart` — login, registration, validation, navigation (9 tests)
+- `dashboard_display_test.dart` — all screens render, no ErrorWidgets (6 tests)
+- `health_reading_flow_test.dart` — BP + glucose entry, validation, boundary, save (14 tests)
+- `meal_logging_flow_test.dart` — quick select, meal type, API save (8 tests)
+- `chat_flow_test.dart` — input, send, response, quota (8 tests)
+- `profile_flow_test.dart` — selection, create, validate, API loads (9 tests)
+- `history_flow_test.dart` — readings list, data display (5 tests)
+- `error_handling_test.dart` — wrong creds, server errors, validation (5 tests)
+- `offline_sync_test.dart` — queue, sync, failed items, unreachable server (10 tests)
+- `boundary_tests.dart` — clinical classification (BP/glucose), double-tap, token expiry (36 tests)
+
+**Test infrastructure (must use):**
+- `test/helpers/test_app.dart` — `TestEnv` bootstrapper, `pumpN()` helper
+- `test/helpers/mock_http.dart` — mock HTTP for all 48 API endpoints
+- `test/helpers/finders.dart` — Key-based widget finders
+- NEVER use `pumpAndSettle()` — causes infinite hangs with animations. Always use `pumpN()`.
+- NEVER use `FlutterSecureStorage` directly in tests — use `StorageService.useInMemoryStorage()`.
+- Every new screen MUST get widget Keys on interactive elements.
+
+**When adding a new feature:**
+1. Add widget Keys to any new interactive elements
+2. Write E2E flow test BEFORE or WITH the feature (not after)
+3. Update mock_http.dart if new API endpoints are added
+4. Run `flutter test test/flows/ --timeout 30s` — all must pass
+5. If a test fails, fix the code, not the test (unless the test is wrong)
+
+**GATE:** All E2E tests pass. Zero failures. This blocks the PR.
+
+### Stage 6: SECURITY (OWASP + health data compliance)
+**Skills used:** `/security-audit` + `/phi-compliance` (conditional)
+**Actions:**
+- Run `/security-audit` on all changed files — full OWASP Top 10 checklist
+- **Auto-trigger `/phi-compliance`** if ANY changed file touches health data
+**GATE:** No CRITICAL or HIGH findings. MEDIUM findings: list them in the PR description. If CRITICAL found → fix and re-run from Stage 5.
+
+### Stage 7: EXPERT QA (domain experts review the CODE after implementation)
+
+**Purpose: Catch "did we build it right?" problems in the actual code/UI. Different question from Stage 3.**
+
+#### 7a — UX Review (Healthify): `/ux-review`
+**Auto-triggers when ANY of these files are in the diff:**
+- `lib/screens/*.dart`, `lib/widgets/*.dart`, `lib/theme/app_theme.dart`
+- `lib/l10n/app_en.arb` or `app_hi.arb` (UI text changed)
+
+**What Healthify checks:**
+- Bihar grandmother test (understands in 3 seconds?)
+- Singapore daughter test (parent safe in 1 second?)
+- Touch targets ≥48dp, font sizes ≥14sp, solid colors, color-blind safe
+
+**GATE:** No "Must Fix" issues. "Should Fix" noted in PR.
+
+#### 7b — Doctor QA (`/doctor-feedback`) — only if Stage 3 was triggered
+**Auto-triggers when:** Stage 3a ran (doctor validated the plan). Now re-checks the built result.
+**What Dr. Rajesh checks:** Does the implementation match what was validated? Any new clinical concerns?
+**GATE:** Implementation matches approved plan.
+
+#### 7c — Legal QA (`/legal-check`) — code-level check
+**Auto-triggers when ANY of these files are in the diff:**
+- `models.py`, `routes.py`, `ai_service.py`, `encryption_service.py`, `email_service.py`
+- Any file touching consent, sharing, invites, permissions
+
+**What Legal checks:** Code-level DPDPA compliance, AI disclaimers present, data sharing permissions correct.
+**GATE:** No HIGH risk findings.
+
+#### 7d — Safety Guard: `/safety-guard`
+**Auto-triggers when ANY of these are true:**
+- Destructive git/bash commands, DB migrations, schema drops
+**GATE:** User explicitly confirms each destructive operation.
+
+### Stage 8: CODE REVIEW (Daniel)
+**Skills used:** `/review`
+**Actions:**
+- Run `/review` — Daniel reviews all changes for correctness, security, error handling, performance, maintainability, test coverage, architecture
+- Daniel also reviews any issues flagged by Stage 7 domain experts
+- CRITICAL issues: fix immediately, then re-run from Stage 5
+- MEDIUM issues: fix if straightforward (<10 min); otherwise list in PR
+- MINOR issues: note but don't block
+**GATE:** Zero CRITICAL issues remain. Proceed to ship.
+
+### Stage 9: SHIP (commit + PR + housekeeping)
+**Skills used:** none (orchestration)
+**Actions — ALL of these, in order:**
+1. `git add` relevant files (never `.env`, `.coverage`, build artifacts)
+2. `git commit` with conventional message: `feat(module):` / `fix(module):` / `refactor(module):`
+3. `git push` to remote branch
+4. `gh pr create` with structured body:
+   - Summary (what changed and why)
+   - Test Plan (what was tested)
+   - Security (PASS/CONDITIONAL PASS + any MEDIUM findings)
+   - Validation Reviews (Stage 3 — which experts validated + their verdicts)
+   - QA Reviews (Stage 7 — which experts QA'd + their verdicts)
+   - Code Review (Daniel's verdict)
+5. Update `WORKING-CONTEXT.md` with new PR entry
+6. Update `AUDIT.md` with session changes
+7. Run `/learn` — capture any non-obvious patterns discovered during this work
+8. Stop hook auto-saves session state
+
+**The pipeline is complete. Every skill has fired at its trigger point. Nothing was skipped.**
+
+### Pipeline Shortcuts
+- User says **"just implement"** → run Stages 1-4 only, pause before verify
+- User says **"skip review"** → skip Stage 8 only (experts still fire)
+- User says **"/ship"** → run Stages 5-9 (assumes implementation is done)
+- User says **"quick fix"** for <10 line changes → Stages 1,4,5,8,9 (skip plan/validate/expert QA)
+
+### On-Demand Only
+These are NOT auto-triggered but can be called anytime:
+- `/compact-now` — invoke when context window is getting full
+- `/council` — can also be invoked outside Stage 2 for any ad-hoc decision
+
+## Branch & Deployment Rules (ENFORCED)
+
+### Branch Hygiene
+- **ALWAYS** checkout master and pull before creating a new branch:
+  ```bash
+  git checkout master && git pull origin master
+  git checkout -b feature/your-feature-name
+  ```
+- **NEVER** create a new branch from another feature branch
+- **NEVER** cherry-pick across feature branches — causes merge conflicts and lost changes
+- If master has advanced while you're on a feature branch, rebase: `git rebase origin/master`
+
+### Server Deployment
+- **ALWAYS** build from master (or from a branch that is up-to-date with master)
+- **NEVER** deploy from a stale feature branch — this overwrites changes from other merged PRs
+- Deploy commands (run in order):
+  ```bash
+  git checkout master && git pull origin master
+  flutter build web --release --dart-define=SERVER_HOST=https://65.109.226.36:8443
+  scp -i ~/.ssh/new-server-key -r build/web/* root@65.109.226.36:/var/www/swasth/web/
+  ```
+- If backend files changed, also deploy and restart:
+  ```bash
+  scp -i ~/.ssh/new-server-key backend/<changed_file>.py root@65.109.226.36:/var/www/swasth/backend/
+  ssh -i ~/.ssh/new-server-key root@65.109.226.36 "kill \$(lsof -ti :8007); sleep 2; cd /var/www/swasth/backend && nohup python3 -B main.py > /var/log/swasth-backend.log 2>&1 &"
+  ```
+
+### Pre-PR Checklist (run ALL before pushing)
+```bash
+flutter analyze --no-pub                              # Zero errors
+flutter test test/flows/ --timeout 30s                # All E2E tests pass
+flutter test                                          # All Flutter tests pass
+cd backend && source venv/bin/activate
+TESTING=true python -m pytest tests/ -v               # All backend tests pass
+TESTING=true python -m pytest tests/ --cov=. --cov-report=term-missing  # Coverage >=85%
+```
 
 ## Architecture Decisions (do not change without discussion)
 - Auth: email + password + JWT (no Firebase for PoC)
@@ -51,9 +322,10 @@ Format:
 - Secrets never committed — `backend/.env` is gitignored
 
 ## Code Rules
-- Never copy-paste auth boilerplate — use `Depends(get_current_user)`
-- All Flutter HTTP calls use `ApiClient.headers()` and `ApiClient.errorDetail()`
-- No print() statements in backend — clean them up if encountered
-- All colors via `AppColors.*` — never use raw `Colors.*` for semantic UI elements
-- All user-facing strings via `AppLocalizations.of(context).*` — never hardcode
-- Follow `TASK_TRACKER.md` for feature status before starting any new work
+See `RULES.md` for the full list. Critical rules:
+- All colors via `AppColors.*` — never raw `Colors.*`
+- All strings via `AppLocalizations.of(context).*` — never hardcode
+- All HTTP via `ApiClient.headers()` + `ApiClient.errorDetail()`
+- All auth via `Depends(get_current_user)`
+- No `print()` in backend
+- Check `TASK_TRACKER.md` before starting any new feature work

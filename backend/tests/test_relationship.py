@@ -73,8 +73,8 @@ class TestInviteWithRelationship:
         viewer_headers = {"Authorization": f"Bearer {viewer_token}"}
 
         # Accept invite
-        resp = client.post(
-            f"/api/invites/{invite_id}/respond",
+        resp = client.patch(
+            f"/api/invites/{invite_id}",
             json={"action": "accept"},
             headers=viewer_headers,
         )
@@ -121,8 +121,8 @@ class TestProfileListRelationship:
         })
         family_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
-        client.post(
-            f"/api/invites/{invite_id}/respond",
+        client.patch(
+            f"/api/invites/{invite_id}",
             json={"action": "accept"},
             headers=family_headers,
         )

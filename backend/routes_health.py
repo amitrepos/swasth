@@ -3,6 +3,7 @@
 
 """Health Readings API Routes"""
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -16,15 +17,16 @@ import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
+from health_utils import generate_meal_insights
 
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 from encryption_service import encrypt, encrypt_float
-from health_utils import age_context_bp, age_context_glucose
+from health_utils import age_context_bp, age_context_glucose, classify_spo2
 
 router = APIRouter()
 
-_VALID_READING_TYPES = {'glucose', 'blood_pressure'}
+_VALID_READING_TYPES = {'glucose', 'blood_pressure', 'spo2', 'steps'}
 
 # Cache: one Gemini call per (profile_id, date) — clears on server restart
 _insight_cache: dict[tuple[int, str], str] = {}
@@ -36,14 +38,14 @@ def save_reading(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Save a new health reading (glucose or blood pressure) for a specific profile."""
+    """Save a new health reading (glucose, blood pressure, SpO2, or steps) for a specific profile."""
     # Verify editor/owner access (viewers cannot create readings)
     get_profile_editor_or_403(reading.profile_id, user, db)
 
     if reading.reading_type not in _VALID_READING_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid reading type. Must be 'glucose' or 'blood_pressure'",
+            detail=f"Invalid reading type. Must be one of: {', '.join(sorted(_VALID_READING_TYPES))}",
         )
 
     db_reading = models.HealthReading(
@@ -59,6 +61,10 @@ def save_reading(
         pulse_rate=reading.pulse_rate,
         bp_unit=reading.bp_unit,
         bp_status=reading.bp_status,
+        spo2_value=reading.spo2_value,
+        spo2_unit=reading.spo2_unit,
+        steps_count=reading.steps_count,
+        steps_goal=reading.steps_goal,
         value_numeric=reading.value_numeric,
         unit_display=reading.unit_display,
         status_flag=reading.status_flag,
@@ -74,6 +80,8 @@ def save_reading(
         db_reading.diastolic_enc = encrypt_float(reading.diastolic)
     if reading.pulse_rate is not None:
         db_reading.pulse_rate_enc = encrypt_float(reading.pulse_rate)
+    if reading.spo2_value is not None:
+        db_reading.spo2_enc = encrypt_float(reading.spo2_value)
     if reading.notes is not None:
         db_reading.notes_enc = encrypt(reading.notes)
 
@@ -96,6 +104,8 @@ def save_reading(
             alert_msg = f"🚨 {profile_name}'s glucose is {reading.glucose_value:.0f} mg/dL ({reading.status_flag}). Please check on them immediately."
         elif reading.reading_type == "blood_pressure" and reading.systolic:
             alert_msg = f"🚨 {profile_name}'s BP is {reading.systolic:.0f}/{reading.diastolic:.0f} mmHg ({reading.status_flag}). Please check on them immediately."
+        elif reading.reading_type == "spo2" and reading.spo2_value:
+            alert_msg = f"🚨 {profile_name}'s SpO2 is {reading.spo2_value:.0f}% ({reading.status_flag}). Please check on them immediately."
         else:
             alert_msg = f"🚨 {profile_name} has a {reading.status_flag} health reading. Please check on them."
 
@@ -144,46 +154,12 @@ def get_readings(
         if reading_type not in _VALID_READING_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid reading type. Must be 'glucose' or 'blood_pressure'",
+                detail=f"Invalid reading type. Must be one of: {', '.join(sorted(_VALID_READING_TYPES))}",
             )
         query = query.filter(models.HealthReading.reading_type == reading_type)
 
     return query.order_by(models.HealthReading.reading_timestamp.desc()).offset(offset).limit(limit).all()
 
-
-@router.get("/readings/stats/summary")
-def get_readings_summary(
-    profile_id: int,
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user),
-):
-    """Get summary statistics for readings of a specific profile."""
-    get_profile_access_or_403(profile_id, user, db)
-
-    total_readings = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id
-    ).count()
-
-    glucose_count = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'glucose',
-    ).count()
-
-    bp_count = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'blood_pressure',
-    ).count()
-
-    latest_reading = db.query(models.HealthReading).filter(
-        models.HealthReading.profile_id == profile_id
-    ).order_by(models.HealthReading.reading_timestamp.desc()).first()
-
-    return {
-        "total_readings": total_readings,
-        "glucose_readings": glucose_count,
-        "bp_readings": bp_count,
-        "latest_reading": schemas.HealthReadingResponse.from_orm(latest_reading) if latest_reading else None,
-    }
 
 
 @router.get("/readings/health-score", response_model=schemas.HealthScoreResponse)
@@ -214,10 +190,16 @@ def get_health_score(
 
     # Today's readings
     today_start = datetime.combine(today, datetime.min.time())
-    today_readings = [r for r in recent if r.reading_timestamp >= today_start]
+    today_readings = [r for r in recent if r.reading_timestamp.replace(tzinfo=None) >= today_start]
 
     today_glucose = next((r for r in today_readings if r.reading_type == 'glucose'), None)
     today_bp = next((r for r in today_readings if r.reading_type == 'blood_pressure'), None)
+    today_spo2 = next((r for r in today_readings if r.reading_type == 'spo2'), None)
+
+    # Steps: sum all step entries today (may have multiple syncs)
+    today_steps_readings = [r for r in today_readings if r.reading_type == 'steps']
+    today_steps_count = sum(r.steps_count or 0 for r in today_steps_readings) if today_steps_readings else None
+    today_steps_goal = next((r.steps_goal for r in today_steps_readings if r.steps_goal), None)
 
     # --- Streak calculation ---
     days_with_readings = set()
@@ -433,6 +415,61 @@ def get_health_score(
         else:
             bmi_category = "Obese"
 
+    # --- SpO2 data ---
+    last_spo2 = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'spo2',
+        )
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
+    avg_spo2_90d = db.query(func.avg(models.HealthReading.spo2_value)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'spo2',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.spo2_value.isnot(None),
+    ).scalar()
+    spo2_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'spo2',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.spo2_value.isnot(None),
+    ).scalar() or 0
+
+    # --- Steps data ---
+    last_steps = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'steps',
+        )
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
+    avg_steps_90d = db.query(func.avg(models.HealthReading.steps_count)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'steps',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.steps_count.isnot(None),
+    ).scalar()
+    steps_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'steps',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.steps_count.isnot(None),
+    ).scalar() or 0
+
+    # SpO2 classification for today's reading
+    today_spo2_status = None
+    if today_spo2 and today_spo2.spo2_value is not None:
+        today_spo2_status = classify_spo2(today_spo2.spo2_value)
+
     return schemas.HealthScoreResponse(
         score=score,
         color=color,
@@ -464,6 +501,19 @@ def get_health_score(
         bmi_category=bmi_category,
         profile_height=p_height,
         profile_weight=p_weight,
+        # SpO2
+        today_spo2_value=today_spo2.spo2_value if today_spo2 else None,
+        today_spo2_status=today_spo2_status,
+        last_spo2_value=last_spo2.spo2_value if last_spo2 else None,
+        last_spo2_status=classify_spo2(last_spo2.spo2_value) if last_spo2 and last_spo2.spo2_value else None,
+        avg_spo2_90d=float(avg_spo2_90d) if avg_spo2_90d is not None else None,
+        spo2_data_days=int(spo2_data_days),
+        # Steps
+        today_steps_count=today_steps_count,
+        today_steps_goal=today_steps_goal,
+        last_steps_count=last_steps.steps_count if last_steps else None,
+        avg_steps_90d=float(avg_steps_90d) if avg_steps_90d is not None else None,
+        steps_data_days=int(steps_data_days),
     )
 
 
@@ -595,36 +645,145 @@ def get_ai_insight(
         elif second_avg > first_avg + 5:
             trend_note += "Glucose trending UP (worsening). "
 
+    # ── Meal summary for LLM context ────────────────────────────────
+    recent_meals = (
+        db.query(models.MealLog)
+        .filter(
+            models.MealLog.profile_id == profile_id,
+            models.MealLog.timestamp >= thirty_days_ago,
+        )
+        .order_by(models.MealLog.timestamp.asc())
+        .all()
+    )
+
+    food_summary = ""
+    if recent_meals:
+        from collections import Counter
+        cat_counts = Counter(m.category for m in recent_meals)
+        food_summary = (
+            f"Meals (30-day, {len(recent_meals)} logged): "
+            + ", ".join(f"{k} {v}" for k, v in cat_counts.most_common())
+            + ". "
+        )
+
+    # Rule-based meal insights (appended to response, not sent to LLM)
+    meal_tips = generate_meal_insights(recent_meals, recent)
+
     age_desc = f"{age} years" if age else "unknown age"
 
-    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {trend_note}
+    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {food_summary}{trend_note}
 
-Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points."""
+Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points. Use suggestive language only ("may help", "consider")."""
 
     import ai_service
-    prompt_summary = f"{glucose_summary} {bp_summary} {trend_note}".strip() or None
+    prompt_summary = f"{glucose_summary} {bp_summary} {food_summary}{trend_note}".strip() or None
     insight = ai_service.generate_health_insight(prompt, profile_id, db, prompt_summary)
 
     if insight:
+        # Append top meal insight if available (max 1 to keep it concise)
+        if meal_tips:
+            insight = f"{insight}\n\n{meal_tips[0]}"
         return {"insight": insight}
 
     # All AI models failed — use rule-based fallback and log it
     ai_service._log(db, profile_id, "rule-based", prompt_summary, fallback, None, None, None)
+    if meal_tips:
+        fallback = f"{fallback}\n\n{meal_tips[0]}"
     return {"insight": fallback}
+
+
+def _build_shareable_summary(profile_id: int, period: int, db: Session):
+    """Build a shareable text summary for the given profile and period."""
+    today = date.today()
+    period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time())
+
+    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
+    profile_name = profile.name if profile else "Patient"
+
+    readings = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_timestamp >= period_start,
+        )
+        .order_by(models.HealthReading.reading_timestamp.asc())
+        .all()
+    )
+
+    glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
+    bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+
+    lines = [f"\U0001f4ca Weekly Health Summary \u2014 {profile_name}"]
+    start_date = (today - timedelta(days=period - 1)).strftime('%b %d')
+    end_date = today.strftime('%b %d, %Y')
+    lines.append(f"Period: {start_date} \u2013 {end_date}")
+    lines.append("")
+
+    if glucose_vals:
+        avg_g = sum(glucose_vals) / len(glucose_vals)
+        normal_pct = sum(1 for v in glucose_vals if 70 <= v <= 130) * 100 // len(glucose_vals)
+        lines.append(f"\U0001fa78 Glucose: {len(glucose_vals)} readings")
+        lines.append(f"   Avg: {avg_g:.0f} mg/dL | Range: {min(glucose_vals):.0f}\u2013{max(glucose_vals):.0f}")
+        lines.append(f"   Normal: {normal_pct}%")
+    else:
+        lines.append("\U0001fa78 Glucose: No readings this week")
+
+    lines.append("")
+
+    if bp_readings:
+        sys_vals = [s for s, _ in bp_readings]
+        dia_vals = [d for _, d in bp_readings]
+        avg_sys = sum(sys_vals) / len(sys_vals)
+        avg_dia = sum(dia_vals) / len(dia_vals)
+        elevated = sum(1 for s, d in bp_readings if s > 140 or d > 90)
+        lines.append(f"\u2764\ufe0f Blood Pressure: {len(bp_readings)} readings")
+        lines.append(f"   Avg: {avg_sys:.0f}/{avg_dia:.0f} mmHg")
+        lines.append(f"   Elevated: {elevated}")
+    else:
+        lines.append("\u2764\ufe0f Blood Pressure: No readings this week")
+
+    days_with = set()
+    for r in readings:
+        days_with.add(r.reading_timestamp.date())
+    days_logged = len(days_with)
+    lines.append("")
+    lines.append(f"\U0001f4c5 Days logged: {days_logged}/{period}")
+    lines.append("")
+    lines.append("\u2014 Sent from Swasth Health App")
+
+    summary_text = "\n".join(lines)
+
+    return {
+        "summary_text": summary_text,
+        "profile_name": profile_name,
+        "glucose_count": len(glucose_vals),
+        "glucose_avg": round(sum(glucose_vals) / len(glucose_vals), 1) if glucose_vals else None,
+        "bp_count": len(bp_readings),
+        "bp_avg_sys": round(sum(s for s, _ in bp_readings) / len(bp_readings), 1) if bp_readings else None,
+        "bp_avg_dia": round(sum(d for _, d in bp_readings) / len(bp_readings), 1) if bp_readings else None,
+        "days_logged": days_logged,
+        "total_readings": len(readings),
+    }
 
 
 @router.get("/readings/trend-summary")
 def get_trend_summary(
     profile_id: int,
     period: int = Query(default=7, ge=7, le=90),
+    format: str = Query(default="json", pattern="^(json|text)$"),
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
     """Layered trend summary: reuses dashboard AI insight + appends period-specific data.
 
     No extra Gemini calls — consistent messaging across all views, instant response.
+    When format=text, returns a shareable weekly summary with emoji formatting.
     """
     get_profile_access_or_403(profile_id, user, db)
+
+    # If text format requested, return shareable summary
+    if format == "text":
+        return _build_shareable_summary(profile_id, period, db)
 
     today = date.today()
 
@@ -698,6 +857,24 @@ def get_trend_summary(
         data_parts.append(
             f"BP: avg {avg_sys:.0f}/{avg_dia:.0f} mmHg ({len(bp_readings)} readings), "
             f"{elevated} elevated"
+        )
+
+    # Meal stats for the period
+    period_meals = (
+        db.query(models.MealLog)
+        .filter(
+            models.MealLog.profile_id == profile_id,
+            models.MealLog.timestamp >= period_start,
+        )
+        .all()
+    )
+    if period_meals:
+        from collections import Counter
+        cat_counts = Counter(m.category for m in period_meals)
+        heavy = cat_counts.get("HIGH_CARB", 0) + cat_counts.get("SWEETS", 0)
+        data_parts.append(
+            f"Diet: {len(period_meals)} meals logged, "
+            f"{heavy} heavy/sweet"
         )
 
     # Previous period comparison
@@ -821,85 +998,15 @@ def get_family_streaks(
     return {"leaderboard": board}
 
 
-@router.get("/readings/weekly-summary")
+@router.get("/readings/weekly-summary", deprecated=True)
 def get_weekly_summary(
     profile_id: int,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Generate a shareable weekly health summary for the doctor or family."""
+    """Deprecated: use GET /readings/trend-summary?period=7&format=text instead."""
     get_profile_access_or_403(profile_id, user, db)
-
-    today = date.today()
-    week_start = datetime.combine(today - timedelta(days=6), datetime.min.time())
-
-    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
-    profile_name = profile.name if profile else "Patient"
-
-    readings = (
-        db.query(models.HealthReading)
-        .filter(
-            models.HealthReading.profile_id == profile_id,
-            models.HealthReading.reading_timestamp >= week_start,
-        )
-        .order_by(models.HealthReading.reading_timestamp.asc())
-        .all()
-    )
-
-    glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
-    bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
-
-    # Build summary text
-    lines = [f"📊 Weekly Health Summary — {profile_name}"]
-    lines.append(f"Period: {(today - timedelta(days=6)).strftime('%b %d')} – {today.strftime('%b %d, %Y')}")
-    lines.append("")
-
-    if glucose_vals:
-        avg_g = sum(glucose_vals) / len(glucose_vals)
-        normal_pct = sum(1 for v in glucose_vals if 70 <= v <= 130) * 100 // len(glucose_vals)
-        lines.append(f"🩸 Glucose: {len(glucose_vals)} readings")
-        lines.append(f"   Avg: {avg_g:.0f} mg/dL | Range: {min(glucose_vals):.0f}–{max(glucose_vals):.0f}")
-        lines.append(f"   Normal: {normal_pct}%")
-    else:
-        lines.append("🩸 Glucose: No readings this week")
-
-    lines.append("")
-
-    if bp_readings:
-        sys_vals = [s for s, _ in bp_readings]
-        dia_vals = [d for _, d in bp_readings]
-        avg_sys = sum(sys_vals) / len(sys_vals)
-        avg_dia = sum(dia_vals) / len(dia_vals)
-        elevated = sum(1 for s, d in bp_readings if s > 140 or d > 90)
-        lines.append(f"❤️ Blood Pressure: {len(bp_readings)} readings")
-        lines.append(f"   Avg: {avg_sys:.0f}/{avg_dia:.0f} mmHg")
-        lines.append(f"   Elevated: {elevated}")
-    else:
-        lines.append("❤️ Blood Pressure: No readings this week")
-
-    # Streak
-    days_with = set()
-    for r in readings:
-        days_with.add(r.reading_timestamp.date())
-    days_logged = len(days_with)
-    lines.append("")
-    lines.append(f"📅 Days logged: {days_logged}/7")
-    lines.append("")
-    lines.append("— Sent from Swasth Health App")
-
-    summary_text = "\n".join(lines)
-
-    return {
-        "summary_text": summary_text,
-        "profile_name": profile_name,
-        "glucose_count": len(glucose_vals),
-        "glucose_avg": round(sum(glucose_vals) / len(glucose_vals), 1) if glucose_vals else None,
-        "bp_count": len(bp_readings),
-        "bp_avg_sys": round(sum(s for s, _ in bp_readings) / len(bp_readings), 1) if bp_readings else None,
-        "bp_avg_dia": round(sum(d for _, d in bp_readings) / len(bp_readings), 1) if bp_readings else None,
-        "days_logged": days_logged,
-        "total_readings": len(readings),
-    }
+    return _build_shareable_summary(profile_id, 7, db)
 
 
 @router.get("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
@@ -919,7 +1026,7 @@ def get_reading(
     return db_reading
 
 
-@router.delete("/readings/{reading_id}")
+@router.delete("/readings/{reading_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_reading(
     reading_id: int,
     db: Session = Depends(get_db),
@@ -935,7 +1042,7 @@ def delete_reading(
     
     db.delete(db_reading)
     db.commit()
-    return {"message": "Reading deleted successfully"}
+    return Response(status_code=204)
 
 
 @router.post("/readings/parse-image")

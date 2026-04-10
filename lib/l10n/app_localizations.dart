@@ -122,7 +122,7 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
-  /// Button to cancel dialog
+  /// No description provided for @cancel.
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
@@ -301,6 +301,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Phone Number'**
   String get phoneLabel;
+
+  /// No description provided for @phoneValidationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your phone number'**
+  String get phoneValidationEmpty;
+
+  /// No description provided for @phoneValidationDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number can only contain digits'**
+  String get phoneValidationDigits;
+
+  /// No description provided for @phoneValidationLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number must be 10-15 digits'**
+  String get phoneValidationLength;
 
   /// No description provided for @confirmPasswordLabel.
   ///
@@ -482,7 +500,7 @@ abstract class AppLocalizations {
   /// **'Your health monitoring companion'**
   String get welcomeSubtitle;
 
-  /// Title for device selection dialog
+  /// No description provided for @selectDevice.
   ///
   /// In en, this message translates to:
   /// **'Select Device'**
@@ -1394,10 +1412,10 @@ abstract class AppLocalizations {
   /// **'Scanning...'**
   String get scanningButton;
 
-  /// Message shown when no BLE devices are found
+  /// No description provided for @noDevicesFound.
   ///
   /// In en, this message translates to:
-  /// **'No devices found.\nMake sure your device is turned on and in pairing mode.'**
+  /// **'No devices found yet'**
   String get noDevicesFound;
 
   /// No description provided for @lookingForDevices.
@@ -1585,6 +1603,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Individual Metrics'**
   String get individualMetricsSection;
+
+  /// No description provided for @vitalsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals'**
+  String get vitalsSection;
+
+  /// No description provided for @trendsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Trends'**
+  String get trendsSection;
+
+  /// No description provided for @lastSpO2.
+  ///
+  /// In en, this message translates to:
+  /// **'Last SpO2'**
+  String get lastSpO2;
+
+  /// No description provided for @lastSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps Today'**
+  String get lastSteps;
+
+  /// No description provided for @spO2Unit.
+  ///
+  /// In en, this message translates to:
+  /// **'%'**
+  String get spO2Unit;
+
+  /// No description provided for @viaArmband.
+  ///
+  /// In en, this message translates to:
+  /// **'via Armband'**
+  String get viaArmband;
+
+  /// No description provided for @viaPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'via Phone / Armband'**
+  String get viaPhone;
+
+  /// No description provided for @pairDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair Device'**
+  String get pairDevice;
+
+  /// No description provided for @connectedDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected Devices'**
+  String get connectedDevices;
+
+  /// No description provided for @readMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get readMore;
+
+  /// No description provided for @mealSlotBreakfast.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakfast'**
+  String get mealSlotBreakfast;
+
+  /// No description provided for @mealSlotLunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch'**
+  String get mealSlotLunch;
+
+  /// No description provided for @mealSlotSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Snack'**
+  String get mealSlotSnack;
+
+  /// No description provided for @mealSlotDinner.
+  ///
+  /// In en, this message translates to:
+  /// **'Dinner'**
+  String get mealSlotDinner;
+
+  /// No description provided for @mealSlotLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged'**
+  String get mealSlotLogged;
+
+  /// No description provided for @mealSlotTapToLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to log'**
+  String get mealSlotTapToLog;
 
   /// No description provided for @footerDisclaimer.
   ///
@@ -2013,166 +2127,361 @@ abstract class AppLocalizations {
   String get offlineLoginExpired;
 
   /// Title for glucometer prerequisites section
-  ///
-  /// In en, this message translates to:
-  /// **'Glucometer – Prerequisites:'**
   String get glucometerPrerequisites;
 
-  /// Title for BP meter prerequisites section
+  /// No description provided for @heartStatusHealthy.
   ///
   /// In en, this message translates to:
-  /// **'BP Meter – Prerequisites:'**
-  String get bpMeterPrerequisites;
+  /// **'You\'re doing great'**
+  String get heartStatusHealthy;
 
-  /// Section header for first-time setup instructions
+  /// No description provided for @heartStatusCaution.
   ///
   /// In en, this message translates to:
-  /// **'For the first time:'**
-  String get forTheFirstTime;
+  /// **'Monitor closely today'**
+  String get heartStatusCaution;
 
-  /// Section header for regular usage instructions
+  /// No description provided for @heartStatusUrgent.
   ///
   /// In en, this message translates to:
-  /// **'Always:'**
-  String get always;
+  /// **'Call your doctor today'**
+  String get heartStatusUrgent;
 
-  /// First time setup step 1 for glucose meter
+  /// No description provided for @heartFaceHealthy.
   ///
   /// In en, this message translates to:
-  /// **'1. Pair the device via Bluetooth. The glucometer will display \"OK\" once connected.'**
-  String get glucoseFirstTimeStep1;
+  /// **'All is well'**
+  String get heartFaceHealthy;
 
-  /// Regular usage step 1 for glucose meter
+  /// No description provided for @heartFaceCaution.
   ///
   /// In en, this message translates to:
-  /// **'2. Take a sugar test, or press the bottom-right button to view history on the device screen.'**
-  String get glucoseAlwaysStep1;
+  /// **'Stay alert today'**
+  String get heartFaceCaution;
 
-  /// Regular usage step 2 for glucose meter
+  /// No description provided for @heartFaceUrgent.
   ///
   /// In en, this message translates to:
-  /// **'3. The app will scan and display the current reading or history.'**
-  String get glucoseAlwaysStep2;
+  /// **'Need doctor\'s help'**
+  String get heartFaceUrgent;
 
-  /// First time setup step 1 for BP meter
+  /// No description provided for @heartCallDoctor.
   ///
   /// In en, this message translates to:
-  /// **'1. Press and hold the Bluetooth button on the Omron HEM-7140T1 until \'P\' starts blinking.'**
-  String get bpFirstTimeStep1;
+  /// **'Call your doctor now'**
+  String get heartCallDoctor;
 
-  /// First time setup step 2 for BP meter
+  /// No description provided for @quickSelectTitle.
   ///
   /// In en, this message translates to:
-  /// **'2. Pair the device manually via Bluetooth. After pairing, \'P\' will continue blinking.'**
-  String get bpFirstTimeStep2;
+  /// **'Log Meal'**
+  String get quickSelectTitle;
 
-  /// First time setup step 3 for BP meter
+  /// No description provided for @mealHighCarb.
   ///
   /// In en, this message translates to:
-  /// **'3. Click the \'+\' icon. The device will display \"OK\", and the app will show readings.'**
-  String get bpFirstTimeStep3;
+  /// **'Heavy — Rice / Roti'**
+  String get mealHighCarb;
 
-  /// Regular usage step 1 for BP meter
+  /// No description provided for @mealLowCarb.
   ///
   /// In en, this message translates to:
-  /// **'4. Click the \'+\' icon. The app will scan and display current and previous readings.'**
-  String get bpAlwaysStep1;
+  /// **'Light — Sabzi / Dal'**
+  String get mealLowCarb;
 
-  /// Message shown while scanning for BLE devices
+  /// No description provided for @mealSweets.
   ///
   /// In en, this message translates to:
-  /// **'Scanning for devices...'**
-  String get scanningForDevices;
+  /// **'Sweets / Meetha'**
+  String get mealSweets;
 
-  /// Button to rescan for BLE devices
+  /// No description provided for @mealHighProtein.
   ///
   /// In en, this message translates to:
-  /// **'Rescan'**
-  String get rescan;
+  /// **'Protein — Egg / Paneer'**
+  String get mealHighProtein;
 
-  /// Instruction text in device panel
+  /// No description provided for @mealModerateCarb.
   ///
   /// In en, this message translates to:
-  /// **'Tap to connect a device'**
-  String get tapToConnectDevice;
+  /// **'Mixed / Balanced'**
+  String get mealModerateCarb;
 
-  /// Title for connect device dialog
+  /// No description provided for @mealMoreOptions.
   ///
   /// In en, this message translates to:
-  /// **'Connect {deviceType}'**
-  String connectDeviceType(String deviceType);
+  /// **'More options'**
+  String get mealMoreOptions;
 
-  /// Message when device is already connected
+  /// No description provided for @mealLessOptions.
   ///
   /// In en, this message translates to:
-  /// **'{deviceType} already connected. Scan for another {deviceType}?'**
-  String alreadyConnectedMessage(String deviceType);
+  /// **'Less options'**
+  String get mealLessOptions;
 
-  /// Message to scan for device
+  /// No description provided for @mealSavedSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Scan for {deviceType}?'**
-  String scanForDeviceMessage(String deviceType);
+  /// **'Meal logged!'**
+  String get mealSavedSuccess;
 
-  /// Hint for Omron BP device transfer mode
+  /// No description provided for @mealTypeBreakfast.
   ///
   /// In en, this message translates to:
-  /// **'\n\nPress BT on the device once first (slow LED = transfer mode).'**
-  String get bpTransferHint;
+  /// **'Breakfast'**
+  String get mealTypeBreakfast;
 
-  /// Button to start scanning
+  /// No description provided for @mealTypeLunch.
   ///
   /// In en, this message translates to:
-  /// **'Scan'**
-  String get scan;
+  /// **'Lunch'**
+  String get mealTypeLunch;
 
-  /// BLE device signal strength
+  /// No description provided for @mealTypeSnack.
   ///
   /// In en, this message translates to:
-  /// **'Signal: {rssi} dBm'**
-  String signalStrength(int rssi);
+  /// **'Snack'**
+  String get mealTypeSnack;
 
-  /// Title for BP history section
+  /// No description provided for @mealTypeDinner.
   ///
   /// In en, this message translates to:
-  /// **'BP History'**
-  String get bpHistory;
+  /// **'Dinner'**
+  String get mealTypeDinner;
 
-  /// Title for all glucose records section
+  /// No description provided for @mealDisclaimer.
   ///
   /// In en, this message translates to:
-  /// **'All Records'**
-  String get allRecords;
+  /// **'For general wellness, not medical advice'**
+  String get mealDisclaimer;
 
-  /// Count of records
+  /// No description provided for @foodPhotoTitle.
   ///
   /// In en, this message translates to:
-  /// **'{count} records'**
-  String recordsCount(int count);
+  /// **'Take Food Photo'**
+  String get foodPhotoTitle;
 
-  /// Tooltip for history button
+  /// No description provided for @foodPhotoHint.
   ///
   /// In en, this message translates to:
-  /// **'View All History'**
-  String get viewAllHistory;
+  /// **'Point camera at your food'**
+  String get foodPhotoHint;
 
-  /// Message shown when device is disconnected
+  /// No description provided for @foodPhotoGallery.
   ///
   /// In en, this message translates to:
-  /// **'Device disconnected'**
-  String get deviceDisconnected;
+  /// **'Choose from Gallery'**
+  String get foodPhotoGallery;
 
-  /// Status message when no device is connected
+  /// No description provided for @foodPhotoAnalyzing.
   ///
   /// In en, this message translates to:
-  /// **'Tap a device icon above to connect'**
-  String get tapDeviceToConnect;
+  /// **'Analyzing your food...'**
+  String get foodPhotoAnalyzing;
 
-  /// Default name for unnamed BLE devices
+  /// No description provided for @foodPhotoFailed.
   ///
   /// In en, this message translates to:
-  /// **'Unknown Device'**
-  String get unknownDevice;
+  /// **'Could not classify food. Please select manually.'**
+  String get foodPhotoFailed;
+
+  /// No description provided for @foodResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal Result'**
+  String get foodResultTitle;
+
+  /// No description provided for @foodCategoryHighCarb.
+  ///
+  /// In en, this message translates to:
+  /// **'High Carb'**
+  String get foodCategoryHighCarb;
+
+  /// No description provided for @foodCategoryModerateCarb.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate Carb'**
+  String get foodCategoryModerateCarb;
+
+  /// No description provided for @foodCategoryLowCarb.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Carb'**
+  String get foodCategoryLowCarb;
+
+  /// No description provided for @foodCategoryHighProtein.
+  ///
+  /// In en, this message translates to:
+  /// **'High Protein'**
+  String get foodCategoryHighProtein;
+
+  /// No description provided for @foodCategorySweets.
+  ///
+  /// In en, this message translates to:
+  /// **'Sweets'**
+  String get foodCategorySweets;
+
+  /// No description provided for @foodMealTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal Type'**
+  String get foodMealTypeLabel;
+
+  /// No description provided for @foodNotCorrectChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Not correct? Change'**
+  String get foodNotCorrectChange;
+
+  /// No description provided for @foodDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'For general wellness, not medical advice'**
+  String get foodDisclaimer;
+
+  /// No description provided for @foodPhotoSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal saved!'**
+  String get foodPhotoSaved;
+
+  /// No description provided for @foodPhotoSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save meal. Please try again.'**
+  String get foodPhotoSaveFailed;
+
+  /// No description provided for @mealsTileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Meals'**
+  String get mealsTileLabel;
+
+  /// No description provided for @mealsTodayCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} today'**
+  String mealsTodayCount(int count);
+
+  /// No description provided for @todaysMeals.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Meals'**
+  String get todaysMeals;
+
+  /// No description provided for @noMealsToday.
+  ///
+  /// In en, this message translates to:
+  /// **'No meals logged today'**
+  String get noMealsToday;
+
+  /// No description provided for @tapToLogMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to log'**
+  String get tapToLogMeal;
+
+  /// No description provided for @logMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Meal'**
+  String get logMeal;
+
+  /// No description provided for @logMealSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to log?'**
+  String get logMealSubtitle;
+
+  /// No description provided for @quickSelectOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Select'**
+  String get quickSelectOption;
+
+  /// No description provided for @scanFoodPhotoOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Food Photo'**
+  String get scanFoodPhotoOption;
+
+  /// No description provided for @photoAiHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo lets AI detect carb level automatically'**
+  String get photoAiHint;
+
+  /// No description provided for @wellnessHubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{relationship}\'s Wellness Hub'**
+  String wellnessHubTitle(String relationship);
+
+  /// No description provided for @wellnessHubSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} | {location}'**
+  String wellnessHubSubtitle(String name, String location);
+
+  /// No description provided for @caregiverStatusGreat.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {relationship} is doing great today. Vitals are stable.'**
+  String caregiverStatusGreat(String relationship);
+
+  /// No description provided for @caregiverStatusCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {relationship} needs attention today. Check vitals.'**
+  String caregiverStatusCaution(String relationship);
+
+  /// No description provided for @caregiverStatusUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {relationship} needs immediate care. Call now.'**
+  String caregiverStatusUrgent(String relationship);
+
+  /// No description provided for @activityFeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Feed'**
+  String get activityFeedTitle;
+
+  /// No description provided for @careCircleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Care Circle'**
+  String get careCircleTitle;
+
+  /// No description provided for @priorityCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority Call'**
+  String get priorityCall;
+
+  /// No description provided for @noRecentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent activity'**
+  String get noRecentActivity;
+
+  /// No description provided for @wellnessRingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wellness Ring'**
+  String get wellnessRingTitle;
+
+  /// No description provided for @takeReadings.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Readings'**
+  String get takeReadings;
+
+  /// No description provided for @backToWellnessHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Wellness Hub'**
+  String get backToWellnessHub;
 }
 
 class _AppLocalizationsDelegate

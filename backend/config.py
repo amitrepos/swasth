@@ -54,6 +54,16 @@ class Settings(BaseSettings):
     # HTTPS — enable in production behind TLS termination
     REQUIRE_HTTPS: bool = False
     
+    # WhatsApp Business API
+    WA_PHONE_NUMBER_ID: Optional[str] = None
+    WA_ACCESS_TOKEN: Optional[str] = None
+    WA_VERIFY_TOKEN: Optional[str] = None
+    
+    # Twilio Messaging
+    TWILIO_ACCOUNT_SID: Optional[str] = None
+    TWILIO_AUTH_TOKEN: Optional[str] = None
+    TWILIO_WHATSAPP_NUMBER: Optional[str] = None  # e.g. "whatsapp:+14155238886"
+    
     class Config:
         env_file = ".env"
 

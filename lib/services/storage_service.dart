@@ -1,18 +1,88 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// Abstract key-value store — production uses FlutterSecureStorage,
+/// tests use an in-memory map.
+abstract class KeyValueStore {
+  Future<String?> read(String key);
+  Future<void> write(String key, String? value);
+  Future<void> delete(String key);
+  Future<void> deleteAll();
+}
+
+/// Production implementation backed by FlutterSecureStorage.
+class _SecureKeyValueStore implements KeyValueStore {
+  final _storage = const FlutterSecureStorage();
+
+  @override
+  Future<String?> read(String key) => _storage.read(key: key);
+
+  @override
+  // Note: FlutterSecureStorage doesn't support null values, so we delete instead.
+  // This matches InMemoryKeyValueStore behavior for consistency.
+  Future<void> write(String key, String? value) => value == null
+      ? _storage.delete(key: key)
+      : _storage.write(key: key, value: value);
+
+  @override
+  Future<void> delete(String key) => _storage.delete(key: key);
+
+  @override
+  Future<void> deleteAll() => _storage.deleteAll();
+}
+
+/// In-memory implementation for tests (no native plugin needed).
+class InMemoryKeyValueStore implements KeyValueStore {
+  final Map<String, String> _data = {};
+
+  @override
+  Future<String?> read(String key) async => _data[key];
+
+  @override
+  Future<void> write(String key, String? value) async {
+    if (value == null) {
+      _data.remove(key);
+    } else {
+      _data[key] = value;
+    }
+  }
+
+  @override
+  Future<void> delete(String key) async => _data.remove(key);
+
+  @override
+  Future<void> deleteAll() async => _data.clear();
+}
 
 class StorageService {
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;
   StorageService._internal();
 
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  KeyValueStore _store = _SecureKeyValueStore();
+
+  /// Switch to in-memory storage for tests.
+  /// Safe to call multiple times — reuses existing in-memory store.
+  @visibleForTesting
+  static void useInMemoryStorage() {
+    if (_instance._store is! InMemoryKeyValueStore) {
+      _instance._store = InMemoryKeyValueStore();
+    }
+  }
+
+  /// Restore real storage after tests.
+  @visibleForTesting
+  static void useRealStorage() {
+    _instance._store = _SecureKeyValueStore();
+  }
 
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'user_data';
   static const String _activeProfileIdKey = 'active_profile_id';
   static const String _activeProfileNameKey = 'active_profile_name';
-  static const String _activeProfileAccessLevelKey = 'active_profile_access_level';
+  static const String _activeProfileAccessLevelKey =
+      'active_profile_access_level';
   static const String _languageKey = 'language_code';
   static const String _savedEmailKey = 'saved_email';
   static const String _savedPasswordKey = 'saved_password';
@@ -20,100 +90,86 @@ class StorageService {
   static const String _syncQueueKey = 'sync_queue';
   static const String _lastLoginTimestampKey = 'last_login_timestamp';
 
-  // Save authentication token
   Future<void> saveToken(String token) async {
-    await _storage.write(key: _tokenKey, value: token);
+    await _store.write(_tokenKey, token);
   }
 
-  // Get authentication token
   Future<String?> getToken() async {
-    return await _storage.read(key: _tokenKey);
+    return await _store.read(_tokenKey);
   }
 
-  // Save user data
+  // Delete authentication token (used when token is expired/invaild)
+  Future<void> deleteToken() async {
+    await _store.delete(_tokenKey);
+  }
   Future<void> saveUserData(Map<String, dynamic> userData) async {
-    await _storage.write(
-      key: _userKey,
-      value: jsonEncode(userData),
-    );
+    await _store.write(_userKey, jsonEncode(userData));
   }
 
-  // Save active profile ID
   Future<void> saveActiveProfileId(int id) async {
-    await _storage.write(key: _activeProfileIdKey, value: id.toString());
+    await _store.write(_activeProfileIdKey, id.toString());
   }
 
-  // Get active profile ID
   Future<int?> getActiveProfileId() async {
-    final value = await _storage.read(key: _activeProfileIdKey);
+    final value = await _store.read(_activeProfileIdKey);
     return value != null ? int.tryParse(value) : null;
   }
 
-  // Save active profile name
   Future<void> saveActiveProfileName(String name) async {
-    await _storage.write(key: _activeProfileNameKey, value: name);
+    await _store.write(_activeProfileNameKey, name);
   }
 
-  // Get active profile name
   Future<String?> getActiveProfileName() async {
-    return await _storage.read(key: _activeProfileNameKey);
+    return await _store.read(_activeProfileNameKey);
   }
 
-  // Save active profile access level
   Future<void> saveActiveProfileAccessLevel(String level) async {
-    await _storage.write(key: _activeProfileAccessLevelKey, value: level);
+    await _store.write(_activeProfileAccessLevelKey, level);
   }
 
-  // Get active profile access level
   Future<String?> getActiveProfileAccessLevel() async {
-    return await _storage.read(key: _activeProfileAccessLevelKey);
+    return await _store.read(_activeProfileAccessLevelKey);
   }
 
-  // Save language preference (survives logout)
   Future<void> saveLanguage(String languageCode) async {
-    await _storage.write(key: _languageKey, value: languageCode);
+    await _store.write(_languageKey, languageCode);
   }
 
-  // Get language preference
   Future<String?> getLanguage() async {
-    return await _storage.read(key: _languageKey);
+    return await _store.read(_languageKey);
   }
 
-  // Get user data
   Future<Map<String, dynamic>?> getUserData() async {
-    final jsonString = await _storage.read(key: _userKey);
+    final jsonString = await _store.read(_userKey);
     if (jsonString == null) return null;
     return jsonDecode(jsonString);
   }
 
-  // Save credentials for "Remember me"
   Future<void> saveCredentials(String email, String password) async {
-    await _storage.write(key: _savedEmailKey, value: email);
-    await _storage.write(key: _savedPasswordKey, value: password);
+    await _store.write(_savedEmailKey, email);
+    await _store.write(_savedPasswordKey, password);
   }
 
-  // Get saved credentials — returns null if none saved
   Future<({String email, String password})?> getSavedCredentials() async {
-    final email = await _storage.read(key: _savedEmailKey);
-    final password = await _storage.read(key: _savedPasswordKey);
+    final email = await _store.read(_savedEmailKey);
+    final password = await _store.read(_savedPasswordKey);
     if (email == null || password == null) return null;
     return (email: email, password: password);
   }
 
-  // Clear saved credentials (called when user unticks "Remember me" or logs out)
   Future<void> clearCredentials() async {
-    await _storage.delete(key: _savedEmailKey);
-    await _storage.delete(key: _savedPasswordKey);
+    await _store.delete(_savedEmailKey);
+    await _store.delete(_savedPasswordKey);
   }
 
   // ── Offline cache: profiles ──────────────────────────────────────────────
 
   Future<void> saveProfiles(List<Map<String, dynamic>> profiles) async {
-    await _storage.write(key: _cachedProfilesKey, value: jsonEncode(profiles));
+    await _store.write(_cachedProfilesKey, jsonEncode(profiles));
   }
 
   Future<List<Map<String, dynamic>>?> getCachedProfiles() async {
-    final json = await _storage.read(key: _cachedProfilesKey);
+    final json = await _store.read(_cachedProfilesKey);
     if (json == null) return null;
     return (jsonDecode(json) as List).cast<Map<String, dynamic>>();
   }
@@ -122,12 +178,15 @@ class StorageService {
 
   String _readingsKey(int profileId) => 'cached_readings_$profileId';
 
-  Future<void> saveReadings(int profileId, List<Map<String, dynamic>> readings) async {
-    await _storage.write(key: _readingsKey(profileId), value: jsonEncode(readings));
+  Future<void> saveReadings(
+    int profileId,
+    List<Map<String, dynamic>> readings,
+  ) async {
+    await _store.write(_readingsKey(profileId), jsonEncode(readings));
   }
 
   Future<List<Map<String, dynamic>>?> getCachedReadings(int profileId) async {
-    final json = await _storage.read(key: _readingsKey(profileId));
+    final json = await _store.read(_readingsKey(profileId));
     if (json == null) return null;
     return (jsonDecode(json) as List).cast<Map<String, dynamic>>();
   }
@@ -137,11 +196,11 @@ class StorageService {
   String _healthScoreKey(int profileId) => 'cached_health_score_$profileId';
 
   Future<void> saveHealthScore(int profileId, Map<String, dynamic> data) async {
-    await _storage.write(key: _healthScoreKey(profileId), value: jsonEncode(data));
+    await _store.write(_healthScoreKey(profileId), jsonEncode(data));
   }
 
   Future<Map<String, dynamic>?> getCachedHealthScore(int profileId) async {
-    final json = await _storage.read(key: _healthScoreKey(profileId));
+    final json = await _store.read(_healthScoreKey(profileId));
     if (json == null) return null;
     return jsonDecode(json) as Map<String, dynamic>;
   }
@@ -151,56 +210,52 @@ class StorageService {
   Future<void> addToSyncQueue(Map<String, dynamic> reading) async {
     final queue = await getSyncQueue();
     queue.add(reading);
-    await _storage.write(key: _syncQueueKey, value: jsonEncode(queue));
+    await _store.write(_syncQueueKey, jsonEncode(queue));
   }
 
   Future<List<Map<String, dynamic>>> getSyncQueue() async {
-    final json = await _storage.read(key: _syncQueueKey);
+    final json = await _store.read(_syncQueueKey);
     if (json == null) return [];
     return (jsonDecode(json) as List).cast<Map<String, dynamic>>();
   }
 
   Future<void> saveSyncQueue(List<Map<String, dynamic>> queue) async {
-    await _storage.write(key: _syncQueueKey, value: jsonEncode(queue));
+    await _store.write(_syncQueueKey, jsonEncode(queue));
   }
 
   Future<void> clearSyncQueue() async {
-    await _storage.delete(key: _syncQueueKey);
+    await _store.delete(_syncQueueKey);
   }
 
   // ── Last login timestamp (for offline session staleness) ───────────────
 
   Future<void> saveLastLoginTimestamp() async {
-    await _storage.write(
-      key: _lastLoginTimestampKey,
-      value: DateTime.now().toIso8601String(),
+    await _store.write(
+      _lastLoginTimestampKey,
+      DateTime.now().toIso8601String(),
     );
   }
 
   Future<DateTime?> getLastLoginTimestamp() async {
-    final value = await _storage.read(key: _lastLoginTimestampKey);
+    final value = await _store.read(_lastLoginTimestampKey);
     return value != null ? DateTime.tryParse(value) : null;
   }
 
   // ── Clear auth data (logout) — keeps sync queue & cache intact ─────────
 
   Future<void> clearAll() async {
-    await _storage.delete(key: _tokenKey);
-    await _storage.delete(key: _userKey);
-    await _storage.delete(key: _activeProfileIdKey);
-    await _storage.delete(key: _activeProfileNameKey);
+    await _store.delete(_tokenKey);
+    await _store.delete(_userKey);
+    await _store.delete(_activeProfileIdKey);
+    await _store.delete(_activeProfileNameKey);
     await clearCredentials();
-    // NOTE: cached_profiles, cached_readings_*, sync_queue, and
-    // last_login_timestamp are intentionally NOT cleared so offline
-    // data and pending uploads survive logout.
   }
 
-  /// Explicit full wipe — clears everything including offline caches.
   Future<void> clearEverything() async {
-    await _storage.deleteAll();
+    await _store.deleteAll();
   }
 
-  /// Generic string get/set for app preferences (reminders, settings).
-  Future<String?> getString(String key) async => _storage.read(key: key);
-  Future<void> setString(String key, String value) async => _storage.write(key: key, value: value);
+  Future<String?> getString(String key) async => _store.read(key);
+  Future<void> setString(String key, String value) async =>
+      _store.write(key, value);
 }

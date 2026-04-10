@@ -34,9 +34,12 @@
   "healthProfileSection": "स्वास्थ्य प्रोफाइल",
   "fullNameLabel": "पूरा नाम",
   "phoneLabel": "फोन नंबर",
+  "phoneValidationEmpty": "कृपया अपना फोन नंबर डालें",
+  "phoneValidationDigits": "फोन नंबर में केवल अंक होने चाहिए",
+  "phoneValidationLength": "फोन नंबर 10-15 अंकों का होना चाहिए",
   "confirmPasswordLabel": "पासवर्ड दोबारा डालें",
   "profileNameLabel": "प्रोफाइल नाम",
-  "relationshipLabel": "रिश्ता",
+  "relationshipLabel": "रोगी से संबंध",
   "ageLabel": "उम्र",
   "genderLabel": "लिंग",
   "heightLabel": "लंबाई (सेमी)",
@@ -269,6 +272,22 @@
   "aiInsightSection": "AI स्वास्थ्य सुझाव",
   "primaryPhysicianSection": "मुख्य चिकित्सक",
   "individualMetricsSection": "व्यक्तिगत मेट्रिक्स",
+  "vitalsSection": "महत्वपूर्ण संकेत",
+  "trendsSection": "रुझान",
+  "lastSpO2": "अंतिम SpO2",
+  "lastSteps": "आज के कदम",
+  "spO2Unit": "%",
+  "viaArmband": "आर्मबैंड से",
+  "viaPhone": "फ़ोन / आर्मबैंड से",
+  "pairDevice": "डिवाइस जोड़ें",
+  "connectedDevices": "जुड़े उपकरण",
+  "readMore": "और पढ़ें",
+  "mealSlotBreakfast": "नाश्ता",
+  "mealSlotLunch": "दोपहर",
+  "mealSlotSnack": "स्नैक",
+  "mealSlotDinner": "रात का खाना",
+  "mealSlotLogged": "दर्ज",
+  "mealSlotTapToLog": "दर्ज करें",
   "footerDisclaimer": "यह चिकित्सा निदान नहीं है। नैदानिक सलाह के लिए अपने डॉक्टर से परामर्श करें।",
   "goodMorning": "सुप्रभात,",
   "goodAfternoon": "नमस्कार,",
@@ -283,7 +302,6 @@
   "lastBP": "पिछला BP",
   "lastSugar": "पिछला शुगर",
   "liveSteps": "कदम",
-  "relationshipLabel": "रोगी से संबंध",
   "relationshipFather": "पिता",
   "relationshipMother": "माता",
   "relationshipSpouse": "पति/पत्नी",
@@ -340,107 +358,75 @@
   "loggedInOffline": "ऑफ़लाइन लॉगिन हुआ",
   "readingSavedOffline": "रीडिंग ऑफ़लाइन सहेजी गई। कनेक्ट होने पर सिंक होगी।",
   "syncComplete": "{count} रीडिंग सिंक हुईं",
-  "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
-  "offlineLoginExpired": "लॉगिन करने के लिए इंटरनेट से कनेक्ट करें",
-  "selectDevice": "डिवाइस चुनें",
-  "@selectDevice": {
-    "description": "Title for device selection dialog"
-  },
-  "scanningForDevices": "डिवाइस की खोज...",
-  "@scanningForDevices": {
-    "description": "Message shown while scanning for BLE devices"
-  },
-  "noDevicesFound": "कोई डिवाइस नहीं मिला।\nसुनिश्चित करें कि आपका डिवाइस चालू है और पेयरिंग मोड में है।",
-  "@noDevicesFound": {
-    "description": "Message shown when no BLE devices are found"
-  },
-  "rescan": "पुनः खोजें",
-  "@rescan": {
-    "description": "Button to rescan for BLE devices"
-  },
-  "cancel": "रद्द करें",
-  "@cancel": {
-    "description": "Button to cancel dialog"
-  },
-  "tapToConnectDevice": "डिवाइस कनेक्ट करने के लिए टैप करें",
-  "@tapToConnectDevice": {
-    "description": "Instruction text in device panel"
-  },
-  "connectDeviceType": "{deviceType} कनेक्ट करें",
-  "@connectDeviceType": {
-    "description": "Title for connect device dialog",
-    "placeholders": {
-      "deviceType": {
-        "type": "String"
-      }
-    }
-  },
-  "alreadyConnectedMessage": "{deviceType} पहले से कनेक्टेड है। क्या दूसरे {deviceType} की खोज करें?",
-  "@alreadyConnectedMessage": {
-    "description": "Message when device is already connected",
-    "placeholders": {
-      "deviceType": {
-        "type": "String"
-      }
-    }
-  },
-  "scanForDeviceMessage": "{deviceType} की खोज करें?",
-  "@scanForDeviceMessage": {
-    "description": "Message to scan for device",
-    "placeholders": {
-      "deviceType": {
-        "type": "String"
-      }
-    }
-  },
-  "bpTransferHint": "\n\nडिवाइस पर BT बटन एक बार दबाएं (धीमी LED = ट्रांसफर मोड)।",
-  "@bpTransferHint": {
-    "description": "Hint for Omron BP device transfer mode"
-  },
-  "scan": "खोजें",
-  "@scan": {
-    "description": "Button to start scanning"
-  },
-  "signalStrength": "सिग्नल: {rssi} dBm",
-  "@signalStrength": {
-    "description": "BLE device signal strength",
-    "placeholders": {
-      "rssi": {
-        "type": "int"
-      }
-    }
-  },
-  "bpHistory": "BP इतिहास",
-  "@bpHistory": {
-    "description": "Title for BP history section"
-  },
-  "allRecords": "सभी रिकॉर्ड",
-  "@allRecords": {
-    "description": "Title for all glucose records section"
-  },
-  "recordsCount": "{count} रिकॉर्ड",
-  "@recordsCount": {
-    "description": "Count of records",
+  "@syncComplete": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "viewAllHistory": "संपूर्ण इतिहास देखें",
-  "@viewAllHistory": {
-    "description": "Tooltip for history button"
-  },
-  "deviceDisconnected": "डिवाइस डिस्कनेक्ट हो गया",
-  "@deviceDisconnected": {
-    "description": "Message shown when device is disconnected"
-  },
-  "tapDeviceToConnect": "कनेक्ट करने के लिए ऊपर डिवाइस आइकन टैप करें",
-  "@tapDeviceToConnect": {
-    "description": "Status message when no device is connected"
-  },
-  "unknownDevice": "अज्ञात डिवाइस",
-  "@unknownDevice": {
-    "description": "Default name for unnamed BLE devices"
+  "offlineLoginExpired": "लॉगिन करने के लिए इंटरनेट से कनेक्ट करें",
+  "heartStatusHealthy": "बहुत अच्छा!",
+  "heartStatusCaution": "आज ध्यान रखें",
+  "heartStatusUrgent": "डॉक्टर से बात करें",
+  "heartFaceHealthy": "सब ठीक है",
+  "heartFaceCaution": "आज ध्यान रखें",
+  "heartFaceUrgent": "डॉक्टर की ज़रूरत",
+  "heartCallDoctor": "अभी डॉक्टर को कॉल करें",
+  "quickSelectTitle": "खाना दर्ज करें",
+  "mealHighCarb": "भारी खाना — चावल / रोटी",
+  "mealLowCarb": "हल्का खाना — सब्ज़ी / दाल",
+  "mealSweets": "मीठा / मिठाई",
+  "mealHighProtein": "प्रोटीन — अंडा / पनीर",
+  "mealModerateCarb": "मिला-जुला खाना",
+  "mealMoreOptions": "और विकल्प",
+  "mealLessOptions": "कम विकल्प",
+  "mealSavedSuccess": "खाना दर्ज हो गया!",
+  "mealTypeBreakfast": "सुबह का नाश्ता",
+  "mealTypeLunch": "दोपहर का खाना",
+  "mealTypeSnack": "नाश्ता",
+  "mealTypeDinner": "रात का खाना",
+  "mealDisclaimer": "सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं",
+  "foodPhotoTitle": "खाने की फोटो लें",
+  "foodPhotoHint": "कैमरा अपने खाने की तरफ करें",
+  "foodPhotoGallery": "गैलरी से चुनें",
+  "foodPhotoAnalyzing": "खाना पहचान रहे हैं...",
+  "foodPhotoFailed": "खाना पहचान नहीं पाए। कृपया खुद चुनें।",
+  "foodResultTitle": "खाने का नतीजा",
+  "foodCategoryHighCarb": "ज़्यादा कार्ब",
+  "foodCategoryModerateCarb": "सामान्य कार्ब",
+  "foodCategoryLowCarb": "कम कार्ब",
+  "foodCategoryHighProtein": "ज़्यादा प्रोटीन",
+  "foodCategorySweets": "मीठा",
+  "foodMealTypeLabel": "खाने का प्रकार",
+  "foodNotCorrectChange": "सही नहीं? बदलें",
+  "foodDisclaimer": "सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं",
+  "foodPhotoSaved": "खाना दर्ज हो गया!",
+  "foodPhotoSaveFailed": "खाना सेव नहीं हुआ। कृपया दोबारा कोशिश करें।",
+  "mealsTileLabel": "खाना",
+  "mealsTodayCount": "{count} आज",
+  "todaysMeals": "आज का खाना",
+  "noMealsToday": "आज कोई खाना दर्ज नहीं",
+  "tapToLogMeal": "दर्ज करें",
+  "logMeal": "खाना दर्ज करें",
+  "logMealSubtitle": "कैसे दर्ज करें?",
+  "quickSelectOption": "तुरंत चुनें",
+  "scanFoodPhotoOption": "फोटो स्कैन करें",
+  "photoAiHint": "फोटो से AI कार्ब लेवल पता करता है",
+  "wellnessHubTitle": "{relationship} का वेलनेस हब",
+  "wellnessHubSubtitle": "{name} | {location}",
+  "caregiverStatusGreat": "आपकी {relationship} आज ठीक हैं। सभी रीडिंग सामान्य हैं।",
+  "caregiverStatusCaution": "आपकी {relationship} को आज ध्यान देने की ज़रूरत है। रीडिंग देखें।",
+  "caregiverStatusUrgent": "आपकी {relationship} को तुरंत देखभाल चाहिए। अभी कॉल करें।",
+  "activityFeedTitle": "गतिविधि फ़ीड",
+  "careCircleTitle": "केयर सर्कल",
+  "priorityCall": "प्राथमिकता कॉल",
+  "noRecentActivity": "कोई हालिया गतिविधि नहीं",
+  "wellnessRingTitle": "वेलनेस रिंग",
+  "takeReadings": "रीडिंग लें",
+  "backToWellnessHub": "वेलनेस हब पर वापस जाएं",
+  "glucometerPrerequisites": "ग्लूकोमीटर – पूर्वापेक्षाएं:",
+  "@glucometerPrerequisites": {
+    "description": "Title for glucometer prerequisites section"
   }
 }

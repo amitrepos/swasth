@@ -7,6 +7,7 @@ import '../widgets/auth_form_scroll_body.dart';
 import 'registration_screen.dart';
 import 'select_profile_screen.dart';
 import 'forgot_password_screen.dart';
+import 'doctor/doctor_triage_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -95,9 +96,15 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
+        // Route based on role: doctors go to triage, patients to profiles
+        final userData = await StorageService().getUserData();
+        final role = userData?['role'] as String?;
+        final destination = role == 'doctor'
+            ? const DoctorTriageScreen()
+            : const SelectProfileScreen();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const SelectProfileScreen()),
+          MaterialPageRoute(builder: (_) => destination),
         );
       }
     } catch (e) {
@@ -125,9 +132,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   backgroundColor: AppColors.amber,
                 ),
               );
+              final offlineData = await StorageService().getUserData();
+              final offlineRole = offlineData?['role'] as String?;
+              final offlineDest = offlineRole == 'doctor'
+                  ? const DoctorTriageScreen()
+                  : const SelectProfileScreen();
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
+                MaterialPageRoute(builder: (_) => offlineDest),
               );
             }
             return;
@@ -153,9 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.loginTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.loginTitle)),
       body: AuthFormScrollBody(
         child: Form(
           key: _formKey,
@@ -182,6 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Email
               TextFormField(
+                key: const Key('login_email'),
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
@@ -202,6 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Password
               TextFormField(
+                key: const Key('login_password'),
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
@@ -209,7 +221,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                     onPressed: () {
                       setState(() => _obscurePassword = !_obscurePassword);
@@ -259,12 +273,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Login Button
               ElevatedButton(
+                key: const Key('login_button'),
                 onPressed: _isLoading ? null : _login,
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : Text(l10n.loginButton),
               ),
@@ -276,6 +294,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Text(l10n.noAccount),
                   TextButton(
+                    key: const Key('login_register_link'),
                     onPressed: () {
                       Navigator.push(
                         context,

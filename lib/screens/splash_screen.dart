@@ -6,6 +6,7 @@ import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'select_profile_screen.dart';
+import 'doctor/doctor_triage_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -24,50 +25,64 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _attemptAutoLogin() async {
-    final creds = await _storage.getSavedCredentials();
+    final token = await _storage.getToken();
+    final reachable = await ConnectivityService().isServerReachable();
 
-    // No saved credentials → show login screen
-    if (creds == null) {
-      _goToLogin();
+    // SCENARIO 1: OFFLINE
+    if (!reachable) {
+      final lastLogin = await _storage.getLastLoginTimestamp();
+      if (lastLogin != null) {
+        final daysSince = DateTime.now().difference(lastLogin).inDays;
+        if (daysSince <= 7) {
+          _goToProfiles();
+          return;
+        }
+      }
+      _goToLogin(); // Offline but session expired
       return;
     }
 
-    // Try online login first (fast timeout)
-    final reachable = await ConnectivityService().isServerReachable();
+    // SCENARIO 2: ONLINE - TOKEN REUSE
+    if (token != null) {
+      try {
+        final userData = await ApiService().getCurrentUser(token);
+        await _storage.saveUserData(userData);
+        // Note: We intentionally do NOT call saveLastLoginTimestamp here
+        // to maintain the 7-day credential requirement.
 
-    if (reachable) {
+        SyncService().syncPendingReadings();
+        _goToProfiles();
+        return;
+      } catch (_) {
+        await _storage.deleteToken(); // Clear invalid token
+      }
+    }
+
+    // SCENARIO 3: ONLINE - CREDENTIAL FALLBACK
+    final creds = await _storage.getSavedCredentials();
+    if (creds != null) {
       try {
         final resp = await ApiService().login(creds.email, creds.password);
-        final token = resp['access_token'] as String?;
-        if (token != null) {
-          await _storage.saveToken(token);
-          await _storage.saveLastLoginTimestamp();
+        final newToken = resp['access_token'] as String?;
+        if (newToken != null) {
+          await _storage.saveToken(newToken);
+          await _storage
+              .saveLastLoginTimestamp(); // Extend grace period only on re-auth
           try {
-            final userData = await ApiService().getCurrentUser(token);
+            final userData = await ApiService().getCurrentUser(newToken);
             await _storage.saveUserData(userData);
           } catch (_) {}
-          // Sync any pending offline readings in background
+
           SyncService().syncPendingReadings();
           _goToProfiles();
           return;
         }
       } catch (_) {
-        // Online login failed (wrong password changed on another device, etc.)
-        // Fall through to offline check
+        // Credential login failed (e.g. password changed)
       }
     }
 
-    // Offline path — check if session is fresh enough (within 7 days)
-    final lastLogin = await _storage.getLastLoginTimestamp();
-    if (lastLogin != null) {
-      final daysSince = DateTime.now().difference(lastLogin).inDays;
-      if (daysSince <= 7) {
-        _goToProfiles();
-        return;
-      }
-    }
-
-    // Session too old or no previous login — must log in online
+    // SCENARIO 4: NO SESSION (or all above failed)
     _goToLogin();
   }
 
@@ -79,8 +94,18 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  void _goToProfiles() {
+  Future<void> _goToProfiles() async {
     if (!mounted) return;
+    // Check if user is a doctor — route to triage board instead
+    final userData = await _storage.getUserData();
+    final role = userData?['role'] as String?;
+    if (role == 'doctor') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DoctorTriageScreen()),
+      );
+      return;
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const SelectProfileScreen()),
@@ -95,11 +120,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.health_and_safety,
-              size: 80,
-              color: AppColors.primary,
-            ),
+            Icon(Icons.health_and_safety, size: 80, color: AppColors.primary),
             const SizedBox(height: 16),
             Text(
               'Swasth',

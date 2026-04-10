@@ -32,33 +32,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'A+';
-  String _selectedTimezone = 'Asia/Kolkata'; // Default timezone for Bihar
   final List<String> _selectedConditions = [];
-
-  // Timezone options for global users
-  final List<Map<String, String>> _timezoneOptions = [
-    // India
-    {'display': 'India (IST)', 'value': 'Asia/Kolkata'},
-    // USA
-    {'display': 'USA - Eastern Time (EST/EDT)', 'value': 'America/New_York'},
-    {'display': 'USA - Central Time (CST/CDT)', 'value': 'America/Chicago'},
-    {'display': 'USA - Mountain Time (MST/MDT)', 'value': 'America/Denver'},
-    {'display': 'USA - Pacific Time (PST/PDT)', 'value': 'America/Los_Angeles'},
-    // Europe
-    {'display': 'Europe - London (GMT/BST)', 'value': 'Europe/London'},
-    {'display': 'Europe - Paris/Berlin (CET/CEST)', 'value': 'Europe/Paris'},
-    // Asia
-    {'display': 'Asia - Bangkok (ICT)', 'value': 'Asia/Bangkok'},
-    {'display': 'Asia - Singapore (SGT)', 'value': 'Asia/Singapore'},
-    {'display': 'Asia - Tokyo (JST)', 'value': 'Asia/Tokyo'},
-    {'display': 'Asia - Hong Kong (HKT)', 'value': 'Asia/Hong_Kong'},
-    {'display': 'Asia - Dubai (GST)', 'value': 'Asia/Dubai'},
-    // Australia
-    {'display': 'Australia - Sydney (AEST/AEDT)', 'value': 'Australia/Sydney'},
-    {'display': 'Australia - Melbourne (AEST/AEDT)', 'value': 'Australia/Melbourne'},
-    // Other
-    {'display': 'UTC (GMT)', 'value': 'UTC'},
-  ];
 
   // Medical condition values are API keys — do NOT translate
   final List<String> _medicalConditionsOptions = [
@@ -67,7 +41,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     'Hypertension',
     'Heart Disease',
     'None',
-    'Other'
+    'Other',
   ];
 
   bool _passwordHasMinLength = false;
@@ -111,8 +85,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       _passwordHasUppercase = password.contains(RegExp(r'[A-Z]'));
       _passwordHasLowercase = password.contains(RegExp(r'[a-z]'));
       _passwordHasNumber = password.contains(RegExp(r'[0-9]'));
-      _passwordHasSpecialChar = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-      _passwordsMatch = confirmPassword.isNotEmpty && password == confirmPassword;
+      _passwordHasSpecialChar = password.contains(
+        RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+      );
+      _passwordsMatch =
+          confirmPassword.isNotEmpty && password == confirmPassword;
     });
   }
 
@@ -125,9 +102,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     if (_selectedConditions.contains('Other') &&
         _otherConditionController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.specifyOtherCondition)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.specifyOtherCondition)));
       return;
     }
 
@@ -140,7 +117,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'confirm_password': _confirmPasswordController.text,
         'full_name': _fullNameController.text.trim(),
         'phone_number': _phoneController.text.trim(),
-        'timezone': _selectedTimezone,
         'profile_name': _profileNameController.text.trim(),
         'age': int.tryParse(_ageController.text),
         'gender': _selectedGender,
@@ -162,12 +138,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => ConsentScreen(
-              onAccept: ({required String appVersion, required String language, required bool aiConsent}) async {
-                userData['consent_app_version'] = appVersion;
-                userData['consent_language'] = language;
-                userData['ai_consent'] = aiConsent;
-                await _apiService.register(userData);
-              },
+              onAccept:
+                  ({
+                    required String appVersion,
+                    required String language,
+                    required bool aiConsent,
+                  }) async {
+                    userData['consent_app_version'] = appVersion;
+                    userData['consent_language'] = language;
+                    userData['ai_consent'] = aiConsent;
+                    await _apiService.register(userData);
+                  },
             ),
           ),
         );
@@ -191,9 +172,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.registerTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.registerTitle)),
       body: AuthFormScrollBody(
         child: Form(
           key: _formKey,
@@ -204,6 +183,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
               // Full Name
               TextFormField(
+                key: const Key('reg_full_name'),
                 controller: _fullNameController,
                 decoration: InputDecoration(
                   labelText: l10n.fullNameLabel,
@@ -220,6 +200,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
               // Email
               TextFormField(
+                key: const Key('reg_email'),
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
@@ -240,6 +221,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
               // Phone Number
               TextFormField(
+                key: const Key('reg_phone'),
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
@@ -247,39 +229,25 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   prefixIcon: const Icon(Icons.phone),
                 ),
                 validator: (value) {
+                  final l10n = AppLocalizations.of(context)!;
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your phone number';
+                    return l10n.phoneValidationEmpty;
                   }
-                  if (value.length < 10 || value.length > 15) {
-                    return 'Phone number must be 10-15 digits';
+                  final stripped = value.replaceAll(RegExp(r'[\s\-]'), '');
+                  if (!RegExp(r'^\+?[0-9]+$').hasMatch(stripped)) {
+                    return l10n.phoneValidationDigits;
+                  }
+                  if (stripped.length < 10 || stripped.length > 15) {
+                    return l10n.phoneValidationLength;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // Timezone
-              DropdownButtonFormField<String>(
-                value: _selectedTimezone,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  labelText: 'Time Zone',
-                  prefixIcon: const Icon(Icons.public),
-                ),
-                items: _timezoneOptions
-                    .map((tz) => DropdownMenuItem(
-                          value: tz['value']!,
-                          child: Text(tz['display']!),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() => _selectedTimezone = value!);
-                },
-              ),
-              const SizedBox(height: 16),
-
               // Password
               TextFormField(
+                key: const Key('reg_password'),
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
@@ -308,21 +276,40 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                  border: Border.all(
+                    color: Theme.of(context).dividerColor.withOpacity(0.1),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       l10n.passwordRequirementsTitle,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    _buildRequirementRow(l10n.passwordReqLength, _passwordHasMinLength),
-                    _buildRequirementRow(l10n.passwordReqUppercase, _passwordHasUppercase),
-                    _buildRequirementRow(l10n.passwordReqLowercase, _passwordHasLowercase),
-                    _buildRequirementRow(l10n.passwordReqNumber, _passwordHasNumber),
-                    _buildRequirementRow(l10n.passwordReqSpecial, _passwordHasSpecialChar),
+                    _buildRequirementRow(
+                      l10n.passwordReqLength,
+                      _passwordHasMinLength,
+                    ),
+                    _buildRequirementRow(
+                      l10n.passwordReqUppercase,
+                      _passwordHasUppercase,
+                    ),
+                    _buildRequirementRow(
+                      l10n.passwordReqLowercase,
+                      _passwordHasLowercase,
+                    ),
+                    _buildRequirementRow(
+                      l10n.passwordReqNumber,
+                      _passwordHasNumber,
+                    ),
+                    _buildRequirementRow(
+                      l10n.passwordReqSpecial,
+                      _passwordHasSpecialChar,
+                    ),
                   ],
                 ),
               ),
@@ -330,12 +317,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
               // Confirm Password
               TextFormField(
+                key: const Key('reg_confirm_password'),
                 controller: _confirmPasswordController,
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: l10n.confirmPasswordLabel,
                   prefixIcon: const Icon(Icons.lock_outline),
-                  errorText: !_passwordsMatch &&
+                  errorText:
+                      !_passwordsMatch &&
                           _confirmPasswordController.text.isNotEmpty
                       ? l10n.passwordsDoNotMatch
                       : null,
@@ -362,12 +351,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   hintText: l10n.profileNameHint,
                   prefixIcon: const Icon(Icons.badge_outlined),
                 ),
-                validator: (value) => (value == null || value.isEmpty) ? 'Enter a name' : null,
+                validator: (value) =>
+                    (value == null || value.isEmpty) ? 'Enter a name' : null,
               ),
               const SizedBox(height: 16),
 
               // Age
               TextFormField(
+                key: const Key('reg_age'),
                 controller: _ageController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
@@ -446,7 +437,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               // Medical Conditions
               Text(
                 l10n.medicalConditionsSection,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               ..._medicalConditionsOptions.map((condition) {
@@ -478,12 +471,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
               // Register Button
               ElevatedButton(
+                key: const Key('reg_submit_button'),
                 onPressed: _isLoading ? null : _register,
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : Text(l10n.register),
               ),
@@ -519,7 +516,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        style: Theme.of(
+          context,
+        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }

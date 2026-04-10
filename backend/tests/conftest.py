@@ -39,12 +39,15 @@ import database
 database.engine = _test_engine
 database.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_test_engine)
 
-# Now fix ARRAY columns for SQLite compatibility
+# Now fix ARRAY and Enum columns for SQLite compatibility
 import models  # noqa: F401
+from sqlalchemy import String as SAString
 for table in database.Base.metadata.tables.values():
     for col in table.columns:
         if col.type.__class__.__name__ == 'ARRAY':
             col.type = JSON()
+        elif col.type.__class__.__name__ == 'Enum':
+            col.type = SAString()
 
 # Now safe to import — main.py's create_all will use SQLite
 from database import Base, get_db

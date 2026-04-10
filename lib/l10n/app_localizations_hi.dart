@@ -111,6 +111,15 @@ class AppLocalizationsHi extends AppLocalizations {
   String get phoneLabel => 'फोन नंबर';
 
   @override
+  String get phoneValidationEmpty => 'कृपया अपना फोन नंबर डालें';
+
+  @override
+  String get phoneValidationDigits => 'फोन नंबर में केवल अंक होने चाहिए';
+
+  @override
+  String get phoneValidationLength => 'फोन नंबर 10-15 अंकों का होना चाहिए';
+
+  @override
   String get confirmPasswordLabel => 'पासवर्ड दोबारा डालें';
 
   @override
@@ -696,8 +705,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get scanningButton => 'स्कैन हो रहा है...';
 
   @override
-  String get noDevicesFound =>
-      'कोई डिवाइस नहीं मिला।\nसुनिश्चित करें कि आपका डिवाइस चालू है और पेयरिंग मोड में है।';
+  String get noDevicesFound => 'अभी कोई डिवाइस नहीं मिला';
 
   @override
   String get lookingForDevices => 'डिवाइस खोज रहे हैं...';
@@ -797,6 +805,54 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get individualMetricsSection => 'व्यक्तिगत मेट्रिक्स';
+
+  @override
+  String get vitalsSection => 'महत्वपूर्ण संकेत';
+
+  @override
+  String get trendsSection => 'रुझान';
+
+  @override
+  String get lastSpO2 => 'अंतिम SpO2';
+
+  @override
+  String get lastSteps => 'आज के कदम';
+
+  @override
+  String get spO2Unit => '%';
+
+  @override
+  String get viaArmband => 'आर्मबैंड से';
+
+  @override
+  String get viaPhone => 'फ़ोन / आर्मबैंड से';
+
+  @override
+  String get pairDevice => 'डिवाइस जोड़ें';
+
+  @override
+  String get connectedDevices => 'जुड़े उपकरण';
+
+  @override
+  String get readMore => 'और पढ़ें';
+
+  @override
+  String get mealSlotBreakfast => 'नाश्ता';
+
+  @override
+  String get mealSlotLunch => 'दोपहर';
+
+  @override
+  String get mealSlotSnack => 'स्नैक';
+
+  @override
+  String get mealSlotDinner => 'रात का खाना';
+
+  @override
+  String get mealSlotLogged => 'दर्ज';
+
+  @override
+  String get mealSlotTapToLog => 'दर्ज करें';
 
   @override
   String get footerDisclaimer =>
@@ -1034,102 +1090,195 @@ class AppLocalizationsHi extends AppLocalizations {
   String get offlineLoginExpired => 'लॉगिन करने के लिए इंटरनेट से कनेक्ट करें';
 
   @override
-  String get glucometerPrerequisites => 'Glucometer – Prerequisites:';
+  String get glucometerPrerequisites => 'ग्लूकोमीटर – पूर्वापेक्षाएं:';
 
   @override
-  String get bpMeterPrerequisites => 'BP Meter – Prerequisites:';
+  String get heartStatusHealthy => 'बहुत अच्छा!';
 
   @override
-  String get forTheFirstTime => 'For the first time:';
+  String get heartStatusCaution => 'आज ध्यान रखें';
 
   @override
-  String get always => 'Always:';
+  String get heartStatusUrgent => 'डॉक्टर से बात करें';
 
   @override
-  String get glucoseFirstTimeStep1 =>
-      '1. Pair the device via Bluetooth. The glucometer will display \"OK\" once connected.';
+  String get heartFaceHealthy => 'सब ठीक है';
 
   @override
-  String get glucoseAlwaysStep1 =>
-      '2. Take a sugar test, or press the bottom-right button to view history on the device screen.';
+  String get heartFaceCaution => 'आज ध्यान रखें';
 
   @override
-  String get glucoseAlwaysStep2 =>
-      '3. The app will scan and display the current reading or history.';
+  String get heartFaceUrgent => 'डॉक्टर की ज़रूरत';
 
   @override
-  String get bpFirstTimeStep1 =>
-      '1. Press and hold the Bluetooth button on the Omron HEM-7140T1 until \'P\' starts blinking.';
+  String get heartCallDoctor => 'अभी डॉक्टर को कॉल करें';
 
   @override
-  String get bpFirstTimeStep2 =>
-      '2. Pair the device manually via Bluetooth. After pairing, \'P\' will continue blinking.';
+  String get quickSelectTitle => 'खाना दर्ज करें';
 
   @override
-  String get bpFirstTimeStep3 =>
-      '3. Click the \'+\' icon. The device will display \"OK\", and the app will show readings.';
+  String get mealHighCarb => 'भारी खाना — चावल / रोटी';
 
   @override
-  String get bpAlwaysStep1 =>
-      '4. Click the \'+\' icon. The app will scan and display current and previous readings.';
+  String get mealLowCarb => 'हल्का खाना — सब्ज़ी / दाल';
 
   @override
-  String get scanningForDevices => 'डिवाइस की खोज...';
+  String get mealSweets => 'मीठा / मिठाई';
 
   @override
-  String get rescan => 'पुनः खोजें';
+  String get mealHighProtein => 'प्रोटीन — अंडा / पनीर';
 
   @override
-  String get tapToConnectDevice => 'डिवाइस कनेक्ट करने के लिए टैप करें';
+  String get mealModerateCarb => 'मिला-जुला खाना';
 
   @override
-  String connectDeviceType(String deviceType) {
-    return '$deviceType कनेक्ट करें';
+  String get mealMoreOptions => 'और विकल्प';
+
+  @override
+  String get mealLessOptions => 'कम विकल्प';
+
+  @override
+  String get mealSavedSuccess => 'खाना दर्ज हो गया!';
+
+  @override
+  String get mealTypeBreakfast => 'सुबह का नाश्ता';
+
+  @override
+  String get mealTypeLunch => 'दोपहर का खाना';
+
+  @override
+  String get mealTypeSnack => 'नाश्ता';
+
+  @override
+  String get mealTypeDinner => 'रात का खाना';
+
+  @override
+  String get mealDisclaimer => 'सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं';
+
+  @override
+  String get foodPhotoTitle => 'खाने की फोटो लें';
+
+  @override
+  String get foodPhotoHint => 'कैमरा अपने खाने की तरफ करें';
+
+  @override
+  String get foodPhotoGallery => 'गैलरी से चुनें';
+
+  @override
+  String get foodPhotoAnalyzing => 'खाना पहचान रहे हैं...';
+
+  @override
+  String get foodPhotoFailed => 'खाना पहचान नहीं पाए। कृपया खुद चुनें।';
+
+  @override
+  String get foodResultTitle => 'खाने का नतीजा';
+
+  @override
+  String get foodCategoryHighCarb => 'ज़्यादा कार्ब';
+
+  @override
+  String get foodCategoryModerateCarb => 'सामान्य कार्ब';
+
+  @override
+  String get foodCategoryLowCarb => 'कम कार्ब';
+
+  @override
+  String get foodCategoryHighProtein => 'ज़्यादा प्रोटीन';
+
+  @override
+  String get foodCategorySweets => 'मीठा';
+
+  @override
+  String get foodMealTypeLabel => 'खाने का प्रकार';
+
+  @override
+  String get foodNotCorrectChange => 'सही नहीं? बदलें';
+
+  @override
+  String get foodDisclaimer => 'सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं';
+
+  @override
+  String get foodPhotoSaved => 'खाना दर्ज हो गया!';
+
+  @override
+  String get foodPhotoSaveFailed =>
+      'खाना सेव नहीं हुआ। कृपया दोबारा कोशिश करें।';
+
+  @override
+  String get mealsTileLabel => 'खाना';
+
+  @override
+  String mealsTodayCount(int count) {
+    return '$count आज';
   }
 
   @override
-  String alreadyConnectedMessage(String deviceType) {
-    return '$deviceType पहले से कनेक्टेड है। क्या दूसरे $deviceType की खोज करें?';
+  String get todaysMeals => 'आज का खाना';
+
+  @override
+  String get noMealsToday => 'आज कोई खाना दर्ज नहीं';
+
+  @override
+  String get tapToLogMeal => 'दर्ज करें';
+
+  @override
+  String get logMeal => 'खाना दर्ज करें';
+
+  @override
+  String get logMealSubtitle => 'कैसे दर्ज करें?';
+
+  @override
+  String get quickSelectOption => 'तुरंत चुनें';
+
+  @override
+  String get scanFoodPhotoOption => 'फोटो स्कैन करें';
+
+  @override
+  String get photoAiHint => 'फोटो से AI कार्ब लेवल पता करता है';
+
+  @override
+  String wellnessHubTitle(String relationship) {
+    return '$relationship का वेलनेस हब';
   }
 
   @override
-  String scanForDeviceMessage(String deviceType) {
-    return '$deviceType की खोज करें?';
+  String wellnessHubSubtitle(String name, String location) {
+    return '$name | $location';
   }
 
   @override
-  String get bpTransferHint =>
-      '\n\nडिवाइस पर BT बटन एक बार दबाएं (धीमी LED = ट्रांसफर मोड)।';
-
-  @override
-  String get scan => 'खोजें';
-
-  @override
-  String signalStrength(int rssi) {
-    return 'सिग्नल: $rssi dBm';
+  String caregiverStatusGreat(String relationship) {
+    return 'आपकी $relationship आज ठीक हैं। सभी रीडिंग सामान्य हैं।';
   }
 
   @override
-  String get bpHistory => 'BP इतिहास';
-
-  @override
-  String get allRecords => 'सभी रिकॉर्ड';
-
-  @override
-  String recordsCount(int count) {
-    return '$count रिकॉर्ड';
+  String caregiverStatusCaution(String relationship) {
+    return 'आपकी $relationship को आज ध्यान देने की ज़रूरत है। रीडिंग देखें।';
   }
 
   @override
-  String get viewAllHistory => 'संपूर्ण इतिहास देखें';
+  String caregiverStatusUrgent(String relationship) {
+    return 'आपकी $relationship को तुरंत देखभाल चाहिए। अभी कॉल करें।';
+  }
 
   @override
-  String get deviceDisconnected => 'डिवाइस डिस्कनेक्ट हो गया';
+  String get activityFeedTitle => 'गतिविधि फ़ीड';
 
   @override
-  String get tapDeviceToConnect =>
-      'कनेक्ट करने के लिए ऊपर डिवाइस आइकन टैप करें';
+  String get careCircleTitle => 'केयर सर्कल';
 
   @override
-  String get unknownDevice => 'अज्ञात डिवाइस';
+  String get priorityCall => 'प्राथमिकता कॉल';
+
+  @override
+  String get noRecentActivity => 'कोई हालिया गतिविधि नहीं';
+
+  @override
+  String get wellnessRingTitle => 'वेलनेस रिंग';
+
+  @override
+  String get takeReadings => 'रीडिंग लें';
+
+  @override
+  String get backToWellnessHub => 'वेलनेस हब पर वापस जाएं';
 }

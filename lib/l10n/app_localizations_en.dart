@@ -111,6 +111,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneLabel => 'Phone Number';
 
   @override
+  String get phoneValidationEmpty => 'Please enter your phone number';
+
+  @override
+  String get phoneValidationDigits => 'Phone number can only contain digits';
+
+  @override
+  String get phoneValidationLength => 'Phone number must be 10-15 digits';
+
+  @override
   String get confirmPasswordLabel => 'Confirm Password';
 
   @override
@@ -697,8 +706,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanningButton => 'Scanning...';
 
   @override
-  String get noDevicesFound =>
-      'No devices found.\nMake sure your device is turned on and in pairing mode.';
+  String get noDevicesFound => 'No devices found yet';
 
   @override
   String get lookingForDevices => 'Looking for devices...';
@@ -799,6 +807,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get individualMetricsSection => 'Individual Metrics';
+
+  @override
+  String get vitalsSection => 'Vitals';
+
+  @override
+  String get trendsSection => 'Trends';
+
+  @override
+  String get lastSpO2 => 'Last SpO2';
+
+  @override
+  String get lastSteps => 'Steps Today';
+
+  @override
+  String get spO2Unit => '%';
+
+  @override
+  String get viaArmband => 'via Armband';
+
+  @override
+  String get viaPhone => 'via Phone / Armband';
+
+  @override
+  String get pairDevice => 'Pair Device';
+
+  @override
+  String get connectedDevices => 'Connected Devices';
+
+  @override
+  String get readMore => 'Read more';
+
+  @override
+  String get mealSlotBreakfast => 'Breakfast';
+
+  @override
+  String get mealSlotLunch => 'Lunch';
+
+  @override
+  String get mealSlotSnack => 'Snack';
+
+  @override
+  String get mealSlotDinner => 'Dinner';
+
+  @override
+  String get mealSlotLogged => 'Logged';
+
+  @override
+  String get mealSlotTapToLog => 'Tap to log';
 
   @override
   String get footerDisclaimer =>
@@ -1037,98 +1093,192 @@ class AppLocalizationsEn extends AppLocalizations {
   String get glucometerPrerequisites => 'Glucometer – Prerequisites:';
 
   @override
-  String get bpMeterPrerequisites => 'BP Meter – Prerequisites:';
+  String get heartStatusHealthy => 'You\'re doing great';
 
   @override
-  String get forTheFirstTime => 'For the first time:';
+  String get heartStatusCaution => 'Monitor closely today';
 
   @override
-  String get always => 'Always:';
+  String get heartStatusUrgent => 'Call your doctor today';
 
   @override
-  String get glucoseFirstTimeStep1 =>
-      '1. Pair the device via Bluetooth. The glucometer will display \"OK\" once connected.';
+  String get heartFaceHealthy => 'All is well';
 
   @override
-  String get glucoseAlwaysStep1 =>
-      '2. Take a sugar test, or press the bottom-right button to view history on the device screen.';
+  String get heartFaceCaution => 'Stay alert today';
 
   @override
-  String get glucoseAlwaysStep2 =>
-      '3. The app will scan and display the current reading or history.';
+  String get heartFaceUrgent => 'Need doctor\'s help';
 
   @override
-  String get bpFirstTimeStep1 =>
-      '1. Press and hold the Bluetooth button on the Omron HEM-7140T1 until \'P\' starts blinking.';
+  String get heartCallDoctor => 'Call your doctor now';
 
   @override
-  String get bpFirstTimeStep2 =>
-      '2. Pair the device manually via Bluetooth. After pairing, \'P\' will continue blinking.';
+  String get quickSelectTitle => 'Log Meal';
 
   @override
-  String get bpFirstTimeStep3 =>
-      '3. Click the \'+\' icon. The device will display \"OK\", and the app will show readings.';
+  String get mealHighCarb => 'Heavy — Rice / Roti';
 
   @override
-  String get bpAlwaysStep1 =>
-      '4. Click the \'+\' icon. The app will scan and display current and previous readings.';
+  String get mealLowCarb => 'Light — Sabzi / Dal';
 
   @override
-  String get scanningForDevices => 'Scanning for devices...';
+  String get mealSweets => 'Sweets / Meetha';
 
   @override
-  String get rescan => 'Rescan';
+  String get mealHighProtein => 'Protein — Egg / Paneer';
 
   @override
-  String get tapToConnectDevice => 'Tap to connect a device';
+  String get mealModerateCarb => 'Mixed / Balanced';
 
   @override
-  String connectDeviceType(String deviceType) {
-    return 'Connect $deviceType';
+  String get mealMoreOptions => 'More options';
+
+  @override
+  String get mealLessOptions => 'Less options';
+
+  @override
+  String get mealSavedSuccess => 'Meal logged!';
+
+  @override
+  String get mealTypeBreakfast => 'Breakfast';
+
+  @override
+  String get mealTypeLunch => 'Lunch';
+
+  @override
+  String get mealTypeSnack => 'Snack';
+
+  @override
+  String get mealTypeDinner => 'Dinner';
+
+  @override
+  String get mealDisclaimer => 'For general wellness, not medical advice';
+
+  @override
+  String get foodPhotoTitle => 'Take Food Photo';
+
+  @override
+  String get foodPhotoHint => 'Point camera at your food';
+
+  @override
+  String get foodPhotoGallery => 'Choose from Gallery';
+
+  @override
+  String get foodPhotoAnalyzing => 'Analyzing your food...';
+
+  @override
+  String get foodPhotoFailed =>
+      'Could not classify food. Please select manually.';
+
+  @override
+  String get foodResultTitle => 'Meal Result';
+
+  @override
+  String get foodCategoryHighCarb => 'High Carb';
+
+  @override
+  String get foodCategoryModerateCarb => 'Moderate Carb';
+
+  @override
+  String get foodCategoryLowCarb => 'Low Carb';
+
+  @override
+  String get foodCategoryHighProtein => 'High Protein';
+
+  @override
+  String get foodCategorySweets => 'Sweets';
+
+  @override
+  String get foodMealTypeLabel => 'Meal Type';
+
+  @override
+  String get foodNotCorrectChange => 'Not correct? Change';
+
+  @override
+  String get foodDisclaimer => 'For general wellness, not medical advice';
+
+  @override
+  String get foodPhotoSaved => 'Meal saved!';
+
+  @override
+  String get foodPhotoSaveFailed => 'Could not save meal. Please try again.';
+
+  @override
+  String get mealsTileLabel => 'Meals';
+
+  @override
+  String mealsTodayCount(int count) {
+    return '$count today';
   }
 
   @override
-  String alreadyConnectedMessage(String deviceType) {
-    return '$deviceType already connected. Scan for another $deviceType?';
+  String get todaysMeals => 'Today\'s Meals';
+
+  @override
+  String get noMealsToday => 'No meals logged today';
+
+  @override
+  String get tapToLogMeal => 'Tap to log';
+
+  @override
+  String get logMeal => 'Log Meal';
+
+  @override
+  String get logMealSubtitle => 'How would you like to log?';
+
+  @override
+  String get quickSelectOption => 'Quick Select';
+
+  @override
+  String get scanFoodPhotoOption => 'Scan Food Photo';
+
+  @override
+  String get photoAiHint => 'Photo lets AI detect carb level automatically';
+
+  @override
+  String wellnessHubTitle(String relationship) {
+    return '$relationship\'s Wellness Hub';
   }
 
   @override
-  String scanForDeviceMessage(String deviceType) {
-    return 'Scan for $deviceType?';
+  String wellnessHubSubtitle(String name, String location) {
+    return '$name | $location';
   }
 
   @override
-  String get bpTransferHint =>
-      '\n\nPress BT on the device once first (slow LED = transfer mode).';
-
-  @override
-  String get scan => 'Scan';
-
-  @override
-  String signalStrength(int rssi) {
-    return 'Signal: $rssi dBm';
+  String caregiverStatusGreat(String relationship) {
+    return 'Your $relationship is doing great today. Vitals are stable.';
   }
 
   @override
-  String get bpHistory => 'BP History';
-
-  @override
-  String get allRecords => 'All Records';
-
-  @override
-  String recordsCount(int count) {
-    return '$count records';
+  String caregiverStatusCaution(String relationship) {
+    return 'Your $relationship needs attention today. Check vitals.';
   }
 
   @override
-  String get viewAllHistory => 'View All History';
+  String caregiverStatusUrgent(String relationship) {
+    return 'Your $relationship needs immediate care. Call now.';
+  }
 
   @override
-  String get deviceDisconnected => 'Device disconnected';
+  String get activityFeedTitle => 'Activity Feed';
 
   @override
-  String get tapDeviceToConnect => 'Tap a device icon above to connect';
+  String get careCircleTitle => 'Care Circle';
 
   @override
-  String get unknownDevice => 'Unknown Device';
+  String get priorityCall => 'Priority Call';
+
+  @override
+  String get noRecentActivity => 'No recent activity';
+
+  @override
+  String get wellnessRingTitle => 'Wellness Ring';
+
+  @override
+  String get takeReadings => 'Take Readings';
+
+  @override
+  String get backToWellnessHub => 'Back to Wellness Hub';
 }

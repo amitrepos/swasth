@@ -1,6 +1,14 @@
-from sqlalchemy import Column, Integer, String, Float, Text, ARRAY, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Column, Integer, String, Float, Text, ARRAY, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index, Enum
 from sqlalchemy.sql import func
 from database import Base
+import enum
+
+
+class UserRole(str, enum.Enum):
+    """User role — determines which dashboard and access level."""
+    patient = "patient"
+    doctor = "doctor"
+    admin = "admin"
 
 
 class User(Base):
@@ -19,7 +27,8 @@ class User(Base):
     ai_consent = Column(Boolean, default=False)
     ai_consent_timestamp = Column(DateTime(timezone=True), nullable=True)
     is_admin = Column(Boolean, default=False)
-    timezone = Column(String, default="Asia/Kolkata", nullable=False)
+    role = Column(Enum(UserRole), default=UserRole.patient, nullable=False)
+    timezone = Column(String, default="UTC", nullable=False)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -87,14 +96,14 @@ class ProfileInvite(Base):
 
 
 class HealthReading(Base):
-    """Glucose and blood pressure readings. Belongs to a profile, logged by a user."""
+    """Health readings (glucose, blood pressure, SpO2, steps). Belongs to a profile, logged by a user."""
     __tablename__ = "health_readings"
 
     id = Column(Integer, primary_key=True, index=True)
     profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    # Reading type: 'glucose' or 'blood_pressure'
+    # Reading type: 'glucose', 'blood_pressure', 'spo2', or 'steps'
     reading_type = Column(String, nullable=False)
 
     # Glucose specific fields
@@ -109,6 +118,15 @@ class HealthReading(Base):
     pulse_rate = Column(Float, nullable=True)                    # bpm
     bp_unit = Column(String, nullable=True)
     bp_status = Column(String, nullable=True)
+
+    # SpO2 fields
+    spo2_value = Column(Float, nullable=True)                    # percentage (0-100)
+    spo2_unit = Column(String, nullable=True)                    # '%'
+    spo2_enc = Column(Text, nullable=True)                       # AES-256-GCM
+
+    # Steps fields
+    steps_count = Column(Integer, nullable=True)
+    steps_goal = Column(Integer, nullable=True)                  # daily target
 
     # Common fields
     value_numeric = Column(Float, nullable=False)
@@ -195,6 +213,42 @@ class TrendSummaryCache(Base):
     )
 
 
+class MealLog(Base):
+    """Food photo classification — carb level detection for glucose correlation."""
+    __tablename__ = "meal_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    timestamp = Column(DateTime(timezone=True), nullable=False)
+
+    # Classification (NO food naming — only carb level)
+    category = Column(String, nullable=False)          # HIGH_CARB, MODERATE_CARB, LOW_CARB, HIGH_PROTEIN, SWEETS
+    glucose_impact = Column(String, nullable=False)    # HIGH, MODERATE, LOW, VERY_HIGH
+
+    # Health tip from Gemini
+    tip_en = Column(Text, nullable=True)
+    tip_hi = Column(Text, nullable=True)
+
+    # Meal context
+    meal_type = Column(String, nullable=False)         # BREAKFAST, LUNCH, DINNER, SNACK
+
+    # Photo storage
+    photo_path = Column(String, nullable=True)         # Server filesystem path
+
+    # Metadata
+    input_method = Column(String, nullable=False)      # PHOTO_GEMINI, QUICK_SELECT
+    confidence = Column(Float, nullable=True)          # Gemini confidence score
+    user_confirmed = Column(Boolean, default=False)
+    user_corrected_category = Column(String, nullable=True)  # If user overrode Gemini
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_meals_profile_time", "profile_id", "timestamp"),
+    )
+
+
 class PasswordResetOTP(Base):
     __tablename__ = "password_reset_otps"
 
@@ -204,3 +258,112 @@ class PasswordResetOTP(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime, nullable=False)
     is_used = Column(Boolean, default=False)
+
+
+# ---------------------------------------------------------------------------
+# Doctor Portal models (Module E)
+# ---------------------------------------------------------------------------
+
+class DoctorProfile(Base):
+    """Doctor-specific profile data. Linked 1:1 to a User with role=doctor."""
+    __tablename__ = "doctor_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    nmc_number = Column(String, unique=True, nullable=False)       # NMC / State Medical Council registration
+    specialty = Column(String, nullable=True)                       # "General Physician", "Endocrinologist", etc.
+    clinic_name = Column(String, nullable=True)
+    doctor_code = Column(String(8), unique=True, nullable=False, index=True)  # e.g. "DRRAJ52" — patients use this to link
+    is_verified = Column(Boolean, default=False)                    # Admin verifies NMC number
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    verified_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class DoctorPatientLink(Base):
+    """Consent-based link between a doctor and a patient profile."""
+    __tablename__ = "doctor_patient_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Consent
+    consent_granted_at = Column(DateTime(timezone=True), nullable=False)
+    consent_granted_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # may be family member
+    consent_type = Column(String, nullable=False)                   # "in_person_exam" or "video_consult"
+    is_active = Column(Boolean, default=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Doctor code used to establish link
+    doctor_code_used = Column(String(8), nullable=True)
+
+    # Cached triage data (updated async on new reading)
+    triage_status = Column(String, default="no_data")               # critical / attention / stable / no_data
+    triage_updated_at = Column(DateTime(timezone=True), nullable=True)
+    last_reading_value = Column(String, nullable=True)              # "175/110" or "245"
+    last_reading_type = Column(String, nullable=True)               # "blood_pressure" or "glucose"
+    last_reading_at = Column(DateTime(timezone=True), nullable=True)
+    compliance_7d = Column(Integer, default=0)                      # readings count in last 7 days
+    trend_direction = Column(String, nullable=True)                 # "improving", "worsening", "stable"
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("doctor_id", "profile_id", name="uq_doctor_patient"),
+    )
+
+
+class DoctorNote(Base):
+    """Private clinical note by a doctor on a specific reading."""
+    __tablename__ = "doctor_notes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    reading_id = Column(Integer, ForeignKey("health_readings.id", ondelete="CASCADE"), nullable=True)  # null = general note
+    note_text = Column(Text, nullable=False)
+    is_shared_with_patient = Column(Boolean, default=False)         # doctor explicitly shares
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class DoctorAccessLog(Base):
+    """Audit trail — every time a doctor accesses patient data. DPDPA requirement."""
+    __tablename__ = "doctor_access_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True, index=True)  # null for list views
+    action = Column(String, nullable=False)                         # "viewed_readings", "added_note", "sent_whatsapp", etc.
+    endpoint = Column(String, nullable=True)                        # API endpoint accessed
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_doctor_access_log_doctor_time", "doctor_id", "created_at"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Admin Audit Log (CERT-In 180-day requirement, DPDPA S8(5))
+# ---------------------------------------------------------------------------
+
+class AdminAuditLog(Base):
+    """Immutable audit trail for every admin action. CERT-In requires 180-day retention."""
+    __tablename__ = "admin_audit_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    action_type = Column(String(50), nullable=False)                # VIEW_USER_DETAIL, SUSPEND_USER, VERIFY_DOCTOR, etc.
+    target_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    target_profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True)
+    details = Column(Text, nullable=True)                           # JSON-encoded extra context (reason, old/new values)
+    outcome = Column(String(20), nullable=False, default="SUCCESS") # SUCCESS, DENIED, ERROR
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_admin_audit_admin", "admin_user_id"),
+        Index("ix_admin_audit_target", "target_user_id"),
+        Index("ix_admin_audit_time", "created_at"),
+    )

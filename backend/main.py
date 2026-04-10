@@ -13,8 +13,11 @@ import routes_health
 import routes_profiles
 import routes_chat
 import routes_admin
+import routes_meals
+import routes_doctor
 import os
 from dotenv import load_dotenv
+from scheduler import start_scheduler, stop_scheduler
 
 # Load environment variables
 load_dotenv()
@@ -35,6 +38,14 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.on_event("startup")
+async def startup_event():
+    start_scheduler()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    stop_scheduler()
 
 # ---------------------------------------------------------------------------
 # HTTPS redirect (enable in production via REQUIRE_HTTPS=true in .env)
@@ -99,6 +110,10 @@ app.include_router(routes_chat.router, prefix="/api", tags=["Chat"])
 
 # Include admin routes
 app.include_router(routes_admin.router, prefix="/api", tags=["Admin"])
+app.include_router(routes_meals.router, prefix="/api", tags=["Meals"])
+
+# Include doctor portal routes
+app.include_router(routes_doctor.router, prefix="/api/doctor", tags=["Doctor Portal"])
 
 
 if __name__ == "__main__":

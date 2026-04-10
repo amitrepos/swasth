@@ -12,8 +12,7 @@ class TestAccountDeletion:
 
     def test_delete_removes_user_and_profile(self, client, test_user, auth_headers, db):
         resp = client.delete("/api/auth/account", headers=auth_headers)
-        assert resp.status_code == 200
-        assert "permanently deleted" in resp.json()["message"]
+        assert resp.status_code == 204
 
         # User gone
         assert db.query(models.User).filter_by(id=test_user.id).first() is None
@@ -39,7 +38,7 @@ class TestAccountDeletion:
         db.flush()
 
         resp = client.delete("/api/auth/account", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 204
 
         # Reading gone
         assert db.query(models.HealthReading).filter_by(profile_id=access.profile_id).first() is None
@@ -58,7 +57,7 @@ class TestAccountDeletion:
         db.flush()
 
         resp = client.delete("/api/auth/account", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 204
         assert db.query(models.AiInsightLog).filter_by(profile_id=access.profile_id).first() is None
 
     def test_delete_removes_invites_by_email(self, client, test_user, auth_headers, db):
@@ -88,7 +87,7 @@ class TestAccountDeletion:
         db.flush()
 
         resp = client.delete("/api/auth/account", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 204
         assert db.query(models.ProfileInvite).filter_by(invited_email=test_user.email).first() is None
 
     def test_delete_nullifies_logged_by_on_others_readings(self, client, test_user, auth_headers, db):
@@ -112,7 +111,7 @@ class TestAccountDeletion:
         reading_id = reading.id
 
         resp = client.delete("/api/auth/account", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 204
 
         # Reading still exists but logged_by is NULL
         r = db.query(models.HealthReading).filter_by(id=reading_id).first()

@@ -36,7 +36,7 @@ class UserRegister(BaseModel):
     confirm_password: str
     full_name: str = Field(..., min_length=2, max_length=100)
     phone_number: str = Field(..., min_length=10, max_length=15)
-    timezone: str = "Asia/Kolkata"  # User's local timezone
+    timezone: str = "UTC"  # User's local timezone
     # Optional first-profile fields — used to auto-create "My Health" profile on register
     profile_name: Optional[str] = "My Health"
     age: Optional[int] = Field(None, ge=1, le=150)
@@ -51,6 +51,10 @@ class UserRegister(BaseModel):
     consent_app_version: Optional[str] = None
     consent_language: Optional[str] = None
     ai_consent: Optional[bool] = None
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
 
     @validator('password')
     def validate_password(cls, v):
@@ -96,6 +100,10 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
 
 class Token(BaseModel):
     access_token: str
@@ -112,6 +120,8 @@ class UserResponse(BaseModel):
     full_name: str
     phone_number: str
     is_active: bool
+    is_admin: bool = False
+    role: Optional[str] = "patient"
     timezone: str
     consent_timestamp: Optional[datetime] = None
     consent_app_version: Optional[str] = None
@@ -126,10 +136,18 @@ class UserResponse(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
 
 class VerifyOTPRequest(BaseModel):
     email: EmailStr
     otp: str = Field(..., min_length=6, max_length=6)
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
 
 
 class ResetPasswordRequest(BaseModel):
@@ -137,6 +155,10 @@ class ResetPasswordRequest(BaseModel):
     otp: str = Field(..., min_length=6, max_length=6)
     new_password: str
     confirm_password: str
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
 
     @validator('new_password')
     def validate_password(cls, v):
@@ -359,10 +381,25 @@ class HealthScoreResponse(BaseModel):
     profile_height: Optional[float] = None   # cm
     profile_weight: Optional[float] = None   # kg
 
+    # SpO2 (oxygen saturation — from armband or manual entry)
+    today_spo2_value: Optional[float] = None
+    today_spo2_status: Optional[str] = None   # NORMAL | LOW | CRITICAL
+    last_spo2_value: Optional[float] = None
+    last_spo2_status: Optional[str] = None
+    avg_spo2_90d: Optional[float] = None
+    spo2_data_days: Optional[int] = None
+
+    # Steps (from armband or phone pedometer)
+    today_steps_count: Optional[int] = None
+    today_steps_goal: Optional[int] = None
+    last_steps_count: Optional[int] = None
+    avg_steps_90d: Optional[float] = None
+    steps_data_days: Optional[int] = None
+
 
 class HealthReadingCreate(BaseModel):
     profile_id: int
-    reading_type: str           # 'glucose' or 'blood_pressure'
+    reading_type: str           # 'glucose', 'blood_pressure', 'spo2', or 'steps'
 
     # Glucose fields
     glucose_value: Optional[float] = None
@@ -376,6 +413,14 @@ class HealthReadingCreate(BaseModel):
     pulse_rate: Optional[float] = None
     bp_unit: Optional[str] = None
     bp_status: Optional[str] = None
+
+    # SpO2 fields
+    spo2_value: Optional[float] = None
+    spo2_unit: Optional[str] = None
+
+    # Steps fields
+    steps_count: Optional[int] = None
+    steps_goal: Optional[int] = None
 
     # Common fields
     value_numeric: float
@@ -399,12 +444,259 @@ class HealthReadingResponse(BaseModel):
     pulse_rate: Optional[float]
     bp_unit: Optional[str]
     bp_status: Optional[str]
+    spo2_value: Optional[float] = None
+    spo2_unit: Optional[str] = None
+    steps_count: Optional[int] = None
+    steps_goal: Optional[int] = None
     value_numeric: float
     unit_display: str
     status_flag: Optional[str]
     notes: Optional[str]
     reading_timestamp: datetime
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------------------------------------------------------------------
+# Meal Logging schemas
+# ---------------------------------------------------------------------------
+
+MEAL_CATEGORIES = ["HIGH_CARB", "MODERATE_CARB", "LOW_CARB", "HIGH_PROTEIN", "SWEETS"]
+GLUCOSE_IMPACT_OPTIONS = ["HIGH", "MODERATE", "LOW", "VERY_HIGH"]
+MEAL_TYPE_OPTIONS = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"]
+MEAL_INPUT_METHODS = ["PHOTO_GEMINI", "QUICK_SELECT"]
+
+
+class MealLogCreate(BaseModel):
+    profile_id: int
+    category: str
+    glucose_impact: str
+    meal_type: str
+    input_method: str
+    timestamp: datetime
+    tip_en: Optional[str] = None
+    tip_hi: Optional[str] = None
+    confidence: Optional[float] = None
+    user_confirmed: bool = True
+    user_corrected_category: Optional[str] = None
+
+    @validator('category')
+    def validate_category(cls, v):
+        if v not in MEAL_CATEGORIES:
+            raise ValueError(f'category must be one of: {", ".join(MEAL_CATEGORIES)}')
+        return v
+
+    @validator('glucose_impact')
+    def validate_glucose_impact(cls, v):
+        if v not in GLUCOSE_IMPACT_OPTIONS:
+            raise ValueError(f'glucose_impact must be one of: {", ".join(GLUCOSE_IMPACT_OPTIONS)}')
+        return v
+
+    @validator('meal_type')
+    def validate_meal_type(cls, v):
+        if v not in MEAL_TYPE_OPTIONS:
+            raise ValueError(f'meal_type must be one of: {", ".join(MEAL_TYPE_OPTIONS)}')
+        return v
+
+    @validator('input_method')
+    def validate_input_method(cls, v):
+        if v not in MEAL_INPUT_METHODS:
+            raise ValueError(f'input_method must be one of: {", ".join(MEAL_INPUT_METHODS)}')
+        return v
+
+    @validator('user_corrected_category')
+    def validate_corrected_category(cls, v):
+        if v is not None and v not in MEAL_CATEGORIES:
+            raise ValueError(f'user_corrected_category must be one of: {", ".join(MEAL_CATEGORIES)}')
+        return v
+
+
+class MealLogResponse(BaseModel):
+    id: int
+    profile_id: int
+    logged_by: Optional[int] = None
+    category: str
+    glucose_impact: str
+    tip_en: Optional[str] = None
+    tip_hi: Optional[str] = None
+    meal_type: str
+    photo_path: Optional[str] = None
+    input_method: str
+    confidence: Optional[float] = None
+    user_confirmed: bool
+    user_corrected_category: Optional[str] = None
+    timestamp: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FoodClassificationResponse(BaseModel):
+    """Response from Gemini Vision food classification."""
+    category: str
+    glucose_impact: str
+    tip_en: str
+    tip_hi: str
+    confidence: float
+
+
+class AdminStatusUpdate(BaseModel):
+    """Request body for updating user admin status."""
+    is_admin: bool
+
+
+class AdminSuspendUser(BaseModel):
+    """Request body for suspending/reactivating a user."""
+    suspend: bool
+    reason: str = Field(..., min_length=3, max_length=500)
+
+
+class AdminVerifyDoctor(BaseModel):
+    """Request body for verifying a doctor."""
+    notes: Optional[str] = None
+
+
+class AdminRejectDoctor(BaseModel):
+    """Request body for rejecting a doctor verification."""
+    reason: str = Field(..., min_length=3, max_length=200)
+    notes: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Doctor Portal schemas (Module F)
+# ---------------------------------------------------------------------------
+
+DOCTOR_SPECIALTY_OPTIONS = [
+    "General Physician", "Endocrinologist", "Cardiologist", "Diabetologist",
+    "Internal Medicine", "Family Medicine", "Other",
+]
+
+CONSENT_TYPE_OPTIONS = ["in_person_exam", "video_consult"]
+
+
+class DoctorRegister(BaseModel):
+    """Doctor registration — extends normal user registration."""
+    email: EmailStr
+    password: str
+    confirm_password: str
+    full_name: str = Field(..., min_length=2, max_length=100)
+    phone_number: str = Field(..., min_length=10, max_length=15)
+    nmc_number: str = Field(..., min_length=4, max_length=20)
+    specialty: Optional[str] = None
+    clinic_name: Optional[str] = None
+    timezone: str = "Asia/Kolkata"
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
+    @validator('password')
+    def validate_password(cls, v):
+        return _validate_password_strength(v)
+
+    @validator('confirm_password')
+    def passwords_match(cls, v, values):
+        if 'password' in values and v != values['password']:
+            raise ValueError('Passwords do not match')
+        return v
+
+    @validator('specialty')
+    def validate_specialty(cls, v):
+        if v is not None and v not in DOCTOR_SPECIALTY_OPTIONS:
+            raise ValueError(f'Specialty must be one of: {", ".join(DOCTOR_SPECIALTY_OPTIONS)}')
+        return v
+
+
+class DoctorProfileResponse(BaseModel):
+    """Doctor profile info returned after registration or lookup."""
+    user_id: int
+    full_name: str
+    nmc_number: str
+    specialty: Optional[str] = None
+    clinic_name: Optional[str] = None
+    doctor_code: str
+    is_verified: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DoctorCodeLookupResponse(BaseModel):
+    """Returned when a patient looks up a doctor code to link."""
+    doctor_name: str
+    specialty: Optional[str] = None
+    clinic_name: Optional[str] = None
+    doctor_code: str
+    is_verified: bool
+
+
+class DoctorPatientLinkRequest(BaseModel):
+    """Patient requests to link with a doctor."""
+    doctor_code: str = Field(..., min_length=4, max_length=8)
+    consent_type: str
+
+    @validator('consent_type')
+    def validate_consent_type(cls, v):
+        if v not in CONSENT_TYPE_OPTIONS:
+            raise ValueError(f'consent_type must be one of: {", ".join(CONSENT_TYPE_OPTIONS)}')
+        return v
+
+
+class DoctorPatientLinkResponse(BaseModel):
+    """Response after linking patient to doctor."""
+    id: int
+    doctor_id: int
+    doctor_name: str
+    profile_id: int
+    profile_name: str
+    consent_type: str
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DoctorNoteCreate(BaseModel):
+    """Doctor creates a clinical note on a reading."""
+    note_text: str = Field(..., min_length=1, max_length=2000)
+    reading_id: Optional[int] = None          # null = general note on the profile
+    is_shared_with_patient: bool = False
+
+
+class DoctorNoteResponse(BaseModel):
+    id: int
+    doctor_id: int
+    profile_id: int
+    reading_id: Optional[int] = None
+    note_text: str
+    is_shared_with_patient: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TriagePatientCard(BaseModel):
+    """Patient card on the doctor's triage dashboard."""
+    profile_id: int
+    profile_name: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    medical_conditions: Optional[List[str]] = None
+    triage_status: str                         # critical / attention / stable / no_data
+    triage_reason: Optional[str] = None        # human-readable reason for status
+    last_reading_value: Optional[str] = None
+    last_reading_type: Optional[str] = None
+    last_reading_at: Optional[datetime] = None
+    compliance_7d: int = 0
+    trend_direction: Optional[str] = None
+    link_id: int
 
     class Config:
         from_attributes = True

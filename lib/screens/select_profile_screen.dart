@@ -3,18 +3,24 @@
 
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/profile_model.dart';
 import '../models/invite_model.dart';
+import '../config/app_config.dart';
 import '../theme/app_theme.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
 import 'shell_screen.dart';
 import 'create_profile_screen.dart';
+import 'login_screen.dart';
 import 'pending_invites_screen.dart';
 import '../widgets/offline_banner.dart';
 
 class SelectProfileScreen extends StatefulWidget {
-  const SelectProfileScreen({super.key});
+  /// If true, was pushed from Shell (profile switcher) — pop back on select.
+  /// If false, came from Login/Splash — pushReplacement to Shell.
+  final bool pushedFromShell;
+  const SelectProfileScreen({super.key, this.pushedFromShell = false});
 
   @override
   State<SelectProfileScreen> createState() => _SelectProfileScreenState();
@@ -28,6 +34,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   List<InviteModel> _pendingInvites = [];
   bool _isLoading = true;
   bool _isOffline = false;
+  bool _isAdmin = false;
   String? _error;
 
   @override
@@ -52,6 +59,10 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       final profiles = await _profileService.getProfiles(token);
       final invites = await _profileService.getPendingInvites(token);
 
+      // Check admin status
+      final userData = await _storageService.getUserData();
+      final isAdmin = userData?['is_admin'] == true;
+
       // Cache profiles for offline use
       await _storageService.saveProfiles(
         profiles.map((p) => p.toJson()).toList(),
@@ -62,6 +73,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
         _pendingInvites = invites;
         _isLoading = false;
         _isOffline = false;
+        _isAdmin = isAdmin;
       });
     } catch (e) {
       // Try loading cached profiles for offline use
@@ -89,14 +101,11 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
     // Verify the write completed before navigating
     final savedId = await _storageService.getActiveProfileId();
     if (savedId == null) {
-      // Retry once
       await _storageService.saveActiveProfileId(profile.id);
     }
 
     if (mounted) {
-      // If we were pushed from Shell (profile switcher), pop back.
-      // If we replaced Shell (first time / no profile), push new Shell.
-      if (Navigator.canPop(context)) {
+      if (widget.pushedFromShell) {
         Navigator.pop(context);
       } else {
         Navigator.pushReplacement(
@@ -115,83 +124,116 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       appBar: AppBar(
         title: Text(l10n.selectProfileTitle),
         actions: [
+          if (_isAdmin)
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings),
+              onPressed: () {
+                final baseUrl = AppConfig.serverHost;
+                launchUrl(
+                  Uri.parse('$baseUrl/api/admin'),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+              tooltip: 'Admin Dashboard',
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,
             tooltip: l10n.refresh,
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await _storageService.clearAll();
+              if (!mounted) return;
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+            tooltip: 'Logout',
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.statusCritical)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadData,
-                        child: Text(l10n.retry),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: AppColors.statusCritical),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (_isOffline) const OfflineBanner(),
-                        if (_pendingInvites.isNotEmpty)
-                          _buildInvitesBanner(l10n),
+                  const SizedBox(height: 16),
+                  ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_isOffline) const OfflineBanner(),
+                    if (_pendingInvites.isNotEmpty) _buildInvitesBanner(l10n),
 
-                        _buildSectionHeader(l10n.myProfilesSection),
-                        ..._profiles
-                            .where((p) => p.accessLevel == 'owner')
-                            .map((p) => _buildProfileCard(p)),
+                    _buildSectionHeader(l10n.myProfilesSection),
+                    ..._profiles
+                        .where((p) => p.accessLevel == 'owner')
+                        .map((p) => _buildProfileCard(p)),
 
-                        const SizedBox(height: 16),
-                        _buildSectionHeader(l10n.sharedWithMeSection),
-                        ..._profiles
-                            .where((p) => p.accessLevel != 'owner')
-                            .map((p) => _buildProfileCard(p)),
+                    const SizedBox(height: 16),
+                    _buildSectionHeader(l10n.sharedWithMeSection),
+                    ..._profiles
+                        .where((p) => p.accessLevel != 'owner')
+                        .map((p) => _buildProfileCard(p)),
 
-                        if (_profiles.where((p) => p.accessLevel != 'owner').isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                            child: Text(
-                              l10n.noSharedProfiles,
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                            ),
-                          ),
-
-                        const SizedBox(height: 32),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const CreateProfileScreen()),
-                              );
-                              if (result == true) _loadData();
-                            },
-                            icon: const Icon(Icons.add),
-                            label: Text(l10n.addProfile),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
-                            ),
+                    if (_profiles
+                        .where((p) => p.accessLevel != 'owner')
+                        .isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 8,
+                        ),
+                        child: Text(
+                          l10n.noSharedProfiles,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
                           ),
                         ),
-                        const SizedBox(height: 48),
-                      ],
+                      ),
+
+                    const SizedBox(height: 32),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CreateProfileScreen(),
+                            ),
+                          );
+                          if (result == true) _loadData();
+                        },
+                        icon: const Icon(Icons.add),
+                        label: Text(l10n.addProfile),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 48),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 
@@ -210,11 +252,16 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          ),
         ),
         child: Row(
           children: [
-            Icon(Icons.mail_outline, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              Icons.mail_outline,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -225,7 +272,11 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                 ),
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 14, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ],
         ),
       ),
@@ -254,12 +305,18 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
           backgroundColor: AppColors.primary,
           child: Text(
             profile.name[0].toUpperCase(),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         title: Text(
           profile.name,
-          style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
         ),
         subtitle: Text(
           profile.relationship != null
