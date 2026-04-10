@@ -16,11 +16,31 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /var/www/swasth_prod
-            git pull origin master
+            # Hard-reset to origin/master — see rationale in dev.yml.
+            # This is a manual-dispatch workflow (see `on:` above), so
+            # discarding any local drift on the prod server is still
+            # the safe default: prod should never have in-place edits
+            # that aren't in master.
+            git fetch origin master
+            git reset --hard origin/master
+            echo "✅ Repo synced to $(git rev-parse --short HEAD)"
+
             source venv/bin/activate
             cd backend
             pip install -r requirements.txt
+
+            # Run any new DB migrations. Each migration script is
+            # idempotent and safe to re-run.
+            echo "Running DB migrations..."
+            for f in migrate_add_doctor_link_states.py; do
+              if [ -f "$f" ]; then
+                echo "  → $f"
+                python3 "$f" || { echo "❌ Migration $f failed"; exit 1; }
+              fi
+            done
+            echo "✅ Migrations complete"
 
             # Restart or start the PROD backend via PM2
             pm2 restart swasth-prod || pm2 start "python3 main.py" --name "swasth-prod" --cwd /var/www/swasth_prod/backend
