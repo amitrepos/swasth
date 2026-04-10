@@ -53,5 +53,28 @@ class TwilioWhatsAppService:
             print(f"Error sending Twilio WhatsApp message: {e}")
             return False
 
+    def send_critical_alert_whatsapp(
+        self,
+        to_number: str,
+        patient_name: str,
+        alert_text_en: str,
+        alert_text_hi: str,
+    ) -> bool:
+        """Send a bilingual critical health alert via WhatsApp.
+
+        Returns True on success, False on any failure. Callers log and
+        try other channels on False.
+        """
+        if not self.client or not self.from_number:
+            return False
+        body = (
+            f"🚨 *Swasth Health Alert*\n\n"
+            f"*English:* {alert_text_en}\n\n"
+            f"*हिन्दी:* {alert_text_hi}\n\n"
+            f"— Swasth Health App"
+        )
+        return self.send_whatsapp(to_number, body)
+
+
 # Create singleton instance
 whatsapp_service = TwilioWhatsAppService()
