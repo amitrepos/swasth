@@ -408,4 +408,53 @@ Under IMDRF (International Medical Device Regulators Forum) + CDSCO adaptation:
 
 ---
 
+## 11. Critical Value Alerts to Family (Feature D7)
+
+*Added: 2026-04-10 — implementation of backend alert dispatch for CRITICAL and HIGH-STAGE-2 readings.*
+
+### 11.1 What the feature does
+
+When a patient's reading is classified CRITICAL or HIGH-STAGE-2 (e.g. glucose <70 or >300 mg/dL, BP systolic >180, SpO2 dangerously low), the backend fans out an alert notification to every family member listed in `ProfileAccess` for that profile (excluding the person who logged the reading).
+
+Channels: **email (Brevo SMTP)** + **WhatsApp (Twilio)**. SMS is architecturally provisioned but disabled pending API keys.
+
+Alert body contains: patient's name, reading type, reading value, severity flag, and a call to action.
+
+### 11.2 Legal questions to resolve before pilot launch
+
+- [ ] **Q11.1 — Implicit vs. explicit consent for emergency notifications.** `ProfileAccess` currently grants a family member permission to *view* a patient's readings. Does sharing a critical reading *proactively* via email/WhatsApp (without the family member initiating the query) require a separate explicit opt-in under DPDPA 2023 Section 6 (notice) and Section 7 (consent)? Our position: the act of granting ProfileAccess implies consent to receive safety-critical notifications about that profile, but a lawyer should confirm whether a dedicated "Emergency contact — notify me" toggle is required before pilot.
+- [ ] **Q11.2 — Cross-border WhatsApp delivery.** Twilio's WhatsApp Business API routes messages through Meta infrastructure located outside India. DPDPA 2023 restricts cross-border transfer of personal data unless the destination is whitelisted by the Central Government. Patient name + health reading value sent via WhatsApp Business transits via Meta servers. Is this a cross-border transfer that needs Rule 6 compliance, or does Twilio's India-regional endpoint (if available) avoid the issue?
+- [ ] **Q11.3 — Data minimization in the alert body.** Our alert currently reads *"Ramesh's glucose is 400 mg/dL (CRITICAL). Please check on them immediately."* This discloses the patient's name + exact numeric health value via unencrypted email/WhatsApp. Is this DPDPA-compliant under the "purpose limitation" and "data minimization" principles? Alternatives: (a) send only *"Ramesh needs medical attention. Open the Swasth app for details."* and force family to open the app (more private, less actionable), or (b) keep current form (more actionable, potentially over-discloses).
+- [ ] **Q11.4 — Rate limiting vs. safety.** To avoid spamming family with repeat alerts during a single clinical event, we plan a 30-minute dedupe window per profile (only one alert per channel per 30 min). Does silencing potentially-distinct critical events during that window create medical liability if a second unnoticed event causes harm? Should the dedupe window be shorter (15 min) or removed entirely for CRITICAL-level alerts?
+- [ ] **Q11.5 — Language and comprehension.** Alert body is bilingual (English + Hindi) to ensure the recipient can act. Is there NMC or DPDPA guidance on mandatory languages for safety-critical notifications in multilingual markets like Bihar? Should we also support regional languages (Bhojpuri, Maithili) for pilot?
+- [ ] **Q11.6 — Alert delivery failure liability.** If Twilio WhatsApp or Brevo SMTP is down when a critical reading fires, the family isn't notified. We log every attempt in `CriticalAlertLog` for audit, but patients/families are not told the alert failed to deliver. Does the platform incur liability for undelivered critical alerts? Should we surface a "we tried to notify your family, delivery status: FAILED" state in the Flutter app so the patient knows to call manually?
+- [ ] **Q11.7 — NMC telemedicine guidelines on alert triggering.** The critical threshold (glucose <70 / >300, etc.) is built into code by our clinical advisor Dr. Rajesh. NMC Telemedicine Practice Guidelines require algorithms making clinical suggestions to have documented provenance. Do we need to publish the clinical basis for our CRITICAL thresholds (peer-reviewed paper? ICMR diabetes guidelines?) before pilot?
+- [ ] **Q11.8 — Minors and proxy access.** If the patient is a minor (<18), the family member receiving the alert is a legal guardian. If the patient is an adult whose family has viewer access (e.g. son monitoring mother), is proactive notification to the son legally different from granting him view access? Section 5.2 of this document already flags family proxy consent for doctor access — extend that analysis to cover alert dispatch.
+- [ ] **Q11.9 — Audit log retention and PHI in CriticalAlertLog.** The `CriticalAlertLog` table stores recipient_user_id, channel, status, and timestamp for every alert attempt. It does not store the message body to minimize PHI. Is user_id + profile_id + timestamp still considered PHI and subject to the 3-year DPDPA retention limit? Or is this audit metadata exempt?
+
+### 11.3 Implementation decisions deferred pending legal answers
+
+Until Q11.1–Q11.3 are resolved, the D7 implementation will:
+1. Ship with bilingual (EN + HI) alert bodies including patient name and reading value (i.e. not data-minimized).
+2. Rely on implicit consent via `ProfileAccess` (no separate opt-in UI).
+3. Dispatch via Twilio's default global WhatsApp endpoint (no India-regional routing).
+4. Apply a 30-minute per-profile dedupe window.
+5. Log every attempt to `CriticalAlertLog` for audit trail.
+
+If legal review flags any of these as non-compliant, the fix is a config change + message template swap — no database migration or API surface change required. The `alert_service.dispatch_critical_alert` function is the single swap point.
+
+### 11.4 Review checklist for lawyer
+
+- [ ] Q11.1: Implicit vs explicit emergency-contact consent under DPDPA
+- [ ] Q11.2: Cross-border WhatsApp data transfer analysis
+- [ ] Q11.3: Data minimization in alert body (name + value vs. generic "open app")
+- [ ] Q11.4: Rate-limit dedupe window and medical liability tradeoff
+- [ ] Q11.5: Language requirements for safety-critical notifications
+- [ ] Q11.6: Delivery failure liability and patient disclosure
+- [ ] Q11.7: Clinical threshold provenance (NMC telemedicine compliance)
+- [ ] Q11.8: Minor / guardian / adult family proxy notification distinction
+- [ ] Q11.9: CriticalAlertLog retention rules and PHI classification
+
+---
+
 *This document is AI-generated legal analysis, not legal advice. All items should be reviewed by a licensed Indian lawyer before implementation.*
