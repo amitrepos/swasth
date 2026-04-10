@@ -132,19 +132,21 @@ def save_reading(
             "profile_name": profile_name,
         }
 
-        # Send email alert to all family members with access
+        # Dispatch via alert_service — handles email + WhatsApp + SMS fanout,
+        # per-channel failure logging, and dedupe window. Failures do NOT
+        # block the reading save — the reading is already committed above.
         try:
-            family_accesses = db.query(models.ProfileAccess).filter(
-                models.ProfileAccess.profile_id == reading.profile_id,
-                models.ProfileAccess.user_id != user.id,
-            ).all()
-            for access in family_accesses:
-                family_user = db.query(models.User).filter(models.User.id == access.user_id).first()
-                if family_user and family_user.email:
-                    from email_service import email_service
-                    email_service.send_otp_email(family_user.email, "")  # TODO: create proper alert email template
+            from alert_service import dispatch_critical_alert
+            if profile is not None:
+                dispatch_critical_alert(
+                    reading=db_reading,
+                    profile=profile,
+                    logger_user_id=user.id,
+                    db=db,
+                )
+                db.commit()  # Persist CriticalAlertLog rows
         except Exception:
-            pass  # Email failure should not block saving the reading
+            db.rollback()  # Never let alert dispatch break the reading save
 
     response = schemas.HealthReadingResponse.from_orm(db_reading)
     result = response.dict()

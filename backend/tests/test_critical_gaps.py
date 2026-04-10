@@ -112,7 +112,7 @@ class TestCriticalAlertEmail:
         db.add(models.ProfileAccess(user_id=viewer.id, profile_id=pid, access_level="viewer"))
         db.flush()
 
-        with patch("email_service.email_service.send_otp_email") as mock_email:
+        with patch("email_service.email_service.send_critical_alert_email", return_value=True) as mock_email:
             resp = client.post("/api/readings", json={
                 "profile_id": pid,
                 "reading_type": "glucose",
@@ -125,8 +125,11 @@ class TestCriticalAlertEmail:
 
             assert resp.status_code == 201
             assert resp.json().get("alert") is not None
-            # Email should have been called for family member
+            # New critical-alert email dispatcher should have been called for the family viewer
             assert mock_email.called
+            call_kwargs = mock_email.call_args.kwargs
+            assert call_kwargs["recipient_email"] == "family@test.com"
+            assert "400" in call_kwargs["alert_text_en"]
 
     def test_high_stage2_bp_triggers_alert(self, client, test_user, auth_headers, db):
         pid = db.query(models.ProfileAccess).filter(
