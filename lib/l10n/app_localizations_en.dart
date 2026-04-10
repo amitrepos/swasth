@@ -1337,4 +1337,188 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rescan => 'Rescan';
+
+  @override
+  String get linkDoctorTitle => 'Link a Doctor';
+
+  @override
+  String get linkDoctorHeadline => 'Share your health readings with a doctor';
+
+  @override
+  String get linkDoctorCodeLabel => 'Doctor Code';
+
+  @override
+  String get linkDoctorCodeHint => 'e.g. DRRAJ52';
+
+  @override
+  String get linkDoctorCodeEmpty => 'Please enter a doctor code';
+
+  @override
+  String get linkDoctorCodeInvalid => 'Doctor code is too short';
+
+  @override
+  String get linkDoctorLookupButton => 'Find Doctor';
+
+  @override
+  String get linkDoctorLookupFailed => 'Doctor not found. Check the code.';
+
+  @override
+  String get linkDoctorCodeHelper =>
+      'Ask your doctor for their Swasth code (starts with DR)';
+
+  @override
+  String get linkDoctorConsentTitle => 'How did you meet this doctor?';
+
+  @override
+  String get linkDoctorConsentInPerson => 'In-person visit at clinic';
+
+  @override
+  String get linkDoctorConsentInPersonHelp =>
+      'I have visited this doctor at the clinic.';
+
+  @override
+  String get linkDoctorConsentVideo => 'Video or phone consultation';
+
+  @override
+  String get linkDoctorConsentVideoHelp =>
+      'I have talked to this doctor over video or phone.';
+
+  @override
+  String get linkDoctorNotVerified => 'Verification pending';
+
+  @override
+  String get linkDoctorNotVerifiedHelp =>
+      'This doctor is registered but Swasth is still checking their NMC number. You can link once verification is complete.';
+
+  @override
+  String get linkDoctorVerified => 'Verified doctor';
+
+  @override
+  String get linkDoctorConfirm => 'Share my readings';
+
+  @override
+  String get linkDoctorConfirmDialogTitle => 'Share your readings?';
+
+  @override
+  String linkDoctorConfirmDialogBody(String name) {
+    return 'Dr. $name will be able to see your past and future health readings. You can stop sharing any time from your profile.';
+  }
+
+  @override
+  String get linkDoctorConfirmDialogShare => 'Yes, share';
+
+  @override
+  String get linkDoctorNmcDisclaimer =>
+      'Sharing readings does not create a doctor-patient relationship. Your doctor must confirm any treatment separately. In an emergency, call 108.';
+
+  @override
+  String linkDoctorSuccess(String name) {
+    return 'You are now linked to $name.';
+  }
+
+  @override
+  String get linkDoctorRevokeHint =>
+      'You can stop sharing any time from your profile.';
+
+  @override
+  String get linkDoctorNoProfile => 'Please select a profile first';
+
+  @override
+  String get linkDoctorSessionExpired =>
+      'Your session has expired. Please log out and log in again.';
+
+  @override
+  String get linkDoctorNetworkError =>
+      'No internet connection. Please try again.';
+
+  @override
+  String get doctorRegisterTitle => 'Doctor Sign Up';
+
+  @override
+  String get doctorRegisterHeadline => 'Register as a Doctor';
+
+  @override
+  String get doctorRegisterSubheadline =>
+      'Your NMC number will be verified by the Swasth team before you can see patients.';
+
+  @override
+  String get doctorFullNameLabel => 'Full Name';
+
+  @override
+  String get doctorNmcLabel => 'NMC Registration Number';
+
+  @override
+  String get doctorNmcHint => 'Medical council number';
+
+  @override
+  String get doctorNmcEmpty => 'Please enter your NMC number';
+
+  @override
+  String get doctorSpecialtyLabel => 'Specialty';
+
+  @override
+  String get doctorClinicLabel => 'Clinic or Hospital Name';
+
+  @override
+  String get doctorRegisterSubmit => 'Create Doctor Account';
+
+  @override
+  String get doctorRegisterSuccess =>
+      'Account created. A Swasth admin will verify your NMC number soon.';
+
+  @override
+  String get doctorSpecialtyGeneral => 'General Physician';
+
+  @override
+  String get doctorSpecialtyEndocrinologist => 'Endocrinologist';
+
+  @override
+  String get doctorSpecialtyCardiologist => 'Cardiologist';
+
+  @override
+  String get doctorSpecialtyDiabetologist => 'Diabetologist';
+
+  @override
+  String get doctorSpecialtyInternal => 'Internal Medicine';
+
+  @override
+  String get doctorSpecialtyFamily => 'Family Medicine';
+
+  @override
+  String get doctorSpecialtyOther => 'Other';
+
+  @override
+  String get adminCreateUserTitle => 'Create User';
+
+  @override
+  String get adminCreateUserHeadline => 'Create a patient account';
+
+  @override
+  String get adminCreateUserRoleLabel => 'Account Type';
+
+  @override
+  String get adminCreateUserRolePatient => 'Patient';
+
+  @override
+  String get adminCreateUserRoleDoctor => 'Doctor (coming soon)';
+
+  @override
+  String get adminCreateUserDoctorComingSoon =>
+      'Doctor accounts must be created via the doctor self-signup flow for now.';
+
+  @override
+  String get adminCreateUserTempPasswordHelp =>
+      'Share this password securely with the user. They can change it from their Profile screen.';
+
+  @override
+  String get adminCreateUserSubmit => 'Create Account';
+
+  @override
+  String adminCreateUserSuccess(String email) {
+    return 'Account created for $email';
+  }
+
+  @override
+  String get adminCreateUserNmcRequired =>
+      'NMC number is required for doctor accounts';
 }

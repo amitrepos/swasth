@@ -1338,4 +1338,189 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get rescan => 'पुनः खोजें';
+
+  @override
+  String get linkDoctorTitle => 'डॉक्टर जोड़ें';
+
+  @override
+  String get linkDoctorHeadline =>
+      'अपनी सेहत की रीडिंग डॉक्टर के साथ साझा करें';
+
+  @override
+  String get linkDoctorCodeLabel => 'डॉक्टर कोड';
+
+  @override
+  String get linkDoctorCodeHint => 'जैसे DRRAJ52';
+
+  @override
+  String get linkDoctorCodeEmpty => 'कृपया डॉक्टर कोड डालें';
+
+  @override
+  String get linkDoctorCodeInvalid => 'डॉक्टर कोड बहुत छोटा है';
+
+  @override
+  String get linkDoctorLookupButton => 'डॉक्टर ढूंढें';
+
+  @override
+  String get linkDoctorLookupFailed => 'डॉक्टर नहीं मिला। कोड जांचें।';
+
+  @override
+  String get linkDoctorCodeHelper =>
+      'अपने डॉक्टर से उनका Swasth कोड पूछें (DR से शुरू होता है)';
+
+  @override
+  String get linkDoctorConsentTitle => 'डॉक्टर से कैसे मिले हैं?';
+
+  @override
+  String get linkDoctorConsentInPerson => 'क्लिनिक में जाकर मिले हैं';
+
+  @override
+  String get linkDoctorConsentInPersonHelp =>
+      'मैंने इस डॉक्टर से क्लिनिक में मिलकर जांच कराई है।';
+
+  @override
+  String get linkDoctorConsentVideo => 'वीडियो या फोन पर बात हुई है';
+
+  @override
+  String get linkDoctorConsentVideoHelp =>
+      'मैंने इस डॉक्टर से वीडियो या फोन पर बात की है।';
+
+  @override
+  String get linkDoctorNotVerified => 'सत्यापन जारी है';
+
+  @override
+  String get linkDoctorNotVerifiedHelp =>
+      'डॉक्टर रजिस्टर हैं, Swasth उनके NMC नंबर की जाँच कर रहा है। सत्यापन पूरा होने पर आप जोड़ सकेंगे।';
+
+  @override
+  String get linkDoctorVerified => 'सत्यापित डॉक्टर';
+
+  @override
+  String get linkDoctorConfirm => 'मेरी रीडिंग साझा करें';
+
+  @override
+  String get linkDoctorConfirmDialogTitle => 'अपनी रीडिंग साझा करें?';
+
+  @override
+  String linkDoctorConfirmDialogBody(String name) {
+    return 'डॉ. $name आपकी पुरानी और आने वाली सेहत की रीडिंग देख सकेंगे। आप कभी भी प्रोफाइल से साझा करना बंद कर सकते हैं।';
+  }
+
+  @override
+  String get linkDoctorConfirmDialogShare => 'हाँ, साझा करें';
+
+  @override
+  String get linkDoctorNmcDisclaimer =>
+      'रीडिंग साझा करने से डॉक्टर-मरीज़ का रिश्ता नहीं बनता। इलाज के लिए आपके डॉक्टर को अलग से पुष्टि करनी होगी। आपात स्थिति में 108 पर कॉल करें।';
+
+  @override
+  String linkDoctorSuccess(String name) {
+    return 'आप अब $name से जुड़ गए हैं।';
+  }
+
+  @override
+  String get linkDoctorRevokeHint =>
+      'आप कभी भी प्रोफाइल से साझा करना बंद कर सकते हैं।';
+
+  @override
+  String get linkDoctorNoProfile => 'कृपया पहले एक प्रोफाइल चुनें';
+
+  @override
+  String get linkDoctorSessionExpired =>
+      'आपका सत्र समाप्त हो गया है। कृपया लॉग आउट करके फिर से लॉग इन करें।';
+
+  @override
+  String get linkDoctorNetworkError =>
+      'इंटरनेट कनेक्शन नहीं है। कृपया दोबारा कोशिश करें।';
+
+  @override
+  String get doctorRegisterTitle => 'डॉक्टर पंजीकरण';
+
+  @override
+  String get doctorRegisterHeadline => 'डॉक्टर के रूप में रजिस्टर करें';
+
+  @override
+  String get doctorRegisterSubheadline =>
+      'Swasth की टीम आपके NMC नंबर की जांच करेगी। उसके बाद ही आप मरीज़ देख पाएंगे।';
+
+  @override
+  String get doctorFullNameLabel => 'पूरा नाम';
+
+  @override
+  String get doctorNmcLabel => 'NMC पंजीकरण संख्या';
+
+  @override
+  String get doctorNmcHint => 'मेडिकल काउंसिल नंबर';
+
+  @override
+  String get doctorNmcEmpty => 'कृपया अपना NMC नंबर डालें';
+
+  @override
+  String get doctorSpecialtyLabel => 'विशेषज्ञता';
+
+  @override
+  String get doctorClinicLabel => 'क्लिनिक या अस्पताल का नाम';
+
+  @override
+  String get doctorRegisterSubmit => 'डॉक्टर खाता बनाएं';
+
+  @override
+  String get doctorRegisterSuccess =>
+      'खाता बन गया। Swasth एडमिन जल्द ही आपका NMC नंबर सत्यापित करेगा।';
+
+  @override
+  String get doctorSpecialtyGeneral => 'सामान्य चिकित्सक';
+
+  @override
+  String get doctorSpecialtyEndocrinologist => 'एंडोक्रिनोलॉजिस्ट';
+
+  @override
+  String get doctorSpecialtyCardiologist => 'हृदय रोग विशेषज्ञ';
+
+  @override
+  String get doctorSpecialtyDiabetologist => 'मधुमेह विशेषज्ञ';
+
+  @override
+  String get doctorSpecialtyInternal => 'आंतरिक चिकित्सा';
+
+  @override
+  String get doctorSpecialtyFamily => 'पारिवारिक चिकित्सा';
+
+  @override
+  String get doctorSpecialtyOther => 'अन्य';
+
+  @override
+  String get adminCreateUserTitle => 'यूज़र बनाएं';
+
+  @override
+  String get adminCreateUserHeadline => 'मरीज़ का खाता बनाएं';
+
+  @override
+  String get adminCreateUserRoleLabel => 'खाते का प्रकार';
+
+  @override
+  String get adminCreateUserRolePatient => 'मरीज़';
+
+  @override
+  String get adminCreateUserRoleDoctor => 'डॉक्टर (जल्द आ रहा है)';
+
+  @override
+  String get adminCreateUserDoctorComingSoon =>
+      'अभी डॉक्टर खाते केवल डॉक्टर के खुद के रजिस्ट्रेशन से बन सकते हैं।';
+
+  @override
+  String get adminCreateUserTempPasswordHelp =>
+      'यूज़र को यह पासवर्ड सुरक्षित रूप से दें। वे इसे प्रोफाइल स्क्रीन से बदल सकते हैं।';
+
+  @override
+  String get adminCreateUserSubmit => 'खाता बनाएं';
+
+  @override
+  String adminCreateUserSuccess(String email) {
+    return '$email के लिए खाता बन गया';
+  }
+
+  @override
+  String get adminCreateUserNmcRequired =>
+      'डॉक्टर खाते के लिए NMC नंबर ज़रूरी है';
 }

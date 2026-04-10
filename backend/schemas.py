@@ -1,3 +1,4 @@
+import re
 from pydantic import BaseModel, EmailStr, validator, Field
 from typing import Optional, List, Literal
 from datetime import datetime
@@ -9,6 +10,23 @@ BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]
 MEDICAL_CONDITIONS = ["Diabetes T1", "Diabetes T2", "Hypertension", "Heart Disease", "None", "Other"]
 RELATIONSHIP_OPTIONS = ["myself", "father", "mother", "spouse", "son", "daughter", "brother", "sister", "uncle", "aunt", "friend", "other"]
 _SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?'
+
+# Doctor portal constants — declared here (top of module) so Admin*
+# schemas defined before the Doctor Portal section can reference them
+# without a load-order foot-gun.
+DOCTOR_SPECIALTY_OPTIONS = [
+    "General Physician", "Endocrinologist", "Cardiologist", "Diabetologist",
+    "Internal Medicine", "Family Medicine", "Other",
+]
+CONSENT_TYPE_OPTIONS = ["in_person_exam", "video_consult"]
+
+# NMC registration number — digits, optional state council prefix like "BMCR/".
+# Real council numbers are 5-10 digits; reject anything shorter to stop
+# trivial identifiers like "1234" from passing validation.
+_NMC_PATTERN = re.compile(r'^[A-Z]{0,8}/?\d{5,10}$')
+
+# Phone number — 10-15 digits with an optional leading '+' and no separators.
+_PHONE_PATTERN = re.compile(r'^\+?\d{10,15}$')
 
 
 def _validate_password_strength(v: str) -> str:
@@ -565,16 +583,74 @@ class AdminRejectDoctor(BaseModel):
     notes: Optional[str] = None
 
 
+class AdminCreateUser(BaseModel):
+    """Admin creates a patient or doctor account (G6).
+
+    Doctor-role creation is currently blocked at the endpoint layer — the
+    schema still accepts the fields so the admin UI can submit them, but
+    the endpoint returns 501 until the first-login doctor-consent flow is
+    built (see DPDPA fiduciary consent requirements).
+    """
+    email: EmailStr
+    password: str
+    full_name: str = Field(..., min_length=2, max_length=100)
+    phone_number: str = Field(..., min_length=10, max_length=20)
+    role: str = Field(..., pattern="^(patient|doctor)$")
+    nmc_number: Optional[str] = Field(None, min_length=5, max_length=20)
+    specialty: Optional[str] = None
+    clinic_name: Optional[str] = None
+
+    class Config:
+        extra = 'forbid'
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower()
+
+    @validator('password')
+    def validate_password(cls, v):
+        return _validate_password_strength(v)
+
+    @validator('full_name')
+    def validate_full_name(cls, v):
+        stripped = v.strip()
+        if len(stripped) < 2:
+            raise ValueError('Full name must be at least 2 characters')
+        return stripped
+
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        stripped = re.sub(r'[\s\-]', '', v)
+        if not _PHONE_PATTERN.match(stripped):
+            raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
+        return stripped
+
+    @validator('nmc_number', always=True)
+    def nmc_required_for_doctor(cls, v, values):
+        if values.get('role') == 'doctor' and not v:
+            raise ValueError('NMC number is required for doctor accounts')
+        if v is not None:
+            normalized = v.strip().upper()
+            if not _NMC_PATTERN.match(normalized):
+                raise ValueError(
+                    'NMC number must be 5-10 digits with an optional state council prefix (e.g. BMCR/123456)'
+                )
+            return normalized
+        return v
+
+    @validator('specialty')
+    def validate_specialty(cls, v):
+        if v is not None and v not in DOCTOR_SPECIALTY_OPTIONS:
+            raise ValueError(f'Specialty must be one of: {", ".join(DOCTOR_SPECIALTY_OPTIONS)}')
+        return v
+
+
 # ---------------------------------------------------------------------------
 # Doctor Portal schemas (Module F)
+# DOCTOR_SPECIALTY_OPTIONS and CONSENT_TYPE_OPTIONS are declared at the top
+# of this module so that Admin* schemas (above) can reference them without
+# a forward-reference smell.
 # ---------------------------------------------------------------------------
-
-DOCTOR_SPECIALTY_OPTIONS = [
-    "General Physician", "Endocrinologist", "Cardiologist", "Diabetologist",
-    "Internal Medicine", "Family Medicine", "Other",
-]
-
-CONSENT_TYPE_OPTIONS = ["in_person_exam", "video_consult"]
 
 
 class DoctorRegister(BaseModel):
