@@ -169,7 +169,8 @@ def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Ses
     return {"message": "Password reset successfully"}
 
 
-@router.put("/profile", response_model=schemas.UserResponse)
+@router.put("/me", response_model=schemas.UserResponse)
+@router.put("/profile", response_model=schemas.UserResponse, deprecated=True)
 def update_profile(
     user_update: schemas.UpdateUserRequest,
     db: Session = Depends(get_db),
@@ -221,7 +222,7 @@ def grant_ai_consent(
 # Account deletion — DPDP Act right to erasure
 # ---------------------------------------------------------------------------
 
-@router.delete("/account")
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
 def delete_account(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
@@ -241,6 +242,13 @@ def delete_account(
         db.query(models.ProfileInvite).filter(models.ProfileInvite.profile_id == pid).delete()
         db.query(models.ProfileAccess).filter(models.ProfileAccess.profile_id == pid).delete()
         db.query(models.Profile).filter(models.Profile.id == pid).delete()
+
+    # 1.1 Delete WhatsApp Logs (DPDP Act compliance)
+    db.query(models.WhatsAppMessageLog).filter(models.WhatsAppMessageLog.user_id == user.id).delete()
+    db.query(models.ReportGenerationLog).filter(models.ReportGenerationLog.user_id == user.id).delete()
+    
+    # Update timestamp with UTC
+    now_utc = datetime.now(pytz.UTC)
 
     # 2. Nullify logged_by on readings this user logged on other people's profiles
     db.query(models.HealthReading).filter(
@@ -270,7 +278,7 @@ def delete_account(
     db.query(models.User).filter(models.User.id == user.id).delete()
 
     db.commit()
-    return {"message": "Account and all associated data have been permanently deleted"}
+    return None
 
 
 # ---------------------------------------------------------------------------
