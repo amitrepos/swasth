@@ -550,6 +550,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareWithDoctorSection => 'Share with a Doctor';
 
   @override
+  String get myDoctorsSection => 'My Doctors';
+
+  @override
+  String get primaryPhysicianSubheading => 'Primary Physician';
+
+  @override
+  String get sharingHealthDataWithSubheading => 'Sharing health data with';
+
+  @override
+  String get sharingHealthDataWithEmpty =>
+      'You are not sharing health data with any doctor yet.';
+
+  @override
+  String get linkAnotherDoctor => 'Link another doctor';
+
+  @override
   String get linkedDoctorsTileTitle => 'Doctors with access';
 
   @override
@@ -1425,6 +1441,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get linkDoctorCodeHelper =>
       'Ask your doctor for their Swasth code (starts with DR)';
+
+  @override
+  String get linkDoctorPickerTitle => 'Your doctors';
+
+  @override
+  String get linkDoctorPickerSubtitle =>
+      'Tap a doctor you already share with on another profile.';
+
+  @override
+  String get linkDoctorAlreadyLinked =>
+      'This doctor can already see this profile.';
+
+  @override
+  String get linkDoctorAlreadyLinkedBadge => 'Already sharing';
+
+  @override
+  String get linkDoctorOr => 'OR';
+
+  @override
+  String get linkDoctorEnterNewCode => 'Enter a new doctor\'s code';
 
   @override
   String get linkDoctorConsentTitle => 'How did you meet this doctor?';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../services/doctor_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -10,7 +11,6 @@ import '../models/profile_model.dart';
 import '../providers/language_provider.dart';
 import 'link_doctor_screen.dart';
 import 'manage_access_screen.dart';
-import 'my_linked_doctors_screen.dart';
 import 'privacy_policy_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -27,6 +27,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isLoading = true;
   final _profileService = ProfileService();
   final _apiService = ApiService();
+  final _doctorService = DoctorService();
+
+  // Swasth-linked doctors for this profile (populated by _loadLinkedDoctors).
+  List<Map<String, dynamic>> _linkedDoctors = <Map<String, dynamic>>[];
+  bool _isLoadingLinkedDoctors = false;
+  final Set<String> _revokingCodes = <String>{};
 
   // Password change controllers
   final _currentPasswordController = TextEditingController();
@@ -78,6 +84,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _isLoading = false;
       });
       _initHealthControllers();
+      // Load the linked doctors list in parallel-ish fashion; it only
+      // runs for owners because the endpoint is profile-scoped and the
+      // UI section that displays it is owner-only.
+      _loadLinkedDoctors();
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -85,6 +95,120 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text('Error loading profile: $e')));
       }
+    }
+  }
+
+  Future<void> _loadLinkedDoctors() async {
+    setState(() => _isLoadingLinkedDoctors = true);
+    try {
+      final token = await StorageService().getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final list = await _doctorService.getLinkedDoctors(
+        token,
+        widget.profileId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _linkedDoctors = list.whereType<Map<String, dynamic>>().toList(
+          growable: false,
+        );
+        _isLoadingLinkedDoctors = false;
+      });
+    } catch (_) {
+      // Silent — this section is non-critical; empty/error state will
+      // show in the UI. Full-screen error is only for the main profile load.
+      if (!mounted) return;
+      setState(() {
+        _linkedDoctors = const [];
+        _isLoadingLinkedDoctors = false;
+      });
+    }
+  }
+
+  Future<bool> _confirmRevoke(String doctorName) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.linkedDoctorsRevokeDialogTitle(doctorName)),
+        content: Text(l10n.linkedDoctorsRevokeDialogBody),
+        actions: [
+          TextButton(
+            key: const Key('profile_revoke_dialog_cancel'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            key: const Key('profile_revoke_dialog_confirm'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusCritical,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.linkedDoctorsRevokeConfirm),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  Future<void> _revokeLinkedDoctor(Map<String, dynamic> doctor) async {
+    final l10n = AppLocalizations.of(context)!;
+    final doctorCode = doctor['doctor_code'] as String?;
+    final doctorName = (doctor['doctor_name'] as String?) ?? '';
+    if (doctorCode == null) return;
+
+    final confirmed = await _confirmRevoke(doctorName);
+    if (!confirmed || !mounted) return;
+
+    setState(() => _revokingCodes.add(doctorCode));
+    try {
+      final token = await StorageService().getToken();
+      if (token == null) throw Exception('Not authenticated');
+      await _doctorService.revokeDoctorLink(
+        token,
+        widget.profileId,
+        doctorCode,
+      );
+      if (!mounted) return;
+      setState(() {
+        _linkedDoctors = _linkedDoctors
+            .where((d) => d['doctor_code'] != doctorCode)
+            .toList(growable: false);
+        _revokingCodes.remove(doctorCode);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.linkedDoctorsRevokeSuccess(doctorName)),
+          backgroundColor: AppColors.statusNormal,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _revokingCodes.remove(doctorCode));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: AppColors.statusCritical,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openLinkDoctor() async {
+    // Capture the navigator before the async gap so the linter can
+    // prove context isn't used across an await. LinkDoctorScreen reads
+    // the active profile ID from StorageService.
+    final navigator = Navigator.of(context);
+    await StorageService().saveActiveProfileId(widget.profileId);
+    if (!mounted) return;
+    final result = await navigator.push<bool>(
+      MaterialPageRoute(builder: (_) => const LinkDoctorScreen()),
+    );
+    if (result == true) {
+      // A new link was created — refresh the inline list.
+      await _loadLinkedDoctors();
     }
   }
 
@@ -684,84 +808,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             : ""),
                   ),
                 ]),
-              if (_profile?.doctorName?.isNotEmpty == true)
-                _buildSection(l10n.doctorDetailsSection, [
-                  _buildInfoCard(
-                    icon: Icons.medical_services_outlined,
-                    label: l10n.doctorNameField,
-                    value: _profile!.doctorName!,
-                  ),
-                  if (_profile?.doctorSpecialty?.isNotEmpty == true)
-                    _buildInfoCard(
-                      icon: Icons.domain_outlined,
-                      label: l10n.doctorSpecialtyField,
-                      value: _profile!.doctorSpecialty!,
-                    ),
-                  if (_profile?.doctorWhatsapp?.isNotEmpty == true)
-                    _buildInfoCard(
-                      icon: Icons.phone_outlined,
-                      label: l10n.doctorWhatsappField,
-                      value: _profile!.doctorWhatsapp!,
-                    ),
-                ]),
             ],
 
-            if (isOwner)
-              _buildSection(l10n.shareWithDoctorSection, [
-                GlassCard(
-                  borderRadius: 16,
-                  child: ListTile(
-                    key: const Key('profile_link_doctor_tile'),
-                    leading: const Icon(
-                      Icons.medical_services_outlined,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(l10n.linkDoctorTitle),
-                    subtitle: Text(l10n.linkDoctorHeadline),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () async {
-                      // Capture the navigator before the async gap so
-                      // the linter can prove context isn't used across
-                      // an await. LinkDoctorScreen reads the active
-                      // profile ID from StorageService.
-                      final navigator = Navigator.of(context);
-                      await StorageService().saveActiveProfileId(
-                        widget.profileId,
-                      );
-                      if (!mounted) return;
-                      await navigator.push(
-                        MaterialPageRoute(
-                          builder: (_) => const LinkDoctorScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                GlassCard(
-                  borderRadius: 16,
-                  child: ListTile(
-                    key: const Key('profile_linked_doctors_tile'),
-                    leading: const Icon(
-                      Icons.people_outline,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(l10n.linkedDoctorsTileTitle),
-                    subtitle: Text(l10n.linkedDoctorsTileSubtitle),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => MyLinkedDoctorsScreen(
-                            profileId: widget.profileId,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ]),
+            _buildMyDoctorsSection(l10n, isOwner: isOwner),
 
             if (isOwner)
               _buildSection(l10n.accountSettingsSection, [
@@ -823,6 +872,192 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             const SizedBox(height: 32),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Unified "My Doctors" section shown on every profile. Contains two
+  /// subgroups kept intentionally separate so the data models don't mix:
+  ///   - **Primary physician** — the free-text doctor on the Profile
+  ///     row (`doctorName` / `doctorSpecialty` / `doctorWhatsapp`). May
+  ///     not be on Swasth at all; this is "who's my doctor in real
+  ///     life".
+  ///   - **Sharing health data with** — Swasth-registered doctors who
+  ///     can actually read this profile's readings. Owner-only.
+  ///
+  /// Also hosts the "+ Link another doctor" action that pushes the
+  /// LinkDoctorScreen.
+  Widget _buildMyDoctorsSection(
+    AppLocalizations l10n, {
+    required bool isOwner,
+  }) {
+    final theme = Theme.of(context);
+    final hasPrimary = _profile?.doctorName?.isNotEmpty == true;
+    final hasLinked = _linkedDoctors.isNotEmpty;
+
+    // Hide the entire section only if nothing to show AND the user
+    // can't act on it (viewer with no primary physician set).
+    if (!isOwner && !hasPrimary) {
+      return const SizedBox.shrink();
+    }
+
+    return _buildSection(l10n.myDoctorsSection, [
+      // ── Primary physician subgroup ─────────────────────────────────
+      if (hasPrimary) ...[
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            l10n.primaryPhysicianSubheading,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        _buildInfoCard(
+          icon: Icons.medical_services_outlined,
+          label: l10n.doctorNameField,
+          value: _profile!.doctorName!,
+        ),
+        if (_profile?.doctorSpecialty?.isNotEmpty == true)
+          _buildInfoCard(
+            icon: Icons.domain_outlined,
+            label: l10n.doctorSpecialtyField,
+            value: _profile!.doctorSpecialty!,
+          ),
+        if (_profile?.doctorWhatsapp?.isNotEmpty == true)
+          _buildInfoCard(
+            icon: Icons.phone_outlined,
+            label: l10n.doctorWhatsappField,
+            value: _profile!.doctorWhatsapp!,
+          ),
+        const SizedBox(height: 16),
+      ],
+
+      // ── Sharing data with subgroup (owner only) ────────────────────
+      if (isOwner) ...[
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            l10n.sharingHealthDataWithSubheading,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        if (_isLoadingLinkedDoctors)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (!hasLinked)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              l10n.sharingHealthDataWithEmpty,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          )
+        else
+          ..._linkedDoctors.map((d) => _buildInlineLinkedDoctorCard(l10n, d)),
+
+        const SizedBox(height: 8),
+        GlassCard(
+          borderRadius: 16,
+          child: ListTile(
+            key: const Key('profile_link_another_doctor_tile'),
+            leading: const Icon(
+              Icons.add_circle_outline,
+              color: AppColors.primary,
+            ),
+            title: Text(
+              hasLinked ? l10n.linkAnotherDoctor : l10n.linkDoctorTitle,
+            ),
+            subtitle: Text(l10n.linkDoctorHeadline),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: _openLinkDoctor,
+          ),
+        ),
+      ],
+    ]);
+  }
+
+  Widget _buildInlineLinkedDoctorCard(
+    AppLocalizations l10n,
+    Map<String, dynamic> doctor,
+  ) {
+    final theme = Theme.of(context);
+    final name = (doctor['doctor_name'] as String?) ?? '';
+    final specialty = doctor['specialty'] as String?;
+    final code = (doctor['doctor_code'] as String?) ?? '';
+    final isRevoking = _revokingCodes.contains(code);
+    final initial = name.isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GlassCard(
+        borderRadius: 16,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            key: Key('profile_linked_doctor_$code'),
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.primary.withOpacity(0.15),
+                child: Text(
+                  initial,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (specialty != null && specialty.isNotEmpty)
+                      Text(
+                        specialty,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              IconButton(
+                key: Key('profile_revoke_button_$code'),
+                tooltip: l10n.linkedDoctorsRevoke,
+                onPressed: isRevoking
+                    ? null
+                    : () => _revokeLinkedDoctor(doctor),
+                icon: isRevoking
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(
+                        Icons.link_off,
+                        color: AppColors.statusCritical,
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

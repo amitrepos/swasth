@@ -53,6 +53,15 @@ const _unverifiedDoctor = {
   'is_verified': false,
 };
 
+const _knownDoctorPatel = {
+  'doctor_name': 'Dr. Patel',
+  'specialty': 'Cardiologist',
+  'clinic_name': 'Patna Heart Clinic',
+  'doctor_code': 'DRPAT99',
+  'is_verified': true,
+  'linked_profile_ids': [2],
+};
+
 void main() {
   setUp(() async {
     StorageService.useInMemoryStorage();
@@ -208,4 +217,114 @@ void main() {
 
     expect(linkCalled, isTrue);
   });
+
+  // ---------------------------------------------------------------------
+  // Picker tests
+  // ---------------------------------------------------------------------
+
+  testWidgets(
+    'shows known-doctors picker when /known-doctors returns candidates',
+    (tester) async {
+      ApiClient.httpClientOverride = MockClient((request) async {
+        if (request.url.path.contains('/api/doctor/known-doctors')) {
+          return http.Response(jsonEncode([_knownDoctorPatel]), 200);
+        }
+        if (request.url.path.contains('/api/doctor/link/')) {
+          return http.Response(jsonEncode(<Map<String, dynamic>>[]), 200);
+        }
+        return http.Response(jsonEncode({'detail': 'unexpected'}), 500);
+      });
+
+      await tester.pumpWidget(_wrap(const LinkDoctorScreen()));
+      await pumpN(tester, times: 5);
+
+      // Picker card renders
+      expect(find.text('Dr. Patel'), findsOneWidget);
+      expect(find.text('Patna Heart Clinic'), findsOneWidget);
+      // Code field is NOT shown by default when the picker has candidates
+      expect(find.byKey(const Key('link_doctor_code')), findsNothing);
+      // "Enter a new code" fallback button is visible
+      expect(
+        find.byKey(const Key('link_doctor_expand_code_button')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'tapping a picker card selects the doctor and shows consent flow',
+    (tester) async {
+      ApiClient.httpClientOverride = MockClient((request) async {
+        if (request.url.path.contains('/api/doctor/known-doctors')) {
+          return http.Response(jsonEncode([_knownDoctorPatel]), 200);
+        }
+        if (request.url.path.contains('/api/doctor/link/')) {
+          return http.Response(jsonEncode(<Map<String, dynamic>>[]), 200);
+        }
+        return http.Response(jsonEncode({'detail': 'unexpected'}), 500);
+      });
+
+      await tester.pumpWidget(_wrap(const LinkDoctorScreen()));
+      await pumpN(tester, times: 5);
+
+      // No preview card yet
+      expect(find.byKey(const Key('link_doctor_card')), findsNothing);
+
+      // Tap Dr. Patel in the picker
+      await tester.tap(find.byKey(const Key('link_doctor_picker_DRPAT99')));
+      await pumpN(tester, times: 3);
+
+      // Preview card + consent radios + confirm button are shown
+      expect(find.byKey(const Key('link_doctor_card')), findsOneWidget);
+      expect(find.text('Verified doctor'), findsOneWidget);
+      expect(
+        find.byKey(const Key('link_doctor_confirm_button')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'already-linked picker card shows snackbar and does not open consent',
+    (tester) async {
+      ApiClient.httpClientOverride = MockClient((request) async {
+        if (request.url.path.contains('/api/doctor/known-doctors')) {
+          return http.Response(jsonEncode([_knownDoctorPatel]), 200);
+        }
+        if (request.url.path.contains('/api/doctor/link/')) {
+          // This profile already links Dr. Patel, so the picker card
+          // for them should render as "already sharing" and be inert.
+          return http.Response(
+            jsonEncode([
+              {
+                'doctor_name': 'Dr. Patel',
+                'doctor_code': 'DRPAT99',
+                'specialty': 'Cardiologist',
+                'is_verified': true,
+                'linked_since': '2026-04-01T10:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
+        return http.Response(jsonEncode({'detail': 'unexpected'}), 500);
+      });
+
+      await tester.pumpWidget(_wrap(const LinkDoctorScreen()));
+      await pumpN(tester, times: 5);
+
+      // The "Already sharing" badge appears on the card
+      expect(find.text('Already sharing'), findsOneWidget);
+
+      // Tap the disabled card — shouldn't select anything
+      await tester.tap(
+        find.byKey(const Key('link_doctor_picker_DRPAT99')),
+        warnIfMissed: false,
+      );
+      await pumpN(tester, times: 3);
+
+      // Preview card did NOT appear (no selection)
+      expect(find.byKey(const Key('link_doctor_card')), findsNothing);
+    },
+  );
 }

@@ -361,6 +361,164 @@ class TestListLinkedDoctors:
 
 
 # ---------------------------------------------------------------------------
+# GET /api/doctor/known-doctors (picker source)
+# ---------------------------------------------------------------------------
+
+
+class TestKnownDoctors:
+    URL = "/api/doctor/known-doctors"
+
+    def test_empty_for_new_user(self, client, patient_user, patient_headers):
+        resp = client.get(self.URL, headers=patient_headers)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_returns_linked_doctor(
+        self,
+        client,
+        patient_user,
+        patient_headers,
+        doctor_user,
+        linked_doctor_patient,
+    ):
+        _, profile = patient_user
+        resp = client.get(self.URL, headers=patient_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 1
+        entry = body[0]
+        assert entry["doctor_name"] == "Dr. Rajesh Verma"
+        assert entry["doctor_code"] == "DRRAJ52"
+        assert entry["is_verified"] is True
+        assert entry["specialty"] == "General Physician"
+        assert entry["clinic_name"] == "Verma Clinic Patna"
+        assert entry["linked_profile_ids"] == [profile.id]
+
+    def test_dedupe_across_profiles(
+        self,
+        client,
+        db,
+        patient_user,
+        patient_headers,
+        doctor_user,
+        linked_doctor_patient,
+    ):
+        """Same doctor linked to two profiles appears once with both profile IDs."""
+        user, profile_one = patient_user
+        # Add a second owned profile and link the same doctor
+        profile_two = models.Profile(name="Mom Profile")
+        db.add(profile_two)
+        db.flush()
+        db.add(
+            models.ProfileAccess(
+                user_id=user.id,
+                profile_id=profile_two.id,
+                access_level="owner",
+            )
+        )
+        db.add(
+            models.DoctorPatientLink(
+                doctor_id=doctor_user.id,
+                profile_id=profile_two.id,
+                consent_granted_at=datetime.now(timezone.utc),
+                consent_granted_by=user.id,
+                consent_type="in_person_exam",
+                doctor_code_used="DRRAJ52",
+            )
+        )
+        db.flush()
+
+        resp = client.get(self.URL, headers=patient_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 1  # deduped
+        assert sorted(body[0]["linked_profile_ids"]) == sorted(
+            [profile_one.id, profile_two.id]
+        )
+
+    def test_excludes_revoked_links(
+        self,
+        client,
+        db,
+        patient_user,
+        patient_headers,
+        doctor_user,
+        linked_doctor_patient,
+    ):
+        linked_doctor_patient.is_active = False
+        linked_doctor_patient.revoked_at = datetime.now(timezone.utc)
+        db.flush()
+
+        resp = client.get(self.URL, headers=patient_headers)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_excludes_shared_profiles(
+        self,
+        client,
+        db,
+        patient_user,
+        patient_headers,
+        doctor_user,
+        linked_doctor_patient,
+    ):
+        """If a doctor is linked to a profile the user can only VIEW (not own),
+        that doctor should NOT appear in their own picker."""
+        # Create another user who owns a new profile; give our patient viewer access
+        owner = models.User(
+            email="otherowner@test.com",
+            password_hash=get_password_hash("Other@1234"),
+            full_name="Other Owner",
+            phone_number="9876599999",
+        )
+        db.add(owner)
+        db.flush()
+        shared_profile = models.Profile(name="Shared Profile")
+        db.add(shared_profile)
+        db.flush()
+        db.add(
+            models.ProfileAccess(
+                user_id=owner.id,
+                profile_id=shared_profile.id,
+                access_level="owner",
+            )
+        )
+        # Viewer access for our patient
+        db.add(
+            models.ProfileAccess(
+                user_id=patient_user[0].id,
+                profile_id=shared_profile.id,
+                access_level="viewer",
+            )
+        )
+        # Link the same doctor only to the shared profile
+        db.add(
+            models.DoctorPatientLink(
+                doctor_id=doctor_user.id,
+                profile_id=shared_profile.id,
+                consent_granted_at=datetime.now(timezone.utc),
+                consent_granted_by=owner.id,
+                consent_type="in_person_exam",
+                doctor_code_used="DRRAJ52",
+            )
+        )
+        db.flush()
+
+        resp = client.get(self.URL, headers=patient_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        # The doctor only appears because of the patient's OWN owned profile
+        # (from the linked_doctor_patient fixture), not the shared one.
+        assert len(body) == 1
+        assert patient_user[1].id in body[0]["linked_profile_ids"]
+        assert shared_profile.id not in body[0]["linked_profile_ids"]
+
+    def test_requires_authentication(self, client):
+        resp = client.get(self.URL)
+        assert resp.status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
 # GET /api/doctor/patients (Triage Board)
 # ---------------------------------------------------------------------------
 
