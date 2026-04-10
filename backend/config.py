@@ -63,7 +63,12 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: Optional[str] = None
     TWILIO_AUTH_TOKEN: Optional[str] = None
     TWILIO_WHATSAPP_NUMBER: Optional[str] = None  # e.g. "whatsapp:+14155238886"
-    
+    TWILIO_SMS_NUMBER: Optional[str] = None  # e.g. "+14155238886" — SMS disabled until set
+
+    # Critical Alert Dispatch (D7)
+    CRITICAL_ALERT_DEDUPE_MINUTES: int = 30  # Suppress repeat alerts to same profile within window
+    CRITICAL_ALERTS_ENABLED: bool = True     # Kill switch for the whole feature
+
     class Config:
         env_file = ".env"
 
