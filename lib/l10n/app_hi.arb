@@ -428,5 +428,84 @@
   "glucometerPrerequisites": "ग्लूकोमीटर – पूर्वापेक्षाएं:",
   "@glucometerPrerequisites": {
     "description": "Title for glucometer prerequisites section"
+  },
+  "tapDeviceToConnect": "कनेक्ट करने के लिए ऊपर डिवाइस आइकन टैप करें",
+  "@tapDeviceToConnect": {
+    "description": "Status message when no device is connected"
+  },
+  "tapToConnectDevice": "कनेक्ट करने के लिए टैप करें",
+  "@tapToConnectDevice": {
+    "description": "Instruction to tap and connect device"
+  },
+  "alreadyConnectedMessage": "{deviceType} पहले से कनेक्टेड है। दूसरे {deviceType} की खोज करें?",
+  "@alreadyConnectedMessage": {
+    "description": "Message when device is already connected",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scanForDeviceMessage": "{deviceType} की खोज करें?",
+  "@scanForDeviceMessage": {
+    "description": "Confirmation message to scan for device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "bpTransferHint": "\n\nडिवाइस पर BT बटन एक बार दबाएं (धीमी LED = ट्रांसफर मोड)।",
+  "@bpTransferHint": {
+    "description": "Hint for BP device transfer mode"
+  },
+  "connectDeviceType": "{deviceType} कनेक्ट करें",
+  "@connectDeviceType": {
+    "description": "Button to connect device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scan": "खोजें",
+  "@scan": {
+    "description": "Button to start scanning"
+  },
+  "bpHistory": "BP इतिहास",
+  "@bpHistory": {
+    "description": "Title for BP history section"
+  },
+  "recordsCount": "{count} रिकॉर्ड",
+  "@recordsCount": {
+    "description": "Count of records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allRecords": "सभी रिकॉर्ड",
+  "@allRecords": {
+    "description": "Title for all records section"
+  },
+  "viewAllHistory": "संपूर्ण इतिहास देखें",
+  "@viewAllHistory": {
+    "description": "Tooltip for history button"
+  },
+  "deviceDisconnected": "डिवाइस डिस्कनेक्ट हो गया",
+  "@deviceDisconnected": {
+    "description": "Message shown when device is disconnected"
+  },
+  "unknownDevice": "अज्ञात डिवाइस",
+  "@unknownDevice": {
+    "description": "Default name for unnamed BLE devices"
+  },
+  "signalStrength": "सिग्नल: {rssi} dBm",
+  "@signalStrength": {
+    "description": "BLE device signal strength",
+    "placeholders": {
+      "rssi": {
+        "type": "int"
+      }
+    }
+  },
+  "rescan": "पुनः खोजें",
+  "@rescan": {
+    "description": "Button to rescan for devices"
   }
 }

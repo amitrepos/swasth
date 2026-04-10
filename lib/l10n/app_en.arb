@@ -581,5 +581,84 @@
   "glucometerPrerequisites": "Glucometer – Prerequisites:",
   "@glucometerPrerequisites": {
     "description": "Title for glucometer prerequisites section"
+  },
+  "tapDeviceToConnect": "Tap a device icon above to connect",
+  "@tapDeviceToConnect": {
+    "description": "Status message when no device is connected"
+  },
+  "tapToConnectDevice": "Tap to connect device",
+  "@tapToConnectDevice": {
+    "description": "Instruction to tap and connect device"
+  },
+  "alreadyConnectedMessage": "{deviceType} is already connected. Scan for another {deviceType}?",
+  "@alreadyConnectedMessage": {
+    "description": "Message when device is already connected",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scanForDeviceMessage": "Scan for {deviceType}?",
+  "@scanForDeviceMessage": {
+    "description": "Confirmation message to scan for device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "bpTransferHint": "\n\nPress BT on the device once first (slow LED = transfer mode).",
+  "@bpTransferHint": {
+    "description": "Hint for BP device transfer mode"
+  },
+  "connectDeviceType": "Connect {deviceType}",
+  "@connectDeviceType": {
+    "description": "Button to connect device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scan": "Scan",
+  "@scan": {
+    "description": "Button to start scanning"
+  },
+  "bpHistory": "BP History",
+  "@bpHistory": {
+    "description": "Title for BP history section"
+  },
+  "recordsCount": "{count} records",
+  "@recordsCount": {
+    "description": "Count of records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allRecords": "All Records",
+  "@allRecords": {
+    "description": "Title for all records section"
+  },
+  "viewAllHistory": "View All History",
+  "@viewAllHistory": {
+    "description": "Tooltip for history button"
+  },
+  "deviceDisconnected": "Device disconnected",
+  "@deviceDisconnected": {
+    "description": "Message shown when device is disconnected"
+  },
+  "unknownDevice": "Unknown Device",
+  "@unknownDevice": {
+    "description": "Default name for unnamed BLE devices"
+  },
+  "signalStrength": "Signal: {rssi} dBm",
+  "@signalStrength": {
+    "description": "BLE device signal strength",
+    "placeholders": {
+      "rssi": {
+        "type": "int"
+      }
+    }
+  },
+  "rescan": "Rescan",
+  "@rescan": {
+    "description": "Button to rescan for devices"
   }
 }
