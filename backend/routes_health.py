@@ -48,6 +48,22 @@ def save_reading(
             detail=f"Invalid reading type. Must be one of: {', '.join(sorted(_VALID_READING_TYPES))}",
         )
 
+    # ── BLE deduplication: check if seq already exists ─────────────────────
+    if reading.seq is not None:
+        existing_seq = db.query(models.HealthReading).filter(
+            models.HealthReading.seq == reading.seq,
+            models.HealthReading.reading_type == reading.reading_type,
+        ).first()
+        
+        if existing_seq:
+            # Reading with this sequence number already exists - skip storing
+            return {
+                "skipped": True,
+                "reason": "duplicate_seq",
+                "seq": reading.seq,
+                "existing_id": existing_seq.id,
+            }
+
     db_reading = models.HealthReading(
         profile_id=reading.profile_id,
         logged_by=user.id,
@@ -70,6 +86,7 @@ def save_reading(
         status_flag=reading.status_flag,
         notes=reading.notes,
         reading_timestamp=reading.reading_timestamp,
+        seq=reading.seq,
     )
     # Populate AES-256-GCM encrypted copies for SPDI compliance
     if reading.glucose_value is not None:

@@ -398,9 +398,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final token = await StorageService().getToken();
       if (token == null) return;
 
-      // TODO: convert BPReading → HealthReading and call HealthReadingService
-      // This mirrors the _saveReadingToDatabase pattern used for glucose.
-      print('BP saved: ${reading.systolicMmhg}/${reading.diastolicMmhg} mmHg');
+      // Convert BPReading to HealthReading and save to database
+      final healthReading = HealthReading.fromGlucoseOrBP(reading, 'blood_pressure');
+      healthReading.profileId = widget.profileId;
+
+      // Save to database (backend will handle deduplication via seq)
+      final saveResult = await HealthReadingService().saveReading(healthReading, token);
+      
+      // Check if backend skipped this as a duplicate
+      if (saveResult['skipped'] == true) {
+        print('BP reading skipped by backend (duplicate seq: ${healthReading.seq})');
+        return;
+      }
+
+      final saved = saveResult['reading'] as HealthReading;
+      print('BP reading saved successfully - ID: ${saved.id}, seq: ${saved.seq}');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('BP Saved: ${healthReading.displayValue}'),
+          backgroundColor: AppColors.statusNormal,
+          duration: const Duration(seconds: 2),
+        ));
+      }
     } catch (e) {
       print('Error saving BP reading: $e');
     }
@@ -417,22 +437,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
       healthReading.profileId = widget.profileId;
       final readingTimestamp = reading.timestamp ?? DateTime.now();
 
-      final existingReadings = await HealthReadingService().getReadings(
-        token: token,
-        profileId: widget.profileId,
-        limit: 1000,
-      );
+      // For BLE readings with sequence numbers, let backend handle deduplication
+      // For manual readings (no seq), use timestamp-based deduplication
+      if (healthReading.seq == null) {
+        final existingReadings = await HealthReadingService().getReadings(
+          token: token,
+          profileId: widget.profileId,
+          limit: 1000,
+        );
 
-      final isDuplicate = existingReadings.any((e) =>
-          e.readingTimestamp.millisecondsSinceEpoch ==
-          readingTimestamp.millisecondsSinceEpoch);
+        final isDuplicate = existingReadings.any((e) =>
+            e.readingTimestamp.millisecondsSinceEpoch ==
+            readingTimestamp.millisecondsSinceEpoch);
 
-      if (isDuplicate) return;
+        if (isDuplicate) {
+          print('Duplicate reading detected (timestamp), skipping save');
+          return;
+        }
+      }
 
       final saveResult =
           await HealthReadingService().saveReading(healthReading, token);
+      
+      // Check if backend skipped this as a duplicate
+      if (saveResult['skipped'] == true) {
+        print('Reading skipped by backend (duplicate seq: ${healthReading.seq})');
+        return;
+      }
+
       final saved = saveResult['reading'] as HealthReading;
-      print('Saved reading ID: ${saved.id}');
+      print('Saved reading ID: ${saved.id}, seq: ${saved.seq}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

@@ -37,6 +37,7 @@ class HealthReading {
   final String? statusFlag;
   final String? notes;
   final DateTime readingTimestamp;
+  final int? seq; // Device sequence number for BLE deduplication
   final DateTime createdAt;
 
   HealthReading({
@@ -61,6 +62,7 @@ class HealthReading {
     this.statusFlag,
     this.notes,
     required this.readingTimestamp,
+    this.seq,
     required this.createdAt,
   });
 
@@ -87,6 +89,7 @@ class HealthReading {
       statusFlag: json['status_flag'],
       notes: json['notes'],
       readingTimestamp: DateTime.parse(json['reading_timestamp']),
+      seq: json['seq'],
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -113,6 +116,7 @@ class HealthReading {
       'status_flag': statusFlag,
       'notes': notes,
       'reading_timestamp': readingTimestamp.toIso8601String(),
+      'seq': seq,
     };
   }
 
@@ -162,25 +166,35 @@ class HealthReading {
         statusFlag: reading.flag,
         notes: null,
         readingTimestamp: reading.timestamp ?? now,
+        seq: reading.sequenceNumber, // Pass BLE sequence number
         createdAt: now,
       );
     } else if (deviceType.toLowerCase().contains('blood')) {
       // It's a BPReading
+      // Parse timestamp string to DateTime
+      DateTime bpTimestamp;
+      try {
+        bpTimestamp = DateTime.parse(reading.timestamp);
+      } catch (e) {
+        bpTimestamp = now; // Fallback to current time if parsing fails
+      }
+
       return HealthReading(
         id: 0,
         profileId: 0,
         readingType: 'blood_pressure',
-        systolic: reading.systolic,
-        diastolic: reading.diastolic,
-        meanArterialPressure: reading.mean_arterial_pressure,
-        pulseRate: reading.pulseRate,
-        bpUnit: reading.unit ?? 'mmHg',
-        bpStatus: reading.flag,
-        valueNumeric: reading.systolic ?? 0,
-        unitDisplay: reading.unit ?? 'mmHg',
-        statusFlag: reading.flag,
+        systolic: reading.systolicMmhg.toDouble(),
+        diastolic: reading.diastolicMmhg.toDouble(),
+        meanArterialPressure: reading.mapMmhg,
+        pulseRate: reading.pulseBpm.toDouble(),
+        bpUnit: 'mmHg',
+        bpStatus: reading.bpCategory,
+        valueNumeric: reading.systolicMmhg.toDouble(),
+        unitDisplay: 'mmHg',
+        statusFlag: reading.bpCategory,
         notes: null,
-        readingTimestamp: reading.timestamp ?? now,
+        readingTimestamp: bpTimestamp,
+        seq: reading.seq, // Pass BLE sequence number
         createdAt: now,
       );
     }
@@ -195,7 +209,7 @@ class HealthReadingService {
   static String baseUrl =
       '${AppConfig.serverHost}/api'; // Use /api prefix for health endpoints
 
-  /// Save a new health reading. Returns {reading, alert?} map.
+  /// Save a new health reading. Returns {reading, alert?, skipped?} map.
   Future<Map<String, dynamic>> saveReading(
     HealthReading reading,
     String token,
@@ -210,6 +224,17 @@ class HealthReadingService {
           .timeout(_kTimeout);
       if (response.statusCode == 201) {
         final body = jsonDecode(response.body);
+        
+        // Check if backend skipped this as a duplicate
+        if (body['skipped'] == true) {
+          return {
+            'skipped': true,
+            'reason': body['reason'],
+            'seq': body['seq'],
+            'existing_id': body['existing_id'],
+          };
+        }
+        
         return {
           'reading': HealthReading.fromJson(body),
           'alert': body['alert'],
