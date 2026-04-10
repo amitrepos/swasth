@@ -1560,7 +1560,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get doctorClinicLabel => 'क्लिनिक या अस्पताल का नाम';
 
   @override
-  String get doctorRegisterSubmit => 'डॉक्टर खाता बनाएं';
+  String get doctorRegisterSubmit => 'डॉक्टर का खाता बनाएं';
 
   @override
   String get doctorRegisterSuccess =>
@@ -1583,6 +1583,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get doctorSpecialtyFamily => 'पारिवारिक चिकित्सा';
+
+  @override
+  String get doctorSpecialtyGynaecology => 'स्त्री रोग विशेषज्ञ';
+
+  @override
+  String get doctorSpecialtyPaediatrics => 'बाल रोग विशेषज्ञ';
+
+  @override
+  String get doctorSpecialtyGeneralSurgery => 'सामान्य सर्जरी';
 
   @override
   String get doctorSpecialtyOther => 'अन्य';

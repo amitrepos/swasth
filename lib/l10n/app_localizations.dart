@@ -3008,6 +3008,24 @@ abstract class AppLocalizations {
   /// **'Family Medicine'**
   String get doctorSpecialtyFamily;
 
+  /// No description provided for @doctorSpecialtyGynaecology.
+  ///
+  /// In en, this message translates to:
+  /// **'Gynaecology'**
+  String get doctorSpecialtyGynaecology;
+
+  /// No description provided for @doctorSpecialtyPaediatrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Paediatrics'**
+  String get doctorSpecialtyPaediatrics;
+
+  /// No description provided for @doctorSpecialtyGeneralSurgery.
+  ///
+  /// In en, this message translates to:
+  /// **'General Surgery'**
+  String get doctorSpecialtyGeneralSurgery;
+
   /// No description provided for @doctorSpecialtyOther.
   ///
   /// In en, this message translates to:

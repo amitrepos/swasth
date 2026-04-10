@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // ignore_for_file: deprecated_member_use
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../constants/doctor_specialties.dart';
 import '../theme/app_theme.dart';
 import '../services/admin_service.dart';
 import '../services/storage_service.dart';
@@ -30,16 +31,6 @@ class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
   final _nmcController = TextEditingController();
   final _clinicController = TextEditingController();
 
-  static const _specialtyApiKeys = <String>[
-    'General Physician',
-    'Endocrinologist',
-    'Cardiologist',
-    'Diabetologist',
-    'Internal Medicine',
-    'Family Medicine',
-    'Other',
-  ];
-
   String _role = 'patient';
   String _selectedSpecialty = 'General Physician';
   bool _isLoading = false;
@@ -53,25 +44,6 @@ class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
     _nmcController.dispose();
     _clinicController.dispose();
     super.dispose();
-  }
-
-  String _specialtyLabel(AppLocalizations l10n, String apiKey) {
-    switch (apiKey) {
-      case 'General Physician':
-        return l10n.doctorSpecialtyGeneral;
-      case 'Endocrinologist':
-        return l10n.doctorSpecialtyEndocrinologist;
-      case 'Cardiologist':
-        return l10n.doctorSpecialtyCardiologist;
-      case 'Diabetologist':
-        return l10n.doctorSpecialtyDiabetologist;
-      case 'Internal Medicine':
-        return l10n.doctorSpecialtyInternal;
-      case 'Family Medicine':
-        return l10n.doctorSpecialtyFamily;
-      default:
-        return l10n.doctorSpecialtyOther;
-    }
   }
 
   Future<void> _submit() async {
@@ -279,11 +251,11 @@ class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
                     labelText: l10n.doctorSpecialtyLabel,
                     prefixIcon: const Icon(Icons.medical_services_outlined),
                   ),
-                  items: _specialtyApiKeys
+                  items: doctorSpecialtyApiKeys
                       .map(
                         (k) => DropdownMenuItem(
                           value: k,
-                          child: Text(_specialtyLabel(l10n, k)),
+                          child: Text(doctorSpecialtyDisplayName(l10n, k)),
                         ),
                       )
                       .toList(),

@@ -760,6 +760,9 @@
   "doctorSpecialtyDiabetologist": "Diabetologist",
   "doctorSpecialtyInternal": "Internal Medicine",
   "doctorSpecialtyFamily": "Family Medicine",
+  "doctorSpecialtyGynaecology": "Gynaecology",
+  "doctorSpecialtyPaediatrics": "Paediatrics",
+  "doctorSpecialtyGeneralSurgery": "General Surgery",
   "doctorSpecialtyOther": "Other",
 
   "adminCreateUserTitle": "Create User",

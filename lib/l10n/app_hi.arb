@@ -599,7 +599,7 @@
   "doctorNmcEmpty": "कृपया अपना NMC नंबर डालें",
   "doctorSpecialtyLabel": "विशेषज्ञता",
   "doctorClinicLabel": "क्लिनिक या अस्पताल का नाम",
-  "doctorRegisterSubmit": "डॉक्टर खाता बनाएं",
+  "doctorRegisterSubmit": "डॉक्टर का खाता बनाएं",
   "doctorRegisterSuccess": "खाता बन गया। Swasth एडमिन जल्द ही आपका NMC नंबर सत्यापित करेगा।",
   "doctorSpecialtyGeneral": "सामान्य चिकित्सक",
   "doctorSpecialtyEndocrinologist": "एंडोक्रिनोलॉजिस्ट",
@@ -607,6 +607,9 @@
   "doctorSpecialtyDiabetologist": "मधुमेह विशेषज्ञ",
   "doctorSpecialtyInternal": "आंतरिक चिकित्सा",
   "doctorSpecialtyFamily": "पारिवारिक चिकित्सा",
+  "doctorSpecialtyGynaecology": "स्त्री रोग विशेषज्ञ",
+  "doctorSpecialtyPaediatrics": "बाल रोग विशेषज्ञ",
+  "doctorSpecialtyGeneralSurgery": "सामान्य सर्जरी",
   "doctorSpecialtyOther": "अन्य",
 
   "adminCreateUserTitle": "यूज़र बनाएं",

@@ -4,6 +4,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../widgets/auth_form_scroll_body.dart';
+import '../widgets/password_requirements_box.dart';
 import 'consent_screen.dart';
 import 'login_screen.dart';
 
@@ -44,11 +45,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     'Other',
   ];
 
-  bool _passwordHasMinLength = false;
-  bool _passwordHasUppercase = false;
-  bool _passwordHasLowercase = false;
-  bool _passwordHasNumber = false;
-  bool _passwordHasSpecialChar = false;
   bool _passwordsMatch = false;
 
   bool _isLoading = false;
@@ -56,8 +52,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   @override
   void initState() {
     super.initState();
-    _passwordController.addListener(_validatePassword);
-    _confirmPasswordController.addListener(_validatePassword);
+    _passwordController.addListener(_onPasswordChanged);
+    _confirmPasswordController.addListener(_onPasswordChanged);
   }
 
   @override
@@ -76,18 +72,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     super.dispose();
   }
 
-  void _validatePassword() {
+  void _onPasswordChanged() {
+    // Triggers a rebuild so PasswordRequirementsBox re-evaluates the
+    // five rules against the latest text. The widget owns the rule
+    // logic; we only track confirm-password match here.
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
-
     setState(() {
-      _passwordHasMinLength = password.length >= 8;
-      _passwordHasUppercase = password.contains(RegExp(r'[A-Z]'));
-      _passwordHasLowercase = password.contains(RegExp(r'[a-z]'));
-      _passwordHasNumber = password.contains(RegExp(r'[0-9]'));
-      _passwordHasSpecialChar = password.contains(
-        RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
-      );
       _passwordsMatch =
           confirmPassword.isNotEmpty && password == confirmPassword;
     });
@@ -258,61 +249,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   if (value == null || value.isEmpty) {
                     return l10n.passwordValidationEmpty;
                   }
-                  if (!_passwordHasMinLength ||
-                      !_passwordHasUppercase ||
-                      !_passwordHasLowercase ||
-                      !_passwordHasNumber ||
-                      !_passwordHasSpecialChar) {
+                  if (!PasswordRequirementsBox.meetsAllRequirements(value)) {
                     return 'Password does not meet requirements';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 8),
-
-              // Password requirements
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor.withOpacity(0.1),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.passwordRequirementsTitle,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildRequirementRow(
-                      l10n.passwordReqLength,
-                      _passwordHasMinLength,
-                    ),
-                    _buildRequirementRow(
-                      l10n.passwordReqUppercase,
-                      _passwordHasUppercase,
-                    ),
-                    _buildRequirementRow(
-                      l10n.passwordReqLowercase,
-                      _passwordHasLowercase,
-                    ),
-                    _buildRequirementRow(
-                      l10n.passwordReqNumber,
-                      _passwordHasNumber,
-                    ),
-                    _buildRequirementRow(
-                      l10n.passwordReqSpecial,
-                      _passwordHasSpecialChar,
-                    ),
-                  ],
-                ),
-              ),
+              PasswordRequirementsBox(password: _passwordController.text),
               const SizedBox(height: 16),
 
               // Confirm Password
@@ -520,28 +464,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           context,
         ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
       ),
-    );
-  }
-
-  Widget _buildRequirementRow(String text, bool isMet) {
-    return Row(
-      children: [
-        Icon(
-          isMet ? Icons.check_circle : Icons.cancel,
-          size: 16,
-          color: isMet ? AppColors.statusNormal : AppColors.statusCritical,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: isMet ? AppColors.statusNormal : AppColors.statusCritical,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
