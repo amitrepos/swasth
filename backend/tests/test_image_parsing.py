@@ -102,6 +102,240 @@ class TestParseImageGlucose:
 
 
 # ===========================================================================
+# parse_image_with_gemini — full branch coverage via ai_service mocking
+#
+# The endpoint calls ai_service.generate_vision_insight() internally via a
+# local `import ai_service`. Patching the module attribute works because the
+# import statement inside the function looks up the already-loaded module.
+# ===========================================================================
+
+URL = "/api/readings/parse-image"
+
+
+def _post(client, auth_headers, device_type, *, filename="test.jpg", content_type="image/jpeg"):
+    return client.post(
+        URL,
+        params={"device_type": device_type},
+        files={"file": (filename, BytesIO(b"fake_image_bytes"), content_type)},
+        headers=auth_headers,
+    )
+
+
+class TestParseImageNoApiKey:
+    """Line 1066: both GEMINI and DEEPSEEK keys are None → early return."""
+
+    @patch("routes_health.settings")
+    def test_no_keys_at_all(self, mock_settings, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = None
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        resp = _post(client, auth_headers, "glucose")
+        assert resp.status_code == 200
+        assert resp.json() == {"error": "No AI API key configured"}
+
+
+class TestParseImageMimeDerivation:
+    """Lines 1072-1077: iOS octet-stream → derive mime from filename extension."""
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_octet_stream_png_filename(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"glucose": 120}'
+        resp = client.post(
+            URL,
+            params={"device_type": "glucose"},
+            files={"file": ("reading.png", BytesIO(b"fake"), "application/octet-stream")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {"glucose": 120}
+        # Verify mime_type was derived to image/png
+        _args, kwargs = mock_ai.call_args
+        assert kwargs["mime_type"] == "image/png"
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_octet_stream_jpg_fallback(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"glucose": 100}'
+        resp = client.post(
+            URL,
+            params={"device_type": "glucose"},
+            files={"file": ("reading.heic", BytesIO(b"fake"), "application/octet-stream")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        _args, kwargs = mock_ai.call_args
+        assert kwargs["mime_type"] == "image/jpeg"
+
+
+class TestParseImageAiServiceFailures:
+    """Lines 1114-1120, 1146-1149: ai_service returns empty / bad data / raises."""
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_ai_returns_none(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = None
+        resp = _post(client, auth_headers, "glucose")
+        assert resp.status_code == 200
+        assert "could not process" in resp.json()["error"].lower()
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_ai_returns_no_json(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = "I cannot read this image."
+        resp = _post(client, auth_headers, "glucose")
+        assert resp.status_code == 200
+        assert "could not extract values" in resp.json()["error"].lower()
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_ai_returns_malformed_json(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        # Regex matches { ... } but JSON.loads blows up → JSONDecodeError branch
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{glucose: not_json}'
+        resp = _post(client, auth_headers, "glucose")
+        assert resp.status_code == 200
+        assert "unexpected format" in resp.json()["error"].lower()
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_ai_service_raises(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.side_effect = RuntimeError("network blew up")
+        resp = _post(client, auth_headers, "glucose")
+        assert resp.status_code == 200
+        assert "gemini vision failed" in resp.json()["error"].lower()
+
+
+class TestParseImageGlucoseValidation:
+    """Lines 1138-1144: glucose range / null validation."""
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_glucose_valid(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"glucose": 130}'
+        resp = _post(client, auth_headers, "glucose")
+        assert resp.status_code == 200
+        assert resp.json() == {"glucose": 130}
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_glucose_out_of_range_high(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"glucose": 999}'
+        resp = _post(client, auth_headers, "glucose")
+        assert resp.status_code == 200
+        assert "could not extract valid glucose" in resp.json()["error"].lower()
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_glucose_out_of_range_low(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"glucose": 5}'
+        resp = _post(client, auth_headers, "glucose")
+        assert resp.status_code == 200
+        assert "error" in resp.json()
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_glucose_null(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"glucose": null}'
+        resp = _post(client, auth_headers, "glucose")
+        assert resp.status_code == 200
+        assert "error" in resp.json()
+
+
+class TestParseImageBpValidation:
+    """Lines 1125-1137: BP branches — in-range, out-of-range sys/dia/pulse, nulls."""
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_bp_valid_full(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"systolic": 120, "diastolic": 80, "pulse": 72}'
+        resp = _post(client, auth_headers, "blood_pressure")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body == {"systolic": 120, "diastolic": 80, "pulse": 72}
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_bp_systolic_out_of_range(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"systolic": 500, "diastolic": 80, "pulse": 72}'
+        resp = _post(client, auth_headers, "blood_pressure")
+        assert resp.status_code == 200
+        assert "could not extract valid bp" in resp.json()["error"].lower()
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_bp_diastolic_out_of_range(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"systolic": 120, "diastolic": 300, "pulse": 72}'
+        resp = _post(client, auth_headers, "blood_pressure")
+        assert resp.status_code == 200
+        assert "error" in resp.json()
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_bp_pulse_out_of_range_dropped(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        # Out-of-range pulse is zeroed to null but sys/dia are valid → success
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"systolic": 120, "diastolic": 80, "pulse": 500}'
+        resp = _post(client, auth_headers, "blood_pressure")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["systolic"] == 120
+        assert body["diastolic"] == 80
+        assert body["pulse"] is None
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_bp_null_systolic(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"systolic": null, "diastolic": 80, "pulse": 72}'
+        resp = _post(client, auth_headers, "blood_pressure")
+        assert resp.status_code == 200
+        assert "error" in resp.json()
+
+
+# ===========================================================================
 # Rule-based insight fallback
 # ===========================================================================
 

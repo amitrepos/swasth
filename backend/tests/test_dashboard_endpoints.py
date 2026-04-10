@@ -378,6 +378,101 @@ class TestAiInsightEndpoint:
         resp = client.get(self.URL, params={"profile_id": 1})
         assert resp.status_code == 401
 
+    def test_ai_insight_cached_returns_without_ai_call(self, client, test_user, auth_headers, db):
+        """Lines 566-574: cached insight path — no new readings since last insight, return cache."""
+        test_user.ai_consent = True
+        db.flush()
+        profile = db.query(models.ProfileAccess).filter(
+            models.ProfileAccess.user_id == test_user.id,
+        ).first()
+
+        # Reading first, then cached insight AFTER it — so reading_time <= insight_time
+        _add_glucose_reading(db, profile.profile_id, test_user.id, 110.0, hours_ago=2, status="NORMAL")
+
+        cached = models.AiInsightLog(
+            profile_id=profile.profile_id,
+            model_used="gemini-2.5-flash",
+            prompt_summary="cached summary",
+            response_text="This is a cached insight response.",
+            created_at=datetime.utcnow(),  # newer than the reading
+        )
+        db.add(cached)
+        db.flush()
+
+        with patch("ai_service.generate_health_insight") as mock_ai:
+            resp = client.get(self.URL, params={"profile_id": profile.profile_id}, headers=auth_headers)
+            assert resp.status_code == 200
+            assert resp.json()["insight"] == "This is a cached insight response."
+            mock_ai.assert_not_called()  # cache hit — AI not called
+
+    @patch("ai_service.generate_health_insight", return_value="Glucose is trending well. Keep hydrated.")
+    def test_ai_insight_trend_calculation_down(self, mock_ai, client, test_user, auth_headers, db):
+        """Lines 640-646: trend calc needs >=6 glucose readings. Down-trend branch."""
+        test_user.ai_consent = True
+        db.flush()
+        profile = db.query(models.ProfileAccess).filter(
+            models.ProfileAccess.user_id == test_user.id,
+        ).first()
+
+        # 6 readings, older half avg=200, newer half avg=120 → trending DOWN (improving)
+        for i, v in enumerate([200, 205, 195, 120, 115, 125]):
+            _add_glucose_reading(db, profile.profile_id, test_user.id, float(v), hours_ago=(6 - i) * 12, status="NORMAL")
+
+        resp = client.get(self.URL, params={"profile_id": profile.profile_id}, headers=auth_headers)
+        assert resp.status_code == 200
+        assert mock_ai.called
+        # The prompt should contain the "trending DOWN" marker
+        called_prompt = mock_ai.call_args[0][0]
+        assert "DOWN" in called_prompt
+
+    @patch("ai_service.generate_health_insight", return_value="Glucose rising. Consider a walk after meals.")
+    def test_ai_insight_trend_calculation_up(self, mock_ai, client, test_user, auth_headers, db):
+        """Lines 645-646: up-trend branch."""
+        test_user.ai_consent = True
+        db.flush()
+        profile = db.query(models.ProfileAccess).filter(
+            models.ProfileAccess.user_id == test_user.id,
+        ).first()
+
+        # 6 readings, older half avg=100, newer half avg=180 → trending UP (worsening)
+        for i, v in enumerate([95, 100, 105, 175, 180, 185]):
+            _add_glucose_reading(db, profile.profile_id, test_user.id, float(v), hours_ago=(6 - i) * 12, status="HIGH")
+
+        resp = client.get(self.URL, params={"profile_id": profile.profile_id}, headers=auth_headers)
+        assert resp.status_code == 200
+        called_prompt = mock_ai.call_args[0][0]
+        assert "UP" in called_prompt
+
+    @patch("ai_service.generate_health_insight", return_value="Your meal pattern looks consistent.")
+    def test_ai_insight_with_meal_logs(self, mock_ai, client, test_user, auth_headers, db):
+        """Lines 661-663: food_summary branch when recent_meals exist."""
+        test_user.ai_consent = True
+        db.flush()
+        profile = db.query(models.ProfileAccess).filter(
+            models.ProfileAccess.user_id == test_user.id,
+        ).first()
+
+        _add_glucose_reading(db, profile.profile_id, test_user.id, 140.0, hours_ago=1, status="NORMAL")
+
+        # Add meal logs
+        for i, cat in enumerate(["HIGH_CARB", "LOW_CARB", "HIGH_CARB"]):
+            m = models.MealLog(
+                profile_id=profile.profile_id,
+                logged_by=test_user.id,
+                timestamp=datetime.utcnow() - timedelta(hours=(i + 1) * 4),
+                category=cat,
+                glucose_impact="MODERATE",
+                meal_type="LUNCH",
+                input_method="QUICK_SELECT",
+            )
+            db.add(m)
+        db.flush()
+
+        resp = client.get(self.URL, params={"profile_id": profile.profile_id}, headers=auth_headers)
+        assert resp.status_code == 200
+        called_prompt = mock_ai.call_args[0][0]
+        # Meal summary should be embedded in prompt
+        assert "Meals" in called_prompt or "HIGH_CARB" in called_prompt
 
 
 # ===========================================================================
