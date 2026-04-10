@@ -184,4 +184,25 @@ class DoctorService {
       ApiClient.errorDetail(response, 'Failed to get linked doctors'),
     );
   }
+
+  /// Patient revokes a doctor's access to their profile — DPDPA § 13
+  /// right-to-erasure path. Sets [DoctorPatientLink.is_active] to false
+  /// on the backend; the doctor immediately loses read access to the
+  /// profile's readings and triage data.
+  Future<void> revokeDoctorLink(
+    String token,
+    int profileId,
+    String doctorCode,
+  ) async {
+    final uri = Uri.parse(
+      '$_baseUrl/link/$profileId',
+    ).replace(queryParameters: {'doctor_code': doctorCode});
+    final response = await ApiClient.httpClient
+        .delete(uri, headers: ApiClient.headers(token: token))
+        .timeout(_kTimeout);
+    if (response.statusCode == 200 || response.statusCode == 204) return;
+    throw Exception(
+      ApiClient.errorDetail(response, 'Failed to revoke doctor access'),
+    );
+  }
 }

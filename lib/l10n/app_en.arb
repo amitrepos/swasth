@@ -248,6 +248,33 @@
   "medicalConditionsField": "Conditions",
   "accountSettingsSection": "Account Settings",
   "shareWithDoctorSection": "Share with a Doctor",
+  "linkedDoctorsTileTitle": "Doctors with access",
+  "linkedDoctorsTileSubtitle": "See who can view your readings",
+  "linkedDoctorsTitle": "Doctors with access",
+  "linkedDoctorsEmpty": "No doctor is currently linked to this profile.",
+  "linkedDoctorsEmptyHint": "Tap 'Link a Doctor' on your profile to share your readings.",
+  "linkedDoctorsError": "Could not load linked doctors.",
+  "linkedDoctorsLinkedSince": "Linked since {date}",
+  "@linkedDoctorsLinkedSince": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "linkedDoctorsRevoke": "Stop sharing",
+  "linkedDoctorsRevokeDialogTitle": "Stop sharing with {name}?",
+  "@linkedDoctorsRevokeDialogTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkedDoctorsRevokeDialogBody": "This doctor will no longer be able to see your past or future readings. You can link again any time.",
+  "linkedDoctorsRevokeConfirm": "Stop sharing",
+  "linkedDoctorsRevokeSuccess": "{name} can no longer see your readings.",
+  "@linkedDoctorsRevokeSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "adminMenuTooltip": "Admin",
   "adminMenuDashboard": "Open dashboard",
   "adminMenuCreateUser": "Create user",

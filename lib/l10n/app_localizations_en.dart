@@ -550,6 +550,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareWithDoctorSection => 'Share with a Doctor';
 
   @override
+  String get linkedDoctorsTileTitle => 'Doctors with access';
+
+  @override
+  String get linkedDoctorsTileSubtitle => 'See who can view your readings';
+
+  @override
+  String get linkedDoctorsTitle => 'Doctors with access';
+
+  @override
+  String get linkedDoctorsEmpty =>
+      'No doctor is currently linked to this profile.';
+
+  @override
+  String get linkedDoctorsEmptyHint =>
+      'Tap \'Link a Doctor\' on your profile to share your readings.';
+
+  @override
+  String get linkedDoctorsError => 'Could not load linked doctors.';
+
+  @override
+  String linkedDoctorsLinkedSince(String date) {
+    return 'Linked since $date';
+  }
+
+  @override
+  String get linkedDoctorsRevoke => 'Stop sharing';
+
+  @override
+  String linkedDoctorsRevokeDialogTitle(String name) {
+    return 'Stop sharing with $name?';
+  }
+
+  @override
+  String get linkedDoctorsRevokeDialogBody =>
+      'This doctor will no longer be able to see your past or future readings. You can link again any time.';
+
+  @override
+  String get linkedDoctorsRevokeConfirm => 'Stop sharing';
+
+  @override
+  String linkedDoctorsRevokeSuccess(String name) {
+    return '$name can no longer see your readings.';
+  }
+
+  @override
   String get adminMenuTooltip => 'Admin';
 
   @override

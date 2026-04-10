@@ -1124,6 +1124,78 @@ abstract class AppLocalizations {
   /// **'Share with a Doctor'**
   String get shareWithDoctorSection;
 
+  /// No description provided for @linkedDoctorsTileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctors with access'**
+  String get linkedDoctorsTileTitle;
+
+  /// No description provided for @linkedDoctorsTileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See who can view your readings'**
+  String get linkedDoctorsTileSubtitle;
+
+  /// No description provided for @linkedDoctorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctors with access'**
+  String get linkedDoctorsTitle;
+
+  /// No description provided for @linkedDoctorsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No doctor is currently linked to this profile.'**
+  String get linkedDoctorsEmpty;
+
+  /// No description provided for @linkedDoctorsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \'Link a Doctor\' on your profile to share your readings.'**
+  String get linkedDoctorsEmptyHint;
+
+  /// No description provided for @linkedDoctorsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load linked doctors.'**
+  String get linkedDoctorsError;
+
+  /// No description provided for @linkedDoctorsLinkedSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked since {date}'**
+  String linkedDoctorsLinkedSince(String date);
+
+  /// No description provided for @linkedDoctorsRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing'**
+  String get linkedDoctorsRevoke;
+
+  /// No description provided for @linkedDoctorsRevokeDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing with {name}?'**
+  String linkedDoctorsRevokeDialogTitle(String name);
+
+  /// No description provided for @linkedDoctorsRevokeDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This doctor will no longer be able to see your past or future readings. You can link again any time.'**
+  String get linkedDoctorsRevokeDialogBody;
+
+  /// No description provided for @linkedDoctorsRevokeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing'**
+  String get linkedDoctorsRevokeConfirm;
+
+  /// No description provided for @linkedDoctorsRevokeSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} can no longer see your readings.'**
+  String linkedDoctorsRevokeSuccess(String name);
+
   /// No description provided for @adminMenuTooltip.
   ///
   /// In en, this message translates to:

@@ -548,6 +548,52 @@ class AppLocalizationsHi extends AppLocalizations {
   String get shareWithDoctorSection => 'डॉक्टर के साथ साझा करें';
 
   @override
+  String get linkedDoctorsTileTitle => 'पहुँच वाले डॉक्टर';
+
+  @override
+  String get linkedDoctorsTileSubtitle =>
+      'देखें कि कौन आपकी रीडिंग देख सकता है';
+
+  @override
+  String get linkedDoctorsTitle => 'पहुँच वाले डॉक्टर';
+
+  @override
+  String get linkedDoctorsEmpty =>
+      'अभी इस प्रोफाइल से कोई डॉक्टर जुड़ा नहीं है।';
+
+  @override
+  String get linkedDoctorsEmptyHint =>
+      'अपनी रीडिंग साझा करने के लिए प्रोफाइल पर \'डॉक्टर जोड़ें\' पर टैप करें।';
+
+  @override
+  String get linkedDoctorsError => 'जुड़े डॉक्टरों की सूची लोड नहीं हो सकी।';
+
+  @override
+  String linkedDoctorsLinkedSince(String date) {
+    return '$date से जुड़े';
+  }
+
+  @override
+  String get linkedDoctorsRevoke => 'साझा करना बंद करें';
+
+  @override
+  String linkedDoctorsRevokeDialogTitle(String name) {
+    return '$name के साथ साझा करना बंद करें?';
+  }
+
+  @override
+  String get linkedDoctorsRevokeDialogBody =>
+      'यह डॉक्टर अब आपकी पुरानी या नई रीडिंग नहीं देख सकेंगे। आप कभी भी फिर से जोड़ सकते हैं।';
+
+  @override
+  String get linkedDoctorsRevokeConfirm => 'साझा करना बंद करें';
+
+  @override
+  String linkedDoctorsRevokeSuccess(String name) {
+    return '$name अब आपकी रीडिंग नहीं देख सकते।';
+  }
+
+  @override
   String get adminMenuTooltip => 'एडमिन';
 
   @override
