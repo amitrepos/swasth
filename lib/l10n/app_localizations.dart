@@ -2777,13 +2777,13 @@ abstract class AppLocalizations {
   /// No description provided for @linkDoctorPickerTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your doctors'**
+  /// **'Pick your doctor'**
   String get linkDoctorPickerTitle;
 
   /// No description provided for @linkDoctorPickerSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Tap a doctor you already share with on another profile.'**
+  /// **'Tap the doctor you want to share your readings with.'**
   String get linkDoctorPickerSubtitle;
 
   /// No description provided for @linkDoctorAlreadyLinked.

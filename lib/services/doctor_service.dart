@@ -240,9 +240,32 @@ class DoctorService {
     throw Exception(ApiClient.errorDetail(response, 'Failed to link doctor'));
   }
 
+  /// Return the full directory of verified doctors on Swasth, sorted
+  /// alphabetically by name. Patient-safe — no PII in the response.
+  ///
+  /// Each entry is a map with `doctor_name`, `specialty`, `clinic_name`,
+  /// and `doctor_code`. Powers the LinkDoctor picker so patients can
+  /// find a doctor by name instead of having to memorize a code.
+  Future<List<Map<String, dynamic>>> getDirectory(String token) async {
+    final response = await ApiClient.httpClient
+        .get(
+          Uri.parse('$_baseUrl/directory'),
+          headers: ApiClient.headers(token: token),
+        )
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.whereType<Map<String, dynamic>>().toList(growable: false);
+    }
+    throw Exception(
+      ApiClient.errorDetail(response, 'Failed to load doctor directory'),
+    );
+  }
+
   /// Return deduped verified doctors linked to any profile the
-  /// authenticated user owns — used to populate the Link Doctor picker
-  /// so patients don't have to remember a code.
+  /// authenticated user owns. Retained as a secondary source even
+  /// though the primary picker now uses [getDirectory]; future UX may
+  /// use this to highlight "your frequently-used doctors".
   ///
   /// Each entry is a map with `doctor_name`, `specialty`, `clinic_name`,
   /// `doctor_code`, `is_verified`, and `linked_profile_ids` (a list of int).

@@ -33,7 +33,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
   final _storageService = StorageService();
 
   // Picker state
-  List<Map<String, dynamic>>? _knownDoctors;
+  List<Map<String, dynamic>>? _directoryDoctors;
   Set<String> _alreadyLinkedCodes = <String>{};
   bool _isLoadingPicker = true;
 
@@ -44,6 +44,11 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
 
   // Selection + link state
   Map<String, dynamic>? _selectedDoctor;
+  // True if the current _selectedDoctor was picked from the directory
+  // list rather than entered via the code field. Used by the code
+  // field's onChanged handler so an accidental keystroke doesn't wipe
+  // a picker selection.
+  bool _selectedFromPicker = false;
   String _consentType = 'in_person_exam';
   bool _isLinking = false;
 
@@ -71,7 +76,14 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
       if (token == null) throw Exception('Not authenticated');
       final profileId = await _storageService.getActiveProfileId();
 
-      final known = await _doctorService.getKnownDoctors(token);
+      // Phase 4+: picker is sourced from the platform-wide directory
+      // of verified doctors, not just the patient's own prior links.
+      // This matches the patient's mental model — "pick Dr. Rajesh by
+      // name" — and removes the first-time code memorization.
+      final directory = await _doctorService.getDirectory(token);
+
+      // Cross-reference with the current profile's linked doctors so
+      // the picker can mark already-linked cards as disabled.
       Set<String> alreadyLinked = <String>{};
       if (profileId != null) {
         try {
@@ -91,17 +103,19 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
 
       if (!mounted) return;
       setState(() {
-        _knownDoctors = known;
+        _directoryDoctors = directory;
         _alreadyLinkedCodes = alreadyLinked;
         _activeProfileId = profileId;
         _isLoadingPicker = false;
-        // New patient with no known doctors → jump straight to code entry.
-        if (known.isEmpty) _codeEntryExpanded = true;
+        // If the directory is empty (no verified doctors on the
+        // platform yet, e.g. early-pilot day 1), fall back to the
+        // code-entry path so the user still has something to do.
+        if (directory.isEmpty) _codeEntryExpanded = true;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _knownDoctors = const [];
+        _directoryDoctors = const [];
         _isLoadingPicker = false;
         _codeEntryExpanded = true;
       });
@@ -129,6 +143,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
       _isLookingUp = true;
       _lookupError = null;
       _selectedDoctor = null;
+      _selectedFromPicker = false;
     });
     try {
       final token = await _storageService.getToken();
@@ -138,7 +153,10 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
         _normalizeCode(_codeController.text),
       );
       if (!mounted) return;
-      setState(() => _selectedDoctor = doctor);
+      setState(() {
+        _selectedDoctor = doctor;
+        _selectedFromPicker = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _lookupError = _mapErrorToMessage(l10n, e));
@@ -158,6 +176,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
     }
     setState(() {
       _selectedDoctor = doctor;
+      _selectedFromPicker = true;
       _lookupError = null;
     });
   }
@@ -278,7 +297,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else ...[
-                if ((_knownDoctors ?? const []).isNotEmpty) ...[
+                if ((_directoryDoctors ?? const []).isNotEmpty) ...[
                   _buildPickerSection(context, l10n),
                   const SizedBox(height: 16),
                   _buildOrDivider(context, l10n),
@@ -350,7 +369,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
 
   Widget _buildPickerSection(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
-    final doctors = _knownDoctors ?? const [];
+    final doctors = _directoryDoctors ?? const [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -500,10 +519,10 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
               return null;
             },
             onChanged: (_) {
-              // Clear the selection only if it came from a code lookup
-              // (picker selections carry linked_profile_ids in the map).
-              if (_selectedDoctor != null &&
-                  _selectedDoctor!['linked_profile_ids'] == null) {
+              // Clear the selection only if it came from a code lookup,
+              // not a picker tap. Otherwise a stray keystroke would
+              // wipe a valid picker selection.
+              if (_selectedDoctor != null && !_selectedFromPicker) {
                 setState(() {
                   _selectedDoctor = null;
                   _lookupError = null;

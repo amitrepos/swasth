@@ -566,6 +566,111 @@ class TestKnownDoctors:
 
 
 # ---------------------------------------------------------------------------
+# GET /api/doctor/directory (patient-safe verified doctor picker)
+# ---------------------------------------------------------------------------
+
+
+class TestDoctorDirectory:
+    URL = "/api/doctor/directory"
+
+    def test_returns_verified_doctor(
+        self, client, doctor_user, patient_headers
+    ):
+        resp = client.get(self.URL, headers=patient_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 1
+        entry = body[0]
+        assert entry["doctor_name"] == "Dr. Rajesh Verma"
+        assert entry["specialty"] == "General Physician"
+        assert entry["clinic_name"] == "Verma Clinic Patna"
+        assert entry["doctor_code"] == "DRRAJ52"
+        # PII must NOT leak into the patient-facing directory
+        assert "email" not in entry
+        assert "phone_number" not in entry
+        assert "nmc_number" not in entry
+        assert "user_id" not in entry
+        assert "is_verified" not in entry  # implied — all listed are verified
+
+    def test_excludes_unverified_doctors(
+        self, client, db, doctor_user, patient_headers
+    ):
+        # Flip the fixture doctor to unverified
+        dp = db.query(models.DoctorProfile).filter(
+            models.DoctorProfile.user_id == doctor_user.id
+        ).first()
+        dp.is_verified = False
+        db.flush()
+
+        resp = client.get(self.URL, headers=patient_headers)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_empty_when_no_doctors_exist(self, client, patient_headers):
+        resp = client.get(self.URL, headers=patient_headers)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_sorted_by_name_alphabetically(
+        self, client, db, doctor_user, patient_headers
+    ):
+        # Add two more verified doctors with names that sort before and
+        # after "Dr. Rajesh Verma" to verify stable ordering.
+        from auth import get_password_hash
+        dr_amit = models.User(
+            email="dr.amit@test.com",
+            password_hash=get_password_hash("Doctor@123"),
+            full_name="Dr. Amit Kumar",
+            phone_number="9876500003",
+            role=UserRole.doctor,
+        )
+        dr_zara = models.User(
+            email="dr.zara@test.com",
+            password_hash=get_password_hash("Doctor@123"),
+            full_name="Dr. Zara Ali",
+            phone_number="9876500004",
+            role=UserRole.doctor,
+        )
+        db.add_all([dr_amit, dr_zara])
+        db.flush()
+        db.add_all([
+            models.DoctorProfile(
+                user_id=dr_amit.id,
+                nmc_number="BR-11111",
+                specialty="Cardiologist",
+                clinic_name="Kumar Heart",
+                doctor_code="DRAMI01",
+                is_verified=True,
+                verified_at=datetime.now(timezone.utc),
+            ),
+            models.DoctorProfile(
+                user_id=dr_zara.id,
+                nmc_number="BR-22222",
+                specialty="Paediatrics",
+                clinic_name="Zara Clinic",
+                doctor_code="DRZAR01",
+                is_verified=True,
+                verified_at=datetime.now(timezone.utc),
+            ),
+        ])
+        db.flush()
+
+        resp = client.get(self.URL, headers=patient_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        names = [d["doctor_name"] for d in body]
+        assert names == [
+            "Dr. Amit Kumar",
+            "Dr. Rajesh Verma",
+            "Dr. Zara Ali",
+        ]
+
+    def test_requires_authentication(self, client):
+        resp = client.get(self.URL)
+        assert resp.status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
 # Phase 4 — doctor-side accept/decline flow
 # ---------------------------------------------------------------------------
 

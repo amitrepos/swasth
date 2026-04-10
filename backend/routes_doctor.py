@@ -555,6 +555,44 @@ def list_known_doctors(
     return sorted(by_doctor.values(), key=lambda d: (d["doctor_name"] or "").lower())
 
 
+@router.get("/directory")
+def get_verified_doctor_directory(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Patient-safe directory of every verified doctor on Swasth.
+
+    Powers the LinkDoctor picker — the patient can pick a doctor by
+    name instead of having to remember a code. Returns only the
+    fields a patient needs to identify a doctor: name, specialty,
+    clinic, and the shareable doctor code. No PII (no email, phone,
+    NMC number, or internal IDs) crosses this boundary.
+
+    Only `is_verified=True` doctors are listed — newly-registered
+    doctors awaiting admin verification do not appear until they
+    clear the verification queue. This lines up with the hard block
+    on linking to unverified doctors in `link_doctor_to_patient`.
+
+    Sorted alphabetically by doctor name for stable UI ordering.
+    """
+    rows = (
+        db.query(models.DoctorProfile, models.User)
+        .join(models.User, models.User.id == models.DoctorProfile.user_id)
+        .filter(models.DoctorProfile.is_verified == True)  # noqa: E712
+        .order_by(models.User.full_name.asc())
+        .all()
+    )
+    return [
+        {
+            "doctor_name": u.full_name,
+            "specialty": dp.specialty,
+            "clinic_name": dp.clinic_name,
+            "doctor_code": dp.doctor_code,
+        }
+        for dp, u in rows
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Phase 4 — doctor-side accept flow (NMC 2020 § 1.4.1)
 # ---------------------------------------------------------------------------

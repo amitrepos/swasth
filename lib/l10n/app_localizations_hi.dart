@@ -1453,11 +1453,11 @@ class AppLocalizationsHi extends AppLocalizations {
       'अपने डॉक्टर से उनका Swasth कोड पूछें (DR से शुरू होता है)';
 
   @override
-  String get linkDoctorPickerTitle => 'आपके डॉक्टर';
+  String get linkDoctorPickerTitle => 'डॉक्टर चुनें';
 
   @override
   String get linkDoctorPickerSubtitle =>
-      'किसी प्रोफाइल पर आप जिस डॉक्टर से पहले से जुड़े हैं, उन पर टैप करें।';
+      'जिस डॉक्टर के साथ अपनी रीडिंग साझा करना चाहते हैं, उन पर टैप करें।';
 
   @override
   String get linkDoctorAlreadyLinked =>

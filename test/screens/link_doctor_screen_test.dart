@@ -223,10 +223,10 @@ void main() {
   // ---------------------------------------------------------------------
 
   testWidgets(
-    'shows known-doctors picker when /known-doctors returns candidates',
+    'shows directory picker when /directory returns candidates',
     (tester) async {
       ApiClient.httpClientOverride = MockClient((request) async {
-        if (request.url.path.contains('/api/doctor/known-doctors')) {
+        if (request.url.path.contains('/api/doctor/directory')) {
           return http.Response(jsonEncode([_knownDoctorPatel]), 200);
         }
         if (request.url.path.contains('/api/doctor/link/')) {
@@ -255,7 +255,7 @@ void main() {
     'tapping a picker card selects the doctor and shows consent flow',
     (tester) async {
       ApiClient.httpClientOverride = MockClient((request) async {
-        if (request.url.path.contains('/api/doctor/known-doctors')) {
+        if (request.url.path.contains('/api/doctor/directory')) {
           return http.Response(jsonEncode([_knownDoctorPatel]), 200);
         }
         if (request.url.path.contains('/api/doctor/link/')) {
@@ -288,7 +288,7 @@ void main() {
     'already-linked picker card shows snackbar and does not open consent',
     (tester) async {
       ApiClient.httpClientOverride = MockClient((request) async {
-        if (request.url.path.contains('/api/doctor/known-doctors')) {
+        if (request.url.path.contains('/api/doctor/directory')) {
           return http.Response(jsonEncode([_knownDoctorPatel]), 200);
         }
         if (request.url.path.contains('/api/doctor/link/')) {
