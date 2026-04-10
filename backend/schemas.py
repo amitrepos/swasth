@@ -428,6 +428,7 @@ class HealthReadingCreate(BaseModel):
     status_flag: Optional[str] = None
     notes: Optional[str] = None
     reading_timestamp: datetime
+    seq: Optional[int] = None                # Device sequence number for BLE deduplication
 
 
 class HealthReadingResponse(BaseModel):
@@ -453,6 +454,7 @@ class HealthReadingResponse(BaseModel):
     status_flag: Optional[str]
     notes: Optional[str]
     reading_timestamp: datetime
+    seq: Optional[int] = None
     created_at: datetime
 
     class Config:

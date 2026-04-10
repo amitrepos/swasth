@@ -117,7 +117,7 @@ void showReadingInputModal(
                           device: null,
                           services: [],
                           deviceType: btDeviceType,
-                          autoConnect: true,
+                          autoConnect: false, // Don't auto-scan, let user select device
                           profileId: profileId,
                         ),
                       ),
