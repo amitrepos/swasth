@@ -3,6 +3,75 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-04-10 — Session A: Coverage + D7 Critical Alerts + Legal Section 11
+
+Ran in parallel with Session B (Flutter screens + admin) using a git worktree
+after an early shared-working-tree accident. Backend-only focus.
+
+### PR #98 — Coverage boost (routes_health + routes_doctor)
+- Added 24 new tests across 3 files
+- **routes_health.py**: 86% → **96%** (Tier 1 target 95% exceeded)
+  - `parse_image_with_gemini` full branch coverage via ai_service mock (mime derivation, validation paths, exceptions)
+  - `get_ai_insight` cached-response path, trend calculation (up + down), meal summary branch
+- **routes_doctor.py**: 81% → **95%** (Tier 2 target 85% exceeded)
+  - `_compute_triage_status`: no_data, critical BP/glucose (hyper + hypo), attention paths, non-compliance, other types
+  - `refresh_triage_for_profile`: active-link update + noop no-links path
+- All 579 backend tests pass
+
+### Section 11 of docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md
+- Added 9 open legal questions (Q11.1–Q11.9) for D7 critical alerts
+- Covers: implicit vs explicit consent, cross-border WhatsApp transfer (Meta servers), data minimization in alert body, rate-limit vs medical liability tradeoff, language requirements, delivery failure liability, clinical threshold provenance (NMC), minor/guardian proxy, audit log retention
+- Landed on master via Session B's PR #100 (branch relabel from recovery)
+
+### PR #103 — D7 critical value alerts (email + WhatsApp + SMS fanout)
+- **New:** `backend/alert_service.py` — `dispatch_critical_alert()` entry point, per-channel dispatch with audit logging, 30-min dedupe window, `CRITICAL_ALERTS_ENABLED` kill switch, graceful per-channel failure isolation
+- **New:** `backend/sms_service.py` — Twilio SMS stub, activates automatically when `TWILIO_SMS_NUMBER` is set in `.env` (no code change needed later)
+- **New:** `CriticalAlertLog` model — audit trail per `(recipient, channel)` with `status`, `error`, no message body (PHI minimization per Q11.9)
+- **New:** `config.TWILIO_SMS_NUMBER`, `CRITICAL_ALERT_DEDUPE_MINUTES=30`, `CRITICAL_ALERTS_ENABLED=True`
+- **Updated:** `email_service.send_critical_alert_email()` — bilingual EN+HI HTML template
+- **Updated:** `twilio_service.send_critical_alert_whatsapp()` — bilingual formatted body
+- **Updated:** `routes_health.save_reading` — replaces inline `send_otp_email("")` hack with proper dispatcher call
+- **New:** `tests/test_alert_service.py` — 29 tests (fanout, partial failures, exceptions, missing contacts, logger exclusion, dedupe recent/old/failed, kill switch, SMS enable/disable)
+- All 614 backend tests pass
+
+### PR #105 — Manual end-to-end test script
+- **New:** `backend/test_critical_alerts.py` — 302-line live-delivery smoke test
+- Hits **real** Twilio WhatsApp + Brevo SMTP (not mocked) so delivery can be verified against live services
+- Reuses existing user by email (swaps phone temporarily), creates throwaway patient + profile + reading + alert logs, dispatches, prints per-channel results + audit log, cleans up all test rows on exit
+
+### End-to-end verification (live services)
+- Ran `test_critical_alerts.py amitrepos@gmail.com +4917659637909` against local DB + live Twilio + live Brevo
+- Dispatch result: `email_sent=1, whatsapp_sent=1, failures=0` — both channels accepted at service level
+- Brevo SMTP confirmed queuing: `queued as <202604101250.39927821747@smtp-relay.sendinblue.com>`
+- **Unresolved**: email not received in Gmail inbox. Root cause identified — `BREVO_SENDER_EMAIL` is set to Brevo's raw SMTP login address (`a6124a001@smtp-brevo.com`), not a verified sender domain. Gmail silently filters. Fix: verify a sender address or domain at https://app.brevo.com → Senders & IPs, then update `.env`. Deferred to next session.
+- **WhatsApp delivery**: Twilio accepted the message (SID returned). Inbox-level confirmation depends on recipient having active sandbox opt-in session.
+
+### Local environment changes (non-code, not committed)
+- Started `postgresql@14` brew service (was stopped)
+- Added 8 missing columns to local Postgres via ALTER to match ORM models — schema drift from an older DB baseline:
+  - `users.role VARCHAR NOT NULL DEFAULT 'patient'`
+  - `users.timezone VARCHAR NOT NULL DEFAULT 'UTC'`
+  - `profiles.weight FLOAT`
+  - `health_readings.{steps_count, steps_goal, seq}` INTEGER
+  - `health_readings.spo2_value FLOAT`, `spo2_unit VARCHAR`, `spo2_enc TEXT`
+- Created `critical_alert_logs` table via `Base.metadata.create_all`
+- Team members with pre-existing local DBs may need the same ALTERs. Worth adding to a migration script.
+
+### Workflow incidents and recovery
+- **Shared working tree accident #1**: Commit on Session B's branch bundled my 3 test files with Session B's 11 in-progress files. Recovered via `git reset --mixed HEAD~1` → fresh branch → re-commit only tests → return to Session B's branch. Session B's work preserved.
+- **Shared working tree accident #2**: Session B's branch switch during D7 coding clobbered my uncommitted backend edits (alert_service.py, sms_service.py, and edits to 4 existing files all disappeared). Recovered by recreating all files from context memory — no data loss because nothing was committed yet.
+- **Fix**: Created `git worktree add ../swasth_session_a feature/d7-critical-alerts` for D7 code. Isolated filesystem prevented any further cross-contamination.
+- **Pre-push hook bypass (one-time, user-approved)**: Local Flutter SDK broken (reports version `0.0.0-unknown`), blocking pre-push hook's `flutter pub get`. Pushed PR #103 + #105 by temporarily renaming `.githooks/pre-push` → `.githooks/pre-push.disabled.tmp`, pushing, and restoring. Not a `--no-verify` flag; hook file was physically moved aside. CI still ran all tests on the PRs.
+
+### Session end state
+- All Session A work merged to master (PRs #98, #103, #105; section 11 landed via #100)
+- Backend test count: **614 passing**
+- Coverage: routes_health 96%, routes_doctor 95% (both exceed tier targets)
+- 5 local Session A branches deleted, worktree removed
+- Main working tree left on Session B's branch `feat/doctor-picker-and-unified-care-team`
+
+---
+
 ## 2026-04-09 (evening) — CI/CD Fix + Coverage Boost + Session Close
 
 ### CI/CD Pipeline Fix (PRs #86, #87)
@@ -2141,3 +2210,13 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 23:37:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_triage_screen.dart
   - 23:37:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/doctor/doctor_triage_screen.dart
   - 23:43:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/admin_dashboard.html
+  - 15:02:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/password_requirements_box.dart
+  - 15:03:25 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 15:03:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/password_requirements_box.dart
+  - 15:03:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/widgets/password_requirements_box.dart
+  - 15:04:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 15:04:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 15:04:21 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 15:04:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/WORKING-CONTEXT.md
+  - 15:04:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
+  - 15:05:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/screens/registration_screen.dart
