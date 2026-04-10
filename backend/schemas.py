@@ -16,7 +16,13 @@ _SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?'
 # without a load-order foot-gun.
 DOCTOR_SPECIALTY_OPTIONS = [
     "General Physician", "Endocrinologist", "Cardiologist", "Diabetologist",
-    "Internal Medicine", "Family Medicine", "Other",
+    "Internal Medicine", "Family Medicine",
+    # Bihar-pilot additions per Dr. Rajesh's review of PR #100. Keep in
+    # sync with lib/constants/doctor_specialties.dart on the Flutter
+    # client. BHMS / AYUSH intentionally excluded until legal signs off
+    # on telemedicine scope-of-practice for those councils.
+    "Gynaecology", "Paediatrics", "General Surgery",
+    "Other",
 ]
 CONSENT_TYPE_OPTIONS = ["in_person_exam", "video_consult"]
 

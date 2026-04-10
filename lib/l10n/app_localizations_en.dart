@@ -1581,6 +1581,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get doctorSpecialtyFamily => 'Family Medicine';
 
   @override
+  String get doctorSpecialtyGynaecology => 'Gynaecology';
+
+  @override
+  String get doctorSpecialtyPaediatrics => 'Paediatrics';
+
+  @override
+  String get doctorSpecialtyGeneralSurgery => 'General Surgery';
+
+  @override
   String get doctorSpecialtyOther => 'Other';
 
   @override

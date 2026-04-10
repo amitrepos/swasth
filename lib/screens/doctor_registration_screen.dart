@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 // ignore_for_file: deprecated_member_use
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../constants/doctor_specialties.dart';
 import '../theme/app_theme.dart';
 import '../services/doctor_service.dart';
 import '../widgets/auth_form_scroll_body.dart';
+import '../widgets/password_requirements_box.dart';
 import 'login_screen.dart';
 
 /// Doctor self-registration screen.
@@ -31,16 +33,6 @@ class _DoctorRegistrationScreenState extends State<DoctorRegistrationScreen> {
   final _clinicController = TextEditingController();
 
   // These are API key strings — see backend schemas.DOCTOR_SPECIALTY_OPTIONS.
-  static const _specialtyApiKeys = <String>[
-    'General Physician',
-    'Endocrinologist',
-    'Cardiologist',
-    'Diabetologist',
-    'Internal Medicine',
-    'Family Medicine',
-    'Other',
-  ];
-
   String _selectedSpecialty = 'General Physician';
   bool _isLoading = false;
 
@@ -54,25 +46,6 @@ class _DoctorRegistrationScreenState extends State<DoctorRegistrationScreen> {
     _nmcController.dispose();
     _clinicController.dispose();
     super.dispose();
-  }
-
-  String _specialtyLabel(AppLocalizations l10n, String apiKey) {
-    switch (apiKey) {
-      case 'General Physician':
-        return l10n.doctorSpecialtyGeneral;
-      case 'Endocrinologist':
-        return l10n.doctorSpecialtyEndocrinologist;
-      case 'Cardiologist':
-        return l10n.doctorSpecialtyCardiologist;
-      case 'Diabetologist':
-        return l10n.doctorSpecialtyDiabetologist;
-      case 'Internal Medicine':
-        return l10n.doctorSpecialtyInternal;
-      case 'Family Medicine':
-        return l10n.doctorSpecialtyFamily;
-      default:
-        return l10n.doctorSpecialtyOther;
-    }
   }
 
   Future<void> _submit() async {
@@ -223,11 +196,11 @@ class _DoctorRegistrationScreenState extends State<DoctorRegistrationScreen> {
                   labelText: l10n.doctorSpecialtyLabel,
                   prefixIcon: const Icon(Icons.medical_services_outlined),
                 ),
-                items: _specialtyApiKeys
+                items: doctorSpecialtyApiKeys
                     .map(
                       (k) => DropdownMenuItem(
                         value: k,
-                        child: Text(_specialtyLabel(l10n, k)),
+                        child: Text(doctorSpecialtyDisplayName(l10n, k)),
                       ),
                     )
                     .toList(),
@@ -253,16 +226,19 @@ class _DoctorRegistrationScreenState extends State<DoctorRegistrationScreen> {
                   labelText: l10n.passwordLabel,
                   prefixIcon: const Icon(Icons.lock),
                 ),
+                onChanged: (_) => setState(() {}),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return l10n.passwordValidationEmpty;
                   }
-                  if (value.length < 8) {
-                    return 'Password must be at least 8 characters';
+                  if (!PasswordRequirementsBox.meetsAllRequirements(value)) {
+                    return 'Password does not meet requirements';
                   }
                   return null;
                 },
               ),
+              const SizedBox(height: 8),
+              PasswordRequirementsBox(password: _passwordController.text),
               const SizedBox(height: 16),
               TextFormField(
                 key: const Key('doc_reg_confirm_password'),
