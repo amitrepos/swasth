@@ -171,6 +171,28 @@ class DoctorService {
     throw Exception(ApiClient.errorDetail(response, 'Failed to link doctor'));
   }
 
+  /// Return deduped verified doctors linked to any profile the
+  /// authenticated user owns — used to populate the Link Doctor picker
+  /// so patients don't have to remember a code.
+  ///
+  /// Each entry is a map with `doctor_name`, `specialty`, `clinic_name`,
+  /// `doctor_code`, `is_verified`, and `linked_profile_ids` (a list of int).
+  Future<List<Map<String, dynamic>>> getKnownDoctors(String token) async {
+    final response = await ApiClient.httpClient
+        .get(
+          Uri.parse('$_baseUrl/known-doctors'),
+          headers: ApiClient.headers(token: token),
+        )
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.whereType<Map<String, dynamic>>().toList(growable: false);
+    }
+    throw Exception(
+      ApiClient.errorDetail(response, 'Failed to load known doctors'),
+    );
+  }
+
   /// List doctors linked to a profile.
   Future<List<dynamic>> getLinkedDoctors(String token, int profileId) async {
     final response = await ApiClient.httpClient

@@ -1124,6 +1124,36 @@ abstract class AppLocalizations {
   /// **'Share with a Doctor'**
   String get shareWithDoctorSection;
 
+  /// No description provided for @myDoctorsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'My Doctors'**
+  String get myDoctorsSection;
+
+  /// No description provided for @primaryPhysicianSubheading.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Physician'**
+  String get primaryPhysicianSubheading;
+
+  /// No description provided for @sharingHealthDataWithSubheading.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing health data with'**
+  String get sharingHealthDataWithSubheading;
+
+  /// No description provided for @sharingHealthDataWithEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not sharing health data with any doctor yet.'**
+  String get sharingHealthDataWithEmpty;
+
+  /// No description provided for @linkAnotherDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Link another doctor'**
+  String get linkAnotherDoctor;
+
   /// No description provided for @linkedDoctorsTileTitle.
   ///
   /// In en, this message translates to:
@@ -2731,6 +2761,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask your doctor for their Swasth code (starts with DR)'**
   String get linkDoctorCodeHelper;
+
+  /// No description provided for @linkDoctorPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your doctors'**
+  String get linkDoctorPickerTitle;
+
+  /// No description provided for @linkDoctorPickerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a doctor you already share with on another profile.'**
+  String get linkDoctorPickerSubtitle;
+
+  /// No description provided for @linkDoctorAlreadyLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'This doctor can already see this profile.'**
+  String get linkDoctorAlreadyLinked;
+
+  /// No description provided for @linkDoctorAlreadyLinkedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Already sharing'**
+  String get linkDoctorAlreadyLinkedBadge;
+
+  /// No description provided for @linkDoctorOr.
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get linkDoctorOr;
+
+  /// No description provided for @linkDoctorEnterNewCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a new doctor\'s code'**
+  String get linkDoctorEnterNewCode;
 
   /// No description provided for @linkDoctorConsentTitle.
   ///

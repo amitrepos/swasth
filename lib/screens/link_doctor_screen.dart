@@ -7,9 +7,18 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/doctor_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/glass_card.dart';
 
-/// Patient-facing screen: enter a doctor code, preview the doctor,
-/// pick a consent type, and link the active profile to that doctor.
+/// Patient-facing screen for sharing readings with a doctor.
+///
+/// Two ways to pick a doctor:
+///   1. **Picker** (preferred) — tap a card from the list of doctors
+///      already linked to any of the patient's owned profiles.
+///   2. **Code fallback** — for first-time links. Patient types the
+///      doctor's Swasth code (e.g. DRRAJ52) and taps Find Doctor.
+///
+/// Once a doctor is selected (either way), the existing consent
+/// tile + confirmation dialog + link POST flow runs unchanged.
 class LinkDoctorScreen extends StatefulWidget {
   const LinkDoctorScreen({super.key});
 
@@ -23,11 +32,28 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
   final _doctorService = DoctorService();
   final _storageService = StorageService();
 
-  Map<String, dynamic>? _lookedUpDoctor;
-  String _consentType = 'in_person_exam';
+  // Picker state
+  List<Map<String, dynamic>>? _knownDoctors;
+  Set<String> _alreadyLinkedCodes = <String>{};
+  bool _isLoadingPicker = true;
+
+  // Code-entry state
+  bool _codeEntryExpanded = false;
   bool _isLookingUp = false;
-  bool _isLinking = false;
   String? _lookupError;
+
+  // Selection + link state
+  Map<String, dynamic>? _selectedDoctor;
+  String _consentType = 'in_person_exam';
+  bool _isLinking = false;
+
+  int? _activeProfileId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPicker());
+  }
 
   @override
   void dispose() {
@@ -37,6 +63,50 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
 
   String _normalizeCode(String raw) =>
       raw.replaceAll(RegExp(r'[\s\-]'), '').toUpperCase();
+
+  Future<void> _loadPicker() async {
+    setState(() => _isLoadingPicker = true);
+    try {
+      final token = await _storageService.getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final profileId = await _storageService.getActiveProfileId();
+
+      final known = await _doctorService.getKnownDoctors(token);
+      Set<String> alreadyLinked = <String>{};
+      if (profileId != null) {
+        try {
+          final linked = await _doctorService.getLinkedDoctors(
+            token,
+            profileId,
+          );
+          alreadyLinked = linked
+              .whereType<Map<String, dynamic>>()
+              .map((d) => (d['doctor_code'] as String?) ?? '')
+              .where((c) => c.isNotEmpty)
+              .toSet();
+        } catch (_) {
+          // Non-fatal — picker still works without the "already linked" hint.
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _knownDoctors = known;
+        _alreadyLinkedCodes = alreadyLinked;
+        _activeProfileId = profileId;
+        _isLoadingPicker = false;
+        // New patient with no known doctors → jump straight to code entry.
+        if (known.isEmpty) _codeEntryExpanded = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _knownDoctors = const [];
+        _isLoadingPicker = false;
+        _codeEntryExpanded = true;
+      });
+    }
+  }
 
   String _mapErrorToMessage(AppLocalizations l10n, Object error) {
     final s = error.toString();
@@ -52,13 +122,13 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
     return l10n.linkDoctorLookupFailed;
   }
 
-  Future<void> _lookup() async {
+  Future<void> _lookupCode() async {
     if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLookingUp = true;
       _lookupError = null;
-      _lookedUpDoctor = null;
+      _selectedDoctor = null;
     });
     try {
       final token = await _storageService.getToken();
@@ -68,13 +138,28 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
         _normalizeCode(_codeController.text),
       );
       if (!mounted) return;
-      setState(() => _lookedUpDoctor = doctor);
+      setState(() => _selectedDoctor = doctor);
     } catch (e) {
       if (!mounted) return;
       setState(() => _lookupError = _mapErrorToMessage(l10n, e));
     } finally {
       if (mounted) setState(() => _isLookingUp = false);
     }
+  }
+
+  void _selectFromPicker(Map<String, dynamic> doctor) {
+    final l10n = AppLocalizations.of(context)!;
+    final code = (doctor['doctor_code'] as String?) ?? '';
+    if (_alreadyLinkedCodes.contains(code)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.linkDoctorAlreadyLinked)));
+      return;
+    }
+    setState(() {
+      _selectedDoctor = doctor;
+      _lookupError = null;
+    });
   }
 
   Future<bool> _showConfirmDialog(String doctorName) async {
@@ -103,11 +188,9 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
 
   Future<void> _link() async {
     final l10n = AppLocalizations.of(context)!;
-    final doctor = _lookedUpDoctor;
+    final doctor = _selectedDoctor;
     if (doctor == null) return;
 
-    // Unverified doctors are also backend-blocked; this is a UI guard so
-    // the user sees a clear message instead of an API error.
     if (doctor['is_verified'] != true) {
       ScaffoldMessenger.of(
         context,
@@ -115,7 +198,8 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
       return;
     }
 
-    final profileId = await _storageService.getActiveProfileId();
+    final profileId =
+        _activeProfileId ?? await _storageService.getActiveProfileId();
     if (profileId == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -161,6 +245,10 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
     }
   }
 
+  // ---------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -171,125 +259,271 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.linkDoctorHeadline,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (_isLoadingPicker)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else ...[
+                if ((_knownDoctors ?? const []).isNotEmpty) ...[
+                  _buildPickerSection(context, l10n),
+                  const SizedBox(height: 16),
+                  _buildOrDivider(context, l10n),
+                  const SizedBox(height: 16),
+                ],
+                _buildCodeEntrySection(context, l10n),
+              ],
+              if (_selectedDoctor != null) ...[
+                const SizedBox(height: 24),
+                _buildDoctorCard(context, _selectedDoctor!),
+                const SizedBox(height: 24),
                 Text(
-                  l10n.linkDoctorHeadline,
-                  style: theme.textTheme.headlineSmall?.copyWith(
+                  l10n.linkDoctorConsentTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  key: const Key('link_doctor_code'),
-                  controller: _codeController,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(
-                    labelText: l10n.linkDoctorCodeLabel,
-                    hintText: l10n.linkDoctorCodeHint,
-                    helperText: l10n.linkDoctorCodeHelper,
-                    helperMaxLines: 2,
-                    prefixIcon: const Icon(Icons.medical_services_outlined),
-                    errorText: _lookupError,
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return l10n.linkDoctorCodeEmpty;
-                    }
-                    if (_normalizeCode(value).length < 4) {
-                      return l10n.linkDoctorCodeInvalid;
-                    }
-                    return null;
-                  },
-                  onChanged: (value) {
-                    // Only clear the card if the typed code actually
-                    // differs from the looked-up one — elderly users
-                    // often bump keys by accident.
-                    final currentCode =
-                        _lookedUpDoctor?['doctor_code'] as String?;
-                    final typedNormalized = _normalizeCode(value);
-                    final cardStale =
-                        _lookedUpDoctor != null &&
-                        typedNormalized != currentCode;
-                    if (cardStale || _lookupError != null) {
-                      setState(() {
-                        if (cardStale) _lookedUpDoctor = null;
-                        _lookupError = null;
-                      });
-                    }
-                  },
+                const SizedBox(height: 8),
+                _buildConsentTile(
+                  value: 'in_person_exam',
+                  title: l10n.linkDoctorConsentInPerson,
+                  subtitle: l10n.linkDoctorConsentInPersonHelp,
+                ),
+                _buildConsentTile(
+                  value: 'video_consult',
+                  title: l10n.linkDoctorConsentVideo,
+                  subtitle: l10n.linkDoctorConsentVideoHelp,
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  key: const Key('link_doctor_lookup_button'),
-                  onPressed: _isLookingUp ? null : _lookup,
-                  icon: _isLookingUp
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.search),
-                  label: Text(l10n.linkDoctorLookupButton),
+                _buildInfoBox(
+                  context,
+                  icon: Icons.info_outline,
+                  text: l10n.linkDoctorNmcDisclaimer,
+                  color: AppColors.statusElevated,
                 ),
-                if (_lookedUpDoctor != null) ...[
-                  const SizedBox(height: 24),
-                  _buildDoctorCard(context, _lookedUpDoctor!),
-                  const SizedBox(height: 24),
+                const SizedBox(height: 12),
+                _buildInfoBox(
+                  context,
+                  icon: Icons.shield_outlined,
+                  text: l10n.linkDoctorRevokeHint,
+                  color: AppColors.statusNormal,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  key: const Key('link_doctor_confirm_button'),
+                  onPressed: _isLinking ? null : _link,
+                  child: _isLinking
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(l10n.linkDoctorConfirm),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // Section builders
+  // ---------------------------------------------------------------------
+
+  Widget _buildPickerSection(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final doctors = _knownDoctors ?? const [];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.linkDoctorPickerTitle,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.linkDoctorPickerSubtitle,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...doctors.map((d) => _buildPickerCard(context, l10n, d)),
+      ],
+    );
+  }
+
+  Widget _buildPickerCard(
+    BuildContext context,
+    AppLocalizations l10n,
+    Map<String, dynamic> doctor,
+  ) {
+    final theme = Theme.of(context);
+    final name = (doctor['doctor_name'] as String?) ?? '';
+    final specialty = doctor['specialty'] as String?;
+    final clinic = doctor['clinic_name'] as String?;
+    final code = (doctor['doctor_code'] as String?) ?? '';
+    final alreadyLinked = _alreadyLinkedCodes.contains(code);
+    final initial = name.isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Opacity(
+        opacity: alreadyLinked ? 0.55 : 1.0,
+        child: GlassCard(
+          borderRadius: 16,
+          child: ListTile(
+            key: Key('link_doctor_picker_$code'),
+            enabled: !alreadyLinked,
+            onTap: alreadyLinked ? null : () => _selectFromPicker(doctor),
+            leading: CircleAvatar(
+              radius: 22,
+              backgroundColor: AppColors.primary.withOpacity(0.15),
+              child: Text(
+                initial,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            title: Text(
+              name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (specialty != null && specialty.isNotEmpty) Text(specialty),
+                if (clinic != null && clinic.isNotEmpty)
                   Text(
-                    l10n.linkDoctorConsentTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    clinic,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  _buildConsentTile(
-                    value: 'in_person_exam',
-                    title: l10n.linkDoctorConsentInPerson,
-                    subtitle: l10n.linkDoctorConsentInPersonHelp,
+                if (alreadyLinked)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      l10n.linkDoctorAlreadyLinkedBadge,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.statusNormal,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                  _buildConsentTile(
-                    value: 'video_consult',
-                    title: l10n.linkDoctorConsentVideo,
-                    subtitle: l10n.linkDoctorConsentVideoHelp,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoBox(
-                    context,
-                    icon: Icons.info_outline,
-                    text: l10n.linkDoctorNmcDisclaimer,
-                    color: AppColors.statusElevated,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoBox(
-                    context,
-                    icon: Icons.shield_outlined,
-                    text: l10n.linkDoctorRevokeHint,
-                    color: AppColors.statusNormal,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    key: const Key('link_doctor_confirm_button'),
-                    onPressed: _isLinking ? null : _link,
-                    child: _isLinking
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(l10n.linkDoctorConfirm),
-                  ),
-                ],
               ],
+            ),
+            trailing: alreadyLinked
+                ? const Icon(Icons.check_circle, color: AppColors.statusNormal)
+                : const Icon(Icons.arrow_forward_ios, size: 16),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrDivider(BuildContext context, AppLocalizations l10n) {
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            l10n.linkDoctorOr,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
+        const Expanded(child: Divider()),
+      ],
+    );
+  }
+
+  Widget _buildCodeEntrySection(BuildContext context, AppLocalizations l10n) {
+    if (!_codeEntryExpanded) {
+      return OutlinedButton.icon(
+        key: const Key('link_doctor_expand_code_button'),
+        onPressed: () => setState(() => _codeEntryExpanded = true),
+        icon: const Icon(Icons.keyboard_alt_outlined),
+        label: Text(l10n.linkDoctorEnterNewCode),
+      );
+    }
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextFormField(
+            key: const Key('link_doctor_code'),
+            controller: _codeController,
+            textCapitalization: TextCapitalization.characters,
+            decoration: InputDecoration(
+              labelText: l10n.linkDoctorCodeLabel,
+              hintText: l10n.linkDoctorCodeHint,
+              helperText: l10n.linkDoctorCodeHelper,
+              helperMaxLines: 2,
+              prefixIcon: const Icon(Icons.medical_services_outlined),
+              errorText: _lookupError,
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return l10n.linkDoctorCodeEmpty;
+              }
+              if (_normalizeCode(value).length < 4) {
+                return l10n.linkDoctorCodeInvalid;
+              }
+              return null;
+            },
+            onChanged: (_) {
+              // Clear the selection only if it came from a code lookup
+              // (picker selections carry linked_profile_ids in the map).
+              if (_selectedDoctor != null &&
+                  _selectedDoctor!['linked_profile_ids'] == null) {
+                setState(() {
+                  _selectedDoctor = null;
+                  _lookupError = null;
+                });
+              } else if (_lookupError != null) {
+                setState(() => _lookupError = null);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            key: const Key('link_doctor_lookup_button'),
+            onPressed: _isLookingUp ? null : _lookupCode,
+            icon: _isLookingUp
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.search),
+            label: Text(l10n.linkDoctorLookupButton),
+          ),
+        ],
       ),
     );
   }
@@ -300,7 +534,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
     final isVerified = doctor['is_verified'] == true;
     final specialty = doctor['specialty'] as String?;
     final clinic = doctor['clinic_name'] as String?;
-    final doctorName = doctor['doctor_name'] as String? ?? '';
+    final doctorName = (doctor['doctor_name'] as String?) ?? '';
     final firstInitial = doctorName.isNotEmpty
         ? doctorName.trim()[0].toUpperCase()
         : '?';
@@ -356,8 +590,6 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            // Verification status — icon carries the color; text stays in
-            // theme-default color to preserve contrast (WCAG AA).
             Row(
               children: [
                 Icon(

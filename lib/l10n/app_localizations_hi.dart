@@ -548,6 +548,23 @@ class AppLocalizationsHi extends AppLocalizations {
   String get shareWithDoctorSection => 'डॉक्टर के साथ साझा करें';
 
   @override
+  String get myDoctorsSection => 'मेरे डॉक्टर';
+
+  @override
+  String get primaryPhysicianSubheading => 'मुख्य डॉक्टर';
+
+  @override
+  String get sharingHealthDataWithSubheading =>
+      'इनके साथ रीडिंग साझा कर रहे हैं';
+
+  @override
+  String get sharingHealthDataWithEmpty =>
+      'अभी आप किसी डॉक्टर के साथ रीडिंग साझा नहीं कर रहे हैं।';
+
+  @override
+  String get linkAnotherDoctor => 'और डॉक्टर जोड़ें';
+
+  @override
   String get linkedDoctorsTileTitle => 'पहुँच वाले डॉक्टर';
 
   @override
@@ -1428,6 +1445,26 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get linkDoctorCodeHelper =>
       'अपने डॉक्टर से उनका Swasth कोड पूछें (DR से शुरू होता है)';
+
+  @override
+  String get linkDoctorPickerTitle => 'आपके डॉक्टर';
+
+  @override
+  String get linkDoctorPickerSubtitle =>
+      'किसी प्रोफाइल पर आप जिस डॉक्टर से पहले से जुड़े हैं, उन पर टैप करें।';
+
+  @override
+  String get linkDoctorAlreadyLinked =>
+      'यह डॉक्टर पहले से इस प्रोफाइल को देख सकते हैं।';
+
+  @override
+  String get linkDoctorAlreadyLinkedBadge => 'पहले से जुड़े';
+
+  @override
+  String get linkDoctorOr => 'या';
+
+  @override
+  String get linkDoctorEnterNewCode => 'नया डॉक्टर कोड डालें';
 
   @override
   String get linkDoctorConsentTitle => 'डॉक्टर से कैसे मिले हैं?';

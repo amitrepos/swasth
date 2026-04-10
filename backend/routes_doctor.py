@@ -462,6 +462,81 @@ def list_linked_doctors(
     ]
 
 
+@router.get("/known-doctors")
+def list_known_doctors(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return deduped verified doctors linked to any profile the user owns.
+
+    Powers the LinkDoctor picker — instead of asking the patient to type
+    a code, show a dropdown of doctors they already interact with across
+    their own + family profiles. Only active links count; revoked links
+    are excluded so a doctor the patient has already stopped sharing
+    with doesn't reappear in the picker.
+
+    Response shape:
+      [
+        {
+          "doctor_name": "Dr. Rajesh Verma",
+          "specialty": "General Physician",
+          "clinic_name": "Patna Clinic",
+          "doctor_code": "DRRAJ52",
+          "is_verified": true,
+          "linked_profile_ids": [1, 3]   # profiles the user owns that
+                                         # are already linked to this doctor
+        }
+      ]
+    """
+    # Profiles the user owns (family sharing with editor/viewer access
+    # is intentionally excluded — those aren't "their" doctors).
+    owned_profile_ids = [
+        row[0]
+        for row in db.query(models.ProfileAccess.profile_id)
+        .filter(
+            models.ProfileAccess.user_id == user.id,
+            models.ProfileAccess.access_level == "owner",
+        )
+        .all()
+    ]
+    if not owned_profile_ids:
+        return []
+
+    rows = (
+        db.query(models.DoctorPatientLink, models.DoctorProfile, models.User)
+        .join(
+            models.DoctorProfile,
+            models.DoctorProfile.user_id == models.DoctorPatientLink.doctor_id,
+        )
+        .join(models.User, models.User.id == models.DoctorPatientLink.doctor_id)
+        .filter(
+            models.DoctorPatientLink.profile_id.in_(owned_profile_ids),
+            models.DoctorPatientLink.is_active == True,  # noqa: E712
+        )
+        .all()
+    )
+
+    # Dedupe by doctor_id; aggregate linked_profile_ids per doctor.
+    by_doctor: dict[int, dict] = {}
+    for link, dp, u in rows:
+        entry = by_doctor.get(u.id)
+        if entry is None:
+            entry = {
+                "doctor_name": u.full_name,
+                "specialty": dp.specialty,
+                "clinic_name": dp.clinic_name,
+                "doctor_code": dp.doctor_code,
+                "is_verified": dp.is_verified,
+                "linked_profile_ids": [],
+            }
+            by_doctor[u.id] = entry
+        if link.profile_id not in entry["linked_profile_ids"]:
+            entry["linked_profile_ids"].append(link.profile_id)
+
+    # Sort by doctor name for stable UI ordering.
+    return sorted(by_doctor.values(), key=lambda d: (d["doctor_name"] or "").lower())
+
+
 # ---------------------------------------------------------------------------
 # Triage Dashboard (doctor view)
 # ---------------------------------------------------------------------------
