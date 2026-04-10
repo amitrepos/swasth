@@ -192,6 +192,33 @@
   "medicalConditionsField": "बीमारियां",
   "accountSettingsSection": "खाता सेटिंग",
   "shareWithDoctorSection": "डॉक्टर के साथ साझा करें",
+  "linkedDoctorsTileTitle": "पहुँच वाले डॉक्टर",
+  "linkedDoctorsTileSubtitle": "देखें कि कौन आपकी रीडिंग देख सकता है",
+  "linkedDoctorsTitle": "पहुँच वाले डॉक्टर",
+  "linkedDoctorsEmpty": "अभी इस प्रोफाइल से कोई डॉक्टर जुड़ा नहीं है।",
+  "linkedDoctorsEmptyHint": "अपनी रीडिंग साझा करने के लिए प्रोफाइल पर 'डॉक्टर जोड़ें' पर टैप करें।",
+  "linkedDoctorsError": "जुड़े डॉक्टरों की सूची लोड नहीं हो सकी।",
+  "linkedDoctorsLinkedSince": "{date} से जुड़े",
+  "@linkedDoctorsLinkedSince": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "linkedDoctorsRevoke": "साझा करना बंद करें",
+  "linkedDoctorsRevokeDialogTitle": "{name} के साथ साझा करना बंद करें?",
+  "@linkedDoctorsRevokeDialogTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkedDoctorsRevokeDialogBody": "यह डॉक्टर अब आपकी पुरानी या नई रीडिंग नहीं देख सकेंगे। आप कभी भी फिर से जोड़ सकते हैं।",
+  "linkedDoctorsRevokeConfirm": "साझा करना बंद करें",
+  "linkedDoctorsRevokeSuccess": "{name} अब आपकी रीडिंग नहीं देख सकते।",
+  "@linkedDoctorsRevokeSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "adminMenuTooltip": "एडमिन",
   "adminMenuDashboard": "डैशबोर्ड खोलें",
   "adminMenuCreateUser": "यूज़र बनाएं",

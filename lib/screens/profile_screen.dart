@@ -10,6 +10,7 @@ import '../models/profile_model.dart';
 import '../providers/language_provider.dart';
 import 'link_doctor_screen.dart';
 import 'manage_access_screen.dart';
+import 'my_linked_doctors_screen.dart';
 import 'privacy_policy_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -731,6 +732,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       await navigator.push(
                         MaterialPageRoute(
                           builder: (_) => const LinkDoctorScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GlassCard(
+                  borderRadius: 16,
+                  child: ListTile(
+                    key: const Key('profile_linked_doctors_tile'),
+                    leading: const Icon(
+                      Icons.people_outline,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(l10n.linkedDoctorsTileTitle),
+                    subtitle: Text(l10n.linkedDoctorsTileSubtitle),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MyLinkedDoctorsScreen(
+                            profileId: widget.profileId,
+                          ),
                         ),
                       );
                     },
