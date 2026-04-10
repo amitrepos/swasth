@@ -285,6 +285,36 @@ class TestDoctorLink:
         )
         assert resp.status_code == 422
 
+    def test_link_rejects_unverified_doctor(
+        self, client, doctor_user, patient_user, patient_headers, db
+    ):
+        """NMC §5.2 + Consumer Protection Act 2019: platform must not
+        facilitate telemedicine with a doctor whose credentials have not
+        been verified. The backend must hard-block the link even if the
+        UI mistakenly allowed it."""
+        _, profile = patient_user
+        # Flip the doctor to unverified
+        dp = db.query(models.DoctorProfile).filter(
+            models.DoctorProfile.user_id == doctor_user.id
+        ).first()
+        dp.is_verified = False
+        db.flush()
+
+        resp = client.post(
+            f"/api/doctor/link/{profile.id}",
+            json={"doctor_code": "DRRAJ52", "consent_type": "in_person_exam"},
+            headers=patient_headers,
+        )
+        assert resp.status_code == 403
+        assert "verif" in resp.json()["detail"].lower()
+
+        # And no DoctorPatientLink row should have been created
+        link = db.query(models.DoctorPatientLink).filter(
+            models.DoctorPatientLink.doctor_id == doctor_user.id,
+            models.DoctorPatientLink.profile_id == profile.id,
+        ).first()
+        assert link is None
+
 
 # ---------------------------------------------------------------------------
 # DELETE /api/doctor/link/{profile_id}

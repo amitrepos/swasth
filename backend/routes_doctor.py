@@ -9,47 +9,17 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 from datetime import datetime, timezone, timedelta
 import logging
-import random
-import string
 
 import models
 import schemas
 import auth
 from database import get_db
 from dependencies import get_current_user, get_doctor_patient_access, get_profile_access_or_403
+from doctor_utils import ensure_unique_doctor_code
 from models import UserRole
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _generate_doctor_code(full_name: str) -> str:
-    """Generate a unique doctor code like 'DRRAJ52'.
-
-    Format: DR + first 3 letters of name (uppercased) + 2 random digits.
-    """
-    # Extract letters from name, skip spaces/punctuation
-    letters = "".join(c for c in full_name.upper() if c.isalpha())
-    prefix = letters[:3] if len(letters) >= 3 else letters.ljust(3, "X")
-    digits = "".join(random.choices(string.digits, k=2))
-    return f"DR{prefix}{digits}"
-
-
-def _ensure_unique_doctor_code(db: Session, full_name: str) -> str:
-    """Generate a doctor code and retry if collision."""
-    for _ in range(10):
-        code = _generate_doctor_code(full_name)
-        exists = db.query(models.DoctorProfile).filter(
-            models.DoctorProfile.doctor_code == code
-        ).first()
-        if not exists:
-            return code
-    # Fallback: add more random chars
-    return f"DR{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
 
 
 def _log_doctor_access(db: Session, doctor_id: int, profile_id: int, action: str, endpoint: str = None):
@@ -249,7 +219,7 @@ def register_doctor(data: schemas.DoctorRegister, db: Session = Depends(get_db))
     db.flush()
 
     # Generate unique doctor code
-    doctor_code = _ensure_unique_doctor_code(db, data.full_name)
+    doctor_code = ensure_unique_doctor_code(db, data.full_name)
 
     # Create doctor profile
     doctor_profile = models.DoctorProfile(
@@ -352,6 +322,20 @@ def link_doctor_to_patient(
     ).first()
     if not dp:
         raise HTTPException(status_code=404, detail="Doctor code not found")
+
+    # NMC 2020 § 5.2 + Consumer Protection Act 2019: the platform must
+    # not facilitate a telemedicine relationship with a doctor whose
+    # credentials have not been verified. The UI shows a "Verification
+    # pending" badge on lookup — this is the hard gate that keeps
+    # unverified doctors from actually receiving PHI.
+    if not dp.is_verified:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "This doctor is not yet verified by Swasth. "
+                "Please try again after verification is complete."
+            ),
+        )
 
     doctor_user = db.query(models.User).filter(models.User.id == dp.user_id).first()
 

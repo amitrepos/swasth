@@ -507,5 +507,78 @@
   "rescan": "पुनः खोजें",
   "@rescan": {
     "description": "Button to rescan for devices"
-  }
+  },
+
+  "linkDoctorTitle": "डॉक्टर जोड़ें",
+  "linkDoctorHeadline": "अपनी सेहत की रीडिंग डॉक्टर के साथ साझा करें",
+  "linkDoctorCodeLabel": "डॉक्टर कोड",
+  "linkDoctorCodeHint": "जैसे DRRAJ52",
+  "linkDoctorCodeEmpty": "कृपया डॉक्टर कोड डालें",
+  "linkDoctorCodeInvalid": "डॉक्टर कोड बहुत छोटा है",
+  "linkDoctorLookupButton": "डॉक्टर ढूंढें",
+  "linkDoctorLookupFailed": "डॉक्टर नहीं मिला। कोड जांचें।",
+  "linkDoctorCodeHelper": "अपने डॉक्टर से उनका Swasth कोड पूछें (DR से शुरू होता है)",
+  "linkDoctorConsentTitle": "डॉक्टर से कैसे मिले हैं?",
+  "linkDoctorConsentInPerson": "क्लिनिक में जाकर मिले हैं",
+  "linkDoctorConsentInPersonHelp": "मैंने इस डॉक्टर से क्लिनिक में मिलकर जांच कराई है।",
+  "linkDoctorConsentVideo": "वीडियो या फोन पर बात हुई है",
+  "linkDoctorConsentVideoHelp": "मैंने इस डॉक्टर से वीडियो या फोन पर बात की है।",
+  "linkDoctorNotVerified": "सत्यापन जारी है",
+  "linkDoctorNotVerifiedHelp": "डॉक्टर रजिस्टर हैं, Swasth उनके NMC नंबर की जाँच कर रहा है। सत्यापन पूरा होने पर आप जोड़ सकेंगे।",
+  "linkDoctorVerified": "सत्यापित डॉक्टर",
+  "linkDoctorConfirm": "मेरी रीडिंग साझा करें",
+  "linkDoctorConfirmDialogTitle": "अपनी रीडिंग साझा करें?",
+  "linkDoctorConfirmDialogBody": "डॉ. {name} आपकी पुरानी और आने वाली सेहत की रीडिंग देख सकेंगे। आप कभी भी प्रोफाइल से साझा करना बंद कर सकते हैं।",
+  "@linkDoctorConfirmDialogBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkDoctorConfirmDialogShare": "हाँ, साझा करें",
+  "linkDoctorNmcDisclaimer": "रीडिंग साझा करने से डॉक्टर-मरीज़ का रिश्ता नहीं बनता। इलाज के लिए आपके डॉक्टर को अलग से पुष्टि करनी होगी। आपात स्थिति में 108 पर कॉल करें।",
+  "linkDoctorSuccess": "आप अब {name} से जुड़ गए हैं।",
+  "@linkDoctorSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkDoctorRevokeHint": "आप कभी भी प्रोफाइल से साझा करना बंद कर सकते हैं।",
+  "linkDoctorNoProfile": "कृपया पहले एक प्रोफाइल चुनें",
+  "linkDoctorSessionExpired": "आपका सत्र समाप्त हो गया है। कृपया लॉग आउट करके फिर से लॉग इन करें।",
+  "linkDoctorNetworkError": "इंटरनेट कनेक्शन नहीं है। कृपया दोबारा कोशिश करें।",
+
+  "doctorRegisterTitle": "डॉक्टर पंजीकरण",
+  "doctorRegisterHeadline": "डॉक्टर के रूप में रजिस्टर करें",
+  "doctorRegisterSubheadline": "Swasth की टीम आपके NMC नंबर की जांच करेगी। उसके बाद ही आप मरीज़ देख पाएंगे।",
+  "doctorFullNameLabel": "पूरा नाम",
+  "doctorNmcLabel": "NMC पंजीकरण संख्या",
+  "doctorNmcHint": "मेडिकल काउंसिल नंबर",
+  "doctorNmcEmpty": "कृपया अपना NMC नंबर डालें",
+  "doctorSpecialtyLabel": "विशेषज्ञता",
+  "doctorClinicLabel": "क्लिनिक या अस्पताल का नाम",
+  "doctorRegisterSubmit": "डॉक्टर खाता बनाएं",
+  "doctorRegisterSuccess": "खाता बन गया। Swasth एडमिन जल्द ही आपका NMC नंबर सत्यापित करेगा।",
+  "doctorSpecialtyGeneral": "सामान्य चिकित्सक",
+  "doctorSpecialtyEndocrinologist": "एंडोक्रिनोलॉजिस्ट",
+  "doctorSpecialtyCardiologist": "हृदय रोग विशेषज्ञ",
+  "doctorSpecialtyDiabetologist": "मधुमेह विशेषज्ञ",
+  "doctorSpecialtyInternal": "आंतरिक चिकित्सा",
+  "doctorSpecialtyFamily": "पारिवारिक चिकित्सा",
+  "doctorSpecialtyOther": "अन्य",
+
+  "adminCreateUserTitle": "यूज़र बनाएं",
+  "adminCreateUserHeadline": "मरीज़ का खाता बनाएं",
+  "adminCreateUserRoleLabel": "खाते का प्रकार",
+  "adminCreateUserRolePatient": "मरीज़",
+  "adminCreateUserRoleDoctor": "डॉक्टर (जल्द आ रहा है)",
+  "adminCreateUserDoctorComingSoon": "अभी डॉक्टर खाते केवल डॉक्टर के खुद के रजिस्ट्रेशन से बन सकते हैं।",
+  "adminCreateUserTempPasswordHelp": "यूज़र को यह पासवर्ड सुरक्षित रूप से दें। वे इसे प्रोफाइल स्क्रीन से बदल सकते हैं।",
+  "adminCreateUserSubmit": "खाता बनाएं",
+  "adminCreateUserSuccess": "{email} के लिए खाता बन गया",
+  "@adminCreateUserSuccess": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "adminCreateUserNmcRequired": "डॉक्टर खाते के लिए NMC नंबर ज़रूरी है"
 }

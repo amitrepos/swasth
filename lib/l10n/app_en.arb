@@ -660,5 +660,78 @@
   "rescan": "Rescan",
   "@rescan": {
     "description": "Button to rescan for devices"
-  }
+  },
+
+  "linkDoctorTitle": "Link a Doctor",
+  "linkDoctorHeadline": "Share your health readings with a doctor",
+  "linkDoctorCodeLabel": "Doctor Code",
+  "linkDoctorCodeHint": "e.g. DRRAJ52",
+  "linkDoctorCodeEmpty": "Please enter a doctor code",
+  "linkDoctorCodeInvalid": "Doctor code is too short",
+  "linkDoctorLookupButton": "Find Doctor",
+  "linkDoctorLookupFailed": "Doctor not found. Check the code.",
+  "linkDoctorCodeHelper": "Ask your doctor for their Swasth code (starts with DR)",
+  "linkDoctorConsentTitle": "How did you meet this doctor?",
+  "linkDoctorConsentInPerson": "In-person visit at clinic",
+  "linkDoctorConsentInPersonHelp": "I have visited this doctor at the clinic.",
+  "linkDoctorConsentVideo": "Video or phone consultation",
+  "linkDoctorConsentVideoHelp": "I have talked to this doctor over video or phone.",
+  "linkDoctorNotVerified": "Verification pending",
+  "linkDoctorNotVerifiedHelp": "This doctor is registered but Swasth is still checking their NMC number. You can link once verification is complete.",
+  "linkDoctorVerified": "Verified doctor",
+  "linkDoctorConfirm": "Share my readings",
+  "linkDoctorConfirmDialogTitle": "Share your readings?",
+  "linkDoctorConfirmDialogBody": "Dr. {name} will be able to see your past and future health readings. You can stop sharing any time from your profile.",
+  "@linkDoctorConfirmDialogBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkDoctorConfirmDialogShare": "Yes, share",
+  "linkDoctorNmcDisclaimer": "Sharing readings does not create a doctor-patient relationship. Your doctor must confirm any treatment separately. In an emergency, call 108.",
+  "linkDoctorSuccess": "You are now linked to {name}.",
+  "@linkDoctorSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkDoctorRevokeHint": "You can stop sharing any time from your profile.",
+  "linkDoctorNoProfile": "Please select a profile first",
+  "linkDoctorSessionExpired": "Your session has expired. Please log out and log in again.",
+  "linkDoctorNetworkError": "No internet connection. Please try again.",
+
+  "doctorRegisterTitle": "Doctor Sign Up",
+  "doctorRegisterHeadline": "Register as a Doctor",
+  "doctorRegisterSubheadline": "Your NMC number will be verified by the Swasth team before you can see patients.",
+  "doctorFullNameLabel": "Full Name",
+  "doctorNmcLabel": "NMC Registration Number",
+  "doctorNmcHint": "Medical council number",
+  "doctorNmcEmpty": "Please enter your NMC number",
+  "doctorSpecialtyLabel": "Specialty",
+  "doctorClinicLabel": "Clinic or Hospital Name",
+  "doctorRegisterSubmit": "Create Doctor Account",
+  "doctorRegisterSuccess": "Account created. A Swasth admin will verify your NMC number soon.",
+  "doctorSpecialtyGeneral": "General Physician",
+  "doctorSpecialtyEndocrinologist": "Endocrinologist",
+  "doctorSpecialtyCardiologist": "Cardiologist",
+  "doctorSpecialtyDiabetologist": "Diabetologist",
+  "doctorSpecialtyInternal": "Internal Medicine",
+  "doctorSpecialtyFamily": "Family Medicine",
+  "doctorSpecialtyOther": "Other",
+
+  "adminCreateUserTitle": "Create User",
+  "adminCreateUserHeadline": "Create a patient account",
+  "adminCreateUserRoleLabel": "Account Type",
+  "adminCreateUserRolePatient": "Patient",
+  "adminCreateUserRoleDoctor": "Doctor (coming soon)",
+  "adminCreateUserDoctorComingSoon": "Doctor accounts must be created via the doctor self-signup flow for now.",
+  "adminCreateUserTempPasswordHelp": "Share this password securely with the user. They can change it from their Profile screen.",
+  "adminCreateUserSubmit": "Create Account",
+  "adminCreateUserSuccess": "Account created for {email}",
+  "@adminCreateUserSuccess": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "adminCreateUserNmcRequired": "NMC number is required for doctor accounts"
 }
