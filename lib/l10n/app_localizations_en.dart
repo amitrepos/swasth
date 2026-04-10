@@ -594,6 +594,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedDoctorsRevoke => 'Stop sharing';
 
   @override
+  String get linkedDoctorsWaitingForDoctor => 'Waiting for doctor';
+
+  @override
+  String get linkedDoctorsCancelRequest => 'Cancel request';
+
+  @override
   String linkedDoctorsRevokeDialogTitle(String name) {
     return 'Stop sharing with $name?';
   }
@@ -1506,6 +1512,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get linkDoctorNmcDisclaimer =>
       'Sharing readings does not create a doctor-patient relationship. Your doctor must confirm any treatment separately. In an emergency, call 108.';
+
+  @override
+  String linkDoctorRequestSent(String name) {
+    return 'Request sent to $name. You will get access once the doctor accepts.';
+  }
 
   @override
   String linkDoctorSuccess(String name) {

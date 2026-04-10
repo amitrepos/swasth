@@ -308,19 +308,48 @@ class DoctorProfile(Base):
 
 
 class DoctorPatientLink(Base):
-    """Consent-based link between a doctor and a patient profile."""
+    """Consent-based link between a doctor and a patient profile.
+
+    Lifecycle (NMC 2020 Telemedicine Guidelines § 1.4.1, § 3.3):
+      1. Patient creates the link via POST /api/doctor/link/{profile_id}.
+         Row is inserted with `status='pending_doctor_accept'` and
+         `is_active=False` — the doctor CANNOT see patient data yet.
+      2. Doctor reviews the pending request via GET /api/doctor/patients/pending
+         and either accepts (with a required `examined_on` date and
+         `examined_for_condition` attestation) or declines.
+      3. On accept, `status='active'`, `is_active=True`, `accepted_at` and
+         `accepted_by_doctor_id` stamped. Only now does the doctor get
+         read access to the patient's readings.
+      4. Either side can transition `active → revoked` at any time via
+         DELETE /api/doctor/link/{profile_id}.
+
+    `is_active` is kept for backwards compatibility with pre-Phase-4
+    code paths (existing queries across the codebase). Going forward,
+    `status` is the source of truth — `is_active` is always
+    `status == 'active'`.
+    """
     __tablename__ = "doctor_patient_links"
 
     id = Column(Integer, primary_key=True, index=True)
     doctor_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # Consent
+    # Consent (patient side)
     consent_granted_at = Column(DateTime(timezone=True), nullable=False)
     consent_granted_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # may be family member
     consent_type = Column(String, nullable=False)                   # "in_person_exam" or "video_consult"
-    is_active = Column(Boolean, default=True)
+
+    # Lifecycle state — see class docstring.
+    status = Column(String, nullable=False, default="pending_doctor_accept")
+    is_active = Column(Boolean, default=False)
     revoked_at = Column(DateTime(timezone=True), nullable=True)
+    revoke_reason = Column(String, nullable=True)
+
+    # Doctor attestation (required at accept time; NMC First Consult evidence)
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    accepted_by_doctor_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    examined_on = Column(Date, nullable=True)                       # doctor's declared exam date
+    examined_for_condition = Column(String, nullable=True)          # what the exam covered
 
     # Doctor code used to establish link
     doctor_code_used = Column(String(8), nullable=True)

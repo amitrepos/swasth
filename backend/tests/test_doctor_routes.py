@@ -87,15 +87,29 @@ def patient_headers(patient_user):
 
 @pytest.fixture()
 def linked_doctor_patient(db, doctor_user, patient_user):
-    """Create an active doctor-patient link."""
+    """Create an already-accepted (active) doctor-patient link.
+
+    Post-Phase-4, new links default to `status='pending_doctor_accept'`
+    until the doctor accepts them. For tests that want a fully linked
+    doctor+patient out of the box, this fixture bypasses the pending
+    flow and inserts an active row with a fake accept attestation.
+    """
+    from datetime import date, timedelta
     _, profile = patient_user
+    now = datetime.now(timezone.utc)
     link = models.DoctorPatientLink(
         doctor_id=doctor_user.id,
         profile_id=profile.id,
-        consent_granted_at=datetime.now(timezone.utc),
+        consent_granted_at=now,
         consent_granted_by=patient_user[0].id,
         consent_type="in_person_exam",
         doctor_code_used="DRRAJ52",
+        status="active",
+        is_active=True,
+        accepted_at=now,
+        accepted_by_doctor_id=doctor_user.id,
+        examined_on=date.today() - timedelta(days=7),
+        examined_for_condition="Type 2 diabetes follow-up",
         triage_status="stable",
         compliance_7d=5,
     )
@@ -244,7 +258,12 @@ class TestDoctorLookup:
 # ---------------------------------------------------------------------------
 
 class TestDoctorLink:
-    def test_link_success(self, client, doctor_user, patient_user, patient_headers):
+    def test_link_creates_pending_request(
+        self, client, doctor_user, patient_user, patient_headers
+    ):
+        """Post-Phase-4: patient-initiated links start in
+        `pending_doctor_accept`, not active. Doctor must explicitly
+        accept before the link grants data access."""
         _, profile = patient_user
         resp = client.post(
             f"/api/doctor/link/{profile.id}",
@@ -254,10 +273,13 @@ class TestDoctorLink:
         assert resp.status_code == 201
         body = resp.json()
         assert body["doctor_name"] == "Dr. Rajesh Verma"
-        assert body["is_active"] is True
         assert body["consent_type"] == "in_person_exam"
+        assert body["status"] == "pending_doctor_accept"
+        assert body["is_active"] is False
 
-    def test_link_duplicate_rejected(self, client, doctor_user, patient_user, patient_headers, linked_doctor_patient):
+    def test_link_duplicate_active_rejected(
+        self, client, doctor_user, patient_user, patient_headers, linked_doctor_patient
+    ):
         _, profile = patient_user
         resp = client.post(
             f"/api/doctor/link/{profile.id}",
@@ -266,6 +288,26 @@ class TestDoctorLink:
         )
         assert resp.status_code == 400
         assert "already linked" in resp.json()["detail"].lower()
+
+    def test_link_duplicate_pending_rejected(
+        self, client, doctor_user, patient_user, patient_headers
+    ):
+        """If the patient has already sent a pending request, a second
+        request for the same doctor is rejected with a distinct message."""
+        _, profile = patient_user
+        first = client.post(
+            f"/api/doctor/link/{profile.id}",
+            json={"doctor_code": "DRRAJ52", "consent_type": "in_person_exam"},
+            headers=patient_headers,
+        )
+        assert first.status_code == 201
+        second = client.post(
+            f"/api/doctor/link/{profile.id}",
+            json={"doctor_code": "DRRAJ52", "consent_type": "in_person_exam"},
+            headers=patient_headers,
+        )
+        assert second.status_code == 400
+        assert "waiting" in second.json()["detail"].lower()
 
     def test_link_invalid_code(self, client, patient_user, patient_headers):
         _, profile = patient_user
@@ -424,6 +466,8 @@ class TestKnownDoctors:
                 consent_granted_by=user.id,
                 consent_type="in_person_exam",
                 doctor_code_used="DRRAJ52",
+                status="active",
+                is_active=True,
             )
         )
         db.flush()
@@ -445,6 +489,7 @@ class TestKnownDoctors:
         doctor_user,
         linked_doctor_patient,
     ):
+        linked_doctor_patient.status = "revoked"
         linked_doctor_patient.is_active = False
         linked_doctor_patient.revoked_at = datetime.now(timezone.utc)
         db.flush()
@@ -500,6 +545,8 @@ class TestKnownDoctors:
                 consent_granted_by=owner.id,
                 consent_type="in_person_exam",
                 doctor_code_used="DRRAJ52",
+                status="active",
+                is_active=True,
             )
         )
         db.flush()
@@ -516,6 +563,240 @@ class TestKnownDoctors:
     def test_requires_authentication(self, client):
         resp = client.get(self.URL)
         assert resp.status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 — doctor-side accept/decline flow
+# ---------------------------------------------------------------------------
+
+
+class TestDoctorAcceptFlow:
+    """State machine tests for the Phase 4 accept/decline flow."""
+
+    def _create_pending_link(self, client, patient_headers, profile_id):
+        resp = client.post(
+            f"/api/doctor/link/{profile_id}",
+            json={"doctor_code": "DRRAJ52", "consent_type": "in_person_exam"},
+            headers=patient_headers,
+        )
+        assert resp.status_code == 201, resp.text
+        return resp.json()
+
+    def test_patient_link_starts_pending(
+        self, client, doctor_user, patient_user, patient_headers
+    ):
+        _, profile = patient_user
+        body = self._create_pending_link(client, patient_headers, profile.id)
+        assert body["status"] == "pending_doctor_accept"
+        assert body["is_active"] is False
+
+    def test_pending_link_appears_in_doctor_queue(
+        self, client, doctor_user, doctor_headers, patient_user, patient_headers
+    ):
+        _, profile = patient_user
+        self._create_pending_link(client, patient_headers, profile.id)
+
+        resp = client.get("/api/doctor/patients/pending", headers=doctor_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 1
+        entry = body[0]
+        assert entry["profile_id"] == profile.id
+        assert entry["profile_name"] == profile.name
+        assert entry["consent_type"] == "in_person_exam"
+
+    def test_pending_link_blocks_doctor_from_reading_data(
+        self, client, doctor_user, doctor_headers, patient_user, patient_headers
+    ):
+        """While pending, the doctor must NOT be able to view readings,
+        profile info, or add notes on the patient."""
+        _, profile = patient_user
+        self._create_pending_link(client, patient_headers, profile.id)
+
+        # Triage board excludes pending links
+        triage = client.get("/api/doctor/patients", headers=doctor_headers)
+        assert triage.status_code == 200
+        assert triage.json() == []
+
+        # Per-profile endpoints return 403
+        readings = client.get(
+            f"/api/doctor/patients/{profile.id}/readings", headers=doctor_headers
+        )
+        assert readings.status_code == 403
+
+        profile_resp = client.get(
+            f"/api/doctor/patients/{profile.id}/profile", headers=doctor_headers
+        )
+        assert profile_resp.status_code == 403
+
+    def test_doctor_accepts_pending_link(
+        self,
+        client,
+        db,
+        doctor_user,
+        doctor_headers,
+        patient_user,
+        patient_headers,
+    ):
+        from datetime import date, timedelta
+        _, profile = patient_user
+        self._create_pending_link(client, patient_headers, profile.id)
+
+        exam_date = (date.today() - timedelta(days=14)).isoformat()
+        resp = client.post(
+            f"/api/doctor/patients/{profile.id}/accept",
+            headers=doctor_headers,
+            json={
+                "examined_on": exam_date,
+                "examined_for_condition": "Type 2 diabetes follow-up",
+            },
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "active"
+        assert body["examined_on"] == exam_date
+
+        # Link is now active — doctor can see triage + readings
+        triage = client.get("/api/doctor/patients", headers=doctor_headers)
+        assert triage.status_code == 200
+        assert len(triage.json()) == 1
+
+        # DB state: status=active, is_active=True, attestation recorded
+        link = (
+            db.query(models.DoctorPatientLink)
+            .filter(
+                models.DoctorPatientLink.doctor_id == doctor_user.id,
+                models.DoctorPatientLink.profile_id == profile.id,
+            )
+            .first()
+        )
+        assert link.status == "active"
+        assert link.is_active is True
+        assert link.accepted_at is not None
+        assert link.accepted_by_doctor_id == doctor_user.id
+        assert link.examined_for_condition == "Type 2 diabetes follow-up"
+
+    def test_accept_rejects_future_exam_date(
+        self, client, doctor_user, doctor_headers, patient_user, patient_headers
+    ):
+        from datetime import date, timedelta
+        _, profile = patient_user
+        self._create_pending_link(client, patient_headers, profile.id)
+
+        future_date = (date.today() + timedelta(days=1)).isoformat()
+        resp = client.post(
+            f"/api/doctor/patients/{profile.id}/accept",
+            headers=doctor_headers,
+            json={
+                "examined_on": future_date,
+                "examined_for_condition": "Something",
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_accept_rejects_exam_older_than_6_months(
+        self, client, doctor_user, doctor_headers, patient_user, patient_headers
+    ):
+        from datetime import date, timedelta
+        _, profile = patient_user
+        self._create_pending_link(client, patient_headers, profile.id)
+
+        old_date = (date.today() - timedelta(days=200)).isoformat()
+        resp = client.post(
+            f"/api/doctor/patients/{profile.id}/accept",
+            headers=doctor_headers,
+            json={
+                "examined_on": old_date,
+                "examined_for_condition": "Something",
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_accept_rejects_missing_condition(
+        self, client, doctor_user, doctor_headers, patient_user, patient_headers
+    ):
+        from datetime import date, timedelta
+        _, profile = patient_user
+        self._create_pending_link(client, patient_headers, profile.id)
+
+        resp = client.post(
+            f"/api/doctor/patients/{profile.id}/accept",
+            headers=doctor_headers,
+            json={
+                "examined_on": (date.today() - timedelta(days=5)).isoformat(),
+                "examined_for_condition": "  ",
+            },
+        )
+        assert resp.status_code == 422
+
+    def test_accept_nonexistent_link_404(
+        self, client, doctor_user, doctor_headers, patient_user
+    ):
+        from datetime import date, timedelta
+        _, profile = patient_user
+        resp = client.post(
+            f"/api/doctor/patients/{profile.id}/accept",
+            headers=doctor_headers,
+            json={
+                "examined_on": (date.today() - timedelta(days=5)).isoformat(),
+                "examined_for_condition": "Anything",
+            },
+        )
+        assert resp.status_code == 404
+
+    def test_doctor_declines_pending_link(
+        self,
+        client,
+        db,
+        doctor_user,
+        doctor_headers,
+        patient_user,
+        patient_headers,
+    ):
+        _, profile = patient_user
+        self._create_pending_link(client, patient_headers, profile.id)
+
+        resp = client.post(
+            f"/api/doctor/patients/{profile.id}/decline",
+            headers=doctor_headers,
+            json={"reason": "Not currently accepting new patients"},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "revoked"
+
+        # Link is gone from the patient list + triage
+        linked = client.get(
+            f"/api/doctor/link/{profile.id}", headers=patient_headers
+        )
+        assert linked.status_code == 200
+        assert linked.json() == []
+
+    def test_patient_can_withdraw_pending_request(
+        self, client, doctor_user, patient_user, patient_headers
+    ):
+        """The patient can DELETE their own pending request before the
+        doctor has reviewed it."""
+        _, profile = patient_user
+        self._create_pending_link(client, patient_headers, profile.id)
+
+        resp = client.delete(
+            f"/api/doctor/link/{profile.id}",
+            params={"doctor_code": "DRRAJ52"},
+            headers=patient_headers,
+        )
+        assert resp.status_code == 200
+
+        # Subsequent linked-doctors list should be empty
+        linked = client.get(
+            f"/api/doctor/link/{profile.id}", headers=patient_headers
+        )
+        assert linked.status_code == 200
+        assert linked.json() == []
+
+    def test_non_doctor_cannot_see_pending_queue(self, client, patient_headers):
+        resp = client.get("/api/doctor/patients/pending", headers=patient_headers)
+        assert resp.status_code == 403
 
 
 # ---------------------------------------------------------------------------

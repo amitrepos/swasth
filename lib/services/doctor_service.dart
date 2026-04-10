@@ -37,6 +37,75 @@ class DoctorService {
     );
   }
 
+  /// Phase 4: return pending patient link requests awaiting the
+  /// current doctor's review + attestation.
+  Future<List<Map<String, dynamic>>> getPendingRequests(String token) async {
+    final response = await ApiClient.httpClient
+        .get(
+          Uri.parse('$_baseUrl/patients/pending'),
+          headers: ApiClient.headers(token: token),
+        )
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List;
+      return list.whereType<Map<String, dynamic>>().toList(growable: false);
+    }
+    throw Exception(
+      ApiClient.errorDetail(response, 'Failed to load pending requests'),
+    );
+  }
+
+  /// Phase 4: doctor accepts a pending link with an NMC attestation.
+  /// [examinedOn] must be within the last 6 months per NMC Follow-up
+  /// Consult rules. [condition] is the clinical context the doctor
+  /// examined the patient for (≥3 characters).
+  Future<Map<String, dynamic>> acceptPatientLink(
+    String token,
+    int profileId, {
+    required DateTime examinedOn,
+    required String condition,
+  }) async {
+    final isoDate =
+        '${examinedOn.year.toString().padLeft(4, '0')}-${examinedOn.month.toString().padLeft(2, '0')}-${examinedOn.day.toString().padLeft(2, '0')}';
+    final response = await ApiClient.httpClient
+        .post(
+          Uri.parse('$_baseUrl/patients/$profileId/accept'),
+          headers: ApiClient.headers(token: token),
+          body: jsonEncode({
+            'examined_on': isoDate,
+            'examined_for_condition': condition,
+          }),
+        )
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception(
+      ApiClient.errorDetail(response, 'Failed to accept patient'),
+    );
+  }
+
+  /// Phase 4: doctor declines a pending link with an optional reason.
+  Future<void> declinePatientLink(
+    String token,
+    int profileId, {
+    String? reason,
+  }) async {
+    final response = await ApiClient.httpClient
+        .post(
+          Uri.parse('$_baseUrl/patients/$profileId/decline'),
+          headers: ApiClient.headers(token: token),
+          body: jsonEncode({
+            if (reason != null && reason.isNotEmpty) 'reason': reason,
+          }),
+        )
+        .timeout(_kTimeout);
+    if (response.statusCode == 200) return;
+    throw Exception(
+      ApiClient.errorDetail(response, 'Failed to decline patient'),
+    );
+  }
+
   /// Get triage board — all linked patients sorted by criticality.
   Future<List<dynamic>> getTriageBoard(String token) async {
     final response = await ApiClient.httpClient

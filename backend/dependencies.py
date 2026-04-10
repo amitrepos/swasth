@@ -106,7 +106,7 @@ def get_doctor_patient_access(
         .filter(
             models.DoctorPatientLink.doctor_id == user.id,
             models.DoctorPatientLink.profile_id == profile_id,
-            models.DoctorPatientLink.is_active == True,  # noqa: E712
+            models.DoctorPatientLink.status == "active",
         )
         .first()
     )
