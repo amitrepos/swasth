@@ -8,7 +8,9 @@ import '../services/profile_service.dart';
 import '../services/api_service.dart';
 import '../models/profile_model.dart';
 import '../providers/language_provider.dart';
+import 'link_doctor_screen.dart';
 import 'manage_access_screen.dart';
+import 'my_linked_doctors_screen.dart';
 import 'privacy_policy_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -79,9 +81,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading profile: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading profile: $e')));
       }
     }
   }
@@ -95,15 +97,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _changePassword() async {
     final l10n = AppLocalizations.of(context)!;
     if (_currentPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.enterCurrentPassword), backgroundColor: AppColors.statusCritical));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.enterCurrentPassword),
+          backgroundColor: AppColors.statusCritical,
+        ),
+      );
       return;
     }
     if (_newPasswordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordTooShort), backgroundColor: AppColors.statusCritical));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.passwordTooShort),
+          backgroundColor: AppColors.statusCritical,
+        ),
+      );
       return;
     }
     if (_newPasswordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordsDoNotMatch), backgroundColor: AppColors.statusCritical));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.passwordsDoNotMatch),
+          backgroundColor: AppColors.statusCritical,
+        ),
+      );
       return;
     }
 
@@ -118,13 +135,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.passwordChanged), backgroundColor: AppColors.statusNormal));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.passwordChanged),
+            backgroundColor: AppColors.statusNormal,
+          ),
+        );
         _clearPasswordFields();
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppColors.statusCritical));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.statusCritical,
+          ),
+        );
       }
     }
   }
@@ -137,7 +164,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: Text(l10n.deleteAccount),
         content: Text(l10n.deleteAccountConfirmMessage),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -147,16 +177,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 await ApiService().deleteAccount(token);
                 await StorageService().clearEverything();
                 if (!mounted) return;
-                Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/login', (_) => false);
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString()), backgroundColor: AppColors.statusCritical),
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: AppColors.statusCritical,
+                    ),
                   );
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusCritical, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusCritical,
+              foregroundColor: Colors.white,
+            ),
             child: Text(l10n.deleteAccountConfirm),
           ),
         ],
@@ -188,8 +226,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       labelText: l10n.currentPasswordLabel,
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
-                        icon: Icon(obscureCurrentPassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setDialogState(() => obscureCurrentPassword = !obscureCurrentPassword),
+                        icon: Icon(
+                          obscureCurrentPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () => setDialogState(
+                          () =>
+                              obscureCurrentPassword = !obscureCurrentPassword,
+                        ),
                       ),
                     ),
                   ),
@@ -201,8 +246,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       labelText: l10n.newPasswordLabel,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        icon: Icon(obscureNewPassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setDialogState(() => obscureNewPassword = !obscureNewPassword),
+                        icon: Icon(
+                          obscureNewPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () => setDialogState(
+                          () => obscureNewPassword = !obscureNewPassword,
+                        ),
                       ),
                       helperText: l10n.passwordMinChars,
                     ),
@@ -215,8 +266,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       labelText: l10n.confirmNewPasswordLabel,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        icon: Icon(obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setDialogState(() => obscureConfirmPassword = !obscureConfirmPassword),
+                        icon: Icon(
+                          obscureConfirmPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () => setDialogState(
+                          () =>
+                              obscureConfirmPassword = !obscureConfirmPassword,
+                        ),
                       ),
                     ),
                   ),
@@ -225,7 +283,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () { _clearPasswordFields(); Navigator.pop(dialogContext); },
+                onPressed: () {
+                  _clearPasswordFields();
+                  Navigator.pop(dialogContext);
+                },
                 child: Text(l10n.cancel),
               ),
               ElevatedButton(
@@ -255,9 +316,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (token == null) throw Exception('Not authenticated');
 
       final data = <String, dynamic>{
-        'doctor_name': _doctorNameController.text.trim().isEmpty ? null : _doctorNameController.text.trim(),
-        'doctor_specialty': _doctorSpecialtyController.text.trim().isEmpty ? null : _doctorSpecialtyController.text.trim(),
-        'doctor_whatsapp': _doctorWhatsappController.text.trim().isEmpty ? null : _doctorWhatsappController.text.trim(),
+        'doctor_name': _doctorNameController.text.trim().isEmpty
+            ? null
+            : _doctorNameController.text.trim(),
+        'doctor_specialty': _doctorSpecialtyController.text.trim().isEmpty
+            ? null
+            : _doctorSpecialtyController.text.trim(),
+        'doctor_whatsapp': _doctorWhatsappController.text.trim().isEmpty
+            ? null
+            : _doctorWhatsappController.text.trim(),
       };
       final age = int.tryParse(_ageController.text);
       if (age != null) data['age'] = age;
@@ -272,14 +339,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         await _loadData();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.save), backgroundColor: AppColors.statusNormal),
+            SnackBar(
+              content: Text(l10n.save),
+              backgroundColor: AppColors.statusNormal,
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.statusCritical),
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.statusCritical,
+          ),
         );
       }
     }
@@ -299,7 +372,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Expanded(
               child: Text(
                 l10n.appLanguageSection,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
             Container(
@@ -310,10 +386,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _langChip(l10n.languageEnglish, isEnglish,
-                      () => ref.read(languageProvider.notifier).setLanguage('en')),
-                  _langChip(l10n.languageHindi, !isEnglish,
-                      () => ref.read(languageProvider.notifier).setLanguage('hi')),
+                  _langChip(
+                    l10n.languageEnglish,
+                    isEnglish,
+                    () => ref.read(languageProvider.notifier).setLanguage('en'),
+                  ),
+                  _langChip(
+                    l10n.languageHindi,
+                    !isEnglish,
+                    () => ref.read(languageProvider.notifier).setLanguage('hi'),
+                  ),
                 ],
               ),
             ),
@@ -330,13 +412,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+          color: selected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : Theme.of(context).colorScheme.onSurface,
+            color: selected
+                ? Colors.white
+                : Theme.of(context).colorScheme.onSurface,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
             fontSize: 14,
           ),
@@ -389,7 +475,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [AppColors.primary, Color(0xFF38BDF8)],  // sky-500 → sky-400
+                  colors: [
+                    AppColors.primary,
+                    Color(0xFF38BDF8),
+                  ], // sky-500 → sky-400
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -399,12 +488,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    child: const Icon(Icons.person, size: 50, color: AppColors.primary),
+                    child: const Icon(
+                      Icons.person,
+                      size: 50,
+                      color: AppColors.primary,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     _profile?.name ?? 'N/A',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600, color: Colors.white),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -437,7 +533,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Expanded(
                       child: TextFormField(
                         controller: _heightEditController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: InputDecoration(
                           labelText: l10n.heightField,
                           prefixIcon: const Icon(Icons.straighten),
@@ -453,7 +551,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Expanded(
                       child: TextFormField(
                         controller: _weightEditController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Weight',
                           prefixIcon: Icon(Icons.monitor_weight_outlined),
@@ -463,20 +563,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildInfoCard(icon: Icons.male, label: l10n.genderField, value: _profile?.gender ?? '—'),
+                      child: _buildInfoCard(
+                        icon: Icons.male,
+                        label: l10n.genderField,
+                        value: _profile?.gender ?? '—',
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                _buildInfoCard(icon: Icons.bloodtype, label: l10n.bloodGroupField, value: _profile?.bloodGroup ?? '—'),
+                _buildInfoCard(
+                  icon: Icons.bloodtype,
+                  label: l10n.bloodGroupField,
+                  value: _profile?.bloodGroup ?? '—',
+                ),
               ]),
-              if (_profile?.medicalConditions != null && _profile!.medicalConditions!.isNotEmpty)
+              if (_profile?.medicalConditions != null &&
+                  _profile!.medicalConditions!.isNotEmpty)
                 _buildSection(l10n.medicalConditionsField, [
                   _buildInfoCard(
                     icon: Icons.medical_services,
                     label: l10n.medicalConditionsField,
-                    value: _profile!.medicalConditions!.join(", ") +
-                        (_profile!.otherMedicalCondition != null ? " (${_profile!.otherMedicalCondition})" : ""),
+                    value:
+                        _profile!.medicalConditions!.join(", ") +
+                        (_profile!.otherMedicalCondition != null
+                            ? " (${_profile!.otherMedicalCondition})"
+                            : ""),
                   ),
                 ]),
               _buildSection(l10n.doctorDetailsSection, [
@@ -507,7 +619,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ]),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -518,7 +633,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
@@ -526,39 +643,141 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ] else ...[
               // Read-only view for non-owners
               _buildSection(l10n.healthInfoSection, [
-                _buildInfoCard(icon: Icons.cake, label: l10n.ageField, value: l10n.ageYears('${_profile?.age ?? "?"}')),
-                _buildInfoCard(icon: Icons.male, label: l10n.genderField, value: _profile?.gender ?? '—'),
-                _buildInfoCard(icon: Icons.bloodtype, label: l10n.bloodGroupField, value: _profile?.bloodGroup ?? '—'),
-                _buildInfoCard(icon: Icons.straighten, label: l10n.heightField, value: l10n.heightCm('${_profile?.height ?? "?"}')),
-                _buildInfoCard(icon: Icons.monitor_weight, label: 'Weight', value: _profile?.weight != null ? '${_profile!.weight} kg' : '?'),
+                _buildInfoCard(
+                  icon: Icons.cake,
+                  label: l10n.ageField,
+                  value: l10n.ageYears('${_profile?.age ?? "?"}'),
+                ),
+                _buildInfoCard(
+                  icon: Icons.male,
+                  label: l10n.genderField,
+                  value: _profile?.gender ?? '—',
+                ),
+                _buildInfoCard(
+                  icon: Icons.bloodtype,
+                  label: l10n.bloodGroupField,
+                  value: _profile?.bloodGroup ?? '—',
+                ),
+                _buildInfoCard(
+                  icon: Icons.straighten,
+                  label: l10n.heightField,
+                  value: l10n.heightCm('${_profile?.height ?? "?"}'),
+                ),
+                _buildInfoCard(
+                  icon: Icons.monitor_weight,
+                  label: 'Weight',
+                  value: _profile?.weight != null
+                      ? '${_profile!.weight} kg'
+                      : '?',
+                ),
               ]),
-              if (_profile?.medicalConditions != null && _profile!.medicalConditions!.isNotEmpty)
+              if (_profile?.medicalConditions != null &&
+                  _profile!.medicalConditions!.isNotEmpty)
                 _buildSection(l10n.medicalConditionsField, [
                   _buildInfoCard(
                     icon: Icons.medical_services,
                     label: l10n.medicalConditionsField,
-                    value: _profile!.medicalConditions!.join(", ") +
-                        (_profile!.otherMedicalCondition != null ? " (${_profile!.otherMedicalCondition})" : ""),
+                    value:
+                        _profile!.medicalConditions!.join(", ") +
+                        (_profile!.otherMedicalCondition != null
+                            ? " (${_profile!.otherMedicalCondition})"
+                            : ""),
                   ),
                 ]),
               if (_profile?.doctorName?.isNotEmpty == true)
                 _buildSection(l10n.doctorDetailsSection, [
-                  _buildInfoCard(icon: Icons.medical_services_outlined, label: l10n.doctorNameField, value: _profile!.doctorName!),
+                  _buildInfoCard(
+                    icon: Icons.medical_services_outlined,
+                    label: l10n.doctorNameField,
+                    value: _profile!.doctorName!,
+                  ),
                   if (_profile?.doctorSpecialty?.isNotEmpty == true)
-                    _buildInfoCard(icon: Icons.domain_outlined, label: l10n.doctorSpecialtyField, value: _profile!.doctorSpecialty!),
+                    _buildInfoCard(
+                      icon: Icons.domain_outlined,
+                      label: l10n.doctorSpecialtyField,
+                      value: _profile!.doctorSpecialty!,
+                    ),
                   if (_profile?.doctorWhatsapp?.isNotEmpty == true)
-                    _buildInfoCard(icon: Icons.phone_outlined, label: l10n.doctorWhatsappField, value: _profile!.doctorWhatsapp!),
+                    _buildInfoCard(
+                      icon: Icons.phone_outlined,
+                      label: l10n.doctorWhatsappField,
+                      value: _profile!.doctorWhatsapp!,
+                    ),
                 ]),
             ],
 
             if (isOwner)
-              _buildSection(l10n.accountSettingsSection, [
-                _buildInfoCard(icon: Icons.email, label: l10n.linkedEmail, value: _userData?['email'] ?? 'N/A'),
+              _buildSection(l10n.shareWithDoctorSection, [
+                GlassCard(
+                  borderRadius: 16,
+                  child: ListTile(
+                    key: const Key('profile_link_doctor_tile'),
+                    leading: const Icon(
+                      Icons.medical_services_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(l10n.linkDoctorTitle),
+                    subtitle: Text(l10n.linkDoctorHeadline),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () async {
+                      // Capture the navigator before the async gap so
+                      // the linter can prove context isn't used across
+                      // an await. LinkDoctorScreen reads the active
+                      // profile ID from StorageService.
+                      final navigator = Navigator.of(context);
+                      await StorageService().saveActiveProfileId(
+                        widget.profileId,
+                      );
+                      if (!mounted) return;
+                      await navigator.push(
+                        MaterialPageRoute(
+                          builder: (_) => const LinkDoctorScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 const SizedBox(height: 8),
                 GlassCard(
                   borderRadius: 16,
                   child: ListTile(
-                    leading: const Icon(Icons.lock_outline, color: AppColors.primary),
+                    key: const Key('profile_linked_doctors_tile'),
+                    leading: const Icon(
+                      Icons.people_outline,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(l10n.linkedDoctorsTileTitle),
+                    subtitle: Text(l10n.linkedDoctorsTileSubtitle),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MyLinkedDoctorsScreen(
+                            profileId: widget.profileId,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ]),
+
+            if (isOwner)
+              _buildSection(l10n.accountSettingsSection, [
+                _buildInfoCard(
+                  icon: Icons.email,
+                  label: l10n.linkedEmail,
+                  value: _userData?['email'] ?? 'N/A',
+                ),
+                const SizedBox(height: 8),
+                GlassCard(
+                  borderRadius: 16,
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.lock_outline,
+                      color: AppColors.primary,
+                    ),
                     title: Text(l10n.changePassword),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: _showChangePasswordDialog,
@@ -570,18 +789,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 GlassCard(
                   borderRadius: 16,
                   child: ListTile(
-                    leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.primary),
+                    leading: const Icon(
+                      Icons.privacy_tip_outlined,
+                      color: AppColors.primary,
+                    ),
                     title: Text(l10n.privacyPolicy),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 GlassCard(
                   borderRadius: 16,
                   child: ListTile(
-                    leading: const Icon(Icons.delete_forever, color: AppColors.statusCritical),
-                    title: Text(l10n.deleteAccount, style: const TextStyle(color: AppColors.statusCritical)),
+                    leading: const Icon(
+                      Icons.delete_forever,
+                      color: AppColors.statusCritical,
+                    ),
+                    title: Text(
+                      l10n.deleteAccount,
+                      style: const TextStyle(color: AppColors.statusCritical),
+                    ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: _confirmDeleteAccount,
                   ),
@@ -601,7 +834,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           ...children,
         ],
@@ -609,14 +847,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoCard({required IconData icon, required String label, required String value}) {
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
     return GlassCard(
       margin: const EdgeInsets.only(bottom: 8),
       borderRadius: 16,
       child: ListTile(
         leading: Icon(icon, color: AppColors.primary),
-        title: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-        subtitle: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        title: Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        subtitle: Text(
+          value,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

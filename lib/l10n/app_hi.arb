@@ -24,6 +24,7 @@
   "forgotPassword": "पासवर्ड भूल गए?",
   "loginButton": "लॉग इन करें",
   "noAccount": "खाता नहीं है?",
+  "loginDoctorRegisterLink": "क्या आप डॉक्टर हैं? यहाँ रजिस्टर करें",
   "register": "रजिस्टर करें",
   "loginSuccessful": "लॉग इन सफल!",
   "emailValidationEmpty": "कृपया अपना ईमेल डालें",
@@ -39,7 +40,7 @@
   "phoneValidationLength": "फोन नंबर 10-15 अंकों का होना चाहिए",
   "confirmPasswordLabel": "पासवर्ड दोबारा डालें",
   "profileNameLabel": "प्रोफाइल नाम",
-  "relationshipLabel": "रिश्ता",
+  "relationshipLabel": "रोगी से संबंध",
   "ageLabel": "उम्र",
   "genderLabel": "लिंग",
   "heightLabel": "लंबाई (सेमी)",
@@ -190,6 +191,37 @@
   "heightCm": "{height} सेमी",
   "medicalConditionsField": "बीमारियां",
   "accountSettingsSection": "खाता सेटिंग",
+  "shareWithDoctorSection": "डॉक्टर के साथ साझा करें",
+  "linkedDoctorsTileTitle": "पहुँच वाले डॉक्टर",
+  "linkedDoctorsTileSubtitle": "देखें कि कौन आपकी रीडिंग देख सकता है",
+  "linkedDoctorsTitle": "पहुँच वाले डॉक्टर",
+  "linkedDoctorsEmpty": "अभी इस प्रोफाइल से कोई डॉक्टर जुड़ा नहीं है।",
+  "linkedDoctorsEmptyHint": "अपनी रीडिंग साझा करने के लिए प्रोफाइल पर 'डॉक्टर जोड़ें' पर टैप करें।",
+  "linkedDoctorsError": "जुड़े डॉक्टरों की सूची लोड नहीं हो सकी।",
+  "linkedDoctorsLinkedSince": "{date} से जुड़े",
+  "@linkedDoctorsLinkedSince": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "linkedDoctorsRevoke": "साझा करना बंद करें",
+  "linkedDoctorsRevokeDialogTitle": "{name} के साथ साझा करना बंद करें?",
+  "@linkedDoctorsRevokeDialogTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkedDoctorsRevokeDialogBody": "यह डॉक्टर अब आपकी पुरानी या नई रीडिंग नहीं देख सकेंगे। आप कभी भी फिर से जोड़ सकते हैं।",
+  "linkedDoctorsRevokeConfirm": "साझा करना बंद करें",
+  "linkedDoctorsRevokeSuccess": "{name} अब आपकी रीडिंग नहीं देख सकते।",
+  "@linkedDoctorsRevokeSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "adminMenuTooltip": "एडमिन",
+  "adminMenuDashboard": "डैशबोर्ड खोलें",
+  "adminMenuCreateUser": "यूज़र बनाएं",
   "linkedEmail": "लिंक ईमेल",
   "changePassword": "पासवर्ड बदलें",
   "privacyPolicy": "गोपनीयता नीति",
@@ -302,7 +334,6 @@
   "lastBP": "पिछला BP",
   "lastSugar": "पिछला शुगर",
   "liveSteps": "कदम",
-  "relationshipLabel": "रोगी से संबंध",
   "relationshipFather": "पिता",
   "relationshipMother": "माता",
   "relationshipSpouse": "पति/पत्नी",
@@ -359,7 +390,13 @@
   "loggedInOffline": "ऑफ़लाइन लॉगिन हुआ",
   "readingSavedOffline": "रीडिंग ऑफ़लाइन सहेजी गई। कनेक्ट होने पर सिंक होगी।",
   "syncComplete": "{count} रीडिंग सिंक हुईं",
-  "@syncComplete": { "placeholders": { "count": { "type": "int" } } },
+  "@syncComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "offlineLoginExpired": "लॉगिन करने के लिए इंटरनेट से कनेक्ट करें",
   "heartStatusHealthy": "बहुत अच्छा!",
   "heartStatusCaution": "आज ध्यान रखें",
@@ -398,7 +435,6 @@
   "foodDisclaimer": "सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं",
   "foodPhotoSaved": "खाना दर्ज हो गया!",
   "foodPhotoSaveFailed": "खाना सेव नहीं हुआ। कृपया दोबारा कोशिश करें।",
-
   "mealsTileLabel": "खाना",
   "mealsTodayCount": "{count} आज",
   "todaysMeals": "आज का खाना",
@@ -409,7 +445,6 @@
   "quickSelectOption": "तुरंत चुनें",
   "scanFoodPhotoOption": "फोटो स्कैन करें",
   "photoAiHint": "फोटो से AI कार्ब लेवल पता करता है",
-
   "wellnessHubTitle": "{relationship} का वेलनेस हब",
   "wellnessHubSubtitle": "{name} | {location}",
   "caregiverStatusGreat": "आपकी {relationship} आज ठीक हैं। सभी रीडिंग सामान्य हैं।",
@@ -421,5 +456,161 @@
   "noRecentActivity": "कोई हालिया गतिविधि नहीं",
   "wellnessRingTitle": "वेलनेस रिंग",
   "takeReadings": "रीडिंग लें",
-  "backToWellnessHub": "वेलनेस हब पर वापस जाएं"
+  "backToWellnessHub": "वेलनेस हब पर वापस जाएं",
+  "glucometerPrerequisites": "ग्लूकोमीटर – पूर्वापेक्षाएं:",
+  "@glucometerPrerequisites": {
+    "description": "Title for glucometer prerequisites section"
+  },
+  "tapDeviceToConnect": "कनेक्ट करने के लिए ऊपर डिवाइस आइकन टैप करें",
+  "@tapDeviceToConnect": {
+    "description": "Status message when no device is connected"
+  },
+  "tapToConnectDevice": "कनेक्ट करने के लिए टैप करें",
+  "@tapToConnectDevice": {
+    "description": "Instruction to tap and connect device"
+  },
+  "alreadyConnectedMessage": "{deviceType} पहले से कनेक्टेड है। दूसरे {deviceType} की खोज करें?",
+  "@alreadyConnectedMessage": {
+    "description": "Message when device is already connected",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scanForDeviceMessage": "{deviceType} की खोज करें?",
+  "@scanForDeviceMessage": {
+    "description": "Confirmation message to scan for device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "bpTransferHint": "\n\nडिवाइस पर BT बटन एक बार दबाएं (धीमी LED = ट्रांसफर मोड)।",
+  "@bpTransferHint": {
+    "description": "Hint for BP device transfer mode"
+  },
+  "connectDeviceType": "{deviceType} कनेक्ट करें",
+  "@connectDeviceType": {
+    "description": "Button to connect device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scan": "खोजें",
+  "@scan": {
+    "description": "Button to start scanning"
+  },
+  "bpHistory": "BP इतिहास",
+  "@bpHistory": {
+    "description": "Title for BP history section"
+  },
+  "recordsCount": "{count} रिकॉर्ड",
+  "@recordsCount": {
+    "description": "Count of records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allRecords": "सभी रिकॉर्ड",
+  "@allRecords": {
+    "description": "Title for all records section"
+  },
+  "viewAllHistory": "संपूर्ण इतिहास देखें",
+  "@viewAllHistory": {
+    "description": "Tooltip for history button"
+  },
+  "deviceDisconnected": "डिवाइस डिस्कनेक्ट हो गया",
+  "@deviceDisconnected": {
+    "description": "Message shown when device is disconnected"
+  },
+  "unknownDevice": "अज्ञात डिवाइस",
+  "@unknownDevice": {
+    "description": "Default name for unnamed BLE devices"
+  },
+  "signalStrength": "सिग्नल: {rssi} dBm",
+  "@signalStrength": {
+    "description": "BLE device signal strength",
+    "placeholders": {
+      "rssi": {
+        "type": "int"
+      }
+    }
+  },
+  "rescan": "पुनः खोजें",
+  "@rescan": {
+    "description": "Button to rescan for devices"
+  },
+
+  "linkDoctorTitle": "डॉक्टर जोड़ें",
+  "linkDoctorHeadline": "अपनी सेहत की रीडिंग डॉक्टर के साथ साझा करें",
+  "linkDoctorCodeLabel": "डॉक्टर कोड",
+  "linkDoctorCodeHint": "जैसे DRRAJ52",
+  "linkDoctorCodeEmpty": "कृपया डॉक्टर कोड डालें",
+  "linkDoctorCodeInvalid": "डॉक्टर कोड बहुत छोटा है",
+  "linkDoctorLookupButton": "डॉक्टर ढूंढें",
+  "linkDoctorLookupFailed": "डॉक्टर नहीं मिला। कोड जांचें।",
+  "linkDoctorCodeHelper": "अपने डॉक्टर से उनका Swasth कोड पूछें (DR से शुरू होता है)",
+  "linkDoctorConsentTitle": "डॉक्टर से कैसे मिले हैं?",
+  "linkDoctorConsentInPerson": "क्लिनिक में जाकर मिले हैं",
+  "linkDoctorConsentInPersonHelp": "मैंने इस डॉक्टर से क्लिनिक में मिलकर जांच कराई है।",
+  "linkDoctorConsentVideo": "वीडियो या फोन पर बात हुई है",
+  "linkDoctorConsentVideoHelp": "मैंने इस डॉक्टर से वीडियो या फोन पर बात की है।",
+  "linkDoctorNotVerified": "सत्यापन जारी है",
+  "linkDoctorNotVerifiedHelp": "डॉक्टर रजिस्टर हैं, Swasth उनके NMC नंबर की जाँच कर रहा है। सत्यापन पूरा होने पर आप जोड़ सकेंगे।",
+  "linkDoctorVerified": "सत्यापित डॉक्टर",
+  "linkDoctorConfirm": "मेरी रीडिंग साझा करें",
+  "linkDoctorConfirmDialogTitle": "अपनी रीडिंग साझा करें?",
+  "linkDoctorConfirmDialogBody": "डॉ. {name} आपकी पुरानी और आने वाली सेहत की रीडिंग देख सकेंगे। आप कभी भी प्रोफाइल से साझा करना बंद कर सकते हैं।",
+  "@linkDoctorConfirmDialogBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkDoctorConfirmDialogShare": "हाँ, साझा करें",
+  "linkDoctorNmcDisclaimer": "रीडिंग साझा करने से डॉक्टर-मरीज़ का रिश्ता नहीं बनता। इलाज के लिए आपके डॉक्टर को अलग से पुष्टि करनी होगी। आपात स्थिति में 108 पर कॉल करें।",
+  "linkDoctorSuccess": "आप अब {name} से जुड़ गए हैं।",
+  "@linkDoctorSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "linkDoctorRevokeHint": "आप कभी भी प्रोफाइल से साझा करना बंद कर सकते हैं।",
+  "linkDoctorNoProfile": "कृपया पहले एक प्रोफाइल चुनें",
+  "linkDoctorSessionExpired": "आपका सत्र समाप्त हो गया है। कृपया लॉग आउट करके फिर से लॉग इन करें।",
+  "linkDoctorNetworkError": "इंटरनेट कनेक्शन नहीं है। कृपया दोबारा कोशिश करें।",
+
+  "doctorRegisterTitle": "डॉक्टर पंजीकरण",
+  "doctorRegisterHeadline": "डॉक्टर के रूप में रजिस्टर करें",
+  "doctorRegisterSubheadline": "Swasth की टीम आपके NMC नंबर की जांच करेगी। उसके बाद ही आप मरीज़ देख पाएंगे।",
+  "doctorFullNameLabel": "पूरा नाम",
+  "doctorNmcLabel": "NMC पंजीकरण संख्या",
+  "doctorNmcHint": "मेडिकल काउंसिल नंबर",
+  "doctorNmcEmpty": "कृपया अपना NMC नंबर डालें",
+  "doctorSpecialtyLabel": "विशेषज्ञता",
+  "doctorClinicLabel": "क्लिनिक या अस्पताल का नाम",
+  "doctorRegisterSubmit": "डॉक्टर खाता बनाएं",
+  "doctorRegisterSuccess": "खाता बन गया। Swasth एडमिन जल्द ही आपका NMC नंबर सत्यापित करेगा।",
+  "doctorSpecialtyGeneral": "सामान्य चिकित्सक",
+  "doctorSpecialtyEndocrinologist": "एंडोक्रिनोलॉजिस्ट",
+  "doctorSpecialtyCardiologist": "हृदय रोग विशेषज्ञ",
+  "doctorSpecialtyDiabetologist": "मधुमेह विशेषज्ञ",
+  "doctorSpecialtyInternal": "आंतरिक चिकित्सा",
+  "doctorSpecialtyFamily": "पारिवारिक चिकित्सा",
+  "doctorSpecialtyOther": "अन्य",
+
+  "adminCreateUserTitle": "यूज़र बनाएं",
+  "adminCreateUserHeadline": "मरीज़ का खाता बनाएं",
+  "adminCreateUserRoleLabel": "खाते का प्रकार",
+  "adminCreateUserRolePatient": "मरीज़",
+  "adminCreateUserRoleDoctor": "डॉक्टर (जल्द आ रहा है)",
+  "adminCreateUserDoctorComingSoon": "अभी डॉक्टर खाते केवल डॉक्टर के खुद के रजिस्ट्रेशन से बन सकते हैं।",
+  "adminCreateUserTempPasswordHelp": "यूज़र को यह पासवर्ड सुरक्षित रूप से दें। वे इसे प्रोफाइल स्क्रीन से बदल सकते हैं।",
+  "adminCreateUserSubmit": "खाता बनाएं",
+  "adminCreateUserSuccess": "{email} के लिए खाता बन गया",
+  "@adminCreateUserSuccess": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "adminCreateUserNmcRequired": "डॉक्टर खाते के लिए NMC नंबर ज़रूरी है"
 }

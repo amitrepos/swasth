@@ -4,19 +4,27 @@ All endpoints require is_admin=True on the authenticated user.
 """
 import json
 import os
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, Response
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import func, distinct, case
 from sqlalchemy.orm import Session
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from typing import Optional
 
+import auth
 import models
 import schemas
 from database import get_db
 from dependencies import get_current_user
+from doctor_utils import ensure_unique_doctor_code
 
 router = APIRouter()
+
+# Rate limiter — disabled under TESTING=true to keep the suite deterministic.
+_limiter_enabled = os.environ.get("TESTING", "").lower() != "true"
+limiter = Limiter(key_func=get_remote_address, enabled=_limiter_enabled)
 
 _DASHBOARD_HTML = os.path.join(os.path.dirname(__file__), "admin_dashboard.html")
 
@@ -581,6 +589,74 @@ def suspend_user(
 
     word = "suspended" if body.suspend else "reactivated"
     return {"message": f"{target.email} has been {word}"}
+
+
+# ---------------------------------------------------------------------------
+# G6: Admin-creates-user (patient only for now)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/admin/users", status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+def admin_create_user(
+    request: Request,
+    body: schemas.AdminCreateUser,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Admin creates a patient account on behalf of a user.
+
+    Doctor-role creation is intentionally blocked (501 Not Implemented)
+    until a first-login onboarding flow exists that captures the doctor's
+    own ToS/DPA consent under DPDPA § 6. Until then, doctors must
+    self-register via /api/doctor/register so their consent chain is clean.
+
+    Patient accounts are created active and ready to log in; the user will
+    still need to complete consent + profile creation on first login via
+    the normal consent_screen.dart path.
+    """
+    if body.role == "doctor":
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail=(
+                "Admin-created doctor accounts are not yet supported. "
+                "Doctors must self-register at /api/doctor/register so their "
+                "DPDPA consent is captured directly."
+            ),
+        )
+
+    if db.query(models.User).filter(models.User.email == body.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    now_utc = datetime.now(timezone.utc)
+    new_user = models.User(
+        email=body.email,
+        password_hash=auth.get_password_hash(body.password),
+        full_name=body.full_name,
+        phone_number=body.phone_number,
+        role=models.UserRole.patient,
+        is_active=True,
+        timezone="Asia/Kolkata",
+        created_at=now_utc,
+        updated_at=now_utc,
+    )
+    db.add(new_user)
+    db.flush()
+
+    # Audit log — only store redacted PII, not the full NMC number or
+    # anything that could re-identify the user beyond what's already keyed.
+    details = {"role": body.role, "email": body.email}
+    _audit_log(db, user, "ADMIN_CREATE_USER", target_user_id=new_user.id, details=details)
+    db.commit()
+    db.refresh(new_user)
+
+    return {
+        "id": new_user.id,
+        "email": new_user.email,
+        "full_name": new_user.full_name,
+        "role": "patient",
+        "message": f"Patient account created for {new_user.email}",
+    }
 
 
 # ---------------------------------------------------------------------------

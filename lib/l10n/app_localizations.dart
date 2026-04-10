@@ -242,6 +242,12 @@ abstract class AppLocalizations {
   /// **'Don\'t have an account?'**
   String get noAccount;
 
+  /// No description provided for @loginDoctorRegisterLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you a doctor? Register here'**
+  String get loginDoctorRegisterLink;
+
   /// No description provided for @register.
   ///
   /// In en, this message translates to:
@@ -1111,6 +1117,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account Settings'**
   String get accountSettingsSection;
+
+  /// No description provided for @shareWithDoctorSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with a Doctor'**
+  String get shareWithDoctorSection;
+
+  /// No description provided for @linkedDoctorsTileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctors with access'**
+  String get linkedDoctorsTileTitle;
+
+  /// No description provided for @linkedDoctorsTileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See who can view your readings'**
+  String get linkedDoctorsTileSubtitle;
+
+  /// No description provided for @linkedDoctorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctors with access'**
+  String get linkedDoctorsTitle;
+
+  /// No description provided for @linkedDoctorsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No doctor is currently linked to this profile.'**
+  String get linkedDoctorsEmpty;
+
+  /// No description provided for @linkedDoctorsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \'Link a Doctor\' on your profile to share your readings.'**
+  String get linkedDoctorsEmptyHint;
+
+  /// No description provided for @linkedDoctorsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load linked doctors.'**
+  String get linkedDoctorsError;
+
+  /// No description provided for @linkedDoctorsLinkedSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked since {date}'**
+  String linkedDoctorsLinkedSince(String date);
+
+  /// No description provided for @linkedDoctorsRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing'**
+  String get linkedDoctorsRevoke;
+
+  /// No description provided for @linkedDoctorsRevokeDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing with {name}?'**
+  String linkedDoctorsRevokeDialogTitle(String name);
+
+  /// No description provided for @linkedDoctorsRevokeDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This doctor will no longer be able to see your past or future readings. You can link again any time.'**
+  String get linkedDoctorsRevokeDialogBody;
+
+  /// No description provided for @linkedDoctorsRevokeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing'**
+  String get linkedDoctorsRevokeConfirm;
+
+  /// No description provided for @linkedDoctorsRevokeSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} can no longer see your readings.'**
+  String linkedDoctorsRevokeSuccess(String name);
+
+  /// No description provided for @adminMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get adminMenuTooltip;
+
+  /// No description provided for @adminMenuDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Open dashboard'**
+  String get adminMenuDashboard;
+
+  /// No description provided for @adminMenuCreateUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Create user'**
+  String get adminMenuCreateUser;
 
   /// No description provided for @linkedEmail.
   ///
@@ -2479,6 +2581,432 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to Wellness Hub'**
   String get backToWellnessHub;
+
+  /// Title for glucometer prerequisites section
+  ///
+  /// In en, this message translates to:
+  /// **'Glucometer – Prerequisites:'**
+  String get glucometerPrerequisites;
+
+  /// Status message when no device is connected
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a device icon above to connect'**
+  String get tapDeviceToConnect;
+
+  /// Instruction to tap and connect device
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to connect device'**
+  String get tapToConnectDevice;
+
+  /// Message when device is already connected
+  ///
+  /// In en, this message translates to:
+  /// **'{deviceType} is already connected. Scan for another {deviceType}?'**
+  String alreadyConnectedMessage(Object deviceType);
+
+  /// Confirmation message to scan for device
+  ///
+  /// In en, this message translates to:
+  /// **'Scan for {deviceType}?'**
+  String scanForDeviceMessage(Object deviceType);
+
+  /// Hint for BP device transfer mode
+  ///
+  /// In en, this message translates to:
+  /// **'\n\nPress BT on the device once first (slow LED = transfer mode).'**
+  String get bpTransferHint;
+
+  /// Button to connect device
+  ///
+  /// In en, this message translates to:
+  /// **'Connect {deviceType}'**
+  String connectDeviceType(Object deviceType);
+
+  /// Button to start scanning
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get scan;
+
+  /// Title for BP history section
+  ///
+  /// In en, this message translates to:
+  /// **'BP History'**
+  String get bpHistory;
+
+  /// Count of records
+  ///
+  /// In en, this message translates to:
+  /// **'{count} records'**
+  String recordsCount(int count);
+
+  /// Title for all records section
+  ///
+  /// In en, this message translates to:
+  /// **'All Records'**
+  String get allRecords;
+
+  /// Tooltip for history button
+  ///
+  /// In en, this message translates to:
+  /// **'View All History'**
+  String get viewAllHistory;
+
+  /// Message shown when device is disconnected
+  ///
+  /// In en, this message translates to:
+  /// **'Device disconnected'**
+  String get deviceDisconnected;
+
+  /// Default name for unnamed BLE devices
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Device'**
+  String get unknownDevice;
+
+  /// BLE device signal strength
+  ///
+  /// In en, this message translates to:
+  /// **'Signal: {rssi} dBm'**
+  String signalStrength(int rssi);
+
+  /// Button to rescan for devices
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan'**
+  String get rescan;
+
+  /// No description provided for @linkDoctorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a Doctor'**
+  String get linkDoctorTitle;
+
+  /// No description provided for @linkDoctorHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your health readings with a doctor'**
+  String get linkDoctorHeadline;
+
+  /// No description provided for @linkDoctorCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor Code'**
+  String get linkDoctorCodeLabel;
+
+  /// No description provided for @linkDoctorCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. DRRAJ52'**
+  String get linkDoctorCodeHint;
+
+  /// No description provided for @linkDoctorCodeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a doctor code'**
+  String get linkDoctorCodeEmpty;
+
+  /// No description provided for @linkDoctorCodeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor code is too short'**
+  String get linkDoctorCodeInvalid;
+
+  /// No description provided for @linkDoctorLookupButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Doctor'**
+  String get linkDoctorLookupButton;
+
+  /// No description provided for @linkDoctorLookupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor not found. Check the code.'**
+  String get linkDoctorLookupFailed;
+
+  /// No description provided for @linkDoctorCodeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask your doctor for their Swasth code (starts with DR)'**
+  String get linkDoctorCodeHelper;
+
+  /// No description provided for @linkDoctorConsentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How did you meet this doctor?'**
+  String get linkDoctorConsentTitle;
+
+  /// No description provided for @linkDoctorConsentInPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'In-person visit at clinic'**
+  String get linkDoctorConsentInPerson;
+
+  /// No description provided for @linkDoctorConsentInPersonHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'I have visited this doctor at the clinic.'**
+  String get linkDoctorConsentInPersonHelp;
+
+  /// No description provided for @linkDoctorConsentVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video or phone consultation'**
+  String get linkDoctorConsentVideo;
+
+  /// No description provided for @linkDoctorConsentVideoHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'I have talked to this doctor over video or phone.'**
+  String get linkDoctorConsentVideoHelp;
+
+  /// No description provided for @linkDoctorNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification pending'**
+  String get linkDoctorNotVerified;
+
+  /// No description provided for @linkDoctorNotVerifiedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This doctor is registered but Swasth is still checking their NMC number. You can link once verification is complete.'**
+  String get linkDoctorNotVerifiedHelp;
+
+  /// No description provided for @linkDoctorVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified doctor'**
+  String get linkDoctorVerified;
+
+  /// No description provided for @linkDoctorConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Share my readings'**
+  String get linkDoctorConfirm;
+
+  /// No description provided for @linkDoctorConfirmDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your readings?'**
+  String get linkDoctorConfirmDialogTitle;
+
+  /// No description provided for @linkDoctorConfirmDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Dr. {name} will be able to see your past and future health readings. You can stop sharing any time from your profile.'**
+  String linkDoctorConfirmDialogBody(String name);
+
+  /// No description provided for @linkDoctorConfirmDialogShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, share'**
+  String get linkDoctorConfirmDialogShare;
+
+  /// No description provided for @linkDoctorNmcDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing readings does not create a doctor-patient relationship. Your doctor must confirm any treatment separately. In an emergency, call 108.'**
+  String get linkDoctorNmcDisclaimer;
+
+  /// No description provided for @linkDoctorSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You are now linked to {name}.'**
+  String linkDoctorSuccess(String name);
+
+  /// No description provided for @linkDoctorRevokeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can stop sharing any time from your profile.'**
+  String get linkDoctorRevokeHint;
+
+  /// No description provided for @linkDoctorNoProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a profile first'**
+  String get linkDoctorNoProfile;
+
+  /// No description provided for @linkDoctorSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Please log out and log in again.'**
+  String get linkDoctorSessionExpired;
+
+  /// No description provided for @linkDoctorNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Please try again.'**
+  String get linkDoctorNetworkError;
+
+  /// No description provided for @doctorRegisterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor Sign Up'**
+  String get doctorRegisterTitle;
+
+  /// No description provided for @doctorRegisterHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Register as a Doctor'**
+  String get doctorRegisterHeadline;
+
+  /// No description provided for @doctorRegisterSubheadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your NMC number will be verified by the Swasth team before you can see patients.'**
+  String get doctorRegisterSubheadline;
+
+  /// No description provided for @doctorFullNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get doctorFullNameLabel;
+
+  /// No description provided for @doctorNmcLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'NMC Registration Number'**
+  String get doctorNmcLabel;
+
+  /// No description provided for @doctorNmcHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical council number'**
+  String get doctorNmcHint;
+
+  /// No description provided for @doctorNmcEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your NMC number'**
+  String get doctorNmcEmpty;
+
+  /// No description provided for @doctorSpecialtyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialty'**
+  String get doctorSpecialtyLabel;
+
+  /// No description provided for @doctorClinicLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinic or Hospital Name'**
+  String get doctorClinicLabel;
+
+  /// No description provided for @doctorRegisterSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Doctor Account'**
+  String get doctorRegisterSubmit;
+
+  /// No description provided for @doctorRegisterSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created. A Swasth admin will verify your NMC number soon.'**
+  String get doctorRegisterSuccess;
+
+  /// No description provided for @doctorSpecialtyGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General Physician'**
+  String get doctorSpecialtyGeneral;
+
+  /// No description provided for @doctorSpecialtyEndocrinologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Endocrinologist'**
+  String get doctorSpecialtyEndocrinologist;
+
+  /// No description provided for @doctorSpecialtyCardiologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Cardiologist'**
+  String get doctorSpecialtyCardiologist;
+
+  /// No description provided for @doctorSpecialtyDiabetologist.
+  ///
+  /// In en, this message translates to:
+  /// **'Diabetologist'**
+  String get doctorSpecialtyDiabetologist;
+
+  /// No description provided for @doctorSpecialtyInternal.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal Medicine'**
+  String get doctorSpecialtyInternal;
+
+  /// No description provided for @doctorSpecialtyFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Medicine'**
+  String get doctorSpecialtyFamily;
+
+  /// No description provided for @doctorSpecialtyOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get doctorSpecialtyOther;
+
+  /// No description provided for @adminCreateUserTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create User'**
+  String get adminCreateUserTitle;
+
+  /// No description provided for @adminCreateUserHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a patient account'**
+  String get adminCreateUserHeadline;
+
+  /// No description provided for @adminCreateUserRoleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Type'**
+  String get adminCreateUserRoleLabel;
+
+  /// No description provided for @adminCreateUserRolePatient.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get adminCreateUserRolePatient;
+
+  /// No description provided for @adminCreateUserRoleDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor (coming soon)'**
+  String get adminCreateUserRoleDoctor;
+
+  /// No description provided for @adminCreateUserDoctorComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor accounts must be created via the doctor self-signup flow for now.'**
+  String get adminCreateUserDoctorComingSoon;
+
+  /// No description provided for @adminCreateUserTempPasswordHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this password securely with the user. They can change it from their Profile screen.'**
+  String get adminCreateUserTempPasswordHelp;
+
+  /// No description provided for @adminCreateUserSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get adminCreateUserSubmit;
+
+  /// No description provided for @adminCreateUserSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created for {email}'**
+  String adminCreateUserSuccess(String email);
+
+  /// No description provided for @adminCreateUserNmcRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'NMC number is required for doctor accounts'**
+  String get adminCreateUserNmcRequired;
 }
 
 class _AppLocalizationsDelegate
