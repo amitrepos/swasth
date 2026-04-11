@@ -55,7 +55,17 @@ String impactIcon(String glucoseImpact) {
 class QuickSelectScreen extends StatefulWidget {
   final int profileId;
 
-  const QuickSelectScreen({super.key, required this.profileId});
+  /// Pre-selected meal type, set when the user reaches this screen
+  /// from a specific dashboard slot tap (Breakfast / Lunch / Snack /
+  /// Dinner). When `null` (e.g. user opened the generic meal modal),
+  /// the screen falls back to [detectMealType] which uses the current
+  /// hour. The fallback is the bug we're fixing — without an explicit
+  /// type, a user tapping "Breakfast" at 4pm got their meal saved
+  /// as `SNACK` because 3-6pm is the snack window in
+  /// [detectMealType].
+  final String? mealType;
+
+  const QuickSelectScreen({super.key, required this.profileId, this.mealType});
 
   @override
   State<QuickSelectScreen> createState() => _QuickSelectScreenState();
@@ -86,7 +96,10 @@ class _QuickSelectScreenState extends State<QuickSelectScreen> {
         profileId: widget.profileId,
         category: category,
         glucoseImpact: glucoseImpactFor(category),
-        mealType: detectMealType(),
+        // Prefer the explicit meal type passed in (from a dashboard
+        // slot tap). Fall back to time-based detection only when the
+        // user reached this screen without tapping a specific slot.
+        mealType: widget.mealType ?? detectMealType(),
         inputMethod: 'QUICK_SELECT',
         timestamp: DateTime.now(),
         userConfirmed: true,
@@ -145,7 +158,9 @@ class _QuickSelectScreenState extends State<QuickSelectScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Detected meal type chip
-                    _MealTypeChip(mealType: detectMealType()),
+                    _MealTypeChip(
+                      mealType: widget.mealType ?? detectMealType(),
+                    ),
                     const SizedBox(height: 20),
 
                     // --- 3 primary buttons ---

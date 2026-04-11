@@ -7,6 +7,16 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 ---
 
+## Known data issue — pilot meals logged before 2026-04-11
+
+**Meals logged before the slot-tap fix (PR landing 2026-04-11) may have the wrong `meal_type` in the database.** `quick_select_screen.dart` was hardcoding `mealType: detectMealType()` (wall-clock time), so any patient who tapped a specific slot ("Breakfast" / "Lunch" / "Snack" / "Dinner") had their saved `meal_type` overwritten with whatever slot the current hour matched. Fix plumbs the tapped slot type through `MealSummaryCard → home_screen → modal → QuickSelectScreen`.
+
+**Impact**: anyone running `SELECT meal_type, count(*) FROM meal_logs GROUP BY meal_type` on pilot data will see a skew. If you need clean aggregate analytics on historical pilot data, EXCLUDE meals logged before the PR landed OR recompute `meal_type` from `created_at` using the old time-based rule for the pre-fix window only.
+
+**Not backfilling**: per Dr. Rajesh's review, rewriting history has its own integrity risks (a patient's 4pm Breakfast would get relabelled to Snack if we retroactively ran the old rule, which is MORE wrong than leaving it alone). Small pilot N, no clinical decisions yet ride on historical `meal_type`. Revisit if/when pilot volume grows.
+
+---
+
 ## Session Log — 2026-04-11
 
 ### Shipped today

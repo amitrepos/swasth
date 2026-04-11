@@ -16,9 +16,18 @@ import '../glass_card.dart';
 /// non-tappable. Caregivers who want to log on the patient's behalf
 /// use the "act as patient" toggle in the caregiver header — same
 /// pattern as readings.
+///
+/// [onTapLogMeal] is called with the meal type string (`'BREAKFAST'`,
+/// `'LUNCH'`, `'SNACK'`, `'DINNER'`) when the user taps a specific
+/// meal slot, or with `null` when they tap the generic "+" / empty
+/// state CTA. The callback is responsible for routing to the meal
+/// input modal and using the meal type as the pre-selected value.
+/// Without this, the saved meal type was always derived from
+/// `detectMealType()` (current wall-clock hour), so a user who tapped
+/// the "Breakfast" slot at 4pm got their meal stamped as `SNACK`.
 class MealSummaryCard extends StatefulWidget {
   final int profileId;
-  final VoidCallback? onTapLogMeal;
+  final void Function(String? mealType)? onTapLogMeal;
   final bool readOnly;
 
   const MealSummaryCard({
@@ -105,7 +114,9 @@ class MealSummaryCardState extends State<MealSummaryCard> {
             ),
             if (hasMeals && widget.onTapLogMeal != null && !widget.readOnly)
               GestureDetector(
-                onTap: widget.onTapLogMeal,
+                // Generic "+" — no specific meal type, fall back to
+                // detectMealType() in QuickSelectScreen.
+                onTap: () => widget.onTapLogMeal!(null),
                 child: Container(
                   width: 30,
                   height: 30,
@@ -188,7 +199,8 @@ class MealSummaryCardState extends State<MealSummaryCard> {
       );
     }
     return GestureDetector(
-      onTap: widget.onTapLogMeal,
+      // Empty-state CTA — no specific meal type chosen.
+      onTap: () => widget.onTapLogMeal?.call(null),
       child: Row(
         children: [
           const Text(
@@ -266,7 +278,13 @@ class MealSummaryCardState extends State<MealSummaryCard> {
         final isLogged = logged.contains(slot.type);
         return Expanded(
           child: GestureDetector(
-            onTap: (widget.readOnly || isLogged) ? null : widget.onTapLogMeal,
+            // Pass the slot's meal type so the saved meal matches what
+            // the user actually tapped, not the wall-clock category.
+            // Without this, tapping "Breakfast" at 4pm would save the
+            // meal as SNACK because detectMealType() is time-based.
+            onTap: (widget.readOnly || isLogged)
+                ? null
+                : () => widget.onTapLogMeal?.call(slot.type),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 3),
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),

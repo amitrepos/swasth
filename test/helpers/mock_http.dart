@@ -9,8 +9,15 @@ import 'package:http/testing.dart';
 /// Tracks API calls made during tests for assertions.
 class ApiCallTracker {
   final List<http.BaseRequest> calls = [];
+  // Bodies indexed by request position in `calls`. Captured at record
+  // time because `http.Request.body` is cleared after MockClient
+  // resolves, and we need to assert on it later in the test.
+  final List<String?> _bodies = [];
 
-  void record(http.BaseRequest request) => calls.add(request);
+  void record(http.BaseRequest request) {
+    calls.add(request);
+    _bodies.add(request is http.Request ? request.body : null);
+  }
 
   bool hasCalled(String method, String pathContains) {
     return calls.any(
@@ -18,7 +25,25 @@ class ApiCallTracker {
     );
   }
 
-  void clear() => calls.clear();
+  /// Returns the decoded JSON body of the LAST request matching
+  /// `method` + `pathContains`. Null if no such request was made or
+  /// the request had no body (GET/DELETE).
+  Map<String, dynamic>? lastRequestBody(String method, String pathContains) {
+    for (var i = calls.length - 1; i >= 0; i--) {
+      final r = calls[i];
+      if (r.method == method && r.url.toString().contains(pathContains)) {
+        final body = _bodies[i];
+        if (body == null || body.isEmpty) return null;
+        return jsonDecode(body) as Map<String, dynamic>;
+      }
+    }
+    return null;
+  }
+
+  void clear() {
+    calls.clear();
+    _bodies.clear();
+  }
 }
 
 /// Creates a MockClient that simulates the Swasth backend.
