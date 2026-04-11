@@ -2,10 +2,18 @@
 source = .
 omit =
     tests/*
-    test_whatsapp_report.py
+    # Orphan test scripts in backend/ root that pytest discovery doesn't
+    # collect (it scans tests/ only). They are not production code, so
+    # they should not count toward coverage. Catches test_whatsapp_report,
+    # test_critical_alerts, test_manual_report.
+    test_*.py
+    # Migrations and DB init are run-once code, not exercised by tests.
     migrate_*.py
     init_db.py
-    seed_demo_data.py
+    # Seed scripts populate demo / test data — not production code paths.
+    # Glob covers seed_demo_data.py, seed_video_demo_patient.py, and
+    # any future seed_*.py that gets added.
+    seed_*.py
     */venv/*
     */build/*
 
