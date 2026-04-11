@@ -585,12 +585,18 @@ class TestDoctorDirectory:
         assert entry["specialty"] == "General Physician"
         assert entry["clinic_name"] == "Verma Clinic Patna"
         assert entry["doctor_code"] == "DRRAJ52"
-        # PII must NOT leak into the patient-facing directory
+        # is_verified must be present and True — the Flutter preview
+        # card reads this flag to render the "Verified doctor" badge
+        # and the _link() guard blocks submission otherwise. Every
+        # doctor in this endpoint is verified by the filter, so the
+        # client-side value is always True, but the field itself MUST
+        # be in the response shape.
+        assert entry["is_verified"] is True
+        # PII must still NOT leak into the patient-facing directory
         assert "email" not in entry
         assert "phone_number" not in entry
         assert "nmc_number" not in entry
         assert "user_id" not in entry
-        assert "is_verified" not in entry  # implied — all listed are verified
 
     def test_excludes_unverified_doctors(
         self, client, db, doctor_user, patient_headers

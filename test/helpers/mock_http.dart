@@ -23,12 +23,25 @@ class ApiCallTracker {
 
 /// Creates a MockClient that simulates the Swasth backend.
 /// Returns realistic responses for all API endpoints.
-MockClient createMockClient({ApiCallTracker? tracker}) {
+MockClient createMockClient({
+  ApiCallTracker? tracker,
+  Map<String, http.Response> overrides = const {},
+}) {
   return MockClient((request) async {
     tracker?.record(request);
 
     final path = request.url.path;
     final method = request.method;
+
+    // Test-specific overrides take precedence. Key is "METHOD path-suffix"
+    // (e.g. "GET /readings"). Lets individual tests inject empty or
+    // error responses without rewriting the whole mock.
+    for (final entry in overrides.entries) {
+      final parts = entry.key.split(' ');
+      if (parts.length == 2 && parts[0] == method && path.endsWith(parts[1])) {
+        return entry.value;
+      }
+    }
 
     // ── Auth endpoints ──────────────────────────────────────────────
 

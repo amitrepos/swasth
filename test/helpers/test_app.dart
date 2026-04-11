@@ -19,6 +19,7 @@ import 'package:swasth_app/theme/app_theme.dart';
 import 'package:swasth_app/services/api_client.dart';
 import 'package:swasth_app/services/storage_service.dart';
 import 'package:swasth_app/main.dart' show routeObserver;
+import 'package:http/http.dart' as http;
 
 import 'mock_http.dart';
 
@@ -48,6 +49,7 @@ class TestEnv {
   static Future<TestEnv> create(
     WidgetTester tester, {
     Widget? startScreen,
+    Map<String, http.Response> overrides = const {},
   }) async {
     // Tall phone surface (412x915 logical pixels) — avoids overflow and
     // ensures buttons at bottom of scrollable forms are reachable
@@ -66,7 +68,7 @@ class TestEnv {
     StorageService.useInMemoryStorage();
 
     final tracker = ApiCallTracker();
-    final mockClient = createMockClient(tracker: tracker);
+    final mockClient = createMockClient(tracker: tracker, overrides: overrides);
     ApiClient.httpClientOverride = mockClient;
 
     final app = ProviderScope(
@@ -167,10 +169,17 @@ class TestEnv {
   }
 
   /// Start at HistoryScreen.
-  static Future<TestEnv> createAtHistory(WidgetTester tester) async {
+  static Future<TestEnv> createAtHistory(
+    WidgetTester tester, {
+    Map<String, http.Response> overrides = const {},
+  }) async {
     StorageService.useInMemoryStorage();
     await StorageService().saveToken('mock_token_123');
-    final env = await create(tester, startScreen: HistoryScreen(profileId: 1));
+    final env = await create(
+      tester,
+      startScreen: HistoryScreen(profileId: 1),
+      overrides: overrides,
+    );
     await pumpN(tester, frames: 10); // load readings
     return env;
   }
