@@ -282,7 +282,12 @@ class MealSummaryCardState extends State<MealSummaryCard> {
             // the user actually tapped, not the wall-clock category.
             // Without this, tapping "Breakfast" at 4pm would save the
             // meal as SNACK because detectMealType() is time-based.
-            onTap: (widget.readOnly || isLogged)
+            // A slot marked "logged" stays tappable — users routinely eat
+            // more than one snack (or lunch) in a day, and pre-2026-04-11
+            // pilot data has every meal stamped as SNACK due to the old
+            // time-based bug, which would otherwise permanently lock the
+            // Snack slot.
+            onTap: widget.readOnly
                 ? null
                 : () => widget.onTapLogMeal?.call(slot.type),
             child: Container(
