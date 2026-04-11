@@ -1,3 +1,5 @@
+import 'dart:io'
+    show HttpClient, HttpOverrides, SecurityContext, X509Certificate;
 import 'dart:math' show min;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -20,15 +22,44 @@ final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 /// (typical web app column — avoids ultra-wide stretching while not feeling like a phone shell).
 const double _kWebMaxContentWidth = 1280;
 
+/// Trusts the pilot backend's self-signed TLS cert on mobile builds ONLY.
+///
+/// The production backend at 65.109.226.36:8443 currently uses a
+/// self-signed certificate. Browsers let users click past the warning,
+/// but `dart:io`'s HttpClient hard-rejects it with
+/// `CERTIFICATE_VERIFY_FAILED: self signed certificate`, breaking every
+/// API call from the Android/iOS app.
+///
+/// This override is **scoped to that single host** — every other host
+/// still goes through the normal TLS trust chain. Before public release
+/// the server must get a real cert (Let's Encrypt + domain) and this
+/// class must be deleted.
+class _PilotHttpOverrides extends HttpOverrides {
+  static const _pilotHost = '65.109.226.36';
+
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => host == _pilotHost;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  if (!kIsWeb) {
+    HttpOverrides.global = _PilotHttpOverrides();
+  }
+
   // Dark status bar icons on light background (time, WiFi, battery visible)
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,      // Android
-    statusBarBrightness: Brightness.light,          // iOS
-  ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark, // Android
+      statusBarBrightness: Brightness.light, // iOS
+    ),
+  );
 
   await dotenv.load(fileName: ".env");
   await ReminderService().initialize();
@@ -36,9 +67,7 @@ void main() async {
   runApp(
     ProviderScope(
       overrides: [
-        languageProvider.overrideWith(
-          () => LanguageNotifier(Locale(langCode)),
-        ),
+        languageProvider.overrideWith(() => LanguageNotifier(Locale(langCode))),
       ],
       child: const SwasthApp(),
     ),
@@ -68,18 +97,20 @@ class SwasthApp extends ConsumerWidget {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.bgPage,
       textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
-        displayLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        displayLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
         displayMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        displaySmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        headlineLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        headlineMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        headlineSmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        titleLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        displaySmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        headlineLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        headlineMedium: GoogleFonts.plusJakartaSans(
+          fontWeight: FontWeight.w700,
+        ),
+        headlineSmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        titleLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
         titleMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        titleSmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        bodyLarge:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
+        titleSmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        bodyLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
         bodyMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
-        bodySmall:  GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
+        bodySmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
         labelLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
       ),
       appBarTheme: const AppBarTheme(
@@ -138,7 +169,10 @@ class SwasthApp extends ConsumerWidget {
           borderRadius: BorderRadius.circular(borderRadiusValue),
           borderSide: const BorderSide(color: skyAccent, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
       ),
     );
 
