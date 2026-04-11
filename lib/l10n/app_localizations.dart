@@ -1406,6 +1406,18 @@ abstract class AppLocalizations {
   /// **'No doctor linked yet.'**
   String get noDoctorLinked;
 
+  /// No description provided for @linkADoctorCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a doctor'**
+  String get linkADoctorCta;
+
+  /// No description provided for @doctorPendingAcceptBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting doctor'**
+  String get doctorPendingAcceptBadge;
+
   /// No description provided for @addDoctor.
   ///
   /// In en, this message translates to:
