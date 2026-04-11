@@ -84,13 +84,19 @@ class HealthReading {
       spo2Unit: json['spo2_unit'],
       stepsCount: json['steps_count']?.toInt(),
       stepsGoal: json['steps_goal']?.toInt(),
-      valueNumeric: json['value_numeric'].toDouble(),
-      unitDisplay: json['unit_display'],
+      // value_numeric can be null for reading types that don't produce a
+      // single scalar (e.g. blood_pressure returns systolic/diastolic).
+      // Previously this crashed fromJson and propagated as "error loading
+      // history" even when the underlying list was perfectly valid.
+      valueNumeric: (json['value_numeric'] as num?)?.toDouble() ?? 0,
+      unitDisplay: json['unit_display'] ?? '',
       statusFlag: json['status_flag'],
       notes: json['notes'],
       readingTimestamp: DateTime.parse(json['reading_timestamp']),
       seq: json['seq'],
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.parse(json['reading_timestamp']),
     );
   }
 
@@ -224,7 +230,7 @@ class HealthReadingService {
           .timeout(_kTimeout);
       if (response.statusCode == 201) {
         final body = jsonDecode(response.body);
-        
+
         // Check if backend skipped this as a duplicate
         if (body['skipped'] == true) {
           return {
@@ -234,7 +240,7 @@ class HealthReadingService {
             'existing_id': body['existing_id'],
           };
         }
-        
+
         return {
           'reading': HealthReading.fromJson(body),
           'alert': body['alert'],
@@ -312,7 +318,6 @@ class HealthReadingService {
       throw Exception('Failed to delete reading: $e');
     }
   }
-
 
   /// Get AI Doctor recommendation from Gemini via backend
   Future<String> getAiInsight(String token, int profileId) async {
@@ -459,7 +464,9 @@ class HealthReadingService {
     try {
       final response = await ApiClient.httpClient
           .get(
-            Uri.parse('$baseUrl/readings/trend-summary?profile_id=$profileId&period=7&format=text'),
+            Uri.parse(
+              '$baseUrl/readings/trend-summary?profile_id=$profileId&period=7&format=text',
+            ),
             headers: ApiClient.headers(token: token),
           )
           .timeout(_kTimeout);

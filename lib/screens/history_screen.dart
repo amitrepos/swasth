@@ -78,19 +78,32 @@ class HistoryScreenState extends State<HistoryScreen> {
       if (cached != null && cached.isNotEmpty) {
         var readings = cached.map((j) => HealthReading.fromJson(j)).toList();
         if (_filterType != null) {
-          readings = readings.where((r) => r.readingType == _filterType).toList();
+          readings = readings
+              .where((r) => r.readingType == _filterType)
+              .toList();
         }
-        readings.sort((a, b) => b.readingTimestamp.compareTo(a.readingTimestamp));
+        readings.sort(
+          (a, b) => b.readingTimestamp.compareTo(a.readingTimestamp),
+        );
         setState(() {
           _readings = readings;
           _isLoading = false;
         });
         return;
       }
-      setState(() => _isLoading = false);
-      if (mounted) {
+      // No cache and API failed. Clear readings and fall through to
+      // the empty-state UI — the "No readings yet" card with a refresh
+      // button in the AppBar is a calmer UX than a red snackbar on
+      // fresh installs where the user legitimately has no history.
+      // Only surface a snackbar for clearly user-actionable errors
+      // (token missing — user must re-login).
+      setState(() {
+        _readings = [];
+        _isLoading = false;
+      });
+      if (mounted && e.toString().contains('Not authenticated')) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading history: $e')),
+          SnackBar(content: Text('Please sign in again to see your history')),
         );
       }
     }
@@ -138,9 +151,9 @@ class HistoryScreenState extends State<HistoryScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting reading: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting reading: $e')));
         }
       }
     }
@@ -228,105 +241,108 @@ class HistoryScreenState extends State<HistoryScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _readings.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.history,
-                        size: 80,
-                        color: AppColors.textTertiary,
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history, size: 80, color: AppColors.textTertiary),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.noReadingsYet,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.noReadingsSubtitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadReadings,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _readings.length,
+                itemBuilder: (context, index) {
+                  final reading = _readings[index];
+                  return GlassCard(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    borderRadius: 16,
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: _getStatusColor(
+                          reading.statusFlag,
+                        ).withOpacity(0.1),
+                        child: Icon(
+                          _getTypeIcon(reading.readingType),
+                          color: _getStatusColor(reading.statusFlag),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        l10n.noReadingsYet,
-                        style: TextStyle(
+                      title: Text(
+                        reading.displayValue,
+                        style: const TextStyle(
                           fontSize: 18,
-                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.noReadingsSubtitle,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(
+                                reading.statusFlag,
+                              ).withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _localizedStatus(reading.statusFlag, l10n),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _getStatusColor(reading.statusFlag),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            DateFormat(
+                              'MMM dd, yyyy • hh:mm a',
+                            ).format(reading.readingTimestamp),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadReadings,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _readings.length,
-                    itemBuilder: (context, index) {
-                      final reading = _readings[index];
-                      return GlassCard(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        borderRadius: 16,
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: _getStatusColor(reading.statusFlag)
-                                .withOpacity(0.1),
-                            child: Icon(
-                              _getTypeIcon(reading.readingType),
-                              color: _getStatusColor(reading.statusFlag),
-                            ),
-                          ),
-                          title: Text(
-                            reading.displayValue,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: _getStatusColor(reading.statusFlag).withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  _localizedStatus(reading.statusFlag, l10n),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: _getStatusColor(reading.statusFlag),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                DateFormat('MMM dd, yyyy • hh:mm a')
-                                    .format(reading.readingTimestamp),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          trailing: _canEdit
-                              ? IconButton(
-                                  icon: const Icon(Icons.delete_outline),
-                                  color: AppColors.statusCritical,
-                                  onPressed: () => _deleteReading(reading.id),
-                                  tooltip: l10n.delete,
-                                )
-                              : null,
-                          isThreeLine: true,
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                      trailing: _canEdit
+                          ? IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              color: AppColors.statusCritical,
+                              onPressed: () => _deleteReading(reading.id),
+                              tooltip: l10n.delete,
+                            )
+                          : null,
+                      isThreeLine: true,
+                    ),
+                  );
+                },
+              ),
+            ),
     );
   }
 }

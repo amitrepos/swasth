@@ -588,6 +588,13 @@ def get_verified_doctor_directory(
             "specialty": dp.specialty,
             "clinic_name": dp.clinic_name,
             "doctor_code": dp.doctor_code,
+            # Redundant — the filter above guarantees this is always True
+            # — but the Flutter preview card reads this flag to decide
+            # whether to show "Verified doctor" vs "Verification pending".
+            # Without it in the payload, the client renders every picker
+            # selection as pending and the "Share my readings" button
+            # silently aborts on the is_verified guard in _link().
+            "is_verified": True,
         }
         for dp, u in rows
     ]

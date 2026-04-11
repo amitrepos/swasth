@@ -351,6 +351,42 @@ let TOKEN = '';
 let CURRENT_USER_ID = null;
 const API = window.location.origin;
 
+// ── Error display ───────────────────────────────────────────────────
+// Show a visible error banner inside any admin section if a fetch
+// fails. Replaces the previous silent-failure pattern where a 500
+// or a JS exception left the tab blank with no feedback.
+function showSectionError(sectionId, err) {
+  console.error(`[admin] ${sectionId}:`, err);
+  const container = document.getElementById(sectionId);
+  if (!container) return;
+  const msg = (err && err.message) ? err.message : String(err);
+  const banner = document.createElement('div');
+  banner.style.cssText = 'background:#fee;color:#c00;padding:12px;border-radius:8px;margin:12px 0;font-size:13px;';
+  banner.textContent = `Failed to load: ${msg}. Check browser console for details.`;
+  // Remove any previous banner before adding a new one so repeated
+  // failures don't stack indefinitely.
+  const existing = container.querySelector('[data-role="error-banner"]');
+  if (existing) existing.remove();
+  banner.setAttribute('data-role', 'error-banner');
+  container.insertBefore(banner, container.firstChild);
+}
+
+async function fetchJson(path, opts = {}) {
+  const resp = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: {
+      'Authorization': `Bearer ${TOKEN}`,
+      ...(opts.headers || {}),
+    },
+  });
+  if (!resp.ok) {
+    let detail = '';
+    try { detail = (await resp.json()).detail || ''; } catch(_) {}
+    throw new Error(`${resp.status} ${resp.statusText}${detail ? ': ' + detail : ''}`);
+  }
+  return resp.json();
+}
+
 // ── Auth ────────────────────────────────────────────────────────────
 async function login() {
   const email = document.getElementById('email').value;
@@ -400,32 +436,52 @@ function showSection(name) {
 // ── Overview ────────────────────────────────────────────────────────
 let chartsCreated = false;
 async function loadOverview() {
-  const resp = await fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
-  const m = await resp.json();
+  try {
+    const m = await fetchJson('/api/admin/metrics');
+    // Guard every numeric read — a null from the backend used to
+    // throw on `.toLocaleString()` / string concat and leave the
+    // whole KPI grid blank with no error on screen.
+    const n = (v, fallback = 0) => (v == null ? fallback : v);
+    const pct = (v) => (v == null ? '--' : v + '%');
+    const num = (v) => Number(n(v)).toLocaleString();
 
-  const kpis = [
-    {label: 'Total Users', value: m.total_users, color: 'blue'},
-    {label: 'DAU', value: m.dau, color: 'green'},
-    {label: 'MAU', value: m.mau, color: 'blue'},
-    {label: 'Stickiness', value: m.stickiness_pct + '%', color: m.stickiness_pct > 20 ? 'green' : 'amber'},
-    {label: 'Total Readings', value: m.total_readings.toLocaleString(), color: 'blue'},
-    {label: 'Readings/User/Week', value: m.readings_per_user_week, color: 'blue'},
-    {label: 'D1 Retention', value: m.d1_retention_pct != null ? m.d1_retention_pct + '%' : '--', color: 'green'},
-    {label: 'D7 Retention', value: m.d7_retention_pct != null ? m.d7_retention_pct + '%' : '--', color: 'amber'},
-    {label: 'Chat Adoption', value: m.chat_adoption_pct + '%', color: 'blue'},
-    {label: 'AI Fallback', value: m.ai_fallback_rate_pct + '%', color: m.ai_fallback_rate_pct < 20 ? 'green' : 'red'},
-    {label: 'Glucose Normal', value: m.glucose_normal_pct + '%', color: m.glucose_normal_pct > 50 ? 'green' : 'red'},
-    {label: 'Critical Readings', value: m.glucose_critical_count, color: m.glucose_critical_count > 0 ? 'red' : 'green'},
-  ];
-  document.getElementById('kpiGrid').innerHTML = kpis.map(k => `<div class="card"><div class="label">${k.label}</div><div class="value ${k.color}">${k.value}</div></div>`).join('');
+    const kpis = [
+      {label: 'Total Users', value: n(m.total_users), color: 'blue'},
+      {label: 'DAU', value: n(m.dau), color: 'green'},
+      {label: 'MAU', value: n(m.mau), color: 'blue'},
+      {label: 'Stickiness', value: pct(m.stickiness_pct), color: n(m.stickiness_pct) > 20 ? 'green' : 'amber'},
+      {label: 'Total Readings', value: num(m.total_readings), color: 'blue'},
+      {label: 'Readings/User/Week', value: n(m.readings_per_user_week), color: 'blue'},
+      {label: 'D1 Retention', value: pct(m.d1_retention_pct), color: 'green'},
+      {label: 'D7 Retention', value: pct(m.d7_retention_pct), color: 'amber'},
+      {label: 'Chat Adoption', value: pct(m.chat_adoption_pct), color: 'blue'},
+      {label: 'AI Fallback', value: pct(m.ai_fallback_rate_pct), color: n(m.ai_fallback_rate_pct) < 20 ? 'green' : 'red'},
+      {label: 'Glucose Normal', value: pct(m.glucose_normal_pct), color: n(m.glucose_normal_pct) > 50 ? 'green' : 'red'},
+      {label: 'Critical Readings', value: n(m.glucose_critical_count), color: n(m.glucose_critical_count) > 0 ? 'red' : 'green'},
+    ];
+    document.getElementById('kpiGrid').innerHTML = kpis.map(k => `<div class="card"><div class="label">${k.label}</div><div class="value ${k.color}">${k.value}</div></div>`).join('');
 
-  if (!chartsCreated) {
-    chartsCreated = true;
-    new Chart(document.getElementById('signupsChart'), {type:'bar',data:{labels:m.signups_by_day.map(d=>d.date.slice(5)),datasets:[{label:'Signups',data:m.signups_by_day.map(d=>d.count),backgroundColor:'#0ea5e9'}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
-    new Chart(document.getElementById('readingsChart'), {type:'line',data:{labels:m.readings_by_day.map(d=>d.date.slice(5)),datasets:[{label:'Readings',data:m.readings_by_day.map(d=>d.count),borderColor:'#10b981',fill:true,backgroundColor:'rgba(16,185,129,0.1)'}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
-    const sd = m.streak_distribution;
-    new Chart(document.getElementById('streakChart'), {type:'doughnut',data:{labels:Object.keys(sd),datasets:[{data:Object.values(sd),backgroundColor:['#ef4444','#f59e0b','#eab308','#22c55e','#10b981','#059669']}]},options:{plugins:{legend:{position:'bottom'}}}});
-    new Chart(document.getElementById('clinicalChart'), {type:'bar',data:{labels:['Glucose Normal%','BP Normal%','Critical'],datasets:[{data:[m.glucose_normal_pct,m.bp_normal_pct,m.glucose_critical_count],backgroundColor:['#10b981','#0ea5e9','#ef4444']}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+    // Clear any stale error banner on successful load.
+    const existing = document.getElementById('sec-overview').querySelector('[data-role="error-banner"]');
+    if (existing) existing.remove();
+
+    if (!chartsCreated && typeof Chart !== 'undefined') {
+      try {
+        const signups = m.signups_by_day || [];
+        const readings = m.readings_by_day || [];
+        const sd = m.streak_distribution || {};
+        new Chart(document.getElementById('signupsChart'), {type:'bar',data:{labels:signups.map(d=>d.date.slice(5)),datasets:[{label:'Signups',data:signups.map(d=>d.count),backgroundColor:'#0ea5e9'}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+        new Chart(document.getElementById('readingsChart'), {type:'line',data:{labels:readings.map(d=>d.date.slice(5)),datasets:[{label:'Readings',data:readings.map(d=>d.count),borderColor:'#10b981',fill:true,backgroundColor:'rgba(16,185,129,0.1)'}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+        new Chart(document.getElementById('streakChart'), {type:'doughnut',data:{labels:Object.keys(sd),datasets:[{data:Object.values(sd),backgroundColor:['#ef4444','#f59e0b','#eab308','#22c55e','#10b981','#059669']}]},options:{plugins:{legend:{position:'bottom'}}}});
+        new Chart(document.getElementById('clinicalChart'), {type:'bar',data:{labels:['Glucose Normal%','BP Normal%','Critical'],datasets:[{data:[n(m.glucose_normal_pct),n(m.bp_normal_pct),n(m.glucose_critical_count)],backgroundColor:['#10b981','#0ea5e9','#ef4444']}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+        chartsCreated = true;
+      } catch (chartErr) {
+        // Charts are best-effort. KPIs already rendered; log and move on.
+        console.warn('[admin] chart render failed:', chartErr);
+      }
+    }
+  } catch (err) {
+    showSectionError('sec-overview', err);
   }
 }
 

@@ -174,8 +174,16 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
       ).showSnackBar(SnackBar(content: Text(l10n.linkDoctorAlreadyLinked)));
       return;
     }
+    // Doctors in the picker come from GET /api/doctor/directory,
+    // which only returns verified doctors. If a future version of
+    // that endpoint omits the is_verified flag, we still treat the
+    // selection as verified (backend is already the source of truth
+    // and will reject any link attempt on an unverified doctor via
+    // the is_verified check in link_doctor_to_patient).
+    final enriched = Map<String, dynamic>.from(doctor);
+    enriched['is_verified'] = true;
     setState(() {
-      _selectedDoctor = doctor;
+      _selectedDoctor = enriched;
       _selectedFromPicker = true;
       _lookupError = null;
     });
