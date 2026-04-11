@@ -310,6 +310,8 @@
   "doctorSpecialtyField": "Specialty",
   "doctorWhatsappField": "WhatsApp Number",
   "noDoctorLinked": "No doctor linked yet.",
+  "linkADoctorCta": "Link a doctor",
+  "doctorPendingAcceptBadge": "Awaiting doctor",
   "addDoctor": "Add Doctor",
   "editDoctor": "Edit Doctor Details",
   "editDoctorTitle": "Doctor Details",

@@ -254,6 +254,8 @@
   "doctorSpecialtyField": "विशेषज्ञता",
   "doctorWhatsappField": "व्हाट्सएप नंबर",
   "noDoctorLinked": "अभी तक कोई डॉक्टर नहीं जोड़ा गया।",
+  "linkADoctorCta": "डॉक्टर जोड़ें",
+  "doctorPendingAcceptBadge": "डॉक्टर की स्वीकृति बाकी",
   "addDoctor": "डॉक्टर जोड़ें",
   "editDoctor": "डॉक्टर की जानकारी बदलें",
   "editDoctorTitle": "डॉक्टर की जानकारी",

@@ -383,6 +383,24 @@ MockClient createMockClient({
       );
     }
 
+    // ── Linked doctors (GET /doctor/link/{profile_id}) ──────────────
+
+    if (RegExp(r'/doctor/link/\d+$').hasMatch(path) && method == 'GET') {
+      return http.Response(
+        jsonEncode([
+          {
+            'doctor_name': 'Dr. Omisha Sharma',
+            'specialty': 'General Physician',
+            'doctor_code': 'DROMI19',
+            'is_verified': true,
+            'linked_since': '2026-03-15T10:00:00Z',
+            'status': 'active',
+          },
+        ]),
+        200,
+      );
+    }
+
     // ── Connectivity check ──────────────────────────────────────────
 
     if (path.contains('/health') && method == 'GET') {

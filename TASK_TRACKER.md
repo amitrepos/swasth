@@ -1,9 +1,64 @@
 # Swasth App — Phase 1 Task Tracker
 
-**Last Updated:** 2026-04-09
+**Last Updated:** 2026-04-11
 **Sprint:** 4 weeks + buffer | **Target:** Bihar pilot
 
 Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
+
+---
+
+## Session Log — 2026-04-11
+
+### Shipped today
+- **PR #111** ✅ merged — `fix(ci): hard-reset deploy target + auto-run migrations`. Replaces silently-failing `git pull` with `git fetch + git reset --hard`, adds `set -e`, auto-runs migrations, applies to both dev.yml and prod.yml.
+- **PR #112** ✅ merged — `fix(doctor,history,admin): bug fixes + end-to-end integration tests`. Fixes History empty-state error snackbar, Admin Overview blank KPIs, and doctor directory picker "verification pending" regression. Adds 16 new backend integration tests (`test_doctor_integration.py` + `test_patient_flows_integration.py`) covering doctor happy-path, decline/withdraw, directory filtering, meal logging roundtrip, health score seeded + empty, multi-profile scoping, account deletion cascade, history pagination/filter. Backend at 653 tests, 88% coverage.
+- **PR #113** ✅ merged — `chore(hooks): recover review-chain infrastructure + install 4 branch-hygiene gates`. Recovers 4 orphaned hook commits from `fix/admin-toggle-button` (the 2026-04-10 incident where PR #95 shipped but 4 follow-up commits stayed local-only). Adds: `.githooks/pre-commit` (merged-PR block + domain expert review chain), `.githooks/pre-push` (no-open-PR block, reads stdin per githooks(5)), `.claude/scripts/orphan-scan.sh` (SessionStart warning, single gh call + jq filter), `.github/workflows/branch-hygiene.yml` (CI mirror). New skills: `aditya`, `sunita`, marker-writing instructions on `daniel-review`/`doctor-feedback`/`legal-check`/`phi-compliance`/`security-audit`/`qa-review`/`ship`. Updated CLAUDE.md Branch Hygiene section and Domain Expert Review Matrix.
+- **PR #114** ✅ merged — `fix(ci): move venv activation after cd backend in deploy workflows`. Root-caused why PR #111 and #112 deploys showed green on GitHub but the backend process never restarted: `source venv/bin/activate` ran with cwd `/var/www/swasth` but the venv is at `backend/venv`. Silent before `set -e`, hard fail after. Two-line fix in both workflows. Also manually restarted `pm2 swasth-backend` on dev server (PID 3677756) so PR #112 code took effect before the CI fix itself could ship.
+
+### Orphan branches cleaned up
+Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose content was already on master via different SHAs (admin Phase 1 duplicates, care-circle duplicates, admin button duplicates, etc.). All 9 local branches deleted after per-SHA forensic verification: `fix/admin-toggle-button`, `fix/doctor-triage-ux-v1`, `feat/doctor-triage-reason`, `feature/doctor-portal-backend`, `feat/link-doctor-and-admin-create-user`, `feature/admin-user-management-phase1`, `feature/doctor-portal-frontend`, `chore/review-hooks-recovery-and-guardrails`, `fix/doctor-flow-bugs`. Orphan scan is now silent at session start.
+
+### Paused / open work — RESUME FROM HERE
+
+**1. Unified history timeline (meals + glucose) — Stage 1 of meal-correlation feature**
+
+- **Status**: Plan agreed with user, zero code written yet.
+- **Context**: User asked "where do I see history of the food and correlation between the sugar spike and the food I had?" We scoped it as 3 stages: (Stage 1) visual timeline only, no math; (Stage 2) rule-based summary after real usage volume exists; (Stage 3) AI insight text — requires `/legal-check` + `/doctor-feedback` because it's a clinical claim. User greenlit Stage 1.
+- **Stage 1 plan (agreed)**:
+  - `lib/screens/history_screen.dart` — add `_meals` state + `_loadMeals()` alongside `_loadReadings()`. Extend `_filterType` options to `all` / `glucose` / `blood_pressure` / `meals`. Build unified `_timelineItems` list (reading|meal union) sorted by timestamp desc. New `_buildMealTile()` widget with food icon, meal_type, category, glucose_impact badge.
+  - `lib/l10n/app_en.arb` + `app_hi.arb` — 5–7 new strings (meal filter, meal type names, impact levels, category labels) with Hindi translations.
+  - `test/helpers/mock_http.dart` — add `GET /meals` mock response with 2 sample meals (breakfast + lunch).
+  - `test/flows/history_flow_test.dart` — new tests: unified timeline shows both readings AND meals; meal filter shows only meals; empty-meals case still works.
+- **Backend + service + model already exist**: `POST/GET /api/meals` in `routes_meals.py`, `lib/services/meal_service.dart::getMeals(profileId, token, days)`, `lib/models/meal_log.dart::MealLog`. Zero new backend work.
+- **Expected review chain on commit**: Sunita + Aditya + Dr. Rajesh + Daniel (screen change triggers `lib/screens/`), plus Sunita + Aditya for l10n, plus Priya for test files.
+- **Explicitly NOT in Stage 1**: correlation math, AI insights, clinical claims ("this meal caused that spike"), grouping meals+readings visually beyond chronological order.
+
+**2. Dashboard doctor section — migration from legacy `profile.doctor_name` to `DoctorPatientLink`**
+
+- **Status**: ✅ Shipped 2026-04-11 as PR `fix/dashboard-doctor-section-and-widget-invariant`. New `LinkedDoctorsCard` widget (always renders: filled / pending / empty-state CTA), `_loadLinkedDoctors` wired into `home_screen.dart`, both render sites updated, regression test `dashboard_widgets_present_test.dart` enforces the widget invariant via stable `Key('dashboard_*')` keys for both full-data and empty-data scenarios. Reviewed by Sunita, Aditya, Dr. Rajesh, Priya, Daniel — all PASS after one Aditya iteration on accessibility (CTA tap target, status icons, font sizes).
+- **Follow-ups deferred** (track separately, not blocking pilot):
+  - **Schema-level "primary doctor" enforcement (Option B)**: today "primary" is a convention — most-recently-linked active row wins. When users start accumulating multiple active links, add `is_primary` boolean to `DoctorPatientLink` + uniqueness constraint `at_most_one_is_primary_per_profile_id` + auto-demote-old-primary on new link. Required before the dashboard card becomes the routing target for "message my doctor" / alert delivery (clinical risk: wrong doctor receives the patient's contact attempt).
+  - **Caregivers card**: when 2+ active doctors are linked, surface the non-primary ones as caregivers in a separate card. Currently `_pickPrimary` returns one and the rest are silently dropped from the dashboard.
+  - **Caregiver dashboard widget invariant test**: mirror `dashboard_widgets_present_test.dart` for the `access_level: 'caregiver'` render path (different widget set: `ActivityFeedCard`, `CareCircleCard`). Without it the same class of regression could land on the caregiver dashboard undetected.
+  - **`LinkedDoctorsCard` typed model**: `List<Map<String, dynamic>>` is fragile; introduce a `LinkedDoctor` model class.
+  - **`_loadLinkedDoctors` retry affordance**: today swallows errors silently (graceful degradation to empty state). For persistent backend 500s, consider a "Tap to retry" affordance with a `_linkedDoctorsLoadFailed` flag.
+  - **Pending-only scenario in widget invariant test**: add a third scenario where the only linked doctor is `status='pending_doctor_accept'`; the test should verify the amber pending badge renders.
+
+**Original investigation (kept for context):**
+- **Status**: Bug diagnosed, code gap identified, fix approach sketched, waiting on one design decision from user.
+- **Bug report**: Pratika logs in as `pratika@gmail.com` (user id in DB: has profile 44 "Pratika" as own, profile 2 "My Health" as shared-with-her). On her own profile (44) she confirmed Omisha (doctor_code `DROMI19`, status `active`). Dashboard shows no doctor section at all. On shared profile 2 she correctly sees "Dr Vishal" (profile-owner's legacy free-text value). The shared profile rendering is correct — user clarified it and asked us not to focus on it.
+- **DB verified**: `SELECT` on `doctor_patient_links` joined via `profile_access` confirms profile 44 is linked to `DROMI19` with `status=active, is_active=true`. Profile 2 has `doctor_name="Dr Vishal"` legacy field AND two linked doctors (`DRDRR18`, `DRAMI35`) which are currently invisible on dashboard.
+- **Root cause — exact code locations**:
+  - `lib/screens/home_screen.dart:484` and `:711` — both `PhysicianCard` render sites are guarded by `if (_activeProfile?.doctorName?.isNotEmpty == true)`. `doctorName` is the legacy free-text column on `profiles` table, not the new `doctor_patient_links` join. When the new Link-a-Doctor flow creates a row in `doctor_patient_links` it does NOT populate `profiles.doctor_name` — the two systems are disconnected.
+  - `lib/widgets/home/physician_card.dart:9`, `:21`, `:53`, `:60` — the widget takes `ProfileModel profile` and reads `profile.doctorName` / `profile.doctorWhatsapp` / `profile.doctorSpecialty` directly. Has no field for a list of linked doctors from the DoctorPatientLink system. Architecturally it is "one profile owns one free-text doctor".
+  - `home_screen.dart` does not import `DoctorService` anywhere. No code path on the dashboard calls `getLinkedDoctors(token, profileId)`, even though that method exists on `lib/services/doctor_service.dart:289` and is used by `my_linked_doctors_screen.dart`.
+  - No `else` branch for empty state — when the guard fails the widget tree simply omits the section (no heading, no card, no CTA).
+- **Fix approach (sketched for user approval, NOT implemented)**:
+  1. Add `List<Map<String,dynamic>> _linkedDoctors = []` + `_loadLinkedDoctors()` state to `home_screen.dart`, wired into the same lifecycle as `_loadAccessLevel`/`_loadReadings` (fires on profile change via `didUpdateWidget`).
+  2. Leave `PhysicianCard` alone for backward compatibility with profiles that still use the legacy free-text path (e.g. shared profile 2 "Dr Vishal"). Build a NEW `LinkedDoctorsCard` widget that renders the DoctorPatientLink data.
+  3. Dashboard chooses: if `_linkedDoctors.isNotEmpty` → render `LinkedDoctorsCard`; else if `profile.doctorName?.isNotEmpty` → render existing `PhysicianCard`; else → render an **always-visible empty state** card with "PRIMARY PHYSICIAN / No doctor linked yet / [Link a doctor →]" CTA that deep-links to `link_doctor_screen.dart`. This satisfies the user's request that the section be visible even when blank.
+- **Open design question (needs user answer before coding)**: should dashboard show ALL linked doctors for the active profile (profile could have 3–4 over time), or just the most-recent / primary one with a subtle "+N more" expander? User has the pilot context to decide. My instinct leans toward "most-recent active as primary card, tap to expand list".
+- **Expected review chain on commit**: Sunita + Aditya + Dr. Rajesh + Daniel (new widget + screen edit under `lib/screens/` and `lib/widgets/home/`), plus Priya (new widget test + flow test).
 
 ---
 

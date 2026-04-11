@@ -702,6 +702,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noDoctorLinked => 'No doctor linked yet.';
 
   @override
+  String get linkADoctorCta => 'Link a doctor';
+
+  @override
+  String get doctorPendingAcceptBadge => 'Awaiting doctor';
+
+  @override
   String get addDoctor => 'Add Doctor';
 
   @override

@@ -14,7 +14,9 @@ import 'shell_screen.dart';
 import '../services/storage_service.dart';
 import '../services/health_reading_service.dart';
 import '../services/profile_service.dart';
+import '../services/doctor_service.dart';
 import '../services/sync_service.dart';
+import 'link_doctor_screen.dart';
 import '../models/profile_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -22,6 +24,7 @@ import '../widgets/home/home_header.dart';
 import '../widgets/home/health_score_ring.dart';
 import '../widgets/home/ai_insight_card.dart';
 import '../widgets/home/physician_card.dart';
+import '../widgets/home/linked_doctors_card.dart';
 import '../widgets/home/vital_summary_card.dart';
 import '../widgets/home/metrics_grid.dart';
 import '../widgets/home/reading_input_modal.dart';
@@ -49,6 +52,8 @@ class _HomeScreenState extends State<HomeScreen>
   final StorageService _storageService = StorageService();
   final HealthReadingService _readingService = HealthReadingService();
   final ProfileService _profileService = ProfileService();
+  final DoctorService _doctorService = DoctorService();
+  List<Map<String, dynamic>> _linkedDoctors = [];
 
   String _activeProfileName = "Health";
   int? _activeProfileId;
@@ -154,9 +159,37 @@ class _HomeScreenState extends State<HomeScreen>
       if (mounted) setState(() => _activeProfile = profile);
     } catch (_) {}
 
+    _loadLinkedDoctors(token, profileId);
+
     // Load caregiver-specific data when viewing shared profile
     if (_isCaregiverView) {
       _loadCaregiverData(token, profileId);
+    }
+  }
+
+  Future<void> _loadLinkedDoctors(String token, int profileId) async {
+    try {
+      final raw = await _doctorService.getLinkedDoctors(token, profileId);
+      if (!mounted) return;
+      setState(() {
+        _linkedDoctors = raw
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      });
+    } catch (_) {
+      if (mounted) setState(() => _linkedDoctors = []);
+    }
+  }
+
+  Future<void> _openLinkDoctorScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LinkDoctorScreen()),
+    );
+    final token = await _storageService.getToken();
+    if (token != null && _activeProfileId != null) {
+      _loadLinkedDoctors(token, _activeProfileId!);
     }
   }
 
@@ -283,6 +316,7 @@ class _HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 HomeHeader(
+                  key: const Key('dashboard_header'),
                   activeProfileName: _activeProfileName,
                   activeProfileId: _activeProfileId,
                   streak: _streak,
@@ -402,6 +436,7 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                             ),
                           HealthScoreRing(
+                            key: const Key('dashboard_health_score'),
                             data: data,
                             isLoading: isLoading,
                             profileId: _activeProfileId,
@@ -444,6 +479,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                           // ② Vitals 2x2 grid (BP, Sugar, BMI, Steps)
                           MetricsGrid(
+                            key: const Key('dashboard_metrics_grid'),
                             data: data,
                             profileId: _activeProfileId,
                             canEdit: _accessLevel != 'viewer',
@@ -459,10 +495,13 @@ class _HomeScreenState extends State<HomeScreen>
 
                           // ④ Today's Meals (expanded with slot prompts)
                           if (_activeProfileId != null)
-                            MealSummaryCard(
-                              key: _mealSummaryKey,
-                              profileId: _activeProfileId!,
-                              onTapLogMeal: _handleAddMeal,
+                            KeyedSubtree(
+                              key: const Key('dashboard_meal_summary'),
+                              child: MealSummaryCard(
+                                key: _mealSummaryKey,
+                                profileId: _activeProfileId!,
+                                onTapLogMeal: _handleAddMeal,
+                              ),
                             ),
                           if (_activeProfileId != null)
                             const SizedBox(height: 16),
@@ -470,6 +509,7 @@ class _HomeScreenState extends State<HomeScreen>
                           // ⑤ AI Insight (collapsed, 2 lines + Read more)
                           if (_aiInsightFuture != null)
                             AiInsightCard(
+                              key: const Key('dashboard_ai_insight'),
                               insightFuture: _aiInsightFuture,
                               pulseAnimation: _pulseAnimation,
                               isSaved: _insightSaved,
@@ -480,9 +520,22 @@ class _HomeScreenState extends State<HomeScreen>
                           if (_aiInsightFuture != null)
                             const SizedBox(height: 16),
 
-                          // ⑥ Physician Card
-                          if (_activeProfile?.doctorName?.isNotEmpty == true)
+                          // ⑥ Physician Card — prefer DoctorPatientLink
+                          // (new system); fall back to legacy free-text
+                          // doctor_name on the profile if no link exists.
+                          // Always renders something (filled, legacy, or
+                          // empty-state CTA) so the section can never
+                          // silently disappear.
+                          if (_linkedDoctors.isNotEmpty)
+                            LinkedDoctorsCard(
+                              key: const Key('dashboard_doctor_section'),
+                              linkedDoctors: _linkedDoctors,
+                              onLinkDoctorTap: _openLinkDoctorScreen,
+                            )
+                          else if (_activeProfile?.doctorName?.isNotEmpty ==
+                              true)
                             PhysicianCard(
+                              key: const Key('dashboard_doctor_section'),
                               profile: _activeProfile!,
                               onWhatsAppTap:
                                   _activeProfile!.doctorWhatsapp?.isNotEmpty ==
@@ -491,23 +544,39 @@ class _HomeScreenState extends State<HomeScreen>
                                       _activeProfile!.doctorWhatsapp!,
                                     )
                                   : null,
+                            )
+                          else
+                            LinkedDoctorsCard(
+                              key: const Key('dashboard_doctor_section'),
+                              linkedDoctors: const [],
+                              onLinkDoctorTap: _openLinkDoctorScreen,
                             ),
-                          if (_activeProfile?.doctorName?.isNotEmpty == true)
-                            const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
                           // ⑦ Device Status Card
-                          const DeviceStatusCard(),
+                          const DeviceStatusCard(
+                            key: Key('dashboard_device_status'),
+                          ),
                           const SizedBox(height: 16),
 
                           // ⑧ 90-day Trends (pushed down)
-                          VitalSummaryCard(data: data),
+                          VitalSummaryCard(
+                            key: const Key('dashboard_vital_summary'),
+                            data: data,
+                          ),
                           const SizedBox(height: 16),
 
                           // ⑨ Quick actions
-                          _buildQuickActions(l10n),
+                          KeyedSubtree(
+                            key: const Key('dashboard_quick_actions'),
+                            child: _buildQuickActions(l10n),
+                          ),
                           const SizedBox(height: 16),
 
-                          _buildFooter(l10n),
+                          KeyedSubtree(
+                            key: const Key('dashboard_footer'),
+                            child: _buildFooter(l10n),
+                          ),
                         ],
                       );
                     },
@@ -707,16 +776,26 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         const SizedBox(height: 16),
 
-        // ⑥ Physician Card
-        if (_activeProfile?.doctorName?.isNotEmpty == true)
+        // ⑥ Physician Card — prefer DoctorPatientLink (new system);
+        // fall back to legacy free-text doctor_name on the profile.
+        if (_linkedDoctors.isNotEmpty)
+          LinkedDoctorsCard(
+            linkedDoctors: _linkedDoctors,
+            onLinkDoctorTap: _openLinkDoctorScreen,
+          )
+        else if (_activeProfile?.doctorName?.isNotEmpty == true)
           PhysicianCard(
             profile: _activeProfile!,
             onWhatsAppTap: _activeProfile!.doctorWhatsapp?.isNotEmpty == true
                 ? () => _openWhatsApp(_activeProfile!.doctorWhatsapp!)
                 : null,
+          )
+        else
+          LinkedDoctorsCard(
+            linkedDoctors: const [],
+            onLinkDoctorTap: _openLinkDoctorScreen,
           ),
-        if (_activeProfile?.doctorName?.isNotEmpty == true)
-          const SizedBox(height: 16),
+        const SizedBox(height: 16),
 
         _buildFooter(l10n),
       ],

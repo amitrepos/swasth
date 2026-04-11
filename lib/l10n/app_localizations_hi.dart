@@ -702,6 +702,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get noDoctorLinked => 'अभी तक कोई डॉक्टर नहीं जोड़ा गया।';
 
   @override
+  String get linkADoctorCta => 'डॉक्टर जोड़ें';
+
+  @override
+  String get doctorPendingAcceptBadge => 'डॉक्टर की स्वीकृति बाकी';
+
+  @override
   String get addDoctor => 'डॉक्टर जोड़ें';
 
   @override

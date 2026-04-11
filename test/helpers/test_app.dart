@@ -15,6 +15,7 @@ import 'package:swasth_app/screens/reading_confirmation_screen.dart';
 import 'package:swasth_app/screens/quick_select_screen.dart';
 import 'package:swasth_app/screens/chat_screen.dart';
 import 'package:swasth_app/screens/history_screen.dart';
+import 'package:swasth_app/screens/home_screen.dart';
 import 'package:swasth_app/theme/app_theme.dart';
 import 'package:swasth_app/services/api_client.dart';
 import 'package:swasth_app/services/storage_service.dart';
@@ -165,6 +166,30 @@ class TestEnv {
     await StorageService().saveToken('mock_token_123');
     final env = await create(tester, startScreen: ChatScreen(profileId: 1));
     await pumpN(tester, frames: 10); // load messages + quota
+    return env;
+  }
+
+  /// Start at HomeScreen — seeds active profile in storage so the
+  /// dashboard renders for the test user. Profile id `1` matches the
+  /// `My Health` row returned by mock_http for `GET /profiles/{id}`.
+  static Future<TestEnv> createAtHomeScreen(
+    WidgetTester tester, {
+    Map<String, http.Response> overrides = const {},
+  }) async {
+    StorageService.useInMemoryStorage();
+    final storage = StorageService();
+    await storage.saveToken('mock_token_123');
+    await storage.saveActiveProfileId(1);
+    await storage.saveActiveProfileName('My Health');
+    await storage.saveActiveProfileAccessLevel('owner');
+    final env = await create(
+      tester,
+      startScreen: const HomeScreen(),
+      overrides: overrides,
+    );
+    // Let async loaders finish: profile, health score, AI insight,
+    // linked doctors, meals.
+    await pumpN(tester, frames: 25);
     return env;
   }
 
