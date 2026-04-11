@@ -66,8 +66,13 @@ jobs:
             git reset --hard origin/master
             echo "✅ Repo synced to $(git rev-parse --short HEAD)"
 
-            source venv/bin/activate
+            # venv lives at backend/venv/ — cd BEFORE activating, otherwise
+            # `source venv/bin/activate` resolves relative to /var/www/swasth
+            # and fails with "No such file or directory" (the deploy-halting
+            # bug that caused PR #111 and #112 deploys to silently leave the
+            # backend process running stale in-memory code).
             cd backend
+            source venv/bin/activate
             pip install -r requirements.txt
 
             # Run any new DB migrations. Each migration script is

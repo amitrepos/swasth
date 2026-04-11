@@ -27,8 +27,10 @@ jobs:
             git reset --hard origin/master
             echo "✅ Repo synced to $(git rev-parse --short HEAD)"
 
-            source venv/bin/activate
+            # venv lives at backend/venv/ — cd BEFORE activating. See
+            # dev.yml for the same fix and the incident this addresses.
             cd backend
+            source venv/bin/activate
             pip install -r requirements.txt
 
             # Run any new DB migrations. Each migration script is
