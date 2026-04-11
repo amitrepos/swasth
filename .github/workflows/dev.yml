@@ -52,11 +52,36 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /var/www/swasth
-            git pull origin master
+            # Hard-reset to origin/master instead of `git pull` — the
+            # pull was silently failing whenever the server's local
+            # repo diverged (e.g. from manual in-place edits or old
+            # merge artifacts), leaving dev stuck on stale code. The
+            # reset is idempotent, immune to divergence, and always
+            # produces a working tree that exactly matches origin.
+            # Any legitimate in-place admin work should go through a
+            # PR, not a direct file edit on the server.
+            git fetch origin master
+            git reset --hard origin/master
+            echo "✅ Repo synced to $(git rev-parse --short HEAD)"
+
             source venv/bin/activate
             cd backend
             pip install -r requirements.txt
+
+            # Run any new DB migrations. Each migration script is
+            # idempotent (checks for column existence before ALTER)
+            # so re-running on every deploy is safe. If you add a
+            # new migration, append it here.
+            echo "Running DB migrations..."
+            for f in migrate_add_doctor_link_states.py; do
+              if [ -f "$f" ]; then
+                echo "  → $f"
+                python3 "$f" || { echo "❌ Migration $f failed"; exit 1; }
+              fi
+            done
+            echo "✅ Migrations complete"
 
             # Restart or start the DEV backend via PM2
             pm2 restart swasth-backend || pm2 start "python3 main.py" --name "swasth-backend" --cwd /var/www/swasth/backend
