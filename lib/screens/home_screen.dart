@@ -266,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen>
   final GlobalKey<MealSummaryCardState> _mealSummaryKey =
       GlobalKey<MealSummaryCardState>();
 
-  void _handleAddMeal() {
+  void _handleAddMeal([String? mealType]) {
     if (_activeProfileId == null) {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
@@ -277,6 +277,11 @@ class _HomeScreenState extends State<HomeScreen>
     showMealInputModal(
       context,
       profileId: _activeProfileId!,
+      // null when launched from generic "+" / empty state CTA;
+      // 'BREAKFAST' / 'LUNCH' / 'SNACK' / 'DINNER' when launched from
+      // a specific dashboard slot tap. QuickSelectScreen falls back
+      // to `detectMealType()` (current hour) when null.
+      mealType: mealType,
       onMealSaved: () {
         if (mounted && _activeProfileId != null) {
           _refreshHealthScore(_activeProfileId!);

@@ -5,10 +5,18 @@ import '../../screens/quick_select_screen.dart';
 import '../../screens/food_photo_screen.dart';
 
 /// Shows a bottom sheet with options to log a meal (quick select or food photo).
+///
+/// [mealType] — when non-null, the resulting [QuickSelectScreen] /
+/// [FoodPhotoScreen] save the meal with this exact `meal_type` instead
+/// of falling back to `detectMealType()` (current hour). Pass the slot
+/// the user tapped on the dashboard ("BREAKFAST" / "LUNCH" / "SNACK" /
+/// "DINNER") so the saved meal matches the user's intent regardless
+/// of when in the day they're logging.
 void showMealInputModal(
   BuildContext context, {
   required int profileId,
   required VoidCallback onMealSaved,
+  String? mealType,
 }) {
   final l10n = AppLocalizations.of(context)!;
 
@@ -55,7 +63,10 @@ void showMealInputModal(
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => QuickSelectScreen(profileId: profileId),
+                    builder: (_) => QuickSelectScreen(
+                      profileId: profileId,
+                      mealType: mealType,
+                    ),
                   ),
                 );
                 onMealSaved();
@@ -83,8 +94,10 @@ void showMealInputModal(
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                QuickSelectScreen(profileId: profileId),
+                            builder: (_) => QuickSelectScreen(
+                              profileId: profileId,
+                              mealType: mealType,
+                            ),
                           ),
                         );
                       },
