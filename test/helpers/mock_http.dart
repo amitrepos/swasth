@@ -277,7 +277,44 @@ MockClient createMockClient({
     }
 
     if (path.endsWith('/meals') && method == 'GET') {
-      return http.Response(jsonEncode([]), 200);
+      // Two sample meals: a low-impact breakfast (today) and a
+      // high-impact lunch (yesterday). Used by history timeline,
+      // caregiver activity feed, and read-only meal summary card.
+      final today = DateTime.now();
+      final yesterday = today.subtract(const Duration(days: 1));
+      return http.Response(
+        jsonEncode([
+          {
+            'id': 101,
+            'profile_id': 1,
+            'logged_by': 1,
+            'category': 'roti_dal',
+            'glucose_impact': 'LOW',
+            'meal_type': 'BREAKFAST',
+            'input_method': 'quick_select',
+            'user_confirmed': true,
+            'timestamp': today.copyWith(hour: 8, minute: 30).toIso8601String(),
+            'created_at': today.copyWith(hour: 8, minute: 30).toIso8601String(),
+          },
+          {
+            'id': 102,
+            'profile_id': 1,
+            'logged_by': 1,
+            'category': 'rice_curry',
+            'glucose_impact': 'HIGH',
+            'meal_type': 'LUNCH',
+            'input_method': 'quick_select',
+            'user_confirmed': true,
+            'timestamp': yesterday
+                .copyWith(hour: 13, minute: 0)
+                .toIso8601String(),
+            'created_at': yesterday
+                .copyWith(hour: 13, minute: 0)
+                .toIso8601String(),
+          },
+        ]),
+        200,
+      );
     }
 
     // ── Chat endpoints ──────────────────────────────────────────────

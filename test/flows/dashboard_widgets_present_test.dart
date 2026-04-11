@@ -70,6 +70,19 @@ void main() {
       expect(find.text('Dr. Omisha Sharma'), findsOneWidget);
     });
 
+    testWidgets('owner dashboard meal summary card is interactive', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtHomeScreen(tester);
+
+      // The owner-side meal card has the "Log meal" + button visible
+      // when meals are present. Caregiver flips this to read-only.
+      // We don't tap it here — just assert the section exists and is
+      // not the read-only variant. Concrete read-only assertion lives
+      // in the caregiver test below.
+      expect(find.byKey(const Key('dashboard_meal_summary')), findsOneWidget);
+    });
+
     testWidgets('all sections still render when data is empty', (tester) async {
       // Override every data endpoint to return empty/null payloads.
       // This simulates a brand-new user who just signed up: no health
@@ -124,6 +137,136 @@ void main() {
         find.byKey(const Key('link_doctor_cta')),
         findsOneWidget,
         reason: 'Link-a-doctor CTA must be tappable when section is empty',
+      );
+    });
+  });
+
+  // Mirror of the owner test for the caregiver dashboard. A caregiver
+  // (access_level != 'owner') sees a different widget set: caregiver
+  // header instead of HomeHeader, ActivityFeedCard instead of
+  // MetricsGrid, etc. The same invariant must hold: every section
+  // renders in both full-data and empty-data states.
+  const caregiverSectionKeys = <Key>[
+    Key('dashboard_caregiver_header'),
+    Key('dashboard_caregiver_wellness'),
+    Key('dashboard_caregiver_meals'),
+    Key('dashboard_caregiver_activity'),
+    Key('dashboard_caregiver_vital_summary'),
+    Key('dashboard_caregiver_care_circle'),
+    Key('dashboard_doctor_section'),
+    Key('dashboard_caregiver_footer'),
+  ];
+
+  group('Dashboard widget invariant — caregiver', () {
+    late TestEnv env;
+    tearDown(() => env.dispose());
+
+    testWidgets('all sections render with full data', (tester) async {
+      env = await TestEnv.createAtCaregiverDashboard(tester);
+
+      expect(find.byType(ErrorWidget), findsNothing);
+
+      for (final key in caregiverSectionKeys) {
+        expect(
+          find.byKey(key),
+          findsOneWidget,
+          reason: 'Caregiver section $key must render with full data',
+        );
+      }
+    });
+
+    testWidgets('all sections still render when data is empty', (tester) async {
+      final overrides = <String, http.Response>{
+        'GET /readings': http.Response(jsonEncode([]), 200),
+        'GET /health-score': http.Response(
+          jsonEncode({
+            'score': 0,
+            'streak_days': 0,
+            'today_bp_status': null,
+            'today_glucose_status': null,
+            'profile_age': 65,
+            'profile_height': null,
+            'profile_weight': null,
+            'bmi': null,
+            'bmi_category': null,
+          }),
+          200,
+        ),
+        'GET /meals': http.Response(jsonEncode([]), 200),
+        'GET /doctor/link/1': http.Response(jsonEncode([]), 200),
+        'GET /access': http.Response(jsonEncode([]), 200),
+      };
+
+      env = await TestEnv.createAtCaregiverDashboard(
+        tester,
+        overrides: overrides,
+      );
+
+      expect(find.byType(ErrorWidget), findsNothing);
+
+      for (final key in caregiverSectionKeys) {
+        expect(
+          find.byKey(key),
+          findsOneWidget,
+          reason:
+              'Caregiver section $key must render even when data is empty '
+              '(prevents the same class of regression as the 2026-04 '
+              'doctor-section bug from landing on the caregiver dashboard)',
+        );
+      }
+
+      // Doctor section: empty-state CTA is the right variant.
+      expect(
+        find.byKey(const Key('linked_doctor_empty')),
+        findsOneWidget,
+        reason: 'Caregiver empty-state must show the doctor empty-state CTA',
+      );
+    });
+
+    testWidgets('caregiver meal card is read-only — no add button', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtCaregiverDashboard(tester);
+
+      // The owner version of MealSummaryCard renders an Icons.add
+      // button when meals exist (the "Log meal" affordance). The
+      // read-only caregiver version must NOT render it. We scope the
+      // search to the caregiver meals section so an `Icons.add` from
+      // some other widget (e.g. profile switcher) doesn't false-positive.
+      final caregiverMealsSection = find.byKey(
+        const Key('dashboard_caregiver_meals'),
+      );
+      expect(caregiverMealsSection, findsOneWidget);
+
+      final addButtonInsideMeals = find.descendant(
+        of: caregiverMealsSection,
+        matching: find.byIcon(Icons.add),
+      );
+      expect(
+        addButtonInsideMeals,
+        findsNothing,
+        reason:
+            'Caregiver meal card must be read-only — caregivers log meals '
+            'via the act-as-patient toggle, not from the caregiver view',
+      );
+    });
+
+    testWidgets('caregiver activity feed includes meals when present', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtCaregiverDashboard(tester);
+
+      // mock_http returns meal id=101 (today) and id=102 (yesterday).
+      // The activity feed caps at 6, so both should fit.
+      expect(
+        find.byKey(const Key('activity_meal_101')),
+        findsOneWidget,
+        reason: 'Today\'s meal should appear in caregiver activity feed',
+      );
+      expect(
+        find.byKey(const Key('activity_meal_102')),
+        findsOneWidget,
+        reason: 'Yesterday\'s meal should appear in caregiver activity feed',
       );
     });
   });

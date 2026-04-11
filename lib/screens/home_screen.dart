@@ -15,7 +15,9 @@ import '../services/storage_service.dart';
 import '../services/health_reading_service.dart';
 import '../services/profile_service.dart';
 import '../services/doctor_service.dart';
+import '../services/meal_service.dart';
 import '../services/sync_service.dart';
+import '../models/meal_log.dart';
 import 'link_doctor_screen.dart';
 import '../models/profile_model.dart';
 import '../theme/app_theme.dart';
@@ -53,7 +55,9 @@ class _HomeScreenState extends State<HomeScreen>
   final HealthReadingService _readingService = HealthReadingService();
   final ProfileService _profileService = ProfileService();
   final DoctorService _doctorService = DoctorService();
+  final MealService _mealService = MealService();
   List<Map<String, dynamic>> _linkedDoctors = [];
+  List<MealLog> _activityMeals = [];
 
   String _activeProfileName = "Health";
   int? _activeProfileId;
@@ -213,6 +217,16 @@ class _HomeScreenState extends State<HomeScreen>
       );
       if (mounted) setState(() => _activityReadings = readings);
     } catch (_) {}
+
+    // Load recent meals for the same activity feed (last 7 days).
+    // Failure is silent — meals are an enrichment, not the primary
+    // signal. Empty list keeps the feed working with readings only.
+    try {
+      final meals = await _mealService.getMeals(profileId, token, days: 7);
+      if (mounted) setState(() => _activityMeals = meals);
+    } catch (_) {
+      if (mounted) setState(() => _activityMeals = []);
+    }
     if (mounted) setState(() => _activityLoading = false);
 
     // Load care circle members
@@ -609,6 +623,7 @@ class _HomeScreenState extends State<HomeScreen>
       children: [
         // ① Caregiver header
         GlassCard(
+          key: const Key('dashboard_caregiver_header'),
           borderRadius: 20,
           padding: const EdgeInsets.all(16),
           margin: EdgeInsets.zero,
@@ -723,6 +738,7 @@ class _HomeScreenState extends State<HomeScreen>
 
         // ② Wellness Ring with personalized message
         HealthScoreRing(
+          key: const Key('dashboard_caregiver_wellness'),
           data: data,
           isLoading: isLoading,
           profileId: _activeProfileId,
@@ -757,34 +773,60 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         const SizedBox(height: 16),
 
-        // ③ Activity Feed
-        ActivityFeedCard(
-          readings: _activityReadings,
-          isLoading: _activityLoading,
+        // ③ Today's meals (read-only — caregivers cannot log meals here.
+        // To log on the patient's behalf, use the "Take Readings" toggle
+        // at the top of the caregiver header to switch to the full
+        // patient dashboard, same pattern as readings).
+        if (_activeProfileId != null)
+          KeyedSubtree(
+            key: const Key('dashboard_caregiver_meals'),
+            child: MealSummaryCard(
+              profileId: _activeProfileId!,
+              readOnly: true,
+            ),
+          ),
+        if (_activeProfileId != null) const SizedBox(height: 16),
+
+        // ④ Activity Feed — readings + meals merged, sorted desc.
+        KeyedSubtree(
+          key: const Key('dashboard_caregiver_activity'),
+          child: ActivityFeedCard(
+            readings: _activityReadings,
+            meals: _activityMeals,
+            isLoading: _activityLoading,
+          ),
         ),
         const SizedBox(height: 16),
 
-        // ④ 90-day Trends
-        VitalSummaryCard(data: data),
-        const SizedBox(height: 16),
-
-        // ⑤ Care Circle
-        CareCircleCard(
-          members: _careCircleMembers,
-          isLoading: _careCircleLoading,
-          currentUserEmail: _currentUserEmail,
+        // ⑤ 90-day Trends
+        VitalSummaryCard(
+          key: const Key('dashboard_caregiver_vital_summary'),
+          data: data,
         ),
         const SizedBox(height: 16),
 
-        // ⑥ Physician Card — prefer DoctorPatientLink (new system);
+        // ⑥ Care Circle
+        KeyedSubtree(
+          key: const Key('dashboard_caregiver_care_circle'),
+          child: CareCircleCard(
+            members: _careCircleMembers,
+            isLoading: _careCircleLoading,
+            currentUserEmail: _currentUserEmail,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ⑦ Physician Card — prefer DoctorPatientLink (new system);
         // fall back to legacy free-text doctor_name on the profile.
         if (_linkedDoctors.isNotEmpty)
           LinkedDoctorsCard(
+            key: const Key('dashboard_doctor_section'),
             linkedDoctors: _linkedDoctors,
             onLinkDoctorTap: _openLinkDoctorScreen,
           )
         else if (_activeProfile?.doctorName?.isNotEmpty == true)
           PhysicianCard(
+            key: const Key('dashboard_doctor_section'),
             profile: _activeProfile!,
             onWhatsAppTap: _activeProfile!.doctorWhatsapp?.isNotEmpty == true
                 ? () => _openWhatsApp(_activeProfile!.doctorWhatsapp!)
@@ -792,12 +834,16 @@ class _HomeScreenState extends State<HomeScreen>
           )
         else
           LinkedDoctorsCard(
+            key: const Key('dashboard_doctor_section'),
             linkedDoctors: const [],
             onLinkDoctorTap: _openLinkDoctorScreen,
           ),
         const SizedBox(height: 16),
 
-        _buildFooter(l10n),
+        KeyedSubtree(
+          key: const Key('dashboard_caregiver_footer'),
+          child: _buildFooter(l10n),
+        ),
       ],
     );
   }

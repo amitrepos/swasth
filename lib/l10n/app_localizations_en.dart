@@ -469,6 +469,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bpOnly => 'BP Only';
 
   @override
+  String get mealsOnly => 'Meals Only';
+
+  @override
+  String get noMealsYet => 'No meals logged yet';
+
+  @override
+  String get mealCarbLoadLow => 'Low-carb meal';
+
+  @override
+  String get mealCarbLoadModerate => 'Medium-carb meal';
+
+  @override
+  String get mealCarbLoadHigh => 'High-carb meal';
+
+  @override
+  String get mealCarbLoadVeryHigh => 'Sugary meal';
+
+  @override
+  String get mealLabelDisclaimer =>
+      'Food labels describe typical carbohydrate content, not your body\'s response.';
+
+  @override
+  String get caregiverLogMealsHint =>
+      'To log meals, use the patient view toggle at the top.';
+
+  @override
   String get noReadingsYet => 'No readings yet';
 
   @override

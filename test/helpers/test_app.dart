@@ -193,6 +193,32 @@ class TestEnv {
     return env;
   }
 
+  /// Start at HomeScreen with caregiver access (`viewer`) on profile 1,
+  /// so `_isCaregiverView` evaluates true and the caregiver dashboard
+  /// renders instead of the owner dashboard. Caregivers see read-only
+  /// meal summary, activity feed (readings + meals), care circle, and
+  /// the doctor section — but cannot log new readings or meals from
+  /// the caregiver view itself.
+  static Future<TestEnv> createAtCaregiverDashboard(
+    WidgetTester tester, {
+    Map<String, http.Response> overrides = const {},
+  }) async {
+    StorageService.useInMemoryStorage();
+    final storage = StorageService();
+    await storage.saveToken('mock_token_123');
+    await storage.saveActiveProfileId(1);
+    await storage.saveActiveProfileName('Mummy');
+    await storage.saveActiveProfileAccessLevel('viewer');
+    final env = await create(
+      tester,
+      startScreen: const HomeScreen(),
+      overrides: overrides,
+    );
+    // Caregiver loaders run sequentially and include the meals fetch.
+    await pumpN(tester, frames: 30);
+    return env;
+  }
+
   /// Start at HistoryScreen.
   static Future<TestEnv> createAtHistory(
     WidgetTester tester, {
