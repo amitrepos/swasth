@@ -15,15 +15,103 @@ tests/e2e/
 
 ## How to run
 
-From this directory:
+### First-time setup (do this ONCE on a new machine)
 
 ```bash
-npm install                # one-time
-npx playwright install chromium   # one-time
-npm test                   # run smoke test headless (~5s)
-npm run test:ui            # open Playwright UI panel with time-travel
-npm run test:headed        # run with visible browser window
-npm run report             # open HTML report from last run
+cd tests/e2e                       # all commands run from here
+npm install                        # downloads @playwright/test (~5s)
+npx playwright install chromium    # downloads Chrome browser binary (~1 min, 100MB)
+```
+
+That's the entire setup. Both commands are idempotent — re-running them is safe.
+
+### Every time you want to run the smoke test
+
+You must be in `tests/e2e/`. All four commands below do the same test, just present it differently:
+
+```bash
+cd tests/e2e
+
+# Option A: headless, fastest (~5s). Just terminal output.
+npm test
+
+# Option B: open Playwright's UI panel — sidebar of tests, click "▶" to run,
+# scrub through every action with a time-travel timeline. RECOMMENDED for the
+# first run so you can see what's happening.
+npm run test:ui
+
+# Option C: open a real visible Chrome window and watch it bootstrap the Flutter
+# bundle. Slower but visceral — useful when troubleshooting.
+npm run test:headed
+
+# Option D: open the HTML report from the LAST run (screenshots, video, trace).
+# Run this AFTER any of A/B/C to see what happened.
+npm run report
+```
+
+### What "passing" looks like
+
+When you run `npm test`, you should see:
+
+```
+Running 1 test using 1 worker
+
+  ✓  1 [chromium] › smoke.spec.ts:10:7 › Smoke › dev server responds and login screen renders (3.5s)
+
+  1 passed (5.0s)
+```
+
+The first time you run it, a screenshot of the live dev server's login screen lands at `tests/e2e/screenshots/smoke-login.png`. Open it to confirm visually.
+
+### What "failing" looks like
+
+If the smoke test fails, the HTML report opens automatically in your browser. You'll see:
+
+- A red ✗ next to the test name
+- The exact assertion that failed
+- A screenshot of the page at the moment of failure (so you can see the broken state)
+- A 10-second video of the test run
+- A trace file you can scrub through frame-by-frame
+
+If the report doesn't auto-open (CI runs, headless terminals), open it manually:
+
+```bash
+npm run report
+```
+
+### Run it from VS Code
+
+Open the integrated terminal (`Ctrl+\`` or `Cmd+\``), then:
+
+```bash
+cd tests/e2e && npm run test:ui
+```
+
+The Playwright UI panel will open in a separate window. Click the "▶" next to `smoke.spec.ts` to run it. You'll see the live browser preview on the right while it executes.
+
+You can also install the VS Code extension "Playwright Test for VS Code" (Microsoft) which adds inline ▶ buttons next to every test in the source file.
+
+### Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `npm: command not found` | Node.js not installed | `brew install node` |
+| `playwright: command not found` after `npm install` | You're not in `tests/e2e/` | `cd tests/e2e` first |
+| `Browser executable doesn't exist` | Skipped `npx playwright install chromium` | Run that command |
+| `net::ERR_CERT_AUTHORITY_INVALID` | The dev server has a self-signed cert; config already handles this | If you still see it, check `playwright.config.ts` has `ignoreHTTPSErrors: true` |
+| Test fails with "expect locator visible" | The dev server is actually broken — this is the canary doing its job | Check `https://65.109.226.36:8443` in your real browser; if it's down or shows an error, fix the deploy |
+| HTML report doesn't open automatically | Common in headless terminals | Run `npm run report` manually |
+
+### Run against a different server
+
+The default target is `https://65.109.226.36:8443`. To point at production, localhost, or a staging URL, set `BASE_URL`:
+
+```bash
+# Against localhost (e.g. flutter run -d web-server --web-port 8080)
+BASE_URL=http://localhost:8080 npm test
+
+# Against production (only if/when prod has a public URL)
+BASE_URL=https://swasth.example.com npm test
 ```
 
 ## What the smoke test checks
