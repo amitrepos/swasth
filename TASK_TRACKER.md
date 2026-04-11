@@ -22,16 +22,14 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 
 **1. Unified history timeline (meals + glucose) — Stage 1 of meal-correlation feature**
 
-- **Status**: Plan agreed with user, zero code written yet.
-- **Context**: User asked "where do I see history of the food and correlation between the sugar spike and the food I had?" We scoped it as 3 stages: (Stage 1) visual timeline only, no math; (Stage 2) rule-based summary after real usage volume exists; (Stage 3) AI insight text — requires `/legal-check` + `/doctor-feedback` because it's a clinical claim. User greenlit Stage 1.
-- **Stage 1 plan (agreed)**:
-  - `lib/screens/history_screen.dart` — add `_meals` state + `_loadMeals()` alongside `_loadReadings()`. Extend `_filterType` options to `all` / `glucose` / `blood_pressure` / `meals`. Build unified `_timelineItems` list (reading|meal union) sorted by timestamp desc. New `_buildMealTile()` widget with food icon, meal_type, category, glucose_impact badge.
-  - `lib/l10n/app_en.arb` + `app_hi.arb` — 5–7 new strings (meal filter, meal type names, impact levels, category labels) with Hindi translations.
-  - `test/helpers/mock_http.dart` — add `GET /meals` mock response with 2 sample meals (breakfast + lunch).
-  - `test/flows/history_flow_test.dart` — new tests: unified timeline shows both readings AND meals; meal filter shows only meals; empty-meals case still works.
-- **Backend + service + model already exist**: `POST/GET /api/meals` in `routes_meals.py`, `lib/services/meal_service.dart::getMeals(profileId, token, days)`, `lib/models/meal_log.dart::MealLog`. Zero new backend work.
-- **Expected review chain on commit**: Sunita + Aditya + Dr. Rajesh + Daniel (screen change triggers `lib/screens/`), plus Sunita + Aditya for l10n, plus Priya for test files.
-- **Explicitly NOT in Stage 1**: correlation math, AI insights, clinical claims ("this meal caused that spike"), grouping meals+readings visually beyond chronological order.
+- **Status**: ✅ Shipped 2026-04-11 as PR `feat/meals-history-and-caregiver-dashboard`. History screen renders meals interleaved with BP/glucose readings sorted desc, with a "Meals Only" filter, color-blind-safe carb-load pills (icon + text + neutral palette), and a disclaimer banner at the top of the list when meals are visible. Caregiver dashboard now shows today's meals (read-only — caregivers must use the act-as-patient toggle to log) and meals appear in the activity feed alongside readings. New `dashboard_caregiver_*` widget invariant test mirrors the owner test from PR #115. Reviewed by Sunita, Aditya, Dr. Rajesh, Priya, Daniel — all PASS after one round of fixes (Dr. Rajesh: rename `glucoseImpactX` → `mealCarbLoadX` and drop `statusCritical` red because "impact" is causal language and red equates meals with abnormal vitals; Aditya: add color-blind icons + Semantics labels + caregiver discoverability hint; Sunita: neutralize Hindi wording — "मीठा भोजन" not "बहुत अधिक प्रभाव").
+- **Follow-ups deferred** (track separately, not blocking pilot):
+  - **Localize raw English meal categories**: backend stores categories as English strings (`rice_curry`, `roti_dal`, etc.). Currently displayed verbatim with underscores replaced. ~50 category strings need l10n keys + Hindi translations. Sunita explicitly flagged this as her remaining grievance.
+  - **Naming consistency**: `history_screen.dart` uses `_carbLoadColor` / `_localizedCarbLoad` / `_carbLoadIcon` (post-rename), but `activity_feed_card.dart::_ActivityMealItem` kept the old `_impactColor` name. Behaviour identical, palette rule preserved. Align in a follow-up.
+  - **Pre-existing UX polish (Aditya)**: meal slot label `fontSize: 7` in `meal_summary_card.dart` is below any reasonable accessibility floor — not introduced by this PR but worth fixing before pilot. Activity feed timestamp at 11sp is also below the 12sp floor.
+  - **Stage 2** (rule-based summary, requires `/legal-check` + `/doctor-feedback`): introduce post-meal glucose comparison with explicit clinical-claim language reviewed by NMC-savvy advisor.
+  - **Stage 3** (AI insight text, requires `/legal-check` + `/doctor-feedback`): natural-language correlation summary; clinical claim, full Stage 3 review.
+  - **Test gaps** (Priya should-fix): filter toggle round-trip ("Meals Only" → "All"), `userCorrectedCategory` display, caregiver `editor` access level path, midnight-boundary mock timestamp robustness, scroll behaviour with 20+ readings + 20+ meals.
 
 **2. Dashboard doctor section — migration from legacy `profile.doctor_name` to `DoctorPatientLink`**
 
@@ -43,6 +41,25 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
   - **`LinkedDoctorsCard` typed model**: `List<Map<String, dynamic>>` is fragile; introduce a `LinkedDoctor` model class.
   - **`_loadLinkedDoctors` retry affordance**: today swallows errors silently (graceful degradation to empty state). For persistent backend 500s, consider a "Tap to retry" affordance with a `_linkedDoctorsLoadFailed` flag.
   - **Pending-only scenario in widget invariant test**: add a third scenario where the only linked doctor is `status='pending_doctor_accept'`; the test should verify the amber pending badge renders.
+
+**3. Legacy doctor fields on `profiles` table — tech-debt note (NOT P0)**
+
+- **Status**: Investigated 2026-04-11. Documented, deliberately not fixing. Doesn't block any current pilot functionality. User decision: live with it, revisit when it actually blocks something.
+- **What exists**: Two completely disconnected "doctor" systems in the codebase.
+  - **LEGACY**: `profiles.doctor_name`, `profiles.doctor_specialty`, `profiles.doctor_whatsapp` — free-text columns the user types into the "Edit Doctor Details" form on `profile_screen.dart`. No verification, no consent, no doctor side.
+  - **NEW (NMC-compliant)**: `DoctorPatientLink` table — populated via Link-a-Doctor flow with `doctor_code` lookup, doctor acceptance, `status='active'`. Read by `LinkedDoctorsCard` (PR #115).
+- **The data model blocker**: `DoctorProfile` table at `backend/models.py:293-307` has no `phone_number` / `whatsapp_number` column. Doctor registration doesn't collect contact info. So the new system literally cannot make a phone call — `list_linked_doctors` has nothing to return. This means we CANNOT fully migrate "Priority Call" / WhatsApp / `_callDoctor` flows off the legacy field until we add doctor contact data.
+- **Current visible symptom**: Dashboard "Priority Call" button (`home_screen.dart:679-716`) and the urgent-state "Call Doctor" button inside `HealthScoreRing` (`health_score_ring.dart:282`) only render if the user has typed a phone number into the legacy form. Pratika linked Dr. Omisha via the new consent flow but never typed a number into the legacy form, so neither button appears for her. Workaround: the patient types Dr. Omisha's WhatsApp into the "Edit Doctor Details" form on their profile screen.
+- **Surface area if we ever migrate**:
+  - **Backend (7 files)**: `models.py:52-54` (the columns), `schemas.py:234,275,311` (3 schemas), `routes_profiles.py:38,118` (build/update), `routes_admin.py:357` (admin export), `seed_demo_data.py`, doctor route tests.
+  - **Flutter (9 files, 5 duplicate guard sites)**: `profile_model.dart:12-14`, `profile_screen.dart:48-49,720-740,883-933` (form + display), `home_screen.dart:458,541,679,744,789` (5 separate `_activeProfile?.doctorWhatsapp?.isNotEmpty` guards — should consolidate to one `_primaryDoctorPhone` getter when migrating), `physician_card.dart:21,53-72`, `health_score_ring.dart:21,282`, 3 l10n files.
+  - **`profile_model.dart:66`**: `toJson()` does NOT serialize the doctor fields back — possible latent bug for profile updates round-tripping these fields. Worth checking when we touch this code next.
+- **3-PR migration plan when it becomes P0** (Option C — hybrid):
+  - **PR 1 (1 day)**: Add `whatsapp_number` (and optionally `phone_number`) to `DoctorProfile` + Alembic migration + doctor registration form (Flutter + backend). Extend `list_linked_doctors` response to return the new field. Required experts: Legal (NMC + DPDPA on doctor PII), PHI, Daniel.
+  - **PR 2 (~2 hours)**: Add a single `String? get _primaryDoctorPhone` derived getter on `_HomeScreenState` that prefers the linked-doctor phone, falls back to legacy. Replace all 5 guard sites and all 5 `_callDoctor(_activeProfile!.doctorWhatsapp!)` calls with the getter. Pratika's Priority Call works.
+  - **PR 3 (later, optional)**: Hide the "Edit Doctor Details" form for new profiles, show read-only legacy data + "Re-link via Doctor Code" CTA for existing legacy users, eventually drop the columns once the at-risk count is 0.
+- **SQL queries to run on the dev DB when we want concrete numbers** (counts of legacy-only profiles, profiles with both, etc.) — captured in the 2026-04-11 Explore agent's report; rerun the agent or grep for "doctor_name IS NOT NULL" if needed.
+- **Why this is not P0**: pilot users so far enter doctor details via the legacy form (it's the documented path), so Priority Call works for them. The bug only surfaces for users who use the *new* Link-a-Doctor flow without also typing into the legacy form — currently a small overlap. PR #115 fixed the silent-disappearance bug on the dashboard's primary card, which was the user-visible regression.
 
 **Original investigation (kept for context):**
 - **Status**: Bug diagnosed, code gap identified, fix approach sketched, waiting on one design decision from user.

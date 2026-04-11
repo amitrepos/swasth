@@ -974,6 +974,54 @@ abstract class AppLocalizations {
   /// **'BP Only'**
   String get bpOnly;
 
+  /// No description provided for @mealsOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Meals Only'**
+  String get mealsOnly;
+
+  /// No description provided for @noMealsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No meals logged yet'**
+  String get noMealsYet;
+
+  /// No description provided for @mealCarbLoadLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low-carb meal'**
+  String get mealCarbLoadLow;
+
+  /// No description provided for @mealCarbLoadModerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium-carb meal'**
+  String get mealCarbLoadModerate;
+
+  /// No description provided for @mealCarbLoadHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High-carb meal'**
+  String get mealCarbLoadHigh;
+
+  /// No description provided for @mealCarbLoadVeryHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Sugary meal'**
+  String get mealCarbLoadVeryHigh;
+
+  /// No description provided for @mealLabelDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Food labels describe typical carbohydrate content, not your body\'s response.'**
+  String get mealLabelDisclaimer;
+
+  /// No description provided for @caregiverLogMealsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'To log meals, use the patient view toggle at the top.'**
+  String get caregiverLogMealsHint;
+
   /// No description provided for @noReadingsYet.
   ///
   /// In en, this message translates to:

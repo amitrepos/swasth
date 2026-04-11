@@ -468,6 +468,32 @@ class AppLocalizationsHi extends AppLocalizations {
   String get bpOnly => 'केवल बीपी';
 
   @override
+  String get mealsOnly => 'केवल भोजन';
+
+  @override
+  String get noMealsYet => 'आज कोई भोजन दर्ज नहीं किया';
+
+  @override
+  String get mealCarbLoadLow => 'कम कार्ब्स वाला भोजन';
+
+  @override
+  String get mealCarbLoadModerate => 'मध्यम कार्ब्स वाला भोजन';
+
+  @override
+  String get mealCarbLoadHigh => 'अधिक कार्ब्स वाला भोजन';
+
+  @override
+  String get mealCarbLoadVeryHigh => 'मीठा भोजन';
+
+  @override
+  String get mealLabelDisclaimer =>
+      'ये लेबल भोजन में कार्ब्स की मात्रा बताते हैं, आपकी सेहत पर कोई टिप्पणी नहीं।';
+
+  @override
+  String get caregiverLogMealsHint =>
+      'भोजन दर्ज करने के लिए ऊपर दिए गए मरीज़-व्यू टॉगल का उपयोग करें।';
+
+  @override
   String get noReadingsYet => 'अभी कोई रीडिंग नहीं';
 
   @override

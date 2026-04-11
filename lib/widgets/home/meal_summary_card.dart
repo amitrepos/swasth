@@ -10,14 +10,22 @@ import '../glass_card.dart';
 ///
 /// If no meals logged: shows tappable "No meals logged today" text.
 /// Uses [MealService.getTodayMeals] to fetch data.
+///
+/// When [readOnly] is true (caregiver dashboard), the add button hides,
+/// the empty-state CTA text is removed, and meal slots become
+/// non-tappable. Caregivers who want to log on the patient's behalf
+/// use the "act as patient" toggle in the caregiver header — same
+/// pattern as readings.
 class MealSummaryCard extends StatefulWidget {
   final int profileId;
   final VoidCallback? onTapLogMeal;
+  final bool readOnly;
 
   const MealSummaryCard({
     super.key,
     required this.profileId,
     this.onTapLogMeal,
+    this.readOnly = false,
   });
 
   @override
@@ -95,7 +103,7 @@ class MealSummaryCardState extends State<MealSummaryCard> {
                 ),
               ),
             ),
-            if (hasMeals && widget.onTapLogMeal != null)
+            if (hasMeals && widget.onTapLogMeal != null && !widget.readOnly)
               GestureDetector(
                 onTap: widget.onTapLogMeal,
                 child: Container(
@@ -141,6 +149,44 @@ class MealSummaryCardState extends State<MealSummaryCard> {
   }
 
   Widget _buildEmptyState(AppLocalizations l10n) {
+    // Read-only mode (caregiver view): no CTA, no tap. Two lines —
+    // primary "no meals today", secondary discoverability hint that
+    // the caregiver CAN log via the "act as patient" toggle.
+    if (widget.readOnly) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Text('\uD83C\uDF5A', style: TextStyle(fontSize: 20)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.noMealsToday,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.caregiverLogMealsHint,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textTertiary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
     return GestureDetector(
       onTap: widget.onTapLogMeal,
       child: Row(
@@ -220,7 +266,7 @@ class MealSummaryCardState extends State<MealSummaryCard> {
         final isLogged = logged.contains(slot.type);
         return Expanded(
           child: GestureDetector(
-            onTap: !isLogged ? widget.onTapLogMeal : null,
+            onTap: (widget.readOnly || isLogged) ? null : widget.onTapLogMeal,
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 3),
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -253,7 +299,9 @@ class MealSummaryCardState extends State<MealSummaryCard> {
                     textAlign: TextAlign.center,
                   ),
                   Text(
-                    isLogged ? l10n.mealSlotLogged : l10n.mealSlotTapToLog,
+                    isLogged
+                        ? l10n.mealSlotLogged
+                        : (widget.readOnly ? '' : l10n.mealSlotTapToLog),
                     style: TextStyle(
                       fontSize: 7,
                       color: isLogged
