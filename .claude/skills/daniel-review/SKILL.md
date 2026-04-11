@@ -84,3 +84,16 @@ JSON
 **Do NOT skip inline comments.** The summary tells the developer *what* to fix; the inline comments show *where*.
 
 $ARGUMENTS
+**Do NOT skip inline comments.** The summary tells the developer *what* to fix; the inline comments show *where*.
+
+## After the review
+
+If your verdict is APPROVE (no CRITICAL issues), call this script to write the review marker so the pre-commit hook knows Daniel has signed off on the current staged content:
+
+```bash
+.claude/scripts/write-review-marker.sh daniel
+```
+
+If your verdict is REQUEST CHANGES (CRITICAL issues present), do NOT write the marker. The user needs to fix the issues first, restage, and re-run the review on the new staged content (which will have a new hash and invalidate all prior markers).
+
+$ARGUMENTS

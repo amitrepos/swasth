@@ -1,0 +1,75 @@
+#!/bin/bash
+# Pre-commit hook — Swasth quality gates.
+#
+# Two gates run in order; a failure in either blocks the commit:
+#
+#   Gate 1: Branch hygiene — refuse commits on a branch whose PR has
+#           already merged (prevents orphaned-commit bugs like the
+#           fix/admin-toggle-button incident on 2026-04-10 where hook
+#           infrastructure was committed to a shipped-and-forgotten branch).
+#
+#   Gate 2: Domain expert review chain — inspect staged diff, compute
+#           required reviewers from the CLAUDE.md Domain Expert Review
+#           Matrix, and require a content-hash-keyed marker from each.
+#           See .claude/scripts/check-required-reviewers.sh.
+#
+# All network calls are wrapped in _with_timeout so a flaky network
+# cannot hang a commit. If gh is unavailable or times out, Gate 1
+# degrades to "allow" (defensive default — Gate 2 and CI still catch).
+#
+# To bypass: --no-verify is blocked separately by the Claude Code harness
+# and by project policy (RULES.md). For a genuine emergency, temporarily
+# unset core.hooksPath, commit, and restore it.
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+  echo "[pre-commit] not in a git repo — skipping" >&2
+  exit 0
+}
+
+# Portable timeout helper. Falls back to no timeout if neither GNU
+# `timeout` nor BSD `gtimeout` is installed.
+_with_timeout() {
+  local secs="$1"; shift
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$secs" "$@"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    gtimeout "$secs" "$@"
+  else
+    "$@"
+  fi
+}
+
+# ── Gate 1: Branch hygiene ────────────────────────────────────────────
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+if [[ -n "$branch" && "$branch" != "master" && "$branch" != "HEAD" ]]; then
+  # Only check if gh is installed and authenticated — otherwise we can't
+  # query PR state, and we fall back to allowing the commit rather than
+  # locking the user out (defensive default). Every gh call is bounded
+  # by _with_timeout so offline / VPN-drop scenarios don't freeze commits.
+  if command -v gh >/dev/null 2>&1 && _with_timeout 3 gh auth status >/dev/null 2>&1; then
+    merged_pr="$(_with_timeout 5 gh pr list --state merged --head "$branch" --json number --jq '.[0].number' 2>/dev/null || true)"
+    if [[ -n "$merged_pr" && "$merged_pr" != "null" ]]; then
+      {
+        echo "BLOCKED: branch '$branch' has already been shipped via merged PR #$merged_pr."
+        echo ""
+        echo "Continuing to commit here creates orphaned work that will never reach master."
+        echo ""
+        echo "To continue your work cleanly:"
+        echo "  git stash                             # save in-progress changes"
+        echo "  git checkout master && git pull"
+        echo "  git checkout -b <new-descriptive-branch>"
+        echo "  git stash pop                         # restore changes"
+        echo ""
+        echo "If you genuinely need to patch this branch (hotfix on a shipped branch),"
+        echo "temporarily unset core.hooksPath, commit, and restore it. But that is"
+        echo "almost never the right move — prefer a new branch off master."
+      } >&2
+      exit 1
+    fi
+  fi
+fi
+
+# ── Gate 2: Domain expert review chain ────────────────────────────────
+exec bash "$REPO_ROOT/.claude/scripts/check-required-reviewers.sh"

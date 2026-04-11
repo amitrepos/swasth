@@ -1,18 +1,105 @@
 #!/bin/bash
-# Pre-push hook: runs backend tests + Flutter analysis before allowing push.
-# If any check fails, the push is aborted.
+# Pre-push hook: branch hygiene + backend tests + Flutter analysis.
+# Any failure aborts the push.
+#
+# Hygiene gate reads pushed refs from STDIN (per githooks(5)) — the branch
+# being pushed is not always the currently checked-out HEAD, e.g.
+# `git push origin feature/other` from master. Checking HEAD would
+# silently validate the wrong branch and defeat the gate.
 
 set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Portable timeout: falls back to running without a timeout if neither
+# GNU `timeout` nor BSD `gtimeout` is available. Degrades to "allow"
+# rather than locking the user out.
+_with_timeout() {
+  local secs="$1"; shift
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$secs" "$@"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    gtimeout "$secs" "$@"
+  else
+    "$@"
+  fi
+}
 
 echo "══════════════════════════════════════════════════"
 echo "  Pre-push checks"
 echo "══════════════════════════════════════════════════"
 
+# ── Gate: branch hygiene ──────────────────────────────────────────────
+# Read stdin per githooks(5): <local ref> <local sha> <remote ref> <remote sha>
+# Collect the local branch names actually being pushed (skip deletes
+# and any non-branch refs like tags).
+pushed_branches=()
+while read -r local_ref _local_sha _remote_ref _remote_sha; do
+  [[ -z "$local_ref" ]] && continue
+  # Deletes come through as "(delete)" / all-zero local sha — skip them.
+  [[ "$local_ref" == "(delete)" ]] && continue
+  case "$local_ref" in
+    refs/heads/*) pushed_branches+=("${local_ref#refs/heads/}") ;;
+    *) ;;  # tags and other refs — no hygiene check
+  esac
+done
+
+# Fallback for edge cases where stdin is empty (e.g. running the hook
+# manually for testing): fall back to HEAD.
+if [[ ${#pushed_branches[@]} -eq 0 ]]; then
+  fallback="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+  if [[ -n "$fallback" && "$fallback" != "HEAD" ]]; then
+    pushed_branches+=("$fallback")
+  fi
+fi
+
+# Only query gh if it's installed and authenticated. All network calls
+# are wrapped in _with_timeout so a flaky network can't hang the push.
+gh_available=0
+if command -v gh >/dev/null 2>&1 && _with_timeout 3 gh auth status >/dev/null 2>&1; then
+  gh_available=1
+fi
+
+if [[ "$gh_available" -eq 1 ]]; then
+  for branch in "${pushed_branches[@]}"; do
+    [[ "$branch" == "master" || "$branch" == "HEAD" ]] && continue
+
+    merged_pr="$(_with_timeout 5 gh pr list --state merged --head "$branch" --json number --jq '.[0].number' 2>/dev/null || true)"
+    if [[ -n "$merged_pr" && "$merged_pr" != "null" ]]; then
+      {
+        echo ""
+        echo "BLOCKED: branch '$branch' already shipped via merged PR #$merged_pr."
+        echo "Pushing more commits here is almost certainly a mistake."
+        echo "Recover: git checkout master && git pull && git checkout -b <new-branch>"
+      } >&2
+      exit 1
+    fi
+
+    open_pr="$(_with_timeout 5 gh pr list --state open --head "$branch" --json number --jq '.[0].number' 2>/dev/null || true)"
+    if [[ -z "$open_pr" || "$open_pr" == "null" ]]; then
+      if [[ -z "${SWASTH_ALLOW_BRANCHLESS_PUSH:-}" ]]; then
+        {
+          echo ""
+          echo "WARNING: branch '$branch' has no open PR."
+          echo "Every push should be associated with a PR — that's how reviews and CI run."
+          echo ""
+          echo "If you intend to open the PR right after this push, rerun with:"
+          echo "  SWASTH_ALLOW_BRANCHLESS_PUSH=1 git push <args>"
+          echo ""
+          echo "Otherwise create the PR first:"
+          echo "  gh pr create --fill"
+        } >&2
+        exit 1
+      fi
+    fi
+  done
+fi
+
 # ── Backend pytest ────────────────────────────────────────────────────────
 echo ""
 echo "▶ Running backend tests..."
 export TESTING=true
-cd "$(git rev-parse --show-toplevel)/backend"
+cd "$REPO_ROOT/backend"
 if [ -d "venv" ]; then
     source venv/bin/activate
 fi
@@ -22,7 +109,7 @@ echo "✓ Backend tests passed (85% coverage gate passed)"
 # ── Flutter analyze ───────────────────────────────────────────────────────
 echo ""
 echo "▶ Running Flutter analysis..."
-cd "$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
 flutter analyze --no-fatal-infos --no-fatal-warnings
 echo "✓ Flutter analysis passed"
 

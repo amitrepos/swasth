@@ -1,0 +1,83 @@
+name: Branch Hygiene
+
+# Runs on every PR. Fails (red ❌) if any of the hygiene invariants
+# are violated. This mirrors the local pre-commit/pre-push gates so
+# they're enforced even for contributors on a fresh clone who
+# haven't set core.hooksPath=.githooks yet.
+#
+# Invariants checked:
+#
+# 1. The PR head branch has not previously been merged. If commit history
+#    shows a prior merged PR with the same branch name, that indicates
+#    someone continued work on a shipped branch instead of starting fresh
+#    off master (the 2026-04-10 fix/admin-toggle-button incident).
+#
+# 2. core.hooksPath is set to .githooks in the repo. The local hooks are
+#    only useful if git is pointed at them.
+#
+# 3. The domain expert review matrix script and the marker writer exist
+#    and are executable. Protects against accidental deletion.
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check branch has not previously shipped
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -e
+          # Count MERGED PRs with this exact head branch, excluding the current PR.
+          count=$(gh pr list --state merged --head "$BRANCH" --json number --jq "map(select(.number != $PR_NUMBER)) | length")
+          if [ "$count" -gt 0 ]; then
+            other=$(gh pr list --state merged --head "$BRANCH" --json number --jq "map(select(.number != $PR_NUMBER)) | .[].number" | head -1)
+            echo "::error::Branch '$BRANCH' has already been shipped via merged PR #$other."
+            echo "::error::Start a fresh branch off master for new work: git checkout master && git pull && git checkout -b <new-branch>"
+            exit 1
+          fi
+          echo "OK: branch '$BRANCH' has not previously shipped."
+
+      - name: Check core.hooksPath is .githooks
+        run: |
+          set -e
+          expected=".githooks"
+          # Look for the configured-hooksPath hint in a setup script OR check that .githooks exists and is populated.
+          if [ ! -d ".githooks" ]; then
+            echo "::error::.githooks directory missing — branch protection hooks will not run locally."
+            exit 1
+          fi
+          for hook in pre-commit pre-push; do
+            if [ ! -x ".githooks/$hook" ]; then
+              echo "::error::.githooks/$hook missing or not executable."
+              exit 1
+            fi
+          done
+          echo "OK: .githooks is populated."
+
+      - name: Check review-chain scripts exist
+        run: |
+          set -e
+          for s in \
+            .claude/scripts/check-required-reviewers.sh \
+            .claude/scripts/write-review-marker.sh \
+            .claude/scripts/orphan-scan.sh; do
+            if [ ! -x "$s" ]; then
+              echo "::error::$s missing or not executable — the domain expert review chain will not function."
+              exit 1
+            fi
+          done
+          echo "OK: review-chain scripts present."

@@ -26,3 +26,11 @@ echo "=== CURRENT STATE ==="
 echo "Branch: $(git -C "$PROJECT_DIR" branch --show-current 2>/dev/null)"
 echo "Last commit: $(git -C "$PROJECT_DIR" log --oneline -1 2>/dev/null)"
 echo "Uncommitted: $(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null | wc -l | tr -d ' ') files"
+
+# Orphan-branch scan — warns loudly if any local branch has drifted into
+# a dangerous state (unpushed commits on a shipped branch, unpushed
+# commits with no PR). Silent when everything is clean.
+ORPHAN_SCRIPT="$PROJECT_DIR/.claude/scripts/orphan-scan.sh"
+if [ -x "$ORPHAN_SCRIPT" ]; then
+  bash "$ORPHAN_SCRIPT" 2>/dev/null || true
+fi

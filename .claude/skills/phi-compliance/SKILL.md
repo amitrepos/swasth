@@ -78,3 +78,16 @@ The following data types are PHI in this project:
 5. End with: COMPLIANT, CONDITIONALLY COMPLIANT (medium only), or NON-COMPLIANT
 
 $ARGUMENTS
+5. End with: COMPLIANT, CONDITIONALLY COMPLIANT (medium only), or NON-COMPLIANT
+
+## After the review
+
+If your verdict is COMPLIANT or CONDITIONALLY COMPLIANT (no CRITICAL or HIGH findings), call this script to write the review marker so the pre-commit hook knows the PHI compliance check has passed for the current staged content:
+
+```bash
+.claude/scripts/write-review-marker.sh phi
+```
+
+If your verdict is NON-COMPLIANT (CRITICAL or HIGH findings), do NOT write the marker. The user needs to fix the violations first, restage, and re-run the review on the new staged content (which will have a new hash and invalidate all prior markers).
+
+$ARGUMENTS

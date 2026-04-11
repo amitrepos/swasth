@@ -117,7 +117,7 @@ LEGAL_TRIGGER:  files touch user data, consent, AI advice, sharing, or non-code 
 SAFETY_TRIGGER: commands involve destructive ops OR DB schema changes?
 ```
 
-### 6a — UX Review (`/ux-review`) — if UI_TRIGGER
+### 6a — UX Review (`/aditya`) — if UI_TRIGGER
 - Bihar grandmother test, Singapore daughter test
 - Touch targets ≥48dp, fonts ≥14sp, solid colors, color-blind safe
 - GATE: no "Must Fix" issues
@@ -185,7 +185,7 @@ gh pr create --title "..." --body "$(cat <<'EOF'
 - Known MEDIUM issues: [list or "none"]
 
 ## Domain Expert Reviews
-- UX (Healthify): TRIGGERED/SKIPPED — verdict
+- UX (Aditya): TRIGGERED/SKIPPED — verdict
 - Doctor (Dr. Rajesh): TRIGGERED/SKIPPED — verdict
 - Legal: TRIGGERED/SKIPPED — verdict
 - Safety: TRIGGERED/SKIPPED — verdict

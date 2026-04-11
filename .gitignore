@@ -53,3 +53,6 @@ backend/.env
 
 # Backup directories
 ios_backup/
+
+# Domain expert review markers — per-clone state, content-hash keyed
+.claude/markers/
