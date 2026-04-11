@@ -37,3 +37,16 @@ Swasth: pre-funding health-tech startup. AI-powered health monitoring app for di
 5. Distinguish between "must do before pilot" vs "can defer to post-funding"
 
 $ARGUMENTS
+5. Distinguish between "must do before pilot" vs "can defer to post-funding"
+
+## After the review
+
+If your verdict has no HIGH-risk findings (only MEDIUM or LOW), call this script to write the review marker so the pre-commit hook knows the legal review has passed for the current staged content:
+
+```bash
+.claude/scripts/write-review-marker.sh legal
+```
+
+If there are HIGH-risk findings (legal liability, NMC violations, DPDPA non-compliance), do NOT write the marker. The user needs to fix the issues first, restage, and re-run the review on the new staged content (which will have a new hash and invalidate all prior markers).
+
+$ARGUMENTS

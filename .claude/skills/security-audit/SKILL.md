@@ -79,3 +79,16 @@ Perform a thorough security review on the changed or specified files.
 6. End with: PASS (no critical/high), CONDITIONAL PASS (medium only), or FAIL
 
 $ARGUMENTS
+6. End with: PASS (no critical/high), CONDITIONAL PASS (medium only), or FAIL
+
+## After the review
+
+If your verdict is PASS or CONDITIONAL PASS (no CRITICAL or HIGH findings), call this script to write the review marker so the pre-commit hook knows the security audit has passed for the current staged content:
+
+```bash
+.claude/scripts/write-review-marker.sh security
+```
+
+If your verdict is FAIL (CRITICAL or HIGH findings), do NOT write the marker. The user needs to fix the vulnerabilities first, restage, and re-run the audit on the new staged content (which will have a new hash and invalidate all prior markers).
+
+$ARGUMENTS

@@ -275,17 +275,90 @@ These are NOT auto-triggered but can be called anytime:
 - `/compact-now` — invoke when context window is getting full
 - `/council` — can also be invoked outside Stage 2 for any ad-hoc decision
 
-## Branch & Deployment Rules (ENFORCED)
+## Branch & Deployment Rules (ENFORCED BY HOOKS — NOT JUST DOCS)
 
 ### Branch Hygiene
-- **ALWAYS** checkout master and pull before creating a new branch:
+
+**The rules below are enforced by `.githooks/pre-commit`, `.githooks/pre-push`,
+`.claude/scripts/orphan-scan.sh` (session start), and
+`.github/workflows/branch-hygiene.yml` (CI). Violating any of them stops the
+commit / push / merge immediately. Memory rules alone are not enough — the
+2026-04-10 `fix/admin-toggle-button` incident produced 4 orphaned commits
+because advisory rules are suggestions, not gates.**
+
+- **ALWAYS checkout master and pull before creating a new branch:**
   ```bash
   git checkout master && git pull origin master
   git checkout -b feature/your-feature-name
   ```
-- **NEVER** create a new branch from another feature branch
-- **NEVER** cherry-pick across feature branches — causes merge conflicts and lost changes
-- If master has advanced while you're on a feature branch, rebase: `git rebase origin/master`
+- **STOP using a branch the moment its PR merges.** Do NOT continue to commit
+  follow-up work on a branch whose PR is already closed/merged. The pre-commit
+  hook will refuse (`gh pr list --state merged --head <branch>` blocks).
+  Recovery pattern:
+  ```bash
+  git stash                                    # save in-progress changes
+  git checkout master && git pull
+  git checkout -b <new-descriptive-branch>
+  git stash pop                                # restore changes
+  ```
+- **Every push must be associated with an open PR.** The pre-push hook blocks
+  branches that are ahead of origin but have no open PR. If you're pushing a
+  fresh branch for the first time, rerun with `SWASTH_ALLOW_BRANCHLESS_PUSH=1`
+  once, then immediately run `gh pr create --fill`.
+- **NEVER** create a new branch from another feature branch.
+- **NEVER** cherry-pick across feature branches — causes merge conflicts and
+  lost changes.
+- If master has advanced while you're on a feature branch, rebase:
+  `git rebase origin/master`.
+
+### First-time setup on a fresh clone
+
+```bash
+git config core.hooksPath .githooks
+```
+
+CI's `branch-hygiene.yml` will block the PR if `.githooks/` scripts are
+missing or not executable, so the hooks themselves are tamper-resistant.
+
+### Domain Expert Review Matrix (ENFORCED via pre-commit hook)
+
+Every `git commit` is intercepted by `.claude/scripts/check-required-reviewers.sh`,
+which inspects the staged diff and computes the required experts from the
+table below. Each required expert must produce a PASS verdict (no Must Fix
+items) and write a content-hash-keyed marker before the commit is allowed.
+Markers live in `.claude/markers/` (gitignored) and invalidate automatically
+when staged content changes.
+
+| Files in staged diff | Required experts (in order) |
+|---|---|
+| Any `.dart` or `.py` source | **Daniel** (`/daniel-review`) — always last, final correctness/security/architecture gate |
+| `lib/screens/`, `lib/widgets/`, `lib/theme/` | **Sunita** (`/sunita`) → **Aditya** (`/aditya`) → **Dr. Rajesh** (`/doctor-feedback`) → Daniel |
+| `lib/l10n/*.arb` | **Sunita** (Hindi naturalness) → **Aditya** (cultural fit) → Daniel |
+| `routes_health.py`, `health_utils.py`, `routes_meals.py` | **Dr. Rajesh** → **PHI** (`/phi-compliance`) → **Legal** (`/legal-check`) → **Sunita** → **Priya** (`/qa-review`) → Daniel |
+| `ai_service.py` | **Dr. Rajesh** → **Legal** → **PHI** → **Sunita** → Daniel |
+| `models.py`, `schemas.py`, `backend/migrations/` | **Legal** → **PHI** → **Priya** → Daniel |
+| `auth.py`, `dependencies.py`, `routes.py` | **Security** (`/security-audit`) → **Legal** → Daniel |
+| `encryption_service.py` | **PHI** → **Security** → Daniel |
+| `routes_doctor.py`, `lib/screens/doctor_*` | **Dr. Rajesh** → **Legal** (NMC) → Daniel |
+| `routes_admin.py`, `admin_dashboard*` | **Legal** → **Aditya** → Daniel |
+| `pubspec.yaml`, `backend/requirements.txt` | **Security** (CVE/supply chain) → Daniel |
+| `backend/tests/*.py`, `test/*.dart` | **Priya** — audits test quality → Daniel |
+
+**Aditya vs Sunita** — NOT redundant. Aditya is a senior UX expert reviewing
+accessibility heuristics, touch targets, color contrast, font sizes. Sunita
+is a 55yo patient in Ranchi reviewing comprehension at arm's length without
+glasses, Hindi naturalness, fear-vs-reassurance balance. Both review every
+patient-facing change.
+
+**Hard block on Must Fix** — any expert returning a Must Fix issue blocks
+the commit. No soft override. Fix the issue, restage, rerun the review chain
+on the new staged content (new hash → all prior markers invalidated).
+
+After running an expert and getting a PASS verdict, write the marker:
+```bash
+.claude/scripts/write-review-marker.sh <expert>
+# expert ∈ {sunita, aditya, doctor, daniel, phi, legal, security, priya}
+```
 
 ### Server Deployment
 - **ALWAYS** build from master (or from a branch that is up-to-date with master)

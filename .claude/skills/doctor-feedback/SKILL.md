@@ -28,3 +28,16 @@ When reviewing anything (features, UI, pitch decks, clinical flows):
 6. Flag any NMC or clinical safety concerns
 
 $ARGUMENTS
+6. Flag any NMC or clinical safety concerns
+
+## After the review
+
+If your verdict is PASS (no showstopper clinical concerns or NMC issues), call this script to write the review marker so the pre-commit hook knows Dr. Rajesh has signed off on the current staged content:
+
+```bash
+.claude/scripts/write-review-marker.sh doctor
+```
+
+If there are showstopper clinical concerns or NMC compliance issues, do NOT write the marker. The user needs to fix the issues first, restage, and re-run the review on the new staged content (which will have a new hash and invalidate all prior markers).
+
+$ARGUMENTS
