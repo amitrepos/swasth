@@ -1669,4 +1669,52 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get adminCreateUserNmcRequired =>
       'NMC number is required for doctor accounts';
+
+  @override
+  String get emailVerificationTitle => 'Verify Your Email';
+
+  @override
+  String emailVerificationSubtitle(String email) {
+    return 'We sent a 6-digit code to $email. Enter it below to verify your email address.';
+  }
+
+  @override
+  String get verifyEmailButton => 'Verify Email';
+
+  @override
+  String get skipForNow => 'Skip for now';
+
+  @override
+  String get emailNotVerifiedBanner => 'Please verify your email address';
+
+  @override
+  String get emailVerifiedSuccess => 'Email verified successfully!';
+
+  @override
+  String get verifyEmailDialogTitle => 'Verify Your Email';
+
+  @override
+  String get verifyEmailDialogMessage =>
+      'Verify your email for account security. You can also do this later.';
+
+  @override
+  String get verifyNow => 'Verify Now';
+
+  @override
+  String get verifyLater => 'Later';
+
+  @override
+  String get emailVerificationOtpSent => 'Verification code sent to your email';
+
+  @override
+  String get emailVerificationFailed => 'Failed to send verification code';
+
+  @override
+  String get otpValidationEmpty => 'Please enter the code';
+
+  @override
+  String get otpValidationLength => 'Code must be 6 digits';
+
+  @override
+  String get otpValidationDigitsOnly => 'Code must contain only numbers';
 }

@@ -3169,6 +3169,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'NMC number is required for doctor accounts'**
   String get adminCreateUserNmcRequired;
+
+  /// No description provided for @emailVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Your Email'**
+  String get emailVerificationTitle;
+
+  /// No description provided for @emailVerificationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code to {email}. Enter it below to verify your email address.'**
+  String emailVerificationSubtitle(String email);
+
+  /// No description provided for @verifyEmailButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Email'**
+  String get verifyEmailButton;
+
+  /// No description provided for @skipForNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get skipForNow;
+
+  /// No description provided for @emailNotVerifiedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Please verify your email address'**
+  String get emailNotVerifiedBanner;
+
+  /// No description provided for @emailVerifiedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Email verified successfully!'**
+  String get emailVerifiedSuccess;
+
+  /// No description provided for @verifyEmailDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Your Email'**
+  String get verifyEmailDialogTitle;
+
+  /// No description provided for @verifyEmailDialogMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email for account security. You can also do this later.'**
+  String get verifyEmailDialogMessage;
+
+  /// No description provided for @verifyNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Now'**
+  String get verifyNow;
+
+  /// No description provided for @verifyLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get verifyLater;
+
+  /// No description provided for @emailVerificationOtpSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code sent to your email'**
+  String get emailVerificationOtpSent;
+
+  /// No description provided for @emailVerificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send verification code'**
+  String get emailVerificationFailed;
+
+  /// No description provided for @otpValidationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the code'**
+  String get otpValidationEmpty;
+
+  /// No description provided for @otpValidationLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Code must be 6 digits'**
+  String get otpValidationLength;
+
+  /// No description provided for @otpValidationDigitsOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Code must contain only numbers'**
+  String get otpValidationDigitsOnly;
 }
 
 class _AppLocalizationsDelegate

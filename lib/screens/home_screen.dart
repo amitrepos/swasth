@@ -6,6 +6,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 
+import 'email_verification_screen.dart';
 import 'select_profile_screen.dart';
 import 'manage_access_screen.dart';
 import 'trend_chart_screen.dart';
@@ -76,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen>
   bool _careCircleLoading = false;
   bool _activityLoading = false;
   String? _currentUserEmail;
+  bool _isEmailVerified = true;
   bool _showFullDashboard = false;
 
   late AnimationController _pulseController;
@@ -125,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen>
         _activeProfileId = id;
         _accessLevel = level ?? 'owner';
         _currentUserEmail = userData?['email'] as String?;
+        _isEmailVerified = userData?['email_verified'] == true;
         _showFullDashboard = false; // Reset on profile switch
         if (id != null) _refreshHealthScore(id);
       });
@@ -385,6 +388,60 @@ class _HomeScreenState extends State<HomeScreen>
                   onLogout: () => _logout(context),
                 ),
                 const SizedBox(height: 16),
+
+                if (!_isEmailVerified)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      key: const Key('email_verify_banner_home'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.amber.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.amber.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: AppColors.warning,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(
+                                context,
+                              )!.emailNotVerifiedBanner,
+                              style: const TextStyle(
+                                color: AppColors.warning,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => EmailVerificationScreen(
+                                    email: _currentUserEmail ?? '',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              AppLocalizations.of(context)!.verifyNow,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 if (_healthScoreFuture != null)
                   FutureBuilder<Map<String, dynamic>>(

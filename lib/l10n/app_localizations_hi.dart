@@ -1673,4 +1673,52 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get adminCreateUserNmcRequired =>
       'डॉक्टर खाते के लिए NMC नंबर ज़रूरी है';
+
+  @override
+  String get emailVerificationTitle => 'अपना ईमेल सत्यापित करें';
+
+  @override
+  String emailVerificationSubtitle(String email) {
+    return 'हमने $email पर 6 अंकों का कोड भेजा है। अपना ईमेल सत्यापित करने के लिए नीचे दर्ज करें।';
+  }
+
+  @override
+  String get verifyEmailButton => 'ईमेल सत्यापित करें';
+
+  @override
+  String get skipForNow => 'अभी छोड़ें';
+
+  @override
+  String get emailNotVerifiedBanner => 'कृपया अपना ईमेल पता सत्यापित करें';
+
+  @override
+  String get emailVerifiedSuccess => 'ईमेल सफलतापूर्वक सत्यापित हो गया!';
+
+  @override
+  String get verifyEmailDialogTitle => 'अपना ईमेल सत्यापित करें';
+
+  @override
+  String get verifyEmailDialogMessage =>
+      'खाते की सुरक्षा के लिए अपना ईमेल सत्यापित करें। आप बाद में भी कर सकते हैं।';
+
+  @override
+  String get verifyNow => 'अभी सत्यापित करें';
+
+  @override
+  String get verifyLater => 'बाद में';
+
+  @override
+  String get emailVerificationOtpSent => 'सत्यापन कोड आपके ईमेल पर भेजा गया';
+
+  @override
+  String get emailVerificationFailed => 'कोड नहीं भेज पाए, दोबारा कोशिश करें';
+
+  @override
+  String get otpValidationEmpty => 'कृपया कोड डालें';
+
+  @override
+  String get otpValidationLength => 'कोड 6 अंकों का होना चाहिए';
+
+  @override
+  String get otpValidationDigitsOnly => 'कोड में केवल नंबर होने चाहिए';
 }

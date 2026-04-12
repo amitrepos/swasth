@@ -147,6 +147,7 @@ class UserResponse(BaseModel):
     is_admin: bool = False
     role: Optional[str] = "patient"
     timezone: str
+    email_verified: bool = False
     consent_timestamp: Optional[datetime] = None
     consent_app_version: Optional[str] = None
     consent_language: Optional[str] = None
@@ -155,6 +156,10 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class VerifyEmailOTPRequest(BaseModel):
+    otp: str = Field(..., min_length=6, max_length=6)
 
 
 class ForgotPasswordRequest(BaseModel):

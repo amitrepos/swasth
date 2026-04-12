@@ -16,6 +16,7 @@ import 'create_profile_screen.dart';
 import 'login_screen.dart';
 import 'pending_invites_screen.dart';
 import '../widgets/offline_banner.dart';
+import 'email_verification_screen.dart';
 
 class SelectProfileScreen extends StatefulWidget {
   /// If true, was pushed from Shell (profile switcher) — pop back on select.
@@ -36,6 +37,8 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
   bool _isLoading = true;
   bool _isOffline = false;
   bool _isAdmin = false;
+  bool _isEmailVerified = true;
+  String? _currentUserEmail;
   String? _error;
 
   @override
@@ -60,9 +63,11 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       final profiles = await _profileService.getProfiles(token);
       final invites = await _profileService.getPendingInvites(token);
 
-      // Check admin status
+      // Check admin status and email verification
       final userData = await _storageService.getUserData();
       final isAdmin = userData?['is_admin'] == true;
+      final emailVerified = userData?['email_verified'] == true;
+      final userEmail = userData?['email'] as String?;
 
       // Cache profiles for offline use
       await _storageService.saveProfiles(
@@ -75,6 +80,8 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
         _isLoading = false;
         _isOffline = false;
         _isAdmin = isAdmin;
+        _isEmailVerified = emailVerified;
+        _currentUserEmail = userEmail;
       });
     } catch (e) {
       // Try loading cached profiles for offline use
@@ -217,6 +224,53 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (_isOffline) const OfflineBanner(),
+                    if (!_isEmailVerified)
+                      Container(
+                        key: const Key('email_verify_banner'),
+                        margin: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.amber.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.amber.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              color: AppColors.warning,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                l10n.emailNotVerifiedBanner,
+                                style: const TextStyle(
+                                  color: AppColors.warning,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => EmailVerificationScreen(
+                                      email: _currentUserEmail ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Text(l10n.verifyNow),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (_pendingInvites.isNotEmpty) _buildInvitesBanner(l10n),
 
                     _buildSectionHeader(l10n.myProfilesSection),

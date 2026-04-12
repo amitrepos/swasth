@@ -86,6 +86,14 @@ void main() {
       await tester.tap(loginButton);
       await pumpN(tester, frames: 30);
 
+      // Email verification dialog may appear (email_verified=false in mock).
+      // Dismiss it by tapping "Later" to proceed to SelectProfileScreen.
+      final laterButton = find.text('Later');
+      if (laterButton.evaluate().isNotEmpty) {
+        await tester.tap(laterButton);
+        await pumpN(tester, frames: 20);
+      }
+
       expect(find.byType(SelectProfileScreen), findsOneWidget);
 
       // Wait for profiles to load

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import hashlib
 import os
 import pytz
 import models
@@ -74,12 +75,28 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
     
     db.commit()
     db.refresh(db_user)
-    
-    # 4. Send welcome email
+
+    # 4. Send email verification OTP (best-effort)
+    try:
+        otp = email_service.generate_otp()
+        otp_hash = hashlib.sha256(otp.encode()).hexdigest()
+        otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+        db.add(models.EmailVerificationOTP(
+            user_id=db_user.id,
+            email=db_user.email,
+            otp=otp_hash,
+            expires_at=otp_expires,
+        ))
+        db.commit()
+        email_service.send_email_verification_otp(db_user.email, otp, db_user.full_name)
+    except Exception:
+        pass  # best-effort — user can resend later
+
+    # 5. Send welcome email (best-effort)
     try:
         email_service.send_welcome_email(db_user.email, db_user.full_name)
-    except Exception as e:
-        print(f"Error sending welcome email: {e}")
+    except Exception:
+        pass  # best-effort
 
     return db_user
 
@@ -219,6 +236,85 @@ def grant_ai_consent(
 
 
 # ---------------------------------------------------------------------------
+# Email verification
+# ---------------------------------------------------------------------------
+
+@router.post("/send-email-verification")
+@limiter.limit("3/minute")
+def send_email_verification(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Generate and send a new email verification OTP."""
+    # Invalidate any previous unused OTPs for this user
+    db.query(models.EmailVerificationOTP).filter(
+        models.EmailVerificationOTP.user_id == user.id,
+        models.EmailVerificationOTP.is_used == False,
+    ).update({"is_used": True})
+
+    otp = email_service.generate_otp()
+    otp_hash = hashlib.sha256(otp.encode()).hexdigest()
+    otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+
+    db.add(models.EmailVerificationOTP(
+        user_id=user.id,
+        email=user.email,
+        otp=otp_hash,
+        expires_at=otp_expires,
+    ))
+    db.commit()
+
+    email_service.send_email_verification_otp(user.email, otp, user.full_name)
+
+    return {"message": "Verification OTP sent", "expires_in_minutes": settings.OTP_EXPIRE_MINUTES}
+
+
+@router.post("/verify-email")
+@limiter.limit("5/minute")
+def verify_email(
+    request: Request,
+    body: schemas.VerifyEmailOTPRequest,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Verify the user's email address using an OTP."""
+    # Idempotent — already verified
+    if user.email_verified:
+        return {"message": "Email verified successfully"}
+
+    otp_hash = hashlib.sha256(body.otp.encode()).hexdigest()
+    otp_record = db.query(models.EmailVerificationOTP).filter(
+        models.EmailVerificationOTP.user_id == user.id,
+        models.EmailVerificationOTP.otp == otp_hash,
+        models.EmailVerificationOTP.is_used == False,
+        models.EmailVerificationOTP.expires_at > datetime.utcnow(),
+    ).first()
+
+    if not otp_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP",
+        )
+
+    # Mark OTP as used and verify user
+    otp_record.is_used = True
+    user.email_verified = True
+    user.email_verified_at = datetime.now(pytz.UTC)
+    db.commit()
+
+    return {"message": "Email verified successfully"}
+
+
+@router.get("/email-verification-status")
+def email_verification_status(
+    user: models.User = Depends(get_current_user),
+):
+    """Check whether the current user's email is verified."""
+    return {"email_verified": bool(user.email_verified)}
+
+
+# ---------------------------------------------------------------------------
 # Account deletion — DPDP Act right to erasure
 # ---------------------------------------------------------------------------
 
@@ -271,8 +367,9 @@ def delete_account(
         models.ProfileInvite.invited_user_id == user.id,
     ).update({"invited_user_id": None})
 
-    # 6. Delete password reset OTPs
+    # 6. Delete password reset OTPs and email verification OTPs
     db.query(models.PasswordResetOTP).filter(models.PasswordResetOTP.email == user.email).delete()
+    db.query(models.EmailVerificationOTP).filter(models.EmailVerificationOTP.user_id == user.id).delete()
 
     # 7. Delete the user
     db.query(models.User).filter(models.User.id == user.id).delete()

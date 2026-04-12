@@ -109,6 +109,8 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 | A14 | Google OAuth login | ❌ Not started | Add "Sign in with Google" option. Use `google_sign_in` Flutter package + backend token verification. ~3 hours. Needs Google Cloud OAuth client IDs (web + iOS + Android). Existing email/password login stays as fallback. |
 | A15 | Admin visual dashboard (Phase 2) | ✅ Done | HTML dashboard at `/api/admin` with KPI cards, charts, user management. User detail modal with 6 tabs (Overview, Profiles, Readings, Chats, Insights, AI Memory). AI memory edit/reset. Served by backend. |
 | A16 | Inline profile editing | ✅ Done | Profile screen: owners can edit age, height, weight, doctor details inline with single Save button. Read-only for viewers. Added 2026-04-03. |
+| A17 | Email verification (OTP) | ❌ Not started | Phase 1: soft nudge (banner + skip). Phase 2: hard block (one-line change). Blueprint: `docs/blueprints/email-verification.md`. Pre-pilot priority. |
+| A18 | Alembic DB migrations | ❌ Not started | Replace 10 hand-written `migrate_*.py` scripts with Alembic. One-time ~30min setup. Post-pilot. |
 
 ---
 
