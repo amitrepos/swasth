@@ -7,6 +7,24 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 ---
 
+## Pre-release blocker — replace self-signed TLS cert on pilot backend
+
+**Backend at `65.109.226.36:8443` currently uses a self-signed certificate.** Browsers let users click past the warning, but `dart:io` on Android/iOS hard-rejects with `CERTIFICATE_VERIFY_FAILED: self signed certificate`, breaking every API call from native mobile builds.
+
+**Temporary workaround (2026-04-11):** `lib/main.dart` installs a `_PilotHttpOverrides` class that trusts self-signed certs **only** for host `65.109.226.36` (other hosts still use normal TLS trust chain, web builds unaffected via `kIsWeb` guard). This unblocks the APK for pilot device testing.
+
+**Must remove before public release:**
+1. Point a real domain at the backend (or the server's IP if Let's Encrypt allows — it doesn't; needs a domain).
+2. Provision a Let's Encrypt cert via certbot on the server.
+3. Update nginx / uvicorn TLS config to use the real cert.
+4. Delete `_PilotHttpOverrides` from `lib/main.dart` and its `HttpOverrides.global` install in `main()`.
+5. Delete the `dart:io` imports that became unused.
+6. Rebuild APK and verify handshake succeeds without the override.
+
+**Why this is a hard blocker:** Shipping a cert-bypass in a public release means anyone on the patient's Wi-Fi can MITM every API call (tokens, health data, meal logs). It's scoped to one IP today, but "pilot-only" code has a way of surviving into GA if it's not tracked.
+
+---
+
 ## Known data issue — pilot meals logged before 2026-04-11
 
 **Meals logged before the slot-tap fix (PR landing 2026-04-11) may have the wrong `meal_type` in the database.** `quick_select_screen.dart` was hardcoding `mealType: detectMealType()` (wall-clock time), so any patient who tapped a specific slot ("Breakfast" / "Lunch" / "Snack" / "Dinner") had their saved `meal_type` overwritten with whatever slot the current hour matched. Fix plumbs the tapped slot type through `MealSummaryCard → home_screen → modal → QuickSelectScreen`.
