@@ -797,5 +797,25 @@
       "email": { "type": "String" }
     }
   },
-  "adminCreateUserNmcRequired": "NMC number is required for doctor accounts"
+  "adminCreateUserNmcRequired": "NMC number is required for doctor accounts",
+  "emailVerificationTitle": "Verify Your Email",
+  "emailVerificationSubtitle": "We sent a 6-digit code to {email}. Enter it below to verify your email address.",
+  "@emailVerificationSubtitle": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "verifyEmailButton": "Verify Email",
+  "skipForNow": "Skip for now",
+  "emailNotVerifiedBanner": "Please verify your email address",
+  "emailVerifiedSuccess": "Email verified successfully!",
+  "verifyEmailDialogTitle": "Verify Your Email",
+  "verifyEmailDialogMessage": "Verify your email for account security. You can also do this later.",
+  "verifyNow": "Verify Now",
+  "verifyLater": "Later",
+  "emailVerificationOtpSent": "Verification code sent to your email",
+  "emailVerificationFailed": "Failed to send verification code",
+  "otpValidationEmpty": "Please enter the code",
+  "otpValidationLength": "Code must be 6 digits",
+  "otpValidationDigitsOnly": "Code must contain only numbers"
 }

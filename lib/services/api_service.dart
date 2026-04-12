@@ -119,6 +119,63 @@ class ApiService {
     }
   }
 
+  Future<void> sendEmailVerification(String token) async {
+    try {
+      final response = await ApiClient.httpClient
+          .post(
+            Uri.parse('$baseUrl/send-email-verification'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
+      if (response.statusCode != 200) {
+        throw Exception(
+          ApiClient.errorDetail(response, 'Failed to send verification email'),
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to send verification email: $e');
+    }
+  }
+
+  Future<void> verifyEmailOTP(String token, String otp) async {
+    try {
+      final response = await ApiClient.httpClient
+          .post(
+            Uri.parse('$baseUrl/verify-email'),
+            headers: ApiClient.headers(token: token),
+            body: jsonEncode({'otp': otp}),
+          )
+          .timeout(_kTimeout);
+      if (response.statusCode != 200) {
+        throw Exception(
+          ApiClient.errorDetail(response, 'Email verification failed'),
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to verify email: $e');
+    }
+  }
+
+  Future<bool> getEmailVerificationStatus(String token) async {
+    try {
+      final response = await ApiClient.httpClient
+          .get(
+            Uri.parse('$baseUrl/email-verification-status'),
+            headers: ApiClient.headers(token: token),
+          )
+          .timeout(_kTimeout);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['email_verified'] == true;
+      }
+      throw Exception(
+        ApiClient.errorDetail(response, 'Failed to get verification status'),
+      );
+    } catch (e) {
+      throw Exception('Failed to get email verification status: $e');
+    }
+  }
+
   Future<void> deleteAccount(String token) async {
     try {
       final response = await ApiClient.httpClient

@@ -77,6 +77,7 @@ MockClient createMockClient({
           'email': 'test@swasth.app',
           'full_name': 'Test User',
           'access_token': 'mock_token_123',
+          'email_verified': false,
         }),
         201,
       );
@@ -104,9 +105,33 @@ MockClient createMockClient({
           'email': 'test@swasth.app',
           'full_name': 'Test User',
           'is_admin': false,
+          'email_verified': false,
         }),
         200,
       );
+    }
+
+    // ── Email verification endpoints ────────────────────────────────
+
+    if (path.endsWith('/send-email-verification') && method == 'POST') {
+      return http.Response(
+        jsonEncode({
+          'message': 'Verification OTP sent',
+          'expires_in_minutes': 10,
+        }),
+        200,
+      );
+    }
+
+    if (path.endsWith('/verify-email') && method == 'POST') {
+      return http.Response(
+        jsonEncode({'message': 'Email verified successfully'}),
+        200,
+      );
+    }
+
+    if (path.endsWith('/email-verification-status') && method == 'GET') {
+      return http.Response(jsonEncode({'email_verified': false}), 200);
     }
 
     // ── Profile endpoints ───────────────────────────────────────────

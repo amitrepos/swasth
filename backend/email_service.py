@@ -1,5 +1,5 @@
 import smtplib
-import random
+import secrets
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -20,7 +20,7 @@ class BrevoEmailService:
     
     def generate_otp(self) -> str:
         """Generate a 6-digit OTP."""
-        return str(random.randint(100000, 999999))
+        return str(secrets.randbelow(900000) + 100000)
     
     def send_otp_email(self, recipient_email: str, otp: str) -> bool:
         """
@@ -206,6 +206,96 @@ class BrevoEmailService:
             print(f"Error sending welcome email: {e}")
             return False
 
+
+    def send_email_verification_otp(self, recipient_email: str, otp: str, full_name: str) -> bool:
+        """Send email verification OTP to a user.
+
+        Args:
+            recipient_email: Recipient's email address
+            otp: The OTP to send
+            full_name: User's full name
+
+        Returns:
+            True if email sent successfully, False otherwise
+        """
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = f"{self.sender_name} <{self.sender_email}>"
+            msg['To'] = recipient_email
+            msg['Subject'] = "Verify Your Email - Swasth Health App"
+
+            body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }}
+        .otp-box {{ background-color: #fff; border: 2px dashed #4CAF50; padding: 20px; text-align: center; margin: 20px 0; }}
+        .otp-code {{ font-size: 32px; font-weight: bold; color: #4CAF50; letter-spacing: 5px; }}
+        .warning {{ background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
+        .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Swasth Health App</h1>
+            <p>Email Verification</p>
+        </div>
+
+        <div class="content">
+            <p>Hello {full_name},</p>
+            <p>Welcome to Swasth Health App! Please verify your email address using the OTP below.</p>
+
+            <p>Your One-Time Password (OTP) is:</p>
+
+            <div class="otp-box">
+                <div class="otp-code">{otp}</div>
+            </div>
+
+            <p>This OTP is valid for <strong>10 minutes</strong>.</p>
+
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+
+            <p>नमस्ते {full_name},</p>
+            <p>स्वास्थ्य हेल्थ ऐप में आपका स्वागत है! कृपया नीचे दिए गए OTP से अपना ईमेल पता सत्यापित करें।</p>
+            <p>यह OTP <strong>10 मिनट</strong> के लिए मान्य है।</p>
+
+            <div class="warning">
+                <strong>Important / महत्वपूर्ण:</strong>
+                <ul>
+                    <li>Do not share this OTP with anyone / यह OTP किसी के साथ साझा न करें</li>
+                    <li>If you didn't create an account, please ignore this email / यदि आपने खाता नहीं बनाया है, तो इस ईमेल को अनदेखा करें</li>
+                </ul>
+            </div>
+
+            <p>Best regards / सधन्यवाद,<br>
+            <strong>The Swasth Health Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>&copy; 2026 Swasth Health App. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+            """
+
+            msg.attach(MIMEText(body, 'html'))
+
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.smtp_login, self.sender_password)
+                server.send_message(msg)
+
+            return True
+
+        except Exception:
+            return False
 
     def send_profile_invite_email(
         self,

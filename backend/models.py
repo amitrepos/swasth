@@ -30,6 +30,8 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.patient, nullable=False)
     timezone = Column(String, default="UTC", nullable=False)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
+    email_verified = Column(Boolean, default=False)
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -279,6 +281,18 @@ class PasswordResetOTP(Base):
     __tablename__ = "password_reset_otps"
 
     id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, nullable=False)
+    otp = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime, nullable=False)
+    is_used = Column(Boolean, default=False)
+
+
+class EmailVerificationOTP(Base):
+    __tablename__ = "email_verification_otps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     email = Column(String, nullable=False)
     otp = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -8,6 +8,7 @@ import 'doctor_registration_screen.dart';
 import 'registration_screen.dart';
 import 'select_profile_screen.dart';
 import 'forgot_password_screen.dart';
+import 'email_verification_screen.dart';
 import 'doctor/doctor_triage_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -100,13 +101,49 @@ class _LoginScreenState extends State<LoginScreen> {
         // Route based on role: doctors go to triage, patients to profiles
         final userData = await StorageService().getUserData();
         final role = userData?['role'] as String?;
-        final destination = role == 'doctor'
-            ? const DoctorTriageScreen()
-            : const SelectProfileScreen();
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => destination),
-        );
+
+        // Prompt non-doctor users to verify email if not yet verified
+        if (userData?['email_verified'] != true && role != 'doctor') {
+          final shouldVerify = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(l10n.verifyEmailDialogTitle),
+              content: Text(l10n.verifyEmailDialogMessage),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(l10n.verifyLater),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(l10n.verifyNow),
+                ),
+              ],
+            ),
+          );
+
+          if (mounted && shouldVerify == true) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EmailVerificationScreen(
+                  email: _emailController.text.trim(),
+                ),
+              ),
+            );
+            return;
+          }
+        }
+
+        if (mounted) {
+          final destination = role == 'doctor'
+              ? const DoctorTriageScreen()
+              : const SelectProfileScreen();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => destination),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

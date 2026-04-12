@@ -102,6 +102,7 @@ class StorageService {
   Future<void> deleteToken() async {
     await _store.delete(_tokenKey);
   }
+
   Future<void> saveUserData(Map<String, dynamic> userData) async {
     await _store.write(_userKey, jsonEncode(userData));
   }
@@ -143,6 +144,11 @@ class StorageService {
     final jsonString = await _store.read(_userKey);
     if (jsonString == null) return null;
     return jsonDecode(jsonString);
+  }
+
+  Future<bool> isEmailVerified() async {
+    final data = await getUserData();
+    return data?['email_verified'] == true;
   }
 
   Future<void> saveCredentials(String email, String password) async {
