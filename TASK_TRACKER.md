@@ -395,6 +395,30 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 
 ---
 
+## Module F — Marketing & Growth
+
+> **Strategy doc:** [`docs/MARKETING_STRATEGY.md`](docs/MARKETING_STRATEGY.md)
+> **Video scripts:** [`docs/VIDEO_SCRIPTS_AND_TEST_DATA.md`](docs/VIDEO_SCRIPTS_AND_TEST_DATA.md)
+> **VC feedback:** Vikram Chakraborty skill (`/vc-investor`). Current fundability: 3/10. Target: 8/10 by Sep 2026.
+
+| ID | Task | Status | Owner | Notes |
+|----|------|--------|-------|-------|
+| F1 | Build swasth.health landing page + NRI waitlist | ❌ | Amit + Claude | Domain purchased. Fields: name, city, parent city, health interest. Privacy policy needed. |
+| F2 | Script 1 — NRI/family caregiver video (60s, English) | 🔄 | Amit + Claude | v3 exists in VIDEO_SCRIPTS doc. Needs NRI waitlist CTA update. |
+| F3 | Generate Imagen stills for Script 1 (3 images) | ❌ | Amit | Prompts ready in VIDEO_SCRIPTS doc. Use Google AI Studio / Banana. |
+| F4 | Record app walkthrough for Script 1 | ❌ | Amit | Demo data seeded on dev server (Ramesh Kumar persona). Login: ramesh.demo@swasth.app |
+| F5 | Assemble Script 1 video (images + walkthrough + VO) | ❌ | Amit | CapCut or DaVinci Resolve. ElevenLabs or Sarvam AI for VO. |
+| F6 | Facebook ad copy variants (3 versions) | ❌ | Claude | Headlines, descriptions, CTAs for A/B testing. |
+| F7 | Run NRI waitlist campaign (₹5-10K, 7 days) | ❌ | Friend (media buyer) | Target: NRI expats from India, age 28-50, Germany/Canada/Singapore/Dubai/US/UK. |
+| F8 | Script 2 — Patient direct video (60s, Hindi) | ❌ | Amit + Claude | Phase 2 — after Bihar landing. |
+| F9 | Script 3 — Doctor pitch video (90s, English) | ❌ | Amit + Claude | Phase 2 — for doctor onboarding. |
+| F10 | Script 4 — Investor video (90s, English) | ❌ | Amit + Claude | Phase 3 — for pitch meetings. |
+| F11 | Organic NRI Facebook group posts | ❌ | Interns | Join NRI groups (Berlin, Singapore, Dubai, Canada, US). Post waitlist link organically. |
+| F12 | Evaluate Sarvam AI for Hindi VO | ❌ | Amit + Claude | Alternative to ElevenLabs for Hindi voice. Need to check access + quality. |
+| F13 | Company registration (Pvt Ltd) | ❌ | Amit | Target: end of May. ₹15,000. PAN + bank account. |
+
+---
+
 ## NEXT PRIORITIES (Bihar Pilot)
 
 ### P0 — Safety Critical
