@@ -18,14 +18,14 @@ def run_test_for_user(email: str):
             print(f"❌ User with email {email} not found.")
             return
 
-        print(f"🚀 Triggering manual report for: {user.full_name} ({user.phone_number})")
+        print(f"🚀 Triggering manual weekly report for: {user.full_name} ({user.phone_number})")
         print("-" * 50)
 
         # 2. Trigger the report
         success = trigger_single_user_report(db, user, trigger_type=ReportTriggerType.MANUAL)
 
         # 3. Fetch and display logs
-        print("\n📊 --- AUDIT LOGS ---")
+        print("\n📊 --- WEEKLY AUDIT LOGS ---")
         
         # Generation Log
         gen_log = db.query(ReportGenerationLog).filter(
