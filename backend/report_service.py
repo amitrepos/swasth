@@ -10,9 +10,10 @@ from models import (
 )
 from health_utils import classify_bp, classify_glucose
 from twilio_service import whatsapp_service
+import ai_report_service
 
 def format_report_message(user: User, profiles_data: list) -> str:
-    """Format the cumulative report message for a user."""
+    """Format the cumulative weekly report message for a user."""
     # Date in user's timezone if possible, or fallback to IST since it's an Indian app
     user_tz_str = getattr(user, "timezone", "Asia/Kolkata")
     try:
@@ -20,13 +21,13 @@ def format_report_message(user: User, profiles_data: list) -> str:
     except Exception:
         tz = pytz.timezone("Asia/Kolkata")
         
-    # Use the current time in user's timezone for the report header date
     now = datetime.now(tz)
-    date_str = now.strftime("%A, %d %b %Y")
+    date_str = now.strftime("%d %b %Y")
+    last_week_str = (now - timedelta(days=6)).strftime("%d %b")
     
     msg = [
-        "📊 *Daily Health Report*",
-        f"📅 {date_str}",
+        "📊 *Weekly Health Report*",
+        f"📅 {last_week_str} – {date_str}",
         "══════════════════════════\n"
     ]
     
@@ -34,27 +35,28 @@ def format_report_message(user: User, profiles_data: list) -> str:
         msg.append(f"👤 *{p['name']}*")
         msg.append("──────────────────────")
         
-        # Sugar
+        # Stats summary (from recent data)
         if p['glucose']:
             val = p['glucose'].glucose_value
             status = classify_glucose(val)
-            # Match status to user icons
             icon = "✅" if status == "NORMAL" else "⚠️"
-            # Clean up status text (e.g. HIGH -> High)
-            status_text = status.replace("_", " ").title()
-            msg.append(f"🩸 Sugar: {int(val)} mg/dL — {status_text} {icon}")
+            msg.append(f"🩸 Sugar: {int(val)} mg/dL ({status.title()}) {icon}")
         else:
-            msg.append("🩸 Sugar: No reading today")
+            msg.append("🩸 Sugar: No checks today")
             
-        # BP
         if p['bp']:
             sys, dia = p['bp'].systolic, p['bp'].diastolic
             status = classify_bp(sys, dia)
             icon = "✅" if status == "NORMAL" else "⚠️"
-            status_text = status.replace(" - ", " ").title()
-            msg.append(f"💓 BP: {int(sys)}/{int(dia)} mmHg — {status_text} {icon}\n")
+            msg.append(f"💓 BP: {int(sys)}/{int(dia)} mmHg ({status.title()}) {icon}")
         else:
-            msg.append("💓 BP: No reading today\n")
+            msg.append("💓 BP: No checks today")
+
+        # AI Insight Section
+        if p.get('insight'):
+            msg.append(f"\n✨ *AI Evaluation:* {p['insight']}\n")
+        else:
+            msg.append("\n")
             
     msg.append("💚 Stay healthy! — *Swasth*")
     return "\n".join(msg)
@@ -96,28 +98,38 @@ def trigger_single_user_report(db: Session, user: User, trigger_type: ReportTrig
         skipped_ids = []
         all_reading_ids = []
 
-        last_24h = datetime.utcnow() - timedelta(hours=24)
+        last_7d = datetime.utcnow() - timedelta(days=7)
 
         for profile in controlled_profiles:
-            # Latest Glucose
+            # Latest Glucose (within last 24h for the 'Latest' spot, but AI uses 7d)
             glucose = db.query(HealthReading).filter(
                 HealthReading.profile_id == profile.id,
                 HealthReading.reading_type == "glucose",
-                HealthReading.reading_timestamp >= last_24h
+                HealthReading.reading_timestamp >= (datetime.utcnow() - timedelta(hours=24))
             ).order_by(HealthReading.reading_timestamp.desc()).first()
             
             # Latest BP
             bp = db.query(HealthReading).filter(
                 HealthReading.profile_id == profile.id,
                 HealthReading.reading_type == "blood_pressure",
-                HealthReading.reading_timestamp >= last_24h
+                HealthReading.reading_timestamp >= (datetime.utcnow() - timedelta(hours=24))
             ).order_by(HealthReading.reading_timestamp.desc()).first()
             
-            if glucose or bp:
+            # Check for any data in 7d to decide if we send the profile report
+            any_data = db.query(HealthReading).filter(
+                HealthReading.profile_id == profile.id,
+                HealthReading.reading_timestamp >= last_7d
+            ).first()
+
+            if any_data:
+                # Generate AI Insight for the week
+                insight = ai_report_service.get_weekly_ai_insight(db, profile.id, user)
+                
                 profiles_data.append({
                     "name": profile.name,
                     "glucose": glucose,
-                    "bp": bp
+                    "bp": bp,
+                    "insight": insight
                 })
                 with_data_ids.append(profile.id)
                 if glucose: all_reading_ids.append(glucose.id)
@@ -131,7 +143,7 @@ def trigger_single_user_report(db: Session, user: User, trigger_type: ReportTrig
         
         if not profiles_data:
             gen_log.status = ReportGenerationStatus.FAILED
-            gen_log.error_message = "No data found for any profile in the last 24h."
+            gen_log.error_message = "No data found for any profile in the last 7 days."
             db.commit()
             return False
 
@@ -179,26 +191,44 @@ def trigger_single_user_report(db: Session, user: User, trigger_type: ReportTrig
         db.commit()
         return False
 
-def send_daily_reports(db: Optional[Session] = None, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED):
-    """Main task to aggregate data and send WhatsApp reports to all users."""
+def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED):
+    """Main task to send Weekly WhatsApp reports to all users in batches."""
+    import time
     managed_session = False
     if db is None:
         db = SessionLocal()
         managed_session = True
         
     try:
-        # Fetch users with phone numbers
-        users = db.query(User).filter(User.phone_number != None, User.phone_number != "").all()
+        # Fetch active users (Batching logic)
+        batch_size = 20
+        offset = 0
         
-        for user in users:
-            trigger_single_user_report(db, user, trigger_type=trigger_type)
+        while True:
+            users = db.query(User).filter(
+                User.phone_number != None, 
+                User.phone_number != "",
+                User.is_active == True
+            ).offset(offset).limit(batch_size).all()
+            
+            if not users:
+                break
                 
+            for user in users:
+                try:
+                    trigger_single_user_report(db, user, trigger_type=trigger_type)
+                except Exception as user_e:
+                    print(f"Failed to process user {user.id} in batch: {user_e}")
+            
+            offset += batch_size
+            time.sleep(1) # Small pause between batches to breathe
+            
     except Exception as e:
-        print(f"Error in global send_daily_reports task: {e}")
+        print(f"Error in global send_weekly_reports task: {e}")
     finally:
         if managed_session:
             db.close()
 
 if __name__ == "__main__":
     # For quick manual testing
-    send_daily_reports(trigger_type=ReportTriggerType.MANUAL)
+    send_weekly_reports(trigger_type=ReportTriggerType.MANUAL)

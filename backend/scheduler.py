@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from report_service import send_daily_reports
+from report_service import send_weekly_reports
 from models import ReportTriggerType
 import logging
 from datetime import datetime
@@ -11,34 +11,31 @@ logger = logging.getLogger("swasth-scheduler")
 
 scheduler = BackgroundScheduler()
 
-def daily_reports_job():
+def weekly_reports_job():
     """Wrapper to log the trigger event and call the service."""
-    logger.info(f"[SCHEDULER] Daily report job fired at {datetime.now()}")
-    send_daily_reports(trigger_type=ReportTriggerType.SCHEDULED)
+    logger.info(f"[SCHEDULER] Weekly report job fired at {datetime.now()}")
+    send_weekly_reports(trigger_type=ReportTriggerType.SCHEDULED)
 
 def start_scheduler():
     """
     Initialize and start the background scheduler.
-    Currently schedules:
-    - Daily Health Reports: 09:00 AM IST
+    Now schedules:
+    - Weekly Health Reports: Sunday 09:00 AM IST
     """
     if not scheduler.running:
-        # Task: Daily Reports
-        # For an Indian healthcare app, 9:00 AM is a standard summary time.
+        # Task: Weekly Reports
+        # Sent every Sunday morning as a comprehensive family summary.
         scheduler.add_job(
-            daily_reports_job,
-            trigger=CronTrigger(hour=9, minute=0),
-            id="daily_whatsapp_reports",
-            name="Generate and send daily health reports to all users",
+            weekly_reports_job,
+            trigger=CronTrigger(day_of_week='sun', hour=9, minute=0),
+            id="weekly_whatsapp_reports",
+            name="Generate and send weekly health reports to all users",
             replace_existing=True
         )
         
-        # We can add a shorter interval test job here if needed for debugging
-        # scheduler.add_job(send_daily_reports, 'interval', minutes=60)
-        
         scheduler.start()
         logger.info("✅ Background scheduler initialized.")
-        logger.info("📅 Daily reports scheduled for 09:00 AM local time.")
+        logger.info("📅 Weekly reports scheduled for Sundays at 09:00 AM local time.")
 
 def stop_scheduler():
     """Shutdown the scheduler gracefully."""

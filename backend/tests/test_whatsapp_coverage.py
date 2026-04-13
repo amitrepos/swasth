@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock, ANY
 from datetime import datetime, timedelta
 import pytz
 from models import User, Profile, HealthReading, ProfileAccess
-from report_service import send_daily_reports, format_report_message
+from report_service import send_weekly_reports, format_report_message
 from twilio_service import TwilioWhatsAppService
 
 # --- Tests for report_service.py ---
@@ -13,7 +13,7 @@ def test_format_report_message_invalid_timezone():
     user = User(full_name="Test User", timezone="Invalid/Zone")
     # Should fallback to Asia/Kolkata
     msg = format_report_message(user, [])
-    assert "Daily Health Report" in msg
+    assert "Weekly Health Report" in msg
 
 def test_format_report_message_with_bp_data():
     """Test line 46-50: Rendering Blood Pressure data correctly."""
@@ -21,31 +21,36 @@ def test_format_report_message_with_bp_data():
     p_data = [{
         "name": "Papa",
         "glucose": None,
-        "bp": MagicMock(systolic=120, diastolic=80)
+        "bp": MagicMock(systolic=120, diastolic=80),
+        "insight": "Test insight"
     }]
     msg = format_report_message(user, p_data)
     assert "💓 BP: 120/80 mmHg" in msg
-    assert "Normal ✅" in msg
+    assert "(Normal) ✅" in msg
+    assert "✨ *AI Evaluation:* Test insight" in msg
 
 @patch("report_service.whatsapp_service")
-def test_send_daily_reports_managed_session(mock_whatsapp, db):
+@patch("report_service.ai_report_service")
+def test_send_weekly_reports_managed_session(mock_ai, mock_whatsapp, db):
     """Test line 61-62, 131: Managed session when db is None."""
     # This involves patching SessionLocal in report_service
     with patch("report_service.SessionLocal") as mock_session_local:
         mock_session_local.return_value = db
         # We don't need any users/readings, just hitting the initialization/finally blocks
-        send_daily_reports(db=None) 
+        send_weekly_reports(db=None) 
         mock_session_local.assert_called_once()
 
 @patch("report_service.whatsapp_service")
-def test_send_daily_reports_phone_formats(mock_whatsapp, db):
+@patch("report_service.ai_report_service")
+def test_send_weekly_reports_phone_formats(mock_ai, mock_whatsapp, db):
     """Test line 80-84: Phone number starting with 91 but no +."""
     user = User(
         email="phone@test.com",
         full_name="Phone Tester",
         password_hash="pw",
         phone_number="918700151250", # 12 digits starting with 91
-        timezone="UTC"
+        timezone="UTC",
+        is_active=True
     )
     db.add(user)
     db.flush()
@@ -59,7 +64,9 @@ def test_send_daily_reports_phone_formats(mock_whatsapp, db):
     ))
     db.commit()
     
-    send_daily_reports(db=db)
+    mock_ai.get_weekly_ai_insight.return_value = "Insight"
+    
+    send_weekly_reports(db=db)
     # Should normalize to +91...
     mock_whatsapp.send_whatsapp.assert_called_with("+918700151250", ANY)
 

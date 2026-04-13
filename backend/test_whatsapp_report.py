@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database import SessionLocal
 from models import User, Profile, HealthReading, ProfileAccess
-from report_service import send_daily_reports
+from report_service import send_weekly_reports
 
 def normalize_phone(phone: str) -> str:
     """Basic normalization for searching/creating."""
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     print(f"🚀 Setting up multi-profile test data for {TEST_PHONE}...")
     setup_multi_profile_test_data(TEST_PHONE)
     
-    print("\n📩 Triggering WhatsApp report service for all users...")
-    send_daily_reports()
+    print("\n📩 Triggering Weekly WhatsApp report service for all users...")
+    send_weekly_reports()
     
-    print("\n🏁 Aggregated test complete. Check your WhatsApp!")
+    print("\n🏁 Aggregated Weekly test complete. Check your WhatsApp!")
