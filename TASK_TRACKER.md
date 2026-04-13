@@ -403,7 +403,7 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 
 | ID | Task | Status | Owner | Notes |
 |----|------|--------|-------|-------|
-| F1 | Build swasth.health landing page + NRI waitlist | ❌ | Amit + Claude | Domain purchased. Fields: name, city, parent city, health interest. Privacy policy needed. |
+| F1 | **Build swasth.health landing page + NRI waitlist** | ❌ | **Assignee: TBD** | See detailed breakdown below (F1.1–F1.12) |
 | F2 | Script 1 — NRI/family caregiver video (60s, English) | 🔄 | Amit + Claude | v3 exists in VIDEO_SCRIPTS doc. Needs NRI waitlist CTA update. |
 | F3 | Generate Imagen stills for Script 1 (3 images) | ❌ | Amit | Prompts ready in VIDEO_SCRIPTS doc. Use Google AI Studio / Banana. |
 | F4 | Record app walkthrough for Script 1 | ❌ | Amit | Demo data seeded on dev server (Ramesh Kumar persona). Login: ramesh.demo@swasth.app |
@@ -416,6 +416,52 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 | F11 | Organic NRI Facebook group posts | ❌ | Interns | Join NRI groups (Berlin, Singapore, Dubai, Canada, US). Post waitlist link organically. |
 | F12 | Evaluate Sarvam AI for Hindi VO | ❌ | Amit + Claude | Alternative to ElevenLabs for Hindi voice. Need to check access + quality. |
 | F13 | Company registration (Pvt Ltd) | ❌ | Amit | Target: end of May. ₹15,000. PAN + bank account. |
+
+---
+
+### F1 — Detailed Breakdown: swasth.health Website + Interest Form
+
+**Objective:** Build a single-page landing site at `swasth.health` that collects NRI waitlist sign-ups for the Swasth health monitoring app. This is Phase 1 of the marketing strategy — goal is 200-500 sign-ups by end of May 2026.
+
+**Domain:** `swasth.health` (already purchased by Amit)
+
+**Design direction:** Single-page, mobile-first, clean and modern. Hero section with app demo, one clear CTA ("Join the Waitlist"), feature highlights, trust signals.
+
+#### Sub-tasks
+
+| ID | Task | Description | Estimate | Status | Dependencies |
+|----|------|-------------|----------|--------|--------------|
+| F1.1 | **Tech stack decision** | Decide: static HTML/CSS/JS, Next.js, or hosted (Carrd/Framer). Recommend static or Next.js on Vercel for speed + free hosting. | 1 hr | ❌ | None |
+| F1.2 | **Hosting & DNS setup** | Point `swasth.health` DNS to hosting provider (Vercel recommended — free tier, auto-SSL). Configure DNS A/CNAME records. Verify HTTPS works. | 2 hrs | ❌ | F1.1 |
+| F1.3 | **Page layout & wireframe** | Design wireframe with these sections: (1) Hero — headline + subheadline + CTA button, (2) App demo section — screenshot or embedded video, (3) Features — 3-4 key value props with icons, (4) Interest form, (5) Footer — privacy policy link + contact. Mobile-first. | 3 hrs | ❌ | F1.1 |
+| F1.4 | **Hero section** | Build hero with: **Headline:** "Keep your parents healthy — from anywhere in the world" (or similar NRI-focused). **Subheadline:** "AI-powered health monitoring that connects families across borders." **CTA button:** "Join the Waitlist" (scrolls to form). Background: gradient or app screenshot. | 3 hrs | ❌ | F1.3 |
+| F1.5 | **Feature highlights section** | 3-4 cards/columns: (1) "Daily health tracking" — BP, glucose, meals logged in seconds, (2) "AI health insights" — personalized tips in Hindi & English, (3) "Family dashboard" — see parent's readings from abroad, (4) "Doctor-ready reports" — share history with any doctor. Icons or illustrations for each. | 3 hrs | ❌ | F1.3 |
+| F1.6 | **Interest/waitlist form** | Form fields: (1) **Name** — text, required, (2) **Email** — email, required, validated, (3) **City you live in** — text, required (NRI's current city, e.g. Berlin, Toronto), (4) **Parent's city in India** — text, required (e.g. Patna, Ranchi), (5) **Health topics that interest you** — checkboxes: ☐ Diabetes management, ☐ Blood pressure monitoring, ☐ General wellness. Submit button: "Join the Waitlist". Success message: "Thank you! We'll notify you when Swasth launches in your parent's area." | 4 hrs | ❌ | F1.3 |
+| F1.7 | **Form backend (data storage)** | Options (pick one): (a) Google Sheets via Apps Script (simplest, free), (b) Supabase free tier (PostgreSQL), (c) Simple API endpoint on our FastAPI backend. **Recommended: Google Sheets** — zero cost, Amit can view sign-ups directly, no backend maintenance. Store: name, email, city, parent_city, interests, timestamp. | 3 hrs | ❌ | F1.6 |
+| F1.8 | **Email confirmation (optional but recommended)** | On form submit, send a simple confirmation email: "Thanks for joining the Swasth waitlist! We'll keep you posted." Use Resend (free tier: 100 emails/day) or EmailJS. | 3 hrs | ❌ | F1.7 |
+| F1.9 | **Privacy policy page** | Separate page or modal with privacy policy. Must include: what data we collect (name, email, city, health interests), how we use it (waitlist communication only), that we don't share it, how to request deletion, contact email. Draft with Claude, Amit reviews. **DPDPA compliant** — health interest checkboxes are phrased as "topics that interest you", NOT "does your parent have diabetes" (avoids sensitive personal data classification). | 2 hrs | ❌ | None |
+| F1.10 | **Consent notice on form** | Below submit button: "By signing up, you agree to receive updates from Swasth. We won't share your data. [Privacy Policy]" — must be visible before user submits. | 30 min | ❌ | F1.9 |
+| F1.11 | **App demo section** | Either: (a) Embedded video placeholder (for Script 1 when ready — F2-F5), or (b) 2-3 app screenshots showing dashboard, health readings, family view. Use actual app screenshots from dev server (Ramesh Kumar demo account). | 2 hrs | ❌ | F1.3 |
+| F1.12 | **Analytics** | Add Google Analytics 4 (or Plausible for privacy-friendly alternative). Track: page views, form submissions, scroll depth, CTA clicks. Set up conversion event for form submit. | 1 hr | ❌ | F1.2 |
+
+**Total estimated effort:** ~27 hours (~3-4 days for one person)
+
+#### Acceptance Criteria
+1. Site loads at `https://swasth.health` with valid SSL (no cert warnings)
+2. Page is mobile-responsive (test on iPhone SE, Pixel 5, iPad)
+3. Form submits successfully and data appears in Google Sheets (or chosen backend)
+4. Privacy policy is accessible from the form
+5. Consent notice is visible before submit
+6. Page loads in < 3 seconds on 3G connection (lighthouse score > 80)
+7. Analytics tracking fires on page load and form submit
+8. Health interest checkboxes use DPDPA-safe phrasing ("topics that interest you")
+
+#### Important Notes for Assignee
+- **DO NOT** ask "Does your parent have diabetes?" — this triggers DPDPA sensitive personal data requirements. Use "What health topics interest you?" with checkboxes instead.
+- **Domain is already purchased** — Amit has access to the DNS settings.
+- **Video will come later** — use a placeholder or app screenshots for now (F2-F5 are separate tasks).
+- **Target audience is NRIs** — Indians living abroad, aged 28-50, worried about parents' health. Tone should be warm, family-focused, not clinical.
+- **Reference docs:** `docs/MARKETING_STRATEGY.md` (full strategy), `docs/VIDEO_SCRIPTS_AND_TEST_DATA.md` (video script for tone reference)
 
 ---
 
