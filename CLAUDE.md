@@ -38,6 +38,9 @@ Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
 - `/legal-check` — India health-tech legal/compliance advisor
 - `/phi-compliance` — Health data (PHI) compliance audit (DPDPA, DISHA, encryption)
 
+### Strategic
+- `/reality-check` — Meera Krishnan: ex-McKinsey, challenges "should we build this at all?" (Stage 1.5 gate)
+
 ### Decision Support
 - `/council` — 4-voice decision panel (Architect, Skeptic, Pragmatist, Critic)
 - `/safety-guard` — Review planned operations for destructive risk
@@ -51,17 +54,18 @@ Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
 **This pipeline runs for EVERY feature, bug fix, or refactor. Each stage has a GATE that must pass before proceeding. If a gate fails, fix the issue and re-run that stage. Never skip ahead.**
 
 ```
-┌───────────┐ ┌──────┐ ┌────────┐ ┌───────────┐ ┌────────┐ ┌────────┐ ┌─────────┐ ┌────────┐ ┌──────┐
-│1.UNDERSTAND│▶│2.PLAN│▶│3.VALID.│▶│4.IMPLEMENT│▶│5.VERIFY│▶│6.SECURE│▶│7.EXPERT │▶│8.REVIEW│▶│9.SHIP│
-│            │ │      │ │        │ │           │ │        │ │        │ │   QA    │ │        │ │      │
-│ auto       │ │/bluep│ │/dr-feed│ │ /tdd      │ │/verify │ │/sec-aud│ │/ux-rev  │ │/review │ │commit│
-│            │ │/cncil│ │/legal  │ │           │ │6 phase │ │/phi-com│ │/safe-grd│ │(Daniel)│ │PR    │
-│            │ │      │ │        │ │           │ │        │ │        │ │/legal   │ │        │ │audit │
-│            │ │      │ │        │ │           │ │        │ │        │ │/dr-feed │ │        │ │learn │
-└────────────┘ └──────┘ └────────┘ └───────────┘ └────────┘ └────────┘ └─────────┘ └────────┘ └──────┘
-    GATE:        GATE:     GATE:       GATE:        GATE:      GATE:      GATE:       GATE:
-  context     user approves no show-  tests pass  6 phases  no CRITICAL no Must-Fix no CRITICAL
-  loaded        plan      stoppers                  pass     findings    issues      issues
+┌───────────┐ ┌────────┐ ┌──────┐ ┌────────┐ ┌───────────┐ ┌────────┐ ┌────────┐ ┌─────────┐ ┌────────┐ ┌──────┐
+│1.UNDERSTAND│▶│1.5MEERA│▶│2.PLAN│▶│3.VALID.│▶│4.IMPLEMENT│▶│5.VERIFY│▶│6.SECURE│▶│7.EXPERT │▶│8.REVIEW│▶│9.SHIP│
+│            │ │REALITY │ │      │ │        │ │           │ │        │ │        │ │   QA    │ │        │ │      │
+│ auto       │ │CHECK   │ │/bluep│ │/dr-feed│ │ /tdd      │ │/verify │ │/sec-aud│ │/ux-rev  │ │/review │ │commit│
+│            │ │        │ │/cncil│ │/legal  │ │           │ │6 phase │ │/phi-com│ │/safe-grd│ │(Daniel)│ │PR    │
+│            │ │/reality│ │      │ │        │ │           │ │        │ │        │ │/legal   │ │        │ │audit │
+│            │ │-check  │ │      │ │        │ │           │ │        │ │        │ │/dr-feed │ │        │ │learn │
+└────────────┘ └────────┘ └──────┘ └────────┘ └───────────┘ └────────┘ └────────┘ └─────────┘ └────────┘ └──────┘
+    GATE:        GATE:      GATE:     GATE:       GATE:        GATE:      GATE:      GATE:       GATE:
+  context      GREEN or   user      no show-   tests pass   6 phases  no CRITICAL no Must-Fix no CRITICAL
+  loaded       YELLOW     approves  stoppers                  pass     findings    issues      issues
+               from Meera   plan
 ```
 
 **KEY: Domain experts fire TWICE — once to validate the idea (Stage 3), once to QA the code (Stage 7).**
@@ -74,6 +78,28 @@ Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
 - Read `.claude/learnings/` — any past patterns relevant to this work?
 - Ask clarifying questions ONLY if genuinely ambiguous
 **GATE:** Context is loaded. Proceed.
+
+### Stage 1.5: REALITY CHECK (Meera — strategic gate before planning)
+**Skills used:** `/reality-check`
+**Auto-triggers when ANY of these are true:**
+- A new feature is being proposed (not a bug fix or refactor)
+- A new module, screen, or API endpoint is being added
+- Work will take more than 2 hours
+
+**What Meera challenges (2-3 sentences, not a full audit):**
+- "Do we have 100+ DAU yet? If not, does this help us GET there?"
+- "Has a real user or doctor asked for this, or are we guessing?"
+- "Is this building for the demo or for the daily?"
+- "Could we validate this with a conversation instead of code?"
+
+**Meera's grades:**
+- **GREEN:** Directly helps acquire/retain/monetize real users. Build it.
+- **YELLOW:** Plausible but unvalidated. Test with users before committing >4 hours.
+- **RED:** No user has asked for this. Stop. Go talk to someone first.
+
+**GATE:** GREEN = proceed to Stage 2. YELLOW = proceed with user approval. RED = do not build until validated with real user/doctor.
+
+**SKIP conditions:** Bug fixes, security patches, legal blockers, infra (server migration, CI/CD), and anything the user explicitly says "just build it."
 
 ### Stage 2: PLAN (automatic for >50 lines; ask user for <50)
 **Skills used:** `/blueprint` (multi-PR features) | `/council` (ambiguous decisions)
@@ -343,6 +369,12 @@ when staged content changes.
 | `routes_admin.py`, `admin_dashboard*` | **Legal** → **Aditya** → Daniel |
 | `pubspec.yaml`, `backend/requirements.txt` | **Security** (CVE/supply chain) → Daniel |
 | `backend/tests/*.py`, `test/*.dart` | **Priya** — audits test quality → Daniel |
+| **Any NEW `.dart` or `.py` file** (git diff --diff-filter=A) | **Meera** (`/reality-check`) — "should we build this?" strategic gate. Runs FIRST. |
+
+**Meera vs other experts** — Meera is NOT a code reviewer. She challenges whether
+the feature should exist at all. She asks: "Has a real user asked for this? Does
+this help us get to 100 DAU?" She grades GREEN/YELLOW/RED. RED blocks the commit.
+Meera is skipped for bug fixes, security patches, and infra-only changes.
 
 **Aditya vs Sunita** — NOT redundant. Aditya is a senior UX expert reviewing
 accessibility heuristics, touch targets, color contrast, font sizes. Sunita
