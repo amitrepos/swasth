@@ -51,7 +51,7 @@ class TestNewUserOnboarding:
             "value_numeric": 120.0,
             "unit_display": "mg/dL",
             "status_flag": "NORMAL",
-            "reading_timestamp": datetime.utcnow().isoformat(),
+            "reading_timestamp": datetime.now().isoformat(),
         }, headers=headers)
         assert reading.status_code == 201
 
@@ -97,7 +97,7 @@ class TestCriticalReadingAlertFlow:
             "value_numeric": 350.0,
             "unit_display": "mg/dL",
             "status_flag": "CRITICAL",
-            "reading_timestamp": datetime.utcnow().isoformat(),
+            "reading_timestamp": datetime.now().isoformat(),
         }, headers=auth_headers)
         assert resp.status_code == 201
         body = resp.json()
@@ -126,7 +126,7 @@ class TestCriticalReadingAlertFlow:
             "value_numeric": 100.0,
             "unit_display": "mg/dL",
             "status_flag": "NORMAL",
-            "reading_timestamp": datetime.utcnow().isoformat(),
+            "reading_timestamp": datetime.now().isoformat(),
         }, headers=auth_headers)
         assert resp.status_code == 201
         assert "alert" not in resp.json() or resp.json().get("alert") is None
@@ -167,7 +167,7 @@ class TestProfileSharingFlow:
             "value_numeric": 180.0,
             "unit_display": "mg/dL",
             "status_flag": "HIGH",
-            "reading_timestamp": datetime.utcnow().isoformat(),
+            "reading_timestamp": datetime.now().isoformat(),
         }, headers=owner_headers)
 
         # 2. Viewer registers
@@ -227,7 +227,7 @@ class TestProfileSharingFlow:
             "value_numeric": 100.0,
             "unit_display": "mg/dL",
             "status_flag": "NORMAL",
-            "reading_timestamp": datetime.utcnow().isoformat(),
+            "reading_timestamp": datetime.now().isoformat(),
         }, headers=viewer_headers)
         assert save_attempt.status_code == 403
 
@@ -270,7 +270,8 @@ class TestChatFlow:
     """Send message → get AI response → check history."""
 
     @patch("ai_service.generate_health_insight", return_value="Stay hydrated.")
-    def test_chat_roundtrip(self, mock_ai, client, test_user, auth_headers, db):
+    @patch("routes_chat._period_start", return_value=datetime.min)
+    def test_chat_roundtrip(self, mock_period, mock_ai, client, test_user, auth_headers, db):
         profile_id = db.query(models.ProfileAccess).filter(
             models.ProfileAccess.user_id == test_user.id,
             models.ProfileAccess.access_level == "owner",

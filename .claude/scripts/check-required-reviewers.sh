@@ -110,6 +110,19 @@ if printf '%s\n' "$STAGED_FILES" | grep -qE '^backend/(routes_health|health_util
   required+=("priya")
 fi
 
+# Meera (reality-check) — required when new feature files are added (not bug fixes/refactors).
+# Detects new files in staged diff (--diff-filter=A) that are source code.
+NEW_FILES="$(git diff --cached --diff-filter=A --name-only 2>/dev/null)"
+if [[ -n "$NEW_FILES" ]]; then
+  if printf '%s\n' "$NEW_FILES" | grep -qE '\.(dart|py)$'; then
+    # New source files = likely a new feature. Meera should have approved.
+    required+=("meera")
+  fi
+fi
+
+# Also require Meera if the commit message starts with "feat" (conventional commits)
+# This is checked via a separate mechanism — the marker must exist before commit.
+
 # Nothing required? Allow commit. (Check first to avoid set -u on empty array.)
 if [[ ${#required[@]} -eq 0 ]]; then
   exit 0

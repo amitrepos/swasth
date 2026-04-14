@@ -15,8 +15,10 @@
 #   .claude/scripts/write-review-marker.sh legal
 #   .claude/scripts/write-review-marker.sh security
 #   .claude/scripts/write-review-marker.sh priya
+#   .claude/scripts/write-review-marker.sh meera
 #
 # Only call this AFTER the expert has explicitly given a PASS verdict.
+# For Meera: call after /reality-check returns GREEN or YELLOW (with user approval).
 # If there are Must Fix items, do NOT call this — fix the issues, restage,
 # and run the expert again.
 
@@ -24,17 +26,17 @@ set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
   echo "Usage: $0 <expert-name>" >&2
-  echo "Valid experts: sunita, aditya, doctor, daniel, phi, legal, security, priya" >&2
+  echo "Valid experts: sunita, aditya, doctor, daniel, phi, legal, security, priya, meera" >&2
   exit 2
 fi
 
 EXPERT="$1"
 
 case "$EXPERT" in
-  sunita|aditya|doctor|daniel|phi|legal|security|priya) ;;
+  sunita|aditya|doctor|daniel|phi|legal|security|priya|meera) ;;
   *)
     echo "Unknown expert: $EXPERT" >&2
-    echo "Valid experts: sunita, aditya, doctor, daniel, phi, legal, security, priya" >&2
+    echo "Valid experts: sunita, aditya, doctor, daniel, phi, legal, security, priya, meera" >&2
     exit 2
     ;;
 esac
