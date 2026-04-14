@@ -284,19 +284,21 @@ class TestChatContextAndSummary:
             models.ProfileAccess.access_level == "owner",
         ).first().profile_id
 
-        # Exhaust quota (default 5)
-        with patch("ai_service.generate_health_insight", return_value="Response."):
+        # Exhaust quota (default 5), patching period_start to epoch so all
+        # messages fall within the current quota window regardless of timezone.
+        with patch("ai_service.generate_health_insight", return_value="Response."), \
+             patch("routes_chat._period_start", return_value=datetime.min):
             for i in range(5):
                 client.post("/api/chat/messages", json={
                     "profile_id": pid,
                     "message": f"Msg {i}",
                 }, headers=auth_headers)
 
-        # 6th message should be rejected
-        resp = client.post("/api/chat/messages", json={
-            "profile_id": pid,
-            "message": "One more",
-        }, headers=auth_headers)
+            # 6th message should be rejected
+            resp = client.post("/api/chat/messages", json={
+                "profile_id": pid,
+                "message": "One more",
+            }, headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json().get("error") == "quota_exceeded"
 

@@ -192,7 +192,7 @@ class TestHealthScoreFlow:
         profile = _make_profile(db, user, "Score Profile")
         headers = _headers(user)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now()
 
         # Log one glucose + one BP per day for 7 days (today-inclusive)
         for days_back in range(7):
@@ -268,7 +268,7 @@ class TestMultiProfileScoping:
         p3 = _make_profile(db, user, "Father")
         headers = _headers(user)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now()
 
         # 3 glucose readings on p1, 1 on p2, 5 on p3
         for i in range(3):

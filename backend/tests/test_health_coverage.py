@@ -102,6 +102,7 @@ def test_score_empty(client, auth_headers, test_user, db):
 def test_score_yesterday_streak(client, auth_headers, test_user, db):
     pid = _pid(db)
     _r(db, pid, "glucose", 120, days_ago=1, glucose_value=120.0)
+    _r(db, pid, "glucose", 120, days_ago=0, glucose_value=120.0)
     r = client.get(f"/api/readings/health-score?profile_id={pid}", headers=auth_headers)
     assert r.status_code == 200
     assert r.json().get("streak_days", 0) >= 1
