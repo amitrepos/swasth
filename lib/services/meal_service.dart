@@ -2,10 +2,11 @@
 // Related: backend/routes_meals.py, lib/models/meal_log.dart
 
 import 'dart:convert';
-import 'dart:io';
+import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/meal_log.dart';
+import '../screens/meal_result_screen.dart';
 import 'api_client.dart';
 
 const _kTimeout = Duration(seconds: 20);
@@ -101,20 +102,30 @@ class MealService {
   }
 
   /// Parse a food photo via POST /api/meals/parse-image?profile_id=X.
-  Future<MealLog> parseImage(int profileId, File file, String token) async {
+  Future<FoodClassificationResult> parseImage(
+      int profileId, XFile file, String token) async {
     try {
       final uri = Uri.parse('$_baseUrl/parse-image?profile_id=$profileId');
       final request = http.MultipartRequest('POST', uri)
-        ..headers.addAll(ApiClient.headers(token: token))
-        ..files.add(await http.MultipartFile.fromPath('file', file.path));
+        ..headers.addAll(ApiClient.headers(token: token));
+
+      // Read bytes and add as multipart file (compatible with Web)
+      final bytes = await file.readAsBytes();
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: file.name,
+        ),
+      );
 
       final streamed = await request.send().timeout(
-        const Duration(seconds: 30),
-      );
+            const Duration(seconds: 30),
+          );
       final response = await http.Response.fromStream(streamed);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return MealLog.fromJson(jsonDecode(response.body));
+        return FoodClassificationResult.fromJson(jsonDecode(response.body));
       }
       throw Exception(ApiClient.errorDetail(response, 'Failed to parse image'));
     } catch (e) {

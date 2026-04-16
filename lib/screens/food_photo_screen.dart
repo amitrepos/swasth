@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:camera/camera.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -78,8 +76,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
 
     try {
       final XFile xfile = await _controller!.takePicture();
-      final file = File(xfile.path);
-      await _classifyImage(file);
+      await _classifyImage(xfile);
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessing = false);
@@ -91,15 +88,22 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
   Future<void> _pickFromGallery() async {
     if (_isProcessing) return;
 
-    final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result == null || result.files.single.path == null) return;
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result == null) return;
 
     setState(() => _isProcessing = true);
-    final file = File(result.files.single.path!);
-    await _classifyImage(file);
+    final platformFile = result.files.single;
+    final xfile = XFile.fromData(
+      platformFile.bytes!,
+      name: platformFile.name,
+    );
+    await _classifyImage(xfile);
   }
 
-  Future<void> _classifyImage(File file) async {
+  Future<void> _classifyImage(XFile file) async {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
 
@@ -133,22 +137,13 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
       }
 
       // 5-second timeout — auto-fallback to quick select on timeout
-      final mealLog = await MealService()
+      final classificationResult = await MealService()
           .parseImage(widget.profileId, file, token)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 60));
 
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
 
       if (!mounted) return;
-
-      // Convert MealLog response to FoodClassificationResult for the result screen
-      final classificationResult = FoodClassificationResult(
-        category: mealLog.category,
-        glucoseImpact: mealLog.glucoseImpact,
-        tipEn: mealLog.tipEn ?? '',
-        tipHi: mealLog.tipHi ?? '',
-        confidence: mealLog.confidence ?? 0.0,
-      );
 
       Navigator.push(
         context,
@@ -163,20 +158,32 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
     } on TimeoutException {
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
       _showFallbackSnackbar();
-    } catch (_) {
+    } catch (e) {
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
-      _showFallbackSnackbar();
+      String errorMsg = e.toString();
+      // Clean up common exception prefixes
+      if (errorMsg.contains('Exception: ')) {
+        errorMsg = errorMsg.split('Exception: ').last;
+      }
+      _showFallbackSnackbar(message: errorMsg);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  void _showFallbackSnackbar() {
+  void _showFallbackSnackbar({String? message}) {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.foodPhotoFailed)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message ?? l10n.foodPhotoFailed),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: l10n.retry,
+          onPressed: _capturePhoto,
+        ),
+      ),
+    );
     // Navigate to quick select fallback
     if (widget.onFallbackToQuickSelect != null) {
       widget.onFallbackToQuickSelect!();
