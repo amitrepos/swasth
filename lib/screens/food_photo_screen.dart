@@ -135,7 +135,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
       // 5-second timeout — auto-fallback to quick select on timeout
       final mealLog = await MealService()
           .parseImage(widget.profileId, file, token)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 20));
 
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
 
