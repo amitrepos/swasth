@@ -1,4 +1,4 @@
-package com.example.swasth_app
+package health.swasth.app
 
 import io.flutter.embedding.android.FlutterActivity
 
