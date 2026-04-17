@@ -89,6 +89,9 @@ class StorageService {
   static const String _cachedProfilesKey = 'cached_profiles';
   static const String _syncQueueKey = 'sync_queue';
   static const String _lastLoginTimestampKey = 'last_login_timestamp';
+  static const String _todayStepsKey = 'today_steps';
+  static const String _lastStepsDateKey = 'last_steps_date';
+  static const String _stepsGoalKey = 'steps_goal';
 
   Future<void> saveToken(String token) async {
     await _store.write(_tokenKey, token);
@@ -264,4 +267,39 @@ class StorageService {
   Future<String?> getString(String key) async => _store.read(key);
   Future<void> setString(String key, String value) async =>
       _store.write(key, value);
+
+  // ── Steps tracking ─────────────────────────────────────────────────────
+
+  /// Save today's step count
+  Future<void> saveTodaySteps(int steps) async {
+    await _store.write(_todayStepsKey, steps.toString());
+  }
+
+  /// Get today's step count
+  Future<int?> getTodaySteps() async {
+    final value = await _store.read(_todayStepsKey);
+    return value != null ? int.tryParse(value) : null;
+  }
+
+  /// Save the date for the last step count
+  Future<void> saveLastStepsDate(DateTime date) async {
+    await _store.write(_lastStepsDateKey, date.toIso8601String());
+  }
+
+  /// Get the date of the last step count
+  Future<DateTime?> getLastStepsDate() async {
+    final value = await _store.read(_lastStepsDateKey);
+    return value != null ? DateTime.tryParse(value) : null;
+  }
+
+  /// Save daily step goal
+  Future<void> saveStepsGoal(int goal) async {
+    await _store.write(_stepsGoalKey, goal.toString());
+  }
+
+  /// Get daily step goal
+  Future<int?> getStepsGoal() async {
+    final value = await _store.read(_stepsGoalKey);
+    return value != null ? int.tryParse(value) : null;
+  }
 }

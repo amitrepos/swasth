@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../services/ocr_service.dart';
@@ -251,6 +252,44 @@ class HealthReadingService {
       );
     } catch (e) {
       throw Exception('Failed to save reading: $e');
+    }
+  }
+
+  /// Save steps reading to backend
+  Future<void> saveStepsReading({
+    required String token,
+    required int profileId,
+    required int stepsCount,
+    required int stepsGoal,
+  }) async {
+    try {
+      final reading = HealthReading(
+        id: 0, // Will be assigned by server
+        profileId: profileId,
+        readingType: 'steps',
+        stepsCount: stepsCount,
+        stepsGoal: stepsGoal,
+        valueNumeric: stepsCount.toDouble(),
+        unitDisplay: 'steps',
+        readingTimestamp: DateTime.now(),
+        createdAt: DateTime.now(),
+      );
+
+      final response = await ApiClient.httpClient
+          .post(
+            Uri.parse('$baseUrl/readings'),
+            headers: ApiClient.headers(token: token),
+            body: jsonEncode(reading.toJson()),
+          )
+          .timeout(_kTimeout);
+      
+      if (response.statusCode != 201) {
+        throw Exception(
+          ApiClient.errorDetail(response, 'Failed to save steps reading'),
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to save steps reading: $e');
     }
   }
 
