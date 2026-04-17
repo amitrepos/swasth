@@ -7,6 +7,7 @@ class OcrResult {
   final double? systolic;
   final double? diastolic;
   final double? pulse;
+  final double? weightValue;
   final String rawText;
   final bool isHiLo; // true if glucometer returned HI or LO
 
@@ -16,12 +17,14 @@ class OcrResult {
     this.systolic,
     this.diastolic,
     this.pulse,
+    this.weightValue,
     required this.rawText,
     this.isHiLo = false,
   });
 
   bool get hasValue {
     if (readingType == 'glucose') return glucoseValue != null;
+    if (readingType == 'weight') return weightValue != null;
     return systolic != null && diastolic != null;
   }
 }

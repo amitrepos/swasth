@@ -130,6 +130,10 @@ class HealthReading(Base):
     steps_count = Column(Integer, nullable=True)
     steps_goal = Column(Integer, nullable=True)                  # daily target
 
+    # Weight fields
+    weight_value = Column(Float, nullable=True)                  # kg
+    weight_unit = Column(String, nullable=True)                  # 'kg'
+
     # Common fields
     value_numeric = Column(Float, nullable=False)
     unit_display = Column(String, nullable=False)
@@ -141,6 +145,7 @@ class HealthReading(Base):
     systolic_enc = Column(Text, nullable=True)
     diastolic_enc = Column(Text, nullable=True)
     pulse_rate_enc = Column(Text, nullable=True)
+    weight_value_enc = Column(Text, nullable=True)
     notes_enc = Column(Text, nullable=True)
 
     reading_timestamp = Column(DateTime, nullable=False)

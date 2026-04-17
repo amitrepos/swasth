@@ -425,10 +425,16 @@ class HealthScoreResponse(BaseModel):
     avg_steps_90d: Optional[float] = None
     steps_data_days: Optional[int] = None
 
+    # Weight fields
+    today_weight_value: Optional[float] = None
+    last_weight_value: Optional[float] = None
+    avg_weight_90d: Optional[float] = None
+    weight_data_days: Optional[int] = None
+
 
 class HealthReadingCreate(BaseModel):
     profile_id: int
-    reading_type: str           # 'glucose', 'blood_pressure', 'spo2', or 'steps'
+    reading_type: str           # 'glucose', 'blood_pressure', 'spo2', 'steps', or 'weight'
 
     # Glucose fields
     glucose_value: Optional[float] = None
@@ -447,9 +453,12 @@ class HealthReadingCreate(BaseModel):
     spo2_value: Optional[float] = None
     spo2_unit: Optional[str] = None
 
-    # Steps fields
     steps_count: Optional[int] = None
     steps_goal: Optional[int] = None
+
+    # Weight fields
+    weight_value: Optional[float] = None
+    weight_unit: Optional[str] = None
 
     # Common fields
     value_numeric: float
@@ -478,6 +487,8 @@ class HealthReadingResponse(BaseModel):
     spo2_unit: Optional[str] = None
     steps_count: Optional[int] = None
     steps_goal: Optional[int] = None
+    weight_value: Optional[float] = None
+    weight_unit: Optional[str] = None
     value_numeric: float
     unit_display: str
     status_flag: Optional[str]

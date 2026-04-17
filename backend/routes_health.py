@@ -28,7 +28,7 @@ from health_utils import age_context_bp, age_context_glucose, classify_spo2
 
 router = APIRouter()
 
-_VALID_READING_TYPES = {'glucose', 'blood_pressure', 'spo2', 'steps'}
+_VALID_READING_TYPES = {'glucose', 'blood_pressure', 'spo2', 'steps', 'weight'}
 
 # Cache: one Gemini call per (profile_id, date) — clears on server restart
 _insight_cache: dict[tuple[int, str], str] = {}
@@ -83,6 +83,8 @@ def save_reading(
         spo2_unit=reading.spo2_unit,
         steps_count=reading.steps_count,
         steps_goal=reading.steps_goal,
+        weight_value=reading.weight_value,
+        weight_unit=reading.weight_unit,
         value_numeric=reading.value_numeric,
         unit_display=reading.unit_display,
         status_flag=reading.status_flag,
@@ -101,6 +103,8 @@ def save_reading(
         db_reading.pulse_rate_enc = encrypt_float(reading.pulse_rate)
     if reading.spo2_value is not None:
         db_reading.spo2_enc = encrypt_float(reading.spo2_value)
+    if reading.weight_value is not None:
+        db_reading.weight_value_enc = encrypt_float(reading.weight_value)
     if reading.notes is not None:
         db_reading.notes_enc = encrypt(reading.notes)
 
@@ -221,6 +225,8 @@ def get_health_score(
     today_steps_readings = [r for r in today_readings if r.reading_type == 'steps']
     today_steps_count = sum(r.steps_count or 0 for r in today_steps_readings) if today_steps_readings else None
     today_steps_goal = next((r.steps_goal for r in today_steps_readings if r.steps_goal), None)
+
+    today_weight = next((r for r in today_readings if r.reading_type == 'weight'), None)
 
     # --- Streak calculation ---
     days_with_readings = set()
@@ -402,6 +408,15 @@ def get_health_score(
         .order_by(models.HealthReading.reading_timestamp.desc())
         .first()
     )
+    last_weight = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'weight',
+        )
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
 
     # --- Age-contextual notes ---
     _bp_for_context = today_bp or last_bp
@@ -419,9 +434,34 @@ def get_health_score(
             profile_age, getattr(_glucose_for_context, "sample_type", None),
         )
 
+    steps_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'steps',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.steps_count.isnot(None),
+    ).scalar() or 0
+
+    # --- Weight data ---
+    avg_weight_90d = db.query(func.avg(models.HealthReading.weight_value)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'weight',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.weight_value.isnot(None),
+    ).scalar()
+    weight_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'weight',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.weight_value.isnot(None),
+    ).scalar() or 0
+
     # --- BMI ---
     p_height = profile.height if profile else None
-    p_weight = profile.weight if profile else None
+    p_weight = last_weight.weight_value if last_weight else (profile.weight if profile else None)
     bmi = None
     bmi_category = None
     if p_height and p_weight and p_height > 0:
@@ -535,6 +575,11 @@ def get_health_score(
         last_steps_count=last_steps.steps_count if last_steps else None,
         avg_steps_90d=float(avg_steps_90d) if avg_steps_90d is not None else None,
         steps_data_days=int(steps_data_days),
+        # Weight
+        today_weight_value=today_weight.weight_value if today_weight else None,
+        last_weight_value=last_weight.weight_value if last_weight else None,
+        avg_weight_90d=float(avg_weight_90d) if avg_weight_90d is not None else None,
+        weight_data_days=int(weight_data_days),
     )
 
 
@@ -1110,6 +1155,18 @@ async def parse_image_with_gemini(
                 "Respond with ONLY a JSON object, no explanation, no markdown:\n"
                 '{"systolic": <number or null>, "diastolic": <number or null>, "pulse": <number or null>}'
             )
+        elif device_type == "weight":
+            prompt = (
+                "You are reading a digital weight scale display in this photo.\n"
+                "Extract the weight value shown.\n\n"
+                "Rules:\n"
+                "- Weight is typically a 2–3 digit number with one decimal (e.g., 72.5)\n"
+                "- If the display shows 'ERR' or is unreadable, use null\n"
+                "- Ignore units (kg, lb) — respond with the raw number\n"
+                "- Assume the value is in kg unless explicitly marked otherwise\n\n"
+                "Respond with ONLY a JSON object, no explanation, no markdown:\n"
+                '{"weight": <number or null>}'
+            )
         else:
             prompt = (
                 "You are reading a blood glucose meter display in this photo.\n"
@@ -1156,6 +1213,13 @@ async def parse_image_with_gemini(
             if sys is None or dia is None:
                 return {"error": "Could not extract valid BP values from image"}
             return {"systolic": sys, "diastolic": dia, "pulse": pulse}
+        elif device_type == "weight":
+            weight = parsed.get("weight")
+            if weight is not None and not (5 <= weight <= 500):
+                weight = None
+            if weight is None:
+                return {"error": "Could not extract valid weight value from image"}
+            return {"weight": weight}
         else:
             glucose = parsed.get("glucose")
             if glucose is not None and not (20 <= glucose <= 600):

@@ -227,7 +227,16 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isGlucose = widget.deviceType == 'glucose';
-    final deviceLabel = isGlucose ? l10n.glucometer : l10n.bpMeter;
+    final isWeight = widget.deviceType == 'weight';
+    final String deviceLabel;
+
+    if (isGlucose) {
+      deviceLabel = l10n.glucometer;
+    } else if (isWeight) {
+      deviceLabel = 'Weight Scale';
+    } else {
+      deviceLabel = l10n.bpMeter;
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,

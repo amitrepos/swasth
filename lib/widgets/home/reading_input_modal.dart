@@ -17,12 +17,15 @@ void showReadingInputModal(
   final l10n = AppLocalizations.of(context)!;
   final isSpo2 = deviceType == 'spo2';
   final isSteps = deviceType == 'steps';
+  final isWeight = deviceType == 'weight';
 
   final String localizedLabel;
   if (isSpo2) {
     localizedLabel = 'SpO2';
   } else if (isSteps) {
     localizedLabel = l10n.lastSteps;
+  } else if (isWeight) {
+    localizedLabel = 'Weight'; // Fallback to string, check l10n if exists later
   } else {
     localizedLabel = deviceType == 'glucose' ? l10n.glucometer : l10n.bpMeter;
   }
@@ -86,7 +89,7 @@ void showReadingInputModal(
             ],
 
             // Bluetooth — for glucose, BP, and SpO2 (armband)
-            if (!isSteps) ...[
+            if (!isSteps && !isWeight) ...[
               OutlinedButton.icon(
                 key: const Key('reading_bluetooth'),
                 icon: Icon(isSpo2 ? Icons.watch : Icons.bluetooth),

@@ -51,8 +51,21 @@ class MetricsGrid extends StatelessWidget {
     final bpValue = lastBpSys != null && lastBpDia != null
         ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'
         : '—';
-    final glucoseValue = lastGlucose != null
+    final lastGlucoseValue = lastGlucose != null
         ? '${lastGlucose.toStringAsFixed(0)} mg'
+        : '—';
+
+    // Weight & SpO2
+    final lastWeight = (data?['last_weight_value'] as num?)?.toDouble();
+    final avgWeight90d = (data?['avg_weight_90d'] as num?)?.toDouble();
+    final lastSpo2 = (data?['last_spo2_value'] as num?)?.toDouble();
+    final lastSpo2Status = data?['last_spo2_status'] as String?;
+
+    final weightValue = lastWeight != null
+        ? '${lastWeight.toStringAsFixed(1)} kg'
+        : '—';
+    final spo2Value = lastSpo2 != null
+        ? '${lastSpo2.toStringAsFixed(0)}%'
         : '—';
 
     return Column(
@@ -88,7 +101,7 @@ class MetricsGrid extends StatelessWidget {
             Expanded(
               child: _MetricTile(
                 label: l10n.lastSugar,
-                value: glucoseValue,
+                value: lastGlucoseValue,
                 valueColor: helpers.statusTextColor(lastGlucoseStatus),
                 onAddTap: canEdit
                     ? () => onAddReading(
@@ -110,6 +123,13 @@ class MetricsGrid extends StatelessWidget {
                 category: bmiCategory,
                 heightCm: heightCm,
                 weightKg: weightKg,
+                weightDisplay: weightValue,
+                onAddWeight: canEdit
+                    ? () => onAddReading(
+                          deviceType: 'weight',
+                          btDeviceType: 'Weight',
+                        )
+                    : null,
               ),
             ),
             const SizedBox(width: 10),
@@ -340,8 +360,17 @@ class _BmiTile extends StatelessWidget {
   final String? category;
   final double? heightCm;
   final double? weightKg;
+  final String weightDisplay;
+  final VoidCallback? onAddWeight;
 
-  const _BmiTile({this.bmi, this.category, this.heightCm, this.weightKg});
+  const _BmiTile({
+    this.bmi,
+    this.category,
+    this.heightCm,
+    this.weightKg,
+    required this.weightDisplay,
+    this.onAddWeight,
+  });
 
   Color _bmiColor() {
     if (bmi == null) return AppColors.textSecondary;
@@ -382,47 +411,110 @@ class _BmiTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'BMI',
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
-              letterSpacing: 1,
-            ),
-          ),
-          if (displayCategory.isNotEmpty)
-            Text(displayCategory, style: TextStyle(fontSize: 8, color: color)),
-          const SizedBox(height: 6),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                displayValue,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                ),
-              ),
-              if (tip != null) ...[
-                const Spacer(),
-                Text(
-                  tip,
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: color,
-                    fontStyle: FontStyle.italic,
+              // Left side: BMI
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'BMI',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                      letterSpacing: 1,
+                    ),
                   ),
-                ),
-              ],
+                  if (displayCategory.isNotEmpty)
+                    Text(
+                      displayCategory,
+                      style: TextStyle(fontSize: 8, color: color),
+                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        displayValue,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Right side: Weight
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'WEIGHT',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        weightDisplay,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if (onAddWeight != null) ...[
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: onAddWeight,
+                          child: Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: AppColors.textPrimary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
+          if (tip != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              tip,
+              style: TextStyle(
+                fontSize: 8,
+                color: color,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
         ],
       ),
     );
