@@ -1,23 +1,31 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'flavor.dart';
+
 class AppConfig {
-  /// Resolved server host.
-  ///  1. --dart-define=SERVER_HOST (if provided at build time)
-  ///  2. .env file SERVER_HOST variable
+  /// Resolved server host. Precedence:
+  ///  1. `--dart-define=SERVER_HOST` at build time (explicit override, wins over everything)
+  ///  2. `.env` file's `SERVER_HOST` (dev-time override for a specific checkout)
+  ///  3. `Flavor.current.serverHost` (compile-time flavor value — primary source)
+  ///  4. Hardcoded fallback (only reached if Flavor.current is not set, e.g. in a unit test)
   static String get serverHost {
-    // Explicit override via --dart-define always wins.
     const explicitHost = String.fromEnvironment('SERVER_HOST');
     if (explicitHost.isNotEmpty) return _stripTrailingSlash(explicitHost);
 
-    // Read from .env file (may not be initialized in tests)
     try {
       final envHost = dotenv.env['SERVER_HOST'] ?? '';
       if (envHost.isNotEmpty) return _stripTrailingSlash(envHost);
     } catch (_) {
-      // dotenv not loaded — fall through to default
+      // dotenv not loaded (unit tests, etc.) — fall through.
     }
 
-    // Fallback (should not happen if .env is configured)
+    try {
+      return _stripTrailingSlash(Flavor.current.serverHost);
+    } catch (_) {
+      // Flavor not set (unit tests that bypass bootstrap) — fall through.
+    }
+
+    // Last-resort fallback — only reached in contrived test scenarios.
     return 'http://10.0.2.2:8000';
   }
 
