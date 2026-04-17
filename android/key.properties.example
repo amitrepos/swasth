@@ -1,0 +1,11 @@
+# Example upload-keystore config. Copy to `key.properties` (which is gitignored)
+# and fill in real values. The Flutter Gradle Plugin resolves `storeFile` relative
+# to the project root (the repo root), so the path below points to a keystore
+# stored OUTSIDE the repo to avoid accidental commits.
+#
+# To generate a fresh keystore, see docs/RELEASE_SIGNING.md.
+
+storeFile=/Users/<you>/.swasth/swasth-upload.jks
+storePassword=<from 1Password>
+keyAlias=swasth-upload
+keyPassword=<from 1Password>

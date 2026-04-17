@@ -47,6 +47,14 @@ app.*.map.json
 
 # Secrets
 backend/.env
+# Upload keystore config — local path + plaintext passwords; CI reconstructs from
+# GitHub secrets (see docs/RELEASE_SIGNING.md).
+key.properties
+android/key.properties
+# Keystores under the android/ tree (the keystore itself lives outside the repo,
+# but belt-and-braces in case anyone drops one in).
+android/**/*.jks
+android/**/*.keystore
 
 # Local tooling
 .vscode/
