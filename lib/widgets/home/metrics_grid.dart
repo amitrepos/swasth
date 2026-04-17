@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
@@ -47,6 +48,10 @@ class MetricsGrid extends StatelessWidget {
     // Steps data
     final todaySteps = (data?['today_steps_count'] as num?)?.toInt();
     final stepsGoal = (data?['today_steps_goal'] as num?)?.toInt() ?? 7500;
+
+    // DEBUG: Print steps data to console
+    debugPrint('MetricsGrid - Steps Data: todaySteps=$todaySteps, stepsGoal=$stepsGoal');
+    debugPrint('MetricsGrid - Full data keys: ${data?.keys.toList()}');
 
     final bpValue = lastBpSys != null && lastBpDia != null
         ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'

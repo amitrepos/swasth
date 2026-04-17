@@ -1,6 +1,7 @@
 // Context: Main dashboard — glassmorphism redesign matching dashboard1.html.
 // Related: lib/widgets/glass_card.dart, lib/theme/app_theme.dart, backend/routes_health.py
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'login_screen.dart';
@@ -39,6 +40,7 @@ import '../widgets/home/care_circle_card.dart';
 import '../config/feature_flags.dart';
 import '../utils/health_helpers.dart' as helpers;
 import '../services/reminder_service.dart';
+import '../services/pedometer_service.dart';
 import '../main.dart' show routeObserver;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -57,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen>
   final ProfileService _profileService = ProfileService();
   final DoctorService _doctorService = DoctorService();
   final MealService _mealService = MealService();
+  final PedometerService _pedometerService = PedometerService();
   List<Map<String, dynamic>> _linkedDoctors = [];
   List<MealLog> _activityMeals = [];
 
@@ -82,6 +85,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  Timer? _stepsSyncTimer;
 
   @override
   void initState() {
@@ -95,6 +99,24 @@ class _HomeScreenState extends State<HomeScreen>
     );
     _loadProfileInfo();
     SyncService().syncPendingReadings();
+    _initializePedometer();
+  }
+
+  /// Initialize pedometer service for step counting
+  Future<void> _initializePedometer() async {
+    try {
+      await _pedometerService.initialize();
+      // Sync steps to backend after initialization
+      await _pedometerService.syncStepsToBackend();
+      
+      // Set up periodic sync every 5 minutes
+      _stepsSyncTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+        debugPrint('HomeScreen: Periodic steps sync');
+        await _pedometerService.syncStepsToBackend();
+      });
+    } catch (e) {
+      debugPrint('HomeScreen: Error initializing pedometer: $e');
+    }
   }
 
   @override
@@ -106,6 +128,8 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _pulseController.dispose();
+    _stepsSyncTimer?.cancel();
+    _pedometerService.dispose();
     routeObserver.unsubscribe(this);
     super.dispose();
   }

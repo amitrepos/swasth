@@ -23,7 +23,7 @@ import models
 # ---------------------------------------------------------------------------
 
 def _add_glucose_reading(db, profile_id, user_id, value, hours_ago=0, status="NORMAL"):
-    ts = datetime.now() - timedelta(hours=hours_ago)
+    ts = datetime.utcnow() - timedelta(hours=hours_ago)  # Use UTC to match endpoint expectations
     r = models.HealthReading(
         profile_id=profile_id,
         logged_by=user_id,
@@ -42,7 +42,7 @@ def _add_glucose_reading(db, profile_id, user_id, value, hours_ago=0, status="NO
 
 
 def _add_bp_reading(db, profile_id, user_id, systolic, diastolic, hours_ago=0, status="NORMAL"):
-    ts = datetime.now() - timedelta(hours=hours_ago)
+    ts = datetime.utcnow() - timedelta(hours=hours_ago)  # Use UTC to match endpoint expectations
     r = models.HealthReading(
         profile_id=profile_id,
         logged_by=user_id,
@@ -381,7 +381,7 @@ class TestAiInsightEndpoint:
     def test_ai_insight_cached_returns_without_ai_call(self, client, test_user, auth_headers, db):
         """Lines 566-574: cached insight path — no new readings since last insight, return cache."""
         test_user.ai_consent = True
-        db.flush()
+        db.commit()  # Use commit instead of flush to ensure change is visible to subsequent queries
         profile = db.query(models.ProfileAccess).filter(
             models.ProfileAccess.user_id == test_user.id,
         ).first()
