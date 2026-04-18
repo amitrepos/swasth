@@ -23,7 +23,7 @@ import models
 # ---------------------------------------------------------------------------
 
 def _add_glucose_reading(db, profile_id, user_id, value, hours_ago=0, status="NORMAL"):
-    ts = datetime.now() - timedelta(hours=hours_ago)
+    ts = datetime.utcnow() - timedelta(hours=hours_ago)
     r = models.HealthReading(
         profile_id=profile_id,
         logged_by=user_id,
@@ -42,7 +42,7 @@ def _add_glucose_reading(db, profile_id, user_id, value, hours_ago=0, status="NO
 
 
 def _add_bp_reading(db, profile_id, user_id, systolic, diastolic, hours_ago=0, status="NORMAL"):
-    ts = datetime.now() - timedelta(hours=hours_ago)
+    ts = datetime.utcnow() - timedelta(hours=hours_ago)
     r = models.HealthReading(
         profile_id=profile_id,
         logged_by=user_id,
@@ -387,6 +387,7 @@ class TestAiInsightEndpoint:
         ).first()
 
         # Reading first, then cached insight AFTER it — so reading_time <= insight_time
+        # Both use UTC (consistent with backend UTC storage policy)
         _add_glucose_reading(db, profile.profile_id, test_user.id, 110.0, hours_ago=2, status="NORMAL")
 
         cached = models.AiInsightLog(
@@ -394,7 +395,7 @@ class TestAiInsightEndpoint:
             model_used="gemini-2.5-flash",
             prompt_summary="cached summary",
             response_text="This is a cached insight response.",
-            created_at=datetime.utcnow(),  # newer than the reading
+            created_at=datetime.utcnow(),  # newer than the reading (both UTC)
         )
         db.add(cached)
         db.flush()

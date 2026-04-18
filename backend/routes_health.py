@@ -608,7 +608,7 @@ def get_ai_insight(
         total_count = db.query(func.count(models.HealthReading.id)).filter(
             models.HealthReading.profile_id == profile_id,
         ).scalar() or 0
-        return {"insight": _rule_based_insight(recent, total_count=total_count), "ai_consent_required": True}
+        return {"insight": _rule_based_insight(recent, db, total_count=total_count), "ai_consent_required": True}
 
     # ── Smart cache: only call LLM when new readings exist ────────────
     latest_insight = (
@@ -656,13 +656,14 @@ def get_ai_insight(
     # Build compact summary (averages + ranges) instead of raw readings
     glucose_vals = [r.glucose_value for r in recent if r.reading_type == "glucose" and r.glucose_value]
     bp_readings = [(r.systolic, r.diastolic) for r in recent if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+    weight_vals = [r.weight_value for r in recent if r.reading_type == "weight" and r.weight_value]
 
     total_count = db.query(func.count(models.HealthReading.id)).filter(
         models.HealthReading.profile_id == profile_id,
     ).scalar() or 0
-    fallback = _rule_based_insight(recent, total_count=total_count)
+    fallback = _rule_based_insight(recent, db, total_count=total_count)
 
-    if not glucose_vals and not bp_readings:
+    if not glucose_vals and not bp_readings and not weight_vals:
         return {"insight": fallback}
 
     age = profile.age if profile else None
@@ -732,17 +733,30 @@ def get_ai_insight(
             + ". "
         )
 
+    # ── Weight summary for LLM context ────────────────────────────────
+    weight_vals = [r.weight_value for r in recent if r.reading_type == "weight" and r.weight_value]
+    weight_summary = ""
+    if weight_vals:
+        avg_w = sum(weight_vals) / len(weight_vals)
+        latest_w = weight_vals[-1]
+        weight_summary = f"Weight (30-day, {len(weight_vals)} readings): avg {avg_w:.1f}, latest {latest_w:.1f} kg. "
+        if profile and profile.height:
+            bmi = latest_w / ((profile.height / 100) ** 2)
+            weight_summary += f"BMI is {bmi:.1f}."
+
     # Rule-based meal insights (appended to response, not sent to LLM)
     meal_tips = generate_meal_insights(recent_meals, recent)
 
     age_desc = f"{age} years" if age else "unknown age"
 
-    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {food_summary}{trend_note}
+    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {weight_summary} {food_summary}{trend_note}
 
-Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points. Use suggestive language only ("may help", "consider")."""
+Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points.
+IMPORTANT: Even if glucose and BP are normal, if BMI is high (>= 25) or weight is trending up, prioritize weight management advice.
+Use suggestive language only ("may help", "consider")."""
 
     import ai_service
-    prompt_summary = f"{glucose_summary} {bp_summary} {food_summary}{trend_note}".strip() or None
+    prompt_summary = f"{glucose_summary} {bp_summary} {weight_summary} {food_summary}{trend_note}".strip() or None
     insight = ai_service.generate_health_insight(prompt, profile_id, db, prompt_summary)
 
     if insight:
@@ -807,6 +821,16 @@ def _build_shareable_summary(profile_id: int, period: int, db: Session):
         lines.append(f"   Elevated: {elevated}")
     else:
         lines.append("\u2764\ufe0f Blood Pressure: No readings this week")
+
+    # Weight stats
+    weight_vals = [r.weight_value for r in readings if r.reading_type == "weight" and r.weight_value]
+    if weight_vals:
+        avg_w = sum(weight_vals) / len(weight_vals)
+        lines.append(f"\u2696\ufe0f Weight: {len(weight_vals)} readings")
+        lines.append(f"   Avg: {avg_w:.1f} kg")
+        lines.append(f"   Range: {min(weight_vals):.1f}\u2013{max(weight_vals):.1f} kg")
+    else:
+        lines.append("\u2696\ufe0f Weight: No readings this week")
 
     days_with = set()
     for r in readings:
@@ -915,14 +939,31 @@ def get_trend_summary(
     # BP stats
     bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
     if bp_readings:
-        sys_vals = [s for s, _ in bp_readings]
-        dia_vals = [d for _, d in bp_readings]
-        avg_sys = sum(sys_vals) / len(sys_vals)
-        avg_dia = sum(dia_vals) / len(dia_vals)
-        elevated = sum(1 for s, d in bp_readings if s > 140 or d > 90)
+        avg_sys = sum(s for s, _ in bp_readings) / len(bp_readings)
+        avg_dia = sum(d for _, d in bp_readings) / len(bp_readings)
+        elevated = sum(1 for s, d in bp_readings if s >= 130 or d >= 80)
         data_parts.append(
             f"BP: avg {avg_sys:.0f}/{avg_dia:.0f} mmHg ({len(bp_readings)} readings), "
             f"{elevated} elevated"
+        )
+
+    # Weight stats
+    weight_vals = [r.weight_value for r in readings if r.reading_type == "weight" and r.weight_value]
+    if weight_vals:
+        avg_w = sum(weight_vals) / len(weight_vals)
+        mid = len(weight_vals) // 2
+        first_half = sum(weight_vals[:mid]) / max(mid, 1)
+        second_half = sum(weight_vals[mid:]) / max(len(weight_vals) - mid, 1)
+        if second_half < first_half - 0.5:
+            trend = "decreasing ↓"
+        elif second_half > first_half + 0.5:
+            trend = "increasing ↑"
+        else:
+            trend = "stable →"
+        data_parts.append(
+            f"Weight: avg {avg_w:.1f} kg ({len(weight_vals)} readings), "
+            f"range {min(weight_vals):.1f}\u2013{max(weight_vals):.1f}, "
+            f"trend {trend}"
         )
 
     # Meal stats for the period
@@ -1234,7 +1275,7 @@ async def parse_image_with_gemini(
         return {"error": f"Gemini Vision failed: {str(e)}"}
 
 
-def _rule_based_insight(recent: list, total_count: int = 0) -> str:
+def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
     """Simple rule-based fallback used when Gemini is unavailable."""
     if not recent:
         if total_count > 0:
@@ -1248,8 +1289,26 @@ def _rule_based_insight(recent: list, total_count: int = 0) -> str:
         if stage2 and stage2.reading_type == "blood_pressure" and stage2.systolic:
             return f"⚠️ Your BP ({stage2.systolic:.0f}/{stage2.diastolic:.0f}) is dangerously high. Have you taken your medication? Please see a doctor today."
         return "⚠️ A reading is in Stage 2 range. Have you taken your medication? Please consult your doctor."
+
+    # Weight specific tips (check this BEFORE general NORMAL status)
+    weight_readings = [r for r in recent if r.reading_type == "weight" and r.weight_value]
+    if weight_readings:
+        latest_w = weight_readings[-1].weight_value
+        profile = db.query(models.Profile).filter(models.Profile.id == weight_readings[-1].profile_id).first()
+        if profile and profile.height:
+            bmi = latest_w / ((profile.height / 100) ** 2)
+            if bmi >= 25:
+                # Still check if other things are high, but if everything else is normal, tell them about BMI
+                msg = f"Your BMI is {bmi:.1f} (Overweight). Try reducing carbs and aim for daily activity."
+                if any("HIGH" in (s or "") for s in statuses):
+                    return f"Some readings are elevated, and your BMI is {bmi:.1f}. Focus on diet and movement."
+                return msg
+            if bmi < 18.5:
+                return f"Your BMI is {bmi:.1f} (Underweight). Ensure you are getting enough nutrition."
+
     if any("HIGH" in (s or "") for s in statuses):
         return "Some readings were elevated this week. Stay hydrated and keep active."
+
     if statuses and all(s == "NORMAL" for s in statuses):
         return "All recent readings look healthy. Keep up the great work!"
     return "Readings logged. Keep tracking daily for better health insights."
