@@ -70,6 +70,8 @@ final _healthScoreData = <String, dynamic>{
   'last_bp_systolic': 130.0,
   'last_bp_diastolic': 85.0,
   'last_bp_status': 'NORMAL',
+  'last_weight_value': 75.0,
+  'bmi': 26.6,
   'glucose_data_days': 30,
   'bp_data_days': 25,
 };
@@ -414,20 +416,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(MetricsGrid), findsOneWidget);
+      expect(find.text('—'), findsWidgets);
     });
 
-    testWidgets('renders with null data showing dashes', (tester) async {
+    testWidgets('renders weight and BMI labels', (tester) async {
       await tester.pumpWidget(_wrap(
         MetricsGrid(
-          data: null,
+          data: _healthScoreData,
           profileId: 1,
           onAddReading: ({required String deviceType, required String btDeviceType}) {},
         ),
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byType(MetricsGrid), findsOneWidget);
-      expect(find.text('—'), findsWidgets);
+      expect(find.textContaining('WEIGHT'), findsOneWidget);
+      expect(find.textContaining('75.0 kg'), findsOneWidget);
+      expect(find.textContaining('BMI'), findsOneWidget);
+      expect(find.textContaining('26.6'), findsOneWidget);
     });
   });
 

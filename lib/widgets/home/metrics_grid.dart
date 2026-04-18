@@ -43,6 +43,12 @@ class MetricsGrid extends StatelessWidget {
     final lastGlucoseStatus = data?['last_glucose_status'] as String?;
     final ageContextBp = data?['age_context_bp'] as String?;
     final ageContextGlucose = data?['age_context_glucose'] as String?;
+    
+    // Fallback values from data if not explicitly provided
+    final effectiveBmi = bmi ?? (data?['bmi'] as num?)?.toDouble();
+    final effectiveBmiCategory = bmiCategory ?? data?['bmi_category'] as String?;
+    final effectiveHeight = heightCm ?? (data?['profile_height'] as num?)?.toDouble();
+    final effectiveWeight = weightKg ?? (data?['last_weight_value'] as num?)?.toDouble() ?? (data?['profile_weight'] as num?)?.toDouble();
 
     // Steps data
     final todaySteps = (data?['today_steps_count'] as num?)?.toInt();
@@ -119,10 +125,10 @@ class MetricsGrid extends StatelessWidget {
           children: [
             Expanded(
               child: _BmiTile(
-                bmi: bmi,
-                category: bmiCategory,
-                heightCm: heightCm,
-                weightKg: weightKg,
+                bmi: effectiveBmi,
+                category: effectiveBmiCategory,
+                heightCm: effectiveHeight,
+                weightKg: effectiveWeight,
                 weightDisplay: weightValue,
                 onAddWeight: canEdit
                     ? () => onAddReading(

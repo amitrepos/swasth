@@ -13,6 +13,7 @@ import 'shell_screen.dart';
 const _kGlucoseColor = Color(0xFF10B981);   // emerald-500
 const _kSysColor     = Color(0xFFF43F5E);   // rose-500  (systolic)
 const _kDiaColor     = Color(0xFFFDA4AF);   // rose-300  (diastolic, lighter)
+const _kWeightColor  = Color(0xFF6366F1);   // indigo-500
 const _kGridColor    = Color(0x1A64748B);   // slate-500 @ 10%
 
 class TrendChartScreen extends StatefulWidget {
@@ -149,8 +150,9 @@ class _TrendView extends StatelessWidget {
     final filtered = _filtered;
     final glucose = filtered.where((r) => r.readingType == 'glucose' && r.glucoseValue != null).toList();
     final bp = filtered.where((r) => r.readingType == 'blood_pressure' && r.systolic != null).toList();
+    final weight = filtered.where((r) => r.readingType == 'weight' && r.weightValue != null).toList();
 
-    if (glucose.isEmpty && bp.isEmpty) {
+    if (glucose.isEmpty && bp.isEmpty && weight.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -304,6 +306,27 @@ class _TrendView extends StatelessWidget {
                           isBar: true,
                         ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // ── Weight detail ───────────────────────────────────────────
+            if (weight.isNotEmpty) ...[
+              _DetailChartCard(
+                icon: Icons.monitor_weight_outlined,
+                color: _kWeightColor,
+                title: 'Weight Trend',
+                unit: 'kg',
+                child: Column(
+                  children: [
+                    _WeightChart(readings: weight, days: days, dotRadius: dotRadius),
+                    const SizedBox(height: 8),
+                    _WeightStatsRow(
+                      values: weight.map((r) => r.weightValue!).toList(),
+                      l10n: l10n,
                     ),
                   ],
                 ),
@@ -1111,6 +1134,113 @@ class _LegendDot extends StatelessWidget {
             : Container(width: 10, height: 10, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
         const SizedBox(width: 5),
         Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Full-size Weight chart (200px)
+// ---------------------------------------------------------------------------
+
+class _WeightChart extends StatelessWidget {
+  final List<HealthReading> readings;
+  final int days;
+  final double dotRadius;
+
+  const _WeightChart({required this.readings, required this.days, required this.dotRadius});
+
+  @override
+  Widget build(BuildContext context) {
+    final windowStart = DateTime.now().subtract(Duration(days: days));
+    final spots = readings.map((r) {
+      final x = r.readingTimestamp.difference(windowStart).inHours.toDouble();
+      return FlSpot(x, r.weightValue!);
+    }).toList();
+
+    final values = readings.map((r) => r.weightValue!).toList();
+    final minY = (values.reduce((a, b) => a < b ? a : b) - 5).clamp(0.0, double.infinity);
+    final maxY = values.reduce((a, b) => a > b ? a : b) + 5;
+    final maxX = (days * 24).toDouble();
+
+    return SizedBox(
+      height: 200,
+      child: LineChart(
+        LineChartData(
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              curveSmoothness: 0.3,
+              color: _kWeightColor,
+              barWidth: 3,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+                  radius: dotRadius + 1,
+                  color: _kWeightColor,
+                  strokeWidth: 2,
+                  strokeColor: Colors.white,
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [_kWeightColor.withValues(alpha: 0.15), _kWeightColor.withValues(alpha: 0.0)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ],
+          minY: minY,
+          maxY: maxY,
+          minX: 0,
+          maxX: maxX,
+          titlesData: _titlesData(days, maxY, minY),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: 5,
+            getDrawingHorizontalLine: (_) => const FlLine(color: _kGridColor, strokeWidth: 1),
+          ),
+          borderData: FlBorderData(show: false),
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipItems: (spots) => spots.map((s) {
+                final dt = windowStart.add(Duration(hours: s.x.toInt()));
+                return LineTooltipItem(
+                  '${s.y.toStringAsFixed(1)} kg\n${DateFormat('d MMM').format(dt)}',
+                  const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WeightStatsRow extends StatelessWidget {
+  final List<double> values;
+  final AppLocalizations l10n;
+
+  const _WeightStatsRow({required this.values, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) return const SizedBox.shrink();
+    final avg = values.reduce((a, b) => a + b) / values.length;
+    final min = values.reduce((a, b) => a < b ? a : b);
+    final max = values.reduce((a, b) => a > b ? a : b);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _StatCell(label: l10n.avgLabel, value: avg.toStringAsFixed(1), color: _kWeightColor),
+        _StatCell(label: l10n.minLabel, value: min.toStringAsFixed(1)),
+        _StatCell(label: l10n.maxLabel, value: max.toStringAsFixed(1)),
       ],
     );
   }

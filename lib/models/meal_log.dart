@@ -36,6 +36,15 @@ class MealLog {
     required this.createdAt,
   });
 
+  static DateTime _parseUtc(dynamic val) {
+    if (val == null) return DateTime.now();
+    final dtStr = val.toString();
+    if (!dtStr.endsWith('Z') && !dtStr.contains('+')) {
+      return DateTime.parse('${dtStr}Z').toLocal();
+    }
+    return DateTime.parse(dtStr).toLocal();
+  }
+
   factory MealLog.fromJson(Map<String, dynamic> json) {
     return MealLog(
       id: json['id'],
@@ -51,8 +60,8 @@ class MealLog {
       confidence: (json['confidence'] as num?)?.toDouble(),
       userConfirmed: json['user_confirmed'] ?? true,
       userCorrectedCategory: json['user_corrected_category'],
-      timestamp: DateTime.parse(json['timestamp']),
-      createdAt: DateTime.parse(json['created_at']),
+      timestamp: _parseUtc(json['timestamp']),
+      createdAt: _parseUtc(json['created_at']),
     );
   }
 }

@@ -72,6 +72,15 @@ class HealthReading {
     required this.createdAt,
   });
 
+  static DateTime _parseUtc(dynamic val) {
+    if (val == null) return DateTime.now();
+    final dtStr = val.toString();
+    if (!dtStr.endsWith('Z') && !dtStr.contains('+')) {
+      return DateTime.parse('${dtStr}Z').toLocal();
+    }
+    return DateTime.parse(dtStr).toLocal();
+  }
+
   factory HealthReading.fromJson(Map<String, dynamic> json) {
     return HealthReading(
       id: json['id'],
@@ -100,11 +109,11 @@ class HealthReading {
       unitDisplay: json['unit_display'] ?? '',
       statusFlag: json['status_flag'],
       notes: json['notes'],
-      readingTimestamp: DateTime.parse(json['reading_timestamp']),
+      readingTimestamp: _parseUtc(json['reading_timestamp']),
       seq: json['seq'],
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.parse(json['reading_timestamp']),
+          ? _parseUtc(json['created_at'])
+          : _parseUtc(json['reading_timestamp']),
     );
   }
 
