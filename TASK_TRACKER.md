@@ -484,3 +484,78 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 - **B18** — Armband: implement actual step/heart rate BLE parsing
 - **A12** — Onboarding carousel (3–4 screens)
 - **D13** — FCM setup for push alerts (prerequisite for D7 fallback)
+
+---
+
+## Play Store Release — Deferred Follow-ups (opened 2026-04-18)
+
+Context: Play Store app entry created (`health.swasth.app`, ID "Swasth — Health Tracker"). Privacy policy temporarily deployed to Cloudflare Worker at `https://swasth-privacy.swasth-admin.workers.dev/privacy` with `swasth.admin@gmail.com` as the grievance email (interim — `swasth.app` domain doesn't exist, `swasth.health` domain owned but DNS not configured yet). Below are the cleanup items to do after the Bangalore doctor pilot is live.
+
+### P0 — Before public Production release (do within 2 weeks)
+
+- **REL-1** — **Set up `swasth.health` as the canonical domain.** Move nameservers to Cloudflare (the Swasth CF account under `swasth.admin@gmail.com`), verify DNS resolves. ~15 min work + DNS propagation wait. Blocker for REL-2 and REL-3.
+- **REL-2** — **Configure Cloudflare Email Routing**: `support@swasth.health` → `swasth.admin@gmail.com`. Free, ~10 min once REL-1 is done. Send a test email to confirm delivery.
+- **REL-3** — **Swap grievance email back to `support@swasth.health`** in 4 places:
+  - `docs/legal/privacy.html` line 116 (both `href` and visible text)
+  - `docs/PLAY_STORE_LISTING.md` × 3 places (`Questions, feedback...` line, Contact details line, Release notes footer)
+  - Re-deploy Cloudflare Worker with updated HTML (drag-and-drop to existing `swasth-privacy` project — don't create a new one)
+  - Update Play Console: Data Safety form, App Content → Privacy policy, Main Store Listing contact email
+- **REL-4** — **Point `swasth.health/privacy` at the Cloudflare Worker** once REL-1 is done. Options: (a) custom domain on the Worker itself, or (b) subdomain `privacy.swasth.health` via CNAME. Then edit Play Console privacy URL — no re-review needed.
+
+### P0 — Deployment pipeline gaps (drift incident 2026-04-18)
+
+**Incident:** User tried to save weight reading on production via the newly-deployed frontend. Got `"Invalid reading type. Must be one of: blood_pressure, glucose, spo2, steps"`. Root cause: production backend was running **April 12 code** (commit `11cd7cd`, PR #122), 11 commits behind master. PR #133 (weight tracking) + PR #132 (step count) + PR #124 (weekly reports) were never deployed to prod because `prod.yml` is `workflow_dispatch`-only. Fixed 2026-04-18 by `rsync`ing backend/*.py to `/var/www/swasth_prod/backend/`, running `migrate_add_weight_to_readings.py` (added 19 weight readings from legacy Profile.weight), and `pm2 restart swasth-prod`. CI tests were green because they run against fresh-checkout master, not live prod.
+
+- **REL-DEPLOY-1** — **Change `.github/workflows/prod.yml` from manual-dispatch to auto-deploy on master push.** Currently `on: [workflow_dispatch]` means master merges sit in prod limbo until someone clicks "Run workflow." Alternative: keep manual but add a scheduled check that alerts if master is >3 commits ahead of prod's HEAD.
+- **REL-DEPLOY-2** — **Add post-deploy smoke tests against live production URL.** Dedicated smoke-test user (`smoke.test@swasth.com`). One test per resource endpoint: POST every supported `reading_type` (bp, glucose, spo2, steps, weight) and assert 201. Run in CI after every successful prod deploy — would have caught this incident instantly. File: `backend/tests/smoke/test_prod_canary.py`.
+- **REL-DEPLOY-3** — **Add frontend version-compatibility check.** When the Flutter app boots, call `GET /api/version` and compare server capability flags to what the app expects. If mismatch (e.g., client knows `weight` but server doesn't), show "App needs update" banner instead of cryptic backend error. Requires a new backend endpoint returning supported reading_types + min-app-version.
+
+### P0 — Internal Testing rollout plan
+
+- **REL-INT-1** — **Phase A (team QA, no doctor needed):** Add 2-3 emails controlled by Amit to tester list `Swasth Internal QA`. Upload AAB (after `flutter clean && flutter build appbundle --flavor production --target lib/main_production.dart --release` to bake new icon). Install on own Android device, smoke-test: login as `test.user@swasth.com` / `Test@1234`, verify home screen, trend chart, language toggle, icon is heart-pulse (not Flutter default). Fix any bugs before Phase B.
+- **REL-INT-2** — **Phase B (doctor pilot, after Phase A is green):** Edit tester email list to add Bangalore doctor + 15-20 patient emails as doctor recruits. No new release needed — tester list edits are instant. Same opt-in URL works for all. Share URL via WhatsApp using template at `docs/DOCTOR_INVITE_TEMPLATE.md`.
+
+### P0 — Finish Play Console setup (do in parallel with pilot)
+
+Ordered by dependency. All of these are forms inside Play Console → "Finish setting up your app":
+
+1. **REL-5** — Set privacy policy URL → DONE (using interim Cloudflare URL)
+2. **REL-6** — App access → describe how testers log in (email+password, no premium gate for pilot)
+3. **REL-7** — Ads → No
+4. **REL-8** — Content rating → questionnaire, answers in `docs/PLAY_STORE_LISTING.md` Content rating section
+5. **REL-9** — Target audience → 18+ only
+6. **REL-10** — Data safety form → copy from `docs/PLAY_STORE_LISTING.md` Data Safety section
+7. **REL-11** — Misc declarations (News apps: No, COVID-19: No, Government apps: No, Financial features: No, Health apps: Yes)
+8. **REL-12** — Advertising ID → we don't use it, declare No
+9. **REL-13** — Select app category → Medical
+10. **REL-14** — Main store listing → requires icon (512×512), feature graphic (1024×500), 2–8 screenshots — see `docs/PLAY_STORE_LISTING.md` shot-list
+
+### P0 — Production demo accounts for Play Store review
+
+**Server topology clarification (learned 2026-04-18):** two Swasth backends run on `65.109.226.36`:
+- `/var/www/swasth/` → internal port 8007 → connects to DB `swasth_db` (**DEV / pre-prod**) — nginx proxies this at `:8443`
+- `/var/www/swasth_prod/` → internal port 8009 → connects to DB `swasth_prod` (**PROD**) — nginx proxies this at `:8444`
+
+All Play Store traffic goes to prod (`:8444` → port 8009 backend → `swasth_prod` DB). **Do NOT confuse demo accounts between the two DBs — they have completely different user rows.**
+
+- **REL-PROD-1** — 🔄 PARTIALLY DONE. Earlier verification used the WRONG database (`swasth_db` / dev) — credentials `ramesh.demo@swasth.app` exist on dev, NOT on prod. Correct prod demo account is `test.user@swasth.com` (533 readings, 0 meals, 0 doctor links, 5 profiles). Password not yet verified — either confirm with Amit or reset via `/api/auth/forgot-password`.
+- **REL-PROD-2** — ❌ NOT DONE. Production DB `swasth_prod` has only 18 total users and only 2 demo-like accounts (`test.user@swasth.com`, `testdoc@gmail.com`). No seeded meal_logs, no seeded doctor_patient_links. For proper Play Store Production review (not Internal Testing), seed a rich demo account on prod mirroring `ramesh.demo@swasth.app` from dev: ~50 BP readings, ~30 glucose readings, ~20 meals, 1 active linked doctor, 1 caregiver profile_access entry. Run before submitting for Production access (after closed test phase).
+- **REL-PROD-3** — ✅ DONE 2026-04-18. Password confirmed as `Test@1234` — returns HTTP 200 + JWT from `/api/auth/login` on prod (port 8009). Credentials in Play Console App Access: `test.user@swasth.com` / `Test@1234`.
+
+### P1 — Production server migration to India (4–6 weeks out, post-pilot)
+
+- **REL-15** — **Migrate backend from Hetzner (EU) to Indian hosting.** Reasons: DISHA-readiness, doctor/NMC perception, latency for Bihar mobile networks, investor optics. Options to evaluate: AWS Mumbai, Azure Central India, DigitalOcean Bangalore, E2E Networks, Netmagic. 2–3 day project including DB migration + SSL cert + secrets rotation + backup re-verification + doctor demo account re-creation. **Do not attempt before Bangalore doctor pilot is stable — risk of breaking the thing that's working during validation window.**
+- **REL-16** — **Replace self-signed TLS cert with Let's Encrypt** once real domain (`swasth.health` or `api.swasth.health`) is pointed at the Indian server. This also lets us remove `_PilotHttpOverrides` from `lib/main.dart` (see "Pre-release blocker" at top of this file — linked work item).
+- **REL-17** — **Update privacy policy data-location language** after migration: change any mention of EU/Germany data storage to India. Also update `docs/PLAY_STORE_LISTING.md` "servers in India" claim (currently aspirational) to factual.
+
+### P0 — Brand identity (Flutter default icon is still the launcher icon, learned 2026-04-18)
+
+- **REL-BRAND-1** — ✅ DONE 2026-04-18. Replaced Flutter default launcher icons with Swasth heart+pulse icon (coral heart #F43F5E with white ECG pulse line, off-white rounded-square background, 100px corner radius). Updated: Android (10 files across mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi × ic_launcher + ic_launcher_round), iOS (15 files in AppIcon.appiconset, alpha flattened), web (Icon-192/512 + maskable + favicon), Play Store upload icon at ~/Desktop/swasth-app-icon-512.png. Source variant: `v2-red-heart-white-pulse` from `~/Desktop/swasth-icon-samples-v4/`. macOS Runner AppIcon NOT yet updated — low priority since macOS builds aren't shipped. **Rebuild AAB before next tester release** to bake icons into the binary.
+- **REL-BRAND-2** — Before Production release: commission a proper brand identity. Fiverr ($30-100) or 99designs ($200-500). Deliverables needed: full icon suite across platforms, wordmark, brand guidelines document, color palette confirmation. Replace REL-BRAND-1 temporary icon once delivered.
+
+### P2 — Branding + asset polish (do anytime before 1,000 users)
+
+- **REL-18** — ✅ DONE 2026-04-18. Feature graphic 1024×500 at `~/Desktop/swasth-feature-graphic/feature-graphic-final.png`. Sky-blue gradient, "Swasth" wordmark, tagline "Track your health. In your language.", heart-pulse icon on right, decorative ECG line at bottom. Bilingual version attempted but abandoned due to PIL Devanagari rendering limitations — English-only is sufficient for the Play Store listing's primary language (en-US). When a proper designer is engaged (REL-BRAND-2), request a redesigned feature graphic with Hindi localization using a text engine that supports Devanagari shaping.
+- **REL-19** — ✅ DONE 2026-04-18 (phone screenshots). Phone screenshots captured and uploaded to Play Console Main Store Listing. Tablet screenshots (7-inch + 10-inch) deliberately left empty — Play Console showed them with asterisk but accepted the save. Internal Testing does not require them.
+- **REL-19b** — ⚠️ Before Production release submission: add tablet screenshots (7-inch min 320px/side, 10-inch min 1080px/side, both 16:9 or 9:16 aspect). Google has been enforcing tablet screenshots on new-app Production listings since late 2024. Option: capture on a tablet emulator (Pixel Tablet profile in Android Studio) OR use a tablet-mockup service (previewed.app) to wrap phone screenshots in a tablet frame. Not blocking for Internal Testing.
+- **REL-20** — Buy `swasth.app` domain defensively? Current cost: ~$15/yr. Reason: prevents a squatter from using it against you later. Not urgent. Discussion only.
