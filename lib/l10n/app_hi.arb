@@ -107,6 +107,19 @@
   "maxLabel": "अधिकतम",
   "normalPct": "सामान्य",
   "noChartData": "इस अवधि में कोई रीडिंग नहीं",
+  "noReadingsInWindowGlucose": "पिछले {days} दिनों में कोई शुगर रीडिंग नहीं।",
+  "@noReadingsInWindowGlucose": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "noReadingsInWindowBp": "पिछले {days} दिनों में कोई BP रीडिंग नहीं।",
+  "@noReadingsInWindowBp": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "noReadingsInWindowWeight": "पिछले {days} दिनों में कोई वज़न रीडिंग नहीं।",
+  "@noReadingsInWindowWeight": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "logFromHomeHint": "होम से रीडिंग डालें और यहाँ देखें।",
   "tapToViewTrends": "ट्रेंड देखने के लिए टैप करें →",
   "viewTrends": "ट्रेंड देखें",
   "viewTrendsSubtitle": "7 और 30-दिन के ग्लूकोज और बीपी चार्ट",

@@ -317,6 +317,24 @@ class AppLocalizationsHi extends AppLocalizations {
   String get noChartData => 'इस अवधि में कोई रीडिंग नहीं';
 
   @override
+  String noReadingsInWindowGlucose(int days) {
+    return 'पिछले $days दिनों में कोई शुगर रीडिंग नहीं।';
+  }
+
+  @override
+  String noReadingsInWindowBp(int days) {
+    return 'पिछले $days दिनों में कोई BP रीडिंग नहीं।';
+  }
+
+  @override
+  String noReadingsInWindowWeight(int days) {
+    return 'पिछले $days दिनों में कोई वज़न रीडिंग नहीं।';
+  }
+
+  @override
+  String get logFromHomeHint => 'होम से रीडिंग डालें और यहाँ देखें।';
+
+  @override
   String get tapToViewTrends => 'ट्रेंड देखने के लिए टैप करें →';
 
   @override

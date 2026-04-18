@@ -698,6 +698,30 @@ abstract class AppLocalizations {
   /// **'No readings in this period'**
   String get noChartData;
 
+  /// Empty state for glucose chart when there are no glucose readings in the selected window.
+  ///
+  /// In en, this message translates to:
+  /// **'No glucose readings in the last {days} days.'**
+  String noReadingsInWindowGlucose(int days);
+
+  /// Empty state for BP chart when there are no BP readings in the selected window.
+  ///
+  /// In en, this message translates to:
+  /// **'No blood pressure readings in the last {days} days.'**
+  String noReadingsInWindowBp(int days);
+
+  /// Empty state for weight chart when there are no weight readings in the selected window.
+  ///
+  /// In en, this message translates to:
+  /// **'No weight readings in the last {days} days.'**
+  String noReadingsInWindowWeight(int days);
+
+  /// No description provided for @logFromHomeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Log a reading from the Home screen to see it here.'**
+  String get logFromHomeHint;
+
   /// No description provided for @tapToViewTrends.
   ///
   /// In en, this message translates to:

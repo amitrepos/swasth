@@ -128,6 +128,28 @@
   "maxLabel": "Max",
   "normalPct": "Normal",
   "noChartData": "No readings in this period",
+  "noReadingsInWindowGlucose": "No glucose readings in the last {days} days.",
+  "@noReadingsInWindowGlucose": {
+    "description": "Empty state for glucose chart when there are no glucose readings in the selected window.",
+    "placeholders": {
+      "days": { "type": "int", "example": "7" }
+    }
+  },
+  "noReadingsInWindowBp": "No blood pressure readings in the last {days} days.",
+  "@noReadingsInWindowBp": {
+    "description": "Empty state for BP chart when there are no BP readings in the selected window.",
+    "placeholders": {
+      "days": { "type": "int", "example": "7" }
+    }
+  },
+  "noReadingsInWindowWeight": "No weight readings in the last {days} days.",
+  "@noReadingsInWindowWeight": {
+    "description": "Empty state for weight chart when there are no weight readings in the selected window.",
+    "placeholders": {
+      "days": { "type": "int", "example": "7" }
+    }
+  },
+  "logFromHomeHint": "Log a reading from the Home screen to see it here.",
   "tapToViewTrends": "Tap to view trends →",
   "viewTrends": "View Trends",
   "viewTrendsSubtitle": "7 and 30-day glucose & BP charts",

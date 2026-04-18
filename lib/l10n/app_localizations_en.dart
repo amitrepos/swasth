@@ -317,6 +317,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noChartData => 'No readings in this period';
 
   @override
+  String noReadingsInWindowGlucose(int days) {
+    return 'No glucose readings in the last $days days.';
+  }
+
+  @override
+  String noReadingsInWindowBp(int days) {
+    return 'No blood pressure readings in the last $days days.';
+  }
+
+  @override
+  String noReadingsInWindowWeight(int days) {
+    return 'No weight readings in the last $days days.';
+  }
+
+  @override
+  String get logFromHomeHint =>
+      'Log a reading from the Home screen to see it here.';
+
+  @override
   String get tapToViewTrends => 'Tap to view trends →';
 
   @override
