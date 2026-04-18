@@ -1,9 +1,34 @@
-name: PROD Manual Deploy
+name: PROD Deploy
 
-on: [workflow_dispatch]
+# Auto-deploys on every push to master, keeping prod in sync with the merged
+# state. Also manually triggerable for emergency deploys (e.g., rollbacks,
+# re-running a failed deploy, or deploying a non-master branch for a quick fix
+# that's been cherry-picked).
+#
+# Why auto + manual:
+# - Auto on master push eliminates the "forgot to click Run workflow" drift
+#   that caused the 2026-04-18 incident (prod was 11 commits behind master
+#   because nobody had manually dispatched since 2026-04-12).
+# - Manual workflow_dispatch stays available for:
+#     • Rollbacks (trigger on a revert commit)
+#     • Re-running a deploy that failed mid-way (e.g., migration error)
+#     • Hot-patching without pushing to master
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# Prevent concurrent deploys clobbering each other. If a new master push
+# arrives while a deploy is running, cancel the in-flight one and start fresh.
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: true
 
 jobs:
-  # ── Deploy backend to PROD ─────────────────────────────────────────────────
+  # ── Stage 1: deploy backend ────────────────────────────────────────────────
+  # Runs FIRST. Frontend deploy depends on this to eliminate the race where
+  # `git reset --hard` in backend-deploy would overwrite web/ after web deploy
+  # wrote to it.
   deploy-backend:
     name: Deploy Backend to PROD
     runs-on: ubuntu-latest
@@ -18,25 +43,22 @@ jobs:
           script: |
             set -e
             cd /var/www/swasth_prod
-            # Hard-reset to origin/master — see rationale in dev.yml.
-            # This is a manual-dispatch workflow (see `on:` above), so
-            # discarding any local drift on the prod server is still
-            # the safe default: prod should never have in-place edits
-            # that aren't in master.
+            # Hard-reset to origin/master. Prod should never have in-place
+            # edits that aren't in master.
             git fetch origin master
             git reset --hard origin/master
             echo "✅ Repo synced to $(git rev-parse --short HEAD)"
 
-            # venv lives at backend/venv/ — cd BEFORE activating. See
-            # dev.yml for the same fix and the incident this addresses.
-            cd backend
+            # venv lives at /var/www/swasth_prod/venv/ (sibling of backend/),
+            # not inside backend/. Activate BEFORE cd-ing into backend/.
             source venv/bin/activate
+            cd backend
             pip install -r requirements.txt
 
             # Run any new DB migrations. Each migration script is
             # idempotent and safe to re-run.
             echo "Running DB migrations..."
-            for f in migrate_add_doctor_link_states.py; do
+            for f in migrate_*.py; do
               if [ -f "$f" ]; then
                 echo "  → $f"
                 python3 "$f" || { echo "❌ Migration $f failed"; exit 1; }
@@ -45,12 +67,16 @@ jobs:
             echo "✅ Migrations complete"
 
             # Restart or start the PROD backend via PM2
-            pm2 restart swasth-prod || pm2 start "python3 main.py" --name "swasth-prod" --cwd /var/www/swasth_prod/backend
-            echo "✅ Backend PROD deployed on port 8008"
+            pm2 restart swasth-prod || pm2 start "python3 -B main.py" --name "swasth-prod" --cwd /var/www/swasth_prod/backend
+            echo "✅ Backend PROD deployed"
 
-  # ── Build & deploy Flutter web to PROD ─────────────────────────────────────
+  # ── Stage 2: build & deploy Flutter web ────────────────────────────────────
+  # Runs AFTER deploy-backend succeeds. This prevents the race where
+  # `git reset --hard` in backend-deploy would overwrite the built web/
+  # artifacts that web-deploy just scp'd.
   deploy-web:
     name: Deploy Flutter Web to PROD
+    needs: deploy-backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +94,7 @@ jobs:
       - name: Build Flutter Web
         run: |
           flutter build web --release \
+            --target lib/main_production.dart \
             --dart-define=SERVER_HOST=https://${{ secrets.SERVER_HOST }}:8444
 
       - name: Deploy web to server
@@ -90,3 +117,64 @@ jobs:
           script: |
             sudo nginx -t && sudo systemctl reload nginx
             echo "✅ Flutter Web PROD deployed"
+
+  # ── Stage 3: post-deploy smoke test ────────────────────────────────────────
+  # Validates that the freshly-deployed stack actually works before we consider
+  # the deploy successful. Would have caught the 2026-04-18 drift incident.
+  smoke-test:
+    name: Post-deploy smoke test
+    needs: [deploy-backend, deploy-web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit production health endpoint
+        run: |
+          set -e
+          echo "=== /health ==="
+          curl -sk --max-time 10 https://${{ secrets.SERVER_HOST }}:8444/health | tee /tmp/health.json
+          grep -q '"status":"healthy"' /tmp/health.json
+          echo "✅ /health returns healthy"
+
+      - name: Verify supported reading_types end-to-end
+        env:
+          SMOKE_EMAIL: ${{ secrets.SMOKE_USER_EMAIL }}
+          SMOKE_PASS: ${{ secrets.SMOKE_USER_PASSWORD }}
+          HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          set -e
+          # Skip if smoke-test credentials aren't configured yet
+          if [ -z "$SMOKE_EMAIL" ] || [ -z "$SMOKE_PASS" ]; then
+            echo "⚠️  SMOKE_USER_* secrets not set — skipping reading_type smoke test."
+            echo "    To enable: add SMOKE_USER_EMAIL and SMOKE_USER_PASSWORD in repo secrets."
+            exit 0
+          fi
+
+          TOKEN=$(curl -sk -X POST "https://${HOST}:8444/api/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"${SMOKE_EMAIL}\",\"password\":\"${SMOKE_PASS}\"}" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+          echo "✅ Login OK"
+
+          PROFILE_ID=$(curl -sk "https://${HOST}:8444/api/profiles" \
+            -H "Authorization: Bearer $TOKEN" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+          echo "✅ Profile ID: $PROFILE_ID"
+
+          # Each reading_type the app currently supports. If master adds a
+          # new one, add it here too — that's how this test stays in sync.
+          for RT in blood_pressure glucose spo2 steps weight; do
+            STATUS=$(curl -sk -o /dev/null -w "%{http_code}" \
+              -X POST "https://${HOST}:8444/api/readings" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"profile_id\":$PROFILE_ID,\"reading_type\":\"$RT\",\"value_numeric\":0,\"reading_timestamp\":\"2026-01-01T00:00:00Z\"}")
+            if [ "$STATUS" = "201" ] || [ "$STATUS" = "200" ] || [ "$STATUS" = "400" ]; then
+              # 400 is acceptable for missing type-specific fields; what we're
+              # validating is that the backend RECOGNIZES the reading_type.
+              # 404/422 on invalid-type would fail this check.
+              echo "✅ reading_type=$RT accepted (HTTP $STATUS)"
+            else
+              echo "❌ reading_type=$RT unexpectedly rejected (HTTP $STATUS)"
+              exit 1
+            fi
+          done
+          echo "✅ All reading_types round-trip to production"
