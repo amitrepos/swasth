@@ -95,6 +95,85 @@ if [[ "$gh_available" -eq 1 ]]; then
   done
 fi
 
+# ── Gate: orphan-commit detection ─────────────────────────────────────
+# Catches the "branched off a stale feature branch" failure mode that
+# bit us twice on 2026-04-18. When PR N is squash-merged, the original
+# feature commits stay in local history with OLD SHAs, but master now
+# has ONE new commit with the same content and a NEW SHA. If someone
+# then branches off the stale branch for PR N+1, their branch inherits
+# the old-SHA commits. GitHub can't tell they're content-equivalent
+# and reports merge conflicts.
+#
+# git patch-id --stable computes a SHA-independent ID from the commit's
+# diff. If our branch has commits whose patch-id matches a commit
+# already on master, we're about to push orphans.
+#
+# Perf: only compare against the last 100 master commits — enough to
+# cover weeks of history without scanning the whole repo log.
+fetch_patch_ids() {
+  # Read commit SHAs from stdin, emit one patch-id per line.
+  while read -r sha; do
+    [[ -z "$sha" ]] && continue
+    git show "$sha" 2>/dev/null | git patch-id --stable 2>/dev/null | awk '{print $1}'
+  done
+}
+
+if [[ "$gh_available" -eq 1 || -d "$REPO_ROOT/.git" ]]; then
+  # We need origin/master present locally for this check. Fetch quietly
+  # with a short timeout so a flaky network doesn't block the push.
+  _with_timeout 8 git fetch origin master --quiet 2>/dev/null || true
+
+  for branch in "${pushed_branches[@]}"; do
+    [[ "$branch" == "master" || "$branch" == "HEAD" ]] && continue
+
+    # Compare patch-ids of commits being pushed vs recent master commits.
+    # `git log origin/master..refs/heads/$branch` = commits on our branch
+    # not yet on master.
+    branch_ref="refs/heads/$branch"
+    if ! git rev-parse --verify --quiet "$branch_ref" >/dev/null; then
+      continue  # branch already deleted or remote-only — skip
+    fi
+
+    branch_patches="$(git log origin/master.."$branch_ref" --format='%H' 2>/dev/null | fetch_patch_ids | sort -u)"
+    if [[ -z "$branch_patches" ]]; then
+      continue  # nothing to push on this branch, no orphans possible
+    fi
+
+    master_patches="$(git log origin/master -n 100 --format='%H' 2>/dev/null | fetch_patch_ids | sort -u)"
+
+    # Intersection = patch-ids present on BOTH master and branch = orphans.
+    orphans="$(comm -12 <(echo "$branch_patches") <(echo "$master_patches"))"
+    orphan_count="$(echo "$orphans" | grep -c . || true)"
+
+    if [[ "$orphan_count" -gt 0 ]]; then
+      {
+        echo ""
+        echo "BLOCKED: branch '$branch' contains $orphan_count commit(s) whose"
+        echo "content is already on master (under different SHAs — squash-merge)."
+        echo ""
+        echo "This is the 'orphan-commit' failure mode documented in"
+        echo ".claude/scripts/scb.sh. Pushing would likely produce a"
+        echo "conflicting PR that can't be merged."
+        echo ""
+        echo "Recover — rebuild the branch cleanly from fresh master:"
+        echo ""
+        echo "  # 1. identify the ONE commit you actually want to ship"
+        echo "  git log origin/master..HEAD --oneline"
+        echo "  # 2. rebuild from master and cherry-pick just that commit"
+        echo "  git stash push -u -m 'wip'"
+        echo "  git scb $branch-v2   # or: checkout master; pull; checkout -b"
+        echo "  git cherry-pick <sha-of-the-real-commit>"
+        echo ""
+        echo "To bypass (you're certain this is fine): SWASTH_ALLOW_ORPHAN_PUSH=1 git push ..."
+      } >&2
+      if [[ -z "${SWASTH_ALLOW_ORPHAN_PUSH:-}" ]]; then
+        exit 1
+      fi
+      echo "[orphan-check] SWASTH_ALLOW_ORPHAN_PUSH=1 — bypassed" >&2
+    fi
+  done
+fi
+
 # ── Backend pytest ────────────────────────────────────────────────────────
 echo ""
 echo "▶ Running backend tests..."

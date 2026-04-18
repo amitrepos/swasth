@@ -341,10 +341,42 @@ because advisory rules are suggestions, not gates.**
 
 ```bash
 git config core.hooksPath .githooks
+git config alias.scb '!bash .claude/scripts/scb.sh'
 ```
 
 CI's `branch-hygiene.yml` will block the PR if `.githooks/` scripts are
 missing or not executable, so the hooks themselves are tamper-resistant.
+
+### Drift Prevention Protocol (added after 2026-04-18 incidents)
+
+Health data = no room for "I think it's deployed." Three failures in
+one session had the same skeleton: assumed state after action A, never
+verified, downstream error much later. Three enforcement layers now:
+
+**Layer 1 — deterministic hooks (strongest):**
+- `git scb <branch>` creates a new branch from fresh `origin/master`.
+  Refuses if local master is stale or working tree is dirty. Always
+  use this instead of `git checkout -b`.
+- `.githooks/pre-push` now also refuses a push if any branch commit
+  has a `git patch-id` already on master (orphan-commit detection).
+  Catches the "branched off a stale feature branch" failure mode.
+
+**Layer 2 — verification discipline (required, always):**
+- After ANY state-changing action, run an observable verification
+  before moving to the next step. `gh secret set` → hit the live
+  endpoint. `scp` → `ssh stat` the file. `pm2 restart` → curl a
+  route. `git checkout -b` → `git log origin/master..HEAD` is empty.
+- **Exit code 0 does NOT prove success.** The downstream surface
+  working proves success.
+
+**Layer 3 — memory (for coverage the hooks miss):**
+- `~/.claude/projects/.../memory/feedback_state_verification.md`
+- `~/.claude/projects/.../memory/feedback_quality_over_speed.md`
+  Auto-loaded every session — future AI inherits the lessons.
+
+**The meta-rule:** "Quality over speed. We handle health data."
+When tempted to skip a verification or batch a too-big commit, stop.
+One atomic change, verified, then the next.
 
 ### Domain Expert Review Matrix (ENFORCED via pre-commit hook)
 
