@@ -33,7 +33,7 @@ BUILT FOR INDIA
 • Designed with doctors in Bihar, built for elders and their families.
 
 PRIVACY & SECURITY
-• Your health data is encrypted (AES-256) and stored on servers in India.
+• Your health data is encrypted (AES-256) and stored on servers with industry-standard security.
 • Nothing is sold. No ads. No advertisers.
 • Delete all your data from the app whenever you want.
 • Compliant with DPDP Act 2023 and SPDI Rules 2011.
@@ -46,7 +46,7 @@ WHO IT'S FOR
 CURRENTLY IN PILOT
 Swasth is in an invite-only pilot with doctors in Bihar. Features are updated weekly based on real feedback.
 
-Questions, feedback, data requests? Email support@swasth.app.
+Questions, feedback, data requests? Email swasth.admin@gmail.com.
 ```
 
 ## App category
@@ -60,7 +60,7 @@ Health & Fitness, Medical, Diabetes, Blood Pressure, Personal Health
 ```
 
 ## Contact details
-- **Email:** support@swasth.app (required — must be reachable)
+- **Email:** swasth.admin@gmail.com (required — must be reachable; swap to support@swasth.health after domain setup)
 - **Website:** https://swasth.health (optional but recommended)
 - **Phone:** (leave blank unless you have a support line)
 
@@ -152,5 +152,5 @@ First internal build. Core features:
 - Family sharing + doctor view
 - English + हिन्दी
 
-Feedback: support@swasth.app
+Feedback: swasth.admin@gmail.com
 ```
