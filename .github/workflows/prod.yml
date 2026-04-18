@@ -148,33 +148,83 @@ jobs:
             exit 0
           fi
 
-          TOKEN=$(curl -sk -X POST "https://${HOST}:8444/api/auth/login" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"${SMOKE_EMAIL}\",\"password\":\"${SMOKE_PASS}\"}" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-          echo "✅ Login OK"
+          # Use a single Python script to drive the whole smoke test. This avoids
+          # the shell-interpolation-into-JSON trap where a password character
+          # that's harmless to bash (e.g. a stray quote) silently breaks the
+          # JSON body, the server returns 400, and curl pipes "no access_token"
+          # to the next stage producing a cryptic KeyError.
+          python3 <<'PYEOF'
+          import json, os, sys, urllib.request, ssl
 
-          PROFILE_ID=$(curl -sk "https://${HOST}:8444/api/profiles" \
-            -H "Authorization: Bearer $TOKEN" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
-          echo "✅ Profile ID: $PROFILE_ID"
+          HOST  = os.environ["HOST"]
+          EMAIL = os.environ["SMOKE_EMAIL"]
+          PASS  = os.environ["SMOKE_PASS"]
+          BASE  = f"https://{HOST}:8444"
 
-          # Each reading_type the app currently supports. If master adds a
-          # new one, add it here too — that's how this test stays in sync.
-          for RT in blood_pressure glucose spo2 steps weight; do
-            STATUS=$(curl -sk -o /dev/null -w "%{http_code}" \
-              -X POST "https://${HOST}:8444/api/readings" \
-              -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "{\"profile_id\":$PROFILE_ID,\"reading_type\":\"$RT\",\"value_numeric\":0,\"reading_timestamp\":\"2026-01-01T00:00:00Z\"}")
-            if [ "$STATUS" = "201" ] || [ "$STATUS" = "200" ] || [ "$STATUS" = "400" ]; then
-              # 400 is acceptable for missing type-specific fields; what we're
-              # validating is that the backend RECOGNIZES the reading_type.
-              # 404/422 on invalid-type would fail this check.
-              echo "✅ reading_type=$RT accepted (HTTP $STATUS)"
-            else
-              echo "❌ reading_type=$RT unexpectedly rejected (HTTP $STATUS)"
-              exit 1
-            fi
-          done
-          echo "✅ All reading_types round-trip to production"
+          # Production uses a self-signed cert — smoke test ignores cert verification
+          # exactly as the mobile app does in its HTTPS overrides.
+          CTX = ssl.create_default_context()
+          CTX.check_hostname = False
+          CTX.verify_mode = ssl.CERT_NONE
+
+          def post(path, body, token=None):
+              req = urllib.request.Request(
+                  BASE + path,
+                  data=json.dumps(body).encode(),
+                  headers={"Content-Type": "application/json",
+                           **({"Authorization": f"Bearer {token}"} if token else {})},
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(req, context=CTX, timeout=15) as r:
+                      return r.status, json.loads(r.read() or b"{}")
+              except urllib.error.HTTPError as e:
+                  return e.code, json.loads(e.read() or b"{}")
+
+          def get(path, token):
+              req = urllib.request.Request(
+                  BASE + path,
+                  headers={"Authorization": f"Bearer {token}"},
+              )
+              with urllib.request.urlopen(req, context=CTX, timeout=15) as r:
+                  return json.loads(r.read())
+
+          # ── Login ────────────────────────────────────────────────────────
+          status, body = post("/api/auth/login", {"email": EMAIL, "password": PASS})
+          if status != 200 or "access_token" not in body:
+              print(f"❌ Login failed: HTTP {status}, body={body}")
+              sys.exit(1)
+          token = body["access_token"]
+          print(f"✅ Login OK (email={EMAIL}, pw_len={len(PASS)})")
+
+          # ── Get profile ──────────────────────────────────────────────────
+          profiles = get("/api/profiles", token)
+          if not profiles:
+              print("❌ No profiles visible to smoke user")
+              sys.exit(1)
+          profile_id = profiles[0]["id"]
+          print(f"✅ Profile ID: {profile_id}")
+
+          # ── POST every reading_type the app supports ─────────────────────
+          # If master adds a new reading_type, add it here too — that's how
+          # this test stays in sync with the app.
+          for rt in ["blood_pressure", "glucose", "spo2", "steps", "weight"]:
+              status, body = post(
+                  "/api/readings",
+                  {"profile_id": profile_id,
+                   "reading_type": rt,
+                   "value_numeric": 0,
+                   "reading_timestamp": "2026-01-01T00:00:00Z"},
+                  token=token,
+              )
+              # 201/200 = accepted, 400 = backend recognized the type but the
+              # payload is incomplete for that type (ok, we're only checking
+              # that the type is known). 404/422 on type = stale backend.
+              if status in (200, 201, 400):
+                  print(f"✅ reading_type={rt} accepted (HTTP {status})")
+              else:
+                  print(f"❌ reading_type={rt} unexpectedly rejected: HTTP {status}, body={body}")
+                  sys.exit(1)
+
+          print("✅ All reading_types round-trip to production")
+          PYEOF
