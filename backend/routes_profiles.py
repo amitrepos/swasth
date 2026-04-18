@@ -10,6 +10,7 @@ import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_owner_or_403
 from email_service import email_service
+from encryption_service import encrypt_float
 
 router = APIRouter()
 
@@ -96,6 +97,22 @@ def create_profile(
         access_level="owner",
     )
     db.add(access)
+    
+    # Auto-log first weight reading if provided
+    if profile.weight is not None:
+        weight_reading = models.HealthReading(
+            profile_id=profile.id,
+            logged_by=user.id,
+            reading_type="weight",
+            weight_value=profile.weight,
+            weight_unit="kg",
+            value_numeric=profile.weight,
+            unit_display="kg",
+            reading_timestamp=datetime.now(),
+            weight_value_enc=encrypt_float(profile.weight)
+        )
+        db.add(weight_reading)
+
     db.commit()
     db.refresh(profile)
     return _build_profile_response(profile, "owner")

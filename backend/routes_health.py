@@ -28,7 +28,7 @@ from health_utils import age_context_bp, age_context_glucose, classify_spo2
 
 router = APIRouter()
 
-_VALID_READING_TYPES = {'glucose', 'blood_pressure', 'spo2', 'steps'}
+_VALID_READING_TYPES = {'glucose', 'blood_pressure', 'spo2', 'steps', 'weight'}
 
 # Cache: one Gemini call per (profile_id, date) — clears on server restart
 _insight_cache: dict[tuple[int, str], str] = {}
@@ -83,6 +83,8 @@ def save_reading(
         spo2_unit=reading.spo2_unit,
         steps_count=reading.steps_count,
         steps_goal=reading.steps_goal,
+        weight_value=reading.weight_value,
+        weight_unit=reading.weight_unit,
         value_numeric=reading.value_numeric,
         unit_display=reading.unit_display,
         status_flag=reading.status_flag,
@@ -101,6 +103,8 @@ def save_reading(
         db_reading.pulse_rate_enc = encrypt_float(reading.pulse_rate)
     if reading.spo2_value is not None:
         db_reading.spo2_enc = encrypt_float(reading.spo2_value)
+    if reading.weight_value is not None:
+        db_reading.weight_value_enc = encrypt_float(reading.weight_value)
     if reading.notes is not None:
         db_reading.notes_enc = encrypt(reading.notes)
 
@@ -227,6 +231,8 @@ def get_health_score(
     logging.info(f"Health Score - Profile {profile_id}: today_steps_readings={len(today_steps_readings)}, today_steps_count={today_steps_count}, today_steps_goal={today_steps_goal}")
     if today_steps_readings:
         logging.info(f"  Steps readings: {[{'id': r.id, 'count': r.steps_count, 'goal': r.steps_goal, 'timestamp': r.reading_timestamp} for r in today_steps_readings]}")
+
+    today_weight = next((r for r in today_readings if r.reading_type == 'weight'), None)
 
     # --- Streak calculation ---
     days_with_readings = set()
@@ -408,6 +414,15 @@ def get_health_score(
         .order_by(models.HealthReading.reading_timestamp.desc())
         .first()
     )
+    last_weight = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'weight',
+        )
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
 
     # --- Age-contextual notes ---
     _bp_for_context = today_bp or last_bp
@@ -425,9 +440,34 @@ def get_health_score(
             profile_age, getattr(_glucose_for_context, "sample_type", None),
         )
 
+    steps_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'steps',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.steps_count.isnot(None),
+    ).scalar() or 0
+
+    # --- Weight data ---
+    avg_weight_90d = db.query(func.avg(models.HealthReading.weight_value)).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'weight',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.weight_value.isnot(None),
+    ).scalar()
+    weight_data_days = db.query(
+        func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
+    ).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == 'weight',
+        models.HealthReading.reading_timestamp >= ninety_days_ago,
+        models.HealthReading.weight_value.isnot(None),
+    ).scalar() or 0
+
     # --- BMI ---
     p_height = profile.height if profile else None
-    p_weight = profile.weight if profile else None
+    p_weight = last_weight.weight_value if last_weight else (profile.weight if profile else None)
     bmi = None
     bmi_category = None
     if p_height and p_weight and p_height > 0:
@@ -541,6 +581,11 @@ def get_health_score(
         last_steps_count=last_steps.steps_count if last_steps else None,
         avg_steps_90d=float(avg_steps_90d) if avg_steps_90d is not None else None,
         steps_data_days=int(steps_data_days),
+        # Weight
+        today_weight_value=today_weight.weight_value if today_weight else None,
+        last_weight_value=last_weight.weight_value if last_weight else None,
+        avg_weight_90d=float(avg_weight_90d) if avg_weight_90d is not None else None,
+        weight_data_days=int(weight_data_days),
     )
 
 
@@ -569,7 +614,7 @@ def get_ai_insight(
         total_count = db.query(func.count(models.HealthReading.id)).filter(
             models.HealthReading.profile_id == profile_id,
         ).scalar() or 0
-        return {"insight": _rule_based_insight(recent, total_count=total_count), "ai_consent_required": True}
+        return {"insight": _rule_based_insight(recent, db, total_count=total_count), "ai_consent_required": True}
 
     # ── Smart cache: only call LLM when new readings exist ────────────
     latest_insight = (
@@ -617,13 +662,14 @@ def get_ai_insight(
     # Build compact summary (averages + ranges) instead of raw readings
     glucose_vals = [r.glucose_value for r in recent if r.reading_type == "glucose" and r.glucose_value]
     bp_readings = [(r.systolic, r.diastolic) for r in recent if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+    weight_vals = [r.weight_value for r in recent if r.reading_type == "weight" and r.weight_value]
 
     total_count = db.query(func.count(models.HealthReading.id)).filter(
         models.HealthReading.profile_id == profile_id,
     ).scalar() or 0
-    fallback = _rule_based_insight(recent, total_count=total_count)
+    fallback = _rule_based_insight(recent, db, total_count=total_count)
 
-    if not glucose_vals and not bp_readings:
+    if not glucose_vals and not bp_readings and not weight_vals:
         return {"insight": fallback}
 
     age = profile.age if profile else None
@@ -693,17 +739,30 @@ def get_ai_insight(
             + ". "
         )
 
+    # ── Weight summary for LLM context ────────────────────────────────
+    weight_vals = [r.weight_value for r in recent if r.reading_type == "weight" and r.weight_value]
+    weight_summary = ""
+    if weight_vals:
+        avg_w = sum(weight_vals) / len(weight_vals)
+        latest_w = weight_vals[-1]
+        weight_summary = f"Weight (30-day, {len(weight_vals)} readings): avg {avg_w:.1f}, latest {latest_w:.1f} kg. "
+        if profile and profile.height:
+            bmi = latest_w / ((profile.height / 100) ** 2)
+            weight_summary += f"BMI is {bmi:.1f}."
+
     # Rule-based meal insights (appended to response, not sent to LLM)
     meal_tips = generate_meal_insights(recent_meals, recent)
 
     age_desc = f"{age} years" if age else "unknown age"
 
-    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {food_summary}{trend_note}
+    prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {weight_summary} {food_summary}{trend_note}
 
-Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points. Use suggestive language only ("may help", "consider")."""
+Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points.
+IMPORTANT: Even if glucose and BP are normal, if BMI is high (>= 25) or weight is trending up, prioritize weight management advice.
+Use suggestive language only ("may help", "consider")."""
 
     import ai_service
-    prompt_summary = f"{glucose_summary} {bp_summary} {food_summary}{trend_note}".strip() or None
+    prompt_summary = f"{glucose_summary} {bp_summary} {weight_summary} {food_summary}{trend_note}".strip() or None
     insight = ai_service.generate_health_insight(prompt, profile_id, db, prompt_summary)
 
     if insight:
@@ -768,6 +827,16 @@ def _build_shareable_summary(profile_id: int, period: int, db: Session):
         lines.append(f"   Elevated: {elevated}")
     else:
         lines.append("\u2764\ufe0f Blood Pressure: No readings this week")
+
+    # Weight stats
+    weight_vals = [r.weight_value for r in readings if r.reading_type == "weight" and r.weight_value]
+    if weight_vals:
+        avg_w = sum(weight_vals) / len(weight_vals)
+        lines.append(f"\u2696\ufe0f Weight: {len(weight_vals)} readings")
+        lines.append(f"   Avg: {avg_w:.1f} kg")
+        lines.append(f"   Range: {min(weight_vals):.1f}\u2013{max(weight_vals):.1f} kg")
+    else:
+        lines.append("\u2696\ufe0f Weight: No readings this week")
 
     days_with = set()
     for r in readings:
@@ -876,14 +945,31 @@ def get_trend_summary(
     # BP stats
     bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
     if bp_readings:
-        sys_vals = [s for s, _ in bp_readings]
-        dia_vals = [d for _, d in bp_readings]
-        avg_sys = sum(sys_vals) / len(sys_vals)
-        avg_dia = sum(dia_vals) / len(dia_vals)
-        elevated = sum(1 for s, d in bp_readings if s > 140 or d > 90)
+        avg_sys = sum(s for s, _ in bp_readings) / len(bp_readings)
+        avg_dia = sum(d for _, d in bp_readings) / len(bp_readings)
+        elevated = sum(1 for s, d in bp_readings if s >= 130 or d >= 80)
         data_parts.append(
             f"BP: avg {avg_sys:.0f}/{avg_dia:.0f} mmHg ({len(bp_readings)} readings), "
             f"{elevated} elevated"
+        )
+
+    # Weight stats
+    weight_vals = [r.weight_value for r in readings if r.reading_type == "weight" and r.weight_value]
+    if weight_vals:
+        avg_w = sum(weight_vals) / len(weight_vals)
+        mid = len(weight_vals) // 2
+        first_half = sum(weight_vals[:mid]) / max(mid, 1)
+        second_half = sum(weight_vals[mid:]) / max(len(weight_vals) - mid, 1)
+        if second_half < first_half - 0.5:
+            trend = "decreasing ↓"
+        elif second_half > first_half + 0.5:
+            trend = "increasing ↑"
+        else:
+            trend = "stable →"
+        data_parts.append(
+            f"Weight: avg {avg_w:.1f} kg ({len(weight_vals)} readings), "
+            f"range {min(weight_vals):.1f}\u2013{max(weight_vals):.1f}, "
+            f"trend {trend}"
         )
 
     # Meal stats for the period
@@ -1116,6 +1202,18 @@ async def parse_image_with_gemini(
                 "Respond with ONLY a JSON object, no explanation, no markdown:\n"
                 '{"systolic": <number or null>, "diastolic": <number or null>, "pulse": <number or null>}'
             )
+        elif device_type == "weight":
+            prompt = (
+                "You are reading a digital weight scale display in this photo.\n"
+                "Extract the weight value shown.\n\n"
+                "Rules:\n"
+                "- Weight is typically a 2–3 digit number with one decimal (e.g., 72.5)\n"
+                "- If the display shows 'ERR' or is unreadable, use null\n"
+                "- Ignore units (kg, lb) — respond with the raw number\n"
+                "- Assume the value is in kg unless explicitly marked otherwise\n\n"
+                "Respond with ONLY a JSON object, no explanation, no markdown:\n"
+                '{"weight": <number or null>}'
+            )
         else:
             prompt = (
                 "You are reading a blood glucose meter display in this photo.\n"
@@ -1162,6 +1260,13 @@ async def parse_image_with_gemini(
             if sys is None or dia is None:
                 return {"error": "Could not extract valid BP values from image"}
             return {"systolic": sys, "diastolic": dia, "pulse": pulse}
+        elif device_type == "weight":
+            weight = parsed.get("weight")
+            if weight is not None and not (5 <= weight <= 500):
+                weight = None
+            if weight is None:
+                return {"error": "Could not extract valid weight value from image"}
+            return {"weight": weight}
         else:
             glucose = parsed.get("glucose")
             if glucose is not None and not (20 <= glucose <= 600):
@@ -1176,7 +1281,7 @@ async def parse_image_with_gemini(
         return {"error": f"Gemini Vision failed: {str(e)}"}
 
 
-def _rule_based_insight(recent: list, total_count: int = 0) -> str:
+def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
     """Simple rule-based fallback used when Gemini is unavailable."""
     if not recent:
         if total_count > 0:
@@ -1190,8 +1295,26 @@ def _rule_based_insight(recent: list, total_count: int = 0) -> str:
         if stage2 and stage2.reading_type == "blood_pressure" and stage2.systolic:
             return f"⚠️ Your BP ({stage2.systolic:.0f}/{stage2.diastolic:.0f}) is dangerously high. Have you taken your medication? Please see a doctor today."
         return "⚠️ A reading is in Stage 2 range. Have you taken your medication? Please consult your doctor."
+
+    # Weight specific tips (check this BEFORE general NORMAL status)
+    weight_readings = [r for r in recent if r.reading_type == "weight" and r.weight_value]
+    if weight_readings:
+        latest_w = weight_readings[-1].weight_value
+        profile = db.query(models.Profile).filter(models.Profile.id == weight_readings[-1].profile_id).first()
+        if profile and profile.height:
+            bmi = latest_w / ((profile.height / 100) ** 2)
+            if bmi >= 25:
+                # Still check if other things are high, but if everything else is normal, tell them about BMI
+                msg = f"Your BMI is {bmi:.1f} (Overweight). Try reducing carbs and aim for daily activity."
+                if any("HIGH" in (s or "") for s in statuses):
+                    return f"Some readings are elevated, and your BMI is {bmi:.1f}. Focus on diet and movement."
+                return msg
+            if bmi < 18.5:
+                return f"Your BMI is {bmi:.1f} (Underweight). Ensure you are getting enough nutrition."
+
     if any("HIGH" in (s or "") for s in statuses):
         return "Some readings were elevated this week. Stay hydrated and keep active."
+
     if statuses and all(s == "NORMAL" for s in statuses):
         return "All recent readings look healthy. Keep up the great work!"
     return "Readings logged. Keep tracking daily for better health insights."

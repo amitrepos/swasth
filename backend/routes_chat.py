@@ -97,21 +97,32 @@ def _build_health_summary(profile_id: int, db: Session) -> str:
 
     glucose_vals = [r.glucose_value for r in recent if r.reading_type == "glucose" and r.glucose_value]
     bp_readings = [(r.systolic, r.diastolic) for r in recent if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
+    weight_vals = [r.weight_value for r in recent if r.reading_type == "weight" and r.weight_value]
 
     age_desc = f"{profile.age} years" if profile.age else "unknown age"
     gender = profile.gender or "Unknown"
     conditions = ", ".join(profile.medical_conditions) if profile.medical_conditions else "None reported"
     medications = profile.current_medications or "None reported"
 
-    # BMI
+    # BMI — prioritize latest logged weight over profile.weight
+    latest_weight = weight_vals[-1] if weight_vals else profile.weight
     bmi_desc = ""
-    if profile.height and profile.weight and profile.height > 0:
+    if profile.height and latest_weight and profile.height > 0:
         height_m = profile.height / 100.0
-        bmi = round(profile.weight / (height_m * height_m), 1)
+        bmi = round(latest_weight / (height_m * height_m), 1)
         cat = "Underweight" if bmi < 18.5 else "Normal" if bmi < 25 else "Overweight" if bmi < 30 else "Obese"
-        bmi_desc = f" Height: {profile.height:.0f}cm, Weight: {profile.weight:.0f}kg, BMI: {bmi} ({cat})."
+        weight_src = "logged" if weight_vals else "profile"
+        bmi_desc = f" Height: {profile.height:.0f}cm, Current Weight ({weight_src}): {latest_weight:.1f}kg, BMI: {bmi} ({cat})."
 
     parts = [f"Patient: {age_desc}, {gender}. Conditions: {conditions}. Medications: {medications}.{bmi_desc}"]
+
+    if weight_vals:
+        avg_w = sum(weight_vals) / len(weight_vals)
+        parts.append(
+            f"Weight (30d, {len(weight_vals)} readings): avg {avg_w:.1f} kg, "
+            f"range {min(weight_vals):.1f}–{max(weight_vals):.1f} kg. "
+            f"Latest: {weight_vals[-1]:.1f} kg."
+        )
 
     if glucose_vals:
         avg_g = sum(glucose_vals) / len(glucose_vals)

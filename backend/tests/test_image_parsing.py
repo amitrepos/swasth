@@ -342,14 +342,22 @@ class TestParseImageBpValidation:
 class TestRuleBasedInsight:
     """Tests for _rule_based_insight() function."""
 
+    def _mock_db(self):
+        """Create a mock db session for _rule_based_insight."""
+        mock = MagicMock()
+        # The function queries Profile when weight readings exist;
+        # for tests without weight readings this is never called.
+        mock.query.return_value.filter.return_value.first.return_value = None
+        return mock
+
     def test_no_readings(self):
         from routes_health import _rule_based_insight
-        result = _rule_based_insight([], total_count=0)
+        result = _rule_based_insight([], self._mock_db(), total_count=0)
         assert "first reading" in result.lower()
 
     def test_returning_user_no_readings(self):
         from routes_health import _rule_based_insight
-        result = _rule_based_insight([], total_count=15)
+        result = _rule_based_insight([], self._mock_db(), total_count=15)
         assert "welcome back" in result.lower()
 
     def test_critical_reading(self):
@@ -357,7 +365,7 @@ class TestRuleBasedInsight:
         reading = MagicMock()
         reading.status_flag = "CRITICAL"
         reading.reading_type = "glucose"
-        result = _rule_based_insight([reading])
+        result = _rule_based_insight([reading], self._mock_db())
         assert "critical" in result.lower()
 
     def test_high_stage2_bp(self):
@@ -367,7 +375,7 @@ class TestRuleBasedInsight:
         reading.reading_type = "blood_pressure"
         reading.systolic = 165.0
         reading.diastolic = 100.0
-        result = _rule_based_insight([reading])
+        result = _rule_based_insight([reading], self._mock_db())
         assert "165" in result
 
     def test_high_reading(self):
@@ -375,7 +383,7 @@ class TestRuleBasedInsight:
         reading = MagicMock()
         reading.status_flag = "HIGH"
         reading.reading_type = "glucose"
-        result = _rule_based_insight([reading])
+        result = _rule_based_insight([reading], self._mock_db())
         assert "elevated" in result.lower()
 
     def test_all_normal(self):
@@ -384,7 +392,7 @@ class TestRuleBasedInsight:
         r1.status_flag = "NORMAL"
         r2 = MagicMock()
         r2.status_flag = "NORMAL"
-        result = _rule_based_insight([r1, r2])
+        result = _rule_based_insight([r1, r2], self._mock_db())
         assert "healthy" in result.lower()
 
     def test_mixed_readings(self):
@@ -393,7 +401,7 @@ class TestRuleBasedInsight:
         r1.status_flag = "NORMAL"
         r2 = MagicMock()
         r2.status_flag = None
-        result = _rule_based_insight([r1, r2])
+        result = _rule_based_insight([r1, r2], self._mock_db())
         assert len(result) > 0  # returns some insight
 
 

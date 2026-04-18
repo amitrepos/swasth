@@ -57,6 +57,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
   final _pulseController = TextEditingController();
   final _spo2Controller = TextEditingController();
   final _stepsController = TextEditingController();
+  final _weightController = TextEditingController();
 
   String? _mealContext; // 'fasting', 'before_meal', 'after_meal'
   DateTime _readingTime = DateTime.now();
@@ -69,6 +70,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
   bool get isGlucose => widget.deviceType == 'glucose';
   bool get isSpo2 => widget.deviceType == 'spo2';
   bool get isSteps => widget.deviceType == 'steps';
+  bool get isWeight => widget.deviceType == 'weight';
 
   @override
   void initState() {
@@ -88,6 +90,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
       if (r.diastolic != null)
         _diastolicController.text = r.diastolic!.toStringAsFixed(0);
       if (r.pulse != null) _pulseController.text = r.pulse!.toStringAsFixed(0);
+    } else if (isWeight && r.weightValue != null) {
+      _weightController.text = r.weightValue!.toStringAsFixed(1);
     }
   }
 
@@ -146,6 +150,14 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
       if (v == null || v < 0 || v > 100000) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Steps must be between 0-100,000')),
+        );
+        return;
+      }
+    } else if (isWeight) {
+      final v = double.tryParse(_weightController.text.trim());
+      if (v == null || v < 2 || v > 500) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Weight must be between 2-500 kg')),
         );
         return;
       }
@@ -213,6 +225,19 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
           stepsGoal: 7500,
           valueNumeric: value.toDouble(),
           unitDisplay: 'steps',
+          readingTimestamp: _readingTime,
+          createdAt: DateTime.now(),
+        );
+      } else if (isWeight) {
+        final value = double.parse(_weightController.text.trim());
+        reading = HealthReading(
+          id: 0,
+          profileId: widget.profileId,
+          readingType: 'weight',
+          weightValue: value,
+          weightUnit: 'kg',
+          valueNumeric: value,
+          unitDisplay: 'kg',
           readingTimestamp: _readingTime,
           createdAt: DateTime.now(),
         );
@@ -374,6 +399,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     if (isGlucose) return l10n.glucoseReadingTitle;
     if (isSpo2) return 'SpO2 Reading';
     if (isSteps) return 'Steps Entry';
+    if (isWeight) return 'Weight Reading';
     return l10n.bpReadingTitle;
   }
 
@@ -385,6 +411,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     _pulseController.dispose();
     _spo2Controller.dispose();
     _stepsController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
@@ -433,6 +460,14 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
                 label: l10n.lastSteps,
                 suffix: 'steps',
                 hint: 'e.g. 5000',
+              ),
+            ] else if (isWeight) ...[
+              _inputField(
+                key: const Key('reading_weight_value'),
+                controller: _weightController,
+                label: 'Weight',
+                suffix: 'kg',
+                hint: 'e.g. 72.5',
               ),
             ] else ...[
               _inputField(
@@ -614,6 +649,8 @@ class _OcrResultBanner extends StatelessWidget {
                 ? 'HI (>600 mg/dL)'
                 : 'LO (<20 mg/dL)')
           : '${ocrResult.glucoseValue!.toStringAsFixed(0)} mg/dL';
+    } else if (deviceType == 'weight') {
+      valueText = '${ocrResult.weightValue!.toStringAsFixed(1)} kg';
     } else {
       valueText =
           '${ocrResult.systolic!.toStringAsFixed(0)} / ${ocrResult.diastolic!.toStringAsFixed(0)} mmHg'

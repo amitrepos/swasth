@@ -32,6 +32,10 @@ class HealthReading {
   final int? stepsCount;
   final int? stepsGoal;
 
+  // Weight fields
+  final double? weightValue;
+  final String? weightUnit;
+
   // Common fields
   final double valueNumeric;
   final String unitDisplay;
@@ -58,6 +62,8 @@ class HealthReading {
     this.spo2Unit,
     this.stepsCount,
     this.stepsGoal,
+    this.weightValue,
+    this.weightUnit,
     required this.valueNumeric,
     required this.unitDisplay,
     this.statusFlag,
@@ -66,6 +72,15 @@ class HealthReading {
     this.seq,
     required this.createdAt,
   });
+
+  static DateTime _parseUtc(dynamic val) {
+    if (val == null) return DateTime.now();
+    final dtStr = val.toString();
+    if (!dtStr.endsWith('Z') && !dtStr.contains('+')) {
+      return DateTime.parse('${dtStr}Z').toLocal();
+    }
+    return DateTime.parse(dtStr).toLocal();
+  }
 
   factory HealthReading.fromJson(Map<String, dynamic> json) {
     return HealthReading(
@@ -85,6 +100,8 @@ class HealthReading {
       spo2Unit: json['spo2_unit'],
       stepsCount: json['steps_count']?.toInt(),
       stepsGoal: json['steps_goal']?.toInt(),
+      weightValue: json['weight_value']?.toDouble(),
+      weightUnit: json['weight_unit'],
       // value_numeric can be null for reading types that don't produce a
       // single scalar (e.g. blood_pressure returns systolic/diastolic).
       // Previously this crashed fromJson and propagated as "error loading
@@ -93,11 +110,11 @@ class HealthReading {
       unitDisplay: json['unit_display'] ?? '',
       statusFlag: json['status_flag'],
       notes: json['notes'],
-      readingTimestamp: DateTime.parse(json['reading_timestamp']),
+      readingTimestamp: _parseUtc(json['reading_timestamp']),
       seq: json['seq'],
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.parse(json['reading_timestamp']),
+          ? _parseUtc(json['created_at'])
+          : _parseUtc(json['reading_timestamp']),
     );
   }
 
@@ -116,8 +133,10 @@ class HealthReading {
       'bp_status': bpStatus,
       'spo2_value': spo2Value,
       'spo2_unit': spo2Unit,
-      'steps_count': stepsCount,
+      'stepsCount': stepsCount,
       'steps_goal': stepsGoal,
+      'weight_value': weightValue,
+      'weight_unit': weightUnit,
       'value_numeric': valueNumeric,
       'unit_display': unitDisplay,
       'status_flag': statusFlag,
@@ -135,6 +154,8 @@ class HealthReading {
   String get displayValue {
     if (readingType == 'glucose') {
       return '${glucoseValue?.toStringAsFixed(1) ?? '-'} $unitDisplay';
+    } else if (readingType == 'weight') {
+      return '${weightValue?.toStringAsFixed(1) ?? '-'} $unitDisplay';
     } else {
       return '${systolic?.toStringAsFixed(0) ?? '-'}/${diastolic?.toStringAsFixed(0) ?? '-'} $unitDisplay';
     }
@@ -440,6 +461,14 @@ class HealthReadingService {
           diastolic: dia,
           pulse: pulse,
           rawText: 'Gemini: $sys/$dia mmHg${pulse != null ? ' ♥$pulse' : ''}',
+        );
+      } else if (deviceType == 'weight') {
+        final weight = (data['weight'] as num?)?.toDouble();
+        if (weight == null) return null;
+        return OcrResult(
+          readingType: 'weight',
+          weightValue: weight,
+          rawText: 'Gemini: $weight kg',
         );
       } else {
         final glucose = (data['glucose'] as num?)?.toDouble();
