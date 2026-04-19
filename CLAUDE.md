@@ -360,6 +360,12 @@ verified, downstream error much later. Three enforcement layers now:
 - `.githooks/pre-push` now also refuses a push if any branch commit
   has a `git patch-id` already on master (orphan-commit detection).
   Catches the "branched off a stale feature branch" failure mode.
+- `.githooks/pre-commit` (Gate 2) refuses any commit that changes
+  `backend/models.py` without a new Alembic migration in the same
+  commit. CI re-runs `alembic upgrade head` + `alembic check` against
+  ephemeral Postgres (`.github/workflows/migration-check.yml`). The
+  hook is the spec — do not duplicate the schema-change procedure in
+  prose. Escape hatch for genuine no-op edits: `SWASTH_NO_MIGRATION_NEEDED=1`.
 
 **Layer 2 — verification discipline (required, always):**
 - After ANY state-changing action, run an observable verification
@@ -436,6 +442,9 @@ After running an expert and getting a PASS verdict, write the marker:
 - If backend files changed, also deploy and restart:
   ```bash
   scp -i ~/.ssh/new-server-key backend/<changed_file>.py root@65.109.226.36:/var/www/swasth/backend/
+  # If migrations/ has new revisions, apply BEFORE restart so the new code
+  # never sees the old schema. alembic upgrade head is idempotent.
+  ssh -i ~/.ssh/new-server-key root@65.109.226.36 "cd /var/www/swasth/backend && alembic upgrade head"
   ssh -i ~/.ssh/new-server-key root@65.109.226.36 "kill \$(lsof -ti :8007); sleep 2; cd /var/www/swasth/backend && nohup python3 -B main.py > /var/log/swasth-backend.log 2>&1 &"
   ```
 

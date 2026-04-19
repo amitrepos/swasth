@@ -2289,3 +2289,139 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - 17:01:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_doctor_utils.py
   - 17:13:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
   - 17:15:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/prod.yml
+
+## 2026-04-19 — Adopt Alembic for backend schema migrations
+
+Closes the failure mode behind the 2026-04-19 weight-update blocker (PR #133
+added `weight_value` / `weight_unit` / `weight_value_enc` columns to
+`models.py` but they never reached prod because `Base.metadata.create_all()`
+silently ignores existing tables). All future schema changes ship as Alembic
+revisions enforced by a pre-commit hook + CI gate.
+
+### What changed
+- `backend/alembic.ini` — script_location, prepend_sys_path, sequential rev IDs.
+- `backend/migrations/env.py` — loads `DATABASE_URL` from `config.settings`,
+  imports `models` to register tables onto `Base.metadata`, runs with
+  `compare_server_default=True` so `alembic check` detects DEFAULT-value drift.
+- `backend/migrations/versions/0001_baseline.py` — empty revision establishing
+  the version-tracking row. Prod adopted via `alembic stamp 0001` (no DDL run).
+- `backend/migrations/versions/0002_weight_columns_and_default_drift.py`:
+  - ADD COLUMN `weight_value` (float), `weight_unit` (varchar), `weight_value_enc`
+    (text) on `health_readings` — all nullable, no backfill.
+  - ALTER COLUMN DEFAULTs:
+    - `profile_invites.access_level` → `'viewer'` (was `'editor'`, security)
+    - `doctor_patient_links.status` → `'pending_doctor_accept'` (was `'active'`, NMC)
+    - `users.timezone` → `'UTC'` (was `'Asia/Kolkata'`; UTC-at-rest doctrine)
+- `backend/models.py` — added `server_default=` to the 3 columns above so
+  `alembic check` sees them as the source of truth (silent client-side
+  `default=` is invisible to the DB and to `compare_server_default`).
+- `backend/requirements.txt` — added `alembic>=1.13.0`.
+- `.claude/scripts/check-migration-required.sh` — pre-commit Gate 2:
+  refuses commits that touch `backend/models.py` without a new
+  `backend/migrations/versions/*.py` staged. Escape: `SWASTH_NO_MIGRATION_NEEDED=1`.
+- `.githooks/pre-commit` — wired in Gate 2 between branch-hygiene and
+  reviewer-chain.
+- `.github/workflows/migration-check.yml` — bootstrap-then-stamp pattern
+  against ephemeral Postgres 16 service. Runs `alembic check` at head,
+  exercises `downgrade -1` then `upgrade head`, then re-checks.
+- `CLAUDE.md` — bullet under "Drift Prevention Protocol Layer 1"
+  describing the new hook (no procedural prose — the hook is the spec).
+  Deploy section now runs `alembic upgrade head` on the server before
+  the backend restart.
+
+### Local verification
+- `alembic history` → `<base> -> 0001 -> 0002 (head)`.
+- Bootstrapped Postgres test DB via `Base.metadata.create_all()`,
+  `alembic stamp head`, `alembic check` → "No new upgrade operations".
+- `alembic downgrade -1` → at 0001, weight columns gone, defaults reverted
+  to `'editor'` / `'active'` / `'Asia/Kolkata'` (verified via
+  `information_schema.columns`).
+- `alembic upgrade head` → at 0002, weight columns present, defaults
+  set to `'viewer'` / `'pending_doctor_accept'` / `'UTC'`.
+- `alembic check` again → clean.
+- `pytest -x` → 701 passed (server_default additions did not regress any test).
+
+### One-time prod cutover (manual, must run BEFORE first deploy of this PR)
+```
+ssh root@65.109.226.36
+cd /var/www/swasth/backend
+pip install 'alembic>=1.13.0'
+alembic stamp 0001
+alembic upgrade head
+# verify:
+psql -d swasth_db -c "\d health_readings" | grep weight
+psql -d swasth_db -c "SELECT column_default FROM information_schema.columns WHERE table_name='users' AND column_name='timezone';"
+```
+After this, deploys run `alembic upgrade head` automatically (idempotent).
+  - 17:27:04 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+
+## 2026-04-19 — Error-handling overhaul (Daniel's 3-PR plan, MERGED)
+
+Three-PR sweep motivated by Sunita (55yo Bihar patient persona) seeing
+`"SocketException: Failed host lookup: 'swasth.app'"` on every rural-network
+hiccup. Daniel's senior review prescribed the scope; 8 expert reviewers
+passed each PR before merge.
+
+**#139 — Backend hardening**
+- Global FastAPI exception handlers (IntegrityError → 409, SQLAlchemyError → 503,
+  Exception → 500) with HTTPException passthrough
+- `encryption_service.decrypt()` guarded against InvalidTag/binascii.Error/
+  UnicodeDecodeError — legacy rows no longer 500 the `/readings` endpoint
+- `/forgot-password` user enumeration closed (byte-identical response for
+  known + unknown emails)
+- `main.py` startup `print()` → logger
+- Backend suite 701 → 703
+
+**#140 — Flutter typed ApiException + ErrorMapper**
+- `api_exception.dart` sealed hierarchy (Network / Unauthorized / Server /
+  Validation)
+- `error_mapper.dart` central translator + app-wide 401 interceptor
+- `api_client.dart` gained `send()` / `sendJsonObject()` / `sendJsonList()`
+  helpers
+- 7 services migrated, 22 screens migrated, 12 double-wraps eliminated
+- 4 new l10n keys (errNetwork / errSessionExpired / errServer / errGeneric)
+  in EN + HI
+- Bug caught mid-impl: login 401 ≠ session-expired → ValidationException rethrow
+- Flutter suite 221 → 251
+
+**#141 — Follow-ups (closes all non-blocking review asks from #139 and #140)**
+- Gemini Vision error sanitization (`routes_health.py:1281` no longer leaks
+  `str(e)` → now 502/503 with generic detail, full trace logged server-side)
+- `/forgot-password` SMTP via BackgroundTasks (closes PR #139's A07 timing
+  side-channel — known/unknown paths now equal wall-clock)
+- `print()` → logger across email_service / twilio_service / report_service
+  (10 sites)
+- `ApiClient.errorDetail` 422 pydantic-list-detail guard
+- `ErrorMapper.showSnack`: 6s duration, SemanticsService.announce for
+  TalkBack, `UnauthorizedException` → non-dismissible modal the user
+  acknowledges before storage clear + nav
+- `bootstrap.dart` dependency-free bilingual error screen on init failure
+- Hindi word swaps per Sunita: "सेशन" → "खाता", dropped "सर्वर"
+- Backend suite → 703 sustained, Flutter → 256
+
+**PR 4 tracker** (residual nits, none blocking):
+- Style ErrorMapper's Login button as primary action (Aditya)
+- Device-specific parse-image error text (Dr. Rajesh)
+- Bootstrap widget test + `_send_password_reset_email` unit test +
+  `barrierDismissible: false` assertion test (Priya)
+- X-Request-ID header for grievance traceability (Legal)
+- Draft preservation on mid-form 401 (Dr. Rajesh from PR #140)
+
+**Outcome:** Typed exceptions end-to-end, zero raw-exception leaks to patients,
+DPDPA-compliant error messaging, timing parity on account-enumeration surfaces,
+fallback screens on catastrophic init paths, TalkBack-accessible error
+announcements, localized messages written for 55yo rural patient comprehension.
+  - 17:33:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 17:36:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/COMPETITIVE_ANALYSIS_2026.md
+  - 17:39:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/FOUNDER_PITCH_KIT_2026.md
+  - 17:40:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/FOUNDER_KIT_CHECKLIST.md
+  - 18:07:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 18:07:26 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/INDIA_TRIP_APR_MAY_2026.md
+  - 18:07:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 18:07:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/models.py
+  - 18:08:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/ONE_PAGER_2026.md
+  - 18:08:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/migrations/README.md
+  - 18:09:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/FOUNDER_PITCH_KIT_2026.md
+  - 18:09:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/FOUNDER_KIT_CHECKLIST.md
+  - 18:09:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/FOUNDER_KIT_CHECKLIST.md
+  - 18:09:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/FOUNDER_KIT_CHECKLIST.md
