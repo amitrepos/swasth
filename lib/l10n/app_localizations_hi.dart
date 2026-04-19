@@ -65,11 +65,11 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get errSessionExpired =>
-      'आपका सेशन खत्म हो गया है। कृपया फिर से लॉग इन करें।';
+      'आपका खाता फिर से खोलना होगा। कृपया लॉग इन करें।';
 
   @override
   String get errServer =>
-      'हमारे सर्वर में अभी कुछ दिक्कत है। कृपया थोड़ी देर बाद फिर कोशिश करें।';
+      'हमारी तरफ से अभी कुछ दिक्कत है। कृपया थोड़ी देर बाद फिर कोशिश करें।';
 
   @override
   String get errGeneric => 'कुछ गड़बड़ हुई। कृपया फिर कोशिश करें।';

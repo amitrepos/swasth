@@ -31,10 +31,21 @@ class ApiClient {
 
   /// Extracts the `detail` field from a non-success response body.
   /// Falls back to [fallback] if the field is missing or the body is malformed.
+  ///
+  /// FastAPI returns `detail` as a LIST on 422 pydantic validation errors
+  /// (`[{loc, msg, type}, ...]`), not as a string. We don't try to
+  /// reconstruct a user-readable message from that structure here — the
+  /// screen layer via [ErrorMapper] falls through to the generic error
+  /// string instead. Don't echo raw pydantic ValidationError dicts to
+  /// users; they read "field required; loc=(body,email)" which is
+  /// worse than "Something went wrong".
   static String errorDetail(http.Response response, String fallback) {
     try {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      return (body['detail'] as String?) ?? fallback;
+      final body = jsonDecode(response.body);
+      if (body is! Map<String, dynamic>) return fallback;
+      final detail = body['detail'];
+      if (detail is String) return detail;
+      return fallback;
     } catch (_) {
       return fallback;
     }

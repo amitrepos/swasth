@@ -1,11 +1,11 @@
 import 'dart:io'
     show HttpClient, HttpOverrides, SecurityContext, X509Certificate;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'config/flavor.dart';
@@ -38,6 +38,13 @@ class _PilotHttpOverrides extends HttpOverrides {
 /// Shared app startup. Each flavor's entry point calls this with its Flavor
 /// value — encodes the server URL + display name at compile time, removing the
 /// need for `--dart-define=SERVER_HOST=...` at build time.
+///
+/// Wraps the bootstrap sequence in a try/catch so a failure in early init
+/// (secure storage unavailable, notification permission denied on some Android
+/// variants, dotenv corrupted asset) doesn't crash the app with a native OS
+/// dialog before any Flutter surface has rendered — the user would see a
+/// black screen and close the app. We instead render a minimal branded error
+/// screen with a retry affordance.
 Future<void> bootstrap(Flavor flavor) async {
   WidgetsFlutterBinding.ensureInitialized();
   Flavor.set(flavor);
@@ -54,9 +61,19 @@ Future<void> bootstrap(Flavor flavor) async {
     ),
   );
 
-  // .env remains an optional override for local dev (dotenv.env['SERVER_HOST']
-  // overrides the flavor's serverHost if set). Asset-bundling-safe: if .env is
-  // missing, load() throws, so we swallow that and continue with flavor default.
+  try {
+    await _init(flavor);
+  } catch (e, stack) {
+    debugPrint('bootstrap failed: $e\n$stack');
+    runApp(_BootstrapErrorApp(onRetry: () => bootstrap(flavor)));
+  }
+}
+
+Future<void> _init(Flavor flavor) async {
+  // .env is a **debug-only** override for local dev (e.g. SERVER_HOST pointing
+  // at a local backend). Release builds ignore .env — see AppConfig.serverHost
+  // for rationale. The file is still loaded here so other dotenv-backed
+  // values (if any) stay available; only the SERVER_HOST lookup is gated.
   try {
     await dotenv.load(fileName: '.env');
   } catch (_) {
@@ -74,4 +91,63 @@ Future<void> bootstrap(Flavor flavor) async {
       child: const SwasthApp(),
     ),
   );
+}
+
+/// Minimal, localization-free fallback app shown when bootstrap throws before
+/// the main app (and its AppLocalizations) can load. Keep this widget
+/// dependency-free — no Riverpod, no l10n, no theme extensions — because
+/// whatever broke bootstrap probably affects one of those too.
+class _BootstrapErrorApp extends StatelessWidget {
+  const _BootstrapErrorApp({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.favorite, size: 64, color: Colors.redAccent),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Swasth',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    "We couldn't start the app.\n"
+                    "कुछ गड़बड़ हुई. ऐप नहीं खुल पाया.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: onRetry,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      child: Text(
+                        'Try again / फिर कोशिश करें',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

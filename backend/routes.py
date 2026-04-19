@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi import Limiter
@@ -128,18 +128,41 @@ def get_current_user_info(user: models.User = Depends(get_current_user)):
     return user
 
 
+def _send_password_reset_email(email: str, otp: str) -> None:
+    """Background worker — dispatches the OTP email after the HTTP handler
+    has already returned its generic response. Pulled out of the request
+    path so that a registered account doesn't spend a 100–500ms SMTP
+    round-trip the enumeration attacker can time. Failures log-only."""
+    try:
+        if not email_service.send_otp_email(email, otp):
+            # Don't leak email-send failures to the client (would confirm
+            # the account exists). Log for ops; the user can retry.
+            logger.error("forgot_password: send_otp_email failed for registered user")
+    except Exception:
+        logger.exception("forgot_password: unexpected exception in background email send")
+
+
 @router.post("/forgot-password")
 @limiter.limit("3/minute")
-def request_password_reset(request: Request, body: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+def request_password_reset(
+    request: Request,
+    body: schemas.ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """Request a password reset OTP.
 
     Always returns the same response whether the email is registered or not.
     Returning a different response for unknown emails (a 404 "User does not
     exist") lets an attacker enumerate accounts — a DPDPA-relevant leak of
-    personal data and an OWASP-recommended fix. If the email is registered,
-    we generate an OTP and send it; if not, we silently do nothing. The user
-    with a typo will not receive an email but will not be told their address
-    is unknown.
+    personal data and an OWASP-recommended fix.
+
+    The actual OTP email send is scheduled as a FastAPI BackgroundTask so
+    the endpoint returns in the same ~5ms (DB query only) regardless of
+    whether the email is registered. Without this, an attacker could time
+    requests to distinguish "account exists" (path includes SMTP round-trip)
+    from "account doesn't exist" (path is instant) — the timing side-channel
+    Security flagged in PR #139's CONDITIONAL PASS.
     """
     body.email = body.email.strip().lower()
     generic_response = {
@@ -149,8 +172,6 @@ def request_password_reset(request: Request, body: schemas.ForgotPasswordRequest
 
     user = db.query(models.User).filter(models.User.email == body.email).first()
     if not user:
-        # Deliberately identical response, timing-comparable work skipped.
-        # Rate limiter (3/min) bounds enumeration cost even without timing parity.
         logger.info("forgot_password: unknown email attempt")
         return generic_response
 
@@ -159,10 +180,9 @@ def request_password_reset(request: Request, body: schemas.ForgotPasswordRequest
     db.add(models.PasswordResetOTP(email=body.email, otp=otp, expires_at=expires_at))
     db.commit()
 
-    if not email_service.send_otp_email(body.email, otp):
-        # Don't leak email-send failures to the client (would still confirm
-        # the account exists). Log for ops; the user can retry.
-        logger.error("forgot_password: send_otp_email failed for registered user")
+    # Schedule the SMTP send to run AFTER we respond. Both the known-email
+    # and unknown-email paths now take the same wall-clock time.
+    background_tasks.add_task(_send_password_reset_email, body.email, otp)
 
     return generic_response
 

@@ -1,3 +1,4 @@
+import logging
 import smtplib
 import secrets
 from email.mime.text import MIMEText
@@ -5,6 +6,8 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import Optional
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class BrevoEmailService:
@@ -117,8 +120,8 @@ class BrevoEmailService:
             
             return True
             
-        except Exception as e:
-            print(f"Error sending email: {e}")
+        except Exception:
+            logger.error("Error sending OTP email", exc_info=True)
             return False
     
     def send_welcome_email(self, recipient_email: str, user_name: str) -> bool:
@@ -202,8 +205,8 @@ class BrevoEmailService:
             
             return True
             
-        except Exception as e:
-            print(f"Error sending welcome email: {e}")
+        except Exception:
+            logger.error("Error sending welcome email", exc_info=True)
             return False
 
 
@@ -385,8 +388,8 @@ class BrevoEmailService:
 
             return True
 
-        except Exception as e:
-            print(f"Error sending invite email: {e}")
+        except Exception:
+            logger.error("Error sending invite email", exc_info=True)
             return False
 
     def send_critical_alert_email(
@@ -447,8 +450,12 @@ class BrevoEmailService:
                 server.login(self.smtp_login, self.sender_password)
                 server.send_message(msg)
             return True
-        except Exception as e:
-            print(f"Failed to send critical alert email to {recipient_email}: {e}")
+        except Exception:
+            # Don't include recipient_email in the log message directly —
+            # DPDPA § 7(a) permits processing for system administration but
+            # we minimize PHI-adjacent data in log streams. exc_info provides
+            # enough forensic context.
+            logger.error("Failed to send critical alert email", exc_info=True)
             return False
 
 

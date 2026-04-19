@@ -201,26 +201,46 @@ class TestParseImageAiServiceFailures:
 
     @patch("ai_service.generate_vision_insight")
     @patch("routes_health.settings")
-    def test_ai_returns_malformed_json(self, mock_settings, mock_ai, client, test_user, auth_headers):
-        # Regex matches { ... } but JSON.loads blows up → JSONDecodeError branch
+    def test_ai_returns_malformed_json_maps_to_502(
+        self, mock_settings, mock_ai, client, test_user, auth_headers
+    ):
+        # Regex matches { ... } but JSON.loads blows up → 502 bad gateway
+        # with a generic user-facing message. Previously this returned HTTP
+        # 200 with {"error": "Gemini returned an unexpected format"} which
+        # leaked the upstream vendor name to patients.
         mock_settings.GEMINI_API_KEY = "fake"
         mock_settings.DEEPSEEK_API_KEY = None
         mock_settings.REQUIRE_HTTPS = False
-        mock_ai.return_value = '{glucose: not_json}'
+        mock_ai.return_value = "{glucose: not_json}"
         resp = _post(client, auth_headers, "glucose")
-        assert resp.status_code == 200
-        assert "unexpected format" in resp.json()["error"].lower()
+        assert resp.status_code == 502
+        detail = resp.json()["detail"].lower()
+        # Must NOT leak upstream vendor name
+        assert "gemini" not in detail
+        # Must give patient an actionable fallback
+        assert "manually" in detail or "try again" in detail
 
     @patch("ai_service.generate_vision_insight")
     @patch("routes_health.settings")
-    def test_ai_service_raises(self, mock_settings, mock_ai, client, test_user, auth_headers):
+    def test_ai_service_raises_maps_to_503_sanitized(
+        self, mock_settings, mock_ai, client, test_user, auth_headers
+    ):
+        # Previously returned HTTP 200 with `{"error": f"Gemini Vision
+        # failed: {str(e)}"}` — str(e) could leak API endpoint URLs, auth
+        # header fragments, or rate-limit quota strings. Now returns 503
+        # with a sanitized message.
         mock_settings.GEMINI_API_KEY = "fake"
         mock_settings.DEEPSEEK_API_KEY = None
         mock_settings.REQUIRE_HTTPS = False
-        mock_ai.side_effect = RuntimeError("network blew up")
+        mock_ai.side_effect = RuntimeError("network blew up at example.com/v1/models")
         resp = _post(client, auth_headers, "glucose")
-        assert resp.status_code == 200
-        assert "gemini vision failed" in resp.json()["error"].lower()
+        assert resp.status_code == 503
+        detail = resp.json()["detail"].lower()
+        # Exception message must NOT reach the user
+        assert "network blew up" not in detail
+        assert "example.com" not in detail
+        assert "gemini" not in detail
+        assert "runtimeerror" not in detail
 
 
 class TestParseImageGlucoseValidation:

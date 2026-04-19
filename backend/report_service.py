@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, date
 import pytz
 from typing import Optional, List
@@ -11,6 +12,8 @@ from models import (
 from health_utils import classify_bp, classify_glucose
 from twilio_service import whatsapp_service
 import ai_report_service
+
+logger = logging.getLogger(__name__)
 
 def format_report_message(user: User, profiles_data: list) -> str:
     """Format the cumulative weekly report message for a user."""
@@ -185,7 +188,9 @@ def trigger_single_user_report(db: Session, user: User, trigger_type: ReportTrig
 
     except Exception as e:
         error_msg = str(e)
-        print(f"Error generating report for user {user.id}: {error_msg}")
+        logger.error(
+            "Error generating report for user %s", user.id, exc_info=True
+        )
         gen_log.status = ReportGenerationStatus.FAILED
         gen_log.error_message = error_msg
         db.commit()
@@ -217,14 +222,18 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
             for user in users:
                 try:
                     trigger_single_user_report(db, user, trigger_type=trigger_type)
-                except Exception as user_e:
-                    print(f"Failed to process user {user.id} in batch: {user_e}")
+                except Exception:
+                    logger.error(
+                        "Failed to process user %s in batch",
+                        user.id,
+                        exc_info=True,
+                    )
             
             offset += batch_size
             time.sleep(1) # Small pause between batches to breathe
             
-    except Exception as e:
-        print(f"Error in global send_weekly_reports task: {e}")
+    except Exception:
+        logger.error("Error in global send_weekly_reports task", exc_info=True)
     finally:
         if managed_session:
             db.close()

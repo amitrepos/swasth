@@ -151,36 +151,110 @@ void main() {
       expect(find.text(en.errNetwork), findsOneWidget);
     });
 
-    testWidgets('UnauthorizedException clears session and routes to /login', (
-      tester,
-    ) async {
-      // Seed a token so we can assert it's cleared after showSnack.
-      await StorageService().saveToken('seed-token');
-      expect(await StorageService().getToken(), 'seed-token');
+    testWidgets(
+      'UnauthorizedException shows modal, clears session on OK, routes to /login',
+      (tester) async {
+        // Seed a token so we can assert it's cleared after showSnack.
+        await StorageService().saveToken('seed-token');
+        expect(await StorageService().getToken(), 'seed-token');
 
-      await _pumpHarness(
-        tester,
-        child: Scaffold(
-          body: Builder(
-            builder: (ctx) => TextButton(
-              onPressed: () =>
-                  ErrorMapper.showSnack(ctx, const UnauthorizedException()),
-              child: const Text('TAP'),
+        await _pumpHarness(
+          tester,
+          child: Scaffold(
+            body: Builder(
+              builder: (ctx) => TextButton(
+                onPressed: () =>
+                    ErrorMapper.showSnack(ctx, const UnauthorizedException()),
+                child: const Text('TAP'),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.tap(find.text('TAP'));
-      // Drain: snackbar frame + pushNamedAndRemoveUntil + storage async.
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
+        );
+        await tester.tap(find.text('TAP'));
+        // Dialog animation + async dispatch
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
 
-      // Token must be wiped.
-      expect(await StorageService().getToken(), isNull);
-      // Login route must be the sole surviving screen.
-      expect(find.text('LOGIN-SCREEN'), findsOneWidget);
-    });
+        // Modal is showing — NOT yet navigated away. Token still present
+        // because we haven't acknowledged.
+        final en = await AppLocalizations.delegate.load(const Locale('en'));
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text(en.errSessionExpired), findsAtLeast(1));
+        expect(await StorageService().getToken(), 'seed-token');
+        expect(find.text('LOGIN-SCREEN'), findsNothing);
+
+        // User taps "Login" button on the dialog.
+        await tester.tap(find.widgetWithText(TextButton, en.loginButton));
+        // Drain: dialog dismiss + clearAll + pushNamedAndRemoveUntil.
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+
+        // Now token is wiped and login screen is the sole surviving route.
+        expect(await StorageService().getToken(), isNull);
+        expect(find.text('LOGIN-SCREEN'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'concurrent UnauthorizedExceptions do not crash or double-nav',
+      (tester) async {
+        // Priya's risk path: two API calls in flight both return 401
+        // (e.g. home screen fans out 2 parallel requests). Both fire
+        // ErrorMapper.showSnack, both try to clearAll + nav. Expected:
+        // no crash, token cleared, single login screen present.
+        await StorageService().saveToken('seed-token');
+
+        await _pumpHarness(
+          tester,
+          child: Scaffold(
+            body: Builder(
+              builder: (ctx) => TextButton(
+                onPressed: () async {
+                  // Fire both without awaiting — simulates two in-flight
+                  // requests both surfacing 401 at the same microtask tick.
+                  final a = ErrorMapper.showSnack(
+                    ctx,
+                    const UnauthorizedException(),
+                  );
+                  final b = ErrorMapper.showSnack(
+                    ctx,
+                    const UnauthorizedException(),
+                  );
+                  await Future.wait([a, b]);
+                },
+                child: const Text('TAP'),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('TAP'));
+        // Drain modal + acknowledge + nav
+        final en = await AppLocalizations.delegate.load(const Locale('en'));
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        // Dismiss every modal the concurrent calls raised. showDialog doesn't
+        // dedupe; we just make sure the acknowledge cycle drains cleanly.
+        while (find.byType(AlertDialog).evaluate().isNotEmpty) {
+          await tester.tap(
+            find.widgetWithText(TextButton, en.loginButton).first,
+          );
+          for (var i = 0; i < 5; i++) {
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+        }
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+
+        expect(tester.takeException(), isNull);
+        expect(await StorageService().getToken(), isNull);
+        expect(find.text('LOGIN-SCREEN'), findsOneWidget);
+      },
+    );
 
     testWidgets('non-401 error does NOT navigate or clear token', (
       tester,
