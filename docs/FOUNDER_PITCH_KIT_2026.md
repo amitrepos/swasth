@@ -6,6 +6,64 @@
 
 ---
 
+## Section 1 — Cover + One-Line Pitch
+
+> **Purpose:** The absolute opening. Used as the first page of every printed artifact, first slide of every deck, first sentence of every introduction.
+
+---
+
+### The cover page (for printed kit, PDF share, deck)
+
+```
+┌────────────────────────────────────────┐
+│                                        │
+│             S W A S T H                │
+│                                        │
+│   Chronic care, one WhatsApp photo.    │
+│                                        │
+│                                        │
+│   For elderly patients in Tier 2-3     │
+│   India whose children live abroad.    │
+│                                        │
+│                                        │
+│   Amit Mishra | +91-XXXXX-XXXXX        │
+│   amit@swasth.app | health.swasth.app  │
+│   April 2026                           │
+│                                        │
+└────────────────────────────────────────┘
+```
+
+---
+
+### The memorized 10-second opener (every introduction)
+
+> *"Swasth is chronic-care monitoring for Tier 2-3 India — daily logs from home via WhatsApp, weekly reports to NRI children who pay."*
+
+**Hindi version (Tier 2-3 audiences — open in this):**
+> *"Swasth ek chronic-care app hai Tier 2-3 India ke liye — daily reading WhatsApp pe, weekly report NRI bacchon ko, wo pay karte hain."*
+
+---
+
+### The tagline (collateral, signatures, web)
+
+> **"You are not alone managing your health. You have a team."**
+>
+> **"Aap akele nahi ho. Aapka poora team hai aapke saath."**
+
+From Amit's own words (2026-04-19 interview). Use on: website hero, email signature, business card back, pitch deck closing slide.
+
+---
+
+### The one-sentence test (do this before every meeting)
+
+Confirm you can say this in one breath, without looking:
+
+> *"Swasth helps elderly patients in Tier 2-3 India log their BP and sugar daily via WhatsApp, so their doctors and their kids abroad can see what's happening before it becomes an emergency."*
+
+If you stumble — practice 10 more times. This is the first 15 seconds of every meeting.
+
+---
+
 ## Section 2 — Personal story (FINAL — approved 2026-04-19)
 
 > **Built from:** 7 interview prompts (2.A–2.G) answered by Amit in session. All three length versions below use the SAME core narrative. Use the one that fits audience + time.
@@ -73,6 +131,70 @@
 4. **"She has a team."** — tagline candidate (save this)
 5. **"This isn't a resume line. It's the thing."** — mission proof
 6. **"Peace of mind."** — the NRI-daughter hook
+
+---
+
+## Section 3 — Two Patient Stories (use in every emotional pitch)
+
+> **Purpose:** Concrete narratives that make the problem vivid. Investors, advisors, and relatives remember people, not features. Lead with these when a meeting opens on feeling, not facts.
+
+---
+
+### Story 1: Chachi in Ranchi (the Bihar parent)
+
+**Before Swasth:**
+Sushila Devi is 65. Lives with her husband in a two-bedroom house in Ranchi. Type 2 diabetes for 11 years, hypertension for 6. Her Omron BP machine sits on the kitchen counter — she uses it *"when she remembers."* Last reading was 148/92; nobody wrote it down.
+
+Her doctor, Dr. Prasad, sees her every 3-4 months. Each visit he asks, *"Kaise hain aap?"* She says, *"Theek hoon."* In-clinic BP reads fine — white-coat calm. Sugar comes back 210. He adjusts her medicine. She goes home.
+
+Her son Rajesh lives in London. He calls every Sunday. He asks, *"Tabiyat kaisi hai Maa?"* She says, *"Sab theek hai beta."* He believes her.
+
+**The drift (six months):** Morning BP creeps from 130/80 → 138/85 → 145/90 → 150/95. Nobody sees the pattern — there's no chart, just scattered readings nobody added up. One afternoon she collapses in the kitchen. Rajesh gets a 3 AM WhatsApp voice note. ICU. Stroke.
+
+**After Swasth:**
+Same house, same BP machine, same son in London. Every morning Sushila takes the reading, snaps a photo of the machine display, sends it to the WhatsApp number her daughter-in-law saved as *"Swasth."* In 8 seconds she gets a Hindi reply: *"Logged: 138/85 at 7:45 AM. Reading slightly raised. Kaise feel ho raha hai?"*
+
+Every Sunday evening Rajesh's phone in London buzzes: *"Maa's week: BP averaged 136/83, down 2 points from last week. Sugar averaged 142 pre-meal. Walked 4 out of 7 days. No missed medications."* He calls her. *"Maa, achha kar rahi ho. Walking continue rakhna."* She smiles. She feels seen.
+
+**The saved moment:** Three months in, the system flags: *"Sushila's BP has been rising for 10 days. 5-day average: 152/97. Doctor consultation recommended this week."* Rajesh books her appointment with Dr. Prasad. Medicine adjusted. The stroke that would have happened in month six — doesn't.
+
+---
+
+### Story 2: Meera in London (the NRI daughter)
+
+**Before Swasth:**
+Meera is 38, a product manager at a London bank. Her mother Kamla in Patna is 68, diabetic, lives alone since Papa passed. Meera calls twice a week. Every call starts with *"Sab theek hai na Mummy?"* and ends with Meera vaguely worried.
+
+She has tried everything. Remote Practo consultations — Mummy never shows up, *"kal jaana."* Her brother in Delhi checking in — can't come every weekend. A home-care service — Rs 4,500/month, but they only do emergency response. Nothing gives her daily visibility. Nothing tells her whether today is a fine day or a drift day.
+
+At 2 AM every few months she wakes up to her phone ringing. Her brother. Something happened. She books the next flight to Delhi. Nine hours in the air wondering if she'll be on time.
+
+**After Swasth:**
+Kamla's primary tool is still WhatsApp. She photos her BP machine daily; Swasth logs it. Sundays at 7 PM IST, Meera's phone buzzes in London with a 3-panel chart, 2-sentence summary, and a color.
+
+*"Mummy: BP average 128/82 this week (stable). Sugar 138 pre-meal (improving). Missed 1 dose Tuesday. Walking: 5 days. Green week."*
+
+Meera doesn't ask *"Sab theek hai na?"* anymore. She says, *"Mummy, walking zyada kar rahi ho — chart dekhi. Proud of you."* Her mother feels known, not monitored.
+
+Meera pays Rs 800/month. She says it's the best money she spends.
+
+---
+
+### Why these two stories together
+
+- **Story 1** gives the doctor / Bihar relative the *patient* perspective — they see their own mother in Sushila Devi.
+- **Story 2** gives the NRI diaspora the *payer* perspective — they see themselves in Meera.
+- Together: the distribution loop is visible. Patient gets watched. Daughter gets peace. Doctor gets clean data. Everyone wins. That's the business model in narrative form.
+
+---
+
+### Delivery notes
+
+- **Tell Story 1 in Hindi** to Tier-2 audiences. Use Sushila's name, not "the patient."
+- **Tell Story 2 in English** to NRI audiences. Use Meera's name.
+- **Pause after "ICU. Stroke."** — let it land. Then shift tone for "After Swasth."
+- **Tell one, not both**, if the meeting is tight.
+- **Composite is fine** — these are synthesized from real conversations. Don't claim Sushila or Meera are literal current users. Frame as: *"This is the story we keep hearing."*
 
 ---
 
@@ -144,6 +266,106 @@ Save to `docs/assets/pitch_kit/pitch_whatsapp_01.png` through `06.png`.
 - **Delhi/AIIMS academic advisors:** Lead with clinical validation first, reveal WhatsApp as the mechanism.
 
 For **all Patna doctors, all relatives, all NRI diaspora** — lead with WhatsApp. Every time.
+
+---
+
+## Section 9 — Three Asks (pick the right one before you walk in)
+
+> **Rule:** Every meeting ends with ONE specific ask. Vague asks ("stay in touch", "think about it") are the enemy. Choose the right ask for the audience before you walk in.
+
+---
+
+### Ask 1 — The Doctor (Patna, Tier-2 chamber)
+
+**Small version (end of 15-min meeting):**
+> *"Sir, ek specific request — 3 aise patients jinhe aap personally jaante hain, jo Type 2 diabetic ya BP ke hain. Bas unke number de dijiye, main direct baat karunga. 2 hafte baad aapko WhatsApp report bhejunga. Aapko kuch bhi nahi karna."*
+
+**Medium (interested doctor):**
+> Small + *"Aur sir — agar aapka time allow kare, hum advisor doctors ko Rs 5,000 per meeting ya per patient honorarium dete hain. Aap bataiye kaise structure kar sakte hain."*
+
+**Big (enthusiastic doctor, 30+ min meeting):**
+> Medium + *"Agar aap advisor board pe join karna chahen — Rs 25,000-50,000 per year, 1 call per month, deck pe naam — hum LOI bhej sakte hain."*
+
+**Follow-up:** WhatsApp within 24 hours. Silence for 7 days. One gentle ping day 8. No chasing after.
+
+---
+
+### Ask 2 — The Relative (Bihar family, Patna/Bettiah)
+
+**Small (one specific intro):**
+> *"[Mamaji / Chachaji / Didi], aap Dr. [specific name] ko jaante hain na? Agar ek WhatsApp message bhej dein ki 'mera bhanja/bhai mil na chahta hai, 15 minute mein' — toh main baaki handle kar lunga. Aapko kuch karna nahi."*
+
+**Medium (supportive relative):**
+> Small + *"Aur agar aap ke contacts mein koi aur doctor hain Patna mein, unka naam bhi bata dijiye — main aapki taraf se nahi, apna introduction karke milunga."*
+
+**Big (relative wanting to help more):**
+> Medium + *"Agar aap kisi NRI family ko jaante hain — jinke parents Patna/Ranchi mein rehte hain — un se bhi main baat karunga. Aap unka WhatsApp share kar dein."*
+
+**Follow-up:** One-line status update every 10 days for 3 months. This **breaks the "Amit drops things" pattern** — which is the single most important relationship investment you can make.
+
+---
+
+### Ask 3 — The Advisor (Delhi AIIMS / Max / Fortis senior)
+
+**Small (first meeting, no commit):**
+> *"Sir, I'm not asking for anything today — I'd like to come back in 2 weeks after my Patna trip with data, and see if you'd be comfortable being a clinical advisor. Is that OK?"*
+
+**Medium (warm advisor, ready to move):**
+> *"Sir, we're offering a formal advisor role — Rs 25,000-50,000 per year honorarium, one 45-minute call per month, quarterly in-person if you're willing, name on our deck and communications. LOI explicitly carves out clinical liability. 30 days notice exit, no drama. Would that work for you?"*
+
+**Big (advisor wanting a stake):**
+> Medium + *"We can also do a small equity grant — 0.1-0.25% vesting over 2 years — in addition to honorarium, depending on your commitment level."*
+
+**Follow-up:** LOI within 48 hours. Monthly call scheduled. Never let an advisor go >30 days without hearing from you.
+
+---
+
+### Ask 4 — The NRI Diaspora (Delhi, 45-min coffee)
+
+**Small (informational first meeting):**
+> *"If I told you the first month is completely free, would you try Swasth with your mother/father this week?"*
+
+**Medium (interested NRI):**
+> Small + *"We set up the WhatsApp flow for her. You and I both see the readings. Weekly summary every Sunday. If she or you don't see value in 30 days — cancel, no questions, export your data."*
+
+**Big (evangelist NRI with wide network):**
+> Medium + *"If it works for your mother, would you introduce 2-3 other NRI families you know with parents in Bihar/UP? Same first-month-free for them."*
+
+**Follow-up:** Onboard the parent within 48 hours of the yes. First weekly report by next Sunday. Keep the NRI in the loop on everything — they are the payer, treat them like a customer from day 1.
+
+---
+
+### Ask 5 — The Bangalore KOL (tech-fluent doctor)
+
+**Small:**
+> *"Sir, would you experiment with this app for 2-3 of your own patients for a month, and give me brutal feedback on what breaks?"*
+
+**Medium:**
+> Small + *"If you see value, we'd love to list you as a founding clinical advisor — Delhi-level honorarium terms. You'd shape the product direction for our Tier 2-3 rollout."*
+
+---
+
+### What NEVER to ask (any audience)
+
+- ❌ **"Just stay in touch"** — vague, nothing happens
+- ❌ **"Think about it and let me know"** — nothing ever comes back
+- ❌ **"Would you invest?"** — never in a first meeting
+- ❌ **"Can you hire someone at your hospital to test this?"** — procurement spot they don't want
+- ❌ **"Would you endorse us publicly?"** — too big, makes them nervous
+- ❌ **"Can we do a case study?"** — premature until results exist
+
+---
+
+### The golden rule
+
+> **Small. Specific. Time-boxed. Easy exit.**
+
+- **Small:** 3 patients, not 30. 15 minutes, not an hour. Rs 5K, not an equity negotiation.
+- **Specific:** Dr. X by name, not "any doctor." 2 weeks, not "some time."
+- **Time-boxed:** 2-week trial. 30 days money-back. 45-minute chamber visit.
+- **Easy exit:** *"If it doesn't land, we stop."* *"30 days notice, no clawback."* *"Cancel anytime."*
+
+If any of the four is missing, the ask won't land.
 
 ---
 
