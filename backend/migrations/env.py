@@ -26,7 +26,14 @@ from database import Base  # noqa: E402
 import models  # noqa: E402, F401  — registers tables onto Base.metadata
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Escape `%` as `%%` because Alembic's config object uses Python's
+# configparser internally, which treats `%` as interpolation syntax.
+# Without this, a URL like `postgresql://user:pa%40ss@host/db`
+# (containing a URL-encoded `@` or any other %xx) crashes with
+# `ValueError: invalid interpolation syntax`.
+config.set_main_option(
+    "sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%")
+)
 
 target_metadata = Base.metadata
 

@@ -2425,3 +2425,62 @@ announcements, localized messages written for 55yo rural patient comprehension.
   - 18:09:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/FOUNDER_KIT_CHECKLIST.md
   - 18:09:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/FOUNDER_KIT_CHECKLIST.md
   - 18:09:27 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/FOUNDER_KIT_CHECKLIST.md
+
+## 2026-04-19 — Alembic prod bootstrap (PR #144 follow-up)
+
+PR #144 shipped Alembic but never actually ran on prod. Two reasons surfaced
+during post-merge verification:
+
+1. **`backend/migrations/env.py` `%` interpolation crash.** Alembic's config
+   uses Python's `configparser`, which treats `%` as interpolation syntax.
+   Prod's `DATABASE_URL` contains `%40` (URL-encoded `@`) in the password,
+   so any alembic command crashed with `ValueError: invalid interpolation
+   syntax`. **Fix:** `.replace("%", "%%")` before `set_main_option`. (1-line.)
+
+2. **`.github/workflows/prod.yml` never invoked alembic.** Deploy ran the
+   legacy `migrate_*.py` loop instead of `alembic upgrade head`. The new
+   migrations from PR #144 silently never reached prod. **Fix:** replace
+   the loop with a self-bootstrapping alembic step that stamps prod at 0002
+   on first run, then `alembic upgrade head` on every deploy thereafter.
+
+3. **The original 0002 migration was diagnosed against the wrong DB.**
+   Yesterday's introspection looked at `swasth_db` (probably staging/dev),
+   not the actual `swasth_prod`. Real prod already had:
+   - all 3 weight columns (29 rows of data)
+   - `users.timezone` default = `'UTC'`
+   - `doctor_patient_links.status` default = `'pending_doctor_accept'`
+   - **`profile_invites.access_level` default = NULL** (the only real drift)
+
+   So 0002's 6 sub-ops resolve to "5 already done, 1 still needed."
+   Migration **0003** closes the one real gap (access_level → `'viewer'`).
+
+### Files
+- `backend/migrations/env.py` — `%` escape fix.
+- `backend/migrations/versions/0003_profile_invites_access_level_default.py`
+  (NEW) — single ALTER setting `profile_invites.access_level` server_default
+  to `'viewer'`. Symmetric upgrade/downgrade.
+- `.github/workflows/prod.yml` — replace legacy `for f in migrate_*.py`
+  loop with self-bootstrapping `alembic stamp 0002` (first time only) +
+  `alembic upgrade head` (every deploy, idempotent).
+
+### Local verification
+- `alembic stamp head` + `alembic check` → "No new upgrade operations".
+- `alembic downgrade -1` → access_level default cleared (NULL).
+- `alembic upgrade head` → access_level default = `'viewer'` again.
+- `alembic check` → clean.
+- Tested env.py with `DATABASE_URL=postgresql://user:fa%40ke@host/db` → no
+  ValueError, alembic command succeeds.
+
+### Post-merge expectation
+1. PR merges → PROD Deploy auto-fires.
+2. Deploy log: "First-time alembic adoption — stamping current state at 0002"
+   (one-time only).
+3. Deploy log: `alembic upgrade head` applies 0003 → access_level default
+   becomes `'viewer'` on prod.
+4. Subsequent deploys: deploy log shows "Current revision: 0003" + alembic
+   upgrade head is no-op.
+
+### Follow-up tracked
+- DEV Auto Deploy workflow likely has the same legacy migration loop;
+  audit `.github/workflows/dev.yml` post-merge.
+  - 19:09:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

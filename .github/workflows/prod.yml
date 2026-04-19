@@ -55,16 +55,29 @@ jobs:
             cd backend
             pip install -r requirements.txt
 
-            # Run any new DB migrations. Each migration script is
-            # idempotent and safe to re-run.
-            echo "Running DB migrations..."
-            for f in migrate_*.py; do
-              if [ -f "$f" ]; then
-                echo "  → $f"
-                python3 "$f" || { echo "❌ Migration $f failed"; exit 1; }
-              fi
-            done
-            echo "✅ Migrations complete"
+            # Run DB migrations via Alembic.
+            #
+            # First-time bootstrap: prod was migrated via legacy migrate_*.py
+            # scripts before Alembic was adopted (PR #144). Its schema already
+            # matches what migrations 0001+0002 aimed to produce. So on the
+            # FIRST deploy after Alembic is installed, we stamp prod at 0002
+            # without running DDL — `alembic_version` table gets created and
+            # populated with '0002', and `alembic upgrade head` then applies
+            # only 0003+ (the genuinely-pending revisions).
+            #
+            # Subsequent deploys skip the stamp branch (alembic_version exists)
+            # and run pure `alembic upgrade head`, which is a no-op when nothing
+            # is pending.
+            echo "Running Alembic migrations..."
+            current_rev=$(alembic current 2>/dev/null | awk '{print $1}' | grep -E '^[0-9]{4}$' || true)
+            if [ -z "$current_rev" ]; then
+              echo "  First-time alembic adoption — stamping current state at 0002"
+              alembic stamp 0002 || { echo "❌ alembic stamp 0002 failed"; exit 1; }
+            else
+              echo "  Current revision: $current_rev"
+            fi
+            alembic upgrade head || { echo "❌ alembic upgrade head failed"; exit 1; }
+            echo "✅ Alembic migrations complete (head: $(alembic current 2>/dev/null | awk '{print $1}'))"
 
             # Restart or start the PROD backend via PM2
             pm2 restart swasth-prod || pm2 start "python3 -B main.py" --name "swasth-prod" --cwd /var/www/swasth_prod/backend
