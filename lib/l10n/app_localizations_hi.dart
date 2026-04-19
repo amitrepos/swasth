@@ -60,6 +60,21 @@ class AppLocalizationsHi extends AppLocalizations {
   String get error => 'गड़बड़ी';
 
   @override
+  String get errNetwork =>
+      'इंटरनेट नहीं है। कृपया कनेक्शन जाँचकर फिर कोशिश करें।';
+
+  @override
+  String get errSessionExpired =>
+      'आपका सेशन खत्म हो गया है। कृपया फिर से लॉग इन करें।';
+
+  @override
+  String get errServer =>
+      'हमारे सर्वर में अभी कुछ दिक्कत है। कृपया थोड़ी देर बाद फिर कोशिश करें।';
+
+  @override
+  String get errGeneric => 'कुछ गड़बड़ हुई। कृपया फिर कोशिश करें।';
+
+  @override
   String get loginTitle => 'लॉग इन';
 
   @override

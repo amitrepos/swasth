@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../services/error_mapper.dart';
 import '../services/ocr_service.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
@@ -313,9 +314,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
       } catch (_) {} // ShellScreen may not be available in all nav contexts
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.saveFailed(e.toString()))));
+        await ErrorMapper.showSnack(context, e);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

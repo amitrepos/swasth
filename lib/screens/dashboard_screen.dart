@@ -7,6 +7,8 @@ import '../ble/bp_service.dart';
 import '../theme/app_theme.dart';
 import '../ble/glucose_service.dart';
 import '../models/glucose_reading.dart';
+import '../services/api_exception.dart';
+import '../services/error_mapper.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 
@@ -46,8 +48,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _loading = true;
 
   bool _glucometerConnected = false;
-  bool _bpMeterConnected    = false;
-  bool _armbandConnected    = false;
+  bool _bpMeterConnected = false;
+  bool _armbandConnected = false;
   String _connectedDeviceType = 'Unknown';
 
   bool _showHistoryPanel = false;
@@ -95,7 +97,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         : 'glucometer';
 
     setState(() {
-      _status  = 'Scanning for $label...';
+      _status = 'Scanning for $label...';
       _loading = true;
     });
 
@@ -103,7 +105,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await _requestPermissions();
 
       bool found = false;
-      
+
       // Scan for devices matching the widget.deviceType
       BleManager.startScan().listen((results) async {
         if (results.isNotEmpty && !found) {
@@ -131,17 +133,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (!found && mounted) {
         setState(() {
-          _status  = 'No $label found. Make sure it is in transfer mode.';
+          _status = 'No $label found. Make sure it is in transfer mode.';
           _loading = false;
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _status  = 'Connection error: $e';
-          _loading = false;
-        });
+      if (!mounted) return;
+      if (e is UnauthorizedException) {
+        await ErrorMapper.showSnack(context, e);
+        return;
       }
+      final l10n = AppLocalizations.of(context)!;
+      setState(() {
+        _status = ErrorMapper.userMessage(l10n, e);
+        _loading = false;
+      });
     }
   }
 
@@ -158,13 +164,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
 
       setState(() {
-        _discoveredServices     = services;
-        _glucometerConnected    = type == 'Glucose';
-        _bpMeterConnected       = type == 'Blood Pressure';
-        _armbandConnected       = type == 'Unknown';
-        _connectedDeviceType    = type;
-        _loading                = false;
-        
+        _discoveredServices = services;
+        _glucometerConnected = type == 'Glucose';
+        _bpMeterConnected = type == 'Blood Pressure';
+        _armbandConnected = type == 'Unknown';
+        _connectedDeviceType = type;
+        _loading = false;
+
         // Clear readings from OTHER device types to avoid confusion
         // Only keep readings that match the currently connected device
         if (type == 'Glucose') {
@@ -201,12 +207,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() => _status = 'Connected to $type device');
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _status  = 'Connection failed: $e';
-          _loading = false;
-        });
+      if (!mounted) return;
+      if (e is UnauthorizedException) {
+        await ErrorMapper.showSnack(context, e);
+        return;
       }
+      final l10n = AppLocalizations.of(context)!;
+      setState(() {
+        _status = ErrorMapper.userMessage(l10n, e);
+        _loading = false;
+      });
     }
   }
 
@@ -217,14 +227,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _readBPDataOmron(BluetoothDevice device) async {
     setState(() {
       _bpLoading = true;
-      _status    = 'Reading BP records via Omron protocol…\n'
-                   '➜ Press BT once on device (slow LED = transfer mode)';
+      _status =
+          'Reading BP records via Omron protocol…\n'
+          '➜ Press BT once on device (slow LED = transfer mode)';
     });
 
     try {
       final result = await BPService.readAllRecords(
-        device:     device,
-        syncTime:   false,
+        device: device,
+        syncTime: false,
         onProgress: (msg) {
           if (mounted) setState(() => _status = msg);
         },
@@ -233,9 +244,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
 
       setState(() {
-        _allBPReadings   = result.readings;
+        _allBPReadings = result.readings;
         _latestBPReading = result.latest;
-        _bpLoading       = false;
+        _bpLoading = false;
         _status = result.readings.isEmpty
             ? 'No valid BP records found. Try pressing BT first.'
             : 'Found ${result.readings.length} BP record(s)';
@@ -248,7 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         setState(() {
           _bpLoading = false;
-          _status    = 'BP read error: $e';
+          _status = 'BP read error: $e';
         });
       }
     }
@@ -262,7 +273,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _status = 'Waiting for BP measurement…');
     try {
       await BPService.subscribeToStandardBPMeasurement(
-        service:   service,
+        service: service,
         onReading: (reading) {
           if (mounted) {
             setState(() {
@@ -287,12 +298,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
 
   Future<void> _fetchReadings() async {
-    final servicesToUse =
-        widget.services.isNotEmpty ? widget.services : _discoveredServices;
+    final servicesToUse = widget.services.isNotEmpty
+        ? widget.services
+        : _discoveredServices;
 
     if (servicesToUse.isEmpty) {
       setState(() {
-        _status  = 'No services discovered.';
+        _status = 'No services discovered.';
         _loading = false;
       });
       return;
@@ -302,7 +314,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (glucoseService == null) {
       setState(() {
-        _status  = 'Glucose service (0x1808) not found.';
+        _status = 'Glucose service (0x1808) not found.';
         _loading = false;
       });
       return;
@@ -316,18 +328,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _saveReadingToDatabase(reading, 'glucose');
         setState(() {
           _allGlucoseReadings.removeWhere(
-              (r) => r.sequenceNumber == reading.sequenceNumber);
+            (r) => r.sequenceNumber == reading.sequenceNumber,
+          );
           _allGlucoseReadings.add(reading);
           _latestGlucoseReading = reading;
           final count = _removeDuplicateReadings(_allGlucoseReadings).length;
-          _status  = 'Received $count unique record(s)';
+          _status = 'Received $count unique record(s)';
           _loading = false;
         });
       },
       onRacpResponse: (response) {
         setState(() {
           _racpResponse = response;
-          _loading      = false;
+          _loading = false;
           if (_allGlucoseReadings.isEmpty) _status = 'RACP: $response';
         });
       },
@@ -347,14 +360,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Request permissions first
     try {
       await _requestPermissions();
-      
+
       // Check if permissions were granted
       final bleStatus = await FlutterBluePlus.adapterState.first;
       if (bleStatus != BluetoothAdapterState.on) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Bluetooth is not enabled. Please enable Bluetooth and try again.'),
+              content: Text(
+                'Bluetooth is not enabled. Please enable Bluetooth and try again.',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -363,16 +378,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Permission error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        await ErrorMapper.showSnack(context, e, backgroundColor: Colors.red);
         return;
       }
     }
-    
+
     // Show loading dialog
     await showDialog(
       context: context,
@@ -399,27 +409,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (token == null) return;
 
       // Convert BPReading to HealthReading and save to database
-      final healthReading = HealthReading.fromGlucoseOrBP(reading, 'blood_pressure');
+      final healthReading = HealthReading.fromGlucoseOrBP(
+        reading,
+        'blood_pressure',
+      );
       healthReading.profileId = widget.profileId;
 
       // Save to database (backend will handle deduplication via seq)
-      final saveResult = await HealthReadingService().saveReading(healthReading, token);
-      
+      final saveResult = await HealthReadingService().saveReading(
+        healthReading,
+        token,
+      );
+
       // Check if backend skipped this as a duplicate
       if (saveResult['skipped'] == true) {
-        print('BP reading skipped by backend (duplicate seq: ${healthReading.seq})');
+        print(
+          'BP reading skipped by backend (duplicate seq: ${healthReading.seq})',
+        );
         return;
       }
 
       final saved = saveResult['reading'] as HealthReading;
-      print('BP reading saved successfully - ID: ${saved.id}, seq: ${saved.seq}');
+      print(
+        'BP reading saved successfully - ID: ${saved.id}, seq: ${saved.seq}',
+      );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('BP Saved: ${healthReading.displayValue}'),
-          backgroundColor: AppColors.statusNormal,
-          duration: const Duration(seconds: 2),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('BP Saved: ${healthReading.displayValue}'),
+            backgroundColor: AppColors.statusNormal,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
       print('Error saving BP reading: $e');
@@ -427,13 +449,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _saveReadingToDatabase(
-      dynamic reading, String deviceType) async {
+    dynamic reading,
+    String deviceType,
+  ) async {
     try {
       final token = await StorageService().getToken();
       if (token == null) return;
 
-      final healthReading =
-          HealthReading.fromGlucoseOrBP(reading, deviceType);
+      final healthReading = HealthReading.fromGlucoseOrBP(reading, deviceType);
       healthReading.profileId = widget.profileId;
       final readingTimestamp = reading.timestamp ?? DateTime.now();
 
@@ -446,9 +469,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           limit: 1000,
         );
 
-        final isDuplicate = existingReadings.any((e) =>
-            e.readingTimestamp.millisecondsSinceEpoch ==
-            readingTimestamp.millisecondsSinceEpoch);
+        final isDuplicate = existingReadings.any(
+          (e) =>
+              e.readingTimestamp.millisecondsSinceEpoch ==
+              readingTimestamp.millisecondsSinceEpoch,
+        );
 
         if (isDuplicate) {
           print('Duplicate reading detected (timestamp), skipping save');
@@ -456,12 +481,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
 
-      final saveResult =
-          await HealthReadingService().saveReading(healthReading, token);
-      
+      final saveResult = await HealthReadingService().saveReading(
+        healthReading,
+        token,
+      );
+
       // Check if backend skipped this as a duplicate
       if (saveResult['skipped'] == true) {
-        print('Reading skipped by backend (duplicate seq: ${healthReading.seq})');
+        print(
+          'Reading skipped by backend (duplicate seq: ${healthReading.seq})',
+        );
         return;
       }
 
@@ -469,11 +498,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       print('Saved reading ID: ${saved.id}, seq: ${saved.seq}');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Saved: ${healthReading.displayValue}'),
-          backgroundColor: AppColors.statusNormal,
-          duration: const Duration(seconds: 2),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Saved: ${healthReading.displayValue}'),
+            backgroundColor: AppColors.statusNormal,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
       print('Error saving reading: $e');
@@ -486,52 +517,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Color _glucoseFlagColor(String flag) {
     switch (flag) {
-      case 'LOW':       return AppColors.statusElevated;
-      case 'NORMAL':    return AppColors.statusNormal;
-      case 'HIGH':      return AppColors.statusHigh;
-      case 'VERY HIGH': return AppColors.statusCritical;
-      default:          return AppColors.statusLow;
+      case 'LOW':
+        return AppColors.statusElevated;
+      case 'NORMAL':
+        return AppColors.statusNormal;
+      case 'HIGH':
+        return AppColors.statusHigh;
+      case 'VERY HIGH':
+        return AppColors.statusCritical;
+      default:
+        return AppColors.statusLow;
     }
   }
 
   Color _bpCategoryColor(String category) {
     switch (category) {
-      case 'NORMAL':         return AppColors.statusNormal;
-      case 'ELEVATED':       return AppColors.statusElevated;
-      case 'HIGH - STAGE 1': return AppColors.statusHigh;
-      case 'HIGH - STAGE 2': return AppColors.statusCritical;
-      default:               return AppColors.statusLow;
+      case 'NORMAL':
+        return AppColors.statusNormal;
+      case 'ELEVATED':
+        return AppColors.statusElevated;
+      case 'HIGH - STAGE 1':
+        return AppColors.statusHigh;
+      case 'HIGH - STAGE 2':
+        return AppColors.statusCritical;
+      default:
+        return AppColors.statusLow;
     }
   }
 
   IconData _flagIcon(String flag) {
     switch (flag) {
-      case 'LOW':       return Icons.arrow_downward;
-      case 'NORMAL':    return Icons.check_circle;
-      case 'HIGH':      return Icons.warning;
-      case 'VERY HIGH': return Icons.dangerous;
-      default:          return Icons.help;
+      case 'LOW':
+        return Icons.arrow_downward;
+      case 'NORMAL':
+        return Icons.check_circle;
+      case 'HIGH':
+        return Icons.warning;
+      case 'VERY HIGH':
+        return Icons.dangerous;
+      default:
+        return Icons.help;
     }
   }
 
   IconData _getDeviceIcon(String type) {
     switch (type) {
-      case 'Glucose':       return Icons.water_drop;
-      case 'Blood Pressure':return Icons.favorite;
-      default:              return Icons.watch;
+      case 'Glucose':
+        return Icons.water_drop;
+      case 'Blood Pressure':
+        return Icons.favorite;
+      default:
+        return Icons.watch;
     }
   }
 
   Color _getDeviceColor(String type) {
     switch (type) {
-      case 'Glucose':        return AppColors.glucose;
-      case 'Blood Pressure': return AppColors.bloodPressure;
-      default:               return AppColors.statusNormal;
+      case 'Glucose':
+        return AppColors.glucose;
+      case 'Blood Pressure':
+        return AppColors.bloodPressure;
+      default:
+        return AppColors.statusNormal;
     }
   }
 
-  List<GlucoseReading> _removeDuplicateReadings(
-      List<GlucoseReading> readings) {
+  List<GlucoseReading> _removeDuplicateReadings(List<GlucoseReading> readings) {
     final map = <int, GlucoseReading>{};
     for (final r in readings) {
       map[r.sequenceNumber] = r;
@@ -539,8 +590,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return map.values.toList();
   }
 
-  List<GlucoseReading> _sortReadingsBySequence(
-      List<GlucoseReading> readings) {
+  List<GlucoseReading> _sortReadingsBySequence(List<GlucoseReading> readings) {
     final sorted = List<GlucoseReading>.from(readings)
       ..sort((a, b) => b.sequenceNumber.compareTo(a.sequenceNumber));
     return sorted;
@@ -560,47 +610,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Stack(alignment: Alignment.center, children: [
-          if (isConnected)
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            if (isConnected)
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.4),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
             Container(
-              width: 70, height: 70,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(
-                    color: color.withOpacity(0.4),
-                    blurRadius: 15, spreadRadius: 2)],
-              ),
-            ),
-          Container(
-            width: 60, height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isConnected
-                  ? color
-                  : (isDark ? AppColors.bgPillDark : AppColors.bgPill),
-              border: Border.all(
                 color: isConnected
                     ? color
-                    : (isDark ? AppColors.bgCard2Dark : AppColors.bgCard2),
-                width: 2,
+                    : (isDark ? AppColors.bgPillDark : AppColors.bgPill),
+                border: Border.all(
+                  color: isConnected
+                      ? color
+                      : (isDark ? AppColors.bgCard2Dark : AppColors.bgCard2),
+                  width: 2,
+                ),
               ),
-            ),
-            child: Icon(icon,
+              child: Icon(
+                icon,
                 color: isConnected ? Colors.white : AppColors.textSecondary,
-                size: 28),
-          ),
-        ]),
+                size: 28,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
-        Text(label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isConnected
-                    ? color
-                    : Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.5)),
-            textAlign: TextAlign.center),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: isConnected
+                ? color
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          ),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
@@ -613,50 +674,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
-            width: 0.5),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(l10n.tapToConnectDevice,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.6),
-                  fontWeight: FontWeight.w500)),
+          color: Theme.of(context).dividerColor.withOpacity(0.1),
+          width: 0.5,
         ),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          GestureDetector(
-            onTap: () => _handleDeviceTap('Glucose'),
-            child: _buildDeviceIcon(
-              icon: Icons.water_drop,
-              label: AppLocalizations.of(context)!.glucometer,
-              isConnected: _glucometerConnected,
-              color: AppColors.glucose,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              l10n.tapToConnectDevice,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          GestureDetector(
-            onTap: () => _handleDeviceTap('Blood Pressure'),
-            child: _buildDeviceIcon(
-              icon: Icons.favorite,
-              label: AppLocalizations.of(context)!.bpMeter,
-              isConnected: _bpMeterConnected,
-              color: AppColors.bloodPressure,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              GestureDetector(
+                onTap: () => _handleDeviceTap('Glucose'),
+                child: _buildDeviceIcon(
+                  icon: Icons.water_drop,
+                  label: AppLocalizations.of(context)!.glucometer,
+                  isConnected: _glucometerConnected,
+                  color: AppColors.glucose,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _handleDeviceTap('Blood Pressure'),
+                child: _buildDeviceIcon(
+                  icon: Icons.favorite,
+                  label: AppLocalizations.of(context)!.bpMeter,
+                  isConnected: _bpMeterConnected,
+                  color: AppColors.bloodPressure,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _handleDeviceTap('Armband'),
+                child: _buildDeviceIcon(
+                  icon: Icons.watch,
+                  label: AppLocalizations.of(context)!.armband,
+                  isConnected: _armbandConnected,
+                  color: AppColors.statusNormal,
+                ),
+              ),
+            ],
           ),
-          GestureDetector(
-            onTap: () => _handleDeviceTap('Armband'),
-            child: _buildDeviceIcon(
-              icon: Icons.watch,
-              label: AppLocalizations.of(context)!.armband,
-              isConnected: _armbandConnected,
-              color: AppColors.statusNormal,
-            ),
-          ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 
@@ -665,8 +733,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isConnected = deviceType == 'Glucose'
         ? _glucometerConnected
         : deviceType == 'Blood Pressure'
-            ? _bpMeterConnected
-            : _armbandConnected;
+        ? _bpMeterConnected
+        : _armbandConnected;
 
     final message = isConnected
         ? l10n.alreadyConnectedMessage(deviceType)
@@ -682,14 +750,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         content: Text('$message$hint'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.cancel)),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
           ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _startScanForDevice(deviceType);
-              },
-              child: Text(l10n.scan)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _startScanForDevice(deviceType);
+            },
+            child: Text(l10n.scan),
+          ),
         ],
       ),
     );
@@ -706,61 +776,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
       margin: const EdgeInsets.all(16),
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(children: [
-          // Category badge
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withOpacity(0.3), width: 0.5),
-            ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.favorite, color: color, size: 18),
-              const SizedBox(width: 6),
-              Text(r.bpCategory,
-                  style: TextStyle(
+        child: Column(
+          children: [
+            // Category badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.favorite, color: color, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    r.bpCategory,
+                    style: TextStyle(
                       color: color,
                       fontWeight: FontWeight.w600,
-                      fontSize: 14)),
-            ]),
-          ),
-          const SizedBox(height: 20),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
-          // Main BP value
-          Text(
-            '${r.systolicMmhg}/${r.diastolicMmhg}',
-            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                color: color, fontWeight: FontWeight.w700),
-          ),
-          Text('mmHg',
+            // Main BP value
+            Text(
+              '${r.systolicMmhg}/${r.diastolicMmhg}',
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              'mmHg',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.5))),
-          const SizedBox(height: 4),
-          Text('MAP: ${r.mapMmhg} mmHg',
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'MAP: ${r.mapMmhg} mmHg',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.5))),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
 
-          const Divider(height: 32, thickness: 0.5),
+            const Divider(height: 32, thickness: 0.5),
 
-          _detailRow(Icons.monitor_heart, 'Pulse', '${r.pulseBpm} bpm'),
-          _detailRow(Icons.person, 'User', 'User ${r.user}'),
-          _detailRow(Icons.access_time, 'Time', r.timestamp.length > 19 ? r.timestamp.substring(0, 19) : r.timestamp),
-          _detailRow(Icons.tag, 'Seq / Slot', '#${r.seq} / slot ${r.slot}'),
-          if (r.flags.irregularHeartbeat)
-            _detailRow(Icons.warning_amber, 'Warning', 'Irregular heartbeat'),
-          if (r.flags.bodyMovement)
-            _detailRow(Icons.warning_amber, 'Warning', 'Body movement'),
-          if (!r.checksumOk)
-            _detailRow(Icons.error_outline, 'Checksum', 'Failed'),
-        ]),
+            _detailRow(Icons.monitor_heart, 'Pulse', '${r.pulseBpm} bpm'),
+            _detailRow(Icons.person, 'User', 'User ${r.user}'),
+            _detailRow(
+              Icons.access_time,
+              'Time',
+              r.timestamp.length > 19
+                  ? r.timestamp.substring(0, 19)
+                  : r.timestamp,
+            ),
+            _detailRow(Icons.tag, 'Seq / Slot', '#${r.seq} / slot ${r.slot}'),
+            if (r.flags.irregularHeartbeat)
+              _detailRow(Icons.warning_amber, 'Warning', 'Irregular heartbeat'),
+            if (r.flags.bodyMovement)
+              _detailRow(Icons.warning_amber, 'Warning', 'Body movement'),
+            if (!r.checksumOk)
+              _detailRow(Icons.error_outline, 'Checksum', 'Failed'),
+          ],
+        ),
       ),
     );
   }
@@ -776,49 +861,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
       margin: const EdgeInsets.all(16),
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(children: [
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withOpacity(0.3), width: 0.5),
-            ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(_flagIcon(r.flag), color: color, size: 18),
-              const SizedBox(width: 6),
-              Text(r.flag,
-                  style: TextStyle(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_flagIcon(r.flag), color: color, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    r.flag,
+                    style: TextStyle(
                       color: color,
                       fontWeight: FontWeight.w600,
-                      fontSize: 14)),
-            ]),
-          ),
-          const SizedBox(height: 20),
-          Text(r.mgdl.toStringAsFixed(1),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              r.mgdl.toStringAsFixed(1),
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: color, fontWeight: FontWeight.w700)),
-          Text('mg/dL',
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              'mg/dL',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.5))),
-          const SizedBox(height: 4),
-          Text('${r.mmol.toStringAsFixed(2)} mmol/L',
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${r.mmol.toStringAsFixed(2)} mmol/L',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.5))),
-          const Divider(height: 32, thickness: 0.5),
-          _detailRow(Icons.tag, 'Sequence', '#${r.sequenceNumber}'),
-          _detailRow(Icons.access_time, 'Time',
-              r.timestamp.toString().substring(0, 19)),
-          _detailRow(Icons.science, 'Sample Type', r.sampleType),
-          _detailRow(Icons.location_on, 'Location', r.sampleLocation),
-        ]),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            const Divider(height: 32, thickness: 0.5),
+            _detailRow(Icons.tag, 'Sequence', '#${r.sequenceNumber}'),
+            _detailRow(
+              Icons.access_time,
+              'Time',
+              r.timestamp.toString().substring(0, 19),
+            ),
+            _detailRow(Icons.science, 'Sample Type', r.sampleType),
+            _detailRow(Icons.location_on, 'Location', r.sampleLocation),
+          ],
+        ),
       ),
     );
   }
@@ -826,23 +925,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _detailRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Icon(icon,
+      child: Row(
+        children: [
+          Icon(
+            icon,
             size: 16,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withOpacity(0.4)),
-        const SizedBox(width: 8),
-        Text('$label: ',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(fontWeight: FontWeight.w600)),
-        Expanded(
-            child: Text(value,
-                style: Theme.of(context).textTheme.bodySmall)),
-      ]),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$label: ',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          Expanded(
+            child: Text(value, style: Theme.of(context).textTheme.bodySmall),
+          ),
+        ],
+      ),
     );
   }
 
@@ -853,73 +954,98 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildBPHistoryList() {
     if (_allBPReadings.length <= 1) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(children: [
-          Text(l10n.bpHistory,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          Text(l10n.recordsCount(_allBPReadings.length),
-              style: Theme.of(context).textTheme.bodySmall),
-        ]),
-      ),
-      ..._allBPReadings.skip(1).map((r) {
-        final color = _bpCategoryColor(r.bpCategory);
-        return Card(
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: color.withOpacity(0.15),
-              radius: 20,
-              child: Icon(Icons.favorite, color: color, size: 18),
-            ),
-            title: Text('${r.systolicMmhg}/${r.diastolicMmhg} mmHg',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Column(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Text(
+                l10n.bpHistory,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              Text(
+                l10n.recordsCount(_allBPReadings.length),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        ..._allBPReadings.skip(1).map((r) {
+          final color = _bpCategoryColor(r.bpCategory);
+          return Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: color.withOpacity(0.15),
+                radius: 20,
+                child: Icon(Icons.favorite, color: color, size: 18),
+              ),
+              title: Text(
+                '${r.systolicMmhg}/${r.diastolicMmhg} mmHg',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 4),
-                  Text('Pulse: ${r.pulseBpm} bpm',
-                      style: Theme.of(context).textTheme.bodySmall),
-                  Text(r.timestamp.length > 16 ? r.timestamp.substring(0, 16) : r.timestamp,
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelSmall
-                          ?.copyWith(fontSize: 10)),
-                ]),
-            trailing: Column(
+                  Text(
+                    'Pulse: ${r.pulseBpm} bpm',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Text(
+                    r.timestamp.length > 16
+                        ? r.timestamp.substring(0, 16)
+                        : r.timestamp,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                  ),
+                ],
+              ),
+              trailing: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('User ${r.user}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelSmall
-                          ?.copyWith(fontSize: 11)),
+                  Text(
+                    'User ${r.user}',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(fontSize: 11),
+                  ),
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
-                      border:
-                          Border.all(color: color.withOpacity(0.3), width: 0.5),
+                      border: Border.all(
+                        color: color.withOpacity(0.3),
+                        width: 0.5,
+                      ),
                     ),
-                    child: Text(r.bpCategory,
-                        style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: color)),
+                    child: Text(
+                      r.bpCategory,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
                   ),
-                ]),
-          ),
-        );
-      }),
-    ]);
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -931,61 +1057,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final unique = _removeDuplicateReadings(_allGlucoseReadings);
     final sorted = _sortReadingsBySequence(unique);
     if (sorted.length <= 1) return const SizedBox.shrink();
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(children: [
-          Text(l10n.allRecords,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const Spacer(),
-          Text(l10n.recordsCount(sorted.length),
-              style: Theme.of(context).textTheme.bodySmall),
-        ]),
-      ),
-      ...sorted.skip(1).map((r) {
-        final color = _glucoseFlagColor(r.flag);
-        return Card(
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: color.withOpacity(0.15),
-              radius: 20,
-              child: Icon(_flagIcon(r.flag), color: color, size: 18),
-            ),
-            title: Text('${r.mgdl.toStringAsFixed(1)} mg/dL',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Column(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Text(
+                l10n.allRecords,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              Text(
+                l10n.recordsCount(sorted.length),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        ...sorted.skip(1).map((r) {
+          final color = _glucoseFlagColor(r.flag);
+          return Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: color.withOpacity(0.15),
+                radius: 20,
+                child: Icon(_flagIcon(r.flag), color: color, size: 18),
+              ),
+              title: Text(
+                '${r.mgdl.toStringAsFixed(1)} mg/dL',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 4),
-                  Text('${r.mmol.toStringAsFixed(2)} mmol/L',
-                      style: Theme.of(context).textTheme.bodySmall),
-                  Text(r.timestamp.toString().substring(0, 16),
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelSmall
-                          ?.copyWith(fontSize: 10)),
-                ]),
-            trailing: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+                  Text(
+                    '${r.mmol.toStringAsFixed(2)} mmol/L',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Text(
+                    r.timestamp.toString().substring(0, 16),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(fontSize: 10),
+                  ),
+                ],
               ),
-              child: Text(r.flag,
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+                ),
+                child: Text(
+                  r.flag,
                   style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: color)),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ),
             ),
-          ),
-        );
-      }),
-    ]);
+          );
+        }),
+      ],
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1000,10 +1142,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         : 'Swasth Health Monitor';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final showBPCard     = _latestBPReading != null && _connectedDeviceType == 'Blood Pressure';
-    final showGlucCard   = _latestGlucoseReading != null && _connectedDeviceType == 'Glucose';
-    final showBPHistory  = _allBPReadings.isNotEmpty && _connectedDeviceType == 'Blood Pressure';
-    final showGlucHistory= _allGlucoseReadings.isNotEmpty && _connectedDeviceType == 'Glucose';
+    final showBPCard =
+        _latestBPReading != null && _connectedDeviceType == 'Blood Pressure';
+    final showGlucCard =
+        _latestGlucoseReading != null && _connectedDeviceType == 'Glucose';
+    final showBPHistory =
+        _allBPReadings.isNotEmpty && _connectedDeviceType == 'Blood Pressure';
+    final showGlucHistory =
+        _allGlucoseReadings.isNotEmpty && _connectedDeviceType == 'Glucose';
 
     return Scaffold(
       appBar: AppBar(
@@ -1019,12 +1165,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: () {
               setState(() {
-                _allGlucoseReadings  = [];
-                _latestGlucoseReading= null;
-                _allBPReadings       = [];
-                _latestBPReading     = null;
-                _loading             = true;
-                _status              = 'Refreshing…';
+                _allGlucoseReadings = [];
+                _latestGlucoseReading = null;
+                _allBPReadings = [];
+                _latestBPReading = null;
+                _loading = true;
+                _status = 'Refreshing…';
               });
               if (_connectedBPDevice != null) {
                 _readBPDataOmron(_connectedBPDevice!);
@@ -1043,18 +1189,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     if (!mounted) return;
                     setState(() {
                       _glucometerConnected = false;
-                      _bpMeterConnected    = false;
-                      _armbandConnected    = false;
+                      _bpMeterConnected = false;
+                      _armbandConnected = false;
                       _connectedDeviceType = 'Unknown';
-                      _connectedBPDevice   = null;
-                      _allBPReadings       = [];
-                      _latestBPReading     = null;
-                      _allGlucoseReadings  = [];
-                      _latestGlucoseReading= null;
-                      _status              = 'Disconnected';
+                      _connectedBPDevice = null;
+                      _allBPReadings = [];
+                      _latestBPReading = null;
+                      _allGlucoseReadings = [];
+                      _latestGlucoseReading = null;
+                      _status = 'Disconnected';
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.deviceDisconnected)));
+                      SnackBar(content: Text(l10n.deviceDisconnected)),
+                    );
                   });
                 }
               },
@@ -1062,87 +1209,103 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        child: Column(children: [
-          // Device panel
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: _buildDevicePanel(),
-          ),
+        child: Column(
+          children: [
+            // Device panel
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: _buildDevicePanel(),
+            ),
 
-          // Status bar
-          Container(
-            width: double.infinity,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: isDark
-                ? AppColors.insight.withOpacity(0.1)
-                : AppColors.insight.withOpacity(0.05),
-            child: Row(children: [
-              if (_loading || _bpLoading)
-                const SizedBox(
-                  width: 14, height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              if (_loading || _bpLoading) const SizedBox(width: 8),
-              Expanded(
-                  child: Text(_status,
+            // Status bar
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: isDark
+                  ? AppColors.insight.withOpacity(0.1)
+                  : AppColors.insight.withOpacity(0.05),
+              child: Row(
+                children: [
+                  if (_loading || _bpLoading)
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  if (_loading || _bpLoading) const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _status,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.insight,
-                          fontWeight: FontWeight.w500))),
-            ]),
-          ),
-
-          // Loading indicator
-          if ((_loading || _bpLoading) && !showBPCard && !showGlucCard)
-            Padding(
-              padding: const EdgeInsets.all(48),
-              child: Column(children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text('Connecting to device…',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary)),
-              ]),
+                        color: AppColors.insight,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
 
-          // BP reading card
-          if (showBPCard) _buildBPReadingCard(_latestBPReading!),
+            // Loading indicator
+            if ((_loading || _bpLoading) && !showBPCard && !showGlucCard)
+              Padding(
+                padding: const EdgeInsets.all(48),
+                child: Column(
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Connecting to device…',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-          // Glucose reading card
-          if (showGlucCard) _buildGlucoseReadingCard(_latestGlucoseReading!),
+            // BP reading card
+            if (showBPCard) _buildBPReadingCard(_latestBPReading!),
 
-          // BP history
-          if (showBPHistory) _buildBPHistoryList(),
+            // Glucose reading card
+            if (showGlucCard) _buildGlucoseReadingCard(_latestGlucoseReading!),
 
-          // Glucose history
-          if (showGlucHistory) _buildGlucoseHistoryList(),
+            // BP history
+            if (showBPHistory) _buildBPHistoryList(),
 
-          // RACP response
-          if (_racpResponse.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 8),
-              child: Text('Device response: $_racpResponse',
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelSmall
-                      ?.copyWith(color: AppColors.textSecondary)),
-            ),
+            // Glucose history
+            if (showGlucHistory) _buildGlucoseHistoryList(),
 
-          const SizedBox(height: 32),
-        ]),
+            // RACP response
+            if (_racpResponse.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Text(
+                  'Device response: $_racpResponse',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
     );
   }
 
   void _showFullHistory() {
     final l10n = AppLocalizations.of(context)!;
-    final historyTitle = _connectedDeviceType == 'Blood Pressure' 
-        ? l10n.bpHistory 
-        : _connectedDeviceType == 'Glucose' 
-            ? l10n.allRecords 
-            : '$_connectedDeviceType Records';
-    
+    final historyTitle = _connectedDeviceType == 'Blood Pressure'
+        ? l10n.bpHistory
+        : _connectedDeviceType == 'Glucose'
+        ? l10n.allRecords
+        : '$_connectedDeviceType Records';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1151,74 +1314,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
         minChildSize: 0.5,
         maxChildSize: 0.95,
         expand: false,
-        builder: (ctx, sc) => Column(children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              Icon(_getDeviceIcon(_connectedDeviceType),
-                  color: _getDeviceColor(_connectedDeviceType)),
-              const SizedBox(width: 8),
-              Text(historyTitle,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const Spacer(),
-              IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(ctx)),
-            ]),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: ListView(
-              controller: sc,
+        builder: (ctx, sc) => Column(
+          children: [
+            Padding(
               padding: const EdgeInsets.all(16),
-              children: [
-                if (_connectedDeviceType == 'Blood Pressure' && _allBPReadings.isNotEmpty)
-                  ..._allBPReadings.map((r) {
-                    final color = _bpCategoryColor(r.bpCategory);
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                            backgroundColor: color,
-                            child: const Icon(Icons.favorite,
-                                color: Colors.white, size: 18)),
-                        title: Text(
-                            '${r.systolicMmhg}/${r.diastolicMmhg} mmHg'),
-                        subtitle: Text(
-                            '${r.pulseBpm} bpm · User ${r.user} · ${r.bpCategory}'),
-                        trailing: Text(r.timestamp.length > 16
-                            ? r.timestamp.substring(0, 16)
-                            : r.timestamp,
-                            style: const TextStyle(fontSize: 11)),
-                      ),
-                    );
-                  }),
-                if (_connectedDeviceType == 'Glucose' && _allGlucoseReadings.isNotEmpty)
-                  ..._sortReadingsBySequence(
-                          _removeDuplicateReadings(_allGlucoseReadings))
-                      .map((r) {
-                    final color = _glucoseFlagColor(r.flag);
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                            backgroundColor: color,
-                            child: Icon(_flagIcon(r.flag),
-                                color: Colors.white, size: 18)),
-                        title: Text('${r.mgdl.toStringAsFixed(1)} mg/dL'),
-                        subtitle: Text(
-                            '${r.mmol.toStringAsFixed(2)} mmol/L · ${r.flag}'),
-                        trailing: Text(
-                            r.timestamp.toString().substring(0, 16),
-                            style: const TextStyle(fontSize: 11)),
-                      ),
-                    );
-                  }),
-              ],
+              child: Row(
+                children: [
+                  Icon(
+                    _getDeviceIcon(_connectedDeviceType),
+                    color: _getDeviceColor(_connectedDeviceType),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    historyTitle,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ]),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                controller: sc,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (_connectedDeviceType == 'Blood Pressure' &&
+                      _allBPReadings.isNotEmpty)
+                    ..._allBPReadings.map((r) {
+                      final color = _bpCategoryColor(r.bpCategory);
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: color,
+                            child: const Icon(
+                              Icons.favorite,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          title: Text(
+                            '${r.systolicMmhg}/${r.diastolicMmhg} mmHg',
+                          ),
+                          subtitle: Text(
+                            '${r.pulseBpm} bpm · User ${r.user} · ${r.bpCategory}',
+                          ),
+                          trailing: Text(
+                            r.timestamp.length > 16
+                                ? r.timestamp.substring(0, 16)
+                                : r.timestamp,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                      );
+                    }),
+                  if (_connectedDeviceType == 'Glucose' &&
+                      _allGlucoseReadings.isNotEmpty)
+                    ..._sortReadingsBySequence(
+                      _removeDuplicateReadings(_allGlucoseReadings),
+                    ).map((r) {
+                      final color = _glucoseFlagColor(r.flag);
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: color,
+                            child: Icon(
+                              _flagIcon(r.flag),
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          title: Text('${r.mgdl.toStringAsFixed(1)} mg/dL'),
+                          subtitle: Text(
+                            '${r.mmol.toStringAsFixed(2)} mmol/L · ${r.flag}',
+                          ),
+                          trailing: Text(
+                            r.timestamp.toString().substring(0, 16),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1260,29 +1450,32 @@ class _DeviceSelectionDialogState extends State<_DeviceSelectionDialog> {
 
   void _startScanning() {
     final currentGeneration = ++_scanGeneration;
-    
+
     setState(() {
       _isScanning = true;
       _devices = [];
     });
 
     // Start scan with shorter timeout for faster results
-    final subscription = BleManager.startScan(timeout: const Duration(seconds: 10)).listen((results) {
-      if (mounted && currentGeneration == _scanGeneration) {
-        setState(() {
-          // Filter devices based on type
-          _devices = results.where((r) {
-            if (widget.deviceType == 'Glucose') {
-              return BleManager.deviceType(r) == 'Glucose';
-            } else if (widget.deviceType == 'Blood Pressure') {
-              return BleManager.deviceType(r) == 'Blood Pressure';
-            }
-            return true; // For armband or other types - show all
-          }).toList();
-          // Device list updates in real-time as scan results come in
+    final subscription =
+        BleManager.startScan(timeout: const Duration(seconds: 10)).listen((
+          results,
+        ) {
+          if (mounted && currentGeneration == _scanGeneration) {
+            setState(() {
+              // Filter devices based on type
+              _devices = results.where((r) {
+                if (widget.deviceType == 'Glucose') {
+                  return BleManager.deviceType(r) == 'Glucose';
+                } else if (widget.deviceType == 'Blood Pressure') {
+                  return BleManager.deviceType(r) == 'Blood Pressure';
+                }
+                return true; // For armband or other types - show all
+              }).toList();
+              // Device list updates in real-time as scan results come in
+            });
+          }
         });
-      }
-    });
 
     // Auto-stop scanning after 10 seconds
     Future.delayed(const Duration(seconds: 10), () {
@@ -1339,11 +1532,15 @@ class _DeviceSelectionDialogState extends State<_DeviceSelectionDialog> {
                     final name = device.device.platformName.isNotEmpty
                         ? device.device.platformName
                         : l10n.unknownDevice;
-                    
+
                     return ListTile(
                       leading: Icon(
-                        widget.deviceType == 'Glucose' ? Icons.water_drop : Icons.favorite,
-                        color: widget.deviceType == 'Glucose' ? AppColors.glucose : AppColors.bloodPressure,
+                        widget.deviceType == 'Glucose'
+                            ? Icons.water_drop
+                            : Icons.favorite,
+                        color: widget.deviceType == 'Glucose'
+                            ? AppColors.glucose
+                            : AppColors.bloodPressure,
                       ),
                       title: Text(name),
                       subtitle: Text(l10n.signalStrength(device.rssi)),
@@ -1366,19 +1563,17 @@ class _DeviceSelectionDialogState extends State<_DeviceSelectionDialog> {
           child: Text(l10n.cancel),
         ),
         if (!_isScanning)
-          TextButton(
-            onPressed: _rescan,
-            child: Text(l10n.rescan),
-          ),
+          TextButton(onPressed: _rescan, child: Text(l10n.rescan)),
       ],
     );
   }
 
   Widget _buildInstructionsCard() {
     final isGlucose = widget.deviceType == 'Glucose';
-    
+
     return Card(
-      color: (isGlucose ? AppColors.glucose : AppColors.bloodPressure).withValues(alpha: 0.08),
+      color: (isGlucose ? AppColors.glucose : AppColors.bloodPressure)
+          .withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -1388,16 +1583,22 @@ class _DeviceSelectionDialogState extends State<_DeviceSelectionDialog> {
               children: [
                 Icon(
                   Icons.info_outline,
-                  color: isGlucose ? AppColors.glucose : AppColors.bloodPressure,
+                  color: isGlucose
+                      ? AppColors.glucose
+                      : AppColors.bloodPressure,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  isGlucose ? 'Glucometer – Prerequisites:' : 'BP Meter – Prerequisites:',
+                  isGlucose
+                      ? 'Glucometer – Prerequisites:'
+                      : 'BP Meter – Prerequisites:',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    color: isGlucose ? AppColors.glucose : AppColors.bloodPressure,
+                    color: isGlucose
+                        ? AppColors.glucose
+                        : AppColors.bloodPressure,
                   ),
                 ),
               ],

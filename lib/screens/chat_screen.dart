@@ -7,6 +7,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../services/chat_service.dart';
+import '../services/error_mapper.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 
@@ -115,9 +116,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open file picker: $e')),
-        );
+        await ErrorMapper.showSnack(context, e);
       }
     }
   }

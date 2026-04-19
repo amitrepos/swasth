@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../services/api_exception.dart';
+import '../services/error_mapper.dart';
 import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -75,8 +77,14 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
+      if (e is UnauthorizedException) {
+        await ErrorMapper.showSnack(context, e);
+        return;
+      }
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = ErrorMapper.userMessage(l10n, e);
         _isLoading = false;
       });
     }
@@ -117,13 +125,12 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
       _loadAccess();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -162,13 +169,12 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
       _loadAccess();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -187,13 +193,12 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
       _loadAccess();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -212,13 +217,12 @@ class _ManageAccessScreenState extends State<ManageAccessScreen> {
       _loadAccess();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }

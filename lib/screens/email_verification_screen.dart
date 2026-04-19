@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
+import '../services/error_mapper.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_form_scroll_body.dart';
@@ -118,11 +119,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
       }
     } finally {
@@ -153,11 +153,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
       }
     } finally {

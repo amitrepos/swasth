@@ -4,6 +4,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../constants/doctor_specialties.dart';
 import '../theme/app_theme.dart';
 import '../services/doctor_service.dart';
+import '../services/error_mapper.dart';
 import '../widgets/auth_form_scroll_body.dart';
 import '../widgets/password_requirements_box.dart';
 import 'login_screen.dart';
@@ -80,11 +81,10 @@ class _DoctorRegistrationScreenState extends State<DoctorRegistrationScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: AppColors.statusCritical,
-        ),
+      await ErrorMapper.showSnack(
+        context,
+        e,
+        backgroundColor: AppColors.statusCritical,
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

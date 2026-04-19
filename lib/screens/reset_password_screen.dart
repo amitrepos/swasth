@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
+import '../services/error_mapper.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_form_scroll_body.dart';
 import 'login_screen.dart';
@@ -59,8 +60,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       _passwordHasUppercase = newPassword.contains(RegExp(r'[A-Z]'));
       _passwordHasLowercase = newPassword.contains(RegExp(r'[a-z]'));
       _passwordHasNumber = newPassword.contains(RegExp(r'[0-9]'));
-      _passwordHasSpecialChar = newPassword.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-      _passwordsMatch = confirmPassword.isNotEmpty && newPassword == confirmPassword;
+      _passwordHasSpecialChar = newPassword.contains(
+        RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+      );
+      _passwordsMatch =
+          confirmPassword.isNotEmpty && newPassword == confirmPassword;
     });
   }
 
@@ -95,11 +99,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
       }
     } finally {
@@ -112,9 +115,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.resetPasswordTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.resetPasswordTitle)),
       body: AuthFormScrollBody(
         child: Form(
           key: _formKey,
@@ -155,10 +156,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureNewPassword ? Icons.visibility_off : Icons.visibility,
+                      _obscureNewPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                     onPressed: () {
-                      setState(() => _obscureNewPassword = !_obscureNewPassword);
+                      setState(
+                        () => _obscureNewPassword = !_obscureNewPassword,
+                      );
                     },
                   ),
                 ),
@@ -192,11 +197,26 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       l10n.passwordRequirementsTitle,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    _buildRequirementRow(l10n.passwordReqLength, _passwordHasMinLength),
-                    _buildRequirementRow(l10n.passwordReqUppercase, _passwordHasUppercase),
-                    _buildRequirementRow(l10n.passwordReqLowercase, _passwordHasLowercase),
-                    _buildRequirementRow(l10n.passwordReqNumber, _passwordHasNumber),
-                    _buildRequirementRow(l10n.passwordReqSpecial, _passwordHasSpecialChar),
+                    _buildRequirementRow(
+                      l10n.passwordReqLength,
+                      _passwordHasMinLength,
+                    ),
+                    _buildRequirementRow(
+                      l10n.passwordReqUppercase,
+                      _passwordHasUppercase,
+                    ),
+                    _buildRequirementRow(
+                      l10n.passwordReqLowercase,
+                      _passwordHasLowercase,
+                    ),
+                    _buildRequirementRow(
+                      l10n.passwordReqNumber,
+                      _passwordHasNumber,
+                    ),
+                    _buildRequirementRow(
+                      l10n.passwordReqSpecial,
+                      _passwordHasSpecialChar,
+                    ),
                   ],
                 ),
               ),
@@ -210,16 +230,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   labelText: l10n.confirmPasswordLabel,
                   prefixIcon: const Icon(Icons.lock_outline),
                   border: const OutlineInputBorder(),
-                  errorText: !_passwordsMatch &&
+                  errorText:
+                      !_passwordsMatch &&
                           _confirmPasswordController.text.isNotEmpty
                       ? l10n.passwordsDoNotMatch
                       : null,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                     onPressed: () {
-                      setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                      setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      );
                     },
                   ),
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../services/error_mapper.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 import 'privacy_policy_screen.dart';
@@ -15,7 +16,8 @@ class ConsentScreen extends StatefulWidget {
     required String appVersion,
     required String language,
     required bool aiConsent,
-  }) onAccept;
+  })
+  onAccept;
 
   const ConsentScreen({super.key, required this.onAccept});
 
@@ -83,11 +85,10 @@ class _ConsentScreenState extends State<ConsentScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
       }
     } finally {
@@ -222,7 +223,9 @@ class _ConsentScreenState extends State<ConsentScreen> {
                       label: Text(l10n.privacyPolicy),
                       onPressed: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const PrivacyPolicyScreen(),
+                        ),
                       ),
                     ),
                   ),
@@ -233,8 +236,11 @@ class _ConsentScreenState extends State<ConsentScreen> {
                     Center(
                       child: Column(
                         children: [
-                          Icon(Icons.keyboard_arrow_down,
-                              color: AppColors.textSecondary, size: 28),
+                          Icon(
+                            Icons.keyboard_arrow_down,
+                            color: AppColors.textSecondary,
+                            size: 28,
+                          ),
                           Text(
                             l10n.consentScrollToAccept,
                             style: const TextStyle(

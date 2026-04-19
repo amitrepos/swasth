@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../models/meal_log.dart';
+import '../services/error_mapper.dart';
 import '../services/health_reading_service.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
@@ -226,9 +227,7 @@ class HistoryScreenState extends State<HistoryScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error deleting reading: $e')));
+          await ErrorMapper.showSnack(context, e);
         }
       }
     }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/error_mapper.dart';
 import '../widgets/auth_form_scroll_body.dart';
 import '../widgets/password_requirements_box.dart';
 import 'consent_screen.dart';
@@ -146,11 +147,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
       }
     } finally {

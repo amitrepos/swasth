@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../models/meal_log.dart';
+import '../services/error_mapper.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -120,12 +121,10 @@ class _QuickSelectScreenState extends State<QuickSelectScreen> {
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.saveFailed(e.toString())),
-            backgroundColor: AppColors.danger,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.danger,
         );
       }
     } finally {

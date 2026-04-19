@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
+import '../services/error_mapper.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_form_scroll_body.dart';
 import 'reset_password_screen.dart';
@@ -77,11 +78,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
       }
     } finally {
@@ -109,11 +109,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
       }
     } finally {
@@ -126,9 +125,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.verifyOtpTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.verifyOtpTitle)),
       body: AuthFormScrollBody(
         child: Form(
           key: _formKey,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../services/api_exception.dart';
+import '../services/error_mapper.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -94,8 +96,14 @@ class _ScanScreenState extends State<ScanScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
+      if (e is UnauthorizedException) {
+        await ErrorMapper.showSnack(context, e);
+        return;
+      }
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _status = 'Connection failed: $e';
+        _status = ErrorMapper.userMessage(l10n, e);
       });
     }
   }
@@ -113,7 +121,9 @@ class _ScanScreenState extends State<ScanScreen> {
       borderRadius: 16,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: type == 'Glucose' ? AppColors.glucose : AppColors.bloodPressure,
+          backgroundColor: type == 'Glucose'
+              ? AppColors.glucose
+              : AppColors.bloodPressure,
           child: Icon(
             type == 'Glucose' ? Icons.water_drop : Icons.favorite,
             color: Colors.white,
@@ -124,10 +134,14 @@ class _ScanScreenState extends State<ScanScreen> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(result.device.remoteId.toString(),
-                style: const TextStyle(fontSize: 12)),
-            Text('Type: $type  |  RSSI: $rssi dBm',
-                style: const TextStyle(fontSize: 12)),
+            Text(
+              result.device.remoteId.toString(),
+              style: const TextStyle(fontSize: 12),
+            ),
+            Text(
+              'Type: $type  |  RSSI: $rssi dBm',
+              style: const TextStyle(fontSize: 12),
+            ),
           ],
         ),
         trailing: ElevatedButton(
@@ -144,9 +158,7 @@ class _ScanScreenState extends State<ScanScreen> {
     final displayStatus = _status.isEmpty ? l10n.pressScanToFind : _status;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.scanDevicesTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.scanDevicesTitle)),
       body: Column(
         children: [
           // Status bar
@@ -180,15 +192,20 @@ class _ScanScreenState extends State<ScanScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.bluetooth_searching,
-                            size: 64, color: AppColors.textTertiary),
+                        Icon(
+                          Icons.bluetooth_searching,
+                          size: 64,
+                          color: AppColors.textTertiary,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           _isScanning
                               ? l10n.lookingForDevices
                               : l10n.noDevicesFound,
                           style: TextStyle(
-                              color: AppColors.textSecondary, fontSize: 16),
+                            color: AppColors.textSecondary,
+                            fontSize: 16,
+                          ),
                         ),
                       ],
                     ),
