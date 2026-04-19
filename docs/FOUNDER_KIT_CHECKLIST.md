@@ -22,13 +22,13 @@
 - [x] **Section 2: Personal story** — FINAL drafted 2026-04-19 (10-sec / 30-sec / 90-sec / 3-min versions)
 - [x] **Section 10: Objection handlers** — drafted 2026-04-19, 17 objections covered + emergency fallback
 - [x] **Section 6b: Competitive analysis** — `docs/COMPETITIVE_ANALYSIS_2026.md` drafted 2026-04-19
-- [ ] Section 1: Cover + one-line pitch
-- [ ] Section 3: Two patient stories (Bihar parent + NRI daughter narrative)
+- [x] **Section 1: Cover + one-line pitch** — drafted 2026-04-19 (cover ASCII, 10-sec opener HI+EN, tagline, one-sentence test)
+- [x] **Section 3: Two patient stories** — drafted 2026-04-19 (Sushila Devi + Meera, before/after)
 - [ ] Section 4: App walkthrough (6-8 screenshots)
 - [ ] Section 6: Why WhatsApp matters in India
 - [ ] Section 7: Weekly-report sample (what doctor/NRI child receives)
 - [ ] Section 8: Seriousness signals checklist
-- [ ] Section 9: Three asks (doctor / relative / advisor)
+- [x] **Section 9: Three asks** — drafted 2026-04-19 (Doctor/Relative/Advisor/NRI/Bangalore KOL, small/med/big versions, golden rule)
 - [ ] Section 11: Key numbers to know cold
 - [x] **Section 12: 90-day roadmap + Berlin succession plan** — drafted 2026-04-19, 3-layer transition (India CEO / Patna Ops Lead / Amit from Berlin) + decision authority matrix + memorized investor answer
 - [ ] Section 13: Contact + credentials block
@@ -129,3 +129,4 @@
 - **2026-04-19:** Branch switch to `chore/alembic-migrations` dropped uncommitted FOUNDER_*.md and INDIA_TRIP_*.md files. Recreated FOUNDER_PITCH_KIT_2026.md and FOUNDER_KIT_CHECKLIST.md with full Sections 2+5+10 content. INDIA_TRIP_APR_MAY_2026.md pending recreation. **LESSON:** commit these files immediately — do not leave uncommitted across branch switches.
 - **2026-04-19 (PR #142 merged):** Part-1 docs merged to master (FOUNDER_PITCH_KIT, FOUNDER_KIT_CHECKLIST, COMPETITIVE_ANALYSIS).
 - **2026-04-19 (part 2 branch):** Recovered `docs/INDIA_TRIP_APR_MAY_2026.md` in full. Drafted Section 12 (90-day roadmap + Berlin succession plan) — answers the "what if Amit moves to Berlin" investor question with 3-layer structure, hire timeline, and decision authority matrix. Drafted `docs/ONE_PAGER_2026.md` — printable A4 artifact (Hindi + English) for Bangalore Day 1 print run.
+- **2026-04-19 (part 3 branch):** Drafted Section 1 (Cover + one-line pitch + tagline + one-sentence test), Section 3 (Two patient stories — Sushila Devi in Ranchi + Meera in London, before/after narratives with exact Hindi/English phrasing), Section 9 (Five asks — Doctor/Relative/Advisor/NRI/Bangalore KOL — each with small/medium/big versions + "never ask" list + golden rule). Pitch kit now has 7 sections drafted (1, 2, 3, 5, 9, 10, 12) — sufficient for every meeting type on the trip.
