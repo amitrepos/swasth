@@ -111,6 +111,75 @@ void main() {
         throwsA(isA<ServerException>()),
       );
     });
+
+    test('returns response on 204 when listed as success', () async {
+      // Many DELETE endpoints return 204 No Content. Services pass
+      // successCodes: [204] to ApiClient.send — confirm that works.
+      ApiClient.httpClientOverride = _client((_) async => _resp(204, ''));
+      final res = await ApiClient.send(
+        () => ApiClient.httpClient.delete(Uri.parse('http://x/y')),
+        successCodes: const [204],
+      );
+      expect(res.statusCode, 204);
+    });
+
+    test(
+      '422 validation error with pydantic list detail maps to ValidationException with fallback',
+      () async {
+        // FastAPI's default 422 body is
+        //   {"detail": [{"loc": [...], "msg": "...", "type": "..."}, ...]}
+        // errorDetail() must refuse to echo that list to the user — a raw
+        // "[{'loc': ('body', 'email'), 'msg': 'field required'}]" string is
+        // objectively worse than the fallback for Sunita. We fall to the
+        // fallback message; screen layer lets ErrorMapper translate.
+        const pydanticBody =
+            '{"detail":[{"loc":["body","email"],"msg":"field required","type":"value_error.missing"}]}';
+        ApiClient.httpClientOverride = _client(
+          (_) async => _resp(422, pydanticBody),
+        );
+        await expectLater(
+          ApiClient.send(
+            () => ApiClient.httpClient.post(Uri.parse('http://x/y')),
+          ),
+          throwsA(
+            isA<ValidationException>().having(
+              (e) => e.detail,
+              'detail',
+              'Request failed.',
+            ),
+          ),
+        );
+      },
+    );
+
+    test('throws ValidationException on 403 with server detail', () async {
+      // Role-based access denial. Client-safe message should surface.
+      ApiClient.httpClientOverride = _client(
+        (_) async => _resp(403, '{"detail":"You do not have permission."}'),
+      );
+      await expectLater(
+        ApiClient.send(() => ApiClient.httpClient.get(Uri.parse('http://x/y'))),
+        throwsA(
+          isA<ValidationException>().having(
+            (e) => e.detail,
+            'detail',
+            'You do not have permission.',
+          ),
+        ),
+      );
+    });
+
+    test('throws ValidationException on 429 rate limit', () async {
+      ApiClient.httpClientOverride = _client(
+        (_) async => _resp(429, '{"detail":"Too many requests, slow down."}'),
+      );
+      await expectLater(
+        ApiClient.send(
+          () => ApiClient.httpClient.post(Uri.parse('http://x/y')),
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+    });
   });
 
   group('ApiClient.send — transport-level errors', () {

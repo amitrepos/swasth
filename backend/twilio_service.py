@@ -1,6 +1,11 @@
+import logging
+
 from twilio.rest import Client
 from config import settings
 from typing import Optional
+
+logger = logging.getLogger(__name__)
+
 
 class TwilioWhatsAppService:
     """Service for sending WhatsApp messages via Twilio."""
@@ -18,8 +23,8 @@ class TwilioWhatsAppService:
         if not self._client and self.account_sid and self.auth_token:
             try:
                 self._client = Client(self.account_sid, self.auth_token)
-            except Exception as e:
-                print(f"Failed to initialize Twilio client: {e}")
+            except Exception:
+                logger.error("Failed to initialize Twilio client", exc_info=True)
         return self._client
 
     def send_whatsapp(self, to_number: str, body: str) -> tuple[bool, Optional[str], Optional[str]]:
@@ -35,7 +40,7 @@ class TwilioWhatsAppService:
         """
         if not self.client or not self.from_number:
             error_msg = "Twilio credentials or from_number not configured."
-            print(error_msg)
+            logger.warning(error_msg)
             return False, None, error_msg
             
         # Ensure 'whatsapp:' prefix is present for both to and from
@@ -51,8 +56,7 @@ class TwilioWhatsAppService:
             return True, message.sid, None
         except Exception as e:
             error_msg = str(e)
-            # Note: In production, use a proper logger
-            print(f"Error sending Twilio WhatsApp message: {error_msg}")
+            logger.error("Error sending Twilio WhatsApp message", exc_info=True)
             return False, None, error_msg
 
     def send_critical_alert_whatsapp(

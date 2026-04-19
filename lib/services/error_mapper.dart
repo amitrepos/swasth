@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+
 import '../l10n/app_localizations.dart';
 import 'api_exception.dart';
 import 'storage_service.dart';
@@ -11,9 +13,11 @@ import 'storage_service.dart';
 ///     Use when the screen renders the error inline (e.g. `setState(() =>
 ///     _error = ErrorMapper.userMessage(l10n, e))`).
 ///
-///   * [showSnack] — side-effecting helper. Shows a SnackBar and, if the
-///     exception is [UnauthorizedException], clears session storage and
-///     navigates to the login route. This is the 401 interceptor.
+///   * [showSnack] — side-effecting helper. Shows a SnackBar + announces
+///     the message to TalkBack/VoiceOver. On [UnauthorizedException] it
+///     shows an explicit dialog the user must acknowledge before session
+///     storage is cleared and the stack is reset to the login route — the
+///     app-wide 401 interceptor.
 ///
 /// Screens MUST use one of these. Never `Text(e.toString())` — that path
 /// leaks `SocketException: Failed host lookup` to the user.
@@ -23,6 +27,12 @@ class ErrorMapper {
   /// Named login route. Any screen that wants to override the destination
   /// on 401 can do so by calling [showSnack] with its own [loginRoute].
   static const String defaultLoginRoute = '/login';
+
+  /// SnackBar dwell time for error messages. Bumped from the Flutter
+  /// default (4s) to 6s because Devanagari reading takes roughly 1.3x
+  /// the time of English and elderly users need another ~1.5x on top;
+  /// the longer Hindi strings wouldn't finish being read in 4s.
+  static const Duration _errorSnackDuration = Duration(seconds: 6);
 
   /// Pure translation. Returns a plain, elderly-readable localized string.
   /// Safe to call outside a widget context if you already have [l10n].
@@ -41,9 +51,10 @@ class ErrorMapper {
     return l10n.errGeneric;
   }
 
-  /// Show a SnackBar with the mapped message. On [UnauthorizedException],
-  /// additionally clear session storage and reset the navigation stack to
-  /// the login route — this is the single place app-wide 401 handling lives.
+  /// Show a SnackBar with the mapped message. Announces to the accessibility
+  /// layer so TalkBack/VoiceOver speaks the error. On [UnauthorizedException]
+  /// shows a dismiss-blocking dialog the user must acknowledge before we
+  /// clear session storage and reset the navigation stack to [loginRoute].
   ///
   /// Caller MUST ensure [context] is still mounted (guard with `!mounted
   /// return;` before calling from async blocks).
@@ -56,16 +67,57 @@ class ErrorMapper {
     final l10n = AppLocalizations.of(context)!;
     final message = userMessage(l10n, error);
 
+    // 401 is a terminal session event. Use a modal instead of a transient
+    // SnackBar so the user actually reads "please log in again" before
+    // they're bounced to the login screen. Otherwise the SnackBar gets
+    // cut off mid-read by the navigation animation.
+    if (error is UnauthorizedException) {
+      await _showSessionExpiredAndLogout(
+        context,
+        message: message,
+        loginRoute: loginRoute,
+      );
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: backgroundColor),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        duration: _errorSnackDuration,
+      ),
+    );
+    // Announce to TalkBack/VoiceOver. SnackBars are NOT auto-announced by
+    // Flutter's accessibility layer, so users with screen readers would
+    // otherwise miss the error entirely.
+    SemanticsService.announce(message, Directionality.of(context));
+  }
+
+  static Future<void> _showSessionExpiredAndLogout(
+    BuildContext context, {
+    required String message,
+    required String loginRoute,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    SemanticsService.announce(message, Directionality.of(context));
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.errSessionExpired),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.loginButton),
+          ),
+        ],
+      ),
     );
 
-    if (error is UnauthorizedException) {
-      // Terminal session event — wipe token and bounce to login so the
-      // user isn't stuck tapping retry on an already-revoked session.
-      await StorageService().clearAll();
-      if (!context.mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil(loginRoute, (_) => false);
-    }
+    await StorageService().clearAll();
+    if (!context.mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(loginRoute, (_) => false);
   }
 }

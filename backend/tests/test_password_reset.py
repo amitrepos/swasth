@@ -51,6 +51,30 @@ class TestForgotPassword:
         assert resp.status_code == 200
         assert self.GENERIC_MSG_FRAGMENT in resp.json()["message"]
 
+    def test_forgot_password_email_dispatched_via_background_task(
+        self, client, test_user
+    ):
+        # Timing parity: the SMTP send must happen AFTER the response is
+        # written so the wall-clock time of a known-email request matches
+        # an unknown-email request (closes the timing side-channel Security
+        # flagged in PR #139). TestClient runs BackgroundTasks to completion
+        # before returning from .post(), so by then the mock has been called.
+        with patch("routes.email_service.send_otp_email", return_value=True) as mock_send:
+            resp = client.post(self.URL, json={"email": TEST_USER_EMAIL})
+            assert resp.status_code == 200
+            assert self.GENERIC_MSG_FRAGMENT in resp.json()["message"]
+            mock_send.assert_called_once()
+
+    def test_forgot_password_unknown_email_does_not_dispatch_email(
+        self, client
+    ):
+        # An unknown email must NOT trigger send_otp_email — that would
+        # both leak existence and waste an SMTP round-trip.
+        with patch("routes.email_service.send_otp_email", return_value=True) as mock_send:
+            resp = client.post(self.URL, json={"email": "nobody@swasth.app"})
+            assert resp.status_code == 200
+            mock_send.assert_not_called()
+
 
 class TestVerifyOTP:
     URL = "/api/auth/verify-otp"

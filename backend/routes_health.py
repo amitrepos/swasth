@@ -10,8 +10,11 @@ from typing import List, Optional
 from datetime import datetime, date, timedelta
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import logging
 import os
 import json
+
+logger = logging.getLogger(__name__)
 import models
 import schemas
 from database import get_db
@@ -1276,9 +1279,33 @@ async def parse_image_with_gemini(
             return {"glucose": glucose}
 
     except (json.JSONDecodeError, KeyError):
-        return {"error": "Gemini returned an unexpected format"}
-    except Exception as e:
-        return {"error": f"Gemini Vision failed: {str(e)}"}
+        # Upstream returned a response we couldn't parse — treat as a
+        # temporary upstream failure. Log the payload internally for ops;
+        # client gets a generic message that doesn't leak model output.
+        logger.warning(
+            "vision analysis: unparseable response device_type=%s",
+            device_type,
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not read the image. Please try again or enter values manually.",
+        )
+    except Exception:
+        # Any other failure from the vision pipeline — API key revoked,
+        # rate limit, network timeout, model safety filter, etc. None of
+        # these are safe to echo to the user (would leak API endpoint
+        # URLs, auth headers, or model-internal strings). Log the full
+        # trace for operators; return sanitized 503.
+        logger.error(
+            "vision analysis failed device_type=%s",
+            device_type,
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Image analysis is temporarily unavailable. Please enter values manually.",
+        )
 
 
 def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
