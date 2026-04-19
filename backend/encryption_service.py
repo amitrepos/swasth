@@ -14,12 +14,17 @@ Usage:
 """
 
 import base64
+import binascii
+import logging
 import os
 from typing import Optional
 
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 _NONCE_SIZE = 12  # 96-bit nonce recommended for AES-GCM
 
@@ -44,15 +49,36 @@ def encrypt(plaintext: str) -> Optional[str]:
 
 
 def decrypt(token: str) -> Optional[str]:
-    """Decrypt an AES-256-GCM token back to plaintext string."""
+    """Decrypt an AES-256-GCM token back to plaintext string.
+
+    Returns None if the key is unset, the token is empty, the token is not
+    valid base64, or the ciphertext fails authentication (wrong key, rotated
+    key, or tampered data). Failures are logged with a truncated detail so
+    the caller can render a graceful fallback instead of crashing the query.
+    """
     key = _get_key()
     if key is None or not token:
         return None
-    raw = base64.b64decode(token)
-    nonce = raw[:_NONCE_SIZE]
-    ciphertext = raw[_NONCE_SIZE:]
-    aesgcm = AESGCM(key)
-    return aesgcm.decrypt(nonce, ciphertext, None).decode("utf-8")
+    try:
+        raw = base64.b64decode(token, validate=True)
+        if len(raw) <= _NONCE_SIZE:
+            logger.warning("decrypt: token shorter than nonce size")
+            return None
+        nonce = raw[:_NONCE_SIZE]
+        ciphertext = raw[_NONCE_SIZE:]
+        aesgcm = AESGCM(key)
+        return aesgcm.decrypt(nonce, ciphertext, None).decode("utf-8")
+    except (binascii.Error, ValueError):
+        logger.warning("decrypt: malformed base64 token")
+        return None
+    except InvalidTag:
+        # Wrong key, rotated key, or tampered ciphertext. Deliberately vague
+        # in logs — we don't want to expose whether the token was ever valid.
+        logger.warning("decrypt: authentication tag mismatch")
+        return None
+    except UnicodeDecodeError:
+        logger.warning("decrypt: plaintext not valid utf-8")
+        return None
 
 
 def encrypt_float(value: float) -> Optional[str]:
@@ -61,6 +87,13 @@ def encrypt_float(value: float) -> Optional[str]:
 
 
 def decrypt_float(token: str) -> Optional[float]:
-    """Decrypt a token back to float."""
+    """Decrypt a token back to float. Returns None if the token cannot be
+    decrypted or the plaintext is not a valid float."""
     plain = decrypt(token)
-    return float(plain) if plain is not None else None
+    if plain is None:
+        return None
+    try:
+        return float(plain)
+    except ValueError:
+        logger.warning("decrypt_float: plaintext is not a float")
+        return None

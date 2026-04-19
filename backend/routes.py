@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import hashlib
+import logging
 import os
 import pytz
 import models
@@ -14,6 +15,7 @@ from database import get_db
 from config import settings
 from dependencies import get_current_user
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
@@ -129,28 +131,40 @@ def get_current_user_info(user: models.User = Depends(get_current_user)):
 @router.post("/forgot-password")
 @limiter.limit("3/minute")
 def request_password_reset(request: Request, body: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
-    """Request password reset OTP."""
+    """Request a password reset OTP.
+
+    Always returns the same response whether the email is registered or not.
+    Returning a different response for unknown emails (a 404 "User does not
+    exist") lets an attacker enumerate accounts — a DPDPA-relevant leak of
+    personal data and an OWASP-recommended fix. If the email is registered,
+    we generate an OTP and send it; if not, we silently do nothing. The user
+    with a typo will not receive an email but will not be told their address
+    is unknown.
+    """
     body.email = body.email.strip().lower()
+    generic_response = {
+        "message": "If an account with that email exists, an OTP has been sent.",
+        "expires_in_minutes": settings.OTP_EXPIRE_MINUTES,
+    }
+
     user = db.query(models.User).filter(models.User.email == body.email).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User with this email does not exist"
-        )
+        # Deliberately identical response, timing-comparable work skipped.
+        # Rate limiter (3/min) bounds enumeration cost even without timing parity.
+        logger.info("forgot_password: unknown email attempt")
+        return generic_response
 
     otp = email_service.generate_otp()
     expires_at = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
-
     db.add(models.PasswordResetOTP(email=body.email, otp=otp, expires_at=expires_at))
     db.commit()
 
     if not email_service.send_otp_email(body.email, otp):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send OTP email. Please try again later."
-        )
+        # Don't leak email-send failures to the client (would still confirm
+        # the account exists). Log for ops; the user can retry.
+        logger.error("forgot_password: send_otp_email failed for registered user")
 
-    return {"message": "OTP sent successfully to your email", "expires_in_minutes": settings.OTP_EXPIRE_MINUTES}
+    return generic_response
 
 
 @router.post("/verify-otp")

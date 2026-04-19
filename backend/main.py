@@ -1,10 +1,13 @@
-from fastapi import FastAPI, Depends, Request
+import logging
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from database import engine, Base
 from config import settings
 import models
@@ -22,6 +25,18 @@ from scheduler import start_scheduler, stop_scheduler
 # Load environment variables
 load_dotenv()
 
+# ---------------------------------------------------------------------------
+# Structured logging — used by global exception handlers below and by any
+# service that needs to surface an error without returning it to the user.
+# Level defaults to INFO; set LOG_LEVEL=DEBUG in .env for deeper traces.
+# ---------------------------------------------------------------------------
+_log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, _log_level, logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger("swasth")
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -38,6 +53,77 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# ---------------------------------------------------------------------------
+# Global exception handlers
+# ---------------------------------------------------------------------------
+# These catch anything a route didn't handle and return a sanitized response
+# to the client while logging the full trace internally. Without these,
+# FastAPI's default behaviour would leak stack traces and SQL constraint
+# names (including PHI like email addresses in IntegrityError messages) to
+# the frontend. Ordered most-specific-first so IntegrityError wins over
+# the generic SQLAlchemyError handler.
+# ---------------------------------------------------------------------------
+
+@app.exception_handler(IntegrityError)
+async def _integrity_error_handler(request: Request, exc: IntegrityError):
+    # Unique violation, FK violation, NOT NULL violation, etc. The driver
+    # error message typically includes the offending value (e.g. email),
+    # so we must not echo it to the client.
+    logger.warning(
+        "integrity_error path=%s method=%s",
+        request.url.path,
+        request.method,
+        exc_info=True,
+    )
+    return JSONResponse(
+        status_code=409,
+        content={"detail": "This record already exists or conflicts with existing data."},
+    )
+
+
+@app.exception_handler(SQLAlchemyError)
+async def _sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError):
+    # Connection drops, timeouts, data-type mismatches, etc. These usually
+    # mean the database is unhealthy; 503 is honest about that to clients.
+    logger.error(
+        "db_error path=%s method=%s",
+        request.url.path,
+        request.method,
+        exc_info=True,
+    )
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "The service is temporarily unavailable. Please try again shortly."},
+    )
+
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception):
+    # Catch-all for anything a route didn't translate into an HTTPException.
+    # Logs with full trace for operators; returns a generic 500 to the user.
+    #
+    # Defensive: if an HTTPException reaches here (shouldn't, since Starlette
+    # handles those via its own middleware), preserve its status and detail
+    # instead of rewriting it to a 500. Otherwise `raise HTTPException(404)`
+    # in a route would silently become a 500 with a misleading detail.
+    if isinstance(exc, (HTTPException, StarletteHTTPException)):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+            headers=getattr(exc, "headers", None),
+        )
+    logger.error(
+        "unhandled path=%s method=%s",
+        request.url.path,
+        request.method,
+        exc_info=True,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred. Please try again."},
+    )
 
 @app.on_event("startup")
 async def startup_event():
@@ -121,15 +207,10 @@ if __name__ == "__main__":
     # Get host and port from environment variables
     host = os.getenv("SERVER_HOST", "0.0.0.0")
     port = int(os.getenv("SERVER_PORT", 8000))
-    
-    print(f"\n{'='*50}")
-    print(f"Swasth Health App API Server")
-    print(f"{'='*50}")
-    print(f"Host: {host}")
-    print(f"Port: {port}")
-    print(f"Local URL: http://localhost:{port}")
-    print(f"Mobile URL: http://{host}:{port}")
-    print(f"API Docs: http://localhost:{port}/docs")
-    print(f"{'='*50}\n")
-    
+
+    logger.info(
+        "starting swasth api host=%s port=%s docs=http://localhost:%s/docs",
+        host, port, port,
+    )
+
     uvicorn.run(app, host=host, port=port)
