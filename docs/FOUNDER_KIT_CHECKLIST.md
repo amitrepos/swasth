@@ -30,11 +30,11 @@
 - [ ] Section 8: Seriousness signals checklist
 - [ ] Section 9: Three asks (doctor / relative / advisor)
 - [ ] Section 11: Key numbers to know cold
-- [ ] **Section 12: 90-day roadmap + Berlin succession plan** ← every investor will ask this
+- [x] **Section 12: 90-day roadmap + Berlin succession plan** — drafted 2026-04-19, 3-layer transition (India CEO / Patna Ops Lead / Amit from Berlin) + decision authority matrix + memorized investor answer
 - [ ] Section 13: Contact + credentials block
 
 ### Document artifacts to produce from the kit
-- [ ] A4 printed one-pager (front + back, Hindi + English) — print in Bangalore Day 1
+- [x] **A4 printed one-pager** (content drafted — `docs/ONE_PAGER_2026.md`) — still TODO: print in Bangalore Day 1 after QR code + phone # inserted
 - [ ] PDF for WhatsApp share (phone-friendly, 8-10 slides)
 - [ ] Laptop walkthrough deck (10-min version, for Bangalore/Delhi)
 - [ ] Phone demo sequence (for Tier-2 chamber, no laptop)
@@ -113,11 +113,9 @@
 
 ## 🚨 Parked risks / open questions
 
-- **Berlin succession:** Every investor will ask *"what happens if Amit has to move to Berlin for ALG?"* Must be answered clearly in Section 12 (90-day roadmap). Options to evaluate:
-  - Co-founder-led operation from India
-  - On-the-ground Patna ops head
-  - Part-time founder + full-time operator split
-- **Recovery of INDIA_TRIP_APR_MAY_2026.md:** File lost on branch switch. Content is in session conversation — needs recreation next session if trip plan detail is needed (scope, week-by-week, 14 Hindi/English scripts, 8-question interview protocol).
+- **Berlin succession:** ANSWERED 2026-04-19 in Section 12 — 3-layer transition: (1) Co-founder as India CEO full-time from Nov, (2) Patna Ops Lead hired by 15 Jun, (3) Amit as founder/chairman from Berlin with decision authority matrix. Dress-rehearsal in August 2026.
+- **INDIA_TRIP_APR_MAY_2026.md:** RECOVERED 2026-04-19 — full trip plan restored with week-by-week schedule, 14 Hindi/English scripts, 8-question interview protocol, daily log template, trip-report memo template.
+- **Open risk:** If Patna Ops Lead hire slips past 15 July, Berlin transition is at risk. If co-founder full-time transition not confirmed by 1 Oct, escalate. If seed hasn't closed by 1 Oct, decide on bridge from Amit's personal runway.
 
 ---
 
@@ -129,3 +127,5 @@
 - **2026-04-19:** Section 2 (Personal story) interview completed. All 7 prompts answered. Final Section 2 shaped into 4 versions (10-sec / 30-sec / 90-sec / 3-min). Core insight: three family losses (father, sister, father-in-law) → "randomly is the enemy" catalyst. Commitment stack: ~Rs 9L personal, 4-person team, hard Nov 2026 Amazon exit (forced by Berlin relocation). Tagline candidate: "You are not alone managing your health. You have a team."
 - **2026-04-19:** Competitive analysis drafted — `docs/COMPETITIVE_ANALYSIS_2026.md`. 4-tier landscape, 5 direct competitors, 4 structural moat reasons, 5-layer defensibility, scenario table, memorized one-liners in Hindi + English.
 - **2026-04-19:** Branch switch to `chore/alembic-migrations` dropped uncommitted FOUNDER_*.md and INDIA_TRIP_*.md files. Recreated FOUNDER_PITCH_KIT_2026.md and FOUNDER_KIT_CHECKLIST.md with full Sections 2+5+10 content. INDIA_TRIP_APR_MAY_2026.md pending recreation. **LESSON:** commit these files immediately — do not leave uncommitted across branch switches.
+- **2026-04-19 (PR #142 merged):** Part-1 docs merged to master (FOUNDER_PITCH_KIT, FOUNDER_KIT_CHECKLIST, COMPETITIVE_ANALYSIS).
+- **2026-04-19 (part 2 branch):** Recovered `docs/INDIA_TRIP_APR_MAY_2026.md` in full. Drafted Section 12 (90-day roadmap + Berlin succession plan) — answers the "what if Amit moves to Berlin" investor question with 3-layer structure, hire timeline, and decision authority matrix. Drafted `docs/ONE_PAGER_2026.md` — printable A4 artifact (Hindi + English) for Bangalore Day 1 print run.
