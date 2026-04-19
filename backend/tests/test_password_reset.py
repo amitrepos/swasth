@@ -11,27 +11,45 @@ import models
 
 class TestForgotPassword:
     URL = "/api/auth/forgot-password"
+    GENERIC_MSG_FRAGMENT = "If an account"
 
     @patch("routes.email_service.send_otp_email", return_value=True)
-    def test_forgot_password_sends_otp(self, mock_send, client, test_user):
+    def test_forgot_password_sends_otp_for_registered_user(self, mock_send, client, test_user):
         resp = client.post(self.URL, json={"email": TEST_USER_EMAIL})
         assert resp.status_code == 200
-        assert "OTP sent" in resp.json()["message"]
+        assert self.GENERIC_MSG_FRAGMENT in resp.json()["message"]
         mock_send.assert_called_once()
 
-    def test_forgot_password_nonexistent_email(self, client):
+    def test_forgot_password_nonexistent_email_returns_generic_response(self, client):
+        # Anti-enumeration: unknown emails must return the same 200 + message
+        # as a valid registered email. Returning 404 previously let attackers
+        # discover which emails are registered, violating DPDPA.
         resp = client.post(self.URL, json={"email": "nobody@swasth.app"})
-        assert resp.status_code == 404
+        assert resp.status_code == 200
+        assert self.GENERIC_MSG_FRAGMENT in resp.json()["message"]
+
+    def test_forgot_password_response_identical_for_known_and_unknown(self, client, test_user):
+        # The response body for a known vs unknown email must be byte-for-byte
+        # identical — any difference (message, field order, extra keys) leaks
+        # account existence.
+        with patch("routes.email_service.send_otp_email", return_value=True):
+            known = client.post(self.URL, json={"email": TEST_USER_EMAIL})
+        unknown = client.post(self.URL, json={"email": "nobody@swasth.app"})
+        assert known.status_code == unknown.status_code == 200
+        assert known.json() == unknown.json()
 
     def test_forgot_password_invalid_email(self, client):
         resp = client.post(self.URL, json={"email": "not-an-email"})
         assert resp.status_code == 422
 
     @patch("routes.email_service.send_otp_email", return_value=False)
-    def test_forgot_password_email_failure(self, mock_send, client, test_user):
+    def test_forgot_password_email_send_failure_hidden_from_client(self, mock_send, client, test_user):
+        # If SMTP is down, the client still gets the generic 200 response —
+        # otherwise a differential (500 for registered, 200 for unknown) would
+        # also enumerate accounts.
         resp = client.post(self.URL, json={"email": TEST_USER_EMAIL})
-        assert resp.status_code == 500
-        assert "Failed to send" in resp.json()["detail"]
+        assert resp.status_code == 200
+        assert self.GENERIC_MSG_FRAGMENT in resp.json()["message"]
 
 
 class TestVerifyOTP:
