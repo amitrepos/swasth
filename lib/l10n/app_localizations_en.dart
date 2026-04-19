@@ -60,6 +60,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get error => 'Error';
 
   @override
+  String get errNetwork =>
+      'No internet. Please check your connection and try again.';
+
+  @override
+  String get errSessionExpired =>
+      'Your session has ended. Please log in again.';
+
+  @override
+  String get errServer =>
+      'Our server is having trouble right now. Please try again in a moment.';
+
+  @override
+  String get errGeneric => 'Something went wrong. Please try again.';
+
+  @override
   String get loginTitle => 'Login';
 
   @override

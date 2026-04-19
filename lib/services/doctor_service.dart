@@ -1,308 +1,213 @@
 import 'dart:convert';
+
 import '../config/app_config.dart';
 import 'api_client.dart';
 
-const _kTimeout = Duration(seconds: 20);
-
 /// API service for doctor portal endpoints (/api/doctor/*).
+/// All methods throw [ApiException] subclasses on failure — never raw
+/// [Exception]. Screens hand them to [ErrorMapper] for localization.
 class DoctorService {
   static String get _baseUrl => '${AppConfig.serverHost}/api/doctor';
 
-  /// Register a new doctor account.
-  Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
-    final response = await ApiClient.httpClient
-        .post(
-          Uri.parse('$_baseUrl/register'),
-          headers: ApiClient.headers(),
-          body: jsonEncode(data),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 201) return jsonDecode(response.body);
-    throw Exception(
-      ApiClient.errorDetail(response, 'Doctor registration failed'),
+  Future<Map<String, dynamic>> register(Map<String, dynamic> data) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$_baseUrl/register'),
+        headers: ApiClient.headers(),
+        body: jsonEncode(data),
+      ),
+      successCodes: const [201],
     );
   }
 
-  /// Get current doctor's profile.
-  Future<Map<String, dynamic>> getMyProfile(String token) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/me'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return jsonDecode(response.body);
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to get doctor profile'),
+  Future<Map<String, dynamic>> getMyProfile(String token) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/me'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
   }
 
-  /// Phase 4: return pending patient link requests awaiting the
-  /// current doctor's review + attestation.
+  /// Phase 4: pending patient link requests awaiting doctor review + attestation.
   Future<List<Map<String, dynamic>>> getPendingRequests(String token) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/patients/pending'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      return list.whereType<Map<String, dynamic>>().toList(growable: false);
-    }
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to load pending requests'),
+    final list = await ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/patients/pending'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
+    return list.whereType<Map<String, dynamic>>().toList(growable: false);
   }
 
-  /// Phase 4: doctor accepts a pending link with an NMC attestation.
-  /// [examinedOn] must be within the last 6 months per NMC Follow-up
-  /// Consult rules. [condition] is the clinical context the doctor
-  /// examined the patient for (≥3 characters).
+  /// Doctor accepts a pending link with an NMC attestation.
+  /// [examinedOn] must be within the last 6 months per NMC Follow-up Consult rules.
   Future<Map<String, dynamic>> acceptPatientLink(
     String token,
     int profileId, {
     required DateTime examinedOn,
     required String condition,
-  }) async {
+  }) {
     final isoDate =
         '${examinedOn.year.toString().padLeft(4, '0')}-${examinedOn.month.toString().padLeft(2, '0')}-${examinedOn.day.toString().padLeft(2, '0')}';
-    final response = await ApiClient.httpClient
-        .post(
-          Uri.parse('$_baseUrl/patients/$profileId/accept'),
-          headers: ApiClient.headers(token: token),
-          body: jsonEncode({
-            'examined_on': isoDate,
-            'examined_for_condition': condition,
-          }),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    }
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to accept patient'),
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$_baseUrl/patients/$profileId/accept'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode({
+          'examined_on': isoDate,
+          'examined_for_condition': condition,
+        }),
+      ),
+      successCodes: const [200],
     );
   }
 
-  /// Phase 4: doctor declines a pending link with an optional reason.
   Future<void> declinePatientLink(
     String token,
     int profileId, {
     String? reason,
   }) async {
-    final response = await ApiClient.httpClient
-        .post(
-          Uri.parse('$_baseUrl/patients/$profileId/decline'),
-          headers: ApiClient.headers(token: token),
-          body: jsonEncode({
-            if (reason != null && reason.isNotEmpty) 'reason': reason,
-          }),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return;
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to decline patient'),
+    await ApiClient.send(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$_baseUrl/patients/$profileId/decline'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode({
+          if (reason != null && reason.isNotEmpty) 'reason': reason,
+        }),
+      ),
+      successCodes: const [200],
     );
   }
 
-  /// Get triage board — all linked patients sorted by criticality.
-  Future<List<dynamic>> getTriageBoard(String token) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/patients'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return jsonDecode(response.body) as List;
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to get triage board'),
+  Future<List<dynamic>> getTriageBoard(String token) {
+    return ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/patients'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
   }
 
-  /// Get patient readings (doctor view).
   Future<List<dynamic>> getPatientReadings(
     String token,
     int profileId, {
     int days = 30,
-  }) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/patients/$profileId/readings?days=$days'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return jsonDecode(response.body) as List;
-    throw Exception(ApiClient.errorDetail(response, 'Failed to get readings'));
-  }
-
-  /// Get patient profile info (doctor view).
-  Future<Map<String, dynamic>> getPatientProfile(
-    String token,
-    int profileId,
-  ) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/patients/$profileId/profile'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return jsonDecode(response.body);
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to get patient profile'),
+  }) {
+    return ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/patients/$profileId/readings?days=$days'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
   }
 
-  /// Get 7-day summary for a patient.
-  Future<Map<String, dynamic>> getPatientSummary(
-    String token,
-    int profileId,
-  ) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/patients/$profileId/summary'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return jsonDecode(response.body);
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to get patient summary'),
+  Future<Map<String, dynamic>> getPatientProfile(String token, int profileId) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/patients/$profileId/profile'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
   }
 
-  /// Add a clinical note on a patient.
+  Future<Map<String, dynamic>> getPatientSummary(String token, int profileId) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/patients/$profileId/summary'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
+  }
+
   Future<Map<String, dynamic>> addNote(
     String token,
     int profileId,
     String noteText, {
     int? readingId,
-  }) async {
-    final body = <String, dynamic>{
-      'note_text': noteText,
-      if (readingId != null) 'reading_id': readingId,
-    };
-    final response = await ApiClient.httpClient
-        .post(
-          Uri.parse('$_baseUrl/patients/$profileId/notes'),
-          headers: ApiClient.headers(token: token),
-          body: jsonEncode(body),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 201) return jsonDecode(response.body);
-    throw Exception(ApiClient.errorDetail(response, 'Failed to add note'));
+  }) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$_baseUrl/patients/$profileId/notes'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode({
+          'note_text': noteText,
+          if (readingId != null) 'reading_id': readingId,
+        }),
+      ),
+      successCodes: const [201],
+    );
   }
 
-  /// List doctor's notes on a patient.
-  Future<List<dynamic>> getNotes(String token, int profileId) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/patients/$profileId/notes'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return jsonDecode(response.body) as List;
-    throw Exception(ApiClient.errorDetail(response, 'Failed to get notes'));
+  Future<List<dynamic>> getNotes(String token, int profileId) {
+    return ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/patients/$profileId/notes'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
   }
 
-  /// Look up a doctor by code (used by patient app).
-  Future<Map<String, dynamic>> lookupDoctor(
-    String token,
-    String doctorCode,
-  ) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/lookup/$doctorCode'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return jsonDecode(response.body);
-    throw Exception(ApiClient.errorDetail(response, 'Doctor not found'));
+  Future<Map<String, dynamic>> lookupDoctor(String token, String doctorCode) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/lookup/$doctorCode'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
   }
 
-  /// Patient links to a doctor via doctor code.
   Future<Map<String, dynamic>> linkDoctor(
     String token,
     int profileId,
     String doctorCode,
     String consentType,
-  ) async {
-    final response = await ApiClient.httpClient
-        .post(
-          Uri.parse('$_baseUrl/link/$profileId'),
-          headers: ApiClient.headers(token: token),
-          body: jsonEncode({
-            'doctor_code': doctorCode,
-            'consent_type': consentType,
-          }),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 201) return jsonDecode(response.body);
-    throw Exception(ApiClient.errorDetail(response, 'Failed to link doctor'));
+  ) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$_baseUrl/link/$profileId'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode({
+          'doctor_code': doctorCode,
+          'consent_type': consentType,
+        }),
+      ),
+      successCodes: const [201],
+    );
   }
 
-  /// Return the full directory of verified doctors on Swasth, sorted
-  /// alphabetically by name. Patient-safe — no PII in the response.
-  ///
-  /// Each entry is a map with `doctor_name`, `specialty`, `clinic_name`,
-  /// and `doctor_code`. Powers the LinkDoctor picker so patients can
-  /// find a doctor by name instead of having to memorize a code.
+  /// Full directory of verified doctors on Swasth.
   Future<List<Map<String, dynamic>>> getDirectory(String token) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/directory'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      return list.whereType<Map<String, dynamic>>().toList(growable: false);
-    }
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to load doctor directory'),
+    final list = await ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/directory'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
+    return list.whereType<Map<String, dynamic>>().toList(growable: false);
   }
 
-  /// Return deduped verified doctors linked to any profile the
-  /// authenticated user owns. Retained as a secondary source even
-  /// though the primary picker now uses [getDirectory]; future UX may
-  /// use this to highlight "your frequently-used doctors".
-  ///
-  /// Each entry is a map with `doctor_name`, `specialty`, `clinic_name`,
-  /// `doctor_code`, `is_verified`, and `linked_profile_ids` (a list of int).
+  /// Deduped verified doctors linked to any profile the user owns.
   Future<List<Map<String, dynamic>>> getKnownDoctors(String token) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/known-doctors'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      return list.whereType<Map<String, dynamic>>().toList(growable: false);
-    }
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to load known doctors'),
+    final list = await ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/known-doctors'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
+    return list.whereType<Map<String, dynamic>>().toList(growable: false);
+  }
+
+  Future<List<dynamic>> getLinkedDoctors(String token, int profileId) {
+    return ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/link/$profileId'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
   }
 
-  /// List doctors linked to a profile.
-  Future<List<dynamic>> getLinkedDoctors(String token, int profileId) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse('$_baseUrl/link/$profileId'),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-    if (response.statusCode == 200) return jsonDecode(response.body) as List;
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to get linked doctors'),
-    );
-  }
-
-  /// Patient revokes a doctor's access to their profile — DPDPA § 13
-  /// right-to-erasure path. Sets [DoctorPatientLink.is_active] to false
-  /// on the backend; the doctor immediately loses read access to the
-  /// profile's readings and triage data.
+  /// Patient revokes a doctor's access — DPDPA § 13 right-to-erasure path.
   Future<void> revokeDoctorLink(
     String token,
     int profileId,
@@ -311,12 +216,12 @@ class DoctorService {
     final uri = Uri.parse(
       '$_baseUrl/link/$profileId',
     ).replace(queryParameters: {'doctor_code': doctorCode});
-    final response = await ApiClient.httpClient
-        .delete(uri, headers: ApiClient.headers(token: token))
-        .timeout(_kTimeout);
-    if (response.statusCode == 200 || response.statusCode == 204) return;
-    throw Exception(
-      ApiClient.errorDetail(response, 'Failed to revoke doctor access'),
+    await ApiClient.send(
+      () => ApiClient.httpClient.delete(
+        uri,
+        headers: ApiClient.headers(token: token),
+      ),
+      successCodes: const [200, 204],
     );
   }
 }

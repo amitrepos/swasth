@@ -2,35 +2,30 @@
 // Related: backend/routes_meals.py, lib/models/meal_log.dart
 
 import 'dart:convert';
+
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
+
 import '../config/app_config.dart';
 import '../models/meal_log.dart';
 import '../screens/meal_result_screen.dart';
 import 'api_client.dart';
-
-const _kTimeout = Duration(seconds: 20);
+import 'api_exception.dart';
 
 class MealService {
   static String get _baseUrl => '${AppConfig.serverHost}/api/meals';
 
   /// Save a new meal log via POST /api/meals.
   Future<MealLog> saveMeal(MealLogCreate data, String token) async {
-    try {
-      final response = await ApiClient.httpClient
-          .post(
-            Uri.parse(_baseUrl),
-            headers: ApiClient.headers(token: token),
-            body: jsonEncode(data.toJson()),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 201) {
-        return MealLog.fromJson(jsonDecode(response.body));
-      }
-      throw Exception(ApiClient.errorDetail(response, 'Failed to save meal'));
-    } catch (e) {
-      throw Exception('Failed to save meal: $e');
-    }
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse(_baseUrl),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode(data.toJson()),
+      ),
+      successCodes: const [201],
+    );
+    return MealLog.fromJson(body);
   }
 
   /// Get meals for a profile via GET /api/meals?profile_id=X&days=Y.
@@ -39,97 +34,80 @@ class MealService {
     String token, {
     int days = 30,
   }) async {
-    try {
-      final response = await ApiClient.httpClient
-          .get(
-            Uri.parse('$_baseUrl?profile_id=$profileId&days=$days'),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 200) {
-        return (jsonDecode(response.body) as List)
-            .map((j) => MealLog.fromJson(j))
-            .toList();
-      }
-      throw Exception(ApiClient.errorDetail(response, 'Failed to get meals'));
-    } catch (e) {
-      throw Exception('Failed to get meals: $e');
-    }
+    final list = await ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl?profile_id=$profileId&days=$days'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
+    return list.map((j) => MealLog.fromJson(j)).toList();
   }
 
   /// Get today's meals via GET /api/meals?profile_id=X&days=1.
   Future<List<MealLog>> getTodayMeals(int profileId, String token) async {
-    try {
-      final response = await ApiClient.httpClient
-          .get(
-            Uri.parse('$_baseUrl?profile_id=$profileId&days=1'),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 200) {
-        final meals = (jsonDecode(response.body) as List)
-            .map((j) => MealLog.fromJson(j))
-            .toList();
-        // Sort ascending by timestamp for dashboard display
-        meals.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        return meals;
-      }
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to get today meals'),
-      );
-    } catch (e) {
-      throw Exception('Failed to get today meals: $e');
-    }
+    final list = await ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl?profile_id=$profileId&days=1'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
+    final meals = list.map((j) => MealLog.fromJson(j)).toList();
+    meals.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    return meals;
   }
 
   /// Delete a meal via DELETE /api/meals/{id}.
   Future<void> deleteMeal(int mealId, String token) async {
-    try {
-      final response = await ApiClient.httpClient
-          .delete(
-            Uri.parse('$_baseUrl/$mealId'),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode != 200) {
-        throw Exception(
-          ApiClient.errorDetail(response, 'Failed to delete meal'),
-        );
-      }
-    } catch (e) {
-      throw Exception('Failed to delete meal: $e');
-    }
+    await ApiClient.send(
+      () => ApiClient.httpClient.delete(
+        Uri.parse('$_baseUrl/$mealId'),
+        headers: ApiClient.headers(token: token),
+      ),
+      successCodes: const [200, 204],
+    );
   }
 
   /// Parse a food photo via POST /api/meals/parse-image?profile_id=X.
+  /// Uses MultipartRequest so we can't route through [ApiClient.send] —
+  /// manually map errors here instead. Keeps the 30-second timeout because
+  /// Gemini Vision takes longer than a normal API call.
   Future<FoodClassificationResult> parseImage(
-      int profileId, XFile file, String token) async {
+    int profileId,
+    XFile file,
+    String token,
+  ) async {
+    final uri = Uri.parse('$_baseUrl/parse-image?profile_id=$profileId');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll(ApiClient.headers(token: token));
+    final bytes = await file.readAsBytes();
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: file.name),
+    );
+
+    http.Response response;
     try {
-      final uri = Uri.parse('$_baseUrl/parse-image?profile_id=$profileId');
-      final request = http.MultipartRequest('POST', uri)
-        ..headers.addAll(ApiClient.headers(token: token));
-
-      // Read bytes and add as multipart file (compatible with Web)
-      final bytes = await file.readAsBytes();
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: file.name,
-        ),
-      );
-
       final streamed = await request.send().timeout(
-            const Duration(seconds: 30),
-          );
-      final response = await http.Response.fromStream(streamed);
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return FoodClassificationResult.fromJson(jsonDecode(response.body));
-      }
-      throw Exception(ApiClient.errorDetail(response, 'Failed to parse image'));
-    } catch (e) {
-      throw Exception('Failed to parse image: $e');
+        const Duration(seconds: 30),
+      );
+      response = await http.Response.fromStream(streamed);
+    } catch (_) {
+      // Any transport-level failure during multipart upload — treat as network.
+      throw const NetworkException();
     }
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      try {
+        return FoodClassificationResult.fromJson(jsonDecode(response.body));
+      } on FormatException {
+        throw const ServerException();
+      }
+    }
+    if (response.statusCode == 401) throw const UnauthorizedException();
+    if (response.statusCode >= 500) {
+      throw ServerException(ApiClient.errorDetail(response, ''));
+    }
+    throw ValidationException(
+      ApiClient.errorDetail(response, 'Failed to parse image.'),
+    );
   }
 }

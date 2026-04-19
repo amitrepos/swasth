@@ -1,11 +1,10 @@
-import 'dart:async';
-import 'dart:io' show SocketException;
-
 import 'package:flutter/material.dart';
 // ignore_for_file: deprecated_member_use
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../services/api_exception.dart';
 import '../services/doctor_service.dart';
+import '../services/error_mapper.dart';
 import '../services/storage_service.dart';
 import '../widgets/glass_card.dart';
 
@@ -122,18 +121,17 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
     }
   }
 
+  /// Map a thrown exception to a localized message for the inline lookup
+  /// error display. Falls through to the centralized [ErrorMapper] for
+  /// generic cases; only specializes the 404 lookup failure (which
+  /// [ErrorMapper] can't know about since it's a domain-specific concept
+  /// unique to doctor codes).
   String _mapErrorToMessage(AppLocalizations l10n, Object error) {
-    final s = error.toString();
-    if (error is TimeoutException ||
-        error is SocketException ||
-        s.contains('SocketException') ||
-        s.contains('TimeoutException')) {
-      return l10n.linkDoctorNetworkError;
+    if (error is ValidationException) {
+      // Most common lookup failure — doctor code didn't resolve to a user.
+      return l10n.linkDoctorLookupFailed;
     }
-    if (s.contains('401') || s.contains('Not authenticated')) {
-      return l10n.linkDoctorSessionExpired;
-    }
-    return l10n.linkDoctorLookupFailed;
+    return ErrorMapper.userMessage(l10n, error);
   }
 
   Future<void> _lookupCode() async {
@@ -264,11 +262,10 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: AppColors.statusCritical,
-        ),
+      await ErrorMapper.showSnack(
+        context,
+        e,
+        backgroundColor: AppColors.statusCritical,
       );
     } finally {
       if (mounted) setState(() => _isLinking = false);

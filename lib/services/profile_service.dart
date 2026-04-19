@@ -2,9 +2,10 @@
 // Related: lib/models/profile_model.dart, backend/routes.py
 
 import 'dart:convert';
+
 import '../config/app_config.dart';
-import '../models/profile_model.dart';
 import '../models/invite_model.dart';
+import '../models/profile_model.dart';
 import 'api_client.dart';
 
 class ProfileService {
@@ -12,51 +13,38 @@ class ProfileService {
   final String _invitesUrl = '${AppConfig.serverHost}/api/invites';
 
   Future<List<ProfileModel>> getProfiles(String token) async {
-    final response = await ApiClient.httpClient.get(
-      Uri.parse(_baseUrl),
-      headers: ApiClient.headers(token: token),
+    final list = await ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse(_baseUrl),
+        headers: ApiClient.headers(token: token),
+      ),
     );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => ProfileModel.fromJson(json)).toList();
-    } else {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to get profiles'),
-      );
-    }
+    return list.map((j) => ProfileModel.fromJson(j)).toList();
   }
 
   Future<ProfileModel> createProfile(
     String token,
     Map<String, dynamic> data,
   ) async {
-    final response = await ApiClient.httpClient.post(
-      Uri.parse(_baseUrl),
-      headers: ApiClient.headers(token: token),
-      body: json.encode(data),
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse(_baseUrl),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode(data),
+      ),
+      successCodes: const [201],
     );
-
-    if (response.statusCode == 201) {
-      return ProfileModel.fromJson(json.decode(response.body));
-    } else {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to create profile'),
-      );
-    }
+    return ProfileModel.fromJson(body);
   }
 
   Future<ProfileModel> getProfile(String token, int profileId) async {
-    final response = await ApiClient.httpClient.get(
-      Uri.parse('$_baseUrl/$profileId'),
-      headers: ApiClient.headers(token: token),
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/$profileId'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
-
-    if (response.statusCode == 200) {
-      return ProfileModel.fromJson(json.decode(response.body));
-    } else {
-      throw Exception(ApiClient.errorDetail(response, 'Failed to get profile'));
-    }
+    return ProfileModel.fromJson(body);
   }
 
   Future<ProfileModel> updateProfile(
@@ -64,32 +52,24 @@ class ProfileService {
     int profileId,
     Map<String, dynamic> data,
   ) async {
-    final response = await ApiClient.httpClient.put(
-      Uri.parse('$_baseUrl/$profileId'),
-      headers: ApiClient.headers(token: token),
-      body: json.encode(data),
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.put(
+        Uri.parse('$_baseUrl/$profileId'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode(data),
+      ),
     );
-
-    if (response.statusCode == 200) {
-      return ProfileModel.fromJson(json.decode(response.body));
-    } else {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to update profile'),
-      );
-    }
+    return ProfileModel.fromJson(body);
   }
 
   Future<void> deleteProfile(String token, int profileId) async {
-    final response = await ApiClient.httpClient.delete(
-      Uri.parse('$_baseUrl/$profileId'),
-      headers: ApiClient.headers(token: token),
+    await ApiClient.send(
+      () => ApiClient.httpClient.delete(
+        Uri.parse('$_baseUrl/$profileId'),
+        headers: ApiClient.headers(token: token),
+      ),
+      successCodes: const [204],
     );
-
-    if (response.statusCode != 204) {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to delete profile'),
-      );
-    }
   }
 
   Future<void> sendInvite(
@@ -101,46 +81,37 @@ class ProfileService {
   }) async {
     final body = <String, dynamic>{'email': email, 'access_level': accessLevel};
     if (relationship != null) body['relationship'] = relationship;
-    final response = await ApiClient.httpClient.post(
-      Uri.parse('$_baseUrl/$profileId/invite'),
-      headers: ApiClient.headers(token: token),
-      body: json.encode(body),
+    await ApiClient.send(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$_baseUrl/$profileId/invite'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode(body),
+      ),
+      successCodes: const [201],
     );
-
-    if (response.statusCode != 201) {
-      throw Exception(ApiClient.errorDetail(response, 'Failed to send invite'));
-    }
   }
 
   Future<void> cancelInvite(String token, int profileId, int inviteId) async {
-    final response = await ApiClient.httpClient.delete(
-      Uri.parse('$_baseUrl/$profileId/invites/$inviteId'),
-      headers: ApiClient.headers(token: token),
+    await ApiClient.send(
+      () => ApiClient.httpClient.delete(
+        Uri.parse('$_baseUrl/$profileId/invites/$inviteId'),
+        headers: ApiClient.headers(token: token),
+      ),
+      successCodes: const [204],
     );
-
-    if (response.statusCode != 204) {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to cancel invite'),
-      );
-    }
   }
 
   Future<List<Map<String, dynamic>>> getProfileAccess(
     String token,
     int profileId,
   ) async {
-    final response = await ApiClient.httpClient.get(
-      Uri.parse('$_baseUrl/$profileId/access'),
-      headers: ApiClient.headers(token: token),
+    final list = await ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/$profileId/access'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
-
-    if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(json.decode(response.body));
-    } else {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to get profile access'),
-      );
-    }
+    return List<Map<String, dynamic>>.from(list);
   }
 
   Future<void> updateAccessLevel(
@@ -149,17 +120,14 @@ class ProfileService {
     int userId,
     String accessLevel,
   ) async {
-    final response = await ApiClient.httpClient.patch(
-      Uri.parse('$_baseUrl/$profileId/access/$userId'),
-      headers: ApiClient.headers(token: token),
-      body: json.encode({'access_level': accessLevel}),
+    await ApiClient.send(
+      () => ApiClient.httpClient.patch(
+        Uri.parse('$_baseUrl/$profileId/access/$userId'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode({'access_level': accessLevel}),
+      ),
+      successCodes: const [200],
     );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to update access level'),
-      );
-    }
   }
 
   Future<void> updateRelationship(
@@ -168,62 +136,44 @@ class ProfileService {
     int userId,
     String relationship,
   ) async {
-    final response = await ApiClient.httpClient.patch(
-      Uri.parse('$_baseUrl/$profileId/access/$userId'),
-      headers: ApiClient.headers(token: token),
-      body: json.encode({'relationship': relationship}),
+    await ApiClient.send(
+      () => ApiClient.httpClient.patch(
+        Uri.parse('$_baseUrl/$profileId/access/$userId'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode({'relationship': relationship}),
+      ),
+      successCodes: const [200],
     );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to update relationship'),
-      );
-    }
   }
 
   Future<void> revokeAccess(String token, int profileId, int userId) async {
-    final response = await ApiClient.httpClient.delete(
-      Uri.parse('$_baseUrl/$profileId/access/$userId'),
-      headers: ApiClient.headers(token: token),
+    await ApiClient.send(
+      () => ApiClient.httpClient.delete(
+        Uri.parse('$_baseUrl/$profileId/access/$userId'),
+        headers: ApiClient.headers(token: token),
+      ),
+      successCodes: const [204],
     );
-
-    if (response.statusCode != 204) {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to revoke access'),
-      );
-    }
   }
 
   Future<List<InviteModel>> getPendingInvites(String token) async {
-    final response = await ApiClient.httpClient.get(
-      Uri.parse('$_invitesUrl/pending'),
-      headers: ApiClient.headers(token: token),
+    final list = await ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_invitesUrl/pending'),
+        headers: ApiClient.headers(token: token),
+      ),
     );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => InviteModel.fromJson(json)).toList();
-    } else {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to get pending invites'),
-      );
-    }
+    return list.map((j) => InviteModel.fromJson(j)).toList();
   }
 
   Future<int> respondToInvite(String token, int inviteId, bool accept) async {
-    final response = await ApiClient.httpClient.post(
-      Uri.parse('$_invitesUrl/$inviteId/respond'),
-      headers: ApiClient.headers(token: token),
-      body: json.encode({'action': accept ? 'accept' : 'reject'}),
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$_invitesUrl/$inviteId/respond'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode({'action': accept ? 'accept' : 'reject'}),
+      ),
     );
-
-    if (response.statusCode == 200) {
-      final body = json.decode(response.body);
-      return body['profile_id'] ?? 0;
-    } else {
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to respond to invite'),
-      );
-    }
+    return (body['profile_id'] as int?) ?? 0;
   }
 }

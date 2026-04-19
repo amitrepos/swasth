@@ -200,6 +200,30 @@ abstract class AppLocalizations {
   /// **'Error'**
   String get error;
 
+  /// Shown when a network call fails due to no connectivity, DNS failure, timeout, or TLS handshake error. Plain-language so Sunita (55yo Ranchi patient) can understand.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet. Please check your connection and try again.'**
+  String get errNetwork;
+
+  /// Shown on HTTP 401 before auto-logout. User is about to be sent back to the login screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has ended. Please log in again.'**
+  String get errSessionExpired;
+
+  /// Shown on HTTP 5xx or when the server returns a malformed body we can't parse. Never expose the raw error.
+  ///
+  /// In en, this message translates to:
+  /// **'Our server is having trouble right now. Please try again in a moment.'**
+  String get errServer;
+
+  /// Fallback for any unexpected exception that doesn't fit a known category.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get errGeneric;
+
   /// No description provided for @loginTitle.
   ///
   /// In en, this message translates to:

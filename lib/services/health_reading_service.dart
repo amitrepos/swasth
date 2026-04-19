@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+
 import 'package:http/http.dart' as http;
+
 import '../config/app_config.dart';
 import '../services/ocr_service.dart';
 import 'api_client.dart';
+import 'api_exception.dart';
 
 class HealthReading {
   final int id;
@@ -231,90 +233,63 @@ class HealthReading {
   }
 }
 
-const _kTimeout = Duration(seconds: 20);
-
 class HealthReadingService {
-  static String baseUrl =
-      '${AppConfig.serverHost}/api'; // Use /api prefix for health endpoints
+  // Use /api prefix for health endpoints.
+  static String baseUrl = '${AppConfig.serverHost}/api';
 
   /// Save a new health reading. Returns {reading, alert?, skipped?} map.
   Future<Map<String, dynamic>> saveReading(
     HealthReading reading,
     String token,
   ) async {
-    try {
-      final response = await ApiClient.httpClient
-          .post(
-            Uri.parse('$baseUrl/readings'),
-            headers: ApiClient.headers(token: token),
-            body: jsonEncode(reading.toJson()),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-
-        // Check if backend skipped this as a duplicate
-        if (body['skipped'] == true) {
-          return {
-            'skipped': true,
-            'reason': body['reason'],
-            'seq': body['seq'],
-            'existing_id': body['existing_id'],
-          };
-        }
-
-        return {
-          'reading': HealthReading.fromJson(body),
-          'alert': body['alert'],
-        };
-      }
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to save reading'),
-      );
-    } catch (e) {
-      throw Exception('Failed to save reading: $e');
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$baseUrl/readings'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode(reading.toJson()),
+      ),
+      successCodes: const [201],
+    );
+    if (body['skipped'] == true) {
+      return {
+        'skipped': true,
+        'reason': body['reason'],
+        'seq': body['seq'],
+        'existing_id': body['existing_id'],
+      };
     }
+    return {'reading': HealthReading.fromJson(body), 'alert': body['alert']};
   }
 
-  /// Save steps reading to backend
+  /// Save steps reading to backend.
   Future<void> saveStepsReading({
     required String token,
     required int profileId,
     required int stepsCount,
     required int stepsGoal,
   }) async {
-    try {
-      final reading = HealthReading(
-        id: 0, // Will be assigned by server
-        profileId: profileId,
-        readingType: 'steps',
-        stepsCount: stepsCount,
-        stepsGoal: stepsGoal,
-        valueNumeric: stepsCount.toDouble(),
-        unitDisplay: 'steps',
-        readingTimestamp: DateTime.now(),
-        createdAt: DateTime.now(),
-      );
-
-      final response = await ApiClient.httpClient
-          .post(
-            Uri.parse('$baseUrl/readings'),
-            headers: ApiClient.headers(token: token),
-            body: jsonEncode(reading.toJson()),
-          )
-          .timeout(_kTimeout);
-      
-      if (response.statusCode != 201) {
-        throw Exception(
-          ApiClient.errorDetail(response, 'Failed to save steps reading'),
-        );
-      }
-    } catch (e) {
-      throw Exception('Failed to save steps reading: $e');
-    }
+    final reading = HealthReading(
+      id: 0,
+      profileId: profileId,
+      readingType: 'steps',
+      stepsCount: stepsCount,
+      stepsGoal: stepsGoal,
+      valueNumeric: stepsCount.toDouble(),
+      unitDisplay: 'steps',
+      readingTimestamp: DateTime.now(),
+      createdAt: DateTime.now(),
+    );
+    await ApiClient.send(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$baseUrl/readings'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode(reading.toJson()),
+      ),
+      successCodes: const [201],
+    );
   }
 
-  /// Get user's readings with optional filtering
+  /// Get user's readings with optional filtering.
   Future<List<HealthReading>> getReadings({
     required String token,
     required int profileId,
@@ -322,227 +297,202 @@ class HealthReadingService {
     int limit = 100,
     int offset = 0,
   }) async {
-    try {
-      String url =
-          '$baseUrl/readings?profile_id=$profileId&limit=$limit&offset=$offset';
-      if (readingType != null) url += '&reading_type=$readingType';
-
-      final response = await ApiClient.httpClient
-          .get(Uri.parse(url), headers: ApiClient.headers(token: token))
-          .timeout(_kTimeout);
-      if (response.statusCode == 200) {
-        return (jsonDecode(response.body) as List)
-            .map((j) => HealthReading.fromJson(j))
-            .toList();
-      }
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to get readings'),
-      );
-    } catch (e) {
-      throw Exception('Failed to get readings: $e');
-    }
+    var url =
+        '$baseUrl/readings?profile_id=$profileId&limit=$limit&offset=$offset';
+    if (readingType != null) url += '&reading_type=$readingType';
+    final list = await ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse(url),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
+    return list.map((j) => HealthReading.fromJson(j)).toList();
   }
 
-  /// Get a specific reading by ID
+  /// Get a specific reading by ID.
   Future<HealthReading> getReading(int readingId, String token) async {
-    try {
-      final response = await ApiClient.httpClient
-          .get(
-            Uri.parse('$baseUrl/readings/$readingId'),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 200)
-        return HealthReading.fromJson(jsonDecode(response.body));
-      throw Exception(ApiClient.errorDetail(response, 'Reading not found'));
-    } catch (e) {
-      throw Exception('Failed to get reading: $e');
-    }
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$baseUrl/readings/$readingId'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
+    return HealthReading.fromJson(body);
   }
 
-  /// Delete a reading
+  /// Delete a reading.
   Future<void> deleteReading(int readingId, String token) async {
-    try {
-      final response = await ApiClient.httpClient
-          .delete(
-            Uri.parse('$baseUrl/readings/$readingId'),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode != 200) {
-        throw Exception(
-          ApiClient.errorDetail(response, 'Failed to delete reading'),
-        );
-      }
-    } catch (e) {
-      throw Exception('Failed to delete reading: $e');
-    }
+    await ApiClient.send(
+      () => ApiClient.httpClient.delete(
+        Uri.parse('$baseUrl/readings/$readingId'),
+        headers: ApiClient.headers(token: token),
+      ),
+      successCodes: const [200, 204],
+    );
   }
 
-  /// Get AI Doctor recommendation from Gemini via backend
+  /// Get AI Doctor recommendation from Gemini via backend.
+  ///
+  /// Non-critical enrichment: returns empty string on [NetworkException] or
+  /// [ServerException] (home screen degrades gracefully). [UnauthorizedException]
+  /// still propagates so the app-wide 401 handler fires.
   Future<String> getAiInsight(String token, int profileId) async {
     try {
-      final response = await ApiClient.httpClient
-          .get(
-            Uri.parse('$baseUrl/readings/ai-insight?profile_id=$profileId'),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return (data['insight'] as String?) ?? '';
-      }
-      return '';
-    } catch (_) {
+      final data = await ApiClient.sendJsonObject(
+        () => ApiClient.httpClient.get(
+          Uri.parse('$baseUrl/readings/ai-insight?profile_id=$profileId'),
+          headers: ApiClient.headers(token: token),
+        ),
+      );
+      return (data['insight'] as String?) ?? '';
+    } on UnauthorizedException {
+      rethrow;
+    } on ApiException {
       return '';
     }
   }
 
   /// Get AI trend summary for a period (7, 30, or 90 days).
-  /// Combines health readings + chat memory + profile info for pattern analysis.
+  /// Non-critical enrichment — returns empty on non-auth failure.
   Future<String> getTrendSummary(
     String token,
     int profileId,
     int period,
   ) async {
     try {
-      final response = await ApiClient.httpClient
-          .get(
-            Uri.parse(
-              '$baseUrl/readings/trend-summary?profile_id=$profileId&period=$period',
-            ),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(const Duration(seconds: 45));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return (data['summary'] as String?) ?? '';
-      }
-      return '';
-    } catch (_) {
+      final data = await ApiClient.sendJsonObject(
+        () => ApiClient.httpClient.get(
+          Uri.parse(
+            '$baseUrl/readings/trend-summary?profile_id=$profileId&period=$period',
+          ),
+          headers: ApiClient.headers(token: token),
+        ),
+        timeout: const Duration(seconds: 45),
+      );
+      return (data['summary'] as String?) ?? '';
+    } on UnauthorizedException {
+      rethrow;
+    } on ApiException {
       return '';
     }
   }
 
   /// Send a device photo to the backend and use Gemini Vision to extract
   /// the reading values. Returns an OcrResult on success, null on failure.
-  /// Caller should fall back to local OCR when null is returned.
+  /// Caller falls back to local OCR when null is returned.
   Future<OcrResult?> parseImageWithGemini(
     File imageFile,
     String deviceType,
     String token,
   ) async {
-    try {
-      final uri = Uri.parse(
-        '$baseUrl/readings/parse-image?device_type=$deviceType',
-      );
-      final request = http.MultipartRequest('POST', uri)
-        ..headers.addAll(ApiClient.headers(token: token))
-        ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+    final uri = Uri.parse(
+      '$baseUrl/readings/parse-image?device_type=$deviceType',
+    );
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll(ApiClient.headers(token: token))
+      ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
 
+    http.Response response;
+    try {
       final streamed = await request.send().timeout(
         const Duration(seconds: 20),
       );
-      final response = await http.Response.fromStream(streamed);
-
-      if (response.statusCode != 200) return null;
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      if (data.containsKey('error')) return null;
-
-      if (deviceType == 'blood_pressure') {
-        final sys = (data['systolic'] as num?)?.toDouble();
-        final dia = (data['diastolic'] as num?)?.toDouble();
-        final pulse = (data['pulse'] as num?)?.toDouble();
-        if (sys == null || dia == null) return null;
-        return OcrResult(
-          readingType: 'blood_pressure',
-          systolic: sys,
-          diastolic: dia,
-          pulse: pulse,
-          rawText: 'Gemini: $sys/$dia mmHg${pulse != null ? ' ♥$pulse' : ''}',
-        );
-      } else if (deviceType == 'weight') {
-        final weight = (data['weight'] as num?)?.toDouble();
-        if (weight == null) return null;
-        return OcrResult(
-          readingType: 'weight',
-          weightValue: weight,
-          rawText: 'Gemini: $weight kg',
-        );
-      } else {
-        final glucose = (data['glucose'] as num?)?.toDouble();
-        if (glucose == null) return null;
-        return OcrResult(
-          readingType: 'glucose',
-          glucoseValue: glucose,
-          rawText: 'Gemini: $glucose mg/dL',
-        );
-      }
+      response = await http.Response.fromStream(streamed);
     } catch (_) {
+      // Transport failure during multipart — let caller fall back to local OCR.
       return null;
+    }
+
+    if (response.statusCode == 401) {
+      throw const UnauthorizedException();
+    }
+    if (response.statusCode != 200) return null;
+
+    final Map<String, dynamic> data;
+    try {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    } on FormatException {
+      return null;
+    }
+    if (data.containsKey('error')) return null;
+
+    if (deviceType == 'blood_pressure') {
+      final sys = (data['systolic'] as num?)?.toDouble();
+      final dia = (data['diastolic'] as num?)?.toDouble();
+      final pulse = (data['pulse'] as num?)?.toDouble();
+      if (sys == null || dia == null) return null;
+      return OcrResult(
+        readingType: 'blood_pressure',
+        systolic: sys,
+        diastolic: dia,
+        pulse: pulse,
+        rawText: 'Gemini: $sys/$dia mmHg${pulse != null ? ' ♥$pulse' : ''}',
+      );
+    } else if (deviceType == 'weight') {
+      final weight = (data['weight'] as num?)?.toDouble();
+      if (weight == null) return null;
+      return OcrResult(
+        readingType: 'weight',
+        weightValue: weight,
+        rawText: 'Gemini: $weight kg',
+      );
+    } else {
+      final glucose = (data['glucose'] as num?)?.toDouble();
+      if (glucose == null) return null;
+      return OcrResult(
+        readingType: 'glucose',
+        glucoseValue: glucose,
+        rawText: 'Gemini: $glucose mg/dL',
+      );
     }
   }
 
-  /// Get computed health score, streak, and AI insight for the home screen
-  Future<Map<String, dynamic>> getHealthScore(
-    String token,
-    int profileId,
-  ) async {
-    try {
-      final response = await ApiClient.httpClient
-          .get(
-            Uri.parse('$baseUrl/readings/health-score?profile_id=$profileId'),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 200) return jsonDecode(response.body);
-      throw Exception(
-        ApiClient.errorDetail(response, 'Failed to get health score'),
-      );
-    } catch (e) {
-      throw Exception('Failed to get health score: $e');
-    }
+  /// Get computed health score, streak, and AI insight for the home screen.
+  Future<Map<String, dynamic>> getHealthScore(String token, int profileId) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$baseUrl/readings/health-score?profile_id=$profileId'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
   }
 
   /// Get streaks and points for all accessible profiles (family leaderboard).
+  /// Non-critical enrichment — returns empty on non-auth failure.
   Future<List<Map<String, dynamic>>> getFamilyStreaks(String token) async {
     try {
-      final response = await ApiClient.httpClient
-          .get(
-            Uri.parse('$baseUrl/readings/family-streaks'),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data['leaderboard'] ?? []);
-      }
-      return [];
-    } catch (_) {
+      final data = await ApiClient.sendJsonObject(
+        () => ApiClient.httpClient.get(
+          Uri.parse('$baseUrl/readings/family-streaks'),
+          headers: ApiClient.headers(token: token),
+        ),
+      );
+      return List<Map<String, dynamic>>.from(data['leaderboard'] ?? []);
+    } on UnauthorizedException {
+      rethrow;
+    } on ApiException {
       return [];
     }
   }
 
   /// Get shareable weekly summary text for a profile.
+  /// Non-critical enrichment — returns empty on non-auth failure.
   Future<Map<String, dynamic>> getWeeklySummary(
     String token,
     int profileId,
   ) async {
     try {
-      final response = await ApiClient.httpClient
-          .get(
-            Uri.parse(
-              '$baseUrl/readings/trend-summary?profile_id=$profileId&period=7&format=text',
-            ),
-            headers: ApiClient.headers(token: token),
-          )
-          .timeout(_kTimeout);
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-      return {};
-    } catch (_) {
+      return await ApiClient.sendJsonObject(
+        () => ApiClient.httpClient.get(
+          Uri.parse(
+            '$baseUrl/readings/trend-summary?profile_id=$profileId&period=7&format=text',
+          ),
+          headers: ApiClient.headers(token: token),
+        ),
+      );
+    } on UnauthorizedException {
+      rethrow;
+    } on ApiException {
       return {};
     }
   }

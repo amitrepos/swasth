@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
+import '../../services/api_exception.dart';
 import '../../services/doctor_service.dart';
+import '../../services/error_mapper.dart';
 import '../../services/storage_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
@@ -63,8 +66,13 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      if (e is UnauthorizedException) {
+        await ErrorMapper.showSnack(context, e);
+        return;
+      }
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = ErrorMapper.userMessage(l10n, e);
         _loading = false;
       });
     }
@@ -526,11 +534,10 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
       await _loadData();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: AppColors.statusCritical,
-        ),
+      await ErrorMapper.showSnack(
+        context,
+        e,
+        backgroundColor: AppColors.statusCritical,
       );
     } finally {
       if (mounted) {
@@ -582,11 +589,10 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
       await _loadData();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: AppColors.statusCritical,
-        ),
+      await ErrorMapper.showSnack(
+        context,
+        e,
+        backgroundColor: AppColors.statusCritical,
       );
     } finally {
       if (mounted) {

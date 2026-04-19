@@ -8,6 +8,8 @@ import '../models/profile_model.dart';
 import '../models/invite_model.dart';
 import '../config/app_config.dart';
 import '../theme/app_theme.dart';
+import '../services/api_exception.dart';
+import '../services/error_mapper.dart';
 import '../services/profile_service.dart';
 import '../services/storage_service.dart';
 import 'admin_create_user_screen.dart';
@@ -94,8 +96,14 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
         });
         return;
       }
+      if (!mounted) return;
+      if (e is UnauthorizedException) {
+        await ErrorMapper.showSnack(context, e);
+        return;
+      }
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = ErrorMapper.userMessage(l10n, e);
         _isLoading = false;
       });
     }

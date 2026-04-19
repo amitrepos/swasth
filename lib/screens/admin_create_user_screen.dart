@@ -4,6 +4,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../constants/doctor_specialties.dart';
 import '../theme/app_theme.dart';
 import '../services/admin_service.dart';
+import '../services/error_mapper.dart';
 import '../services/storage_service.dart';
 import '../widgets/auth_form_scroll_body.dart';
 
@@ -85,11 +86,10 @@ class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: AppColors.statusCritical,
-        ),
+      await ErrorMapper.showSnack(
+        context,
+        e,
+        backgroundColor: AppColors.statusCritical,
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

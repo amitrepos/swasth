@@ -1,10 +1,12 @@
 import 'dart:convert';
+
 import '../config/app_config.dart';
 import 'api_client.dart';
 
-const _kTimeout = Duration(
-  seconds: 30,
-); // Chat may take longer than typical API calls
+/// Chat service uses a longer timeout than generic API calls because AI
+/// responses (especially vision) can legitimately take tens of seconds.
+const _kChatTimeout = Duration(seconds: 30);
+const _kVisionTimeout = Duration(seconds: 60);
 
 class ChatService {
   static String baseUrl = '${AppConfig.serverHost}/api';
@@ -13,19 +15,15 @@ class ChatService {
     String token,
     int profileId,
     String message,
-  ) async {
-    final response = await ApiClient.httpClient
-        .post(
-          Uri.parse('$baseUrl/chat/send'),
-          headers: ApiClient.headers(token: token),
-          body: jsonEncode({'profile_id': profileId, 'message': message}),
-        )
-        .timeout(_kTimeout);
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    throw Exception(ApiClient.errorDetail(response, 'Failed to send message'));
+  ) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$baseUrl/chat/send'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode({'profile_id': profileId, 'message': message}),
+      ),
+      timeout: _kChatTimeout,
+    );
   }
 
   Future<Map<String, dynamic>> sendImageMessage(
@@ -33,43 +31,32 @@ class ChatService {
     int profileId,
     String message,
     String imageBase64,
-  ) async {
-    final response = await ApiClient.httpClient
-        .post(
-          Uri.parse('$baseUrl/chat/send'),
-          headers: ApiClient.headers(token: token),
-          body: jsonEncode({
-            'profile_id': profileId,
-            'message': message,
-            'image_base64': imageBase64,
-          }),
-        )
-        .timeout(const Duration(seconds: 60)); // Vision takes longer
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    throw Exception(ApiClient.errorDetail(response, 'Failed to analyze image'));
+  ) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$baseUrl/chat/send'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode({
+          'profile_id': profileId,
+          'message': message,
+          'image_base64': imageBase64,
+        }),
+      ),
+      timeout: _kVisionTimeout,
+    );
   }
 
   Future<Map<String, dynamic>> getMessages(
     String token,
     int profileId, {
     int limit = 50,
-  }) async {
-    final response = await ApiClient.httpClient
-        .get(
-          Uri.parse(
-            '$baseUrl/chat/messages?profile_id=$profileId&limit=$limit',
-          ),
-          headers: ApiClient.headers(token: token),
-        )
-        .timeout(_kTimeout);
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    }
-    throw Exception(ApiClient.errorDetail(response, 'Failed to load messages'));
+  }) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$baseUrl/chat/messages?profile_id=$profileId&limit=$limit'),
+        headers: ApiClient.headers(token: token),
+      ),
+      timeout: _kChatTimeout,
+    );
   }
-
 }

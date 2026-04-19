@@ -17,6 +17,22 @@
   "logout": "Logout",
   "profile": "Profile",
   "error": "Error",
+  "errNetwork": "No internet. Please check your connection and try again.",
+  "@errNetwork": {
+    "description": "Shown when a network call fails due to no connectivity, DNS failure, timeout, or TLS handshake error. Plain-language so Sunita (55yo Ranchi patient) can understand."
+  },
+  "errSessionExpired": "Your session has ended. Please log in again.",
+  "@errSessionExpired": {
+    "description": "Shown on HTTP 401 before auto-logout. User is about to be sent back to the login screen."
+  },
+  "errServer": "Our server is having trouble right now. Please try again in a moment.",
+  "@errServer": {
+    "description": "Shown on HTTP 5xx or when the server returns a malformed body we can't parse. Never expose the raw error."
+  },
+  "errGeneric": "Something went wrong. Please try again.",
+  "@errGeneric": {
+    "description": "Fallback for any unexpected exception that doesn't fit a known category."
+  },
   "loginTitle": "Login",
   "emailLabel": "Email",
   "passwordLabel": "Password",

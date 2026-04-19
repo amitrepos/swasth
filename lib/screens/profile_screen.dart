@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/doctor_service.dart';
+import '../services/error_mapper.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -91,9 +92,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading profile: $e')));
+        await ErrorMapper.showSnack(context, e);
       }
     }
   }
@@ -187,11 +186,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _revokingCodes.remove(doctorCode));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: AppColors.statusCritical,
-        ),
+      await ErrorMapper.showSnack(
+        context,
+        e,
+        backgroundColor: AppColors.statusCritical,
       );
     }
   }
@@ -270,11 +268,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
       }
     }
@@ -306,11 +303,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ).pushNamedAndRemoveUntil('/login', (_) => false);
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString()),
-                      backgroundColor: AppColors.statusCritical,
-                    ),
+                  await ErrorMapper.showSnack(
+                    context,
+                    e,
+                    backgroundColor: AppColors.statusCritical,
                   );
                 }
               }
@@ -472,11 +468,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.statusCritical,
-          ),
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
         );
       }
     }
