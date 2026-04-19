@@ -2483,4 +2483,51 @@ during post-merge verification:
 ### Follow-up tracked
 - DEV Auto Deploy workflow likely has the same legacy migration loop;
   audit `.github/workflows/dev.yml` post-merge.
-  - 19:09:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+
+## 2026-04-19 — Align models.py server_defaults with prod (PR #146 follow-up)
+
+After PR #146 brought prod under Alembic management, `alembic check` on
+prod surfaced 4 columns where prod has a DB-side `server_default` that
+`models.py` did not declare. These defaults exist from legacy
+`migrate_*.py` scripts that set them at table creation time.
+
+| Column | Prod default | models.py before | models.py after |
+|---|---|---|---|
+| `users.is_admin` | `false` | `default=False` | + `server_default="false"` |
+| `users.role` | `'patient'::userrole` | `default=UserRole.patient` | + `server_default="patient"` |
+| `users.email_verified` | `false` | `default=False` | + `server_default="false"` |
+| `email_verification_otps.is_used` | `false` | `default=False` | + `server_default="false"` |
+
+App runtime is unaffected (code always specifies these on INSERT). The
+fix is purely so `alembic check` is clean on prod and future
+`alembic revision --autogenerate` doesn't generate noisy "drop these
+defaults" ops that someone might merge by mistake.
+
+### Files
+- `backend/models.py` — 4 `server_default=` additions on existing columns.
+- `backend/migrations/versions/0004_align_existing_server_defaults.py` (NEW)
+  — symmetric upgrade/downgrade. Upgrade is metadata-only on prod (the
+  DEFAULTs already exist; SET DEFAULT to the same value is a no-op).
+  Downgrade drops all 4 defaults.
+
+### Local verification
+- Bootstrap fresh PG via `Base.metadata.create_all()` + `alembic stamp head`
+  → `alembic check` clean.
+- `alembic downgrade -1` → all 4 defaults cleared (`(none)` in
+  `information_schema.columns`).
+- `alembic upgrade head` → defaults restored (`false` × 3,
+  `'patient'::userrole`).
+- `alembic check` → clean.
+
+### Post-merge expectation
+1. PROD Deploy auto-fires.
+2. Deploy log: `Current revision: 0003` (alembic_version exists from
+   PR #146; bootstrap branch skipped).
+3. Deploy log: `alembic upgrade head` applies 0004 — all 4 ops are
+   no-ops on prod (DEFAULTs already set to these values).
+4. SSH verify: `alembic current` → `0004 (head)`; `alembic check` →
+   "No new upgrade operations detected."
+
+This closes the loop on the PR #144 → #146 → #147 sequence: Alembic is
+now the single source of truth for prod schema, no drift, no noise.
+  - 19:44:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md

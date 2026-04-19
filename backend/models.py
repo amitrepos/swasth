@@ -26,11 +26,11 @@ class User(Base):
     consent_language = Column(String, nullable=True)
     ai_consent = Column(Boolean, default=False)
     ai_consent_timestamp = Column(DateTime(timezone=True), nullable=True)
-    is_admin = Column(Boolean, default=False)
-    role = Column(Enum(UserRole), default=UserRole.patient, nullable=False)
+    is_admin = Column(Boolean, default=False, server_default="false")
+    role = Column(Enum(UserRole), default=UserRole.patient, server_default="patient", nullable=False)
     timezone = Column(String, default="UTC", server_default="UTC", nullable=False)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
-    email_verified = Column(Boolean, default=False)
+    email_verified = Column(Boolean, default=False, server_default="false")
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -302,7 +302,7 @@ class EmailVerificationOTP(Base):
     otp = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime, nullable=False)
-    is_used = Column(Boolean, default=False)
+    is_used = Column(Boolean, default=False, server_default="false")
 
 
 # ---------------------------------------------------------------------------
