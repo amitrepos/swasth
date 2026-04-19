@@ -224,6 +224,144 @@ Flips "I want something" to "I want your expertise." Doctors love being asked. G
 
 ---
 
-*Next sections to draft: 1 (cover + one-liner), 3 (two patient stories), 4 (app walkthrough), 6 (why WhatsApp in India), 7 (weekly-report sample), 8 (seriousness signals), 9 (three asks), 11 (key numbers), 12 (90-day roadmap incl. Berlin succession), 13 (contact + credentials).*
+## Section 12 — 90-Day Roadmap + Berlin Succession Plan
 
-*For competitive positioning, see `docs/COMPETITIVE_ANALYSIS_2026.md` (acts as Section 6b).*
+> **Why this section matters:** Every investor, every advisor, every serious relative will ask: *"What happens if Amit has to move to Berlin in November?"* A vague answer kills the pitch. This section is the structured response.
+
+---
+
+### Phase 1 — Trip (22 Apr – 27 May 2026) — 35 days
+
+**Goal:** Validate/invalidate Bihar-first thesis with real doctors, real patients, real NRI payers.
+
+| Workstream | Target | Success = | Tracked in |
+|---|---|---|---|
+| Doctor interviews | 45+ across 3 cities | Scored 1-5 on 8-question protocol | Google Sheets (offline) |
+| Advisor LOIs | 1-2 | Signed Rs 25-50K/yr terms | Files/DOCX |
+| NRI diaspora interviews | 10 in Delhi | Willingness + price-point data | Interview notes |
+| Patient onboards | 5 in Patna + 5 observations in Bettiah | Daily logging verified | App telemetry |
+| Bug fixes | Top-3 from Bangalore demos | Stable demo by Delhi leg | Engineering log |
+| Trip report | 2-page memo | Sent to 3 target VCs by 27 May | Trip report folder |
+
+**Gates:**
+- Day 14 (5 May): Go/no-go on Patna allocation based on Delhi advisor signals
+- Day 28 (19 May): Go/no-go on Bettiah based on Patna traction
+
+---
+
+### Phase 2 — Post-trip synthesis (28 May – 30 Jun 2026) — 33 days
+
+**Goal:** Convert trip data into a fundable thesis + lock 3 pilot patients per doctor who said yes.
+
+| Workstream | Target | Success = |
+|---|---|---|
+| Pilot deployment | 30+ patients across 10 Patna doctors + 5 Bettiah villagers | Daily logging > 60% DAU/WAU |
+| NRI payment test | 3-5 paying NRI families | First Rs 500/mo transactions |
+| Trip report → VC conversations | 3 VCs engaged | 1 term sheet in motion by 30 Jun |
+| WhatsApp feature hardening | v1 → v1.2 | 95%+ AI accuracy on BP/glucose |
+| Bug backlog | Clean | Zero P0/P1 open |
+| Weekly doctor reports | Delivered | All pilot doctors receiving every Sunday |
+
+**Key hire:** Patna Ops Lead (see Berlin Succession below) — start interviewing week of 28 May, hire by 15 Jun.
+
+---
+
+### Phase 3 — Pre-seed push (1 Jul – 30 Sep 2026) — 92 days
+
+**Goal:** Close seed round before November. Structurally hand off India operations before Berlin.
+
+| Workstream | Target | Success = |
+|---|---|---|
+| Pre-seed close | Rs 2-4 Cr | Money in bank |
+| Patna team on ground | 3 FTE (ops lead + 2 field) | All based in Patna, salaried |
+| Patient base | 200+ paying families | Rs 1L/month MRR |
+| Doctor network | 25 active referring doctors | 2+ patients each |
+| Clinical advisor board | 3 signed | AIIMS + Patna + Bettiah representation |
+| Berlin-mode dress rehearsal | Amit works remote for 1 week in Aug | Ops continues without blockers |
+
+**Critical path to Berlin transition (before Nov):**
+- **1 Jul:** Patna Ops Lead starts
+- **1 Aug:** Amit spends 1 week "remote" (from elsewhere in India) — stress test
+- **15 Sep:** Seed closes (ideal case)
+- **15 Oct:** Full transition simulation — Amit unavailable for 2 weeks
+- **1 Nov:** Amazon exit
+- **~15-30 Nov:** Amit moves to Berlin
+
+---
+
+### Berlin Succession — the answer every investor needs
+
+**The reality:** Amit's next role (ALG) takes him to Berlin in November 2026. This is non-negotiable for visa/contract reasons. Swasth must operate without Amit as the India-side daily driver from that point forward.
+
+**The structural answer — 3 layers:**
+
+#### Layer 1: Co-founder elevated to India CEO (full-time by Dec 2026)
+- Current co-founder (currently moonlighting) transitions full-time by Nov 2026
+- Owns: Product roadmap, engineering team, NRI payment operations, investor relations (India)
+- Salary: funded from seed round (one of the first hires confirmed)
+
+#### Layer 2: Patna Operations Lead (hired by 15 Jun 2026)
+- **Profile:** Bihar-based, 10+ years experience, preferably ex-pharma-rep or ex-hospital-admin with doctor-network trust
+- **Owns:** Doctor relationships, patient onboarding, compounder partnerships, local operations
+- **Why this role:** The person on the ground who understands the language, the etiquette, the invisible politics of Patna medical networks. Not a tech role.
+- **Compensation:** Rs 1-1.5 lakh/month + equity (0.5-1%)
+
+#### Layer 3: Amit from Berlin — part-time strategic
+- **Role:** Founder + Chairman + Product strategy + US/Europe investor relations + key advisor calls
+- **Time commitment:** ~15-20 hours/week including weekends
+- **Meeting cadence:** Daily 20-min standup with India CEO; weekly 1-hour deep dive; monthly in-person if possible
+- **Decision authority:** Product direction, capital allocation >Rs 25L, C-suite hires, major pivots
+
+**Decision authority matrix (post-Berlin):**
+
+| Decision type | India CEO (Co-founder) | Patna Ops Lead | Amit (Berlin) |
+|---|---|---|---|
+| Daily operations | Owner | Owner | — |
+| Product features | Consulted | Informed | Owner |
+| Hiring < Rs 5L/month | Owner | Consulted | Informed |
+| Hiring > Rs 5L/month or C-suite | Consulted | — | Owner |
+| Investor engagement (India) | Owner | — | Informed |
+| Investor engagement (US/Europe) | Informed | — | Owner |
+| Capital spend < Rs 5L | Owner | Consulted | Informed |
+| Capital spend > Rs 25L | Consulted | — | Owner |
+| Major pivot / strategic shift | Consulted | — | Owner |
+| Doctor / advisor relationships | Consulted | Owner | Informed |
+| Patient-facing clinical decisions | Consulted | Owner | Informed |
+
+**What this signals to investors:**
+- You've thought about it.
+- You're structurally separating roles, not pretending you can be in two places.
+- You're willing to hire real operators with real authority.
+- You're NOT a solo-founder vanity case — you're a team.
+
+---
+
+### The investor-meeting answer (memorize)
+
+**Question:** *"What happens if you have to move to Berlin?"*
+
+**Your answer (60 seconds):**
+
+> *"I've built the transition into the plan. Three layers. First, my co-founder goes full-time by November and becomes India CEO — she owns product, engineering, and NRI operations. Second, we hire a Patna operations lead in June — that's a Bihari operator with doctor-network trust, owning on-ground relationships and patient onboarding. Third, I stay as founder and chairman from Berlin — strategic product, US/Europe investor relations, 15-20 hours a week. We dress-rehearse this in August — I'm unavailable for a week — to stress-test it before November. The seed round funds layers 1 and 2 before I leave. Swasth doesn't depend on me being in India. That's by design."*
+
+---
+
+### Red flags to monitor
+
+- **If Patna Ops Lead hire slips past 15 July:** the transition is at risk — flag to board immediately
+- **If co-founder full-time transition not confirmed by 1 October:** escalate compensation/structure discussion
+- **If seed round hasn't closed by 1 October:** decide whether Amit funds bridge personally (2-year family buffer available) or pauses Swasth pending close
+
+---
+
+### What this section does NOT do
+
+- Promise that Amit will never step back in if things break — he will, and that's expected
+- Pretend Berlin-based oversight is a substitute for on-ground presence — it isn't, which is why Layer 2 exists
+- Claim everything is pre-solved — several hires are still hypothetical; this is a plan, not a fait accompli
+
+---
+
+*Next sections to draft: 1 (cover + one-liner), 3 (two patient stories), 4 (app walkthrough), 6 (why WhatsApp in India), 7 (weekly-report sample), 8 (seriousness signals), 9 (three asks), 11 (key numbers), 13 (contact + credentials).*
+
+*Related artifacts: `docs/COMPETITIVE_ANALYSIS_2026.md` (Section 6b), `docs/ONE_PAGER_2026.md` (printable), `docs/INDIA_TRIP_APR_MAY_2026.md` (trip execution plan).*
