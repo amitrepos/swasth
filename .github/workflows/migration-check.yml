@@ -1,0 +1,114 @@
+name: Migration Check
+
+# Catches the failure mode the pre-commit hook can't catch on its own:
+# "models.py changed AND a migration was staged, but the migration is
+# wrong / incomplete / doesn't actually match the model change."
+#
+# Approach (bootstrap-then-stamp):
+#   1. Spin up an ephemeral Postgres service (matches prod, not SQLite).
+#   2. Bootstrap schema via Base.metadata.create_all() from current
+#      models.py — gives us a current-shape DB to test against.
+#   3. `alembic stamp head` — register that DB as already at head.
+#   4. `alembic check` → confirm models.py == migration head. Drift here
+#      means the latest migration didn't actually capture a model change
+#      (or someone added a column without a migration, or the migration
+#      doesn't match what models.py declares).
+#   5. `alembic downgrade -1` then `alembic upgrade head` → exercises
+#      the most-recent migration's downgrade() AND upgrade() paths.
+#      Catches downgrade functions that crash, forget to reverse an op,
+#      or upgrade functions that fail when re-run after a downgrade.
+#   6. `alembic check` again → confirm round-trip is clean.
+#
+# Why bootstrap-then-stamp instead of upgrade-from-empty:
+#   The 0001 baseline is intentionally empty (it represents prod's
+#   pre-Alembic schema, which Alembic stamps in the live env without
+#   running DDL). So `alembic upgrade head` from an empty CI database
+#   would call 0002.upgrade against tables that don't exist and crash.
+#   Bootstrapping with create_all() gives us a current-shape DB that
+#   downgrade/upgrade can round-trip against.
+#
+# Triggered for any change touching the schema surface — models.py,
+# migrations, or alembic config. Skipped for unrelated PRs to keep CI
+# fast.
+
+on:
+  push:
+    branches: [master, "feature/**", "fix/**", "chore/**", "test/**", "docs/**"]
+    paths:
+      - "backend/models.py"
+      - "backend/migrations/**"
+      - "backend/alembic.ini"
+      - "backend/requirements.txt"
+      - ".github/workflows/migration-check.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "backend/models.py"
+      - "backend/migrations/**"
+      - "backend/alembic.ini"
+      - "backend/requirements.txt"
+      - ".github/workflows/migration-check.yml"
+
+jobs:
+  alembic-check:
+    name: Alembic check + downgrade/upgrade round-trip
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: swasth_ci
+          POSTGRES_PASSWORD: swasth_ci_pw
+          POSTGRES_DB: swasth_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U swasth_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://swasth_ci:swasth_ci_pw@localhost:5432/swasth_ci
+      # Minimal env so config.py loads — values don't matter for schema work.
+      SECRET_KEY: ci-only-not-a-real-secret-32-chars-long-padding
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Bootstrap schema from models.py
+        run: |
+          python -c "
+          from database import Base, engine
+          import models  # registers tables
+          Base.metadata.create_all(bind=engine)
+          "
+
+      - name: alembic stamp head (mark bootstrapped DB at head)
+        run: alembic stamp head
+
+      - name: alembic check (models.py == migration head)
+        run: alembic check
+
+      - name: Exercise downgrade then upgrade (round-trip)
+        run: |
+          alembic downgrade -1
+          alembic upgrade head
+
+      - name: alembic check again (round-trip preserved schema)
+        run: alembic check

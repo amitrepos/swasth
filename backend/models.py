@@ -28,7 +28,7 @@ class User(Base):
     ai_consent_timestamp = Column(DateTime(timezone=True), nullable=True)
     is_admin = Column(Boolean, default=False)
     role = Column(Enum(UserRole), default=UserRole.patient, nullable=False)
-    timezone = Column(String, default="UTC", nullable=False)
+    timezone = Column(String, default="UTC", server_default="UTC", nullable=False)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     email_verified = Column(Boolean, default=False)
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
@@ -84,7 +84,7 @@ class ProfileInvite(Base):
     invited_email = Column(String, nullable=False, index=True)
     invited_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     relationship = Column(String, nullable=True)                 # "father", "mother", etc.
-    access_level = Column(String, nullable=False, default="viewer")  # "viewer" or "editor"
+    access_level = Column(String, nullable=False, default="viewer", server_default="viewer")  # "viewer" or "editor"
     status = Column(String, nullable=False, default="pending")   # "pending", "accepted", "rejected"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime, nullable=False)
@@ -359,7 +359,7 @@ class DoctorPatientLink(Base):
     consent_type = Column(String, nullable=False)                   # "in_person_exam" or "video_consult"
 
     # Lifecycle state — see class docstring.
-    status = Column(String, nullable=False, default="pending_doctor_accept")
+    status = Column(String, nullable=False, default="pending_doctor_accept", server_default="pending_doctor_accept")
     is_active = Column(Boolean, default=False)
     revoked_at = Column(DateTime(timezone=True), nullable=True)
     revoke_reason = Column(String, nullable=True)

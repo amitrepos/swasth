@@ -1,14 +1,19 @@
 #!/bin/bash
 # Pre-commit hook — Swasth quality gates.
 #
-# Two gates run in order; a failure in either blocks the commit:
+# Three gates run in order; a failure in any blocks the commit:
 #
 #   Gate 1: Branch hygiene — refuse commits on a branch whose PR has
 #           already merged (prevents orphaned-commit bugs like the
 #           fix/admin-toggle-button incident on 2026-04-10 where hook
 #           infrastructure was committed to a shipped-and-forgotten branch).
 #
-#   Gate 2: Domain expert review chain — inspect staged diff, compute
+#   Gate 2: Migration required — refuse commits that change
+#           backend/models.py without a new Alembic migration in the
+#           same commit (prevents the PR #133 / 2026-04-19 weight-column
+#           drift). See .claude/scripts/check-migration-required.sh.
+#
+#   Gate 3: Domain expert review chain — inspect staged diff, compute
 #           required reviewers from the CLAUDE.md Domain Expert Review
 #           Matrix, and require a content-hash-keyed marker from each.
 #           See .claude/scripts/check-required-reviewers.sh.
@@ -71,5 +76,8 @@ if [[ -n "$branch" && "$branch" != "master" && "$branch" != "HEAD" ]]; then
   fi
 fi
 
-# ── Gate 2: Domain expert review chain ────────────────────────────────
+# ── Gate 2: Migration required ────────────────────────────────────────
+bash "$REPO_ROOT/.claude/scripts/check-migration-required.sh"
+
+# ── Gate 3: Domain expert review chain ────────────────────────────────
 exec bash "$REPO_ROOT/.claude/scripts/check-required-reviewers.sh"
