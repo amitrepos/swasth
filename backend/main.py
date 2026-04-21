@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from database import engine, Base
 from config import settings
 import models
+import routes_whatsapp
 import routes
 import routes_health
 import routes_profiles
@@ -200,6 +201,9 @@ app.include_router(routes_meals.router, prefix="/api", tags=["Meals"])
 
 # Include doctor portal routes
 app.include_router(routes_doctor.router, prefix="/api/doctor", tags=["Doctor Portal"])
+
+# Include WhatsApp inbound webhook (no auth — Twilio HMAC validated internally)
+app.include_router(routes_whatsapp.router, prefix="/api", tags=["WhatsApp Inbound"])
 
 
 if __name__ == "__main__":

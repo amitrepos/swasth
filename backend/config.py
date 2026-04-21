@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     CRITICAL_ALERT_DEDUPE_MINUTES: int = 30  # Suppress repeat alerts to same profile within window
     CRITICAL_ALERTS_ENABLED: bool = True     # Kill switch for the whole feature
 
+    # WhatsApp Inbound Webhook
+    TWILIO_WEBHOOK_VALIDATE: bool = False    # Set True in production to verify Twilio HMAC signatures
+    WHATSAPP_SESSION_TTL_MINUTES: int = 10   # How long to wait for profile selection reply
+
     class Config:
         env_file = ".env"
 

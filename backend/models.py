@@ -506,3 +506,55 @@ class WhatsAppMessageLog(Base):
     twilio_sid = Column(String, nullable=True, index=True)
     error_message = Column(Text, nullable=True)
     message_snapshot = Column(Text, nullable=True)
+
+
+# ---------------------------------------------------------------------------
+# WhatsApp Inbound — Session State + Audit Log
+# ---------------------------------------------------------------------------
+
+class WhatsAppSession(Base):
+    """Short-lived (TTL ~10 min) conversation state for inbound WhatsApp photo flow.
+
+    When a user sends a photo and has multiple profiles, we store the
+    extracted reading here while we wait for them to reply with a profile
+    number. Expired rows are safe to delete by a periodic cleanup job or
+    left until next read (expires_at check is done in code).
+    """
+    __tablename__ = "whatsapp_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    phone_number = Column(String, nullable=False, index=True)
+    state = Column(String, nullable=False)              # 'awaiting_profile'
+    pending_reading_json = Column(JSON, nullable=False) # extracted reading data dict
+    profile_choices_json = Column(JSON, nullable=False) # [{id, name, relationship}, ...]
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_wa_session_phone", "phone_number"),
+    )
+
+
+class WhatsAppInboundLog(Base):
+    """Audit trail for every inbound WhatsApp message (CERT-In 180-day / DPDPA S8(5)).
+
+    One row per inbound message — whether it was a photo, a profile
+    selection reply, or an unrecognized message. Does not store the image
+    itself, only metadata about what was detected and what action was taken.
+    """
+    __tablename__ = "whatsapp_inbound_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    phone_number = Column(String, nullable=False)
+    message_sid = Column(String, nullable=True)         # Twilio MessageSid
+    message_type = Column(String, nullable=False)       # 'image' | 'text'
+    ai_detected_type = Column(String, nullable=True)    # 'glucose' | 'blood_pressure' | 'weight' | 'spo2' | None
+    profile_id_saved = Column(Integer, ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True)
+    reading_id_saved = Column(Integer, ForeignKey("health_readings.id", ondelete="SET NULL"), nullable=True)
+    # outcome options: 'reading_saved' | 'awaiting_profile' | 'user_not_found' | 'scan_failed' | 'expired_session' | 'invalid_reply'
+    outcome = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    __table_args__ = (
+        Index("ix_wa_inbound_phone_time", "phone_number", "created_at"),
+    )
