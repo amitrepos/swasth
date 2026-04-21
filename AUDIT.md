@@ -40,7 +40,7 @@ after an early shared-working-tree accident. Backend-only focus.
 - Reuses existing user by email (swaps phone temporarily), creates throwaway patient + profile + reading + alert logs, dispatches, prints per-channel results + audit log, cleans up all test rows on exit
 
 ### End-to-end verification (live services)
-- Ran `test_critical_alerts.py amitrepos@gmail.com +4917659637909` against local DB + live Twilio + live Brevo
+- Ran `test_critical_alerts.py <redacted-test-email> <redacted-test-phone>` against local DB + live Twilio + live Brevo
 - Dispatch result: `email_sent=1, whatsapp_sent=1, failures=0` — both channels accepted at service level
 - Brevo SMTP confirmed queuing: `queued as <202604101250.39927821747@smtp-relay.sendinblue.com>`
 - **Unresolved**: email not received in Gmail inbox. Root cause identified — `BREVO_SENDER_EMAIL` is set to Brevo's raw SMTP login address (`a6124a001@smtp-brevo.com`), not a verified sender domain. Gmail silently filters. Fix: verify a sender address or domain at https://app.brevo.com → Senders & IPs, then update `.env`. Deferred to next session.
@@ -2531,3 +2531,6 @@ defaults" ops that someone might merge by mistake.
 This closes the loop on the PR #144 → #146 → #147 sequence: Alembic is
 now the single source of truth for prod schema, no drift, no noise.
   - 19:44:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 18:13:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.gitignore
+  - 18:13:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 18:13:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/specs/07-SECURITY-AND-COMPLIANCE.md
