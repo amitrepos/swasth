@@ -372,7 +372,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
 
               // Input field for email or phone
               TextFormField(
-                key: const Key('unified_login_input'),
+                key: const Key('login_email'),
                 controller: _inputController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
@@ -404,7 +404,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
               // Password field (shown only when account exists and uses email/password)
               if (_loginStep == 'password') ...[
                 TextFormField(
-                  key: const Key('unified_login_password'),
+                  key: const Key('login_password'),
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
@@ -468,7 +468,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
 
               // Continue/Login Button
               ElevatedButton(
-                key: const Key('unified_login_continue_button'),
+                key: const Key('login_button'),
                 onPressed: _isLoading
                     ? null
                     : _loginStep == 'password'
@@ -497,7 +497,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
                 children: [
                   Text(l10n.noAccount),
                   TextButton(
-                    key: const Key('unified_login_register_link'),
+                    key: const Key('login_register_link'),
                     onPressed: () {
                       Navigator.push(
                         context,
