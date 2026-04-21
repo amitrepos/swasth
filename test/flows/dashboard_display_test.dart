@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:swasth_app/screens/login_screen.dart';
+import 'package:swasth_app/screens/unified_login_screen.dart';
 import 'package:swasth_app/screens/select_profile_screen.dart';
 import 'package:swasth_app/screens/reading_confirmation_screen.dart';
 import 'package:swasth_app/screens/quick_select_screen.dart';
@@ -22,9 +22,9 @@ void main() {
     ) async {
       env = await TestEnv.createAtLogin(tester);
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(UnifiedLoginScreen), findsOneWidget);
       expect(loginEmail, findsOneWidget);
-      expect(loginPassword, findsOneWidget);
+      // Password field is conditionally shown, but key should be defined
       expect(loginButton, findsOneWidget);
       expect(loginRegisterLink, findsOneWidget);
       expect(find.byIcon(Icons.health_and_safety), findsOneWidget);
@@ -79,10 +79,23 @@ void main() {
     testWidgets('Login → Profile Select navigation end-to-end', (tester) async {
       env = await TestEnv.createAtLogin(tester);
 
+      // Step 1: Enter email and tap continue
       await tester.enterText(loginEmail, 'test@swasth.app');
-      await tester.enterText(loginPassword, 'Test1234!');
       await pumpN(tester, frames: 3);
 
+      await tester.tap(loginButton);
+      await pumpN(tester, frames: 30);
+
+      // Step 2: After account check, password field should appear
+      // Enter password
+      expect(find.byKey(const Key('login_password')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('login_password')),
+        'Test1234!',
+      );
+      await pumpN(tester, frames: 3);
+
+      // Step 3: Tap login button to submit
       await tester.tap(loginButton);
       await pumpN(tester, frames: 30);
 

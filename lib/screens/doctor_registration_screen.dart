@@ -7,7 +7,7 @@ import '../services/doctor_service.dart';
 import '../services/error_mapper.dart';
 import '../widgets/auth_form_scroll_body.dart';
 import '../widgets/password_requirements_box.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 
 /// Doctor self-registration screen.
 ///
@@ -77,7 +77,7 @@ class _DoctorRegistrationScreenState extends State<DoctorRegistrationScreen> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
       );
     } catch (e) {
       if (!mounted) return;
@@ -279,7 +279,7 @@ class _DoctorRegistrationScreenState extends State<DoctorRegistrationScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
                       );
                     },
                     child: Text(l10n.loginButton),

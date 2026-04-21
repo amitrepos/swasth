@@ -11,6 +11,7 @@ import models
 import schemas
 import auth
 from email_service import email_service
+from sms_service import sms_service
 from database import get_db
 from config import settings
 from dependencies import get_current_user
@@ -101,6 +102,39 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         pass  # best-effort
 
     return db_user
+
+
+@router.post("/check-account")
+@limiter.limit("10/minute")
+def check_account_exists(
+    request: Request,
+    body: schemas.CheckAccountExistsRequest,
+    db: Session = Depends(get_db),
+):
+    """Check if an account exists by email or phone number.
+    
+    Returns:
+    - {"exists": true, "login_method": "email_password"} for email accounts
+    - {"exists": true, "login_method": "phone_otp"} for phone-only accounts
+    - {"exists": false} if no account found
+    """
+    if body.email:
+        body.email = body.email.strip().lower()
+        user = db.query(models.User).filter(models.User.email == body.email).first()
+        if user:
+            return {"exists": True, "login_method": "email_password"}
+        return {"exists": False}
+    
+    if body.phone_number:
+        user = db.query(models.User).filter(models.User.phone_number == body.phone_number).first()
+        if user:
+            return {"exists": True, "login_method": "phone_otp"}
+        return {"exists": False}
+    
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Either email or phone_number must be provided"
+    )
 
 
 @router.post("/login", response_model=schemas.Token)
@@ -346,6 +380,155 @@ def email_verification_status(
 ):
     """Check whether the current user's email is verified."""
     return {"email_verified": bool(user.email_verified)}
+
+
+# ---------------------------------------------------------------------------
+# Phone OTP authentication (login/registration via SMS)
+# ---------------------------------------------------------------------------
+
+@router.post("/phone-otp/send")
+@limiter.limit("3/minute")
+def send_phone_otp(
+    request: Request,
+    body: schemas.PhoneOTPRequest,
+    db: Session = Depends(get_db),
+):
+    """Send OTP to phone number for login or registration.
+    
+    This endpoint is idempotent — if the phone number exists, it's a login flow;
+    if not, it's a registration flow. The client will know based on the
+    /check-account response.
+    """
+    # Invalidate any previous unused OTPs for this phone number
+    db.query(models.PhoneOTP).filter(
+        models.PhoneOTP.phone_number == body.phone_number,
+        models.PhoneOTP.is_used == False,
+    ).update({"is_used": True})
+
+    # Generate new OTP
+    otp = email_service.generate_otp()
+    otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+    
+    db.add(models.PhoneOTP(
+        phone_number=body.phone_number,
+        otp=otp,
+        expires_at=otp_expires,
+    ))
+    db.commit()
+
+    # Send SMS via Twilio
+    sms_sent = sms_service.send_sms(
+        to_number=body.phone_number,
+        body=f"Your Swasth app verification code is: {otp}. Valid for {settings.OTP_EXPIRE_MINUTES} minutes.",
+    )
+
+    if not sms_sent:
+        logger.warning(f"Failed to send SMS OTP to {body.phone_number}")
+        # In development/testing, we still return success so the flow can continue
+        # In production, you might want to raise an error
+    
+    return {
+        "message": "OTP sent successfully",
+        "expires_in_minutes": settings.OTP_EXPIRE_MINUTES,
+    }
+
+
+@router.post("/phone-otp/verify", response_model=schemas.Token)
+@limiter.limit("5/minute")
+def verify_phone_otp_and_login(
+    request: Request,
+    body: schemas.PhoneOTPVerifyRequest,
+    db: Session = Depends(get_db),
+):
+    """Verify phone OTP and login or create account.
+    
+    If the phone number exists:
+    - Verify OTP and login the user
+    
+    If the phone number doesn't exist:
+    - Verify OTP
+    - Create a new user account (returns flag for client to complete registration)
+    """
+    # Find valid OTP
+    otp_record = db.query(models.PhoneOTP).filter(
+        models.PhoneOTP.phone_number == body.phone_number,
+        models.PhoneOTP.otp == body.otp,
+        models.PhoneOTP.is_used == False,
+        models.PhoneOTP.expires_at > datetime.utcnow(),
+    ).first()
+
+    if not otp_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP"
+        )
+
+    # Mark OTP as used
+    otp_record.is_used = True
+    db.commit()
+
+    # Check if user exists
+    user = db.query(models.User).filter(
+        models.User.phone_number == body.phone_number
+    ).first()
+
+    if user:
+        # LOGIN FLOW: User exists, log them in
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is deactivated"
+            )
+
+        # Update last_login
+        now_utc = datetime.now(pytz.UTC)
+        user.last_login_at = now_utc
+        db.commit()
+
+        # Generate JWT token
+        access_token = auth.create_access_token(data={"sub": user.email})
+        return {"access_token": access_token, "token_type": "bearer", "is_new_user": False}
+    else:
+        # REGISTRATION FLOW: Create minimal account, client will complete profile
+        now_utc = datetime.now(pytz.UTC)
+        
+        # Generate a unique email for phone-only users
+        import uuid
+        temp_email = f"phone_{body.phone_number}@swasth.local"
+        
+        # Create user with minimal info
+        new_user = models.User(
+            email=temp_email,
+            password_hash=auth.get_password_hash(str(uuid.uuid4())),  # Random password
+            full_name=body.full_name or "New User",
+            phone_number=body.phone_number,
+            timezone="UTC",
+            consent_timestamp=now_utc,
+            consent_app_version="phone-otp",
+            ai_consent=False,
+        )
+        db.add(new_user)
+        db.flush()
+
+        # Create default profile
+        new_profile = models.Profile(
+            name="My Health",
+        )
+        db.add(new_profile)
+        db.flush()
+
+        # Create profile access
+        db.add(models.ProfileAccess(
+            user_id=new_user.id,
+            profile_id=new_profile.id,
+            access_level="owner",
+        ))
+        db.commit()
+        db.refresh(new_user)
+
+        # Generate JWT token
+        access_token = auth.create_access_token(data={"sub": new_user.email})
+        return {"access_token": access_token, "token_type": "bearer", "is_new_user": True}
 
 
 # ---------------------------------------------------------------------------

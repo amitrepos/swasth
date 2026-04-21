@@ -305,6 +305,18 @@ class EmailVerificationOTP(Base):
     is_used = Column(Boolean, default=False, server_default="false")
 
 
+class PhoneOTP(Base):
+    """OTP for phone number verification during login/registration."""
+    __tablename__ = "phone_otps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    phone_number = Column(String, nullable=False, index=True)
+    otp = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime, nullable=False)
+    is_used = Column(Boolean, default=False, server_default="false")
+
+
 # ---------------------------------------------------------------------------
 # Doctor Portal models (Module E)
 # ---------------------------------------------------------------------------

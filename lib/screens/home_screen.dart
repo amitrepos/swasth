@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 import 'profile_screen.dart';
 
 import 'email_verification_screen.dart';
@@ -269,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen>
     if (!ctx.mounted) return;
     Navigator.pushReplacement(
       ctx,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
     );
   }
 

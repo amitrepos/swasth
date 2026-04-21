@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:swasth_app/screens/login_screen.dart';
+import 'package:swasth_app/screens/unified_login_screen.dart';
 import 'package:swasth_app/screens/registration_screen.dart';
 import 'package:swasth_app/screens/select_profile_screen.dart';
 
@@ -18,9 +18,8 @@ void main() {
     testWidgets('Login screen renders all required elements', (tester) async {
       env = await TestEnv.createAtLogin(tester);
 
-      expect(find.byType(LoginScreen), findsOneWidget);
-      expect(loginEmail, findsOneWidget);
-      expect(loginPassword, findsOneWidget);
+      expect(find.byType(UnifiedLoginScreen), findsOneWidget);
+      expect(find.byKey(const Key('login_email')), findsOneWidget);
       expect(loginButton, findsOneWidget);
       expect(loginRegisterLink, findsOneWidget);
     });
@@ -31,19 +30,22 @@ void main() {
       await tester.tap(loginButton);
       await pumpN(tester);
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      // Should still be on login screen (validation failed)
+      expect(find.byType(UnifiedLoginScreen), findsOneWidget);
     });
 
     testWidgets('Login form validates invalid email', (tester) async {
       env = await TestEnv.createAtLogin(tester);
 
+      // Enter invalid email/phone
       await tester.enterText(loginEmail, 'not-an-email');
-      await tester.enterText(loginPassword, 'Test1234!');
       await pumpN(tester);
 
+      // Tap continue button - should show validation error
       await tester.tap(loginButton);
       await pumpN(tester);
 
+      // Should show validation error and stay on input step
       expect(find.textContaining('valid email'), findsOneWidget);
     });
 
@@ -52,10 +54,23 @@ void main() {
     ) async {
       env = await TestEnv.createAtLogin(tester);
 
+      // Step 1: Enter email and tap continue
       await tester.enterText(loginEmail, 'test@swasth.app');
-      await tester.enterText(loginPassword, 'Test1234!');
       await pumpN(tester, frames: 3);
 
+      await tester.tap(loginButton);
+      await pumpN(tester, frames: 50);
+
+      // Step 2: After account check, password field should appear
+      // Enter password
+      expect(find.byKey(const Key('login_password')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('login_password')),
+        'Test1234!',
+      );
+      await pumpN(tester, frames: 3);
+
+      // Step 3: Tap login button again to submit
       await tester.tap(loginButton);
       await pumpN(tester, frames: 50);
 
