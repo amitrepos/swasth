@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'config/app_config.dart';
 import 'config/flavor.dart';
 import 'providers/language_provider.dart';
 import 'services/reminder_service.dart';
@@ -71,14 +72,22 @@ Future<void> bootstrap(Flavor flavor) async {
 
 Future<void> _init(Flavor flavor) async {
   // .env is a **debug-only** override for local dev (e.g. SERVER_HOST pointing
-  // at a local backend). Release builds ignore .env — see AppConfig.serverHost
-  // for rationale. The file is still loaded here so other dotenv-backed
-  // values (if any) stay available; only the SERVER_HOST lookup is gated.
+  // at a local backend). Release builds ignore .env — the kReleaseMode gate
+  // in AppConfig.serverHost enforces this so a stray `.env` cannot cross-wire
+  // a release APK to the wrong backend. dotenv is still loaded so other
+  // dotenv-backed values (if any) stay available in debug.
   try {
     await dotenv.load(fileName: '.env');
   } catch (_) {
     // No .env file — fine. Flavor's serverHost wins.
   }
+
+  // Surface the resolved backend at startup so QA can confirm in logcat that
+  // a production APK talks to production (and staging to staging). Cheap and
+  // fires in both release and debug.
+  debugPrint(
+    '[swasth] flavor=${flavor.name} serverHost=${AppConfig.serverHost}',
+  );
 
   await ReminderService().initialize();
   final langCode = await StorageService().getLanguage() ?? 'en';
