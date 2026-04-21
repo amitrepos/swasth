@@ -892,7 +892,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterOtpHeadline => 'Enter OTP';
 
   @override
-  String otpSentTo(String email) {
+  String otpSentToEmail(String email) {
     return 'We\'ve sent a 6-digit OTP to\n$email';
   }
 
@@ -1751,4 +1751,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get otpValidationDigitsOnly => 'Code must contain only numbers';
+
+  @override
+  String get loginModeEmail => 'Email';
+
+  @override
+  String get loginModePhone => 'Phone';
+
+  @override
+  String get emailOrPhoneLabel => 'Email or Phone Number';
+
+  @override
+  String get phoneNumberLabel => 'Phone Number';
+
+  @override
+  String get phoneValidationInvalid =>
+      'Please enter a valid phone number (10-15 digits)';
+
+  @override
+  String get continueButton => 'Continue';
+
+  @override
+  String get phoneLoginNoAccountTitle => 'Account Not Found';
+
+  @override
+  String get phoneLoginNoAccountMessage =>
+      'No account found with this phone number. Would you like to create a new account?';
+
+  @override
+  String get createAccount => 'Create Account';
+
+  @override
+  String get verifyPhoneOTP => 'Verify Phone OTP';
+
+  @override
+  String otpSentToPhone(String phone) {
+    return 'OTP sent to $phone';
+  }
+
+  @override
+  String get nameValidationEmpty => 'Please enter your name';
+
+  @override
+  String get nameValidationTooShort => 'Name must be at least 2 characters';
+
+  @override
+  String get verifyOTP => 'Verify OTP';
+
+  @override
+  String get didntReceiveOTP => 'Didn\'t receive code?';
+
+  @override
+  String get resendOTP => 'Resend OTP';
+
+  @override
+  String get accountCreatedSuccess =>
+      'Account created successfully! Please complete your profile.';
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/error_mapper.dart';
 import '../theme/app_theme.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 import 'privacy_policy_screen.dart';
 
 /// Privacy consent screen shown after registration form.
@@ -81,7 +81,7 @@ class _ConsentScreenState extends State<ConsentScreen> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
       );
     } catch (e) {
       if (mounted) {

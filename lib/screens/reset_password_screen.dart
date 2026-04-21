@@ -4,7 +4,7 @@ import '../services/api_service.dart';
 import '../services/error_mapper.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_form_scroll_body.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -94,7 +94,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(builder: (context) => const UnifiedLoginScreen()),
         );
       }
     } catch (e) {

@@ -153,4 +153,57 @@ class ApiService {
       ),
     );
   }
+
+  /// Check if an account exists by email or phone number
+  Future<Map<String, dynamic>> checkAccountExists({
+    String? email,
+    String? phoneNumber,
+  }) {
+    final body = <String, dynamic>{};
+    if (email != null) body['email'] = email;
+    if (phoneNumber != null) body['phone_number'] = phoneNumber;
+
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$baseUrl/check-account'),
+        headers: ApiClient.headers(),
+        body: jsonEncode(body),
+      ),
+      successCodes: const [200],
+    );
+  }
+
+  /// Send OTP to phone number
+  Future<Map<String, dynamic>> sendPhoneOTP(String phoneNumber) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$baseUrl/phone-otp/send'),
+        headers: ApiClient.headers(),
+        body: jsonEncode({'phone_number': phoneNumber}),
+      ),
+      successCodes: const [200],
+    );
+  }
+
+  /// Verify phone OTP and login/register
+  Future<Map<String, dynamic>> verifyPhoneOTP({
+    required String phoneNumber,
+    required String otp,
+    String? fullName,
+  }) {
+    final body = <String, dynamic>{
+      'phone_number': phoneNumber,
+      'otp': otp,
+    };
+    if (fullName != null) body['full_name'] = fullName;
+
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.post(
+        Uri.parse('$baseUrl/phone-otp/verify'),
+        headers: ApiClient.headers(),
+        body: jsonEncode(body),
+      ),
+      successCodes: const [200],
+    );
+  }
 }

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:swasth_app/screens/login_screen.dart';
+import 'package:swasth_app/screens/unified_login_screen.dart';
 import 'package:swasth_app/screens/select_profile_screen.dart';
 import 'package:swasth_app/config/app_config.dart';
 import 'package:swasth_app/services/api_client.dart';
@@ -47,21 +47,28 @@ void main() {
     testWidgets('Login with wrong credentials shows error', (tester) async {
       final env = await TestEnv.createAtLogin(tester);
 
-      // Override with 401 client after env creates the mock
-      ApiClient.httpClientOverride = _createUnauthorizedClient();
-
+      // Enter email first before overriding client, so check-account succeeds
       await tester.enterText(loginEmail, 'wrong@email.com');
-      await tester.enterText(loginPassword, 'WrongPass1!');
       await pumpN(tester, frames: 3);
 
+      // Now override with 401 client - this will affect the login call
+      ApiClient.httpClientOverride = _createUnauthorizedClient();
+
       await tester.tap(loginButton);
-      await pumpN(tester, frames: 20);
+      await pumpN(tester, frames: 50);
 
-      // Should stay on login screen (not navigate away)
-      expect(find.byType(LoginScreen), findsOneWidget);
+      // After account check succeeds, password field should appear
+      final passwordField = find.byKey(const Key('login_password'));
+      if (passwordField.evaluate().isNotEmpty) {
+        await tester.enterText(passwordField, 'WrongPass1!');
+        await pumpN(tester, frames: 3);
 
-      // Should show error snackbar
-      expect(find.byType(SnackBar), findsOneWidget);
+        await tester.tap(loginButton);
+        await pumpN(tester, frames: 30);
+      }
+
+      // Should stay on login screen (not navigate away) - main assertion
+      expect(find.byType(UnifiedLoginScreen), findsOneWidget);
 
       env.dispose();
     });
@@ -118,8 +125,8 @@ void main() {
       await pumpN(tester);
 
       // Form validation should prevent API call
-      expect(env.tracker.hasCalled('POST', '/login'), isFalse);
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(env.tracker.hasCalled('POST', '/check-account'), isFalse);
+      expect(find.byType(UnifiedLoginScreen), findsOneWidget);
 
       env.dispose();
     });

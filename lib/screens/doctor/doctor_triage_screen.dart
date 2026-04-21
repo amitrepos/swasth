@@ -6,7 +6,7 @@ import '../../services/error_mapper.dart';
 import '../../services/storage_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
-import '../login_screen.dart';
+import '../unified_login_screen.dart';
 import 'doctor_patient_detail_screen.dart';
 
 /// Doctor's main screen — triage board showing patients sorted by criticality.
@@ -40,7 +40,7 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
       );
       return;
     }
@@ -83,7 +83,7 @@ class _DoctorTriageScreenState extends State<DoctorTriageScreen> {
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
     );
   }
 

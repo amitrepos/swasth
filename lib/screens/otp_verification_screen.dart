@@ -5,7 +5,7 @@ import '../services/error_mapper.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_form_scroll_body.dart';
 import 'reset_password_screen.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
@@ -150,7 +150,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                l10n.otpSentTo(widget.email),
+                l10n.otpSentToEmail(widget.email),
                 style: const TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
@@ -237,7 +237,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
+                          builder: (context) => const UnifiedLoginScreen(),
                         ),
                       );
                     },

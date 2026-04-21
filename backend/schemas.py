@@ -200,6 +200,51 @@ class ResetPasswordRequest(BaseModel):
         return v
 
 
+class CheckAccountExistsRequest(BaseModel):
+    """Request to check if an account exists by email or phone."""
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = Field(None, min_length=10, max_length=15)
+
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.strip().lower() if v else v
+
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        if v is not None:
+            stripped = re.sub(r'[\s\-]', '', v)
+            if not _PHONE_PATTERN.match(stripped):
+                raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
+            return stripped
+        return v
+
+
+class PhoneOTPRequest(BaseModel):
+    """Request to send OTP to phone number."""
+    phone_number: str = Field(..., min_length=10, max_length=15)
+
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        stripped = re.sub(r'[\s\-]', '', v)
+        if not _PHONE_PATTERN.match(stripped):
+            raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
+        return stripped
+
+
+class PhoneOTPVerifyRequest(BaseModel):
+    """Request to verify phone OTP and login/register."""
+    phone_number: str = Field(..., min_length=10, max_length=15)
+    otp: str = Field(..., min_length=6, max_length=6)
+    full_name: Optional[str] = Field(None, min_length=2, max_length=100)
+
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        stripped = re.sub(r'[\s\-]', '', v)
+        if not _PHONE_PATTERN.match(stripped):
+            raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
+        return stripped
+
+
 class UpdateUserRequest(BaseModel):
     """Auth-level user fields only — name, phone, password change."""
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)

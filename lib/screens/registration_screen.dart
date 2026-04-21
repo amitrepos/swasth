@@ -7,10 +7,17 @@ import '../services/error_mapper.dart';
 import '../widgets/auth_form_scroll_body.dart';
 import '../widgets/password_requirements_box.dart';
 import 'consent_screen.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
-  const RegistrationScreen({super.key});
+  final String? prefillPhone;
+  final bool isPhoneVerified;
+
+  const RegistrationScreen({
+    super.key,
+    this.prefillPhone,
+    this.isPhoneVerified = false,
+  });
 
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
@@ -55,6 +62,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     super.initState();
     _passwordController.addListener(_onPasswordChanged);
     _confirmPasswordController.addListener(_onPasswordChanged);
+    
+    // Prefill phone number if provided (from phone OTP flow)
+    if (widget.prefillPhone != null) {
+      _phoneController.text = widget.prefillPhone!;
+    }
   }
 
   @override
@@ -103,10 +115,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // For phone-verified users, email is optional
+      final email = widget.isPhoneVerified
+          ? (_emailController.text.trim().isEmpty
+              ? 'phone_${_phoneController.text.trim()}@swasth.local'
+              : _emailController.text.trim())
+          : _emailController.text.trim();
+
       final userData = {
-        'email': _emailController.text.trim(),
-        'password': _passwordController.text,
-        'confirm_password': _confirmPasswordController.text,
+        'email': email,
+        'password': widget.isPhoneVerified
+            ? 'TempPass123!@#'
+            : _passwordController.text,
+        'confirm_password': widget.isPhoneVerified
+            ? 'TempPass123!@#'
+            : _confirmPasswordController.text,
         'full_name': _fullNameController.text.trim(),
         'phone_number': _phoneController.text.trim(),
         'profile_name': _profileNameController.text.trim(),
@@ -195,15 +218,23 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: l10n.emailLabel,
+                  labelText: l10n.emailLabel + (widget.isPhoneVerified ? ' (Optional)' : ''),
                   prefixIcon: const Icon(Icons.email),
                 ),
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return l10n.emailValidationEmpty;
-                  }
-                  if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
-                    return l10n.emailValidationInvalid;
+                  // Email is optional for phone-verified users
+                  if (!widget.isPhoneVerified) {
+                    if (value == null || value.trim().isEmpty) {
+                      return l10n.emailValidationEmpty;
+                    }
+                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
+                      return l10n.emailValidationInvalid;
+                    }
+                  } else if (value != null && value.trim().isNotEmpty) {
+                    // If provided, validate format
+                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
+                      return l10n.emailValidationInvalid;
+                    }
                   }
                   return null;
                 },
@@ -218,6 +249,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.phoneLabel,
                   prefixIcon: const Icon(Icons.phone),
+                  hintText: 'e.g., +911234567890',
                 ),
                 validator: (value) {
                   final l10n = AppLocalizations.of(context)!;
@@ -234,56 +266,66 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 4),
+              Text(
+                'Note: Please include country code with + symbol (e.g., +91 for India)',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
               const SizedBox(height: 16),
 
-              // Password
-              TextFormField(
-                key: const Key('reg_password'),
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: l10n.passwordLabel,
-                  prefixIcon: const Icon(Icons.lock),
+              // Password (only required for non-phone-verified users)
+              if (!widget.isPhoneVerified) ...[
+                TextFormField(
+                  key: const Key('reg_password'),
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.passwordLabel,
+                    prefixIcon: const Icon(Icons.lock),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return l10n.passwordValidationEmpty;
+                    }
+                    if (!PasswordRequirementsBox.meetsAllRequirements(value)) {
+                      return 'Password does not meet requirements';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return l10n.passwordValidationEmpty;
-                  }
-                  if (!PasswordRequirementsBox.meetsAllRequirements(value)) {
-                    return 'Password does not meet requirements';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 8),
-              PasswordRequirementsBox(password: _passwordController.text),
-              const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                PasswordRequirementsBox(password: _passwordController.text),
+                const SizedBox(height: 16),
 
-              // Confirm Password
-              TextFormField(
-                key: const Key('reg_confirm_password'),
-                controller: _confirmPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: l10n.confirmPasswordLabel,
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  errorText:
-                      !_passwordsMatch &&
-                          _confirmPasswordController.text.isNotEmpty
-                      ? l10n.passwordsDoNotMatch
-                      : null,
+                // Confirm Password
+                TextFormField(
+                  key: const Key('reg_confirm_password'),
+                  controller: _confirmPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.confirmPasswordLabel,
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    errorText:
+                        !_passwordsMatch &&
+                            _confirmPasswordController.text.isNotEmpty
+                        ? l10n.passwordsDoNotMatch
+                        : null,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (!_passwordsMatch) {
+                      return l10n.passwordsDoNotMatch;
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please confirm your password';
-                  }
-                  if (!_passwordsMatch) {
-                    return l10n.passwordsDoNotMatch;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
+              ],
 
               _buildSectionTitle(l10n.healthProfileSection),
 
@@ -440,7 +482,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
+                          builder: (context) => const UnifiedLoginScreen(),
                         ),
                       );
                     },

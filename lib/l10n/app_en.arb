@@ -433,8 +433,8 @@
   "rememberPassword": "Remember your password?",
   "verifyOtpTitle": "Verify OTP",
   "enterOtpHeadline": "Enter OTP",
-  "otpSentTo": "We've sent a 6-digit OTP to\n{email}",
-  "@otpSentTo": {
+  "otpSentToEmail": "We've sent a 6-digit OTP to\n{email}",
+  "@otpSentToEmail": {
     "placeholders": {
       "email": {
         "type": "String"
@@ -855,5 +855,37 @@
   "emailVerificationFailed": "Failed to send verification code",
   "otpValidationEmpty": "Please enter the code",
   "otpValidationLength": "Code must be 6 digits",
-  "otpValidationDigitsOnly": "Code must contain only numbers"
+  "otpValidationDigitsOnly": "Code must contain only numbers",
+  "loginModeEmail": "Email",
+  "loginModePhone": "Phone",
+  "emailOrPhoneLabel": "Email or Phone Number",
+  "phoneNumberLabel": "Phone Number",
+  "phoneValidationInvalid": "Please enter a valid phone number (10-15 digits)",
+  "continueButton": "Continue",
+  "phoneLoginNoAccountTitle": "Account Not Found",
+  "phoneLoginNoAccountMessage": "No account found with this phone number. Would you like to create a new account?",
+  "createAccount": "Create Account",
+  "verifyPhoneOTP": "Verify Phone OTP",
+  "otpSentToPhone": "OTP sent to {phone}",
+  "@otpSentToPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "nameValidationEmpty": "Please enter your name",
+  "nameValidationTooShort": "Name must be at least 2 characters",
+  "verifyOTP": "Verify OTP",
+  "didntReceiveOTP": "Didn't receive code?",
+  "resendIn": "Resend in {seconds}s",
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resendOTP": "Resend OTP",
+  "accountCreatedSuccess": "Account created successfully! Please complete your profile."
 }

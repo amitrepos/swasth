@@ -139,7 +139,9 @@ class TestDispatchFanout:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=True) as mock_email, \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True) as mock_wa:
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True) as mock_wa, \
+             patch("alert_service.sms_service") as mock_sms:
+            mock_sms.is_enabled = False
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
 
         assert result.total_recipients == 1
@@ -160,7 +162,9 @@ class TestDispatchFanout:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=False), \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True):
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True), \
+             patch("alert_service.sms_service") as mock_sms:
+            mock_sms.is_enabled = False
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
 
         assert result.email_sent == 0
@@ -178,7 +182,9 @@ class TestDispatchFanout:
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=True), \
              patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp",
-                   side_effect=RuntimeError("Twilio down")):
+                   side_effect=RuntimeError("Twilio down")), \
+             patch("alert_service.sms_service") as mock_sms:
+            mock_sms.is_enabled = False
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
 
         assert result.email_sent == 1
@@ -195,7 +201,9 @@ class TestDispatchFanout:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=False), \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=False):
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=False), \
+             patch("alert_service.sms_service") as mock_sms:
+            mock_sms.is_enabled = False
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
 
         assert result.email_sent == 0

@@ -111,6 +111,33 @@ MockClient createMockClient({
       );
     }
 
+    // Account existence check for unified login
+    if (path.endsWith('/check-account') && method == 'POST') {
+      final body = jsonDecode(request.body);
+      final email = body['email'] as String?;
+      final phoneNumber = body['phone_number'] as String?;
+      
+      // Return account exists for test emails
+      if (email == 'test@swasth.app' || email == 'wrong@email.com') {
+        return http.Response(
+          jsonEncode({
+            'exists': true,
+            'login_method': 'email_password',
+          }),
+          200,
+        );
+      }
+      
+      // For other emails/phones, return doesn't exist
+      return http.Response(
+        jsonEncode({
+          'exists': false,
+          'login_method': null,
+        }),
+        200,
+      );
+    }
+
     // ── Email verification endpoints ────────────────────────────────
 
     if (path.endsWith('/send-email-verification') && method == 'POST') {
