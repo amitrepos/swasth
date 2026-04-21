@@ -1736,11 +1736,11 @@ abstract class AppLocalizations {
   /// **'Enter OTP'**
   String get enterOtpHeadline;
 
-  /// No description provided for @otpSentTo.
+  /// No description provided for @otpSentToEmail.
   ///
   /// In en, this message translates to:
   /// **'We\'ve sent a 6-digit OTP to\n{email}'**
-  String otpSentTo(String email);
+  String otpSentToEmail(String email);
 
   /// No description provided for @otpLabel.
   ///
@@ -3307,6 +3307,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Code must contain only numbers'**
   String get otpValidationDigitsOnly;
+
+  /// No description provided for @loginModeEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get loginModeEmail;
+
+  /// No description provided for @loginModePhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get loginModePhone;
+
+  /// No description provided for @emailOrPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or Phone Number'**
+  String get emailOrPhoneLabel;
+
+  /// No description provided for @phoneNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get phoneNumberLabel;
+
+  /// No description provided for @phoneValidationInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid phone number (10-15 digits)'**
+  String get phoneValidationInvalid;
+
+  /// No description provided for @continueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueButton;
+
+  /// No description provided for @phoneLoginNoAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Not Found'**
+  String get phoneLoginNoAccountTitle;
+
+  /// No description provided for @phoneLoginNoAccountMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No account found with this phone number. Would you like to create a new account?'**
+  String get phoneLoginNoAccountMessage;
+
+  /// No description provided for @createAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get createAccount;
+
+  /// No description provided for @verifyPhoneOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Phone OTP'**
+  String get verifyPhoneOTP;
+
+  /// No description provided for @otpSentToPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'OTP sent to {phone}'**
+  String otpSentToPhone(String phone);
+
+  /// No description provided for @nameValidationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name'**
+  String get nameValidationEmpty;
+
+  /// No description provided for @nameValidationTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Name must be at least 2 characters'**
+  String get nameValidationTooShort;
+
+  /// No description provided for @verifyOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify OTP'**
+  String get verifyOTP;
+
+  /// No description provided for @didntReceiveOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t receive code?'**
+  String get didntReceiveOTP;
+
+  /// No description provided for @resendOTP.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend OTP'**
+  String get resendOTP;
+
+  /// No description provided for @accountCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created successfully! Please complete your profile.'**
+  String get accountCreatedSuccess;
 }
 
 class _AppLocalizationsDelegate

@@ -318,7 +318,7 @@
   "rememberPassword": "पासवर्ड याद है?",
   "verifyOtpTitle": "OTP सत्यापित करें",
   "enterOtpHeadline": "OTP डालें",
-  "otpSentTo": "हमने {email} पर 6 अंकों का OTP भेजा है",
+  "otpSentToEmail": "हमने {email} पर 6 अंकों का OTP भेजा है",
   "otpLabel": "OTP",
   "verifyOtp": "OTP सत्यापित करें",
   "otpVerifiedSuccess": "OTP सत्यापित हो गया!",

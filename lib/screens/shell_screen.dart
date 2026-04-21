@@ -18,7 +18,7 @@ import 'chat_screen.dart';
 import 'select_profile_screen.dart';
 import 'profile_screen.dart';
 import 'manage_access_screen.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
@@ -102,7 +102,7 @@ class _ShellScreenState extends State<ShellScreen> {
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
     );
   }
 

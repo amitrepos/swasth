@@ -4,7 +4,7 @@ import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 import 'select_profile_screen.dart';
 import 'doctor/doctor_triage_screen.dart';
 
@@ -90,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
     );
   }
 

@@ -15,7 +15,7 @@ import '../services/storage_service.dart';
 import 'admin_create_user_screen.dart';
 import 'shell_screen.dart';
 import 'create_profile_screen.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 import 'pending_invites_screen.dart';
 import '../widgets/offline_banner.dart';
 import 'email_verification_screen.dart';
@@ -201,7 +201,7 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
               if (!mounted) return;
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
               );
             },
             tooltip: 'Logout',

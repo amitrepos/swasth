@@ -5,7 +5,7 @@ import '../services/error_mapper.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_form_scroll_body.dart';
 import 'otp_verification_screen.dart';
-import 'login_screen.dart';
+import 'unified_login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -152,7 +152,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
+                          builder: (context) => const UnifiedLoginScreen(),
                         ),
                       );
                     },

@@ -6,6 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 // ── Auth screens ────────────────────────────────────────────────────────────
 
+// Unified login screen
+final unifiedLoginInput = find.byKey(const Key('unified_login_input'));
+final unifiedLoginPassword = find.byKey(const Key('unified_login_password'));
+final unifiedLoginButton = find.byKey(const Key('unified_login_continue_button'));
+final unifiedLoginRegisterLink = find.byKey(const Key('unified_login_register_link'));
+
+// Legacy login screen (for backward compatibility)
 final loginEmail = find.byKey(const Key('login_email'));
 final loginPassword = find.byKey(const Key('login_password'));
 final loginButton = find.byKey(const Key('login_button'));

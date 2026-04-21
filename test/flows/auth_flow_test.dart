@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:swasth_app/screens/login_screen.dart';
+import 'package:swasth_app/screens/unified_login_screen.dart';
 import 'package:swasth_app/screens/registration_screen.dart';
 import 'package:swasth_app/screens/select_profile_screen.dart';
 
@@ -18,9 +18,8 @@ void main() {
     testWidgets('Login screen renders all required elements', (tester) async {
       env = await TestEnv.createAtLogin(tester);
 
-      expect(find.byType(LoginScreen), findsOneWidget);
-      expect(loginEmail, findsOneWidget);
-      expect(loginPassword, findsOneWidget);
+      expect(find.byType(UnifiedLoginScreen), findsOneWidget);
+      expect(find.byKey(const Key('unified_login_input')), findsOneWidget);
       expect(loginButton, findsOneWidget);
       expect(loginRegisterLink, findsOneWidget);
     });
@@ -31,7 +30,7 @@ void main() {
       await tester.tap(loginButton);
       await pumpN(tester);
 
-      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(UnifiedLoginScreen), findsOneWidget);
     });
 
     testWidgets('Login form validates invalid email', (tester) async {

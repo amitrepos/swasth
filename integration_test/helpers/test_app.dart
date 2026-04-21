@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
-import 'package:swasth_app/screens/login_screen.dart';
+import 'package:swasth_app/screens/unified_login_screen.dart';
 import 'package:swasth_app/screens/shell_screen.dart';
 import 'package:swasth_app/screens/select_profile_screen.dart';
 import 'package:swasth_app/screens/reading_confirmation_screen.dart';
@@ -49,7 +49,7 @@ class TestEnv {
           colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
           scaffoldBackgroundColor: AppColors.bgPage,
         ),
-        home: startScreen ?? const LoginScreen(),
+        home: startScreen ?? const UnifiedLoginScreen(),
       ),
     );
 
@@ -61,7 +61,7 @@ class TestEnv {
 
   /// Start at LoginScreen (default).
   static Future<TestEnv> createAtLogin(WidgetTester tester) =>
-      create(tester, startScreen: const LoginScreen());
+      create(tester, startScreen: const UnifiedLoginScreen());
 
   /// Start at SelectProfileScreen (simulates post-login state).
   static Future<TestEnv> createAtProfileSelect(WidgetTester tester) =>
