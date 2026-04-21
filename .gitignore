@@ -64,3 +64,7 @@ ios_backup/
 
 # Domain expert review markers — per-clone state, content-hash keyed
 .claude/markers/
+
+# Personal operational docs — local-only (see memory: project_india_trip_2026)
+docs/INDIA_TRIP_APR_MAY_2026.md
+docs/FOUNDER_KIT_CHECKLIST.md

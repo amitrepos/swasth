@@ -335,7 +335,7 @@ Template and process in `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md § Incident Resp
 
 ### 10.3 If you find a vulnerability
 
-Do not open a public GitHub issue. Email `amitkumarmishra@gmail.com` directly. A private security advisory will be opened and a fix shipped before disclosure.
+Do not open a public GitHub issue. Email `swasth.admin@gmail.com` directly. A private security advisory will be opened and a fix shipped before disclosure.
 
 ---
 
