@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Abstract key-value store — production uses FlutterSecureStorage,
 /// tests use an in-memory map.
@@ -61,6 +62,12 @@ class StorageService {
   StorageService._internal();
 
   KeyValueStore _store = _SecureKeyValueStore();
+  SharedPreferences? _prefs;
+
+  /// Initialize SharedPreferences for credentials storage
+  Future<void> _initPrefs() async {
+    _prefs ??= await SharedPreferences.getInstance();
+  }
 
   /// Switch to in-memory storage for tests.
   /// Safe to call multiple times — reuses existing in-memory store.
@@ -156,20 +163,46 @@ class StorageService {
   }
 
   Future<void> saveCredentials(String email, String password) async {
-    await _store.write(_savedEmailKey, email);
-    await _store.write(_savedPasswordKey, password);
+    // Use SharedPreferences for more reliable persistence on Android
+    // But use the regular store for tests (in-memory)
+    if (_store is InMemoryKeyValueStore) {
+      await _store.write(_savedEmailKey, email);
+      await _store.write(_savedPasswordKey, password);
+    } else {
+      await _initPrefs();
+      await _prefs!.setString(_savedEmailKey, email);
+      await _prefs!.setString(_savedPasswordKey, password);
+    }
   }
 
   Future<({String email, String password})?> getSavedCredentials() async {
-    final email = await _store.read(_savedEmailKey);
-    final password = await _store.read(_savedPasswordKey);
-    if (email == null || password == null) return null;
-    return (email: email, password: password);
+    // Use SharedPreferences for more reliable persistence on Android
+    // But use the regular store for tests (in-memory)
+    if (_store is InMemoryKeyValueStore) {
+      final email = await _store.read(_savedEmailKey);
+      final password = await _store.read(_savedPasswordKey);
+      if (email == null || password == null) return null;
+      return (email: email, password: password);
+    } else {
+      await _initPrefs();
+      final email = _prefs!.getString(_savedEmailKey);
+      final password = _prefs!.getString(_savedPasswordKey);
+      if (email == null || password == null) return null;
+      return (email: email, password: password);
+    }
   }
 
   Future<void> clearCredentials() async {
-    await _store.delete(_savedEmailKey);
-    await _store.delete(_savedPasswordKey);
+    // Use SharedPreferences for more reliable persistence on Android
+    // But use the regular store for tests (in-memory)
+    if (_store is InMemoryKeyValueStore) {
+      await _store.delete(_savedEmailKey);
+      await _store.delete(_savedPasswordKey);
+    } else {
+      await _initPrefs();
+      await _prefs!.remove(_savedEmailKey);
+      await _prefs!.remove(_savedPasswordKey);
+    }
   }
 
   // ── Offline cache: profiles ──────────────────────────────────────────────
@@ -258,7 +291,12 @@ class StorageService {
     await _store.delete(_userKey);
     await _store.delete(_activeProfileIdKey);
     await _store.delete(_activeProfileNameKey);
-    await clearCredentials();
+    // NOTE: We intentionally do NOT clear saved credentials here.
+    // If user checked "Remember me", their credentials should persist
+    // across logout so they don't have to re-type them.
+    // Credentials are only cleared when:
+    // 1. User logs in WITHOUT "Remember me" checked
+    // 2. User manually clears app data
   }
 
   Future<void> clearEverything() async {
