@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
@@ -199,8 +200,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
           unitDisplay: 'mg/dL',
           statusFlag: _glucoseStatus(value),
           notes: _mealContext,
-          readingTimestamp: _readingTime,
-          createdAt: DateTime.now(),
+          readingTimestamp: _readingTime.toUtc(),
+          createdAt: DateTime.now().toUtc(),
         );
       } else if (isSpo2) {
         final value = double.parse(_spo2Controller.text.trim());
@@ -213,8 +214,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
           valueNumeric: value,
           unitDisplay: '%',
           statusFlag: classifySpo2(value),
-          readingTimestamp: _readingTime,
-          createdAt: DateTime.now(),
+          readingTimestamp: _readingTime.toUtc(),
+          createdAt: DateTime.now().toUtc(),
         );
       } else if (isSteps) {
         final value = int.parse(_stepsController.text.trim());
@@ -226,8 +227,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
           stepsGoal: 7500,
           valueNumeric: value.toDouble(),
           unitDisplay: 'steps',
-          readingTimestamp: _readingTime,
-          createdAt: DateTime.now(),
+          readingTimestamp: _readingTime.toUtc(),
+          createdAt: DateTime.now().toUtc(),
         );
       } else if (isWeight) {
         final value = double.parse(_weightController.text.trim());
@@ -239,8 +240,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
           weightUnit: 'kg',
           valueNumeric: value,
           unitDisplay: 'kg',
-          readingTimestamp: _readingTime,
-          createdAt: DateTime.now(),
+          readingTimestamp: _readingTime.toUtc(),
+          createdAt: DateTime.now().toUtc(),
         );
       } else {
         final sys = double.parse(_systolicController.text.trim());
@@ -258,15 +259,20 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
           unitDisplay: 'mmHg',
           statusFlag: _bpStatus(sys, dia),
           notes: null,
-          readingTimestamp: _readingTime,
-          createdAt: DateTime.now(),
+          readingTimestamp: _readingTime.toUtc(),
+          createdAt: DateTime.now().toUtc(),
         );
       }
 
       Map<String, dynamic>? saveResult;
       try {
+        // Debug: Print the reading data being sent
+        debugPrint('Saving reading: ${reading.toJson()}');
+        
         saveResult = await _readingService.saveReading(reading, token);
+        debugPrint('Save result: $saveResult');
       } catch (e) {
+        debugPrint('Error saving reading: $e');
         final errStr = e.toString();
         final isNetworkError =
             errStr.contains('SocketException') ||
@@ -295,26 +301,77 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
 
       if (!mounted) return;
 
-      // Check for critical alert
+      // Check if reading was skipped (duplicate)
+      if (saveResult?['skipped'] == true) {
+        debugPrint('Reading was skipped: ${saveResult?['reason']}');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('This reading was already saved (duplicate).'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        try {
+          ShellScreen.switchToTab(0);
+        } catch (_) {}
+        return;
+      }
+
+      // Check for critical alert (only if alert exists)
       final alert = saveResult?['alert'] as Map<String, dynamic>?;
+      debugPrint('Alert: $alert');
       if (alert != null) {
         await _showCriticalAlert(context, alert);
       }
 
       if (!mounted) return;
+      debugPrint('Showing success message...');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.readingSavedSuccess)));
 
       // Pop back to the Shell and switch to Home tab (refreshes data)
+      debugPrint('Navigating back to home...');
       Navigator.of(context).popUntil((route) => route.isFirst);
       // Trigger Shell to refresh and switch to Home
       try {
         ShellScreen.switchToTab(0);
       } catch (_) {} // ShellScreen may not be available in all nav contexts
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('ERROR in _save: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
       if (mounted) {
-        await ErrorMapper.showSnack(context, e);
+        // Show more detailed error for debugging
+        final errorMsg = e.toString();
+        debugPrint('Error message: $errorMsg');
+        
+        if (errorMsg.contains('422') || errorMsg.contains('validation')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Validation error: Please check your input values'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else if (errorMsg.contains('401')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Session expired. Please login again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else if (errorMsg.contains('SocketException') || errorMsg.contains('Timeout')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Network error. Please check your connection.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          debugPrint('Showing generic error via ErrorMapper');
+          await ErrorMapper.showSnack(context, e);
+        }
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -326,7 +383,6 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     Map<String, dynamic> alert,
   ) async {
     final message = alert['message'] as String? ?? 'Critical reading detected.';
-    final profileName = alert['profile_name'] as String? ?? 'Patient';
 
     await showDialog(
       context: ctx,

@@ -92,6 +92,7 @@ class StorageService {
   static const String _todayStepsKey = 'today_steps';
   static const String _lastStepsDateKey = 'last_steps_date';
   static const String _stepsGoalKey = 'steps_goal';
+  static const String _baselineStepsKey = 'baseline_steps';
 
   Future<void> saveToken(String token) async {
     await _store.write(_tokenKey, token);
@@ -300,6 +301,17 @@ class StorageService {
   /// Get daily step goal
   Future<int?> getStepsGoal() async {
     final value = await _store.read(_stepsGoalKey);
+    return value != null ? int.tryParse(value) : null;
+  }
+
+  /// Save baseline step count (absolute count at start of day)
+  Future<void> saveBaselineSteps(int baseline) async {
+    await _store.write(_baselineStepsKey, baseline.toString());
+  }
+
+  /// Get baseline step count
+  Future<int?> getBaselineSteps() async {
+    final value = await _store.read(_baselineStepsKey);
     return value != null ? int.tryParse(value) : null;
   }
 }

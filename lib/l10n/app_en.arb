@@ -430,6 +430,7 @@
   "forgotPasswordSubtitle": "Enter your email address and we'll send you an OTP to reset your password.",
   "sendOtp": "Send OTP",
   "otpSentSuccess": "OTP sent successfully! Check your email.",
+  "otpSentToPhoneSuccess": "OTP sent successfully! Check your messages.",
   "rememberPassword": "Remember your password?",
   "verifyOtpTitle": "Verify OTP",
   "enterOtpHeadline": "Enter OTP",

@@ -115,7 +115,6 @@ MockClient createMockClient({
     if (path.endsWith('/check-account') && method == 'POST') {
       final body = jsonDecode(request.body);
       final email = body['email'] as String?;
-      final phoneNumber = body['phone_number'] as String?;
       
       // Return account exists for test emails
       if (email == 'test@swasth.app' || email == 'wrong@email.com') {

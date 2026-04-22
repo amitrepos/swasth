@@ -41,6 +41,7 @@ import '../config/feature_flags.dart';
 import '../utils/health_helpers.dart' as helpers;
 import '../services/reminder_service.dart';
 import '../services/pedometer_service.dart';
+import '../services/background_step_service.dart';
 import '../main.dart' show routeObserver;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -60,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen>
   final DoctorService _doctorService = DoctorService();
   final MealService _mealService = MealService();
   final PedometerService _pedometerService = PedometerService();
+  final BackgroundStepService _backgroundStepService = BackgroundStepService();
   List<Map<String, dynamic>> _linkedDoctors = [];
   List<MealLog> _activityMeals = [];
 
@@ -109,9 +111,13 @@ class _HomeScreenState extends State<HomeScreen>
       // Sync steps to backend after initialization
       await _pedometerService.syncStepsToBackend();
       
-      // Set up periodic sync every 5 minutes
+      // Initialize background step counting service
+      await _backgroundStepService.initialize();
+      debugPrint('HomeScreen: Background step counting enabled');
+      
+      // Set up periodic sync every 5 minutes (foreground)
       _stepsSyncTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
-        debugPrint('HomeScreen: Periodic steps sync');
+        debugPrint('HomeScreen: Periodic steps sync (foreground)');
         await _pedometerService.syncStepsToBackend();
       });
     } catch (e) {
@@ -130,6 +136,7 @@ class _HomeScreenState extends State<HomeScreen>
     _pulseController.dispose();
     _stepsSyncTimer?.cancel();
     _pedometerService.dispose();
+    _backgroundStepService.cancel();
     routeObserver.unsubscribe(this);
     super.dispose();
   }

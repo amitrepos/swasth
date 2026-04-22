@@ -174,7 +174,8 @@ void main() {
       ];
 
       for (final tz in timezones) {
-        expect(tz is String, isTrue);
+        // Timezone values are already guaranteed to be Strings by the list type
+        expect(tz.isNotEmpty, isTrue);
       }
     });
   });

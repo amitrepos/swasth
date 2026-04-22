@@ -5,10 +5,8 @@
 /// profile switching, data flowing between screens.
 ///
 /// Run: flutter test integration_test/app_flows_test.dart
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:swasth_app/main.dart' as app;
 import 'package:swasth_app/screens/shell_screen.dart';
 import 'package:swasth_app/screens/chat_screen.dart';
 import 'package:swasth_app/screens/trend_chart_screen.dart';

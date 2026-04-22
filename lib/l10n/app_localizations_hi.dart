@@ -882,6 +882,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get otpSentSuccess => 'OTP सफलतापूर्वक भेजा गया! ईमेल देखें।';
 
   @override
+  String get otpSentToPhoneSuccess => 'OTP सफलतापूर्वक भेजा गया! SMS देखें।';
+
+  @override
   String get rememberPassword => 'पासवर्ड याद है?';
 
   @override

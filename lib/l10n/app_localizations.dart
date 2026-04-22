@@ -1718,6 +1718,12 @@ abstract class AppLocalizations {
   /// **'OTP sent successfully! Check your email.'**
   String get otpSentSuccess;
 
+  /// No description provided for @otpSentToPhoneSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'OTP sent successfully! Check your messages.'**
+  String get otpSentToPhoneSuccess;
+
   /// No description provided for @rememberPassword.
   ///
   /// In en, this message translates to:

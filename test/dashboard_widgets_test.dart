@@ -416,7 +416,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(MetricsGrid), findsOneWidget);
-      expect(find.text('—'), findsWidgets);
+      // Verify actual values are displayed (not dashes)
+      expect(find.text('130/85'), findsOneWidget);
+      expect(find.text('105 mg'), findsOneWidget);
     });
 
     testWidgets('renders weight and BMI labels', (tester) async {

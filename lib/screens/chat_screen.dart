@@ -34,7 +34,6 @@ class _ChatScreenState extends State<ChatScreen> {
   PlatformFile? _selectedImage;
 
   // Header vitals
-  String _profileName = '';
   String _lastBp = '--';
   String _lastSugar = '--';
   bool _canEdit = true;
@@ -82,7 +81,6 @@ class _ChatScreenState extends State<ChatScreen> {
         _lastSugar = glucose != null
             ? '${glucose.toStringAsFixed(0)} mg/dL'
             : '--';
-        _profileName = data['profile_name'] as String? ?? '';
       });
     } catch (_) {}
   }

@@ -883,6 +883,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpSentSuccess => 'OTP sent successfully! Check your email.';
 
   @override
+  String get otpSentToPhoneSuccess =>
+      'OTP sent successfully! Check your messages.';
+
+  @override
   String get rememberPassword => 'Remember your password?';
 
   @override

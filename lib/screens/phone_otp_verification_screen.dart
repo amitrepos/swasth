@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
-import '../services/api_exception.dart';
 import '../services/api_service.dart';
 import '../services/error_mapper.dart';
 import '../services/storage_service.dart';
@@ -158,7 +157,7 @@ class _PhoneOTPVerificationScreenState extends State<PhoneOTPVerificationScreen>
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.otpSentSuccess),
+            content: Text(AppLocalizations.of(context)!.otpSentToPhoneSuccess),
             backgroundColor: AppColors.statusNormal,
           ),
         );

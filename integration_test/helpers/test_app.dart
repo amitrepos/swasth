@@ -10,7 +10,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'package:swasth_app/screens/unified_login_screen.dart';
-import 'package:swasth_app/screens/shell_screen.dart';
 import 'package:swasth_app/screens/select_profile_screen.dart';
 import 'package:swasth_app/screens/reading_confirmation_screen.dart';
 import 'package:swasth_app/screens/quick_select_screen.dart';

@@ -226,14 +226,8 @@ def get_health_score(
 
     # Steps: sum all step entries today (may have multiple syncs)
     today_steps_readings = [r for r in today_readings if r.reading_type == 'steps']
-    today_steps_count = sum(r.steps_count or 0 for r in today_steps_readings) if today_steps_readings else None
+    today_steps_count = sum(r.steps_count or 0 for r in today_steps_readings) if today_steps_readings else 0
     today_steps_goal = next((r.steps_goal for r in today_steps_readings if r.steps_goal), None)
-    
-    # DEBUG: Log steps data
-    import logging
-    logging.info(f"Health Score - Profile {profile_id}: today_steps_readings={len(today_steps_readings)}, today_steps_count={today_steps_count}, today_steps_goal={today_steps_goal}")
-    if today_steps_readings:
-        logging.info(f"  Steps readings: {[{'id': r.id, 'count': r.steps_count, 'goal': r.steps_goal, 'timestamp': r.reading_timestamp} for r in today_steps_readings]}")
 
     today_weight = next((r for r in today_readings if r.reading_type == 'weight'), None)
 
