@@ -1227,6 +1227,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offlineBanner => 'You are offline. Some features may be limited.';
 
   @override
+  String get backOnline => 'Back online! Syncing your data...';
+
+  @override
   String get loggedInOffline => 'Logged in offline';
 
   @override

@@ -551,6 +551,7 @@
   "chatQuotaRemaining": "questions remaining today",
   "chatQuotaExceeded": "Daily question limit reached. Resets at midnight.",
   "offlineBanner": "You are offline. Some features may be limited.",
+  "backOnline": "Back online! Syncing your data...",
   "loggedInOffline": "Logged in offline",
   "readingSavedOffline": "Reading saved offline. Will sync when connected.",
   "syncComplete": "Synced {count} readings",

@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/sync_service.dart';
@@ -100,6 +101,24 @@ class _ShellScreenState extends State<ShellScreen> {
     if (!mounted) return;
     final wasOffline = _isOffline;
     setState(() => _isOffline = !reachable);
+    
+    // Show snackbar when coming back online
+    if (wasOffline && reachable && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.cloud_done, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.backOnline),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+    
     // Auto-sync when coming back online
     if (wasOffline && reachable) {
       SyncService().syncPendingReadings();

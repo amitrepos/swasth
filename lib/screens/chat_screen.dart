@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
@@ -105,18 +105,56 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _pickImage() async {
     try {
+      // Pick image from gallery
+      await _pickFile(FileType.image);
+    } catch (e) {
+      if (mounted) {
+        await ErrorMapper.showSnack(context, e);
+      }
+    }
+  }
+
+  Future<void> _pickFile(FileType type) async {
+    try {
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
+        type: type,
         withData: true,
       );
       if (result != null && result.files.isNotEmpty) {
-        setState(() => _selectedImage = result.files.first);
+        final file = result.files.first;
+        setState(() => _selectedImage = file);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Image selected: ${file.name}'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         await ErrorMapper.showSnack(context, e);
       }
     }
+  }
+
+  /// Check if the selected file is an image (should show image preview)
+  bool _shouldShowImagePreview() {
+    if (_selectedImage == null || _selectedImage!.bytes == null) return false;
+    final extension = _selectedImage!.extension?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(extension);
+  }
+
+  /// Get the appropriate icon for the selected file
+  IconData _getFileIcon() {
+    return Icons.image;
+  }
+
+  /// Get the appropriate color for the file icon background/foreground
+  Color _getFileIconColor({bool foreground = false}) {
+    return foreground ? AppColors.primary : AppColors.primary.withValues(alpha: 0.1);
   }
 
   Future<void> _sendMessage({String? imageDescription}) async {
@@ -127,7 +165,20 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_isSending || _remainingQuota <= 0) return;
 
     if (imageDescription == null) _inputController.clear();
-    final displayText = text.isNotEmpty ? text : 'Analyzing uploaded image...';
+    
+    // Build display text
+    String displayText = text;
+    if (imageFile != null && text.isEmpty) {
+      // Check if it's an image or other file
+      final extension = imageFile.extension?.toLowerCase();
+      final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(extension);
+      
+      if (isImage) {
+        displayText = 'Analyzing uploaded image...';
+      } else {
+        displayText = 'Shared file: ${imageFile.name}';
+      }
+    }
 
     setState(() {
       _messages.add({
@@ -151,7 +202,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ((!kIsWeb && imageFile.path != null)
                 ? await File(imageFile.path!).readAsBytes()
                 : null);
+                
         if (bytes != null) {
+          // Send image as base64
           final base64Str = base64Encode(bytes);
           final msg = text.isNotEmpty ? text : 'Please analyze this image';
           response = await _chatService.sendImageMessage(
@@ -215,6 +268,12 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     });
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
   @override
@@ -318,7 +377,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
 
-            // --- Image preview (if selected) ---
+            // --- File preview (if selected) ---
             if (_selectedImage != null && _canEdit)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
@@ -326,27 +385,54 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: _selectedImage!.bytes != null
+                      child: _shouldShowImagePreview()
                           ? Image.memory(
                               _selectedImage!.bytes!,
                               width: 60,
                               height: 60,
                               fit: BoxFit.cover,
                             )
-                          : const SizedBox(
+                          : Container(
                               width: 60,
                               height: 60,
-                              child: Icon(Icons.image, size: 30),
+                              decoration: BoxDecoration(
+                                color: _getFileIconColor(),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                _getFileIcon(),
+                                size: 30,
+                                color: _getFileIconColor(foreground: true),
+                              ),
                             ),
                     ),
                     const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'Image ready to send',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedImage!.name,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                _formatFileSize(_selectedImage!.size),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                     GestureDetector(

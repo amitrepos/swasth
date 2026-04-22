@@ -2360,6 +2360,12 @@ abstract class AppLocalizations {
   /// **'You are offline. Some features may be limited.'**
   String get offlineBanner;
 
+  /// No description provided for @backOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Back online! Syncing your data...'**
+  String get backOnline;
+
   /// No description provided for @loggedInOffline.
   ///
   /// In en, this message translates to:

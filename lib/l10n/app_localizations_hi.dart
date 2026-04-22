@@ -1227,6 +1227,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get offlineBanner => 'आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।';
 
   @override
+  String get backOnline => 'Back online! Syncing your data...';
+
+  @override
   String get loggedInOffline => 'ऑफ़लाइन लॉगिन हुआ';
 
   @override
