@@ -12,7 +12,6 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import 'package:swasth_app/screens/chat_screen.dart';
 import 'package:swasth_app/screens/trend_chart_screen.dart';
 import 'package:swasth_app/screens/reading_confirmation_screen.dart';
-import 'package:swasth_app/theme/app_theme.dart';
 
 Widget _wrap(Widget child) {
   return MaterialApp(

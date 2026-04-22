@@ -911,7 +911,7 @@ class BPService {
     if (data.length < 7) return null;
     try {
       final flags = data[0];
-      final unit  = (flags & 0x01) == 1 ? 'kPa' : 'mmHg';
+      // unit is determined by flags but not used in decoding
 
       double _sfloat(int raw) {
         int mantissa = raw & 0x0FFF;

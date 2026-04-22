@@ -6,7 +6,6 @@ import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
-import 'chat_screen.dart';
 import 'shell_screen.dart';
 
 // ── Semantic chart colors (distinct from UI palette) ──────────────────────────

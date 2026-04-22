@@ -17,7 +17,6 @@ class PedometerService {
   factory PedometerService() => _instance;
   PedometerService._internal();
 
-  final Pedometer _pedometer = Pedometer();
   final StorageService _storage = StorageService();
   
   Stream<StepCount>? _stepCountStream;
@@ -26,6 +25,7 @@ class PedometerService {
   int _todaySteps = 0;
   int _stepsGoal = 7500; // Default daily goal
   DateTime? _lastStepDate;
+  int _baselineSteps = 0; // Steps count at the start of today
   
   /// Current step count for today
   int get todaySteps => _todaySteps;
@@ -41,8 +41,6 @@ class PedometerService {
 
   /// Initialize pedometer and start listening to step updates
   Future<void> initialize() async {
-    debugPrint('PedometerService: Initializing...');
-    
     // Check and request permissions
     final hasPermission = await _requestPermissions();
     if (!hasPermission) {
@@ -69,11 +67,9 @@ class PedometerService {
       );
       
       debugPrint('PedometerService: Successfully listening to step count stream');
-      debugPrint('PedometerService: Current step count: $_todaySteps');
       
-      // Force an initial sync to backend after a short delay
-      Future.delayed(const Duration(seconds: 2), () {
-        debugPrint('PedometerService: Initial steps value: $_todaySteps');
+      // Force an initial sync to backend after receiving first step event
+      Future.delayed(const Duration(seconds: 3), () {
         syncStepsToBackend();
       });
     } catch (e) {
@@ -112,19 +108,23 @@ class PedometerService {
       final today = DateTime.now();
       final savedDate = await _storage.getLastStepsDate();
       final savedSteps = await _storage.getTodaySteps();
+      final savedBaseline = await _storage.getBaselineSteps();
 
-      // If it's a new day, reset step count
+      // If it's a new day, reset step count and capture new baseline
       if (savedDate == null || 
           savedDate.year != today.year || 
           savedDate.month != today.month || 
           savedDate.day != today.day) {
         _todaySteps = 0;
         _lastStepDate = today;
+        // We'll set baseline when we get the first step event
+        _baselineSteps = 0;
         debugPrint('PedometerService: New day, resetting steps to 0');
       } else {
         _todaySteps = savedSteps ?? 0;
+        _baselineSteps = savedBaseline ?? 0;
         _lastStepDate = savedDate;
-        debugPrint('PedometerService: Loaded saved steps: $_todaySteps');
+        debugPrint('PedometerService: Loaded saved steps: $_todaySteps, baseline: $_baselineSteps');
       }
 
       // Load steps goal
@@ -135,6 +135,7 @@ class PedometerService {
     } catch (e) {
       debugPrint('PedometerService: Error loading steps: $e');
       _todaySteps = 0;
+      _baselineSteps = 0;
     }
   }
 
@@ -143,28 +144,37 @@ class PedometerService {
     try {
       final today = DateTime.now();
       
-      debugPrint('PedometerService: Received step event - steps: ${event.steps}');
-      
       // Check if it's a new day
       if (_lastStepDate == null || 
           _lastStepDate!.year != today.year || 
           _lastStepDate!.month != today.month || 
           _lastStepDate!.day != today.day) {
         debugPrint('PedometerService: New day detected, resetting steps');
-        _todaySteps = event.steps;
+        _baselineSteps = event.steps;
+        _todaySteps = 0;
         _lastStepDate = today;
       } else {
-        // Update step count (pedometer gives absolute count from device boot)
-        _todaySteps = event.steps;
+        // Calculate today's steps by subtracting baseline from current absolute count
+        if (_baselineSteps > 0) {
+          _todaySteps = event.steps - _baselineSteps;
+          // Ensure we don't get negative values (shouldn't happen but safety check)
+          if (_todaySteps < 0) {
+            debugPrint('PedometerService: Negative steps detected, resetting baseline');
+            _baselineSteps = event.steps;
+            _todaySteps = 0;
+          }
+        } else {
+          // First event of the day - set this as baseline
+          _baselineSteps = event.steps;
+          _todaySteps = 0;
+        }
       }
-
-      debugPrint('PedometerService: Updated step count to: $_todaySteps');
       
       // Save to local storage
       _saveSteps();
       
-      // Sync to backend every 100 steps to avoid too many API calls
-      if (_todaySteps > 0 && _todaySteps % 100 == 0) {
+      // Sync to backend every 10 steps for more real-time updates
+      if (_todaySteps > 0 && _todaySteps % 10 == 0) {
         debugPrint('PedometerService: Syncing to backend at $_todaySteps steps');
         syncStepsToBackend();
       }
@@ -178,6 +188,7 @@ class PedometerService {
     try {
       await _storage.saveTodaySteps(_todaySteps);
       await _storage.saveLastStepsDate(DateTime.now());
+      await _storage.saveBaselineSteps(_baselineSteps);
     } catch (e) {
       debugPrint('PedometerService: Error saving steps: $e');
     }

@@ -9,7 +9,6 @@
 //
 // Run: flutter test integration_test/flows/meal_logging_flow_test.dart
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:swasth_app/screens/quick_select_screen.dart';
 

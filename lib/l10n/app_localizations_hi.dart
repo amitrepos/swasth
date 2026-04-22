@@ -882,6 +882,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get otpSentSuccess => 'OTP सफलतापूर्वक भेजा गया! ईमेल देखें।';
 
   @override
+  String get otpSentToPhoneSuccess => 'OTP सफलतापूर्वक भेजा गया! SMS देखें।';
+
+  @override
   String get rememberPassword => 'पासवर्ड याद है?';
 
   @override
@@ -1222,6 +1225,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get offlineBanner => 'आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।';
+
+  @override
+  String get backOnline => 'Back online! Syncing your data...';
 
   @override
   String get loggedInOffline => 'ऑफ़लाइन लॉगिन हुआ';

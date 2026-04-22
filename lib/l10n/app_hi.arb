@@ -315,6 +315,7 @@
   "forgotPasswordSubtitle": "अपना ईमेल डालें, हम आपको OTP भेजेंगे।",
   "sendOtp": "OTP भेजें",
   "otpSentSuccess": "OTP सफलतापूर्वक भेजा गया! ईमेल देखें।",
+  "otpSentToPhoneSuccess": "OTP सफलतापूर्वक भेजा गया! SMS देखें।",
   "rememberPassword": "पासवर्ड याद है?",
   "verifyOtpTitle": "OTP सत्यापित करें",
   "enterOtpHeadline": "OTP डालें",

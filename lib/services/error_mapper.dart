@@ -90,7 +90,11 @@ class ErrorMapper {
     // Announce to TalkBack/VoiceOver. SnackBars are NOT auto-announced by
     // Flutter's accessibility layer, so users with screen readers would
     // otherwise miss the error entirely.
-    SemanticsService.announce(message, Directionality.of(context));
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
   }
 
   static Future<void> _showSessionExpiredAndLogout(
@@ -99,7 +103,11 @@ class ErrorMapper {
     required String loginRoute,
   }) async {
     final l10n = AppLocalizations.of(context)!;
-    SemanticsService.announce(message, Directionality.of(context));
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
 
     await showDialog<void>(
       context: context,

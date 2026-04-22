@@ -8,7 +8,6 @@ import 'package:http/testing.dart';
 import 'package:swasth_app/services/api_client.dart';
 import 'package:swasth_app/services/storage_service.dart';
 import 'package:swasth_app/services/sync_service.dart';
-import 'package:swasth_app/services/connectivity_service.dart';
 
 import '../helpers/mock_http.dart';
 

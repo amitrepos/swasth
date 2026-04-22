@@ -5,7 +5,6 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/ocr_service.dart';
 import '../services/storage_service.dart';
-import '../services/connectivity_service.dart';
 import 'reading_confirmation_screen.dart';
 
 class PhotoScanScreen extends StatefulWidget {
@@ -167,6 +166,8 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
     }
   }
 
+  // _showBlurryError method removed - not currently used
+  /*
   void _showBlurryError(AppLocalizations l10n) {
     showDialog(
       context: context,
@@ -182,6 +183,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       ),
     );
   }
+  */
 
   void _showError({required String title, required String message}) {
     showDialog(

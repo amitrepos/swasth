@@ -8,7 +8,6 @@
 //
 // Run: flutter test integration_test/flows/auth_flow_test.dart
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:swasth_app/screens/login_screen.dart';
 import 'package:swasth_app/screens/registration_screen.dart';

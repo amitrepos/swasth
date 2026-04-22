@@ -1718,6 +1718,12 @@ abstract class AppLocalizations {
   /// **'OTP sent successfully! Check your email.'**
   String get otpSentSuccess;
 
+  /// No description provided for @otpSentToPhoneSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'OTP sent successfully! Check your messages.'**
+  String get otpSentToPhoneSuccess;
+
   /// No description provided for @rememberPassword.
   ///
   /// In en, this message translates to:
@@ -2353,6 +2359,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You are offline. Some features may be limited.'**
   String get offlineBanner;
+
+  /// No description provided for @backOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Back online! Syncing your data...'**
+  String get backOnline;
 
   /// No description provided for @loggedInOffline.
   ///
