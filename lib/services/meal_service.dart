@@ -141,7 +141,10 @@ class MealService {
       try {
         final json = jsonDecode(response.body);
         if (json is Map<String, dynamic> && json.containsKey('error')) {
-          throw ValidationException(json['error'] as String);
+          final errorMsg = json['error'];
+          throw ValidationException(
+            errorMsg is String ? errorMsg : 'Analysis failed',
+          );
         }
         return NutritionAnalysisResult.fromJson(json);
       } on FormatException {

@@ -9,6 +9,7 @@ from slowapi.util import get_remote_address
 import os
 import json
 import re
+import ai_service
 import models
 import schemas
 from database import get_db
@@ -300,7 +301,11 @@ async def parse_food_image(
 # POST /meals/analyze-nutrition — detailed nutrition analysis
 # ---------------------------------------------------------------------------
 
-@router.post("/meals/analyze-nutrition", status_code=status.HTTP_200_OK)
+@router.post(
+    "/meals/analyze-nutrition",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.NutritionAnalysisResult,
+)
 @limiter.limit("10/minute")
 async def analyze_nutrition(
     request: Request,
@@ -313,19 +318,37 @@ async def analyze_nutrition(
     get_profile_access_or_403(profile_id, user, db)
 
     if not settings.GEMINI_API_KEY:
-        return {"error": "No Gemini API key configured"}
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No Gemini API key configured",
+        )
 
     try:
-        image_bytes = await file.read()
+        # Validate MIME type before reading file
         mime_type = file.content_type or "image/jpeg"
         if mime_type == "application/octet-stream":
             fname = (file.filename or "").lower()
             if fname.endswith(".png"):
                 mime_type = "image/png"
+            elif fname.endswith(".webp"):
+                mime_type = "image/webp"
             else:
                 mime_type = "image/jpeg"
+        
+        if mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=f"Unsupported file type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}",
+            )
 
-        import ai_service
+        # Read and validate file size
+        image_bytes = await file.read()
+        if len(image_bytes) > settings.MAX_UPLOAD_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File too large. Max size: {settings.MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB",
+            )
+
         result_text = ai_service.generate_vision_insight(
             NUTRITION_ANALYSIS_PROMPT, image_bytes, profile_id, db,
             prompt_summary="nutrition-analysis",
@@ -333,17 +356,26 @@ async def analyze_nutrition(
         )
 
         if not result_text:
-            return {"error": "AI could not process the image. Please try again."}
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="AI could not process the image. Please try again.",
+            )
 
         json_match = re.search(r"\{[\s\S]*\}", result_text, re.DOTALL)
         if not json_match:
-            return {"error": "AI returned unexpected format. Please try again."}
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="AI returned unexpected format. Please try again.",
+            )
 
         parsed = json.loads(json_match.group())
 
         # Validate required fields
         if "foods" not in parsed or not isinstance(parsed["foods"], list):
-            return {"error": "Invalid food data returned"}
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Invalid food data returned",
+            )
 
         # Validate and clean food items
         validated_foods = []
@@ -358,7 +390,22 @@ async def analyze_nutrition(
                 "fiber_g": float(food.get("fiber_g", 0)),
             })
 
-        # Build response
+        # Build response with validation
+        carb_level = parsed.get("carb_level", "medium")
+        if carb_level not in ("low", "medium", "high"):
+            carb_level = "medium"
+        
+        sugar_level = parsed.get("sugar_level", "medium")
+        if sugar_level not in ("low", "medium", "high"):
+            sugar_level = "medium"
+        
+        meal_score = parsed.get("meal_score")
+        if meal_score is not None:
+            try:
+                meal_score = max(1, min(10, int(meal_score)))
+            except (ValueError, TypeError):
+                meal_score = None
+        
         response = {
             "foods": validated_foods,
             "total_calories": float(parsed.get("total_calories", 0)),
@@ -366,8 +413,8 @@ async def analyze_nutrition(
             "total_protein_g": float(parsed.get("total_protein_g", 0)),
             "total_fat_g": float(parsed.get("total_fat_g", 0)),
             "total_fiber_g": float(parsed.get("total_fiber_g", 0)),
-            "carb_level": parsed.get("carb_level", "medium"),
-            "sugar_level": parsed.get("sugar_level", "medium"),
+            "carb_level": carb_level,
+            "sugar_level": sugar_level,
         }
 
         # Optional fields
@@ -385,14 +432,22 @@ async def analyze_nutrition(
             response["is_gluten_free"] = bool(parsed["is_gluten_free"])
         if "is_high_protein" in parsed:
             response["is_high_protein"] = bool(parsed["is_high_protein"])
-        if "meal_score" in parsed:
-            response["meal_score"] = int(parsed["meal_score"])
+        if meal_score is not None:
+            response["meal_score"] = meal_score
         if "meal_score_reason" in parsed:
             response["meal_score_reason"] = str(parsed["meal_score_reason"])
 
         return response
 
+    except HTTPException:
+        raise
     except (json.JSONDecodeError, KeyError):
-        return {"error": "AI returned unexpected format. Please try again."}
-    except Exception as e:
-        return {"error": f"Nutrition analysis failed: {str(e)}"}
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="AI returned unexpected format. Please try again.",
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nutrition analysis failed. Please try again.",
+        )

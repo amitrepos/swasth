@@ -1883,4 +1883,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nutritionAnalyzing => 'Analyzing nutrition details...';
+
+  @override
+  String get iron => 'Iron';
+
+  @override
+  String get calcium => 'Calcium';
+
+  @override
+  String get vitaminC => 'Vitamin C';
+
+  @override
+  String get kcalUnit => 'kcal';
+
+  @override
+  String get gramsUnit => 'g';
+
+  @override
+  String get carbsUnit => 'carbs';
+
+  @override
+  String get proteinUnit => 'protein';
+
+  @override
+  String get fatUnit => 'fat';
+
+  @override
+  String get useQuickSelect => 'Use Quick Select instead';
 }

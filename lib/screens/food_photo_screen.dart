@@ -109,7 +109,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
 
-    // Show loading dialog
+    // Show loading dialog with cancel button for poor network conditions
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -123,6 +123,17 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
                 Text(l10n.nutritionAnalyzing),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // dismiss dialog
+                    if (mounted) {
+                      Navigator.of(context).pop(); // return to previous screen
+                      widget.onFallbackToQuickSelect?.call();
+                    }
+                  },
+                  child: Text(l10n.useQuickSelect),
+                ),
               ],
             ),
           ),
@@ -138,10 +149,10 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
         return;
       }
 
-      // Detailed nutrition analysis
+      // Detailed nutrition analysis with 20s timeout (graceful fallback to Quick Select)
       final nutritionResult = await MealService()
           .analyzeNutrition(widget.profileId, file, token)
-          .timeout(const Duration(seconds: 60));
+          .timeout(const Duration(seconds: 20));
 
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
       if (!mounted) return;

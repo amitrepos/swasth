@@ -586,11 +586,6 @@ class NutritionAnalysisResult(BaseModel):
     is_high_protein: Optional[bool] = None
     meal_score: Optional[int] = None
     meal_score_reason: Optional[str] = None
-    category: Optional[str] = None  # HIGH_CARB, MODERATE_CARB, etc.
-    glucose_impact: Optional[str] = None  # HIGH, MODERATE, LOW
-    tip_en: Optional[str] = None
-    tip_hi: Optional[str] = None
-    confidence: Optional[float] = None
 
 
 class MealLogCreate(BaseModel):

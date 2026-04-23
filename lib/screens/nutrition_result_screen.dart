@@ -3,9 +3,15 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 
 import '../models/meal_log.dart';
 import '../models/nutrition_analysis_result.dart';
+import '../services/connectivity_service.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+
+/// Hour thresholds for detecting meal type based on current time.
+const _kBreakfastEndHour = 11; // Before 11:00 = Breakfast
+const _kLunchEndHour = 15;     // Before 15:00 = Lunch
+const _kSnackEndHour = 18;     // Before 18:00 = Snack, else Dinner
 
 /// Shows detailed nutrition analysis result: macros, micros, flags, meal score.
 class NutritionResultScreen extends StatefulWidget {
@@ -38,9 +44,9 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
 
   String _detectMealType() {
     final hour = DateTime.now().hour;
-    if (hour < 11) return 'BREAKFAST';
-    if (hour < 15) return 'LUNCH';
-    if (hour < 18) return 'SNACK';
+    if (hour < _kBreakfastEndHour) return 'BREAKFAST';
+    if (hour < _kLunchEndHour) return 'LUNCH';
+    if (hour < _kSnackEndHour) return 'SNACK';
     return 'DINNER';
   }
 
@@ -86,6 +92,32 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     }
   }
 
+  /// Maps carb_level (low/medium/high) to MealLog category.
+  String _categoryFromCarbLevel() {
+    switch (widget.result.carbLevel.toLowerCase()) {
+      case 'low':
+        return 'LOW_CARB';
+      case 'high':
+        return 'HIGH_CARB';
+      case 'medium':
+      default:
+        return 'MODERATE_CARB';
+    }
+  }
+
+  /// Maps sugar_level (low/medium/high) to glucose impact.
+  String _glucoseImpactFromSugarLevel() {
+    switch (widget.result.sugarLevel.toLowerCase()) {
+      case 'low':
+        return 'LOW';
+      case 'high':
+        return 'HIGH';
+      case 'medium':
+      default:
+        return 'MODERATE';
+    }
+  }
+
   Future<void> _saveMeal() async {
     setState(() => _isSaving = true);
 
@@ -105,11 +137,28 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
       final mealLog = MealLogCreate(
         profileId: widget.profileId,
         mealType: _selectedMealType,
-        category: 'MODERATE_CARB', // Default, can be enhanced later
-        glucoseImpact: 'MODERATE',
+        category: _categoryFromCarbLevel(),
+        glucoseImpact: _glucoseImpactFromSugarLevel(),
         inputMethod: 'PHOTO_GEMINI',
         timestamp: DateTime.now(),
       );
+
+      // Check connectivity and queue offline if needed
+      final isOnline = await ConnectivityService().isServerReachable();
+      if (!isOnline) {
+        // Queue for offline sync
+        await StorageService().addToSyncQueue(mealLog.toJson());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Meal saved offline. Will sync when connected.'),
+              backgroundColor: AppColors.amber,
+            ),
+          );
+          Navigator.of(context).pop(true);
+        }
+        return;
+      }
 
       await MealService().saveMeal(mealLog, token);
 
@@ -148,6 +197,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         title: Text(l10n.nutritionAnalysisTitle),
         actions: [
           DropdownButton<String>(
+            key: const Key('meal_type_dropdown'),
             value: _selectedMealType,
             underline: const SizedBox(),
             items: ['BREAKFAST', 'LUNCH', 'SNACK', 'DINNER']
@@ -207,7 +257,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
                   ),
             ),
             const SizedBox(height: 12),
-            _buildMacroGrid(result),
+            _buildMacroGrid(result, l10n),
 
             const SizedBox(height: 24),
 
@@ -220,7 +270,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
                     ),
               ),
               const SizedBox(height: 12),
-              ...result.foods.map((food) => _buildFoodItemCard(food)),
+              ...result.foods.map((food) => _buildFoodItemCard(food, l10n)),
               const SizedBox(height: 24),
             ],
 
@@ -235,7 +285,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
                     ),
               ),
               const SizedBox(height: 12),
-              _buildMicronutrients(result),
+              _buildMicronutrients(result, l10n),
               const SizedBox(height: 24),
             ],
 
@@ -263,7 +313,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: AppColors.bgGrouped,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -287,6 +337,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
 
             // Save Button
             ElevatedButton.icon(
+              key: const Key('save_meal_button'),
               onPressed: _isSaving ? null : _saveMeal,
               icon: _isSaving
                   ? const SizedBox(
@@ -315,12 +366,12 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.primary.withOpacity(0.05),
+            AppColors.primary.withValues(alpha: 0.1),
+            AppColors.primary.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -373,9 +424,9 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -400,7 +451,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     );
   }
 
-  Widget _buildMacroGrid(NutritionAnalysisResult result) {
+  Widget _buildMacroGrid(NutritionAnalysisResult result, AppLocalizations l10n) {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -412,28 +463,28 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         _buildMacroCard(
           label: AppLocalizations.of(context)!.calories,
           value: '${result.totalCalories.round()}',
-          unit: 'kcal',
+          unit: l10n.kcalUnit,
           icon: Icons.local_fire_department,
           color: AppColors.danger,
         ),
         _buildMacroCard(
           label: AppLocalizations.of(context)!.carbs,
           value: '${result.totalCarbsG.toStringAsFixed(1)}',
-          unit: 'g',
+          unit: l10n.gramsUnit,
           icon: Icons.grain,
           color: AppColors.amber,
         ),
         _buildMacroCard(
           label: AppLocalizations.of(context)!.protein,
           value: '${result.totalProteinG.toStringAsFixed(1)}',
-          unit: 'g',
+          unit: l10n.gramsUnit,
           icon: Icons.fitness_center,
           color: AppColors.primary,
         ),
         _buildMacroCard(
           label: AppLocalizations.of(context)!.fat,
           value: '${result.totalFatG.toStringAsFixed(1)}',
-          unit: 'g',
+          unit: l10n.gramsUnit,
           icon: Icons.opacity,
           color: AppColors.textSecondary,
         ),
@@ -451,7 +502,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -482,7 +533,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
                   text: ' $unit',
                   style: TextStyle(
                     fontSize: 12,
-                    color: color.withOpacity(0.7),
+                    color: color.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -493,12 +544,12 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     );
   }
 
-  Widget _buildFoodItemCard(FoodItemNutrition food) {
+  Widget _buildFoodItemCard(FoodItemNutrition food, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: AppColors.bgGrouped,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -529,10 +580,10 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
             spacing: 12,
             runSpacing: 4,
             children: [
-              _buildMiniMacro('${food.calories.round()} kcal', AppColors.danger),
-              _buildMiniMacro('${food.carbsG.toStringAsFixed(1)}g carbs', AppColors.amber),
-              _buildMiniMacro('${food.proteinG.toStringAsFixed(1)}g protein', AppColors.primary),
-              _buildMiniMacro('${food.fatG.toStringAsFixed(1)}g fat', AppColors.textSecondary),
+              _buildMiniMacro('${food.calories.round()} ${l10n.kcalUnit}', AppColors.danger),
+              _buildMiniMacro('${food.carbsG.toStringAsFixed(1)}${l10n.gramsUnit} ${l10n.carbsUnit}', AppColors.amber),
+              _buildMiniMacro('${food.proteinG.toStringAsFixed(1)}${l10n.gramsUnit} ${l10n.proteinUnit}', AppColors.primary),
+              _buildMiniMacro('${food.fatG.toStringAsFixed(1)}${l10n.gramsUnit} ${l10n.fatUnit}', AppColors.textSecondary),
             ],
           ),
         ],
@@ -544,7 +595,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -558,13 +609,13 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     );
   }
 
-  Widget _buildMicronutrients(NutritionAnalysisResult result) {
+  Widget _buildMicronutrients(NutritionAnalysisResult result, AppLocalizations l10n) {
     return Row(
       children: [
         if (result.ironMg != null)
           Expanded(
             child: _buildMicronutrientItem(
-              label: 'Iron',
+              label: l10n.iron,
               value: '${result.ironMg!.toStringAsFixed(1)} mg',
               icon: Icons.favorite,
             ),
@@ -572,7 +623,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         if (result.calciumMg != null)
           Expanded(
             child: _buildMicronutrientItem(
-              label: 'Calcium',
+              label: l10n.calcium,
               value: '${result.calciumMg!.toStringAsFixed(1)} mg',
               icon: Icons.shield,
             ),
@@ -580,7 +631,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         if (result.vitaminCMg != null)
           Expanded(
             child: _buildMicronutrientItem(
-              label: 'Vitamin C',
+              label: l10n.vitaminC,
               value: '${result.vitaminCMg!.toStringAsFixed(1)} mg',
               icon: Icons.brightness_1,
             ),
@@ -598,7 +649,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -630,13 +681,13 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     if (result.isVegan == true) {
-      flags.add(_buildFlagChip(l10n.vegan, Colors.green));
+      flags.add(_buildFlagChip(l10n.vegan, AppColors.success));
     }
     if (result.isVegetarian == true) {
-      flags.add(_buildFlagChip(l10n.vegetarian, Colors.lightGreen));
+      flags.add(_buildFlagChip(l10n.vegetarian, AppColors.success.withGreen(150)));
     }
     if (result.isGlutenFree == true) {
-      flags.add(_buildFlagChip(l10n.glutenFree, Colors.brown));
+      flags.add(_buildFlagChip(l10n.glutenFree, AppColors.amber.withRed(180).withGreen(120).withBlue(60)));
     }
     if (result.isHighProtein == true) {
       flags.add(_buildFlagChip(l10n.highProtein, AppColors.primary));
@@ -649,9 +700,9 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,

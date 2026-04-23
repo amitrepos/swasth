@@ -891,26 +891,131 @@
   "resendOTP": "Resend OTP",
   "accountCreatedSuccess": "Account created successfully! Please complete your profile.",
   "nutritionAnalysisTitle": "Nutrition Analysis",
-  "carbLevel": "Carbs",
+  "@nutritionAnalysisTitle": {
+    "description": "Title for the detailed nutrition analysis screen showing macros, micros, and diet flags"
+  },
+  "carbLevel": "Carb Level",
+  "@carbLevel": {
+    "description": "Label for carbohydrate level badge (low/medium/high) in nutrition analysis"
+  },
   "sugarLevel": "Sugar",
+  "@sugarLevel": {
+    "description": "Label for sugar level badge (low/medium/high) in nutrition analysis"
+  },
   "totalNutrition": "Total Nutrition",
+  "@totalNutrition": {
+    "description": "Section header for total macronutrients summary"
+  },
   "detectedFoods": "Detected Foods",
+  "@detectedFoods": {
+    "description": "Section header for list of individual food items detected in the photo"
+  },
   "micronutrients": "Micronutrients",
+  "@micronutrients": {
+    "description": "Section header for micronutrients (iron, calcium, vitamin C)"
+  },
   "dietFlags": "Diet Information",
+  "@dietFlags": {
+    "description": "Section header for diet type flags (vegan, vegetarian, gluten-free, high protein)"
+  },
   "saveMeal": "Save Meal Log",
+  "@saveMeal": {
+    "description": "Button text to save the analyzed meal to the meal log"
+  },
   "mealHealthScore": "Meal Health Score",
+  "@mealHealthScore": {
+    "description": "Label for the meal health score (1-10) shown in the score card"
+  },
   "calories": "Calories",
+  "@calories": {
+    "description": "Label for calories in the macronutrients grid"
+  },
   "carbs": "Carbs",
+  "@carbs": {
+    "description": "Label for carbohydrates (grams) in the macronutrients grid"
+  },
   "protein": "Protein",
+  "@protein": {
+    "description": "Label for protein (grams) in the macronutrients grid"
+  },
   "fat": "Fat",
+  "@fat": {
+    "description": "Label for fat (grams) in the macronutrients grid"
+  },
   "vegan": "Vegan",
+  "@vegan": {
+    "description": "Diet flag label indicating the meal is vegan"
+  },
   "vegetarian": "Vegetarian",
+  "@vegetarian": {
+    "description": "Diet flag label indicating the meal is vegetarian"
+  },
   "glutenFree": "Gluten Free",
+  "@glutenFree": {
+    "description": "Diet flag label indicating the meal is gluten-free"
+  },
   "highProtein": "High Protein",
+  "@highProtein": {
+    "description": "Diet flag label indicating the meal is high in protein"
+  },
   "analysisTypeTitle": "Choose Analysis Type",
+  "@analysisTypeTitle": {
+    "description": "Title for the screen where user chooses between quick classification or detailed nutrition analysis"
+  },
   "quickClassification": "Quick Classification",
+  "@quickClassification": {
+    "description": "Button text for fast carb level detection option"
+  },
   "quickClassificationDesc": "Carb level + health tip (fast)",
+  "@quickClassificationDesc": {
+    "description": "Description text for quick classification option"
+  },
   "detailedNutrition": "Detailed Nutrition",
+  "@detailedNutrition": {
+    "description": "Button text for full nutrition analysis option with macros and micros"
+  },
   "detailedNutritionDesc": "Full macros, micros & diet flags",
-  "nutritionAnalyzing": "Analyzing nutrition details..."
+  "@detailedNutritionDesc": {
+    "description": "Description text for detailed nutrition analysis option"
+  },
+  "nutritionAnalyzing": "Analyzing nutrition details...",
+  "@nutritionAnalyzing": {
+    "description": "Loading message shown while AI analyzes the food photo for nutrition details"
+  },
+  "iron": "Iron",
+  "@iron": {
+    "description": "Label for iron micronutrient in mg"
+  },
+  "calcium": "Calcium",
+  "@calcium": {
+    "description": "Label for calcium micronutrient in mg"
+  },
+  "vitaminC": "Vitamin C",
+  "@vitaminC": {
+    "description": "Label for vitamin C micronutrient in mg"
+  },
+  "kcalUnit": "kcal",
+  "@kcalUnit": {
+    "description": "Unit abbreviation for kilocalories"
+  },
+  "gramsUnit": "g",
+  "@gramsUnit": {
+    "description": "Unit abbreviation for grams"
+  },
+  "carbsUnit": "carbs",
+  "@carbsUnit": {
+    "description": "Short label for carbohydrates in mini macro badges"
+  },
+  "proteinUnit": "protein",
+  "@proteinUnit": {
+    "description": "Short label for protein in mini macro badges"
+  },
+  "fatUnit": "fat",
+  "@fatUnit": {
+    "description": "Short label for fat in mini macro badges"
+  },
+  "useQuickSelect": "Use Quick Select instead",
+  "@useQuickSelect": {
+    "description": "Button text to fallback to manual meal selection if photo analysis fails"
+  }
 }

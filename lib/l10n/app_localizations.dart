@@ -3559,6 +3559,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Analyzing nutrition details...'**
   String get nutritionAnalyzing;
+
+  /// No description provided for @iron.
+  ///
+  /// In en, this message translates to:
+  /// **'Iron'**
+  String get iron;
+
+  /// No description provided for @calcium.
+  ///
+  /// In en, this message translates to:
+  /// **'Calcium'**
+  String get calcium;
+
+  /// No description provided for @vitaminC.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitamin C'**
+  String get vitaminC;
+
+  /// No description provided for @kcalUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'kcal'**
+  String get kcalUnit;
+
+  /// No description provided for @gramsUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'g'**
+  String get gramsUnit;
+
+  /// No description provided for @carbsUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'carbs'**
+  String get carbsUnit;
+
+  /// No description provided for @proteinUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'protein'**
+  String get proteinUnit;
+
+  /// No description provided for @fatUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'fat'**
+  String get fatUnit;
+
+  /// No description provided for @useQuickSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Quick Select instead'**
+  String get useQuickSelect;
 }
 
 class _AppLocalizationsDelegate

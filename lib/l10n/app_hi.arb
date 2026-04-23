@@ -705,5 +705,14 @@
   "quickClassificationDesc": "कार्ब स्तर + स्वास्थ्य सुझाव (तेज़)",
   "detailedNutrition": "विस्तृत पोषण",
   "detailedNutritionDesc": "पूर्ण मैक्रो, माइक्रो और आहार फ्लैग",
-  "nutritionAnalyzing": "पोषण विवरण का विश्लेषण..."
+  "nutritionAnalyzing": "पोषण विवरण का विश्लेषण...",
+  "iron": "आयरन",
+  "calcium": "कैल्शियम",
+  "vitaminC": "विटामिन सी",
+  "kcalUnit": "किलोकैलोरी",
+  "gramsUnit": "ग्राम",
+  "carbsUnit": "कार्ब्स",
+  "proteinUnit": "प्रोटीन",
+  "fatUnit": "वसा",
+  "useQuickSelect": "त्वरित चयन करें"
 }

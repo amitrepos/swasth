@@ -1885,4 +1885,31 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get nutritionAnalyzing => 'पोषण विवरण का विश्लेषण...';
+
+  @override
+  String get iron => 'आयरन';
+
+  @override
+  String get calcium => 'कैल्शियम';
+
+  @override
+  String get vitaminC => 'विटामिन सी';
+
+  @override
+  String get kcalUnit => 'किलोकैलोरी';
+
+  @override
+  String get gramsUnit => 'ग्राम';
+
+  @override
+  String get carbsUnit => 'कार्ब्स';
+
+  @override
+  String get proteinUnit => 'प्रोटीन';
+
+  @override
+  String get fatUnit => 'वसा';
+
+  @override
+  String get useQuickSelect => 'त्वरित चयन करें';
 }
