@@ -1,0 +1,57 @@
+name: Daniel PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: daniel-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Daniel reviews PR
+    runs-on: ubuntu-latest
+
+    # Skip: draft PRs, PRs opened by repo owner (amitrepos), bot PRs.
+    # Rationale: Daniel is for team-member PRs. Owner self-reviews locally via /daniel-review.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.login != 'amitrepos' &&
+      !endsWith(github.event.pull_request.user.login, '[bot]')
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Run Daniel review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            /daniel-review
+
+            You are reviewing PR #${{ github.event.pull_request.number }} in ${{ github.repository }},
+            opened by @${{ github.event.pull_request.user.login }}.
+
+            PR title: ${{ github.event.pull_request.title }}
+            Head SHA: ${{ github.event.pull_request.head.sha }}
+
+            Follow the GitHub PR Reviews section in your SKILL.md exactly:
+            1. Post the structured summary review (CRITICAL/MEDIUM/MINOR + verdict) via
+               `gh pr review ${{ github.event.pull_request.number }} ...`
+            2. Post inline line comments pinned to exact lines via the
+               `POST /repos/{owner}/{repo}/pulls/{number}/reviews` API.
+
+            Do NOT write the pre-commit review marker — that is a local-only concept and
+            does not apply to PRs opened by other team members.
+          claude_args: "--model claude-opus-4-7 --max-turns 40"
