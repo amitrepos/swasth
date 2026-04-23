@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Any, List, Optional
 from datetime import datetime, date, timedelta, timezone
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -301,12 +301,33 @@ async def parse_food_image(
 # POST /meals/analyze-nutrition — detailed nutrition analysis
 # ---------------------------------------------------------------------------
 
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    """Safely convert a value to float, handling N/A, null, strings with units, etc."""
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    # Try to extract numeric value from string (e.g., "150 kcal" -> 150.0)
+    if isinstance(value, str):
+        # Remove common units and whitespace
+        cleaned = value.strip().lower()
+        # Remove common suffixes
+        for suffix in ['kcal', 'cal', 'g', 'mg', 'kj']:
+            cleaned = cleaned.replace(suffix, '').strip()
+        try:
+            return float(cleaned)
+        except (ValueError, TypeError):
+            return default
+    return default
+
+
 @router.post(
     "/meals/analyze-nutrition",
     status_code=status.HTTP_200_OK,
     response_model=schemas.NutritionAnalysisResult,
 )
-@limiter.limit("10/minute")
+@limiter.limit("3/minute")
 async def analyze_nutrition(
     request: Request,
     profile_id: int = Query(..., gt=0),
@@ -325,17 +346,15 @@ async def analyze_nutrition(
 
     try:
         # Validate MIME type before reading file
-        mime_type = file.content_type or "image/jpeg"
+        mime_type = file.content_type
         if mime_type == "application/octet-stream":
-            fname = (file.filename or "").lower()
-            if fname.endswith(".png"):
-                mime_type = "image/png"
-            elif fname.endswith(".webp"):
-                mime_type = "image/webp"
-            else:
-                mime_type = "image/jpeg"
+            # Reject unknown types instead of defaulting to JPEG
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Unknown file type. Please upload a valid image (JPEG, PNG, or WebP).",
+            )
         
-        if mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
+        if not mime_type or mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                 detail=f"Unsupported file type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}",
@@ -408,22 +427,22 @@ async def analyze_nutrition(
         
         response = {
             "foods": validated_foods,
-            "total_calories": float(parsed.get("total_calories", 0)),
-            "total_carbs_g": float(parsed.get("total_carbs_g", 0)),
-            "total_protein_g": float(parsed.get("total_protein_g", 0)),
-            "total_fat_g": float(parsed.get("total_fat_g", 0)),
-            "total_fiber_g": float(parsed.get("total_fiber_g", 0)),
+            "total_calories": _safe_float(parsed.get("total_calories", 0)),
+            "total_carbs_g": _safe_float(parsed.get("total_carbs_g", 0)),
+            "total_protein_g": _safe_float(parsed.get("total_protein_g", 0)),
+            "total_fat_g": _safe_float(parsed.get("total_fat_g", 0)),
+            "total_fiber_g": _safe_float(parsed.get("total_fiber_g", 0)),
             "carb_level": carb_level,
             "sugar_level": sugar_level,
         }
 
         # Optional fields
         if "iron_mg" in parsed:
-            response["iron_mg"] = float(parsed["iron_mg"])
+            response["iron_mg"] = _safe_float(parsed["iron_mg"])
         if "calcium_mg" in parsed:
-            response["calcium_mg"] = float(parsed["calcium_mg"])
+            response["calcium_mg"] = _safe_float(parsed["calcium_mg"])
         if "vitamin_c_mg" in parsed:
-            response["vitamin_c_mg"] = float(parsed["vitamin_c_mg"])
+            response["vitamin_c_mg"] = _safe_float(parsed["vitamin_c_mg"])
         if "is_vegan" in parsed:
             response["is_vegan"] = bool(parsed["is_vegan"])
         if "is_vegetarian" in parsed:
@@ -435,7 +454,9 @@ async def analyze_nutrition(
         if meal_score is not None:
             response["meal_score"] = meal_score
         if "meal_score_reason" in parsed:
-            response["meal_score_reason"] = str(parsed["meal_score_reason"])
+            # Trim verbose responses to prevent payload bloat
+            reason = str(parsed["meal_score_reason"])[:200]
+            response["meal_score_reason"] = reason
 
         return response
 
@@ -446,7 +467,10 @@ async def analyze_nutrition(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="AI returned unexpected format. Please try again.",
         )
-    except Exception:
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Nutrition analysis failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Nutrition analysis failed. Please try again.",

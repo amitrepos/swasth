@@ -575,8 +575,8 @@ class NutritionAnalysisResult(BaseModel):
     total_protein_g: float
     total_fat_g: float
     total_fiber_g: float
-    carb_level: str  # low, medium, high
-    sugar_level: str  # low, medium, high
+    carb_level: Literal["low", "medium", "high"]
+    sugar_level: Literal["low", "medium", "high"]
     iron_mg: Optional[float] = None
     calcium_mg: Optional[float] = None
     vitamin_c_mg: Optional[float] = None

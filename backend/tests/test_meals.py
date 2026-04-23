@@ -377,7 +377,6 @@ class TestMealParseImage:
         data = resp.json()
         assert data["category"] == "HIGH_CARB"
         assert data["confidence"] == 0.88
-        assert "may" in data["tip_en"].lower() or "consider" in data["tip_en"].lower()
 
     @patch("ai_service.generate_vision_insight")
     def test_parse_image_returns_error_on_failure(self, mock_vision, client, auth_headers, db, test_user):

@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from pydantic import Field
+from typing import Optional, List, ClassVar
 
 
 class Settings(BaseSettings):
@@ -75,7 +76,7 @@ class Settings(BaseSettings):
 
     # File upload limits
     MAX_UPLOAD_SIZE_BYTES: int = 10_485_760  # 10 MB max for food photos
-    ALLOWED_IMAGE_MIME_TYPES: list = ["image/jpeg", "image/png", "image/webp"]
+    ALLOWED_IMAGE_MIME_TYPES: List[str] = Field(default_factory=lambda: ["image/jpeg", "image/png", "image/webp"])
 
     class Config:
         env_file = ".env"
