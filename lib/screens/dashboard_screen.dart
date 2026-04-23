@@ -52,7 +52,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _armbandConnected = false;
   String _connectedDeviceType = 'Unknown';
 
-  bool _showHistoryPanel = false;
   List<BluetoothService> _discoveredServices = [];
 
   // ── Connected BP device reference (needed for BPService calls) ─────────────

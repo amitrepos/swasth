@@ -118,7 +118,11 @@ class HistoryScreenState extends State<HistoryScreen> {
       );
 
       readings.sort((a, b) => b.readingTimestamp.compareTo(a.readingTimestamp));
-      if (mounted) setState(() => _readings = readings);
+      
+      // Filter out steps readings from history
+      final filteredReadings = readings.where((r) => r.readingType != 'steps').toList();
+      
+      if (mounted) setState(() => _readings = filteredReadings);
     } catch (e) {
       // Try loading cached readings for offline use
       final cached = await StorageService().getCachedReadings(widget.profileId);
@@ -129,6 +133,9 @@ class HistoryScreenState extends State<HistoryScreen> {
               .where((r) => r.readingType == _filterType)
               .toList();
         }
+        // Filter out steps readings from history
+        readings = readings.where((r) => r.readingType != 'steps').toList();
+        
         readings.sort(
           (a, b) => b.readingTimestamp.compareTo(a.readingTimestamp),
         );

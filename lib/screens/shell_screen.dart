@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/sync_service.dart';
@@ -16,9 +17,6 @@ import 'streaks_screen.dart';
 import 'insights_screen.dart';
 import 'chat_screen.dart';
 import 'select_profile_screen.dart';
-import 'profile_screen.dart';
-import 'manage_access_screen.dart';
-import 'unified_login_screen.dart';
 
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
@@ -31,6 +29,7 @@ class ShellScreen extends StatefulWidget {
     if (index == 4 && chatMessage != null) {
       state._chatInitialMessage = chatMessage;
       // Force rebuild Chat by changing its key
+      // ignore: invalid_use_of_protected_member
       state.setState(() {
         state._chatRebuildKey++;
         state._currentIndex = index;
@@ -48,7 +47,6 @@ class _ShellScreenState extends State<ShellScreen> {
   static _ShellScreenState? _instance;
   int _currentIndex = 0;
   int? _profileId;
-  String _profileName = '';
   bool _loading = true;
   bool _isOffline = false;
   Timer? _connectivityTimer;
@@ -88,23 +86,14 @@ class _ShellScreenState extends State<ShellScreen> {
     final id = await storage.getActiveProfileId();
     if (!mounted) return;
     if (id != null && id != _profileId) {
-      final name = await storage.getActiveProfileName() ?? 'Health';
       if (!mounted) return;
       setState(() {
         _profileId = id;
-        _profileName = name;
       });
     }
   }
 
-  Future<void> _logout() async {
-    await StorageService().clearAll();
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
-    );
-  }
+  // Logout functionality removed - not currently used
 
   Future<void> _checkConnectivity() async {
     if (!mounted) return;
@@ -112,6 +101,24 @@ class _ShellScreenState extends State<ShellScreen> {
     if (!mounted) return;
     final wasOffline = _isOffline;
     setState(() => _isOffline = !reachable);
+    
+    // Show snackbar when coming back online
+    if (wasOffline && reachable && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.cloud_done, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.backOnline),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+    
     // Auto-sync when coming back online
     if (wasOffline && reachable) {
       SyncService().syncPendingReadings();
@@ -134,10 +141,8 @@ class _ShellScreenState extends State<ShellScreen> {
       );
       return;
     }
-    final name = await storage.getActiveProfileName() ?? 'Health';
     setState(() {
       _profileId = id;
-      _profileName = name;
       _loading = false;
     });
   }

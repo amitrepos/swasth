@@ -35,9 +35,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
   
   // State management for different steps
   String _loginStep = 'input'; // 'input', 'password', 'loading'
-  bool _accountExists = false;
   String _loginMethod = ''; // 'email_password', 'phone_otp'
-  bool _isNewUser = false;
 
   @override
   void initState() {
@@ -106,9 +104,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
       if (exists) {
         // Account exists - proceed with appropriate login method
         setState(() {
-          _accountExists = true;
           _loginMethod = loginMethod ?? '';
-          _isNewUser = false;
         });
 
         if (_loginMethod == 'email_password') {
@@ -120,11 +116,6 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
         }
       } else {
         // Account doesn't exist - show create account option
-        setState(() {
-          _accountExists = false;
-          _isNewUser = true;
-        });
-
         if (mounted) {
           final proceed = await showDialog<bool>(
             context: context,
@@ -298,7 +289,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.otpSentSuccess),
+            content: Text(l10n.otpSentToPhoneSuccess),
             backgroundColor: AppColors.statusNormal,
           ),
         );
@@ -326,9 +317,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
   void _backToInput() {
     setState(() {
       _loginStep = 'input';
-      _accountExists = false;
       _loginMethod = '';
-      _isNewUser = false;
     });
   }
 

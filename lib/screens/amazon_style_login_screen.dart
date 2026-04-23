@@ -294,7 +294,7 @@ class _AmazonStyleLoginScreenState extends State<AmazonStyleLoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.otpSentSuccess),
+            content: Text(l10n.otpSentToPhoneSuccess),
             backgroundColor: AppColors.statusNormal,
           ),
         );

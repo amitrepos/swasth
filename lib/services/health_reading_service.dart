@@ -135,7 +135,7 @@ class HealthReading {
       'bp_status': bpStatus,
       'spo2_value': spo2Value,
       'spo2_unit': spo2Unit,
-      'stepsCount': stepsCount,
+      'steps_count': stepsCount,
       'steps_goal': stepsGoal,
       'weight_value': weightValue,
       'weight_unit': weightUnit,
@@ -158,6 +158,10 @@ class HealthReading {
       return '${glucoseValue?.toStringAsFixed(1) ?? '-'} $unitDisplay';
     } else if (readingType == 'weight') {
       return '${weightValue?.toStringAsFixed(1) ?? '-'} $unitDisplay';
+    } else if (readingType == 'steps') {
+      return '${stepsCount?.toString() ?? '-'} $unitDisplay';
+    } else if (readingType == 'spo2') {
+      return '${spo2Value?.toStringAsFixed(0) ?? '-'} $unitDisplay';
     } else {
       return '${systolic?.toStringAsFixed(0) ?? '-'}/${diastolic?.toStringAsFixed(0) ?? '-'} $unitDisplay';
     }

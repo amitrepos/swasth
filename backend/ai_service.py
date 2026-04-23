@@ -27,6 +27,7 @@ def generate_health_insight(
     profile_id: int,
     db: Session,
     prompt_summary: Optional[str] = None,
+    max_tokens: int = 300,
 ) -> Optional[str]:
     """Try DeepSeek first (cheap, no rate limit), then Gemini, then return None.
 
@@ -35,7 +36,7 @@ def generate_health_insight(
 
     # 1. Try DeepSeek first (cheap, reliable, no rate limit)
     if settings.DEEPSEEK_API_KEY:
-        result = _try_deepseek(prompt)
+        result = _try_deepseek(prompt, max_tokens=max_tokens)
         if result["text"]:
             _log(db, profile_id, "deepseek-chat", prompt_summary,
                  result["text"], None, result["tokens"], result["ms"])
@@ -46,7 +47,7 @@ def generate_health_insight(
 
     # 2. Fallback to Gemini
     if settings.GEMINI_API_KEY:
-        result = _try_gemini(prompt)
+        result = _try_gemini(prompt, max_tokens=max_tokens)
         if result["text"]:
             _log(db, profile_id, "gemini-2.5-flash", prompt_summary,
                  result["text"], f"deepseek failed: {deepseek_error}",
@@ -159,7 +160,7 @@ def _try_gemini_vision_with_key(prompt: str, image_bytes: bytes, mime_type: str,
         return {"text": None, "error": str(e)[:200], "tokens": None, "ms": ms}
 
 
-def _try_gemini(prompt: str) -> dict:
+def _try_gemini(prompt: str, max_tokens: int = 300) -> dict:
     """Attempt Gemini 2.5 Flash with key rotation. Returns {text, error, tokens, ms}."""
     keys = _get_gemini_keys()
     if not keys:
@@ -167,7 +168,7 @@ def _try_gemini(prompt: str) -> dict:
 
     last_error = None
     for api_key in keys:
-        result = _try_gemini_with_key(prompt, api_key)
+        result = _try_gemini_with_key(prompt, api_key, max_tokens=max_tokens)
         if result["text"]:
             return result
         last_error = result["error"]
@@ -176,7 +177,7 @@ def _try_gemini(prompt: str) -> dict:
     return {"text": None, "error": last_error, "tokens": None, "ms": 0}
 
 
-def _try_gemini_with_key(prompt: str, api_key: str) -> dict:
+def _try_gemini_with_key(prompt: str, api_key: str, max_tokens: int = 300) -> dict:
     """Attempt Gemini with a specific API key."""
     start = time.time()
     try:
@@ -188,7 +189,7 @@ def _try_gemini_with_key(prompt: str, api_key: str) -> dict:
             model="gemini-2.5-flash",
             contents=prompt,
             config=genai_types.GenerateContentConfig(
-                max_output_tokens=100,
+                max_output_tokens=max_tokens,
                 temperature=0.4,
                 thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
             ),
@@ -221,7 +222,7 @@ def _try_gemini_with_key(prompt: str, api_key: str) -> dict:
 
 
 
-def _try_deepseek(prompt: str) -> dict:
+def _try_deepseek(prompt: str, max_tokens: int = 300) -> dict:
     """Attempt DeepSeek V3 via OpenAI-compatible API. Returns {text, error, tokens, ms}."""
     start = time.time()
     try:
@@ -234,7 +235,7 @@ def _try_deepseek(prompt: str) -> dict:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=80,
+            max_tokens=max_tokens,
             temperature=0.4,
         )
 

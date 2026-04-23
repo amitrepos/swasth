@@ -883,6 +883,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpSentSuccess => 'OTP sent successfully! Check your email.';
 
   @override
+  String get otpSentToPhoneSuccess =>
+      'OTP sent successfully! Check your messages.';
+
+  @override
   String get rememberPassword => 'Remember your password?';
 
   @override
@@ -1221,6 +1225,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offlineBanner => 'You are offline. Some features may be limited.';
+
+  @override
+  String get backOnline => 'Back online! Syncing your data...';
 
   @override
   String get loggedInOffline => 'Logged in offline';

@@ -52,11 +52,13 @@ class MetricsGrid extends StatelessWidget {
     final effectiveWeight = weightKg ?? (data?['last_weight_value'] as num?)?.toDouble() ?? (data?['profile_weight'] as num?)?.toDouble();
 
     // Steps data
-    final todaySteps = (data?['today_steps_count'] as num?)?.toInt();
+    // For new users or days without step data, default to 0 instead of null
+    final todaySteps = (data?['today_steps_count'] as num?)?.toInt() ?? 0;
     final stepsGoal = (data?['today_steps_goal'] as num?)?.toInt() ?? 7500;
 
     // DEBUG: Print steps data to console
     debugPrint('MetricsGrid - Steps Data: todaySteps=$todaySteps, stepsGoal=$stepsGoal');
+    debugPrint('MetricsGrid - Raw today_steps_count from API: ${data?['today_steps_count']}');
     debugPrint('MetricsGrid - Full data keys: ${data?.keys.toList()}');
 
     final bpValue = lastBpSys != null && lastBpDia != null
@@ -68,15 +70,9 @@ class MetricsGrid extends StatelessWidget {
 
     // Weight & SpO2
     final lastWeight = (data?['last_weight_value'] as num?)?.toDouble();
-    final avgWeight90d = (data?['avg_weight_90d'] as num?)?.toDouble();
-    final lastSpo2 = (data?['last_spo2_value'] as num?)?.toDouble();
-    final lastSpo2Status = data?['last_spo2_status'] as String?;
 
     final weightValue = lastWeight != null
         ? '${lastWeight.toStringAsFixed(1)} kg'
-        : '—';
-    final spo2Value = lastSpo2 != null
-        ? '${lastSpo2.toStringAsFixed(0)}%'
         : '—';
 
     return Column(
@@ -194,14 +190,12 @@ class _MetricTile extends StatelessWidget {
   final String value;
   final Color valueColor;
   final VoidCallback? onAddTap;
-  final String? subtitle;
 
   const _MetricTile({
     required this.label,
     required this.value,
     required this.valueColor,
     this.onAddTap,
-    this.subtitle,
   });
 
   @override
@@ -223,14 +217,6 @@ class _MetricTile extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          if (subtitle != null)
-            Text(
-              subtitle!,
-              style: const TextStyle(
-                fontSize: 8,
-                color: AppColors.textSecondary,
-              ),
-            ),
           const SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -286,6 +272,7 @@ class _StepsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // count should never be null now since we default to 0 in MetricsGrid
     final displayValue = count != null ? _formatSteps(count!) : '—';
     final progress = count != null && goal > 0
         ? (count! / goal).clamp(0.0, 1.0)
@@ -323,35 +310,34 @@ class _StepsTile extends StatelessWidget {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w800,
-              color: count != null
+              color: count != null && count! > 0
                   ? AppColors.statusNormal
                   : AppColors.textSecondary,
             ),
           ),
-          if (count != null) ...[
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: SizedBox(
-                height: 4,
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: const Color(0xFFE0E5EA),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.statusNormal,
-                  ),
+          // Always show progress bar, even for 0 steps
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: SizedBox(
+              height: 4,
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: const Color(0xFFE0E5EA),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppColors.statusNormal,
                 ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              '$pct% of ${_formatSteps(goal)}',
-              style: const TextStyle(
-                fontSize: 8,
-                color: AppColors.textSecondary,
-              ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$pct% of ${_formatSteps(goal)}',
+            style: const TextStyle(
+              fontSize: 8,
+              color: AppColors.textSecondary,
             ),
-          ],
+          ),
         ],
       ),
     );
