@@ -6,10 +6,12 @@ from models import User, Profile, HealthReading, ProfileAccess
 from report_service import send_weekly_reports
 
 # 1. Test Phone Normalization Logic
+@patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
-def test_send_weekly_reports_profile_phone_normalization(mock_ai, mock_whatsapp, db):
+def test_send_weekly_reports_profile_phone_normalization(mock_ai, mock_whatsapp, mock_settings, db):
     """Verify that different profile phone formats are normalized to +91 E.164."""
+    mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     user = User(
         email="norm@test.com",
         full_name="Norm Tester",
@@ -48,10 +50,12 @@ def test_send_weekly_reports_profile_phone_normalization(mock_ai, mock_whatsapp,
     assert args[0] == "+919876543210"
 
 # 2. Test Individual Profile Reports
+@patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
-def test_send_weekly_reports_separate_messages(mock_ai, mock_whatsapp, db):
+def test_send_weekly_reports_separate_messages(mock_ai, mock_whatsapp, mock_settings, db):
     """Verify multiple profiles get separate messages to their own numbers."""
+    mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     user = User(
         email="multi@test.com", 
         full_name="Multi Owner", 
@@ -94,10 +98,12 @@ def test_send_weekly_reports_separate_messages(mock_ai, mock_whatsapp, db):
     assert "+919222222222" in recipients
 
 # 3. Test 7-Day Window and No Readings
+@patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
-def test_send_weekly_reports_profile_window_logic(mock_ai, mock_whatsapp, db):
+def test_send_weekly_reports_profile_window_logic(mock_ai, mock_whatsapp, mock_settings, db):
     """Verify data window: 2-day-old data is valid (Weekly), 8-day-old is not."""
+    mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     user = User(email="window@test.com", phone_number="+910000000000", password_hash="dummy_hash", full_name="Window User", is_active=True)
     db.add(user)
     db.flush()
@@ -130,10 +136,12 @@ def test_send_weekly_reports_profile_window_logic(mock_ai, mock_whatsapp, db):
     assert args[0] == "+919100000001"
 
 # 4. Test Report Generation Error Logging
+@patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
-def test_report_generation_error_logging_profile(mock_ai, mock_whatsapp, db):
+def test_report_generation_error_logging_profile(mock_ai, mock_whatsapp, mock_settings, db):
     """Verify that exceptions during generation are logged to ReportGenerationLog."""
+    mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     from models import ReportGenerationLog, ReportGenerationStatus
     
     user = User(email="gen_err@test.com", phone_number="+915555555555", password_hash="hash", full_name="Err User", is_active=True)

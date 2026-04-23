@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
@@ -302,8 +301,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
       if (!mounted) return;
 
       // Check if reading was skipped (duplicate)
-      if (saveResult?['skipped'] == true) {
-        debugPrint('Reading was skipped: ${saveResult?['reason']}');
+      if (saveResult['skipped'] == true) {
+        debugPrint('Reading was skipped: ${saveResult['reason']}');
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -319,7 +318,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
       }
 
       // Check for critical alert (only if alert exists)
-      final alert = saveResult?['alert'] as Map<String, dynamic>?;
+      final alert = saveResult['alert'] as Map<String, dynamic>?;
       debugPrint('Alert: $alert');
       if (alert != null) {
         await _showCriticalAlert(context, alert);

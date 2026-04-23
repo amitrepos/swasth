@@ -1,8 +1,10 @@
-/// Tests for FoodPhotoScreen and MealResultScreen.
-///
-/// Covers: food_photo_screen renders camera/gallery options,
-/// meal_result_screen renders badge + tip + disclaimer,
-/// and "Not correct? Change" button exists.
+/*
+  Tests for FoodPhotoScreen and MealResultScreen.
+
+  Covers: food_photo_screen renders camera/gallery options,
+  meal_result_screen renders badge + tip + disclaimer,
+  and "Not correct? Change" button exists.
+*/
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -1,7 +1,9 @@
-/// Tests for ConsentScreen — privacy consent after registration.
-///
-/// Covers: consent sections render, accept button disabled until scroll,
-/// decline shows confirmation dialog, accept calls onAccept callback.
+/*
+  Tests for ConsentScreen — privacy consent after registration.
+
+  Covers: consent sections render, accept button disabled until scroll,
+  decline shows confirmation dialog, accept calls onAccept callback.
+*/
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

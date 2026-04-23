@@ -1,10 +1,12 @@
-/// Cross-widget contract tests — verify data flows between screens correctly.
-///
-/// These tests catch regressions where one screen depends on another's
-/// parameters, static methods, or constructors. If someone changes a
-/// method signature, removes a parameter, or breaks a contract, these fail.
-///
-/// This is what we were missing that caused the "Discuss with AI" regression.
+/*
+  Cross-widget contract tests — verify data flows between screens correctly.
+
+  These tests catch regressions where one screen depends on another's
+  parameters, static methods, or constructors. If someone changes a
+  method signature, removes a parameter, or breaks a contract, these fail.
+
+  This is what we were missing that caused the "Discuss with AI" regression.
+*/
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

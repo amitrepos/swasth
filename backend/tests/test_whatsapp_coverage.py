@@ -38,10 +38,12 @@ def test_format_report_template_variables_no_data():
     assert "No checks today" in vars[2]
     assert "\n" in vars[2]  # Should have newlines in the template var
 
+@patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
-def test_send_weekly_reports_managed_session(mock_ai, mock_whatsapp, db):
+def test_send_weekly_reports_managed_session(mock_ai, mock_whatsapp, mock_settings, db):
     """Test line 61-62, 131: Managed session when db is None."""
+    mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     # This involves patching SessionLocal in report_service
     with patch("report_service.SessionLocal") as mock_session_local:
         mock_session_local.return_value = db
@@ -49,10 +51,12 @@ def test_send_weekly_reports_managed_session(mock_ai, mock_whatsapp, db):
         send_weekly_reports(db=None) 
         mock_session_local.assert_called_once()
 
+@patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
-def test_send_weekly_reports_phone_formats(mock_ai, mock_whatsapp, db):
+def test_send_weekly_reports_phone_formats(mock_ai, mock_whatsapp, mock_settings, db):
     """Test phone number normalization (10-digit, 12-digit with 91, full +91)."""
+    mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     user = User(
         email="phone@test.com",
         full_name="Phone Tester",
