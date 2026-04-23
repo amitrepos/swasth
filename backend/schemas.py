@@ -559,32 +559,32 @@ MEAL_INPUT_METHODS = ["PHOTO_GEMINI", "QUICK_SELECT"]
 class FoodItemNutrition(BaseModel):
     """Individual food item nutrition data."""
     name: str
-    weight_grams: float
-    calories: float
-    carbs_g: float
-    protein_g: float
-    fat_g: float
-    fiber_g: float
+    weight_grams: float = Field(..., ge=0)
+    calories: float = Field(..., ge=0)
+    carbs_g: float = Field(..., ge=0)
+    protein_g: float = Field(..., ge=0)
+    fat_g: float = Field(..., ge=0)
+    fiber_g: float = Field(..., ge=0)
 
 
 class NutritionAnalysisResult(BaseModel):
     """Detailed nutrition analysis from Gemini Vision."""
     foods: List[FoodItemNutrition]
-    total_calories: float
-    total_carbs_g: float
-    total_protein_g: float
-    total_fat_g: float
-    total_fiber_g: float
+    total_calories: float = Field(..., ge=0)
+    total_carbs_g: float = Field(..., ge=0)
+    total_protein_g: float = Field(..., ge=0)
+    total_fat_g: float = Field(..., ge=0)
+    total_fiber_g: float = Field(..., ge=0)
     carb_level: Literal["low", "medium", "high"]
     sugar_level: Literal["low", "medium", "high"]
-    iron_mg: Optional[float] = None
-    calcium_mg: Optional[float] = None
-    vitamin_c_mg: Optional[float] = None
+    iron_mg: Optional[float] = Field(None, ge=0)
+    calcium_mg: Optional[float] = Field(None, ge=0)
+    vitamin_c_mg: Optional[float] = Field(None, ge=0)
     is_vegan: Optional[bool] = None
     is_vegetarian: Optional[bool] = None
     is_gluten_free: Optional[bool] = None
     is_high_protein: Optional[bool] = None
-    meal_score: Optional[int] = None
+    meal_score: Optional[int] = Field(None, ge=1, le=10)
     meal_score_reason: Optional[str] = None
 
 

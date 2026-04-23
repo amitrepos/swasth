@@ -247,13 +247,22 @@ async def parse_food_image(
 
     try:
         image_bytes = await file.read()
+        if len(image_bytes) > settings.MAX_UPLOAD_SIZE_BYTES:
+            return {"error": f"File too large. Max size: {settings.MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"}
         mime_type = file.content_type or "image/jpeg"
+        
+        # Defence-in-depth: validate MIME type against allowlist
         if mime_type == "application/octet-stream":
             fname = (file.filename or "").lower()
             if fname.endswith(".png"):
                 mime_type = "image/png"
+            elif fname.endswith(".webp"):
+                mime_type = "image/webp"
             else:
                 mime_type = "image/jpeg"
+        
+        if mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
+            return {"error": f"Unsupported file type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}"}
 
         import ai_service
         result_text = ai_service.generate_vision_insight(
@@ -312,8 +321,8 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
     if isinstance(value, str):
         # Remove common units and whitespace
         cleaned = value.strip().lower()
-        # Remove common suffixes
-        for suffix in ['kcal', 'cal', 'g', 'mg', 'kj']:
+        # Remove common suffixes (longer suffixes first to avoid partial matches)
+        for suffix in ['kcal', 'cal', 'mg', 'kj', 'g']:
             cleaned = cleaned.replace(suffix, '').strip()
         try:
             return float(cleaned)

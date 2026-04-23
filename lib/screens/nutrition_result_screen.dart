@@ -7,11 +7,7 @@ import '../services/connectivity_service.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-
-/// Hour thresholds for detecting meal type based on current time.
-const _kBreakfastEndHour = 11; // Before 11:00 = Breakfast
-const _kLunchEndHour = 15;     // Before 15:00 = Lunch
-const _kSnackEndHour = 18;     // Before 18:00 = Snack, else Dinner
+import '../utils/meal_type_detector.dart';
 
 /// Shows detailed nutrition analysis result: macros, micros, flags, meal score.
 class NutritionResultScreen extends StatefulWidget {
@@ -43,13 +39,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
   }
 
   String _detectMealType() {
-    // Use UTC time as a more reliable default for travelers / wrong-clock devices
-    // The user can override via the dropdown, so this is just a sensible default
-    final hour = DateTime.now().toUtc().hour;
-    if (hour < _kBreakfastEndHour) return 'BREAKFAST';
-    if (hour < _kLunchEndHour) return 'LUNCH';
-    if (hour < _kSnackEndHour) return 'SNACK';
-    return 'DINNER';
+    return detectMealType();
   }
 
   Color _carbLevelColor() {
@@ -385,7 +375,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
               style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppColors.textPrimaryDark,
               ),
             ),
           ),

@@ -362,6 +362,8 @@ class TestMealParseImage:
     def test_parse_image_success(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
         mock_settings.GEMINI_API_KEY = "fake-key"
         mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
         mock_vision.return_value = '{"category": "HIGH_CARB", "glucose_impact": "HIGH", "tip_en": "A short walk after meals may help keep sugar levels stable.", "tip_hi": "खाने के बाद थोड़ी सैर करना शुगर को स्थिर रखने में मदद कर सकता है।", "confidence": 0.88}'
 
         profile_id = _get_profile_id(db, test_user.id)
@@ -478,9 +480,7 @@ class TestMealAnalyzeNutrition:
                 files={"file": ("food.jpg", fake_image, "image/jpeg")},
                 headers=auth_headers,
             )
-            assert resp.status_code in (200, 502)  # Now returns 502 for AI failures
-            if resp.status_code == 200:
-                assert "error" in resp.json()
+            assert resp.status_code == 502  # Should return 502 for AI failures
 
     @patch("routes_meals.settings")
     def test_analyze_nutrition_no_api_key(self, mock_settings, client, auth_headers, db, test_user):
@@ -575,3 +575,105 @@ class TestMealAnalyzeNutrition:
             files={"file": ("food.jpg", fake_image, "image/jpeg")},
         )
         assert resp.status_code == 401
+
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_file_too_large(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns 413 when file exceeds MAX_UPLOAD_SIZE_BYTES."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 50  # Very small limit for testing
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        # Create a file larger than 50 bytes
+        large_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.jpg", large_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 413
+        assert "File too large" in resp.json()["detail"]
+
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_unsupported_mime_type(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns 415 when file MIME type is not allowed."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.gif", fake_image, "image/gif")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 415
+        assert "Unsupported file type" in resp.json()["detail"]
+
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_octet_stream_rejected(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns 415 when file MIME type is application/octet-stream."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.bin", fake_image, "application/octet-stream")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 415
+        assert "Unknown file type" in resp.json()["detail"]
+
+
+class TestSafeFloat:
+    """Test _safe_float utility function edge cases."""
+
+    def test_safe_float_with_na_string(self):
+        """_safe_float handles 'N/A' string correctly."""
+        from routes_meals import _safe_float
+        assert _safe_float("N/A") == 0.0
+        assert _safe_float("N/A", default=1.5) == 1.5
+
+    def test_safe_float_with_unit_string(self):
+        """_safe_float extracts number from strings with units like '150 kcal'."""
+        from routes_meals import _safe_float
+        assert _safe_float("150 kcal") == 150.0
+        assert _safe_float("58g") == 58.0
+        assert _safe_float("2.5 mg") == 2.5
+        assert _safe_float("100 cal") == 100.0
+        assert _safe_float("50 kj") == 50.0
+
+    def test_safe_float_with_empty_string(self):
+        """_safe_float handles empty string correctly."""
+        from routes_meals import _safe_float
+        assert _safe_float("") == 0.0
+        assert _safe_float("  ") == 0.0
+
+    def test_safe_float_with_none(self):
+        """_safe_float handles None correctly."""
+        from routes_meals import _safe_float
+        assert _safe_float(None) == 0.0
+        assert _safe_float(None, default=5.0) == 5.0
+
+    def test_safe_float_with_numeric_types(self):
+        """_safe_float handles int and float correctly."""
+        from routes_meals import _safe_float
+        assert _safe_float(42) == 42.0
+        assert _safe_float(3.14) == 3.14
+        assert _safe_float(0) == 0.0
+
+    def test_safe_float_with_invalid_string(self):
+        """_safe_float returns default for non-numeric strings."""
+        from routes_meals import _safe_float
+        assert _safe_float("abc") == 0.0
+        assert _safe_float("high", default=2.0) == 2.0

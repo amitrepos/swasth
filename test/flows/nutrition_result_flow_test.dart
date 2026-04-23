@@ -18,10 +18,12 @@ void main() {
     tearDown(() => env.dispose());
 
     testWidgets('Renders meal score card when score is present', (tester) async {
-      env = await _createNutritionResultScreen(tester, mealScore: 85);
+      env = await _createNutritionResultScreen(tester, mealScore: 8);
 
-      expect(find.textContaining('85'), findsOneWidget);
-      expect(find.textContaining('Meal Health Score'), findsOneWidget);
+      // Look for the meal health score label to ensure we're in the right card
+      expect(find.text('Meal Health Score'), findsOneWidget);
+      // Look for the score "8" specifically in a large font (size 28)
+      expect(find.text('8'), findsOneWidget);
     });
 
     testWidgets('Renders carb and sugar level badges', (tester) async {
@@ -100,7 +102,8 @@ void main() {
     testWidgets('Shows auto-detected meal type based on current hour', (tester) async {
       env = await _createNutritionResultScreen(tester);
 
-      final hour = DateTime.now().toUtc().hour;
+      // Use local time (not UTC) to match the implementation
+      final hour = DateTime.now().hour;
       final expected = hour < 11
           ? 'Breakfast'
           : hour < 15

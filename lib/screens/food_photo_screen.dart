@@ -8,13 +8,22 @@ import '../models/nutrition_analysis_result.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/meal_type_detector.dart';
 import 'meal_result_screen.dart';
 import 'nutrition_result_screen.dart';
 
-/// Hour thresholds for detecting meal type based on current time.
-const _kBreakfastEndHour = 11; // Before 11:00 = Breakfast
-const _kLunchEndHour = 15;     // Before 15:00 = Lunch
-const _kSnackEndHour = 18;     // Before 18:00 = Snack, else Dinner
+// Camera screen color constants
+class _CameraColors {
+  static const Color background = Colors.black;
+  static const Color foreground = Colors.white;
+  static const Color overlay = Colors.black54;
+  static const Color overlayText = Colors.white70;
+  static const Color iconDisabled = Colors.white54;
+  static const Color buttonBorder = Colors.white;
+  static const Color buttonEnabled = Colors.white;
+  static const Color buttonDisabled = Colors.grey;
+  static const Color buttonIcon = Colors.black87;
+}
 
 /// Food Photo Capture Screen — SECONDARY option for meal logging.
 ///
@@ -210,12 +219,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
   }
 
   String _detectMealType() {
-    // Use UTC time as a more reliable default for travelers / wrong-clock devices
-    final hour = DateTime.now().toUtc().hour;
-    if (hour < _kBreakfastEndHour) return 'BREAKFAST';
-    if (hour < _kLunchEndHour) return 'LUNCH';
-    if (hour < _kSnackEndHour) return 'SNACK';
-    return 'DINNER';
+    return detectMealType();
   }
 
   @override
@@ -229,16 +233,16 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _CameraColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: _CameraColors.background,
+        foregroundColor: _CameraColors.foreground,
         title: Text(l10n.foodPhotoTitle),
       ),
       body: _errorMessage != null
           ? _buildErrorState()
           : !_isInitialized
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          ? const Center(child: CircularProgressIndicator(color: _CameraColors.foreground))
           : _buildCameraView(l10n),
     );
   }
@@ -251,11 +255,11 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.camera_alt, color: Colors.white54, size: 64),
+            const Icon(Icons.camera_alt, color: _CameraColors.iconDisabled, size: 64),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
-              style: const TextStyle(color: Colors.white70),
+              style: const TextStyle(color: _CameraColors.overlayText),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -266,7 +270,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
               label: Text(l10n.foodPhotoGallery),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: _CameraColors.foreground,
                 minimumSize: const Size(200, 48),
               ),
             ),
@@ -291,12 +295,12 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.black54,
+                color: _CameraColors.overlay,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 l10n.foodPhotoHint,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: const TextStyle(color: _CameraColors.foreground, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -316,7 +320,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
                 onPressed: _isProcessing ? null : _pickFromGallery,
                 icon: const Icon(
                   Icons.photo_library,
-                  color: Colors.white,
+                  color: _CameraColors.foreground,
                   size: 32,
                 ),
                 tooltip: l10n.foodPhotoGallery,
@@ -330,8 +334,8 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
                   height: 72,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
-                    color: _isProcessing ? Colors.grey : Colors.white,
+                    border: Border.all(color: _CameraColors.buttonBorder, width: 4),
+                    color: _isProcessing ? _CameraColors.buttonDisabled : _CameraColors.buttonEnabled,
                   ),
                   child: _isProcessing
                       ? const Padding(
@@ -341,7 +345,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
                       : const Icon(
                           Icons.camera_alt,
                           size: 32,
-                          color: Colors.black87,
+                          color: _CameraColors.buttonIcon,
                         ),
                 ),
               ),

@@ -96,7 +96,7 @@ class MealService {
       throw const NetworkException();
     }
 
-    if (response.statusCode == 201 || response.statusCode == 200) {
+    if (response.statusCode == 200) {
       try {
         return FoodClassificationResult.fromJson(jsonDecode(response.body));
       } on FormatException {
