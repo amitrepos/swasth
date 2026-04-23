@@ -3421,6 +3421,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account created successfully! Please complete your profile.'**
   String get accountCreatedSuccess;
+
+  /// No description provided for @nutritionAnalysisTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition Analysis'**
+  String get nutritionAnalysisTitle;
+
+  /// No description provided for @carbLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbs'**
+  String get carbLevel;
+
+  /// No description provided for @sugarLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sugar'**
+  String get sugarLevel;
+
+  /// No description provided for @totalNutrition.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Nutrition'**
+  String get totalNutrition;
+
+  /// No description provided for @detectedFoods.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected Foods'**
+  String get detectedFoods;
+
+  /// No description provided for @micronutrients.
+  ///
+  /// In en, this message translates to:
+  /// **'Micronutrients'**
+  String get micronutrients;
+
+  /// No description provided for @dietFlags.
+  ///
+  /// In en, this message translates to:
+  /// **'Diet Information'**
+  String get dietFlags;
+
+  /// No description provided for @saveMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Meal Log'**
+  String get saveMeal;
+
+  /// No description provided for @mealHealthScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal Health Score'**
+  String get mealHealthScore;
+
+  /// No description provided for @calories.
+  ///
+  /// In en, this message translates to:
+  /// **'Calories'**
+  String get calories;
+
+  /// No description provided for @carbs.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbs'**
+  String get carbs;
+
+  /// No description provided for @protein.
+  ///
+  /// In en, this message translates to:
+  /// **'Protein'**
+  String get protein;
+
+  /// No description provided for @fat.
+  ///
+  /// In en, this message translates to:
+  /// **'Fat'**
+  String get fat;
+
+  /// No description provided for @vegan.
+  ///
+  /// In en, this message translates to:
+  /// **'Vegan'**
+  String get vegan;
+
+  /// No description provided for @vegetarian.
+  ///
+  /// In en, this message translates to:
+  /// **'Vegetarian'**
+  String get vegetarian;
+
+  /// No description provided for @glutenFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Gluten Free'**
+  String get glutenFree;
+
+  /// No description provided for @highProtein.
+  ///
+  /// In en, this message translates to:
+  /// **'High Protein'**
+  String get highProtein;
+
+  /// No description provided for @analysisTypeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Analysis Type'**
+  String get analysisTypeTitle;
+
+  /// No description provided for @quickClassification.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Classification'**
+  String get quickClassification;
+
+  /// No description provided for @quickClassificationDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Carb level + health tip (fast)'**
+  String get quickClassificationDesc;
+
+  /// No description provided for @detailedNutrition.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed Nutrition'**
+  String get detailedNutrition;
+
+  /// No description provided for @detailedNutritionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Full macros, micros & diet flags'**
+  String get detailedNutritionDesc;
+
+  /// No description provided for @nutritionAnalyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing nutrition details...'**
+  String get nutritionAnalyzing;
 }
 
 class _AppLocalizationsDelegate

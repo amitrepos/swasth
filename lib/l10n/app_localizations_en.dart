@@ -1814,4 +1814,73 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountCreatedSuccess =>
       'Account created successfully! Please complete your profile.';
+
+  @override
+  String get nutritionAnalysisTitle => 'Nutrition Analysis';
+
+  @override
+  String get carbLevel => 'Carbs';
+
+  @override
+  String get sugarLevel => 'Sugar';
+
+  @override
+  String get totalNutrition => 'Total Nutrition';
+
+  @override
+  String get detectedFoods => 'Detected Foods';
+
+  @override
+  String get micronutrients => 'Micronutrients';
+
+  @override
+  String get dietFlags => 'Diet Information';
+
+  @override
+  String get saveMeal => 'Save Meal Log';
+
+  @override
+  String get mealHealthScore => 'Meal Health Score';
+
+  @override
+  String get calories => 'Calories';
+
+  @override
+  String get carbs => 'Carbs';
+
+  @override
+  String get protein => 'Protein';
+
+  @override
+  String get fat => 'Fat';
+
+  @override
+  String get vegan => 'Vegan';
+
+  @override
+  String get vegetarian => 'Vegetarian';
+
+  @override
+  String get glutenFree => 'Gluten Free';
+
+  @override
+  String get highProtein => 'High Protein';
+
+  @override
+  String get analysisTypeTitle => 'Choose Analysis Type';
+
+  @override
+  String get quickClassification => 'Quick Classification';
+
+  @override
+  String get quickClassificationDesc => 'Carb level + health tip (fast)';
+
+  @override
+  String get detailedNutrition => 'Detailed Nutrition';
+
+  @override
+  String get detailedNutritionDesc => 'Full macros, micros & diet flags';
+
+  @override
+  String get nutritionAnalyzing => 'Analyzing nutrition details...';
 }

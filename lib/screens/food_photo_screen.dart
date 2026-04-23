@@ -4,10 +4,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 
+import '../models/nutrition_analysis_result.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import 'meal_result_screen.dart';
+import 'nutrition_result_screen.dart';
 
 /// Food Photo Capture Screen — SECONDARY option for meal logging.
 ///
@@ -120,7 +122,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
               children: [
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
-                Text(l10n.foodPhotoAnalyzing),
+                Text(l10n.nutritionAnalyzing),
               ],
             ),
           ),
@@ -136,21 +138,20 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
         return;
       }
 
-      // 5-second timeout — auto-fallback to quick select on timeout
-      final classificationResult = await MealService()
-          .parseImage(widget.profileId, file, token)
+      // Detailed nutrition analysis
+      final nutritionResult = await MealService()
+          .analyzeNutrition(widget.profileId, file, token)
           .timeout(const Duration(seconds: 60));
 
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
-
       if (!mounted) return;
 
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => MealResultScreen(
+          builder: (_) => NutritionResultScreen(
             profileId: widget.profileId,
-            result: classificationResult,
+            result: nutritionResult,
             onFallbackToQuickSelect: widget.onFallbackToQuickSelect,
           ),
         ),

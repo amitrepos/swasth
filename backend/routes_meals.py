@@ -50,6 +50,51 @@ Respond ONLY in this exact JSON format, nothing else:
   "confidence": 0.9
 }"""
 
+# ---------------------------------------------------------------------------
+# Detailed Nutrition Analysis Prompt — full nutrient breakdown
+# ---------------------------------------------------------------------------
+
+NUTRITION_ANALYSIS_PROMPT = """You are a nutrition expert. Analyze this food image and return ONLY valid JSON with:
+- foods: array of detected items with estimated weight in grams
+- per_item: calories, carbs_g, protein_g, fat_g, fiber_g
+- total: summed macros
+- carb_level: "low" (<20g), "medium" (20–50g), or "high" (>50g)
+- sugar_level: "low", "medium", or "high"
+- micronutrients: iron_mg, calcium_mg, vitamin_c_mg estimates
+- flags: is_vegan, is_vegetarian, is_gluten_free, is_high_protein booleans
+- meal_score: health rating 1–10 with a one-line reason
+
+Respond ONLY in this exact JSON format, nothing else:
+{
+  "foods": [
+    {
+      "name": "Brown Rice",
+      "weight_grams": 150,
+      "calories": 165,
+      "carbs_g": 35,
+      "protein_g": 4,
+      "fat_g": 1.5,
+      "fiber_g": 2
+    }
+  ],
+  "total_calories": 450,
+  "total_carbs_g": 65,
+  "total_protein_g": 18,
+  "total_fat_g": 12,
+  "total_fiber_g": 8,
+  "carb_level": "high",
+  "sugar_level": "low",
+  "iron_mg": 3.5,
+  "calcium_mg": 120,
+  "vitamin_c_mg": 15,
+  "is_vegan": false,
+  "is_vegetarian": true,
+  "is_gluten_free": true,
+  "is_high_protein": false,
+  "meal_score": 7,
+  "meal_score_reason": "Good fiber content with balanced macros"
+}"""
+
 
 # ---------------------------------------------------------------------------
 # POST /meals — save a meal log
@@ -249,3 +294,105 @@ async def parse_food_image(
         return {"error": "AI returned unexpected format. Please use Quick Select."}
     except Exception:
         return {"error": "Food classification failed. Please use Quick Select."}
+
+
+# ---------------------------------------------------------------------------
+# POST /meals/analyze-nutrition — detailed nutrition analysis
+# ---------------------------------------------------------------------------
+
+@router.post("/meals/analyze-nutrition", status_code=status.HTTP_200_OK)
+@limiter.limit("10/minute")
+async def analyze_nutrition(
+    request: Request,
+    profile_id: int = Query(..., gt=0),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Analyze food photo for detailed nutrition breakdown using Gemini Vision."""
+    get_profile_access_or_403(profile_id, user, db)
+
+    if not settings.GEMINI_API_KEY:
+        return {"error": "No Gemini API key configured"}
+
+    try:
+        image_bytes = await file.read()
+        mime_type = file.content_type or "image/jpeg"
+        if mime_type == "application/octet-stream":
+            fname = (file.filename or "").lower()
+            if fname.endswith(".png"):
+                mime_type = "image/png"
+            else:
+                mime_type = "image/jpeg"
+
+        import ai_service
+        result_text = ai_service.generate_vision_insight(
+            NUTRITION_ANALYSIS_PROMPT, image_bytes, profile_id, db,
+            prompt_summary="nutrition-analysis",
+            mime_type=mime_type,
+        )
+
+        if not result_text:
+            return {"error": "AI could not process the image. Please try again."}
+
+        json_match = re.search(r"\{[\s\S]*\}", result_text, re.DOTALL)
+        if not json_match:
+            return {"error": "AI returned unexpected format. Please try again."}
+
+        parsed = json.loads(json_match.group())
+
+        # Validate required fields
+        if "foods" not in parsed or not isinstance(parsed["foods"], list):
+            return {"error": "Invalid food data returned"}
+
+        # Validate and clean food items
+        validated_foods = []
+        for food in parsed["foods"]:
+            validated_foods.append({
+                "name": str(food.get("name", "Unknown")),
+                "weight_grams": float(food.get("weight_grams", 0)),
+                "calories": float(food.get("calories", 0)),
+                "carbs_g": float(food.get("carbs_g", 0)),
+                "protein_g": float(food.get("protein_g", 0)),
+                "fat_g": float(food.get("fat_g", 0)),
+                "fiber_g": float(food.get("fiber_g", 0)),
+            })
+
+        # Build response
+        response = {
+            "foods": validated_foods,
+            "total_calories": float(parsed.get("total_calories", 0)),
+            "total_carbs_g": float(parsed.get("total_carbs_g", 0)),
+            "total_protein_g": float(parsed.get("total_protein_g", 0)),
+            "total_fat_g": float(parsed.get("total_fat_g", 0)),
+            "total_fiber_g": float(parsed.get("total_fiber_g", 0)),
+            "carb_level": parsed.get("carb_level", "medium"),
+            "sugar_level": parsed.get("sugar_level", "medium"),
+        }
+
+        # Optional fields
+        if "iron_mg" in parsed:
+            response["iron_mg"] = float(parsed["iron_mg"])
+        if "calcium_mg" in parsed:
+            response["calcium_mg"] = float(parsed["calcium_mg"])
+        if "vitamin_c_mg" in parsed:
+            response["vitamin_c_mg"] = float(parsed["vitamin_c_mg"])
+        if "is_vegan" in parsed:
+            response["is_vegan"] = bool(parsed["is_vegan"])
+        if "is_vegetarian" in parsed:
+            response["is_vegetarian"] = bool(parsed["is_vegetarian"])
+        if "is_gluten_free" in parsed:
+            response["is_gluten_free"] = bool(parsed["is_gluten_free"])
+        if "is_high_protein" in parsed:
+            response["is_high_protein"] = bool(parsed["is_high_protein"])
+        if "meal_score" in parsed:
+            response["meal_score"] = int(parsed["meal_score"])
+        if "meal_score_reason" in parsed:
+            response["meal_score_reason"] = str(parsed["meal_score_reason"])
+
+        return response
+
+    except (json.JSONDecodeError, KeyError):
+        return {"error": "AI returned unexpected format. Please try again."}
+    except Exception as e:
+        return {"error": f"Nutrition analysis failed: {str(e)}"}

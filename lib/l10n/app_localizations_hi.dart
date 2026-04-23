@@ -1816,4 +1816,73 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get accountCreatedSuccess =>
       'Account created successfully! Please complete your profile.';
+
+  @override
+  String get nutritionAnalysisTitle => 'पोषण विश्लेषण';
+
+  @override
+  String get carbLevel => 'कार्ब्स';
+
+  @override
+  String get sugarLevel => 'शुगर';
+
+  @override
+  String get totalNutrition => 'कुल पोषण';
+
+  @override
+  String get detectedFoods => 'पहचाने गए खाद्य पदार्थ';
+
+  @override
+  String get micronutrients => 'सूक्ष्म पोषक तत्व';
+
+  @override
+  String get dietFlags => 'आहार जानकारी';
+
+  @override
+  String get saveMeal => 'भोजन सहेजें';
+
+  @override
+  String get mealHealthScore => 'भोजन स्वास्थ्य स्कोर';
+
+  @override
+  String get calories => 'कैलोरी';
+
+  @override
+  String get carbs => 'कार्ब्स';
+
+  @override
+  String get protein => 'प्रोटीन';
+
+  @override
+  String get fat => 'वसा';
+
+  @override
+  String get vegan => 'वेगन';
+
+  @override
+  String get vegetarian => 'शाकाहारी';
+
+  @override
+  String get glutenFree => 'ग्लूटेन मुक्त';
+
+  @override
+  String get highProtein => 'उच्च प्रोटीन';
+
+  @override
+  String get analysisTypeTitle => 'विश्लेषण प्रकार चुनें';
+
+  @override
+  String get quickClassification => 'त्वरित वर्गीकरण';
+
+  @override
+  String get quickClassificationDesc => 'कार्ब स्तर + स्वास्थ्य सुझाव (तेज़)';
+
+  @override
+  String get detailedNutrition => 'विस्तृत पोषण';
+
+  @override
+  String get detailedNutritionDesc => 'पूर्ण मैक्रो, माइक्रो और आहार फ्लैग';
+
+  @override
+  String get nutritionAnalyzing => 'पोषण विवरण का विश्लेषण...';
 }

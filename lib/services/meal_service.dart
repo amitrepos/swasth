@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import '../models/meal_log.dart';
+import '../models/nutrition_analysis_result.dart';
 import '../screens/meal_result_screen.dart';
 import 'api_client.dart';
 import 'api_exception.dart';
@@ -108,6 +109,51 @@ class MealService {
     }
     throw ValidationException(
       ApiClient.errorDetail(response, 'Failed to parse image.'),
+    );
+  }
+
+  /// Analyze food photo for detailed nutrition via POST /api/meals/analyze-nutrition.
+  /// Returns detailed breakdown: macros, micros, flags, meal score.
+  Future<NutritionAnalysisResult> analyzeNutrition(
+    int profileId,
+    XFile file,
+    String token,
+  ) async {
+    final uri = Uri.parse('$_baseUrl/analyze-nutrition?profile_id=$profileId');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll(ApiClient.headers(token: token));
+    final bytes = await file.readAsBytes();
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: file.name),
+    );
+
+    http.Response response;
+    try {
+      final streamed = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
+      response = await http.Response.fromStream(streamed);
+    } catch (_) {
+      throw const NetworkException();
+    }
+
+    if (response.statusCode == 200) {
+      try {
+        final json = jsonDecode(response.body);
+        if (json is Map<String, dynamic> && json.containsKey('error')) {
+          throw ValidationException(json['error'] as String);
+        }
+        return NutritionAnalysisResult.fromJson(json);
+      } on FormatException {
+        throw const ServerException();
+      }
+    }
+    if (response.statusCode == 401) throw const UnauthorizedException();
+    if (response.statusCode >= 500) {
+      throw ServerException(ApiClient.errorDetail(response, ''));
+    }
+    throw ValidationException(
+      ApiClient.errorDetail(response, 'Failed to analyze nutrition.'),
     );
   }
 }

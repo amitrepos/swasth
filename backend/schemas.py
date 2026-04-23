@@ -556,6 +556,43 @@ MEAL_TYPE_OPTIONS = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"]
 MEAL_INPUT_METHODS = ["PHOTO_GEMINI", "QUICK_SELECT"]
 
 
+class FoodItemNutrition(BaseModel):
+    """Individual food item nutrition data."""
+    name: str
+    weight_grams: float
+    calories: float
+    carbs_g: float
+    protein_g: float
+    fat_g: float
+    fiber_g: float
+
+
+class NutritionAnalysisResult(BaseModel):
+    """Detailed nutrition analysis from Gemini Vision."""
+    foods: List[FoodItemNutrition]
+    total_calories: float
+    total_carbs_g: float
+    total_protein_g: float
+    total_fat_g: float
+    total_fiber_g: float
+    carb_level: str  # low, medium, high
+    sugar_level: str  # low, medium, high
+    iron_mg: Optional[float] = None
+    calcium_mg: Optional[float] = None
+    vitamin_c_mg: Optional[float] = None
+    is_vegan: Optional[bool] = None
+    is_vegetarian: Optional[bool] = None
+    is_gluten_free: Optional[bool] = None
+    is_high_protein: Optional[bool] = None
+    meal_score: Optional[int] = None
+    meal_score_reason: Optional[str] = None
+    category: Optional[str] = None  # HIGH_CARB, MODERATE_CARB, etc.
+    glucose_impact: Optional[str] = None  # HIGH, MODERATE, LOW
+    tip_en: Optional[str] = None
+    tip_hi: Optional[str] = None
+    confidence: Optional[float] = None
+
+
 class MealLogCreate(BaseModel):
     profile_id: int
     category: str
