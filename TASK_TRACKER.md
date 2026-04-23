@@ -35,6 +35,140 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 ---
 
+## Task E17 — PII Encryption at Rest (DPDPA-gap)
+
+**Priority:** HIGH &nbsp;|&nbsp; **Status:** ❌ Not started &nbsp;|&nbsp; **Owner:** _unassigned_ &nbsp;|&nbsp; **Est:** 3–4 engineering days (incl. migration + backfill + tests) &nbsp;|&nbsp; **Opened:** 2026-04-23
+
+### Why this exists
+Current encryption at rest covers **SPDI (health values only)** — AES-256-GCM on glucose/BP/SpO2/weight/notes via `backend/encryption_service.py`, wired in `routes_health.py:100-112` and `routes_profiles.py:112`. **Patient PII is still plaintext** in Postgres. Under DPDPA 2023 a name + phone + email + DOB of a patient is "personal data" and, combined with health readings, "sensitive personal data." A DB dump, backup leak, or compromised read-replica today exposes identifiable patient records. This is the single biggest compliance gap before Play Store Production / doctor portal / NRI paid rollout.
+
+### Exact gap (audit on master @ 538f4c7, 2026-04-23)
+
+**User table** (`backend/models.py:19-22`) — plaintext:
+- `email`, `full_name`, `phone_number`
+  (password_hash is hashed — fine, do not touch.)
+
+**Profile table** (`backend/models.py:44-56`) — plaintext:
+- `name`, `relationship`, `gender`, `age`, `height`, `blood_group`
+- `medical_conditions` (ARRAY), `other_medical_condition`, `current_medications`
+- `doctor_name`, `doctor_specialty`, `doctor_whatsapp`
+
+**ProfileInvite table** (`backend/models.py:84,86`) — plaintext:
+- `invited_email`, `relationship`
+
+**OTP / phone verification table** (check `backend/models.py` verification model) — plaintext phone number stored alongside OTP.
+
+**DoctorProfile table** (`backend/models.py:293-307`) — verify in implementation: doctor full name, registration number, specialty. Doctor PII also falls under DPDPA.
+
+### Scope of this task
+
+**In scope:**
+1. Add `_enc` columns (Text, nullable) for every PII field listed above.
+2. Dual-write on every INSERT / UPDATE path that touches these fields (registration, login flows that update `last_login_at`, profile create/update, invite creation, doctor registration).
+3. Backfill script that iterates existing rows, encrypts current plaintext, writes into `_enc` columns. Idempotent, resumable, dry-run flag. Model after `backend/migrate_encrypt_readings.py`.
+4. Read-path: update every SELECT site to prefer `_enc` → decrypt → fallback to plaintext column while backfill is in flight. After backfill completes and soak passes, flip the fallback off behind a feature flag.
+5. Drop plaintext columns in a second Alembic migration once soak + monitoring confirms zero fallback reads for N days (N = 7 recommended).
+6. Blind-index (HMAC-SHA256 with a separate key) for **email** and **phone_number** so `/api/auth/login` lookup by email and OTP lookup by phone still work without decrypting every row. Store `email_hash` / `phone_hash` columns, indexed. Login flow: HMAC the supplied email/phone → lookup by hash → decrypt the row → proceed.
+7. Unit tests for every encrypt/decrypt round-trip + integration tests for login, register, profile CRUD, invite accept, doctor register with encryption ON and with the key missing (graceful fail).
+8. Key management: `ENCRYPTION_KEY` already exists for health data — **generate a separate `PII_ENCRYPTION_KEY`** so PII and SPDI have independent blast radii (compromise of one does not compromise the other). Both 32-byte hex. Update `backend/encryption_service.py` to accept a key parameter or split into `encrypt_spdi` / `encrypt_pii`.
+9. Update `docs/specs/07-SECURITY-AND-COMPLIANCE.md` + `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md` with the new control.
+
+**Out of scope (track separately):**
+- KMS / HashiCorp Vault integration — stays on env vars for pilot, KMS is a separate task pre-Production-release.
+- Field-level access logging (audit trail of who decrypted which record). Ties into DISHA readiness.
+- Re-encryption / key rotation tooling. Separate task.
+
+### Implementation plan (6 PRs, small & reviewable)
+
+**PR 1 — encryption_service split + PII key wiring (~0.5 day)**
+- Add `PII_ENCRYPTION_KEY` to `config.py` / `Settings`, `.env.example`, deployment secret.
+- Refactor `encryption_service.py` to parameterize the key, or add `encrypt_pii()` / `decrypt_pii()` wrappers that use the PII key. Keep `encrypt()` / `encrypt_float()` pointing at `ENCRYPTION_KEY` for SPDI.
+- Unit tests: round-trip, wrong-key → None, missing-key → None, tamper → None (InvalidTag).
+- Required experts: **Security**, **PHI**, Daniel.
+
+**PR 2 — add `_enc` + `_hash` columns (Alembic migration, NOT YET used) (~0.5 day)**
+- Alembic migration `0005_pii_encryption_columns.py`: ADD COLUMN for every `_enc` (Text nullable) + `email_hash` / `phone_hash` (String indexed).
+- Update `models.py` with the new columns.
+- Must hit CI `migration-check.yml` green.
+- Required experts: **Legal**, **PHI**, **Priya**, Daniel.
+
+**PR 3 — dual-write on all INSERT / UPDATE paths (~1 day)**
+- `routes.py` (register), `routes_profiles.py` (profile CRUD), `routes.py` (OTP flows), invite endpoints, doctor registration.
+- Every write: set the plaintext column AND the `_enc` column AND the hash column if applicable.
+- Integration test matrix: register → DB row has both plaintext + enc populated + hash populated; profile update → enc re-encrypted with new value; invite create → invited_email_enc + invited_email_hash set.
+- Do NOT yet change read paths. Dual-write only.
+- Required experts: **Legal**, **PHI**, **Priya**, **Security**, Daniel.
+
+**PR 4 — backfill script + runbook (~0.5 day)**
+- `backend/migrate_encrypt_pii.py` modelled on `migrate_encrypt_readings.py`. Flags: `--dry-run`, `--batch-size`, `--table`, `--resume-from-id`.
+- Idempotent: skip rows where `_enc IS NOT NULL` unless `--force`.
+- Runbook in `docs/runbooks/PII_ENCRYPTION_BACKFILL.md`: dev → pre-prod → prod sequence, rollback steps (just truncate the `_enc` columns, plaintext is still the source of truth).
+- SSH to `65.109.226.36`, run against both `swasth_db` (dev, port 8007) and `swasth_prod` (port 8009) per the topology in the REL-PROD section above.
+- Required experts: **PHI**, **Priya**, Daniel.
+
+**PR 5 — flip read paths to `_enc` with plaintext fallback (~1 day)**
+- `backend/auth.py` (login), `routes.py` (me, user detail), `routes_profiles.py` (list/get profiles), invite acceptance, doctor login/list.
+- Login flow specifically: `SELECT * FROM users WHERE email_hash = HMAC(input_email)` → decrypt the row → check password. Falls back to the old `WHERE email = plaintext` path only if `email_hash IS NULL` (pre-backfill rows — should be zero after PR 4).
+- Add `PII_FALLBACK_READ_METRIC` counter that increments every time the plaintext fallback fires. Scrape it for N days. Success = counter stays at 0.
+- Required experts: **Security**, **Legal**, **PHI**, **Priya**, Daniel.
+
+**PR 6 — drop plaintext columns (~0.5 day, AFTER 7-day soak with zero fallbacks)**
+- Alembic migration `0006_drop_plaintext_pii.py`: DROP COLUMN for every plaintext PII column replaced by `_enc`.
+- Delete fallback branches in read paths.
+- Required experts: **Legal**, **PHI**, **Priya**, Daniel.
+
+### Acceptance criteria
+
+- [ ] `psql -c "SELECT email, full_name, phone_number FROM users LIMIT 1"` returns ciphertext (or the column no longer exists after PR 6).
+- [ ] `psql -c "SELECT name, doctor_whatsapp, medical_conditions FROM profiles LIMIT 1"` returns ciphertext (or columns dropped).
+- [ ] Login with correct credentials works in < 500ms against a DB with 10k users (hash index verified).
+- [ ] `/api/auth/login` with wrong email returns 401 (not 500) — lookup by hash must not crash on unknown input.
+- [ ] Startup fails fast with clear error if `PII_ENCRYPTION_KEY` is missing in production (`ENVIRONMENT=prod`).
+- [ ] Key rotation path documented even if not automated (manual re-encrypt script sketched in runbook).
+- [ ] Backend test coverage on `auth.py`, `routes_profiles.py`, `encryption_service.py` stays ≥ Tier-2 target (90%).
+- [ ] All existing E2E flow tests pass unchanged (Flutter client is agnostic — it always sees plaintext in JSON responses).
+- [ ] Meera (`/reality-check`), PHI (`/phi-compliance`), Legal (`/legal-check`), Security (`/security-audit`), Daniel (`/daniel-review`) — all PASS on each of the 6 PRs.
+
+### Deployment sequence (per PR)
+
+1. Merge to master → GitHub Actions runs `migration-check.yml` + test suite.
+2. Dev server (`:8443`, DB `swasth_db`): CI auto-deploys backend, `alembic upgrade head` runs automatically per PR #111.
+3. Manual backfill run on dev first (PR 4): `ssh … "cd /var/www/swasth/backend && source venv/bin/activate && python migrate_encrypt_pii.py --dry-run"` then without dry-run.
+4. Soak on dev for 48h minimum — watch `PII_FALLBACK_READ_METRIC` + smoke the app.
+5. Repeat for prod (`:8444`, DB `swasth_prod`).
+6. Observe for 7 days before PR 6 (drop plaintext).
+
+### Rollback
+
+- PRs 1, 2, 3, 4: safe — plaintext is still source of truth, `_enc` is additive.
+- PR 5: rollback = revert the PR; fallback path is still there until the soak passes.
+- PR 6: irreversible once plaintext columns dropped. **Only merge after explicit Amit sign-off + prod DB backup verified restorable.**
+
+### Risks / things the implementer must NOT get wrong
+
+1. **Login latency** — without a hash index on `email`, every login becomes O(N) full-table-scan decrypt. Hash column + btree index is mandatory.
+2. **Case sensitivity** — hash the lowercased+trimmed email, not the raw input. Otherwise `Amit@x.com` and `amit@x.com` register twice.
+3. **Phone format** — normalize to E.164 before hashing (`+917001234567`). Mismatched country-code padding will split the same user into two hash buckets.
+4. **medical_conditions ARRAY** — cryptography operates on strings. Pattern: JSON-encode the array → encrypt the JSON string → store in a Text `_enc`. Do NOT try to encrypt element-by-element.
+5. **password_hash DOES NOT get encrypted** — it's already a one-way hash. Re-encrypting would break login. Leave it.
+6. **Do NOT encrypt foreign keys** (`user_id`, `profile_id`) or timestamps. Only PII.
+7. **OTP column** (plaintext OTP, `models.py` verification) — separate pre-existing gap E4 in Module E table. Do NOT conflate. OTP gets hashed (E4), PII gets encrypted (this task). Different primitives.
+8. **Key material in logs** — ensure `encryption_service.py` never logs the key, the plaintext, or the token in cleartext. Existing service already does this; preserve.
+9. **.env discipline** — `PII_ENCRYPTION_KEY` goes in deployment secrets via `gh secret set` per memory rule on GitHub Secrets. Never committed.
+
+### References
+
+- `backend/encryption_service.py` — existing SPDI encryption implementation, pattern to extend.
+- `backend/migrate_encrypt_readings.py` — existing backfill script, pattern to extend for PII.
+- `backend/models.py:17-34` (User), `:40-58` (Profile), `:77-89` (ProfileInvite), `:293-307` (DoctorProfile).
+- `backend/routes.py` (register / login / OTP), `backend/routes_profiles.py`, `backend/auth.py`.
+- `docs/specs/07-SECURITY-AND-COMPLIANCE.md` — update after PR 6.
+- `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md` — update after PR 6.
+- DPDPA 2023, §§ 8–10 (security safeguards), § 8(5) (breach notification — raises the bar if breach IS notifiable, encryption reduces the blast radius).
+- NIST SP 800-38D (AES-GCM) — already followed by existing service.
+
+---
+
 ## Session Log — 2026-04-11
 
 ### Shipped today
@@ -250,6 +384,7 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 | E14 | Make `ApiService` a singleton | LOW | Not started | `ApiService()` instantiated per screen. Use top-level instance or Riverpod provider. |
 | E15 | Remove `ignore_for_file` suppressions | LOW | Not started | `lib/screens/registration_screen.dart:2` — suppressed deprecation warnings hide future breakage. |
 | E16 | Add BLE reconnection logic | LOW | Not started | No auto-reconnect when BLE device disconnects mid-session. Users must manually reconnect. |
+| E17 | PII encryption at rest (DPDPA gap) | HIGH | Not started | **See full detail block "Task E17 — PII Encryption at Rest" at top of this file.** User PII (`email`, `full_name`, `phone_number`), profile fields (`name`, `medical_conditions`, `doctor_*`) and invite `invited_email` are all plaintext in Postgres. Only SPDI (health readings) is encrypted today. 6-PR plan with dual-write → backfill → read-path flip → drop plaintext. ~3–4 eng days. |
 
 ---
 
