@@ -65,6 +65,21 @@ def upgrade():
     # Senior says "don't invent a phone number". Keep nullable for orphans.
     # No more UPDATE SET '0000000000'.
 
+    # Normalise users.phone_number so DB lookups using normalize_phone() match.
+    # Without this, routes that query users.phone_number == normalize_phone(input)
+    # return None for pre-existing users and silently create duplicate accounts.
+    user_rows = bind.execute(
+        sa.text("SELECT id, phone_number FROM users WHERE phone_number IS NOT NULL AND phone_number != ''")
+    ).fetchall()
+    for row in user_rows:
+        uid, raw = row[0], row[1]
+        norm = normalize_phone(raw)
+        if norm and norm != raw:
+            bind.execute(
+                sa.text("UPDATE users SET phone_number = :p WHERE id = :id"),
+                {"p": norm, "id": uid}
+            )
+
 def downgrade():
     raise NotImplementedError(
         "Downgrade permanently deletes profile phone numbers and cannot be reversed. "

@@ -73,8 +73,7 @@ def format_report_template_variables(profile_name: str, profile_data: dict) -> L
     ══════════════════════
     💚 Stay healthy! — *Swasth*
     
-    NOTE: Twilio does not allow newlines in variable values, so {{3}} is formatted as lines separated by spaces.
-    The template itself should handle line breaks.
+    {{3}} uses \\n as line separators — Twilio renders these as line breaks in the delivered message.
     
     Returns a list of 3 strings for the template variables.
     """
@@ -259,6 +258,7 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
         # 1. Collect all reportable data — keyed by owner_id so two owners
         # sharing a device phone each get their own DPDP audit record.
         recipient_map: dict[int, list] = {}
+        skipped_by_owner: dict[int, list] = {}  # owner_id -> profile_ids with no 7-day data
 
         query = db.query(Profile, User).join(
             ProfileAccess, ProfileAccess.profile_id == Profile.id
@@ -280,7 +280,9 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
             for p, owner in rows:
                 results["total_profiles"] += 1
                 data = trigger_single_profile_report(db, p, trigger_type, owner=owner)
-                if not data: continue
+                if not data:
+                    skipped_by_owner.setdefault(owner.id, []).append(p.id)
+                    continue
 
                 if data['status'] == ReportGenerationStatus.FAILED:
                     if data.get('owner_id'):
@@ -320,8 +322,9 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                     user_id=owner_id,
                     trigger_type=trigger_type,
                     report_date=date.today(),
-                    members_requested=profile_ids,
+                    members_requested=profile_ids + skipped_by_owner.get(owner_id, []),
                     members_with_data=profile_ids,
+                    members_skipped=skipped_by_owner.get(owner_id, []) or None,
                     status=ReportGenerationStatus.SUCCESS
                 )
                 db.add(gen_log)
@@ -369,8 +372,6 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
     except Exception as e:
         logger.error("Error in send_weekly_reports task", exc_info=True)
         results["errors"].append(str(e))
-        if user_id: # Re-raise for manual triggers to get 500
-            raise
     finally:
         if managed_session:
             db.close()

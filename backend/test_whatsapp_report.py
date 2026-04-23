@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database import SessionLocal
-from models import User, Profile, HealthReading, ProfileAccess, ReportTriggerType
+from models import User, Profile, HealthReading, ProfileAccess, ReportTriggerType, ReportGenerationStatus
 from report_service import trigger_single_profile_report
 
 def normalize_phone(phone: str) -> str:
@@ -105,11 +105,11 @@ def test_existing_profile_reports(request_phone: str):
         print(f"\n📩 Triggering separate WhatsApp reports...")
         for p in profiles:
             print(f"   -> Sending report for {p.name} to {p.phone_number}...")
-            success = trigger_single_profile_report(db, p, trigger_type=ReportTriggerType.MANUAL)
-            if success:
+            result = trigger_single_profile_report(db, p, trigger_type=ReportTriggerType.MANUAL)
+            if result and result.get("status") == ReportGenerationStatus.SUCCESS:
                 print(f"      ✅ Success!")
             else:
-                print(f"      ❌ Failed (likely no data or Twilio error).")
+                print(f"      ❌ Failed: {result}")
         
     finally:
         db.close()

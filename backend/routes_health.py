@@ -1350,7 +1350,6 @@ def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
 def manually_trigger_whatsapp_report(
     request: Request,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
     """
@@ -1358,7 +1357,6 @@ def manually_trigger_whatsapp_report(
     Limited to 1 request per hour to prevent spam.
     """
     from report_service import send_weekly_reports
-    from models import ReportTriggerType
 
     background_tasks.add_task(
         send_weekly_reports,

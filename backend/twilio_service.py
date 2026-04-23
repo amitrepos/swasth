@@ -91,9 +91,8 @@ class TwilioWhatsAppService:
             # Also sanitize each value: remove newlines, tabs, and multiple spaces
             content_vars_dict = {}
             for i, var in enumerate(variables, start=1):
-                # Sanitize: remove newlines, tabs, and reduce multiple spaces to single space
-                # M3 Fix: Use re.sub for O(n) space collapsing
-                sanitized = re.sub(r" +", " ", var.replace('\n', ' ').replace('\t', ' '))
+                # Collapse tabs and runs of spaces; preserve \n for Twilio line breaks
+                sanitized = re.sub(r" +", " ", var.replace('\t', ' '))
                 content_vars_dict[str(i)] = sanitized.strip()
             
             message = self.client.messages.create(

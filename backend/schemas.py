@@ -229,7 +229,7 @@ class CheckAccountExistsRequest(BaseModel):
 
 class PhoneOTPRequest(BaseModel):
     """Request to send OTP to phone number."""
-    phone_number: str
+    phone_number: str = Field(..., min_length=10, max_length=15)
 
     @validator('phone_number')
     def validate_phone_number(cls, v):
@@ -250,7 +250,7 @@ class PhoneOTPVerifyRequest(BaseModel):
 class UpdateUserRequest(BaseModel):
     """Auth-level user fields only — name, phone, password change."""
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)
-    phone_number: Optional[str] = None
+    phone_number: Optional[str] = Field(None, min_length=10, max_length=15)
     current_password: Optional[str] = None
     new_password: Optional[str] = None
     confirm_password: Optional[str] = None
@@ -680,7 +680,7 @@ class AdminCreateUser(BaseModel):
     email: EmailStr
     password: str
     full_name: str = Field(..., min_length=2, max_length=100)
-    phone_number: str
+    phone_number: str = Field(..., min_length=10, max_length=15)
     role: str = Field(..., pattern="^(patient|doctor)$")
     nmc_number: Optional[str] = Field(None, min_length=5, max_length=20)
     specialty: Optional[str] = None
