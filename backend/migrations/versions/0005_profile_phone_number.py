@@ -30,13 +30,13 @@ def normalize_phone(phone: str | None) -> str:
     return f"+{digits}"
 
 def upgrade():
-    # 1. Add column as nullable initially + add index (m2)
+    # 1. Add column as nullable initially + add index
     op.add_column('profiles', sa.Column('phone_number', sa.String(), nullable=True))
     op.create_index(op.f('ix_profiles_phone_number'), 'profiles', ['phone_number'], unique=False)
     
     # 2. Backfill: for each profile, copy owner-user's phone_number (join via profile_access)
-    # M1: Run values through normalize_phone during backfill.
-    # C2: Use portable data migration instead of Postgres-only UPDATE FROM.
+    # Run values through normalize_phone during backfill.
+    # Use portable data migration instead of Postgres-only UPDATE FROM.
     bind = op.get_bind()
     
     # Fetch profiles that need backfilling
@@ -59,11 +59,11 @@ def upgrade():
                 {"phone": norm_phone, "id": profile_id}
             )
 
-    # C3: Senior says "don't invent a phone number". Keep nullable for orphans.
+    # Senior says "don't invent a phone number". Keep nullable for orphans.
     # No more UPDATE SET '0000000000'.
 
 def downgrade():
-    # m4: add a comment noting irreversible data loss
+    # add a comment noting irreversible data loss
     # WARNING: Dropping this column will permanently delete profile-specific 
     # phone numbers. Data cannot be recovered from this migration.
     op.drop_index(op.f('ix_profiles_phone_number'), table_name='profiles')

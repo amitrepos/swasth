@@ -152,8 +152,12 @@ def update_profile(
     for field, value in update_data.items():
         if field == "phone_number" and value:
             norm_value = normalize_phone(value)
-            if norm_value:
-                setattr(profile, field, norm_value)
+            if not norm_value:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Invalid phone number format"
+                )
+            setattr(profile, field, norm_value)
         else:
             setattr(profile, field, value)
 

@@ -129,7 +129,8 @@ class TwilioWhatsAppService:
             f"*हिन्दी:* {alert_text_hi}\n\n"
             f"— Swasth Health App"
         )
-        return self.send_whatsapp(to_number, body)
+        success, _, _ = self.send_whatsapp(to_number, body)
+        return success
 
 
 # Create singleton instance

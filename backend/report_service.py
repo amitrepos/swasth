@@ -142,6 +142,12 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
 
     # C2 Fix (Privacy): Always dispatch to owner per senior feedback
     target_phone = normalize_phone(owner.phone_number)
+    if not target_phone:
+        logger.warning(
+            "Profile %s owner %s has no valid phone — skipping report",
+            profile.id, owner.id
+        )
+        return None
 
     try:
         last_7d = datetime.utcnow() - timedelta(days=7)

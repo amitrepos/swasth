@@ -49,12 +49,12 @@ def test_send_weekly_reports_profile_phone_normalization(mock_ai, mock_whatsapp,
     args = mock_whatsapp.send_whatsapp_template.call_args[0]
     assert args[0] == "+918700151250"
 
-# 2. Test Individual Profile Reports
+# 2. Test Consolidated Reports for Multi-Profile Owners
 @patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
-def test_send_weekly_reports_separate_messages(mock_ai, mock_whatsapp, mock_settings, db):
-    """Verify multiple profiles get separate messages to their own numbers."""
+def test_send_weekly_reports_consolidated_messages(mock_ai, mock_whatsapp, mock_settings, db):
+    """Verify multiple profiles for the same owner result in ONE consolidated WhatsApp message."""
     mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     user = User(
         email="multi@test.com", 

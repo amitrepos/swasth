@@ -284,10 +284,12 @@ class ProfileCreate(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
-    phone_number: str = Field(..., min_length=10, max_length=15)
+    phone_number: Optional[str] = Field(None, min_length=10, max_length=15)
 
     @validator('phone_number')
     def validate_phone_number(cls, v):
+        if v is None:
+            return v
         stripped = re.sub(r'[\s\-]', '', v)
         if not _PHONE_PATTERN.match(stripped):
             raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
