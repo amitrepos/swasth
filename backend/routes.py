@@ -64,6 +64,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         medical_conditions=user.medical_conditions,
         other_medical_condition=user.other_medical_condition,
         current_medications=user.current_medications,
+        phone_number=user.phone_number,
     )
     db.add(db_profile)
     db.flush()  # Get db_profile.id
@@ -513,6 +514,7 @@ def verify_phone_otp_and_login(
         # Create default profile
         new_profile = models.Profile(
             name="My Health",
+            phone_number=body.phone_number,
         )
         db.add(new_profile)
         db.flush()

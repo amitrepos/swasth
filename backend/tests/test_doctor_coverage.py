@@ -27,7 +27,7 @@ def _patient(db, email="patient@test.com", days=5):
         full_name="Patient Test", phone_number="9876543212",
     )
     db.add(user); db.flush()
-    p = models.Profile(name="Patient Health", age=45, gender="Male")
+    p = models.Profile(name="Patient Health", age=45, gender="Male", phone_number="9876543210")
     db.add(p); db.flush()
     db.add(models.ProfileAccess(user_id=user.id, profile_id=p.id, access_level="owner"))
     db.flush()
@@ -100,7 +100,7 @@ def test_triage_empty(client, db):
     pu = models.User(email="noread@test.com", password_hash=get_password_hash("Test@1234"),
                      full_name="No Read", phone_number="9876543220")
     db.add(pu); db.flush()
-    p = models.Profile(name="Empty"); db.add(p); db.flush()
+    p = models.Profile(name="Empty", phone_number="9876543220"); db.add(p); db.flush()
     db.add(models.ProfileAccess(user_id=pu.id, profile_id=p.id, access_level="owner"))
     db.add(models.DoctorPatientLink(doctor_id=doc.user_id, profile_id=p.id, consent_granted_at=datetime.now(timezone.utc), consent_type="in_person_exam", is_active=True, status="active"))
     db.flush()
@@ -149,7 +149,7 @@ def _bare_profile(db, email_suffix: str):
         phone_number=f"98765{email_suffix.zfill(5)[:5]}",
     )
     db.add(user); db.flush()
-    p = models.Profile(name=f"Triage Profile {email_suffix}")
+    p = models.Profile(name=f"Triage Profile {email_suffix}", phone_number=user.phone_number)
     db.add(p); db.flush()
     db.add(models.ProfileAccess(user_id=user.id, profile_id=p.id, access_level="owner"))
     db.flush()

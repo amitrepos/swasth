@@ -214,7 +214,7 @@ class TestTrendSummarySharedProfile:
         db.add(owner)
         db.flush()
 
-        profile = models.Profile(name="Owner Health", age=50)
+        profile = models.Profile(name="Owner Health", age=50, phone_number="9876543212")
         db.add(profile)
         db.flush()
 
@@ -232,7 +232,7 @@ class TestTrendSummarySharedProfile:
     def test_no_access_rejected(self, client, test_user, auth_headers, db):
         """Users without access should be rejected."""
         # Create a profile test_user has no access to
-        other = models.Profile(name="Secret Health")
+        other = models.Profile(name="Secret Health", phone_number="9876543213")
         db.add(other)
         db.flush()
 

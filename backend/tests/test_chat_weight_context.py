@@ -12,6 +12,7 @@ def test_build_health_summary_with_weight(db: Session, test_user):
         age=30,
         height=180.0, # 1.8m
         weight=80.0,  # profile weight
+        phone_number="9876543210",
         medical_conditions=[],
         current_medications="None"
     )
@@ -61,6 +62,7 @@ def test_build_health_summary_fallback_to_profile_weight(db: Session, test_user)
         age=25,
         height=160.0, # 1.6m
         weight=50.0,  # profile weight
+        phone_number="9876543210",
         medical_conditions=[],
         current_medications="None"
     )

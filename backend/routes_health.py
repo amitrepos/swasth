@@ -21,7 +21,7 @@ from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
 from health_utils import generate_meal_insights
-from report_service import trigger_single_user_report
+from report_service import trigger_single_profile_report
 from models import ReportTriggerType
 
 _enabled = os.environ.get("TESTING", "").lower() != "true"
@@ -1356,19 +1356,38 @@ def manually_trigger_whatsapp_report(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Manually request a daily-style health report to be sent via WhatsApp."""
-    if not user.phone_number:
+    """Manually request a daily-style health report to be sent via WhatsApp for all owned profiles."""
+    # Get all profiles owned by this user with phone numbers
+    owned_profiles = db.query(models.Profile).join(
+        models.ProfileAccess,
+        models.Profile.id == models.ProfileAccess.profile_id
+    ).filter(
+        models.ProfileAccess.user_id == user.id,
+        models.ProfileAccess.access_level == "owner",
+        models.Profile.phone_number != None,
+        models.Profile.phone_number != ""
+    ).all()
+    
+    if not owned_profiles:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User does not have a phone number configured."
+            detail="No profiles with phone numbers configured."
         )
-        
-    success = trigger_single_user_report(db, user, trigger_type=ReportTriggerType.MANUAL)
     
-    if not success:
+    # Generate report for each owned profile
+    successful = 0
+    for profile in owned_profiles:
+        try:
+            success = trigger_single_profile_report(db, profile, trigger_type=ReportTriggerType.MANUAL)
+            if success:
+                successful += 1
+        except Exception as e:
+            logger.error(f"Failed to generate report for profile {profile.id}: {e}")
+    
+    if successful == 0:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate or send report. Check if there are any health readings for the last 24h."
+            detail="Failed to generate reports. Check if there are any health readings for the last 24h."
         )
         
-    return {"message": "Report generated and queued for delivery via WhatsApp."}
+    return {"message": f"Report(s) generated for {successful} profile(s) and queued for delivery via WhatsApp."}

@@ -39,6 +39,7 @@ def _build_profile_response(profile: models.Profile, access_level: str, relation
         doctor_name=profile.doctor_name,
         doctor_specialty=profile.doctor_specialty,
         doctor_whatsapp=profile.doctor_whatsapp,
+        phone_number=profile.phone_number,
         access_level=access_level,
         relationship=rel,
         created_at=profile.created_at,
@@ -87,6 +88,7 @@ def create_profile(
         medical_conditions=data.medical_conditions,
         other_medical_condition=data.other_medical_condition,
         current_medications=data.current_medications,
+        phone_number=data.phone_number,
     )
     db.add(profile)
     db.flush()   # populate profile.id before creating access row

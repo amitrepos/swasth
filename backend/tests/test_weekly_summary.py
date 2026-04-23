@@ -72,7 +72,7 @@ class TestWeeklySummary:
         assert resp.status_code == 401
 
     def test_summary_unauthorized_profile(self, client, test_user, auth_headers, db):
-        other = models.Profile(name="Secret")
+        other = models.Profile(name="Secret", phone_number="9876543211")
         db.add(other)
         db.flush()
         resp = client.get(self.URL, params={"profile_id": other.id}, headers=auth_headers)

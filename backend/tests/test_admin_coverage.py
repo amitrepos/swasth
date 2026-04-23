@@ -12,7 +12,7 @@ def _admin(db):
         is_admin=True, role="admin",
     )
     db.add(user); db.flush()
-    p = models.Profile(name="Admin Health")
+    p = models.Profile(name="Admin Health", phone_number=user.phone_number)
     db.add(p); db.flush()
     db.add(models.ProfileAccess(user_id=user.id, profile_id=p.id, access_level="owner"))
     db.flush()
@@ -26,7 +26,7 @@ def _data_user(db, email="data@test.com"):
         last_login_at=datetime.now(timezone.utc),
     )
     db.add(user); db.flush()
-    p = models.Profile(name="Data Health", age=50, gender="Male")
+    p = models.Profile(name="Data Health", age=50, gender="Male", phone_number=user.phone_number)
     db.add(p); db.flush()
     db.add(models.ProfileAccess(user_id=user.id, profile_id=p.id, access_level="owner"))
     db.flush()

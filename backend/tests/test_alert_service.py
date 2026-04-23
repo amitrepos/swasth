@@ -34,7 +34,7 @@ def _make_user(db, email: str | None = None, phone: str | None = "+919876500001"
 
 
 def _make_profile(db, name: str = "Ramesh") -> models.Profile:
-    p = models.Profile(name=name, age=60, gender="Male")
+    p = models.Profile(name=name, age=60, gender="Male", phone_number="9876543210")
     db.add(p); db.flush()
     return p
 

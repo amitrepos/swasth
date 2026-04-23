@@ -63,6 +63,7 @@ class TestCreateProfile:
             "relationship": "mother",
             "age": 65,
             "gender": "Female",
+            "phone_number": "9876543210",
         }, headers=auth_headers)
         assert resp.status_code == 201
         body = resp.json()
@@ -70,11 +71,14 @@ class TestCreateProfile:
         assert body["access_level"] == "owner"
 
     def test_create_profile_minimal(self, client, test_user, auth_headers):
-        resp = client.post(self.URL, json={"name": "Quick Profile"}, headers=auth_headers)
+        resp = client.post(self.URL, json={
+            "name": "Quick Profile",
+            "phone_number": "9876543210",
+        }, headers=auth_headers)
         assert resp.status_code == 201
 
     def test_create_profile_unauthenticated(self, client):
-        resp = client.post(self.URL, json={"name": "Test"})
+        resp = client.post(self.URL, json={"name": "Test", "phone_number": "9876543210"})
         assert resp.status_code == 401
 
 
@@ -139,7 +143,11 @@ class TestDeleteProfile:
 
     def test_delete_profile(self, client, test_user, auth_headers, db):
         # Create a separate profile to delete (don't delete the default one)
-        resp = client.post("/api/profiles", json={"name": "To Delete"}, headers=auth_headers)
+        resp = client.post("/api/profiles", json={
+            "name": "To Delete",
+            "phone_number": "9876543210"
+        }, headers=auth_headers)
+        assert resp.status_code == 201
         pid = resp.json()["id"]
 
         del_resp = client.delete(f"/api/profiles/{pid}", headers=auth_headers)
@@ -307,7 +315,7 @@ class TestPendingInvites:
     def test_list_pending_invites(self, mock_email, client, test_user, auth_headers, db):
         # Create a second user who sends invite to test_user
         owner = _second_user(db)
-        profile = models.Profile(name="Shared Profile")
+        profile = models.Profile(name="Shared Profile", phone_number="9876543214")
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -343,7 +351,7 @@ class TestRespondToInvite:
 
     def test_accept_invite(self, client, test_user, auth_headers, db):
         owner = _second_user(db)
-        profile = models.Profile(name="Family Profile")
+        profile = models.Profile(name="Family Profile", phone_number="9876543214")
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -366,7 +374,7 @@ class TestRespondToInvite:
 
     def test_reject_invite(self, client, test_user, auth_headers, db):
         owner = _second_user(db)
-        profile = models.Profile(name="Rejected Profile")
+        profile = models.Profile(name="Rejected Profile", phone_number="9876543214")
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -387,7 +395,7 @@ class TestRespondToInvite:
 
     def test_expired_invite(self, client, test_user, auth_headers, db):
         owner = _second_user(db)
-        profile = models.Profile(name="Expired Profile")
+        profile = models.Profile(name="Expired Profile", phone_number="9876543214")
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))

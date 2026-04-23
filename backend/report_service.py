@@ -11,77 +11,138 @@ from models import (
 )
 from health_utils import classify_bp, classify_glucose
 from twilio_service import whatsapp_service
+from config import settings
 import ai_report_service
 
 logger = logging.getLogger(__name__)
 
-def format_report_message(user: User, profiles_data: list) -> str:
-    """Format the cumulative weekly report message for a user."""
-    # Date in user's timezone if possible, or fallback to IST since it's an Indian app
-    user_tz_str = getattr(user, "timezone", "Asia/Kolkata")
-    try:
-        tz = pytz.timezone(user_tz_str)
-    except Exception:
-        tz = pytz.timezone("Asia/Kolkata")
-        
+def format_report_message(profile_name: str, profile_data: dict) -> str:
+    """Format the individual weekly report message for a specific profile."""
+    # Fallback to IST since it's an Indian app
+    tz = pytz.timezone("Asia/Kolkata")
     now = datetime.now(tz)
+    
     date_str = now.strftime("%d %b %Y")
     last_week_str = (now - timedelta(days=6)).strftime("%d %b")
     
     msg = [
         "📊 *Weekly Health Report*",
         f"📅 {last_week_str} – {date_str}",
-        "══════════════════════════\n"
+        "══════════════════════",
+        f"👤 *{profile_name}*"
     ]
     
-    for p in profiles_data:
-        msg.append(f"👤 *{p['name']}*")
-        msg.append("──────────────────────")
+    # Stats summary
+    glucose = profile_data.get('glucose')
+    if glucose:
+        val = glucose.glucose_value
+        status = classify_glucose(val)
+        icon = "✅" if status == "NORMAL" else "⚠️"
+        msg.append(f"🩸 Sugar: {int(val)} mg/dL ({status.title()}) {icon}")
+    else:
+        msg.append("🩸 Sugar: No checks today")
         
-        # Stats summary (from recent data)
-        if p['glucose']:
-            val = p['glucose'].glucose_value
-            status = classify_glucose(val)
-            icon = "✅" if status == "NORMAL" else "⚠️"
-            msg.append(f"🩸 Sugar: {int(val)} mg/dL ({status.title()}) {icon}")
-        else:
-            msg.append("🩸 Sugar: No checks today")
-            
-        if p['bp']:
-            sys, dia = p['bp'].systolic, p['bp'].diastolic
-            status = classify_bp(sys, dia)
-            icon = "✅" if status == "NORMAL" else "⚠️"
-            msg.append(f"💓 BP: {int(sys)}/{int(dia)} mmHg ({status.title()}) {icon}")
-        else:
-            msg.append("💓 BP: No checks today")
+    bp = profile_data.get('bp')
+    if bp:
+        sys, dia = bp.systolic, bp.diastolic
+        status = classify_bp(sys, dia)
+        icon = "✅" if status == "NORMAL" else "⚠️"
+        msg.append(f"💓 BP: {int(sys)}/{int(dia)} mmHg ({status.title()}) {icon}")
+    else:
+        msg.append("💓 BP: No checks today")
 
-        # AI Insight Section
-        if p.get('insight'):
-            msg.append(f"\n✨ *AI Evaluation:* {p['insight']}\n")
-        else:
-            msg.append("\n")
+    # AI Insight Section
+    if profile_data.get('insight'):
+        msg.append(f"\n✨ *AI Evaluation:* {profile_data['insight']}")
             
+    msg.append("══════════════════════")
     msg.append("💚 Stay healthy! — *Swasth*")
+    
     return "\n".join(msg)
 
-def trigger_single_user_report(db: Session, user: User, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED) -> bool:
+def format_report_template_variables(profile_name: str, profile_data: dict) -> List[str]:
     """
-    Generates and sends a report for a single user with full auditing.
+    Format template variables for Twilio WhatsApp template.
+    Template has 3 variables and renders as:
+    📊 *Weekly Health Report*
+    📅 {{1}} – {{2}}
+    ══════════════════════
+    {{3}}
+    ══════════════════════
+    💚 Stay healthy! — *Swasth*
+    
+    NOTE: Twilio does not allow newlines in variable values, so {{3}} is formatted as lines separated by spaces.
+    The template itself should handle line breaks.
+    
+    Returns a list of 3 strings for the template variables.
+    """
+    tz = pytz.timezone("Asia/Kolkata")
+    now = datetime.now(tz)
+    
+    # {{1}}: Start date (e.g., "16 Apr")
+    last_week_str = (now - timedelta(days=6)).strftime("%d %b")
+    var1 = last_week_str
+    
+    # {{2}}: End date (e.g., "22 Apr 2026")
+    date_str = now.strftime("%d %b %Y")
+    var2 = date_str
+    
+    # {{3}}: Profile name + health readings + AI insight (NO newlines - Twilio constraint)
+    msg_lines = [f"👤 *{profile_name}*"]
+    
+    glucose = profile_data.get('glucose')
+    if glucose:
+        val = glucose.glucose_value
+        status = classify_glucose(val)
+        icon = "✅" if status == "NORMAL" else "⚠️"
+        msg_lines.append(f"🩸 Sugar: {int(val)} mg/dL ({status.title()}) {icon}")
+    else:
+        msg_lines.append("🩸 Sugar: No checks today")
+        
+    bp = profile_data.get('bp')
+    if bp:
+        sys, dia = bp.systolic, bp.diastolic
+        status = classify_bp(sys, dia)
+        icon = "✅" if status == "NORMAL" else "⚠️"
+        msg_lines.append(f"💓 BP: {int(sys)}/{int(dia)} mmHg ({status.title()}) {icon}")
+    else:
+        msg_lines.append("💓 BP: No checks today")
+
+    if profile_data.get('insight'):
+        # Sanitize insight: remove newlines and excessive spaces
+        insight = profile_data['insight']
+        insight_clean = insight.replace('\n', ' ').replace('\t', ' ')
+        while '  ' in insight_clean:
+            insight_clean = insight_clean.replace('  ', ' ')
+        msg_lines.append(f"✨ *AI Evaluation:* {insight_clean.strip()}")
+    
+    # Join with newlines for display, but will be sanitized in twilio_service.py
+    var3 = "\n".join(msg_lines)
+    
+    return [var1, var2, var3]
+
+def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED) -> bool:
+    """
+    Generates and sends a report for a single profile to its own phone number.
     Returns True if a message was successfully attempted.
     """
-    controlled_profiles = db.query(Profile).join(ProfileAccess).filter(
-        ProfileAccess.user_id == user.id,
+    # Find the owner user to check for AI consent
+    owner_access = db.query(ProfileAccess).filter(
+        ProfileAccess.profile_id == profile.id,
         ProfileAccess.access_level == 'owner'
-    ).all()
+    ).first()
     
-    requested_ids = [p.id for p in controlled_profiles]
+    owner = db.query(User).filter(User.id == owner_access.user_id).first() if owner_access else None
     
-    # 1. Initialize Generation Log
+    # 1. Initialize Generation Log (we link it to the owner user for auditing)
+    # If no owner, we can't really audit/send properly under current schema, but we'll try.
+    audit_user_id = owner.id if owner else 0
+
     gen_log = ReportGenerationLog(
-        user_id=user.id,
+        user_id=audit_user_id,
         trigger_type=trigger_type,
         report_date=date.today(),
-        members_requested=requested_ids,
+        members_requested=[profile.id],
         members_with_data=[],
         members_skipped=[],
         status=ReportGenerationStatus.FAILED
@@ -91,93 +152,90 @@ def trigger_single_user_report(db: Session, user: User, trigger_type: ReportTrig
     db.refresh(gen_log)
 
     try:
-        if not controlled_profiles:
-            gen_log.error_message = "No controlled profiles found for user."
-            db.commit()
-            return False
-
-        profiles_data = []
-        with_data_ids = []
-        skipped_ids = []
-        all_reading_ids = []
-
         last_7d = datetime.utcnow() - timedelta(days=7)
 
-        for profile in controlled_profiles:
-            # Latest Glucose (within last 24h for the 'Latest' spot, but AI uses 7d)
-            glucose = db.query(HealthReading).filter(
-                HealthReading.profile_id == profile.id,
-                HealthReading.reading_type == "glucose",
-                HealthReading.reading_timestamp >= (datetime.utcnow() - timedelta(hours=24))
-            ).order_by(HealthReading.reading_timestamp.desc()).first()
-            
-            # Latest BP
-            bp = db.query(HealthReading).filter(
-                HealthReading.profile_id == profile.id,
-                HealthReading.reading_type == "blood_pressure",
-                HealthReading.reading_timestamp >= (datetime.utcnow() - timedelta(hours=24))
-            ).order_by(HealthReading.reading_timestamp.desc()).first()
-            
-            # Check for any data in 7d to decide if we send the profile report
-            any_data = db.query(HealthReading).filter(
-                HealthReading.profile_id == profile.id,
-                HealthReading.reading_timestamp >= last_7d
-            ).first()
-
-            if any_data:
-                # Generate AI Insight for the week
-                insight = ai_report_service.get_weekly_ai_insight(db, profile.id, user)
-                
-                profiles_data.append({
-                    "name": profile.name,
-                    "glucose": glucose,
-                    "bp": bp,
-                    "insight": insight
-                })
-                with_data_ids.append(profile.id)
-                if glucose: all_reading_ids.append(glucose.id)
-                if bp: all_reading_ids.append(bp.id)
-            else:
-                skipped_ids.append(profile.id)
-
-        # Update Generation Log status
-        gen_log.members_with_data = with_data_ids
-        gen_log.members_skipped = skipped_ids
+        # Latest Glucose (within last 24h for the 'Latest' spot)
+        glucose = db.query(HealthReading).filter(
+            HealthReading.profile_id == profile.id,
+            HealthReading.reading_type == "glucose",
+            HealthReading.reading_timestamp >= (datetime.utcnow() - timedelta(hours=24))
+        ).order_by(HealthReading.reading_timestamp.desc()).first()
         
-        if not profiles_data:
+        # Latest BP
+        bp = db.query(HealthReading).filter(
+            HealthReading.profile_id == profile.id,
+            HealthReading.reading_type == "blood_pressure",
+            HealthReading.reading_timestamp >= (datetime.utcnow() - timedelta(hours=24))
+        ).order_by(HealthReading.reading_timestamp.desc()).first()
+        
+        # Check for any data in 7d to decide if we send the report
+        any_data = db.query(HealthReading).filter(
+            HealthReading.profile_id == profile.id,
+            HealthReading.reading_timestamp >= last_7d
+        ).first()
+
+        if not any_data:
+            gen_log.members_skipped = [profile.id]
             gen_log.status = ReportGenerationStatus.FAILED
-            gen_log.error_message = "No data found for any profile in the last 7 days."
+            gen_log.error_message = "No data found for profile in the last 7 days."
             db.commit()
             return False
 
-        gen_log.status = ReportGenerationStatus.PARTIAL if skipped_ids else ReportGenerationStatus.SUCCESS
+        # Generate AI Insight for the week
+        # ai_report_service.get_weekly_ai_insight handles consent check internally via owner user
+        insight = ai_report_service.get_weekly_ai_insight(db, profile.id, owner) if owner else "Owner not found."
+        
+        profile_data = {
+            "glucose": glucose,
+            "bp": bp,
+            "insight": insight
+        }
+
+        # Update Generation Log status
+        gen_log.members_with_data = [profile.id]
+        gen_log.status = ReportGenerationStatus.SUCCESS
         db.commit()
 
-        # 2. Build Message and Start Delivery Log
-        message_text = format_report_message(user, profiles_data)
+        # 2. Format template variables and Normalize phone
+        template_vars = format_report_template_variables(profile.name, profile_data)
+        message_snapshot = format_report_message(profile.name, profile_data)  # For logging/audit
         
-        # Normalize phone
-        phone = user.phone_number.strip()
+        phone = profile.phone_number.strip()
         for char in [" ", "-", "(", ")"]: phone = phone.replace(char, "")
         if len(phone) == 10 and phone.isdigit(): phone = f"+91{phone}"
         elif not phone.startswith("+") and phone.startswith("91") and len(phone) == 12: phone = f"+{phone}"
 
+        reading_ids = []
+        if glucose: reading_ids.append(glucose.id)
+        if bp: reading_ids.append(bp.id)
+
         delivery_log = WhatsAppMessageLog(
-            user_id=user.id,
+            user_id=audit_user_id,
             phone_number=phone,
             trigger_type=trigger_type,
             report_date=date.today(),
-            member_ids_included=with_data_ids,
-            reading_ids_included=all_reading_ids,
-            message_snapshot=message_text,
+            member_ids_included=[profile.id],
+            reading_ids_included=reading_ids,
+            message_snapshot=message_snapshot,
             status=WhatsAppMessageStatus.QUEUED
         )
         db.add(delivery_log)
         db.commit()
         db.refresh(delivery_log)
 
-        # 3. Call Twilio
-        success, sid, twilio_error = whatsapp_service.send_whatsapp(phone, message_text)
+        # 3. Send via Twilio Template
+        if not settings.TWILIO_REPORT_CONTENT_SID:
+            logger.error("TWILIO_REPORT_CONTENT_SID not configured. Cannot send template message.")
+            delivery_log.status = WhatsAppMessageStatus.FAILED
+            delivery_log.error_message = "TWILIO_REPORT_CONTENT_SID not configured"
+            db.commit()
+            return False
+        
+        success, sid, twilio_error = whatsapp_service.send_whatsapp_template(
+            phone, 
+            settings.TWILIO_REPORT_CONTENT_SID,
+            template_vars
+        )
         
         delivery_log.twilio_sid = sid
         delivery_log.error_message = twilio_error
@@ -189,7 +247,7 @@ def trigger_single_user_report(db: Session, user: User, trigger_type: ReportTrig
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            "Error generating report for user %s", user.id, exc_info=True
+            "Error generating report for profile %s", profile.id, exc_info=True
         )
         gen_log.status = ReportGenerationStatus.FAILED
         gen_log.error_message = error_msg
@@ -197,7 +255,7 @@ def trigger_single_user_report(db: Session, user: User, trigger_type: ReportTrig
         return False
 
 def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED):
-    """Main task to send Weekly WhatsApp reports to all users in batches."""
+    """Main task to send Weekly WhatsApp reports to all profiles in batches."""
     import time
     managed_session = False
     if db is None:
@@ -205,27 +263,26 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
         managed_session = True
         
     try:
-        # Fetch active users (Batching logic)
+        # Fetch profiles with a phone number (Batching logic)
         batch_size = 20
         offset = 0
         
         while True:
-            users = db.query(User).filter(
-                User.phone_number != None, 
-                User.phone_number != "",
-                User.is_active == True
+            profiles = db.query(Profile).filter(
+                Profile.phone_number != None, 
+                Profile.phone_number != ""
             ).offset(offset).limit(batch_size).all()
             
-            if not users:
+            if not profiles:
                 break
                 
-            for user in users:
+            for profile in profiles:
                 try:
-                    trigger_single_user_report(db, user, trigger_type=trigger_type)
+                    trigger_single_profile_report(db, profile, trigger_type=trigger_type)
                 except Exception:
                     logger.error(
-                        "Failed to process user %s in batch",
-                        user.id,
+                        "Failed to process profile %s in batch",
+                        profile.id,
                         exc_info=True,
                     )
             

@@ -54,6 +54,7 @@ class Profile(Base):
     doctor_name = Column(String, nullable=True)
     doctor_specialty = Column(String, nullable=True)
     doctor_whatsapp = Column(String, nullable=True)             # full number e.g. +917001234567
+    phone_number = Column(String, nullable=False)               # profile's own phone number
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

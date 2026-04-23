@@ -119,6 +119,7 @@ def create_user_with_data(u):
         doctor_name=u["doctor_name"],
         doctor_specialty=u["doctor_specialty"],
         doctor_whatsapp=u["doctor_whatsapp"],
+        phone_number=u["phone"],
     )
     db.add(profile)
     db.flush()

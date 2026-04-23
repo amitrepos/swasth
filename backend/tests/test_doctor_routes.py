@@ -64,6 +64,7 @@ def patient_user(db):
         gender="Male",
         height=170,
         weight=75,
+        phone_number="9876543210",
         medical_conditions=["Diabetes T2", "Hypertension"],
         current_medications="Metformin 500mg, Amlodipine 5mg",
     )
@@ -448,7 +449,7 @@ class TestKnownDoctors:
         """Same doctor linked to two profiles appears once with both profile IDs."""
         user, profile_one = patient_user
         # Add a second owned profile and link the same doctor
-        profile_two = models.Profile(name="Mom Profile")
+        profile_two = models.Profile(name="Mom Profile", phone_number="9876543216")
         db.add(profile_two)
         db.flush()
         db.add(
@@ -518,7 +519,7 @@ class TestKnownDoctors:
         )
         db.add(owner)
         db.flush()
-        shared_profile = models.Profile(name="Shared Profile")
+        shared_profile = models.Profile(name="Shared Profile", phone_number="9876543217")
         db.add(shared_profile)
         db.flush()
         db.add(

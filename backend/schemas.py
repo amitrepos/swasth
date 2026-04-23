@@ -284,6 +284,7 @@ class ProfileCreate(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
+    phone_number: str = Field(..., min_length=10, max_length=15)
 
     @validator('relationship')
     def validate_relationship(cls, v):
@@ -325,6 +326,7 @@ class ProfileUpdate(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
+    phone_number: Optional[str] = Field(None, min_length=10, max_length=15)
 
     @validator('gender')
     def validate_gender(cls, v):
@@ -361,6 +363,7 @@ class ProfileResponse(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
+    phone_number: Optional[str] = None
     access_level: str           # "owner" or "viewer" — injected per-user at query time
     relationship: Optional[str] = None  # "father", "mother", etc. — only for viewers
     created_at: datetime

@@ -123,7 +123,7 @@ def test_user(db):
     db.flush()
 
     # Also create a default profile + owner access (mirrors register flow)
-    profile = models.Profile(name="My Health")
+    profile = models.Profile(name="My Health", phone_number=TEST_USER_PHONE)
     db.add(profile)
     db.flush()
 

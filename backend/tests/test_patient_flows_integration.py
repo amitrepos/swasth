@@ -37,7 +37,7 @@ def _make_user(db, email, name="Test Patient"):
 
 
 def _make_profile(db, user, name):
-    profile = models.Profile(name=name, age=40, gender="Male", height=170, weight=72)
+    profile = models.Profile(name=name, age=40, gender="Male", height=170, weight=72, phone_number=user.phone_number)
     db.add(profile)
     db.flush()
     db.add(models.ProfileAccess(user_id=user.id, profile_id=profile.id, access_level="owner"))

@@ -16,7 +16,7 @@ def test_ai_insight_no_consent(db):
     )
     db.add(user)
     db.flush()
-    profile = Profile(name="Tester")
+    profile = Profile(name="Tester", phone_number=user.phone_number)
     db.add(profile)
     db.flush()
     
@@ -36,7 +36,7 @@ def test_ai_insight_no_data(db):
     )
     db.add(user)
     db.flush()
-    profile = Profile(name="Tester")
+    profile = Profile(name="Tester", phone_number=user.phone_number)
     db.add(profile)
     db.flush()
     
@@ -56,7 +56,7 @@ def test_ai_insight_generation_success(mock_gen, db):
     )
     db.add(user)
     db.flush()
-    profile = Profile(name="Tester", age=45, medical_conditions=["Hypertension"])
+    profile = Profile(name="Tester", age=45, medical_conditions=["Hypertension"], phone_number=user.phone_number)
     db.add(profile)
     db.flush()
     
@@ -75,7 +75,7 @@ def test_ai_insight_generation_success(mock_gen, db):
 
 def test_rule_based_fallback_critical(db):
     """Verify rule-based logic identifies critical readings."""
-    profile = Profile(name="Tester")
+    profile = Profile(name="Tester", phone_number="+910000000000")
     db.add(profile)
     db.flush()
     
@@ -91,7 +91,7 @@ def test_rule_based_fallback_critical(db):
 
 def test_rule_based_fallback_high(db):
     """Verify rule-based logic identifies high readings."""
-    profile = Profile(name="Tester")
+    profile = Profile(name="Tester", phone_number="+910000000000")
     db.add(profile)
     db.flush()
     
@@ -107,7 +107,7 @@ def test_rule_based_fallback_high(db):
 
 def test_rule_based_fallback_normal(db):
     """Verify rule-based logic returns normal message when all readings are fine."""
-    profile = Profile(name="Tester")
+    profile = Profile(name="Tester", phone_number="+910000000000")
     db.add(profile)
     db.flush()
     
