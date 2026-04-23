@@ -89,7 +89,7 @@ def create_profile(
         medical_conditions=data.medical_conditions,
         other_medical_condition=data.other_medical_condition,
         current_medications=data.current_medications,
-        phone_number=normalize_phone(data.phone_number),
+        phone_number=normalize_phone(data.phone_number) or None,
     )
     db.add(profile)
     db.flush()   # populate profile.id before creating access row
@@ -152,11 +152,6 @@ def update_profile(
     for field, value in update_data.items():
         if field == "phone_number" and value:
             norm_value = normalize_phone(value) or None
-            if not norm_value:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="Invalid phone number format"
-                )
             setattr(profile, field, norm_value)
         else:
             setattr(profile, field, value)

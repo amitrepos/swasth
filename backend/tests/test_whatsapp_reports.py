@@ -9,8 +9,8 @@ from report_service import send_weekly_reports
 @patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
-def test_send_weekly_reports_profile_phone_normalization(mock_ai, mock_whatsapp, mock_settings, db):
-    """Verify that different profile phone formats are normalized to +91 E.164."""
+def test_send_weekly_reports_dispatches_to_normalized_owner_phone(mock_ai, mock_whatsapp, mock_settings, db):
+    """Verify that the OWNER's phone is normalized and used for dispatch."""
     mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     user = User(
         email="norm@test.com",

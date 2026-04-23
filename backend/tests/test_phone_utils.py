@@ -16,6 +16,9 @@ def test_normalize_phone_already_normalized():
 def test_normalize_phone_with_hyphens():
     assert normalize_phone("91-98765-43210") == "+919876543210"
 
+def test_normalize_phone_country_code_with_hyphens():
+    assert normalize_phone("+91-9876543210") == "+919876543210"
+
 def test_normalize_phone_international():
     # Should just ensure it has a +
     assert normalize_phone("14155238886") == "+14155238886"

@@ -81,6 +81,12 @@ class TestCreateProfile:
         resp = client.post(self.URL, json={"name": "Test", "phone_number": "9876543210"})
         assert resp.status_code == 401
 
+    def test_create_profile_no_phone(self, client, test_user, auth_headers):
+        """M4: Verify creating a profile without a phone number stores NULL (not empty string)."""
+        resp = client.post(self.URL, json={"name": "No Phone"}, headers=auth_headers)
+        assert resp.status_code == 201
+        assert resp.json()["phone_number"] is None
+
 
 # ===========================================================================
 # GET /api/profiles/{profile_id}

@@ -151,21 +151,21 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
     try:
         last_7d = datetime.utcnow() - timedelta(days=7)
 
-        # Latest Glucose
+        # Latest Glucose (up to 7 days old)
         glucose = db.query(HealthReading).filter(
             HealthReading.profile_id == profile.id,
             HealthReading.reading_type == "glucose",
-            HealthReading.reading_timestamp >= (datetime.utcnow() - timedelta(hours=24))
+            HealthReading.reading_timestamp >= last_7d
         ).order_by(HealthReading.reading_timestamp.desc()).first()
         
-        # Latest BP
+        # Latest BP (up to 7 days old)
         bp = db.query(HealthReading).filter(
             HealthReading.profile_id == profile.id,
             HealthReading.reading_type == "blood_pressure",
-            HealthReading.reading_timestamp >= (datetime.utcnow() - timedelta(hours=24))
+            HealthReading.reading_timestamp >= last_7d
         ).order_by(HealthReading.reading_timestamp.desc()).first()
         
-        # Check for data in 7d
+        # Check for ANY data in 7d
         any_data = db.query(HealthReading).filter(
             HealthReading.profile_id == profile.id,
             HealthReading.reading_timestamp >= last_7d
@@ -188,17 +188,23 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
         if glucose:
             status = classify_glucose(glucose.glucose_value)
             icon = "✅" if status == "NORMAL" else "⚠️"
-            glucose_line = f"🩸 Sugar: {int(glucose.glucose_value)} mg/dL ({status.title()}) {icon}"
+            # Label older readings
+            age_days = (datetime.utcnow() - glucose.reading_timestamp).days
+            age_str = f" ({age_days}d ago)" if age_days > 0 else ""
+            glucose_line = f"🩸 Sugar: {int(glucose.glucose_value)} mg/dL{age_str} ({status.title()}) {icon}"
         else:
-            glucose_line = "🩸 Sugar: No checks today"
+            glucose_line = "🩸 Sugar: No checks this week"
 
         bp_line = ""
         if bp:
             status = classify_bp(bp.systolic, bp.diastolic)
             icon = "✅" if status == "NORMAL" else "⚠️"
-            bp_line = f"💓 BP: {int(bp.systolic)}/{int(bp.diastolic)} mmHg ({status.title()}) {icon}"
+            # Label older readings
+            age_days = (datetime.utcnow() - bp.reading_timestamp).days
+            age_str = f" ({age_days}d ago)" if age_days > 0 else ""
+            bp_line = f"💓 BP: {int(bp.systolic)}/{int(bp.diastolic)} mmHg{age_str} ({status.title()}) {icon}"
         else:
-            bp_line = "💓 BP: No checks today"
+            bp_line = "💓 BP: No checks this week"
 
         insight_line = ""
         if insight:
@@ -312,8 +318,6 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                 all_reading_ids = []
                 for p in profile_list: all_reading_ids.extend(p['reading_ids'])
                 
-                full_body = "\n\n".join([p['snippet'] for p in profile_list])
-                
                 gen_log = ReportGenerationLog(
                     user_id=owner_id,
                     trigger_type=trigger_type,
@@ -363,6 +367,22 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                 logger.error("Failed to send consolidated report to %s", phone, exc_info=True)
                 results["failed_deliveries"] += 1
                 results["errors"].append(f"Phone ***{phone[-4:]}: {str(e)}")
+
+    except Exception as e:
+        logger.error("Error in send_weekly_reports task", exc_info=True)
+        results["errors"].append(str(e))
+        if user_id: # Re-raise for manual triggers to get 500
+            raise
+    finally:
+        if managed_session:
+            db.close()
+    
+    return results
+
+if __name__ == "__main__":
+    # For quick manual testing
+    send_weekly_reports(trigger_type=ReportTriggerType.MANUAL)
+   results["errors"].append(f"Phone ***{phone[-4:]}: {str(e)}")
 
     except Exception as e:
         logger.error("Error in send_weekly_reports task", exc_info=True)
