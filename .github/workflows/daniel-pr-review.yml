@@ -55,6 +55,6 @@ jobs:
             Do NOT write the pre-commit review marker — that is a local-only concept and
             does not apply to PRs opened by other team members.
           claude_args: >-
-            --model claude-opus-4-7
+            --model claude-sonnet-4-6
             --max-turns 60
             --allowedTools "Bash(gh pr review:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(cat -n:*),Read,Grep,Glob"
