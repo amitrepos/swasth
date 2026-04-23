@@ -1,5 +1,5 @@
 ---
-name: review
+name: daniel-review
 description: "Daniel's senior engineer code review — correctness, security, tests, architecture"
 ---
 
