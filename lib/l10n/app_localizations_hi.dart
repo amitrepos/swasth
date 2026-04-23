@@ -1293,6 +1293,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get mealSavedSuccess => 'खाना दर्ज हो गया!';
 
   @override
+  String get mealSavedOffline =>
+      'भोजन ऑफ़लाइन सहेजा गया। कनेक्ट होने पर सिंक होगा।';
+
+  @override
   String get mealTypeBreakfast => 'सुबह का नाश्ता';
 
   @override

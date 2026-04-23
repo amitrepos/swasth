@@ -2486,6 +2486,12 @@ abstract class AppLocalizations {
   /// **'Meal logged!'**
   String get mealSavedSuccess;
 
+  /// Shown when a meal is saved while device is offline, queued for later sync.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal saved offline. Will sync when connected.'**
+  String get mealSavedOffline;
+
   /// No description provided for @mealTypeBreakfast.
   ///
   /// In en, this message translates to:
@@ -3422,193 +3428,193 @@ abstract class AppLocalizations {
   /// **'Account created successfully! Please complete your profile.'**
   String get accountCreatedSuccess;
 
-  /// No description provided for @nutritionAnalysisTitle.
+  /// Title for the detailed nutrition analysis screen showing macros, micros, and diet flags
   ///
   /// In en, this message translates to:
   /// **'Nutrition Analysis'**
   String get nutritionAnalysisTitle;
 
-  /// No description provided for @carbLevel.
+  /// Label for carbohydrate level badge (low/medium/high) in nutrition analysis
   ///
   /// In en, this message translates to:
-  /// **'Carbs'**
+  /// **'Carb Level'**
   String get carbLevel;
 
-  /// No description provided for @sugarLevel.
+  /// Label for sugar level badge (low/medium/high) in nutrition analysis
   ///
   /// In en, this message translates to:
   /// **'Sugar'**
   String get sugarLevel;
 
-  /// No description provided for @totalNutrition.
+  /// Section header for total macronutrients summary
   ///
   /// In en, this message translates to:
   /// **'Total Nutrition'**
   String get totalNutrition;
 
-  /// No description provided for @detectedFoods.
+  /// Section header for list of individual food items detected in the photo
   ///
   /// In en, this message translates to:
   /// **'Detected Foods'**
   String get detectedFoods;
 
-  /// No description provided for @micronutrients.
+  /// Section header for micronutrients (iron, calcium, vitamin C)
   ///
   /// In en, this message translates to:
   /// **'Micronutrients'**
   String get micronutrients;
 
-  /// No description provided for @dietFlags.
+  /// Section header for diet type flags (vegan, vegetarian, gluten-free, high protein)
   ///
   /// In en, this message translates to:
   /// **'Diet Information'**
   String get dietFlags;
 
-  /// No description provided for @saveMeal.
+  /// Button text to save the analyzed meal to the meal log
   ///
   /// In en, this message translates to:
   /// **'Save Meal Log'**
   String get saveMeal;
 
-  /// No description provided for @mealHealthScore.
+  /// Label for the meal health score (1-10) shown in the score card
   ///
   /// In en, this message translates to:
   /// **'Meal Health Score'**
   String get mealHealthScore;
 
-  /// No description provided for @calories.
+  /// Label for calories in the macronutrients grid
   ///
   /// In en, this message translates to:
   /// **'Calories'**
   String get calories;
 
-  /// No description provided for @carbs.
+  /// Label for carbohydrates (grams) in the macronutrients grid
   ///
   /// In en, this message translates to:
   /// **'Carbs'**
   String get carbs;
 
-  /// No description provided for @protein.
+  /// Label for protein (grams) in the macronutrients grid
   ///
   /// In en, this message translates to:
   /// **'Protein'**
   String get protein;
 
-  /// No description provided for @fat.
+  /// Label for fat (grams) in the macronutrients grid
   ///
   /// In en, this message translates to:
   /// **'Fat'**
   String get fat;
 
-  /// No description provided for @vegan.
+  /// Diet flag label indicating the meal is vegan
   ///
   /// In en, this message translates to:
   /// **'Vegan'**
   String get vegan;
 
-  /// No description provided for @vegetarian.
+  /// Diet flag label indicating the meal is vegetarian
   ///
   /// In en, this message translates to:
   /// **'Vegetarian'**
   String get vegetarian;
 
-  /// No description provided for @glutenFree.
+  /// Diet flag label indicating the meal is gluten-free
   ///
   /// In en, this message translates to:
   /// **'Gluten Free'**
   String get glutenFree;
 
-  /// No description provided for @highProtein.
+  /// Diet flag label indicating the meal is high in protein
   ///
   /// In en, this message translates to:
   /// **'High Protein'**
   String get highProtein;
 
-  /// No description provided for @analysisTypeTitle.
+  /// Title for the screen where user chooses between quick classification or detailed nutrition analysis
   ///
   /// In en, this message translates to:
   /// **'Choose Analysis Type'**
   String get analysisTypeTitle;
 
-  /// No description provided for @quickClassification.
+  /// Button text for fast carb level detection option
   ///
   /// In en, this message translates to:
   /// **'Quick Classification'**
   String get quickClassification;
 
-  /// No description provided for @quickClassificationDesc.
+  /// Description text for quick classification option
   ///
   /// In en, this message translates to:
   /// **'Carb level + health tip (fast)'**
   String get quickClassificationDesc;
 
-  /// No description provided for @detailedNutrition.
+  /// Button text for full nutrition analysis option with macros and micros
   ///
   /// In en, this message translates to:
   /// **'Detailed Nutrition'**
   String get detailedNutrition;
 
-  /// No description provided for @detailedNutritionDesc.
+  /// Description text for detailed nutrition analysis option
   ///
   /// In en, this message translates to:
   /// **'Full macros, micros & diet flags'**
   String get detailedNutritionDesc;
 
-  /// No description provided for @nutritionAnalyzing.
+  /// Loading message shown while AI analyzes the food photo for nutrition details
   ///
   /// In en, this message translates to:
   /// **'Analyzing nutrition details...'**
   String get nutritionAnalyzing;
 
-  /// No description provided for @iron.
+  /// Label for iron micronutrient in mg
   ///
   /// In en, this message translates to:
   /// **'Iron'**
   String get iron;
 
-  /// No description provided for @calcium.
+  /// Label for calcium micronutrient in mg
   ///
   /// In en, this message translates to:
   /// **'Calcium'**
   String get calcium;
 
-  /// No description provided for @vitaminC.
+  /// Label for vitamin C micronutrient in mg
   ///
   /// In en, this message translates to:
   /// **'Vitamin C'**
   String get vitaminC;
 
-  /// No description provided for @kcalUnit.
+  /// Unit abbreviation for kilocalories
   ///
   /// In en, this message translates to:
   /// **'kcal'**
   String get kcalUnit;
 
-  /// No description provided for @gramsUnit.
+  /// Unit abbreviation for grams
   ///
   /// In en, this message translates to:
   /// **'g'**
   String get gramsUnit;
 
-  /// No description provided for @carbsUnit.
+  /// Short label for carbohydrates in mini macro badges
   ///
   /// In en, this message translates to:
   /// **'carbs'**
   String get carbsUnit;
 
-  /// No description provided for @proteinUnit.
+  /// Short label for protein in mini macro badges
   ///
   /// In en, this message translates to:
   /// **'protein'**
   String get proteinUnit;
 
-  /// No description provided for @fatUnit.
+  /// Short label for fat in mini macro badges
   ///
   /// In en, this message translates to:
   /// **'fat'**
   String get fatUnit;
 
-  /// No description provided for @useQuickSelect.
+  /// Button text to fallback to manual meal selection if photo analysis fails
   ///
   /// In en, this message translates to:
   /// **'Use Quick Select instead'**

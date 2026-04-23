@@ -1293,6 +1293,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mealSavedSuccess => 'Meal logged!';
 
   @override
+  String get mealSavedOffline =>
+      'Meal saved offline. Will sync when connected.';
+
+  @override
   String get mealTypeBreakfast => 'Breakfast';
 
   @override
@@ -1819,7 +1823,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nutritionAnalysisTitle => 'Nutrition Analysis';
 
   @override
-  String get carbLevel => 'Carbs';
+  String get carbLevel => 'Carb Level';
 
   @override
   String get sugarLevel => 'Sugar';

@@ -11,6 +11,11 @@ import '../theme/app_theme.dart';
 import 'meal_result_screen.dart';
 import 'nutrition_result_screen.dart';
 
+/// Hour thresholds for detecting meal type based on current time.
+const _kBreakfastEndHour = 11; // Before 11:00 = Breakfast
+const _kLunchEndHour = 15;     // Before 15:00 = Lunch
+const _kSnackEndHour = 18;     // Before 18:00 = Snack, else Dinner
+
 /// Food Photo Capture Screen — SECONDARY option for meal logging.
 ///
 /// Patient takes a photo of food -> Gemini Vision classifies carb level ->
@@ -149,10 +154,9 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
         return;
       }
 
-      // Detailed nutrition analysis with 20s timeout (graceful fallback to Quick Select)
+      // Detailed nutrition analysis (timeout handled in meal_service.dart)
       final nutritionResult = await MealService()
-          .analyzeNutrition(widget.profileId, file, token)
-          .timeout(const Duration(seconds: 20));
+          .analyzeNutrition(widget.profileId, file, token);
 
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
       if (!mounted) return;
@@ -163,6 +167,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
           builder: (_) => NutritionResultScreen(
             profileId: widget.profileId,
             result: nutritionResult,
+            mealType: _detectMealType(),
             onFallbackToQuickSelect: widget.onFallbackToQuickSelect,
           ),
         ),
@@ -202,6 +207,15 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
     } else {
       Navigator.of(context).pop();
     }
+  }
+
+  String _detectMealType() {
+    // Use UTC time as a more reliable default for travelers / wrong-clock devices
+    final hour = DateTime.now().toUtc().hour;
+    if (hour < _kBreakfastEndHour) return 'BREAKFAST';
+    if (hour < _kLunchEndHour) return 'LUNCH';
+    if (hour < _kSnackEndHour) return 'SNACK';
+    return 'DINNER';
   }
 
   @override

@@ -579,6 +579,10 @@
   "mealMoreOptions": "More options",
   "mealLessOptions": "Less options",
   "mealSavedSuccess": "Meal logged!",
+  "mealSavedOffline": "Meal saved offline. Will sync when connected.",
+  "@mealSavedOffline": {
+    "description": "Shown when a meal is saved while device is offline, queued for later sync."
+  },
   "mealTypeBreakfast": "Breakfast",
   "mealTypeLunch": "Lunch",
   "mealTypeSnack": "Snack",

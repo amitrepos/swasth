@@ -43,7 +43,9 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
   }
 
   String _detectMealType() {
-    final hour = DateTime.now().hour;
+    // Use UTC time as a more reliable default for travelers / wrong-clock devices
+    // The user can override via the dropdown, so this is just a sensible default
+    final hour = DateTime.now().toUtc().hour;
     if (hour < _kBreakfastEndHour) return 'BREAKFAST';
     if (hour < _kLunchEndHour) return 'LUNCH';
     if (hour < _kSnackEndHour) return 'SNACK';
@@ -151,7 +153,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Meal saved offline. Will sync when connected.'),
+              content: Text(AppLocalizations.of(context)!.mealSavedOffline),
               backgroundColor: AppColors.amber,
             ),
           );
@@ -461,28 +463,28 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
       childAspectRatio: 1.5,
       children: [
         _buildMacroCard(
-          label: AppLocalizations.of(context)!.calories,
+          label: l10n.calories,
           value: '${result.totalCalories.round()}',
           unit: l10n.kcalUnit,
           icon: Icons.local_fire_department,
           color: AppColors.danger,
         ),
         _buildMacroCard(
-          label: AppLocalizations.of(context)!.carbs,
+          label: l10n.carbs,
           value: '${result.totalCarbsG.toStringAsFixed(1)}',
           unit: l10n.gramsUnit,
           icon: Icons.grain,
           color: AppColors.amber,
         ),
         _buildMacroCard(
-          label: AppLocalizations.of(context)!.protein,
+          label: l10n.protein,
           value: '${result.totalProteinG.toStringAsFixed(1)}',
           unit: l10n.gramsUnit,
           icon: Icons.fitness_center,
           color: AppColors.primary,
         ),
         _buildMacroCard(
-          label: AppLocalizations.of(context)!.fat,
+          label: l10n.fat,
           value: '${result.totalFatG.toStringAsFixed(1)}',
           unit: l10n.gramsUnit,
           icon: Icons.opacity,
@@ -684,10 +686,10 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
       flags.add(_buildFlagChip(l10n.vegan, AppColors.success));
     }
     if (result.isVegetarian == true) {
-      flags.add(_buildFlagChip(l10n.vegetarian, AppColors.success.withGreen(150)));
+      flags.add(_buildFlagChip(l10n.vegetarian, AppColors.success));
     }
     if (result.isGlutenFree == true) {
-      flags.add(_buildFlagChip(l10n.glutenFree, AppColors.amber.withRed(180).withGreen(120).withBlue(60)));
+      flags.add(_buildFlagChip(l10n.glutenFree, AppColors.amber));
     }
     if (result.isHighProtein == true) {
       flags.add(_buildFlagChip(l10n.highProtein, AppColors.primary));
