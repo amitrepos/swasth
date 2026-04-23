@@ -390,7 +390,7 @@ class ProfileResponse(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
-    phone_number: str
+    phone_number: Optional[str] = None
     access_level: str           # "owner" or "viewer" — injected per-user at query time
     relationship: Optional[str] = None  # "father", "mother", etc. — only for viewers
     created_at: datetime

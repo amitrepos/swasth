@@ -1346,7 +1346,7 @@ def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
 # ---------------------------------------------------------------------------
 
 @router.post("/report/manual-trigger")
-@limiter.limit("1/hour")
+@limiter.limit("1/hour", key_func=lambda r: str(r.state.user.id) if hasattr(r.state, 'user') else get_remote_address(r))
 def manually_trigger_whatsapp_report(
     request: Request,
     db: Session = Depends(get_db),

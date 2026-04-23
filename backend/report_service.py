@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime, timedelta, date
 import pytz
 from typing import Optional, List
@@ -112,10 +113,8 @@ def format_report_template_variables(profile_name: str, profile_data: dict) -> L
     if profile_data.get('insight'):
         # Sanitize insight: remove newlines and excessive spaces
         insight = profile_data['insight']
-        insight_clean = insight.replace('\n', ' ').replace('\t', ' ')
-        while '  ' in insight_clean:
-            insight_clean = insight_clean.replace('  ', ' ')
-        msg_lines.append(f"✨ *AI Evaluation:* {insight_clean.strip()}")
+        insight_clean = re.sub(r"\s+", " ", insight.replace('\n', ' ').replace('\t', ' ')).strip()
+        msg_lines.append(f"✨ *AI Evaluation:* {insight_clean}")
     
     # Join with newlines for display, but will be sanitized in twilio_service.py
     var3 = "\n".join(msg_lines)
@@ -203,10 +202,8 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
 
         insight_line = ""
         if insight:
-            insight_clean = insight.replace('\n', ' ').replace('\t', ' ')
-            while '  ' in insight_clean:
-                insight_clean = insight_clean.replace('  ', ' ')
-            insight_line = f"✨ *AI Evaluation:* {insight_clean.strip()}"
+            insight_clean = re.sub(r"\s+", " ", insight.replace('\n', ' ').replace('\t', ' ')).strip()
+            insight_line = f"✨ *AI Evaluation:* {insight_clean}"
 
         snippet = f"👤 *{profile.name}*\n{glucose_line}\n{bp_line}"
         if insight_line:
@@ -360,12 +357,12 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                     results["successful_deliveries"] += 1
                 else:
                     results["failed_deliveries"] += 1
-                    results["errors"].append(f"Phone {phone}: {err}")
+                    results["errors"].append(f"Phone ***{phone[-4:]}: {err}")
 
             except Exception as e:
                 logger.error("Failed to send consolidated report to %s", phone, exc_info=True)
                 results["failed_deliveries"] += 1
-                results["errors"].append(f"Phone {phone}: {str(e)}")
+                results["errors"].append(f"Phone ***{phone[-4:]}: {str(e)}")
 
     except Exception as e:
         logger.error("Error in send_weekly_reports task", exc_info=True)

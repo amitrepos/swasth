@@ -43,7 +43,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         email=user.email,
         password_hash=auth.get_password_hash(user.password),
         full_name=user.full_name,
-        phone_number=normalize_phone(user.phone_number),
+        phone_number=normalize_phone(user.phone_number) or None,
         timezone=user.timezone,
         consent_timestamp=now_utc if user.consent_app_version else None,
         consent_app_version=user.consent_app_version,
@@ -65,7 +65,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         medical_conditions=user.medical_conditions,
         other_medical_condition=user.other_medical_condition,
         current_medications=user.current_medications,
-        phone_number=normalize_phone(user.phone_number),
+        phone_number=normalize_phone(user.phone_number) or None,
     )
     db.add(db_profile)
     db.flush()  # Get db_profile.id

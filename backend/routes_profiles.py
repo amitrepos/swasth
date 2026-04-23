@@ -151,7 +151,7 @@ def update_profile(
     update_data = data.dict(exclude_unset=True)
     for field, value in update_data.items():
         if field == "phone_number" and value:
-            norm_value = normalize_phone(value)
+            norm_value = normalize_phone(value) or None
             if not norm_value:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
