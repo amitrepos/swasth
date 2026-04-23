@@ -122,9 +122,10 @@ def format_report_template_variables(profile_name: str, profile_data: dict) -> L
     return [var1, var2, var3]
 
 def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED, owner: Optional[User] = None) -> dict | None:
-    """
-    Generates report data for a single profile.
-    Returns a dict with report data or None if no report should be sent.
+    """Generates report data for a single profile, or None if no report should be sent.
+
+    On failure, returns a FAILED status dict rather than raising — the caller owns
+    the transaction and must not have it rolled back by this function.
     """
     if owner is None:
         owner_access = db.query(ProfileAccess).filter(
@@ -231,8 +232,6 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
 
     except Exception as e:
         logger.error("Error generating report data for profile %s", profile.id, exc_info=True)
-        # We don't rollback here because it might invalidate objects used by the caller.
-        # Let the caller decide how to handle the transaction.
         return {
             "status": ReportGenerationStatus.FAILED,
             "profile_id": profile.id,
@@ -257,9 +256,10 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
         if not settings.TWILIO_REPORT_CONTENT_SID:
             raise ValueError("TWILIO_REPORT_CONTENT_SID is not configured")
 
-        # 1. Collect all reportable data
-        recipient_map = {} # target_phone -> list of report_data
-        
+        # 1. Collect all reportable data — keyed by owner_id so two owners
+        # sharing a device phone each get their own DPDP audit record.
+        recipient_map: dict[int, list] = {}
+
         query = db.query(Profile, User).join(
             ProfileAccess, ProfileAccess.profile_id == Profile.id
         ).join(
@@ -299,10 +299,7 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                         except Exception:
                             logger.error("Failed to log generation failure", exc_info=True)
                 else:
-                    phone = data['target_phone']
-                    if phone not in recipient_map:
-                        recipient_map[phone] = []
-                    recipient_map[phone].append(data)
+                    recipient_map.setdefault(data['owner_id'], []).append(data)
             
             offset += batch_size
 
@@ -312,9 +309,9 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
         last_week_str = (now - timedelta(days=6)).strftime("%d %b")
         date_str = now.strftime("%d %b %Y")
 
-        for phone, profile_list in recipient_map.items():
+        for owner_id, profile_list in recipient_map.items():
+            phone = profile_list[0]['target_phone']
             try:
-                owner_id = profile_list[0]['owner_id']
                 profile_ids = [p['profile_id'] for p in profile_list]
                 all_reading_ids = []
                 for p in profile_list: all_reading_ids.extend(p['reading_ids'])

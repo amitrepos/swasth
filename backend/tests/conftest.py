@@ -52,6 +52,7 @@ for table in database.Base.metadata.tables.values():
 # Now safe to import — main.py's create_all will use SQLite
 from database import Base, get_db
 from auth import get_password_hash, create_access_token
+from utils.phone import normalize_phone
 
 TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_test_engine)
 
@@ -123,7 +124,7 @@ def test_user(db):
     db.flush()
 
     # Also create a default profile + owner access (mirrors register flow)
-    profile = models.Profile(name="My Health", phone_number=TEST_USER_PHONE)
+    profile = models.Profile(name="My Health", phone_number=normalize_phone(TEST_USER_PHONE))
     db.add(profile)
     db.flush()
 

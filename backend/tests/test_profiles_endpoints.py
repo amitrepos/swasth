@@ -150,6 +150,14 @@ class TestUpdateProfile:
         # Validation error from Pydantic schema (ProfileUpdate)
         assert resp.status_code == 422
 
+    def test_clear_profile_phone_number(self, client, test_user, auth_headers, db):
+        pid = _get_profile_id(db, test_user.id)
+        resp = client.put(f"/api/profiles/{pid}", json={"phone_number": None}, headers=auth_headers)
+        assert resp.status_code == 200
+        profile = db.query(models.Profile).filter(models.Profile.id == pid).first()
+        db.refresh(profile)
+        assert profile.phone_number is None
+
 
 # ===========================================================================
 # DELETE /api/profiles/{profile_id}

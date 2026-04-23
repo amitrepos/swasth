@@ -33,3 +33,15 @@ def test_normalize_phone_invalid():
     assert normalize_phone("1234567890123456") == ""
     # 10 digits with letters
     assert normalize_phone("98765abc10") == ""
+
+def test_normalize_phone_whitespace_only():
+    assert normalize_phone("   ") == ""
+    assert normalize_phone("\t\n") == ""
+
+def test_normalize_phone_all_zeros():
+    # 10 zeros — technically valid digits length, normalised to +91 prefix
+    assert normalize_phone("0000000000") == "+910000000000"
+
+def test_normalize_phone_11_digit_non_india():
+    # 11 digits not matching 91-prefix pattern → treated as generic international
+    assert normalize_phone("12345678901") == "+12345678901"

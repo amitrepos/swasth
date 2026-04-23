@@ -99,6 +99,10 @@ class UserRegister(BaseModel):
             raise ValueError('Passwords do not match')
         return v
 
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        return _validate_phone_number_helper(v)
+
     @validator('timezone')
     def validate_timezone(cls, v):
         import pytz

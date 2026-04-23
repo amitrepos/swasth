@@ -66,8 +66,7 @@ def upgrade():
     # No more UPDATE SET '0000000000'.
 
 def downgrade():
-    # add a comment noting irreversible data loss
-    # WARNING: Dropping this column will permanently delete profile-specific 
-    # phone numbers. Data cannot be recovered from this migration.
-    op.drop_index(op.f('ix_profiles_phone_number'), table_name='profiles')
-    op.drop_column('profiles', 'phone_number')
+    raise NotImplementedError(
+        "Downgrade permanently deletes profile phone numbers and cannot be reversed. "
+        "Restore from a database backup instead of running this downgrade."
+    )
