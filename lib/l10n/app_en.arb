@@ -862,6 +862,7 @@
   "loginModePhone": "Phone",
   "emailOrPhoneLabel": "Email or Phone Number",
   "phoneNumberLabel": "Phone Number",
+  "phoneNumberHint": "e.g. 9876543210",
   "phoneValidationInvalid": "Please enter a valid phone number (10-15 digits)",
   "continueButton": "Continue",
   "phoneLoginNoAccountTitle": "Account Not Found",

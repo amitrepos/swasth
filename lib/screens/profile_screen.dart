@@ -702,12 +702,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
+                  key: const Key('profile_phone_edit'),
                   controller: _phoneEditController,
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
                     labelText: l10n.phoneNumberLabel,
+                    hintText: l10n.phoneNumberHint,
                     prefixIcon: const Icon(Icons.phone_outlined),
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return null; // Optional in profile edit
+                    }
+                    if (!RegExp(r'^\+?\d{10,15}$').hasMatch(value)) {
+                      return l10n.phoneValidationInvalid;
+                    }
+                    return null;
+                  },
                 ),
               ]),
               if (_profile?.medicalConditions != null &&

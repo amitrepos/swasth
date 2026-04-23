@@ -151,8 +151,11 @@ def update_profile(
     update_data = data.dict(exclude_unset=True)
     for field, value in update_data.items():
         if field == "phone_number" and value:
-            value = normalize_phone(value)
-        setattr(profile, field, value)
+            norm_value = normalize_phone(value)
+            if norm_value:
+                setattr(profile, field, norm_value)
+        else:
+            setattr(profile, field, value)
 
     db.commit()
     db.refresh(profile)

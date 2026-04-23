@@ -24,3 +24,9 @@ def test_normalize_phone_invalid():
     assert normalize_phone("invalid") == ""
     assert normalize_phone("") == ""
     assert normalize_phone(None) == ""
+    # Too short (9 digits)
+    assert normalize_phone("123456789") == ""
+    # Too long (16 digits)
+    assert normalize_phone("1234567890123456") == ""
+    # 10 digits with letters
+    assert normalize_phone("98765abc10") == ""

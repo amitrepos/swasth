@@ -165,7 +165,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         labelText: l10n.phoneNumberLabel,
-                        hintText: 'e.g. 9876543210',
+                        hintText: l10n.phoneNumberHint,
                         prefixIcon: const Icon(Icons.phone_outlined),
                       ),
                       validator: (value) {

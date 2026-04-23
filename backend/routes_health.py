@@ -1346,42 +1346,49 @@ def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
 # ---------------------------------------------------------------------------
 
 @router.post("/report/manual-trigger")
+@limiter.limit("1/hour")
 def manually_trigger_whatsapp_report(
+    request: Request,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Manually request a daily-style health report to be sent via WhatsApp for all owned profiles."""
-    # Get all profiles owned by this user with phone numbers
-    owned_profiles = db.query(models.Profile).join(
-        models.ProfileAccess,
-        models.Profile.id == models.ProfileAccess.profile_id
-    ).filter(
-        models.ProfileAccess.user_id == user.id,
-        models.ProfileAccess.access_level == "owner",
-        models.Profile.phone_number != None,
-        models.Profile.phone_number != ""
-    ).all()
-    
-    if not owned_profiles:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No profiles with phone numbers configured."
-        )
-    
-    # Generate report for each owned profile
-    successful = 0
-    for profile in owned_profiles:
-        try:
-            success = trigger_single_profile_report(db, profile, trigger_type=ReportTriggerType.MANUAL)
-            if success:
-                successful += 1
-        except Exception as e:
-            logger.error(f"Failed to generate report for profile {profile.id}: {e}")
-    
-    if successful == 0:
+    """
+    Manually trigger WhatsApp health reports for all profiles owned by the current user.
+    Limited to 1 request per hour to prevent spam.
+    """
+    from report_service import send_weekly_reports
+    from models import ReportTriggerType
+
+    try:
+        results = send_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL, user_id=user.id)
+        
+        if results["successful_deliveries"] == 0:
+            if results["errors"]:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to deliver reports: {results['errors'][0]}"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No reportable data found for your profiles in the last 7 days."
+                )
+
+        return {
+            "message": f"Successfully sent reports to {results['successful_deliveries']} recipient(s).",
+            "details": results
+        }
+    except ValueError as ve:
+        # Actionable feedback for config errors (M2)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate reports. Check if there are any health readings for the last 24h."
+            detail=f"Server configuration error: {str(ve)}"
         )
-        
-    return {"message": f"Report(s) generated for {successful} profile(s) and queued for delivery via WhatsApp."}
+    except Exception as e:
+        logger.error(f"Manual report trigger failed for user {user.id}: {e}")
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while generating reports."
+        )

@@ -232,42 +232,54 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
             "error_message": str(e)
         }
 
-def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED):
-    """Main task: Groups profiles by recipient phone and sends ONE consolidated message."""
+def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED, user_id: Optional[int] = None) -> dict:
+    """Main task: Groups profiles by recipient phone and sends ONE consolidated message.
+    
+    If user_id is provided, only sends for profiles owned by that user.
+    Returns a dict summary of results.
+    """
     import time
     managed_session = False
     if db is None:
         db = SessionLocal()
         managed_session = True
         
+    results = {"total_profiles": 0, "successful_deliveries": 0, "failed_deliveries": 0, "errors": []}
+    
     try:
+        if not settings.TWILIO_REPORT_CONTENT_SID:
+            raise ValueError("TWILIO_REPORT_CONTENT_SID is not configured")
+
         # 1. Collect all reportable data
-        # In a production app with millions of users, this would be a generator or batch-process.
-        # For Bihar-pilot scale, we can group in memory.
         recipient_map = {} # target_phone -> list of report_data
         
+        query = db.query(Profile)
+        if user_id:
+            query = query.join(ProfileAccess).filter(
+                ProfileAccess.user_id == user_id, 
+                ProfileAccess.access_level == 'owner'
+            )
+
         batch_size = 50
         offset = 0
         while True:
-            profiles = db.query(Profile).offset(offset).limit(batch_size).all()
+            profiles = query.offset(offset).limit(batch_size).all()
             if not profiles: break
             
             for p in profiles:
+                results["total_profiles"] += 1
                 data = trigger_single_profile_report(db, p, trigger_type)
                 if not data: continue
 
                 if data['status'] == ReportGenerationStatus.FAILED:
-                    # Log failure immediately
                     if data.get('owner_id'):
                         try:
-                            # No rollback needed here, trigger_single_profile_report doesn't flush on error anymore
                             gen_log = ReportGenerationLog(
                                 user_id=data['owner_id'],
                                 trigger_type=trigger_type,
                                 report_date=date.today(),
                                 members_requested=[data['profile_id']],
-                                members_with_data=[], # Required by NOT NULL constraint
-                                members_skipped=[],
+                                members_with_data=[],
                                 status=ReportGenerationStatus.FAILED,
                                 error_message=data.get('error_message')
                             )
@@ -297,10 +309,8 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                 all_reading_ids = []
                 for p in profile_list: all_reading_ids.extend(p['reading_ids'])
                 
-                # Consolidate snippets
                 full_body = "\n\n".join([p['snippet'] for p in profile_list])
                 
-                # Log Generation
                 gen_log = ReportGenerationLog(
                     user_id=owner_id,
                     trigger_type=trigger_type,
@@ -312,8 +322,6 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                 db.add(gen_log)
                 db.commit()
 
-                # Dispatch via Twilio Template
-                # {{1}} = Start, {{2}} = End, {{3}} = Consolidated snippets
                 template_vars = [last_week_str, date_str, full_body]
                 
                 delivery_log = WhatsAppMessageLog(
@@ -329,28 +337,35 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                 db.add(delivery_log)
                 db.commit()
 
-                if settings.TWILIO_REPORT_CONTENT_SID:
-                    success, sid, err = whatsapp_service.send_whatsapp_template(
-                        phone, settings.TWILIO_REPORT_CONTENT_SID, template_vars
-                    )
-                    delivery_log.status = WhatsAppMessageStatus.SENT if success else WhatsAppMessageStatus.FAILED
-                    delivery_log.twilio_sid = sid
-                    delivery_log.error_message = err
-                    db.commit()
+                success, sid, err = whatsapp_service.send_whatsapp_template(
+                    phone, settings.TWILIO_REPORT_CONTENT_SID, template_vars
+                )
+                delivery_log.status = WhatsAppMessageStatus.SENT if success else WhatsAppMessageStatus.FAILED
+                delivery_log.twilio_sid = sid
+                delivery_log.error_message = err
+                db.commit()
+
+                if success:
+                    results["successful_deliveries"] += 1
                 else:
-                    logger.error("TWILIO_REPORT_CONTENT_SID missing")
-                    delivery_log.status = WhatsAppMessageStatus.FAILED
-                    delivery_log.error_message = "Config missing"
-                    db.commit()
+                    results["failed_deliveries"] += 1
+                    results["errors"].append(f"Phone {phone}: {err}")
 
-            except Exception:
+            except Exception as e:
                 logger.error("Failed to send consolidated report to %s", phone, exc_info=True)
+                results["failed_deliveries"] += 1
+                results["errors"].append(f"Phone {phone}: {str(e)}")
 
-    except Exception:
-        logger.error("Error in global send_weekly_reports task", exc_info=True)
+    except Exception as e:
+        logger.error("Error in send_weekly_reports task", exc_info=True)
+        results["errors"].append(str(e))
+        if user_id: # Re-raise for manual triggers to get 500
+            raise
     finally:
         if managed_session:
             db.close()
+    
+    return results
 
 if __name__ == "__main__":
     # For quick manual testing
