@@ -118,7 +118,7 @@ def test_user(db):
         email=TEST_USER_EMAIL,
         password_hash=get_password_hash(TEST_USER_PASSWORD),
         full_name=TEST_USER_NAME,
-        phone_number=TEST_USER_PHONE,
+        phone_number=normalize_phone(TEST_USER_PHONE),
     )
     db.add(user)
     db.flush()

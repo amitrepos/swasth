@@ -17,7 +17,7 @@ def _second_user(db):
         email="viewer@swasth.app",
         password_hash=get_password_hash("View@1234"),
         full_name="Viewer User",
-        phone_number="9876500099",
+        phone_number=normalize_phone("9876500099"),
     )
     db.add(u)
     db.flush()
@@ -481,3 +481,52 @@ class TestUserProfileUpdate:
         assert resp.status_code == 200
         db.refresh(test_user)
         assert test_user.phone_number == "+919876543210"
+
+
+# ===========================================================================
+# POST /api/auth/phone-otp/verify — OTP login/registration
+# (M2: integration test for the new-user branch so WhatsApp inbound matching
+# by phone does not silently break if the Profile constructor changes.)
+# ===========================================================================
+
+class TestPhoneOTPVerifyNewUser:
+    URL = "/api/auth/phone-otp/verify"
+
+    def test_new_user_gets_profile_with_normalized_phone(self, client, db):
+        from datetime import datetime, timedelta
+
+        normalized = "+919999111122"
+        # Seed a valid, unused OTP for the normalized phone
+        otp = models.PhoneOTP(
+            phone_number=normalized,
+            otp="123456",
+            expires_at=datetime.utcnow() + timedelta(minutes=5),
+            is_used=False,
+        )
+        db.add(otp)
+        db.commit()
+
+        resp = client.post(
+            self.URL,
+            json={"phone_number": "9999111122", "otp": "123456", "full_name": "Phone User"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["access_token"]  # login succeeded
+
+        # User row stores E.164 — inbound matching relies on this
+        created_user = db.query(models.User).filter(models.User.phone_number == normalized).first()
+        assert created_user is not None
+        assert created_user.phone_number == normalized
+
+        # Default Profile created with matching E.164 phone — WhatsApp inbound
+        # photo routing matches on this field, so the assignment must not
+        # silently disappear in a future refactor.
+        access = (
+            db.query(models.ProfileAccess)
+            .filter(models.ProfileAccess.user_id == created_user.id)
+            .first()
+        )
+        assert access is not None
+        profile = db.query(models.Profile).filter(models.Profile.id == access.profile_id).first()
+        assert profile is not None
+        assert profile.phone_number == normalized

@@ -33,7 +33,7 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
 
     # C4 Fix: Guard upfront
     if not owner:
-        logger.warning(f"No owner found for profile {profile.id}. Skipping report.")
+        logger.warning("No owner found for profile %s. Skipping report.", profile.id)
         return None
 
     # C2 Fix (Privacy): Always dispatch to owner per senior feedback

@@ -5,9 +5,11 @@ Revises: 0004
 Create Date: 2026-04-23 11:30:00.000000
 
 """
-from alembic import op
-import sqlalchemy as sa
+import os
 import re
+
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '0005'
@@ -81,7 +83,16 @@ def upgrade():
             )
 
 def downgrade():
-    # WARNING: drops profiles.phone_number — data loss is permanent.
-    # In production: restore from a backup instead of running this.
+    # Running this downgrade permanently deletes profiles.phone_number — a
+    # health-data column users actively populate. Hard-block it unless the
+    # operator has explicitly acknowledged the data loss. CI sets the flag
+    # for the round-trip check against an ephemeral DB.
+    if os.environ.get("SWASTH_ALLOW_DESTRUCTIVE_DOWNGRADE") != "1":
+        raise RuntimeError(
+            "Refusing to downgrade 0005_profile_phone_number: this drops "
+            "profiles.phone_number and destroys collected data. Restore from "
+            "backup, or set SWASTH_ALLOW_DESTRUCTIVE_DOWNGRADE=1 if you are "
+            "running this against a disposable database."
+        )
     op.drop_index(op.f('ix_profiles_phone_number'), table_name='profiles')
     op.drop_column('profiles', 'phone_number')
