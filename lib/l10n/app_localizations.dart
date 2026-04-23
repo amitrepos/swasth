@@ -2552,6 +2552,18 @@ abstract class AppLocalizations {
   /// **'Could not classify food. Please select manually.'**
   String get foodPhotoFailed;
 
+  /// Error message when device has no camera available
+  ///
+  /// In en, this message translates to:
+  /// **'No camera found on this device.'**
+  String get cameraNotFound;
+
+  /// Generic camera error message - never leak raw exception details to user
+  ///
+  /// In en, this message translates to:
+  /// **'Camera initialization failed. Please try again.'**
+  String get cameraError;
+
   /// No description provided for @foodResultTitle.
   ///
   /// In en, this message translates to:
@@ -3457,6 +3469,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Detected Foods'**
   String get detectedFoods;
+
+  /// Empty state message when AI returns empty foods array
+  ///
+  /// In en, this message translates to:
+  /// **'No specific foods detected. This may happen with liquid meals or unclear images.'**
+  String get noFoodsDetected;
 
   /// Section header for micronutrients (iron, calcium, vitamin C)
   ///

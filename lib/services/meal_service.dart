@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../config/app_config.dart';
 import '../models/meal_log.dart';
@@ -82,7 +83,12 @@ class MealService {
       ..headers.addAll(ApiClient.headers(token: token));
     final bytes = await file.readAsBytes();
     request.files.add(
-      http.MultipartFile.fromBytes('file', bytes, filename: file.name),
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: file.name,
+        contentType: MediaType.parse(file.mimeType ?? 'image/jpeg'),
+      ),
     );
 
     http.Response response;
@@ -124,7 +130,12 @@ class MealService {
       ..headers.addAll(ApiClient.headers(token: token));
     final bytes = await file.readAsBytes();
     request.files.add(
-      http.MultipartFile.fromBytes('file', bytes, filename: file.name),
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: file.name,
+        contentType: MediaType.parse(file.mimeType ?? 'image/jpeg'),
+      ),
     );
 
     http.Response response;

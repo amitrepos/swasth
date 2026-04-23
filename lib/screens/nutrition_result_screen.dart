@@ -264,6 +264,37 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
               const SizedBox(height: 12),
               ...result.foods.map((food) => _buildFoodItemCard(food, l10n)),
               const SizedBox(height: 24),
+            ] else ...[
+              Text(
+                l10n.detectedFoods,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.bgGrouped,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: AppColors.textSecondary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.noFoodsDetected,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
 
             // Micronutrients

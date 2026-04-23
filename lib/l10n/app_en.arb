@@ -593,6 +593,14 @@
   "foodPhotoGallery": "Choose from Gallery",
   "foodPhotoAnalyzing": "Analyzing your food...",
   "foodPhotoFailed": "Could not classify food. Please select manually.",
+  "cameraNotFound": "No camera found on this device.",
+  "@cameraNotFound": {
+    "description": "Error message when device has no camera available"
+  },
+  "cameraError": "Camera initialization failed. Please try again.",
+  "@cameraError": {
+    "description": "Generic camera error message - never leak raw exception details to user"
+  },
   "foodResultTitle": "Meal Result",
   "foodCategoryHighCarb": "High Carb",
   "foodCategoryModerateCarb": "Moderate Carb",
@@ -913,6 +921,10 @@
   "detectedFoods": "Detected Foods",
   "@detectedFoods": {
     "description": "Section header for list of individual food items detected in the photo"
+  },
+  "noFoodsDetected": "No specific foods detected. This may happen with liquid meals or unclear images.",
+  "@noFoodsDetected": {
+    "description": "Empty state message when AI returns empty foods array"
   },
   "micronutrients": "Micronutrients",
   "@micronutrients": {

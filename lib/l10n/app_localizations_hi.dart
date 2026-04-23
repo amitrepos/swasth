@@ -1327,6 +1327,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get foodPhotoFailed => 'खाना पहचान नहीं पाए। कृपया खुद चुनें।';
 
   @override
+  String get cameraNotFound => 'इस डिवाइस पर कैमरा नहीं मिला।';
+
+  @override
+  String get cameraError => 'कैमरा शुरू नहीं हो सका। कृपया फिर से कोशिश करें।';
+
+  @override
   String get foodResultTitle => 'खाने का नतीजा';
 
   @override
@@ -1834,7 +1840,11 @@ class AppLocalizationsHi extends AppLocalizations {
   String get totalNutrition => 'कुल पोषण';
 
   @override
-  String get detectedFoods => 'पहचाने गए खाद्य पदार्थ';
+  String get detectedFoods => 'पहचाने गए खाने के पदार्थ';
+
+  @override
+  String get noFoodsDetected =>
+      'कोई खास खाना नहीं मिला। यह लिक्विड मील या साफ नहीं दिखने वाली तस्वीरों में हो सकता है।';
 
   @override
   String get micronutrients => 'सूक्ष्म पोषक तत्व';

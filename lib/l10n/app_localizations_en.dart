@@ -1328,6 +1328,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not classify food. Please select manually.';
 
   @override
+  String get cameraNotFound => 'No camera found on this device.';
+
+  @override
+  String get cameraError => 'Camera initialization failed. Please try again.';
+
+  @override
   String get foodResultTitle => 'Meal Result';
 
   @override
@@ -1833,6 +1839,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detectedFoods => 'Detected Foods';
+
+  @override
+  String get noFoodsDetected =>
+      'No specific foods detected. This may happen with liquid meals or unclear images.';
 
   @override
   String get micronutrients => 'Micronutrients';

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 
 import '../models/nutrition_analysis_result.dart';
+import '../services/api_exception.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -12,17 +13,20 @@ import '../utils/meal_type_detector.dart';
 import 'meal_result_screen.dart';
 import 'nutrition_result_screen.dart';
 
-// Camera screen color constants
+/// Camera error types for localized error messages
+enum CameraErrorType { notFound, initFailed }
+
+// Camera screen color constants — all via AppColors.*
 class _CameraColors {
-  static const Color background = Colors.black;
-  static const Color foreground = Colors.white;
-  static const Color overlay = Colors.black54;
-  static const Color overlayText = Colors.white70;
-  static const Color iconDisabled = Colors.white54;
-  static const Color buttonBorder = Colors.white;
-  static const Color buttonEnabled = Colors.white;
-  static const Color buttonDisabled = Colors.grey;
-  static const Color buttonIcon = Colors.black87;
+  static const Color background = AppColors.cameraBackground;
+  static const Color foreground = AppColors.cameraForeground;
+  static const Color overlay = AppColors.cameraOverlay;
+  static const Color overlayText = AppColors.cameraOverlayText;
+  static const Color iconDisabled = AppColors.cameraIconDisabled;
+  static const Color buttonBorder = AppColors.cameraButtonBorder;
+  static const Color buttonEnabled = AppColors.cameraButtonEnabled;
+  static const Color buttonDisabled = AppColors.cameraButtonDisabled;
+  static const Color buttonIcon = AppColors.cameraButtonIcon;
 }
 
 /// Food Photo Capture Screen — SECONDARY option for meal logging.
@@ -50,7 +54,8 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
   CameraController? _controller;
   bool _isInitialized = false;
   bool _isProcessing = false;
-  String? _errorMessage;
+  CameraErrorType? _cameraError;
+  VoidCallback? _lastRetryAction;
 
   @override
   void initState() {
@@ -62,7 +67,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        setState(() => _errorMessage = 'No camera found on this device.');
+        setState(() => _cameraError = CameraErrorType.notFound);
         return;
       }
       final back = cameras.firstWhere(
@@ -78,7 +83,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
       await _controller!.initialize();
       if (mounted) setState(() => _isInitialized = true);
     } catch (e) {
-      setState(() => _errorMessage = 'Camera error: $e');
+      setState(() => _cameraError = CameraErrorType.initFailed);
     }
   }
 
@@ -87,6 +92,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
         !_controller!.value.isInitialized ||
         _isProcessing)
       return;
+    _lastRetryAction = _capturePhoto;
 
     setState(() => _isProcessing = true);
 
@@ -103,6 +109,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
 
   Future<void> _pickFromGallery() async {
     if (_isProcessing) return;
+    _lastRetryAction = _pickFromGallery;
 
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
@@ -112,9 +119,20 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
 
     setState(() => _isProcessing = true);
     final platformFile = result.files.single;
+    // Infer MIME type from file extension since PlatformFile doesn't provide it
+    final ext = platformFile.extension?.toLowerCase();
+    String? inferredMimeType;
+    if (ext == 'png') {
+      inferredMimeType = 'image/png';
+    } else if (ext == 'webp') {
+      inferredMimeType = 'image/webp';
+    } else if (ext == 'jpg' || ext == 'jpeg') {
+      inferredMimeType = 'image/jpeg';
+    }
     final xfile = XFile.fromData(
       platformFile.bytes!,
       name: platformFile.name,
+      mimeType: inferredMimeType,
     );
     await _classifyImage(xfile);
   }
@@ -186,18 +204,14 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
       _showFallbackSnackbar();
     } catch (e) {
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
-      String errorMsg = e.toString();
-      // Clean up common exception prefixes
-      if (errorMsg.contains('Exception: ')) {
-        errorMsg = errorMsg.split('Exception: ').last;
-      }
-      _showFallbackSnackbar(message: errorMsg);
+      final msg = e is ValidationException ? e.detail : null;
+      _showFallbackSnackbar(message: msg, retry: _lastRetryAction);
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  void _showFallbackSnackbar({String? message}) {
+  void _showFallbackSnackbar({String? message, VoidCallback? retry}) {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -206,7 +220,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: l10n.retry,
-          onPressed: _capturePhoto,
+          onPressed: retry ?? _capturePhoto,
         ),
       ),
     );
@@ -239,16 +253,18 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
         foregroundColor: _CameraColors.foreground,
         title: Text(l10n.foodPhotoTitle),
       ),
-      body: _errorMessage != null
-          ? _buildErrorState()
+      body: _cameraError != null
+          ? _buildErrorState(l10n)
           : !_isInitialized
           ? const Center(child: CircularProgressIndicator(color: _CameraColors.foreground))
           : _buildCameraView(l10n),
     );
   }
 
-  Widget _buildErrorState() {
-    final l10n = AppLocalizations.of(context)!;
+  Widget _buildErrorState(AppLocalizations l10n) {
+    final errorMessage = _cameraError == CameraErrorType.notFound
+        ? l10n.cameraNotFound
+        : l10n.cameraError;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -258,7 +274,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
             const Icon(Icons.camera_alt, color: _CameraColors.iconDisabled, size: 64),
             const SizedBox(height: 16),
             Text(
-              _errorMessage!,
+              errorMessage,
               style: const TextStyle(color: _CameraColors.overlayText),
               textAlign: TextAlign.center,
             ),

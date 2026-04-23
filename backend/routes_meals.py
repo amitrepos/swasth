@@ -347,6 +347,7 @@ async def analyze_nutrition(
     """Analyze food photo for detailed nutrition breakdown using Gemini Vision."""
     get_profile_access_or_403(profile_id, user, db)
 
+    # DeepSeek does not support vision — Gemini is the only supported provider here.
     if not settings.GEMINI_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
