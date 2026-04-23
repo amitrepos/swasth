@@ -50,6 +50,15 @@ def _validate_password_strength(v: str) -> str:
     return v
 
 
+def _validate_phone_number_helper(v: str | None) -> str | None:
+    if v is None:
+        return v
+    stripped = re.sub(r'[\s\-]', '', v)
+    if not _PHONE_PATTERN.match(stripped):
+        raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
+    return stripped
+
+
 # ---------------------------------------------------------------------------
 # Auth schemas
 # ---------------------------------------------------------------------------

@@ -16,7 +16,10 @@ branch_labels = None
 depends_on = None
 
 def normalize_phone(phone: str | None) -> str:
-    """Copy of backend.utils.phone.normalize_phone to keep migration self-contained."""
+    """Copy of backend.utils.phone.normalize_phone to keep migration self-contained.
+    Intentional divergence: Migration copies must remain frozen even if the 
+    application helper changes, to ensure deterministic historical execution.
+    """
     if not phone:
         return ""
     phone = phone.strip()

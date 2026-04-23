@@ -328,6 +328,11 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                 db.add(gen_log)
                 db.commit()
 
+                # Build consolidation snippet
+                full_body = "\n\n".join([p['snippet'] for p in profile_list])
+                
+                # M1: Use helper to get dates, though we need full_body for consolidated message
+                # Actually, the template expects [last_week, today, body]
                 template_vars = [last_week_str, date_str, full_body]
                 
                 delivery_log = WhatsAppMessageLog(

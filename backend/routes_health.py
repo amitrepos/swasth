@@ -1380,9 +1380,10 @@ def manually_trigger_whatsapp_report(
         }
     except ValueError as ve:
         # Actionable feedback for config errors (M2)
+        logger.error(f"Manual report trigger config error: {str(ve)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Server configuration error: {str(ve)}"
+            detail="Server configuration error. Please contact support."
         )
     except Exception as e:
         logger.error(f"Manual report trigger failed for user {user.id}: {e}")

@@ -134,6 +134,15 @@ class TestUpdateProfile:
         resp = client.put(f"/api/profiles/{pid}", json={"name": "Hacked"}, headers=viewer_headers)
         assert resp.status_code == 403
 
+    def test_update_profile_invalid_phone_rejected(self, client, test_user, auth_headers, db):
+        """M4: Verify that providing an invalid phone number returns a 422 error."""
+        pid = _get_profile_id(db, test_user.id)
+        resp = client.put(f"/api/profiles/{pid}", json={
+            "phone_number": "abc",
+        }, headers=auth_headers)
+        # Validation error from Pydantic schema (ProfileUpdate)
+        assert resp.status_code == 422
+
 
 # ===========================================================================
 # DELETE /api/profiles/{profile_id}
