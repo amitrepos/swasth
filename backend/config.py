@@ -65,6 +65,7 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: Optional[str] = None
     TWILIO_WHATSAPP_NUMBER: Optional[str] = None  # e.g. "whatsapp:+14155238886"
     TWILIO_SMS_NUMBER: Optional[str] = None  # e.g. "+14155238886" — SMS disabled until set
+    TWILIO_REPORT_CONTENT_SID: Optional[str] = None  # Approved WhatsApp template SID for weekly report delivery
 
     # Critical Alert Dispatch (D7)
     CRITICAL_ALERT_DEDUPE_MINUTES: int = 30  # Suppress repeat alerts to same profile within window
@@ -80,6 +81,10 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"  # Prevent prod deploy failures when a new env var is added on the server
+                          # before the matching Settings field lands in code (the failure mode that
+                          # took down prod on 2026-04-23 when TWILIO_REPORT_CONTENT_SID was set on
+                          # the server but not declared here).
 
 
 settings = Settings()

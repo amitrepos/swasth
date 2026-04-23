@@ -174,29 +174,90 @@ if [[ "$gh_available" -eq 1 || -d "$REPO_ROOT/.git" ]]; then
   done
 fi
 
+# ── Compute scope: which stacks actually need their gates? ────────────────
+# We scan the changed files on the branch (vs master merge-base) and skip
+# backend/Flutter gates when nothing in those stacks changed.
+#
+# Safety: escape hatch SWASTH_FORCE_ALL_TESTS=1 runs everything regardless.
+# Rationale: doc-only pushes (README, .claude/, .github/workflows/, *.md)
+# were wasting 3-5 minutes per push running pytest + flutter test against
+# an unchanged codebase. Health-data correctness is preserved — any file
+# under backend/ or lib/ that could affect runtime still triggers its gate.
+cd "$REPO_ROOT"
+backend_changed=false
+flutter_changed=false
+
+if [[ -n "${SWASTH_FORCE_ALL_TESTS:-}" ]]; then
+  echo "[scope] SWASTH_FORCE_ALL_TESTS=1 — running full test suite"
+  backend_changed=true
+  flutter_changed=true
+else
+  for branch in "${pushed_branches[@]}"; do
+    [[ "$branch" == "master" || "$branch" == "HEAD" ]] && continue
+    branch_ref="refs/heads/$branch"
+    git rev-parse --verify --quiet "$branch_ref" >/dev/null || continue
+
+    base="$(git merge-base origin/master "$branch_ref" 2>/dev/null || echo '')"
+    [[ -z "$base" ]] && { backend_changed=true; flutter_changed=true; break; }
+
+    while IFS= read -r f; do
+      [[ -z "$f" ]] && continue
+      case "$f" in
+        backend/requirements.txt|backend/pyproject.toml|backend/.coveragerc|backend/pytest.ini|backend/alembic.ini)
+          backend_changed=true ;;
+        backend/migrations/*|backend/*.py|backend/*/*.py|backend/*/*/*.py)
+          backend_changed=true ;;
+        pubspec.yaml|pubspec.lock|analysis_options.yaml)
+          flutter_changed=true ;;
+        lib/*|test/*|integration_test/*)
+          flutter_changed=true ;;
+      esac
+    done < <(git diff --name-only "$base" "$branch_ref" 2>/dev/null)
+  done
+
+  # Fallback: if no pushed_branches enumerated (stdin-less invocation),
+  # be conservative and run everything.
+  if [[ ${#pushed_branches[@]} -eq 0 ]]; then
+    backend_changed=true
+    flutter_changed=true
+  fi
+fi
+
 # ── Backend pytest ────────────────────────────────────────────────────────
 echo ""
-echo "▶ Running backend tests..."
-export TESTING=true
-cd "$REPO_ROOT/backend"
-if [ -d "venv" ]; then
-    source venv/bin/activate
+if [[ "$backend_changed" == "true" ]]; then
+  echo "▶ Running backend tests..."
+  export TESTING=true
+  cd "$REPO_ROOT/backend"
+  if [ -d "venv" ]; then
+      source venv/bin/activate
+  fi
+  python -m pytest tests/ --tb=short -q --cov=. --cov-config=.coveragerc
+  echo "✓ Backend tests passed (85% coverage gate passed)"
+else
+  echo "⏭  Backend tests skipped — no backend/ code changed"
 fi
-python -m pytest tests/ --tb=short -q --cov=. --cov-config=.coveragerc
-echo "✓ Backend tests passed (85% coverage gate passed)"
 
 # ── Flutter analyze ───────────────────────────────────────────────────────
 echo ""
-echo "▶ Running Flutter analysis..."
 cd "$REPO_ROOT"
-flutter analyze --no-fatal-infos --no-fatal-warnings
-echo "✓ Flutter analysis passed"
+if [[ "$flutter_changed" == "true" ]]; then
+  echo "▶ Running Flutter analysis..."
+  flutter analyze --no-fatal-infos --no-fatal-warnings
+  echo "✓ Flutter analysis passed"
+else
+  echo "⏭  Flutter analysis skipped — no lib/ or test/ code changed"
+fi
 
 # ── Flutter tests ─────────────────────────────────────────────────────────
 echo ""
-echo "▶ Running Flutter tests..."
-flutter test
-echo "✓ Flutter tests passed"
+if [[ "$flutter_changed" == "true" ]]; then
+  echo "▶ Running Flutter tests..."
+  flutter test
+  echo "✓ Flutter tests passed"
+else
+  echo "⏭  Flutter tests skipped — no lib/ or test/ code changed"
+fi
 
 echo ""
 echo "══════════════════════════════════════════════════"
