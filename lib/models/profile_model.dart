@@ -56,7 +56,7 @@ class ProfileModel {
       doctorName: json['doctor_name'] as String?,
       doctorSpecialty: json['doctor_specialty'] as String?,
       doctorWhatsapp: json['doctor_whatsapp'] as String?,
-      phoneNumber: json['phone_number'] ?? '',
+      phoneNumber: json['phone_number'] as String,
       accessLevel: json['access_level'],
       relationship: json['relationship'] as String?,
       createdAt: DateTime.parse(json['created_at']),

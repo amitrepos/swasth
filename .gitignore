@@ -59,6 +59,11 @@ android/**/*.keystore
 # Local tooling
 .vscode/
 
+# Databases
+backend/*.db
+backend/*.sqlite3
+backend/swasth.db
+
 # Backup directories
 ios_backup/
 

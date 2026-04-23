@@ -699,7 +699,7 @@ class _MiniLineChart extends StatelessWidget {
               barWidth: 2,
               dotData: FlDotData(
                 show: dotRadius >= 2,
-                getDotPainter: (p0, p1, p2, p3) => FlDotCirclePainter(
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: color,
                   strokeWidth: 1,
@@ -844,7 +844,7 @@ class _MiniBpChart extends StatelessWidget {
               barWidth: 2,
               dotData: FlDotData(
                 show: dotRadius >= 2,
-                getDotPainter: (p0, p1, p2, p3) => FlDotCirclePainter(
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: _kSysColor,
                   strokeWidth: 1,
@@ -872,7 +872,7 @@ class _MiniBpChart extends StatelessWidget {
                 barWidth: 1.5,
                 dotData: FlDotData(
                   show: dotRadius >= 2,
-                  getDotPainter: (p0, p1, p2, p3) => FlDotCirclePainter(
+                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                     radius: dotRadius - 0.5,
                     color: _kDiaColor,
                     strokeWidth: 1,
@@ -1276,7 +1276,7 @@ class _BpChart extends StatelessWidget {
               barWidth: 2.5,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (p0, p1, p2, p3) => FlDotCirclePainter(
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: _kSysColor,
                   strokeWidth: 1.5,
@@ -1304,7 +1304,7 @@ class _BpChart extends StatelessWidget {
                 barWidth: 2,
                 dotData: FlDotData(
                   show: true,
-                  getDotPainter: (p0, p1, p2, p3) => FlDotCirclePainter(
+                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                     radius: dotRadius - 0.5,
                     color: _kDiaColor,
                     strokeWidth: 1.5,
@@ -1627,7 +1627,7 @@ class _WeightChart extends StatelessWidget {
               barWidth: 3,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (p0, p1, p2, p3) => FlDotCirclePainter(
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                   radius: dotRadius + 1,
                   color: _kWeightColor,
                   strokeWidth: 2,

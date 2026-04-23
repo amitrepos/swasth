@@ -260,7 +260,8 @@ class _NavWrapperState extends State<_NavWrapper> {
       Navigator.push(
         context,
         PageRouteBuilder(
-          pageBuilder: (_, __, _) => widget.child,
+          // ignore: unnecessary_underscores
+          pageBuilder: (_, __, ___) => widget.child,
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
         ),

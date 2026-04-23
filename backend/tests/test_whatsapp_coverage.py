@@ -61,13 +61,13 @@ def test_send_weekly_reports_phone_formats(mock_ai, mock_whatsapp, mock_settings
         email="phone@test.com",
         full_name="Phone Tester",
         password_hash="pw",
-        phone_number="918700151250",
+        phone_number="919999999999",
         timezone="UTC",
         is_active=True
     )
     db.add(user)
     db.flush()
-    profile = Profile(name="Self", phone_number="9876543210")  # 10-digit format
+    profile = Profile(name="Self", phone_number="919999999999")  # Matches owner
     db.add(profile)
     db.flush()
     db.add(ProfileAccess(user_id=user.id, profile_id=profile.id, access_level="owner"))
@@ -81,10 +81,10 @@ def test_send_weekly_reports_phone_formats(mock_ai, mock_whatsapp, mock_settings
     mock_whatsapp.send_whatsapp_template.return_value = (True, "SMxxx", None)
     
     send_weekly_reports(db=db)
-    # Should normalize to +91...
+    # Should normalize to +91... and dispatch to owner
     mock_whatsapp.send_whatsapp_template.assert_called_once()
     args = mock_whatsapp.send_whatsapp_template.call_args[0]
-    assert args[0] == "+919876543210"  # Normalized phone number
+    assert args[0] == "+919999999999"  # Normalized owner phone number (from 919999999999)
 
 # --- Tests for twilio_service.py ---
 
@@ -106,7 +106,7 @@ def test_twilio_send_whatsapp_not_configured():
     with patch.multiple(service, _client=None, from_number=None):
         with patch("twilio_service.settings") as mock_settings:
             mock_settings.TWILIO_ACCOUNT_SID = None
-            result = service.send_whatsapp("+918700151250", "hello")
+            result = service.send_whatsapp("+919999999999", "hello")
             assert result[0] is False
 
 def test_twilio_send_whatsapp_success():
@@ -118,13 +118,13 @@ def test_twilio_send_whatsapp_success():
     mock_client.messages.create.return_value = MagicMock(sid="SMxxx")
     
     with patch.object(TwilioWhatsAppService, "client", mock_client):
-        result = service.send_whatsapp("8700151250", "hello")
+        result = service.send_whatsapp("9999999999", "hello")
         assert result[0] is True
         assert result[1] == "SMxxx"
         mock_client.messages.create.assert_called_once_with(
             body="hello",
             from_="whatsapp:+14155238886",
-            to="whatsapp:8700151250"
+            to="whatsapp:9999999999"
         )
 
 def test_twilio_send_whatsapp_api_error():
@@ -136,7 +136,7 @@ def test_twilio_send_whatsapp_api_error():
     mock_client.messages.create.side_effect = Exception("API error")
     
     with patch.object(TwilioWhatsAppService, "client", mock_client):
-        result = service.send_whatsapp("8700151250", "hello")
+        result = service.send_whatsapp("9999999999", "hello")
         assert result[0] is False
         assert result[2] == "API error"
 

@@ -11,6 +11,7 @@ from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_owner_or_403
 from email_service import email_service
 from encryption_service import encrypt_float
+from utils.phone import normalize_phone
 
 router = APIRouter()
 
@@ -88,7 +89,7 @@ def create_profile(
         medical_conditions=data.medical_conditions,
         other_medical_condition=data.other_medical_condition,
         current_medications=data.current_medications,
-        phone_number=data.phone_number,
+        phone_number=normalize_phone(data.phone_number),
     )
     db.add(profile)
     db.flush()   # populate profile.id before creating access row
@@ -149,6 +150,8 @@ def update_profile(
 
     update_data = data.dict(exclude_unset=True)
     for field, value in update_data.items():
+        if field == "phone_number" and value:
+            value = normalize_phone(value)
         setattr(profile, field, value)
 
     db.commit()

@@ -1,10 +1,10 @@
-/*
-  Regression tests for all dashboard sections.
+library;
 
-  These tests verify that every widget on the home screen renders without
-  crashing, so deploying new changes never silently removes a section
-  (like the physician card disappearing).
-*/
+/// Regression tests for all dashboard sections.
+///
+/// These tests verify that every widget on the home screen renders without
+/// crashing, so deploying new changes never silently removes a section
+/// (like the physician card disappearing).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

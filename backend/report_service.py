@@ -10,6 +10,7 @@ from models import (
     ReportTriggerType, WhatsAppMessageStatus, ReportGenerationStatus
 )
 from health_utils import classify_bp, classify_glucose
+from utils.phone import normalize_phone
 from twilio_service import whatsapp_service
 from config import settings
 import ai_report_service
@@ -121,10 +122,10 @@ def format_report_template_variables(profile_name: str, profile_data: dict) -> L
     
     return [var1, var2, var3]
 
-def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED) -> bool:
+def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED) -> dict | None:
     """
-    Generates and sends a report for a single profile to its own phone number.
-    Returns True if a message was successfully attempted.
+    Generates report data for a single profile.
+    Returns a dict with report data or None if no report should be sent.
     """
     # Find the owner user to check for AI consent
     owner_access = db.query(ProfileAccess).filter(
@@ -134,27 +135,18 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
     
     owner = db.query(User).filter(User.id == owner_access.user_id).first() if owner_access else None
     
-    # 1. Initialize Generation Log (we link it to the owner user for auditing)
-    # If no owner, we can't really audit/send properly under current schema, but we'll try.
-    audit_user_id = owner.id if owner else 0
+    # C4 Fix: Guard upfront
+    if not owner:
+        logger.warning(f"No owner found for profile {profile.id}. Skipping report.")
+        return None
 
-    gen_log = ReportGenerationLog(
-        user_id=audit_user_id,
-        trigger_type=trigger_type,
-        report_date=date.today(),
-        members_requested=[profile.id],
-        members_with_data=[],
-        members_skipped=[],
-        status=ReportGenerationStatus.FAILED
-    )
-    db.add(gen_log)
-    db.commit()
-    db.refresh(gen_log)
+    # C2 Fix (Privacy): Always dispatch to owner per senior feedback
+    target_phone = normalize_phone(owner.phone_number)
 
     try:
         last_7d = datetime.utcnow() - timedelta(days=7)
 
-        # Latest Glucose (within last 24h for the 'Latest' spot)
+        # Latest Glucose
         glucose = db.query(HealthReading).filter(
             HealthReading.profile_id == profile.id,
             HealthReading.reading_type == "glucose",
@@ -168,22 +160,17 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
             HealthReading.reading_timestamp >= (datetime.utcnow() - timedelta(hours=24))
         ).order_by(HealthReading.reading_timestamp.desc()).first()
         
-        # Check for any data in 7d to decide if we send the report
+        # Check for data in 7d
         any_data = db.query(HealthReading).filter(
             HealthReading.profile_id == profile.id,
             HealthReading.reading_timestamp >= last_7d
         ).first()
 
         if not any_data:
-            gen_log.members_skipped = [profile.id]
-            gen_log.status = ReportGenerationStatus.FAILED
-            gen_log.error_message = "No data found for profile in the last 7 days."
-            db.commit()
-            return False
+            return None
 
-        # Generate AI Insight for the week
-        # ai_report_service.get_weekly_ai_insight handles consent check internally via owner user
-        insight = ai_report_service.get_weekly_ai_insight(db, profile.id, owner) if owner else "Owner not found."
+        # Generate AI Insight
+        insight = ai_report_service.get_weekly_ai_insight(db, profile.id, owner)
         
         profile_data = {
             "glucose": glucose,
@@ -191,71 +178,62 @@ def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: R
             "insight": insight
         }
 
-        # Update Generation Log status
-        gen_log.members_with_data = [profile.id]
-        gen_log.status = ReportGenerationStatus.SUCCESS
-        db.commit()
+        # Build individual snippet for this profile
+        glucose_line = ""
+        if glucose:
+            status = classify_glucose(glucose.glucose_value)
+            icon = "✅" if status == "NORMAL" else "⚠️"
+            glucose_line = f"🩸 Sugar: {int(glucose.glucose_value)} mg/dL ({status.title()}) {icon}"
+        else:
+            glucose_line = "🩸 Sugar: No checks today"
 
-        # 2. Format template variables and Normalize phone
-        template_vars = format_report_template_variables(profile.name, profile_data)
-        message_snapshot = format_report_message(profile.name, profile_data)  # For logging/audit
-        
-        phone = profile.phone_number.strip()
-        for char in [" ", "-", "(", ")"]: phone = phone.replace(char, "")
-        if len(phone) == 10 and phone.isdigit(): phone = f"+91{phone}"
-        elif not phone.startswith("+") and phone.startswith("91") and len(phone) == 12: phone = f"+{phone}"
+        bp_line = ""
+        if bp:
+            status = classify_bp(bp.systolic, bp.diastolic)
+            icon = "✅" if status == "NORMAL" else "⚠️"
+            bp_line = f"💓 BP: {int(bp.systolic)}/{int(bp.diastolic)} mmHg ({status.title()}) {icon}"
+        else:
+            bp_line = "💓 BP: No checks today"
+
+        insight_line = ""
+        if insight:
+            insight_clean = insight.replace('\n', ' ').replace('\t', ' ')
+            while '  ' in insight_clean:
+                insight_clean = insight_clean.replace('  ', ' ')
+            insight_line = f"✨ *AI Evaluation:* {insight_clean.strip()}"
+
+        snippet = f"👤 *{profile.name}*\n{glucose_line}\n{bp_line}"
+        if insight_line:
+            snippet += f"\n{insight_line}"
 
         reading_ids = []
         if glucose: reading_ids.append(glucose.id)
         if bp: reading_ids.append(bp.id)
 
-        delivery_log = WhatsAppMessageLog(
-            user_id=audit_user_id,
-            phone_number=phone,
-            trigger_type=trigger_type,
-            report_date=date.today(),
-            member_ids_included=[profile.id],
-            reading_ids_included=reading_ids,
-            message_snapshot=message_snapshot,
-            status=WhatsAppMessageStatus.QUEUED
-        )
-        db.add(delivery_log)
-        db.commit()
-        db.refresh(delivery_log)
-
-        # 3. Send via Twilio Template
-        if not settings.TWILIO_REPORT_CONTENT_SID:
-            logger.error("TWILIO_REPORT_CONTENT_SID not configured. Cannot send template message.")
-            delivery_log.status = WhatsAppMessageStatus.FAILED
-            delivery_log.error_message = "TWILIO_REPORT_CONTENT_SID not configured"
-            db.commit()
-            return False
-        
-        success, sid, twilio_error = whatsapp_service.send_whatsapp_template(
-            phone, 
-            settings.TWILIO_REPORT_CONTENT_SID,
-            template_vars
-        )
-        
-        delivery_log.twilio_sid = sid
-        delivery_log.error_message = twilio_error
-        delivery_log.status = WhatsAppMessageStatus.SENT if success else WhatsAppMessageStatus.FAILED
-        db.commit()
-        
-        return success
+        return {
+            "status": ReportGenerationStatus.SUCCESS,
+            "profile_id": profile.id,
+            "owner_id": owner.id,
+            "target_phone": target_phone,
+            "snippet": snippet,
+            "reading_ids": reading_ids,
+            "profile_name": profile.name,
+            "profile_data": profile_data
+        }
 
     except Exception as e:
-        error_msg = str(e)
-        logger.error(
-            "Error generating report for profile %s", profile.id, exc_info=True
-        )
-        gen_log.status = ReportGenerationStatus.FAILED
-        gen_log.error_message = error_msg
-        db.commit()
-        return False
+        logger.error("Error generating report data for profile %s", profile.id, exc_info=True)
+        # We don't rollback here because it might invalidate objects used by the caller.
+        # Let the caller decide how to handle the transaction.
+        return {
+            "status": ReportGenerationStatus.FAILED,
+            "profile_id": profile.id,
+            "owner_id": owner.id if owner else None,
+            "error_message": str(e)
+        }
 
 def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED):
-    """Main task to send Weekly WhatsApp reports to all profiles in batches."""
+    """Main task: Groups profiles by recipient phone and sends ONE consolidated message."""
     import time
     managed_session = False
     if db is None:
@@ -263,32 +241,111 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
         managed_session = True
         
     try:
-        # Fetch profiles with a phone number (Batching logic)
-        batch_size = 20
-        offset = 0
+        # 1. Collect all reportable data
+        # In a production app with millions of users, this would be a generator or batch-process.
+        # For Bihar-pilot scale, we can group in memory.
+        recipient_map = {} # target_phone -> list of report_data
         
+        batch_size = 50
+        offset = 0
         while True:
-            profiles = db.query(Profile).filter(
-                Profile.phone_number != None, 
-                Profile.phone_number != ""
-            ).offset(offset).limit(batch_size).all()
+            profiles = db.query(Profile).offset(offset).limit(batch_size).all()
+            if not profiles: break
             
-            if not profiles:
-                break
-                
-            for profile in profiles:
-                try:
-                    trigger_single_profile_report(db, profile, trigger_type=trigger_type)
-                except Exception:
-                    logger.error(
-                        "Failed to process profile %s in batch",
-                        profile.id,
-                        exc_info=True,
-                    )
+            for p in profiles:
+                data = trigger_single_profile_report(db, p, trigger_type)
+                if not data: continue
+
+                if data['status'] == ReportGenerationStatus.FAILED:
+                    # Log failure immediately
+                    if data.get('owner_id'):
+                        try:
+                            # No rollback needed here, trigger_single_profile_report doesn't flush on error anymore
+                            gen_log = ReportGenerationLog(
+                                user_id=data['owner_id'],
+                                trigger_type=trigger_type,
+                                report_date=date.today(),
+                                members_requested=[data['profile_id']],
+                                members_with_data=[], # Required by NOT NULL constraint
+                                members_skipped=[],
+                                status=ReportGenerationStatus.FAILED,
+                                error_message=data.get('error_message')
+                            )
+                            db.add(gen_log)
+                            db.commit()
+                        except Exception:
+                            logger.error("Failed to log generation failure", exc_info=True)
+                else:
+                    phone = data['target_phone']
+                    if phone not in recipient_map:
+                        recipient_map[phone] = []
+                    recipient_map[phone].append(data)
             
             offset += batch_size
-            time.sleep(1) # Small pause between batches to breathe
-            
+            time.sleep(0.1)
+
+        # 2. Send consolidated messages
+        tz = pytz.timezone("Asia/Kolkata")
+        now = datetime.now(tz)
+        last_week_str = (now - timedelta(days=6)).strftime("%d %b")
+        date_str = now.strftime("%d %b %Y")
+
+        for phone, profile_list in recipient_map.items():
+            try:
+                owner_id = profile_list[0]['owner_id']
+                profile_ids = [p['profile_id'] for p in profile_list]
+                all_reading_ids = []
+                for p in profile_list: all_reading_ids.extend(p['reading_ids'])
+                
+                # Consolidate snippets
+                full_body = "\n\n".join([p['snippet'] for p in profile_list])
+                
+                # Log Generation
+                gen_log = ReportGenerationLog(
+                    user_id=owner_id,
+                    trigger_type=trigger_type,
+                    report_date=date.today(),
+                    members_requested=profile_ids,
+                    members_with_data=profile_ids,
+                    status=ReportGenerationStatus.SUCCESS
+                )
+                db.add(gen_log)
+                db.commit()
+
+                # Dispatch via Twilio Template
+                # {{1}} = Start, {{2}} = End, {{3}} = Consolidated snippets
+                template_vars = [last_week_str, date_str, full_body]
+                
+                delivery_log = WhatsAppMessageLog(
+                    user_id=owner_id,
+                    phone_number=phone,
+                    trigger_type=trigger_type,
+                    report_date=date.today(),
+                    member_ids_included=profile_ids,
+                    reading_ids_included=all_reading_ids,
+                    message_snapshot=full_body,
+                    status=WhatsAppMessageStatus.QUEUED
+                )
+                db.add(delivery_log)
+                db.commit()
+
+                if settings.TWILIO_REPORT_CONTENT_SID:
+                    success, sid, err = whatsapp_service.send_whatsapp_template(
+                        phone, settings.TWILIO_REPORT_CONTENT_SID, template_vars
+                    )
+                    delivery_log.status = WhatsAppMessageStatus.SENT if success else WhatsAppMessageStatus.FAILED
+                    delivery_log.twilio_sid = sid
+                    delivery_log.error_message = err
+                    db.commit()
+                else:
+                    logger.error("TWILIO_REPORT_CONTENT_SID missing")
+                    delivery_log.status = WhatsAppMessageStatus.FAILED
+                    delivery_log.error_message = "Config missing"
+                    db.commit()
+
+            except Exception:
+                logger.error("Failed to send consolidated report to %s", phone, exc_info=True)
+
     except Exception:
         logger.error("Error in global send_weekly_reports task", exc_info=True)
     finally:

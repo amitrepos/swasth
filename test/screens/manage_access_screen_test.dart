@@ -1,11 +1,10 @@
-/*
-  Tests for ManageAccessScreen — profile sharing & access management.
+library;
 
-  Covers: renders invite form, email field, relationship dropdown,
-  access level dropdown, invite button, and "not shared yet" empty state.
-  Security-critical: this screen controls who can see patient health data.
-*/
-
+/// Tests for ManageAccessScreen — profile sharing & access management.
+///
+/// Covers: renders invite form, email field, relationship dropdown,
+/// access level dropdown, invite button, and "not shared yet" empty state.
+/// Security-critical: this screen controls who can see patient health data.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

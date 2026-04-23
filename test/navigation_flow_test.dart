@@ -1,12 +1,12 @@
-/*
-  Navigation flow tests — verify that user actions trigger correct navigation.
+library;
 
-  These tests use WidgetTester to simulate taps and verify that
-  the expected screens appear. They catch regressions like:
-  - "Discuss with AI" not switching to Chat tab
-  - Back button going to wrong profile
-  - Bottom nav disappearing after save
-*/
+/// Navigation flow tests — verify that user actions trigger correct navigation.
+///
+/// These tests use WidgetTester to simulate taps and verify that
+/// the expected screens appear. They catch regressions like:
+/// - "Discuss with AI" not switching to Chat tab
+/// - Back button going to wrong profile
+/// - Bottom nav disappearing after save
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
