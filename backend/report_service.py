@@ -262,12 +262,12 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
         # 1. Collect all reportable data
         recipient_map = {} # target_phone -> list of report_data
         
-        query = db.query(Profile)
+        query = db.query(Profile).join(ProfileAccess).join(User).filter(
+            ProfileAccess.access_level == 'owner',
+            User.is_active == True
+        )
         if user_id:
-            query = query.join(ProfileAccess).filter(
-                ProfileAccess.user_id == user_id, 
-                ProfileAccess.access_level == 'owner'
-            )
+            query = query.filter(ProfileAccess.user_id == user_id)
 
         batch_size = 50
         offset = 0
@@ -367,22 +367,6 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                 logger.error("Failed to send consolidated report to %s", phone, exc_info=True)
                 results["failed_deliveries"] += 1
                 results["errors"].append(f"Phone ***{phone[-4:]}: {str(e)}")
-
-    except Exception as e:
-        logger.error("Error in send_weekly_reports task", exc_info=True)
-        results["errors"].append(str(e))
-        if user_id: # Re-raise for manual triggers to get 500
-            raise
-    finally:
-        if managed_session:
-            db.close()
-    
-    return results
-
-if __name__ == "__main__":
-    # For quick manual testing
-    send_weekly_reports(trigger_type=ReportTriggerType.MANUAL)
-   results["errors"].append(f"Phone ***{phone[-4:]}: {str(e)}")
 
     except Exception as e:
         logger.error("Error in send_weekly_reports task", exc_info=True)
