@@ -39,9 +39,17 @@ def test_normalize_phone_whitespace_only():
     assert normalize_phone("\t\n") == ""
 
 def test_normalize_phone_all_zeros():
-    # 10 zeros — technically valid digits length, normalised to +91 prefix
+    # 10 zeros pass the length check and get a +91 prefix — semantically invalid
+    # but normalize_phone is a format function, not a number registry validator.
     assert normalize_phone("0000000000") == "+910000000000"
 
 def test_normalize_phone_11_digit_non_india():
-    # 11 digits not matching 91-prefix pattern → treated as generic international
+    # 11 digits that don't start with 91 are treated as generic international
+    # (e.g., a US number: 1 + 10 digits). No +91 prepended.
     assert normalize_phone("12345678901") == "+12345678901"
+
+def test_normalize_phone_13_14_15_digits():
+    # 13-, 14-, 15-digit numbers are within the E.164 max — passed through with +
+    assert normalize_phone("4915123456789") == "+4915123456789"   # German mobile (13 digits)
+    assert normalize_phone("85212345678901") == "+85212345678901"  # 14 digits
+    assert normalize_phone("999999999999999") == "+999999999999999"  # 15 digits (max)

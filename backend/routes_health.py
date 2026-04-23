@@ -21,7 +21,7 @@ from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
 from health_utils import generate_meal_insights
-from report_service import trigger_single_profile_report
+from report_service import trigger_single_profile_report, send_weekly_reports
 from models import ReportTriggerType
 
 _enabled = os.environ.get("TESTING", "").lower() != "true"
@@ -1356,8 +1356,6 @@ def manually_trigger_whatsapp_report(
     Manually trigger WhatsApp health reports for all profiles owned by the current user.
     Limited to 1 request per hour to prevent spam.
     """
-    from report_service import send_weekly_reports
-
     background_tasks.add_task(
         send_weekly_reports,
         trigger_type=ReportTriggerType.MANUAL,

@@ -139,7 +139,7 @@ class TestDispatchFanout:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=True) as mock_email, \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True) as mock_wa, \
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=(True, "SMxxx", None)) as mock_wa, \
              patch("alert_service.sms_service") as mock_sms:
             mock_sms.is_enabled = False
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
@@ -162,7 +162,7 @@ class TestDispatchFanout:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=False), \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True), \
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=(True, "SMxxx", None)), \
              patch("alert_service.sms_service") as mock_sms:
             mock_sms.is_enabled = False
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
@@ -201,7 +201,7 @@ class TestDispatchFanout:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=False), \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=False), \
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=(False, None, "Twilio error")), \
              patch("alert_service.sms_service") as mock_sms:
             mock_sms.is_enabled = False
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
@@ -238,7 +238,7 @@ class TestDispatchFanout:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=True) as mock_e, \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True) as mock_wa:
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=(True, "SMxxx", None)) as mock_wa:
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
 
         assert result.email_sent == 1
@@ -257,7 +257,7 @@ class TestDispatchFanout:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=True) as mock_e, \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True) as mock_wa:
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=(True, "SMxxx", None)) as mock_wa:
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
 
         assert result.email_sent == 0
@@ -324,7 +324,7 @@ class TestDedupeWindow:
 
         r = _make_reading(db, p.id)
         with patch("email_service.email_service.send_critical_alert_email", return_value=True), \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True):
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=(True, "SMxxx", None)):
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
 
         assert result.skipped_dedupe is False
@@ -344,7 +344,7 @@ class TestDedupeWindow:
 
         r = _make_reading(db, p.id)
         with patch("email_service.email_service.send_critical_alert_email", return_value=True), \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True):
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=(True, "SMxxx", None)):
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
 
         assert result.skipped_dedupe is False
@@ -389,7 +389,7 @@ class TestSmsStub:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=True), \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True), \
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=(True, "SMxxx", None)), \
              patch("alert_service.sms_service") as mock_sms:
             mock_sms.is_enabled = False
             result = dispatch_critical_alert(reading=r, profile=p, logger_user_id=owner.id, db=db)
@@ -406,7 +406,7 @@ class TestSmsStub:
         r = _make_reading(db, p.id)
 
         with patch("email_service.email_service.send_critical_alert_email", return_value=True), \
-             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=True), \
+             patch("twilio_service.whatsapp_service.send_critical_alert_whatsapp", return_value=(True, "SMxxx", None)), \
              patch("alert_service.sms_service") as mock_sms:
             mock_sms.is_enabled = True
             mock_sms.send_critical_alert_sms.return_value = True

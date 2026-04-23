@@ -2,7 +2,7 @@ import logging
 import re
 from datetime import datetime, timedelta, date
 import pytz
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import (
@@ -17,108 +17,6 @@ from config import settings
 import ai_report_service
 
 logger = logging.getLogger(__name__)
-
-def format_report_message(profile_name: str, profile_data: dict) -> str:
-    """Format the individual weekly report message for a specific profile."""
-    # Fallback to IST since it's an Indian app
-    tz = pytz.timezone("Asia/Kolkata")
-    now = datetime.now(tz)
-    
-    date_str = now.strftime("%d %b %Y")
-    last_week_str = (now - timedelta(days=6)).strftime("%d %b")
-    
-    msg = [
-        "📊 *Weekly Health Report*",
-        f"📅 {last_week_str} – {date_str}",
-        "══════════════════════",
-        f"👤 *{profile_name}*"
-    ]
-    
-    # Stats summary
-    glucose = profile_data.get('glucose')
-    if glucose:
-        val = glucose.glucose_value
-        status = classify_glucose(val)
-        icon = "✅" if status == "NORMAL" else "⚠️"
-        msg.append(f"🩸 Sugar: {int(val)} mg/dL ({status.title()}) {icon}")
-    else:
-        msg.append("🩸 Sugar: No checks today")
-        
-    bp = profile_data.get('bp')
-    if bp:
-        sys, dia = bp.systolic, bp.diastolic
-        status = classify_bp(sys, dia)
-        icon = "✅" if status == "NORMAL" else "⚠️"
-        msg.append(f"💓 BP: {int(sys)}/{int(dia)} mmHg ({status.title()}) {icon}")
-    else:
-        msg.append("💓 BP: No checks today")
-
-    # AI Insight Section
-    if profile_data.get('insight'):
-        msg.append(f"\n✨ *AI Evaluation:* {profile_data['insight']}")
-            
-    msg.append("══════════════════════")
-    msg.append("💚 Stay healthy! — *Swasth*")
-    
-    return "\n".join(msg)
-
-def format_report_template_variables(profile_name: str, profile_data: dict) -> List[str]:
-    """
-    Format template variables for Twilio WhatsApp template.
-    Template has 3 variables and renders as:
-    📊 *Weekly Health Report*
-    📅 {{1}} – {{2}}
-    ══════════════════════
-    {{3}}
-    ══════════════════════
-    💚 Stay healthy! — *Swasth*
-    
-    {{3}} uses \\n as line separators — Twilio renders these as line breaks in the delivered message.
-    
-    Returns a list of 3 strings for the template variables.
-    """
-    tz = pytz.timezone("Asia/Kolkata")
-    now = datetime.now(tz)
-    
-    # {{1}}: Start date (e.g., "16 Apr")
-    last_week_str = (now - timedelta(days=6)).strftime("%d %b")
-    var1 = last_week_str
-    
-    # {{2}}: End date (e.g., "22 Apr 2026")
-    date_str = now.strftime("%d %b %Y")
-    var2 = date_str
-    
-    # {{3}}: Profile name + health readings + AI insight (NO newlines - Twilio constraint)
-    msg_lines = [f"👤 *{profile_name}*"]
-    
-    glucose = profile_data.get('glucose')
-    if glucose:
-        val = glucose.glucose_value
-        status = classify_glucose(val)
-        icon = "✅" if status == "NORMAL" else "⚠️"
-        msg_lines.append(f"🩸 Sugar: {int(val)} mg/dL ({status.title()}) {icon}")
-    else:
-        msg_lines.append("🩸 Sugar: No checks today")
-        
-    bp = profile_data.get('bp')
-    if bp:
-        sys, dia = bp.systolic, bp.diastolic
-        status = classify_bp(sys, dia)
-        icon = "✅" if status == "NORMAL" else "⚠️"
-        msg_lines.append(f"💓 BP: {int(sys)}/{int(dia)} mmHg ({status.title()}) {icon}")
-    else:
-        msg_lines.append("💓 BP: No checks today")
-
-    if profile_data.get('insight'):
-        # Sanitize insight: remove newlines and excessive spaces
-        insight = profile_data['insight']
-        insight_clean = re.sub(r"\s+", " ", insight.replace('\n', ' ').replace('\t', ' ')).strip()
-        msg_lines.append(f"✨ *AI Evaluation:* {insight_clean}")
-    
-    # Join with newlines for display, but will be sanitized in twilio_service.py
-    var3 = "\n".join(msg_lines)
-    
-    return [var1, var2, var3]
 
 def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED, owner: Optional[User] = None) -> dict | None:
     """Generates report data for a single profile, or None if no report should be sent.
@@ -332,9 +230,6 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
 
                 # Build consolidation snippet
                 full_body = "\n\n".join([p['snippet'] for p in profile_list])
-                
-                # M1: Use helper to get dates, though we need full_body for consolidated message
-                # Actually, the template expects [last_week, today, body]
                 template_vars = [last_week_str, date_str, full_body]
                 
                 delivery_log = WhatsAppMessageLog(

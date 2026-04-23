@@ -4,39 +4,8 @@ from datetime import datetime, timedelta
 import pytz
 import json
 from models import User, Profile, HealthReading, ProfileAccess
-from report_service import send_weekly_reports, format_report_template_variables
+from report_service import send_weekly_reports
 from twilio_service import TwilioWhatsAppService
-
-# --- Tests for report_service.py ---
-
-def test_format_report_template_variables_basic():
-    """Test formatting template variables with glucose and BP data."""
-    profile_data = {
-        "glucose": MagicMock(glucose_value=120),
-        "bp": MagicMock(systolic=120, diastolic=80),
-        "insight": "Test insight"
-    }
-    vars = format_report_template_variables("Papa", profile_data)
-    assert len(vars) == 3
-    assert vars[0]  # Start date (e.g., "16 Apr")
-    assert vars[1]  # End date (e.g., "22 Apr 2026")
-    assert "Papa" in vars[2]
-    assert "💓 BP: 120/80 mmHg" in vars[2]
-    assert "(Normal) ✅" in vars[2]
-    assert "✨ *AI Evaluation:* Test insight" in vars[2]
-
-def test_format_report_template_variables_no_data():
-    """Test template variables with no glucose/BP data."""
-    profile_data = {
-        "glucose": None,
-        "bp": None,
-        "insight": None
-    }
-    vars = format_report_template_variables("Self", profile_data)
-    assert len(vars) == 3
-    assert "Self" in vars[2]
-    assert "No checks today" in vars[2]
-    assert "\n" in vars[2]  # Should have newlines in the template var
 
 @patch("report_service.settings")
 @patch("report_service.whatsapp_service")

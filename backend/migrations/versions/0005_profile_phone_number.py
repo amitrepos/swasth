@@ -81,7 +81,7 @@ def upgrade():
             )
 
 def downgrade():
-    raise NotImplementedError(
-        "Downgrade permanently deletes profile phone numbers and cannot be reversed. "
-        "Restore from a database backup instead of running this downgrade."
-    )
+    # WARNING: drops profiles.phone_number — data loss is permanent.
+    # In production: restore from a backup instead of running this.
+    op.drop_index(op.f('ix_profiles_phone_number'), table_name='profiles')
+    op.drop_column('profiles', 'phone_number')

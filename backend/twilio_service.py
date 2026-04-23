@@ -113,22 +113,20 @@ class TwilioWhatsAppService:
         patient_name: str,
         alert_text_en: str,
         alert_text_hi: str,
-    ) -> bool:
+    ) -> tuple[bool, str | None, str | None]:
         """Send a bilingual critical health alert via WhatsApp.
 
-        Returns True on success, False on any failure. Callers log and
-        try other channels on False.
+        Returns (success, message_sid, error_message) — same shape as send_whatsapp.
         """
         if not self.client or not self.from_number:
-            return False
+            return False, None, "Twilio client not configured"
         body = (
             f"🚨 *Swasth Health Alert*\n\n"
             f"*English:* {alert_text_en}\n\n"
             f"*हिन्दी:* {alert_text_hi}\n\n"
             f"— Swasth Health App"
         )
-        success, _, _ = self.send_whatsapp(to_number, body)
-        return success
+        return self.send_whatsapp(to_number, body)
 
 
 # Create singleton instance
