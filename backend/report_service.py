@@ -121,19 +121,18 @@ def format_report_template_variables(profile_name: str, profile_data: dict) -> L
     
     return [var1, var2, var3]
 
-def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED) -> dict | None:
+def trigger_single_profile_report(db: Session, profile: Profile, trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED, owner: Optional[User] = None) -> dict | None:
     """
     Generates report data for a single profile.
     Returns a dict with report data or None if no report should be sent.
     """
-    # Find the owner user to check for AI consent
-    owner_access = db.query(ProfileAccess).filter(
-        ProfileAccess.profile_id == profile.id,
-        ProfileAccess.access_level == 'owner'
-    ).first()
-    
-    owner = db.query(User).filter(User.id == owner_access.user_id).first() if owner_access else None
-    
+    if owner is None:
+        owner_access = db.query(ProfileAccess).filter(
+            ProfileAccess.profile_id == profile.id,
+            ProfileAccess.access_level == 'owner'
+        ).first()
+        owner = db.query(User).filter(User.id == owner_access.user_id).first() if owner_access else None
+
     # C4 Fix: Guard upfront
     if not owner:
         logger.warning(f"No owner found for profile {profile.id}. Skipping report.")
@@ -247,7 +246,6 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
     If user_id is provided, only sends for profiles owned by that user.
     Returns a dict summary of results.
     """
-    import time
     managed_session = False
     if db is None:
         db = SessionLocal()
@@ -262,7 +260,11 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
         # 1. Collect all reportable data
         recipient_map = {} # target_phone -> list of report_data
         
-        query = db.query(Profile).join(ProfileAccess).join(User).filter(
+        query = db.query(Profile, User).join(
+            ProfileAccess, ProfileAccess.profile_id == Profile.id
+        ).join(
+            User, User.id == ProfileAccess.user_id
+        ).filter(
             ProfileAccess.access_level == 'owner',
             User.is_active == True
         )
@@ -272,12 +274,12 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
         batch_size = 50
         offset = 0
         while True:
-            profiles = query.offset(offset).limit(batch_size).all()
-            if not profiles: break
-            
-            for p in profiles:
+            rows = query.offset(offset).limit(batch_size).all()
+            if not rows: break
+
+            for p, owner in rows:
                 results["total_profiles"] += 1
-                data = trigger_single_profile_report(db, p, trigger_type)
+                data = trigger_single_profile_report(db, p, trigger_type, owner=owner)
                 if not data: continue
 
                 if data['status'] == ReportGenerationStatus.FAILED:
@@ -303,7 +305,6 @@ def send_weekly_reports(db: Optional[Session] = None, trigger_type: ReportTrigge
                     recipient_map[phone].append(data)
             
             offset += batch_size
-            time.sleep(0.1)
 
         # 2. Send consolidated messages
         tz = pytz.timezone("Asia/Kolkata")

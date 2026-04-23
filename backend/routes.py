@@ -278,7 +278,7 @@ def update_profile(
         user.full_name = user_update.full_name
     
     if user_update.phone_number:
-        user.phone_number = normalize_phone(user_update.phone_number)
+        user.phone_number = normalize_phone(user_update.phone_number) or None
 
     # Update timestamp with UTC (convert to local time at display)
     now_utc = datetime.now(pytz.UTC)

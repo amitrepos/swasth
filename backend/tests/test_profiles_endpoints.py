@@ -8,6 +8,7 @@ from unittest.mock import patch
 from tests.conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD
 import models
 from auth import get_password_hash, create_access_token
+from utils.phone import normalize_phone
 
 
 def _second_user(db):
@@ -330,7 +331,7 @@ class TestPendingInvites:
     def test_list_pending_invites(self, mock_email, client, test_user, auth_headers, db):
         # Create a second user who sends invite to test_user
         owner = _second_user(db)
-        profile = models.Profile(name="Shared Profile", phone_number="9876543214")
+        profile = models.Profile(name="Shared Profile", phone_number=normalize_phone("9876543214"))
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -366,7 +367,7 @@ class TestRespondToInvite:
 
     def test_accept_invite(self, client, test_user, auth_headers, db):
         owner = _second_user(db)
-        profile = models.Profile(name="Family Profile", phone_number="9876543214")
+        profile = models.Profile(name="Family Profile", phone_number=normalize_phone("9876543214"))
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -389,7 +390,7 @@ class TestRespondToInvite:
 
     def test_reject_invite(self, client, test_user, auth_headers, db):
         owner = _second_user(db)
-        profile = models.Profile(name="Rejected Profile", phone_number="9876543214")
+        profile = models.Profile(name="Rejected Profile", phone_number=normalize_phone("9876543214"))
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -410,7 +411,7 @@ class TestRespondToInvite:
 
     def test_expired_invite(self, client, test_user, auth_headers, db):
         owner = _second_user(db)
-        profile = models.Profile(name="Expired Profile", phone_number="9876543214")
+        profile = models.Profile(name="Expired Profile", phone_number=normalize_phone("9876543214"))
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -460,3 +461,15 @@ class TestUserProfileUpdate:
             "new_password": "Changed@1234",
         }, headers=auth_headers)
         assert resp.status_code == 400
+
+    def test_update_phone_stores_e164(self, client, test_user, auth_headers, db):
+        resp = client.put(self.URL, json={"phone_number": "9876543210"}, headers=auth_headers)
+        assert resp.status_code == 200
+        db.refresh(test_user)
+        assert test_user.phone_number == "+919876543210"
+
+    def test_update_phone_already_e164_unchanged(self, client, test_user, auth_headers, db):
+        resp = client.put(self.URL, json={"phone_number": "+919876543210"}, headers=auth_headers)
+        assert resp.status_code == 200
+        db.refresh(test_user)
+        assert test_user.phone_number == "+919876543210"

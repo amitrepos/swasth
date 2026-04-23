@@ -2,7 +2,7 @@
 # Related: backend/main.py, lib/services/health_reading_service.dart
 
 """Health Readings API Routes"""
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -1345,10 +1345,11 @@ def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
 # Private helpers
 # ---------------------------------------------------------------------------
 
-@router.post("/report/manual-trigger")
+@router.post("/report/manual-trigger", status_code=202)
 @limiter.limit("1/hour", key_func=get_remote_address)
 def manually_trigger_whatsapp_report(
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
@@ -1359,37 +1360,9 @@ def manually_trigger_whatsapp_report(
     from report_service import send_weekly_reports
     from models import ReportTriggerType
 
-    try:
-        results = send_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL, user_id=user.id)
-        
-        if results["successful_deliveries"] == 0:
-            if results["errors"]:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to deliver reports: {results['errors'][0]}"
-                )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="No reportable data found for your profiles in the last 7 days."
-                )
-
-        return {
-            "message": f"Successfully sent reports to {results['successful_deliveries']} recipient(s).",
-            "details": results
-        }
-    except ValueError as ve:
-        # Actionable feedback for config errors (M2)
-        logger.error(f"Manual report trigger config error: {str(ve)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server configuration error. Please contact support."
-        )
-    except Exception as e:
-        logger.error(f"Manual report trigger failed for user {user.id}: {e}")
-        if isinstance(e, HTTPException):
-            raise
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred while generating reports."
-        )
+    background_tasks.add_task(
+        send_weekly_reports,
+        trigger_type=ReportTriggerType.MANUAL,
+        user_id=user.id,
+    )
+    return {"message": "Report generation started. You will receive a WhatsApp message shortly."}
