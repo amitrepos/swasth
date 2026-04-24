@@ -6,9 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:swasth_app/screens/unified_login_screen.dart';
 import 'package:swasth_app/screens/registration_screen.dart';
 import 'package:swasth_app/screens/select_profile_screen.dart';
+import 'package:swasth_app/screens/email_verification_screen.dart';
+import 'package:http/http.dart' as http;
 
 import '../helpers/test_app.dart';
 import '../helpers/finders.dart';
+import '../helpers/mock_http.dart';
 
 void main() {
   group('Auth — Login', () {
@@ -119,13 +122,63 @@ void main() {
       final verifyNowButton = find.text('Verify Now');
       expect(verifyNowButton, findsOneWidget);
       await tester.tap(verifyNowButton);
-      await pumpN(tester, frames: 50);
+      await pumpN(tester, frames: 100); // More frames for async OTP send + navigation
 
       // Assert that send-email-verification was called BEFORE navigation
       expect(env.tracker.hasCalled('POST', '/send-email-verification'), isTrue);
 
       // Should now be on EmailVerificationScreen
       expect(find.byKey(const Key('email_verify_otp_field')), findsOneWidget);
+    });
+
+    testWidgets('OTP send failure shows error dialog and blocks navigation', (
+      tester,
+    ) async {
+      env = await TestEnv.create(
+        tester,
+        startScreen: const UnifiedLoginScreen(),
+        overrides: {
+          'POST /send-email-verification': http.Response(
+            '{"detail": "Email service unavailable"}',
+            500,
+          ),
+        },
+      );
+
+      // Step 1: Enter email and tap continue
+      await tester.enterText(loginEmail, 'test@swasth.app');
+      await pumpN(tester, frames: 3);
+
+      await tester.tap(loginButton);
+      await pumpN(tester, frames: 50);
+
+      // Step 2: Enter password
+      expect(find.byKey(const Key('login_password')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('login_password')),
+        'Test1234!',
+      );
+      await pumpN(tester, frames: 3);
+
+      // Step 3: Tap login to submit
+      await tester.tap(loginButton);
+      await pumpN(tester, frames: 50);
+
+      // Email verification dialog appears
+      final verifyNowButton = find.text('Verify Now');
+      expect(verifyNowButton, findsOneWidget);
+      await tester.tap(verifyNowButton);
+      await pumpN(tester, frames: 50);
+
+      // Should show error dialog (title: "Error", content: failure message)
+      expect(find.text('Error'), findsOneWidget);
+      expect(find.textContaining('Failed to send'), findsOneWidget);
+
+      // Should NOT navigate to EmailVerificationScreen
+      expect(find.byType(EmailVerificationScreen), findsNothing);
+
+      // Retry button should be present
+      expect(find.text('Retry'), findsOneWidget);
     });
 
     testWidgets('Register link exists on login screen', (tester) async {

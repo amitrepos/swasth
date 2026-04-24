@@ -247,50 +247,8 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
 
             if (mounted && shouldVerify == true) {
               // Send OTP before navigating to verification screen
-              bool otpSendSuccess = false;
-              try {
-                final token = await StorageService().getToken();
-                if (token != null) {
-                  await _apiService.sendEmailVerification(token);
-                  otpSendSuccess = true;
-                }
-              } catch (e) {
-                // If sending OTP fails, show error and block navigation
-                if (mounted) {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: Text(l10n.emailVerificationFailed),
-                      content: Text(l10n.emailVerificationFailed),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: Text(l10n.cancel),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            // Retry sending OTP
-                          },
-                          child: Text(l10n.retry),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return; // Block navigation if OTP send fails
-              }
-              
-              // Only navigate if OTP was sent successfully
-              if (mounted && otpSendSuccess) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EmailVerificationScreen(email: email),
-                  ),
-                );
-                return;
-              }
+              await _sendOTPAndNavigateToVerification(email);
+              return; // Prevent navigation to SelectProfileScreen
             }
           }
 
@@ -315,6 +273,58 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _sendOTPAndNavigateToVerification(String email) async {
+    final l10n = AppLocalizations.of(context)!;
+    bool otpSendSuccess = false;
+    
+    try {
+      final token = await StorageService().getToken();
+      if (token != null) {
+        await _apiService.sendEmailVerification(token);
+        otpSendSuccess = true;
+      }
+    } catch (e) {
+      // If sending OTP fails, show error dialog with retry option
+      if (mounted) {
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(l10n.error),
+            content: Text(l10n.emailVerificationFailed),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.cancel),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  // Retry sending OTP
+                  _sendOTPAndNavigateToVerification(email);
+                },
+                child: Text(l10n.retry),
+              ),
+            ],
+          ),
+        );
+      }
+      return; // Block navigation if OTP send fails
+    }
+    
+    // Only navigate if OTP was sent successfully
+    if (mounted && otpSendSuccess) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EmailVerificationScreen(
+            email: email,
+            requiresInitialSend: false, // OTP already sent
+          ),
+        ),
+      );
     }
   }
 

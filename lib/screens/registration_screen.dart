@@ -8,6 +8,8 @@ import '../widgets/auth_form_scroll_body.dart';
 import '../widgets/password_requirements_box.dart';
 import 'consent_screen.dart';
 import 'unified_login_screen.dart';
+import 'email_verification_screen.dart';
+import '../services/storage_service.dart';
 
 class RegistrationScreen extends StatefulWidget {
   final String? prefillPhone;
@@ -165,6 +167,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     userData['ai_consent'] = aiConsent;
                     
                     await _apiService.register(userData);
+                    
+                    // After successful registration, login and send OTP
+                    await _loginAndSendOTPAfterRegistration(email);
                   },
             ),
           ),
@@ -180,6 +185,76 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       }
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loginAndSendOTPAfterRegistration(String email) async {
+    final l10n = AppLocalizations.of(context)!;
+    
+    try {
+      // Login with the registered credentials
+      final response = await _apiService.login(
+        email,
+        widget.isPhoneVerified ? 'TempPass123!@#' : _passwordController.text,
+      );
+
+      final token = response['access_token'];
+      if (token != null) {
+        await StorageService().saveToken(token);
+
+        // Fetch and save user data
+        try {
+          final userData = await _apiService.getCurrentUser(token);
+          await StorageService().saveUserData(userData);
+        } catch (_) {}
+
+        // Send OTP for email verification
+        if (mounted) {
+          await _apiService.sendEmailVerification(token);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.emailVerificationOtpSent),
+              backgroundColor: AppColors.statusNormal,
+            ),
+          );
+
+          // Navigate to email verification screen
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EmailVerificationScreen(
+                  email: email,
+                  requiresInitialSend: true, // OTP not sent on failure path
+                ),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        await ErrorMapper.showSnack(
+          context,
+          e,
+          backgroundColor: AppColors.statusCritical,
+        );
+        
+        // If OTP send fails, still navigate to verification screen
+        // User can use the resend button there
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EmailVerificationScreen(
+                email: email,
+                requiresInitialSend: true, // OTP not sent, needs manual send
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 

@@ -11,8 +11,13 @@ import 'select_profile_screen.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   final String email;
+  final bool requiresInitialSend;
 
-  const EmailVerificationScreen({super.key, required this.email});
+  const EmailVerificationScreen({
+    super.key,
+    required this.email,
+    this.requiresInitialSend = false,
+  });
 
   @override
   State<EmailVerificationScreen> createState() =>
@@ -31,7 +36,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   @override
   void initState() {
     super.initState();
-    // OTP is dispatched by UnifiedLoginScreen before navigating here.
+    // If OTP was pre-sent (e.g., from login flow), initialize countdown
+    if (!widget.requiresInitialSend) {
+      _resendCountdown = 30;
+      _startResendTimer();
+    }
+    // Otherwise, OTP needs to be sent manually (e.g., from registration flow)
   }
 
   @override
@@ -47,6 +57,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     
     setState(() => _isLoading = true);
     
+    bool sent = false;
     try {
       final token = await StorageService().getToken();
       if (token != null) {
@@ -60,6 +71,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
             ),
           );
         }
+        sent = true;
       }
     } catch (e) {
       if (mounted) {
@@ -71,16 +83,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           ),
         );
       }
-      // Only start timer on success, not on failure
+    } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      return; // Exit early on failure
     }
     
     // Only start timer after successful send
-    if (mounted) {
-      setState(() => _isLoading = false);
+    if (sent && mounted) {
       _startResendTimer();
     }
   }
@@ -215,14 +225,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text(
-                l10n.sendVerificationCode,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.statusNormal,
-                  fontWeight: FontWeight.w500,
+              TextButton(
+                onPressed: _isLoading ? null : _sendVerificationEmail,
+                child: Text(
+                  l10n.sendVerificationCode,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.statusNormal,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),
 
