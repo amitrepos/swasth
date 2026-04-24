@@ -7,7 +7,12 @@
 # auditor. The UserPromptSubmit injector is the primary enforcement; this
 # audit exists so repeated violations are visible and correctable.
 
-set -euo pipefail
+# Permissive mode: Stop hooks must never propagate failure. Any error here
+# would surface as "Stop hook error: Failed with non-blocking status code"
+# in Claude Code. We always exit 0.
+set +e
+set +u
+set +o pipefail
 
 PROJECT_DIR="/Users/amitkumarmishra/workspace/swasth/swasth_app"
 LOG="$PROJECT_DIR/.claude/response-cap-violations.log"
