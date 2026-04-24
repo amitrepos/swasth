@@ -694,3 +694,23 @@ All Play Store traffic goes to prod (`:8444` → port 8009 backend → `swasth_p
 - **REL-19** — ✅ DONE 2026-04-18 (phone screenshots). Phone screenshots captured and uploaded to Play Console Main Store Listing. Tablet screenshots (7-inch + 10-inch) deliberately left empty — Play Console showed them with asterisk but accepted the save. Internal Testing does not require them.
 - **REL-19b** — ⚠️ Before Production release submission: add tablet screenshots (7-inch min 320px/side, 10-inch min 1080px/side, both 16:9 or 9:16 aspect). Google has been enforcing tablet screenshots on new-app Production listings since late 2024. Option: capture on a tablet emulator (Pixel Tablet profile in Android Studio) OR use a tablet-mockup service (previewed.app) to wrap phone screenshots in a tablet frame. Not blocking for Internal Testing.
 - **REL-20** — Buy `swasth.app` domain defensively? Current cost: ~$15/yr. Reason: prevents a squatter from using it against you later. Not urgent. Discussion only.
+
+---
+
+## Claude Code Harness Upgrades — Pilot vs Live Evaluation (opened 2026-04-24)
+
+Context: evaluated `shanraisshan/claude-code-best-practice` features for fit with Swasth's pilot-first posture. Primary lens: **token efficiency + pilot readiness**. Items below are deferred to post-pilot unless tagged PILOT NOW.
+
+### PILOT NOW (adopt before May 1 — immediate token/DX wins)
+- **CCH-1 — Auto Mode** (`--permission-mode auto`, `Shift+Tab`). Replaces the 138-entry Bash allowlist + per-prompt approval round-trips. Anthropic's safety classifier decides; blocks prompt injection. **Token impact: HIGH save** (each approval round-trip burns 2–5k tokens of re-sent context). Requires Opus 4.7. Action: enable on next session, monitor for false-blocks for 1 week.
+- **CCH-2 — Output Styles**. Codify the 100-word bullet rule + "Want an elaborative answer?" offer as a named output style in `~/.claude/output-styles/`, referenced from `settings.json`. Replaces the prose block currently duplicated in `CLAUDE.md` (~80 words reloaded every turn). **Token impact: MEDIUM save** (~80 words × every turn). Complements the UserPromptSubmit hook built today.
+- **CCH-3 — Statusline context %**. Add `/statusline` showing context usage, model, cost. **Token impact: INDIRECT save** — lets us trigger `/compact-now` before auto-compaction wastes tokens re-summarizing. Free, zero-risk.
+
+### LIVE ONLY (post-pilot, after May 1 launch)
+- **CCH-4 — Routines / `/schedule`** (cloud cron on Anthropic infra). Candidates post-launch: nightly orphan-branch scan, weekly CVE check on `pubspec.yaml`/`requirements.txt`, monthly PHI-compliance sweep, daily smoke-test against prod. Replaces today's manual `/loop` polling. Skip pre-pilot (nothing recurring yet). Target: 2 weeks after pilot is live, pick top 3 recurring chores.
+- **CCH-5 — Ultrareview** (`/ultrareview`, $5–20/run, 5–10 min, multi-agent cloud PR review). Do NOT wire into every PR — cost blows up. Reserve for: (a) DB migration PRs, (b) auth/encryption changes, (c) pre-prod release audits. Daniel-review stays the default. Add a pre-merge checklist item post-pilot: "if PR touches `models.py`/`encryption_service.py` → run `/ultrareview` once before merge."
+- **CCH-6 — Channels (beta)** — Telegram/Discord → running session. Useful only after pilot goes live and we need push-based prod monitoring (alert from PagerDuty → session fixes config). Pre-pilot: noise. Revisit at 50+ DAU.
+- **CCH-7 — Plugin bundling** — package Sunita/Meera/Daniel/Aditya personas + review chains as a distributable plugin. Zero internal token benefit. Value is external: (a) hiring signal, (b) open-source play if we spin out. Do only if we decide to open-source the harness. Park behind "100 DAU" gate.
+
+### EVALUATED AND REJECTED
+- Nothing rejected outright. All 7 have a fit window — just not the pilot window.

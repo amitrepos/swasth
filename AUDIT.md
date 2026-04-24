@@ -2534,3 +2534,131 @@ now the single source of truth for prod schema, no drift, no noise.
   - 18:13:06 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.gitignore
   - 18:13:22 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
   - 18:13:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/specs/07-SECURITY-AND-COMPLIANCE.md
+  - 14:05:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 14:05:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+
+## 2026-04-23 — Session: Daniel auto-review + PROD deploy unblock
+
+Built end-to-end Daniel PR-review automation for team-member PRs, tuned
+after one real failure cycle, then unblocked a pre-existing PROD deploy
+break. Also swept orphan branches and recovered a real bug from one.
+
+### PR #156 — Daniel auto-review workflow
+- `.github/workflows/daniel-pr-review.yml` runs `/daniel-review` on
+  every non-draft `pull_request` from non-owner, non-bot authors
+- Scope guard: `github.event.pull_request.user.login != 'amitrepos'`
+  and `!endsWith(..., '[bot]')` — owner already runs Daniel locally
+  via pre-commit hook, no double-bill
+- Concurrency: cancel-in-progress per PR number so rapid pushes only
+  review the latest SHA
+- Fixed SKILL.md frontmatter: `name: review` → `name: daniel-review`
+  (the former collided with Claude Code's built-in `/review`)
+
+### PR #159 — OAuth token auth (Claude Max, not API key)
+- Swapped `anthropic_api_key` → `claude_code_oauth_token` input
+- Token generated via `claude setup-token` (long-lived, survives the
+  ~5-hour Keychain access-token rotation)
+- Stored as repo secret `CLAUDE_CODE_OAUTH_TOKEN` (timestamp
+  2026-04-23T06:54:22Z after one rotation to fix initial empty paste)
+- Rationale: reviews now bill against Max subscription, not pay-per-use
+  API. At ~5 teammate PRs/day the subscription covers them free
+
+### PR #160 — Daniel tuning (Sonnet + higher turns + tool allowlist)
+- Model: Opus 4.7 → **Sonnet 4.6** (3-4x faster, ~1/5 subscription
+  budget per review, quality within bar for structured code review)
+- Max turns: 40 → **60** (headroom for larger PRs)
+- Explicit `--allowedTools` for the exact tools Daniel uses per
+  SKILL.md (`Bash(gh pr review:*)`, `Bash(gh api:*)`, `Bash(git diff:*)`,
+  `Read`, `Grep`, `Glob`, etc.) — eliminates per-tool approval
+  prompts that burned turns on `error_max_turns` + 19 denials on
+  PR #158's first real-world run
+
+### PR #161 — Pre-push hook skips unrelated tests
+- `.githooks/pre-push` now classifies pushed commits by file scope
+- `backend_changed`: `backend/**/*.py`, `migrations/`, `requirements.txt`,
+  `pyproject.toml`, `.coveragerc`, `pytest.ini`, `alembic.ini`
+- `flutter_changed`: `lib/**`, `test/**`, `integration_test/**`,
+  `pubspec.yaml/lock`, `analysis_options.yaml`
+- Each gate only fires if its scope changed. `SWASTH_FORCE_ALL_TESTS=1`
+  bypasses. Doc-only pushes now land in seconds instead of 3-5 min
+- Self-verified on its own push: three `⏭ skipped` messages, landed
+  in under 10 s
+
+### PR #162 — Orphan recovery: pubspec .env asset
+- Cherry-picked `856cc98` from abandoned
+  `docs/critical-analysis-and-meera-skill` branch (PR #126 squash-merged
+  without this specific commit)
+- Bug: `pubspec.yaml` had `assets: - .env` but PR #124 deleted `.env`
+  from repo. `flutter build` fresh-clone failed with "No file or
+  variants found for asset: .env"
+- Fix: removed the 3-line `assets:` block (only entry was `.env`)
+
+### PR #163 — Config hardening: unblock PROD deploys
+- Three consecutive PROD deploys had been failing silently on
+  ```
+  pydantic_core._pydantic_core.ValidationError: 1 validation error
+  for Settings — twilio_report_content_sid — Extra inputs are not
+  permitted
+  ```
+- Prod `.env` had `TWILIO_REPORT_CONTENT_SID` (weekly WhatsApp report
+  template SID), but `Settings` didn't declare it
+- Two-part fix:
+  1. Added `TWILIO_REPORT_CONTENT_SID: Optional[str] = None` to
+     Settings
+  2. Added `extra = "ignore"` to `class Config` — next time ops adds
+     an env var before the code PR lands, deploy won't crash.
+     Tradeoff: silent typo risk, acceptable for pre-pilot
+- **Post-merge verified**: `curl https://65.109.226.36:8443/health` →
+  `HTTP 200 {"status":"healthy"}` in 686 ms
+
+### Branch cleanup
+- Deleted 19 stale local branches (14 with `[origin/...: gone]` +
+  the freshly-merged CI branches)
+- Verified 3 orphan branches (content already squashed into master):
+  `feat/android-release-signing` (PR #129),
+  `fix/smoke-test-python-harness` (PR #135),
+  `fix/smoke-test-required-fields` (PR #136). Deleted.
+- Verified 2 orphan branches had content NOT on master:
+  `chore/playwright-e2e-harness` (Playwright canary — dropped) and
+  `docs/critical-analysis-and-meera-skill` (recovered .env fix as #162)
+
+### Team-member PRs with CHANGES_REQUESTED (awaiting author)
+- **PR #154** `feature/profile-phone-number` @deepsharma00 — Daniel
+  posted full review with structured findings; author to address
+- **PR #158** `feature/food_scanner` @Karthikganiga443 — Daniel posted
+  full review on the updated HEAD after the config tuning; author
+  to address
+
+### Secrets added this session
+- `CLAUDE_CODE_OAUTH_TOKEN` — long-lived OAuth token for the Claude
+  Code GitHub Action, tied to owner's Max subscription
+
+### Lessons
+- `gh run rerun --failed` re-uses the workflow config from the
+  original run, not the current master. For newly-added workflows
+  affecting a pre-existing PR, close+reopen is the reliable trigger
+  (only works once the workflow is already on master; was not
+  triggered on the first try pre-PR-160 merge)
+- Pydantic Settings with implicit `extra='forbid'` is a deploy
+  landmine when env and code land asynchronously. Prefer `ignore`
+  in ops-driven deployments
+  - 09:57:46 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback_response_length.md
+  - 09:57:57 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
+  - 09:58:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 10:01:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 10:01:46 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/feedback_response_length.md
+  - 10:01:50 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
+  - 10:02:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/response-cap-injector.sh
+  - 10:02:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/response-cap-audit.sh
+  - 10:02:59 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/settings.local.json
+  - 10:08:44 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/TASK_TRACKER.md
+  - 10:10:28 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/settings.local.json
+  - 10:11:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/output-styles/swasth-concise.md
+  - 10:11:46 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/settings.local.json
+  - 10:11:56 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/CLAUDE.md
+  - 10:14:07 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/statusline.sh
+  - 10:16:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/settings.local.json
+  - 10:29:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/BEST_PRACTICES.md
+  - 10:35:52 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/statusline.sh
+  - 10:38:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/statusline.sh
+  - 10:40:30 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/statusline.sh

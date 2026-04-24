@@ -130,8 +130,24 @@
       "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py tests/test_meals.py tests/test_health_utils.py tests/test_health_score.py -v --tb=short)",
       "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py tests/test_meals.py tests/test_health_score.py -v --tb=short)",
       "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py tests/test_meals.py -v --tb=short)",
-      "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py tests/test_meals.py --cov=health_utils --cov=routes_meals --cov-report=term-missing -q)"
-    ]
+      "Bash(TESTING=true python3 -m pytest tests/test_meal_insights.py tests/test_meals.py --cov=health_utils --cov=routes_meals --cov-report=term-missing -q)",
+      "Bash(.claude/scripts/write-review-marker.sh daniel *)",
+      "Bash(SWASTH_ALLOW_BRANCHLESS_PUSH=1 git push *)",
+      "Bash(git branch *)",
+      "Bash(gh run *)",
+      "Bash(chmod +x /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/response-cap-injector.sh /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/response-cap-audit.sh)",
+      "Bash(gh repo *)",
+      "Bash(chmod +x /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/statusline.sh)",
+      "Bash(/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/statusline.sh)",
+      "Bash(claude usage *)",
+      "Bash(claude -p \"/usage\" --output-format json)",
+      "Bash(npx ccusage@latest statusline --help)",
+      "Bash(npx ccusage@latest statusline)",
+      "Bash(npm install *)",
+      "Bash(ccusage --version)",
+      "WebFetch(domain:docs.claude.com)"
+    ],
+    "defaultMode": "auto"
   },
   "enabledMcpjsonServers": [
     "github",
@@ -189,6 +205,20 @@
           {
             "type": "command",
             "command": "/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/save-session.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/response-cap-audit.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/response-cap-injector.sh"
           }
         ]
       }
@@ -203,5 +233,11 @@
         ]
       }
     ]
-  }
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "/Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/scripts/statusline.sh",
+    "padding": 0
+  },
+  "outputStyle": "swasth-concise"
 }
