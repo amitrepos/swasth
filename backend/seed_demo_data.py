@@ -92,7 +92,8 @@ def bp_status(sys, dia):
 
 def create_user_with_data(u):
     # Check if user already exists
-    existing = db.query(models.User).filter(models.User.email == u["email"]).first()
+    from encryption_service import hash_email
+    existing = db.query(models.User).filter(models.User.email_hash == hash_email(u["email"])).first()
     if existing:
         print(f"  ⏭  {u['email']} already exists, skipping")
         return

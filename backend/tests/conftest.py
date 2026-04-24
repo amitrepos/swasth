@@ -5,12 +5,22 @@ instance.  We monkey-patch `database.engine` BEFORE importing `main` so that
 `Base.metadata.create_all(bind=engine)` in main.py targets SQLite, not PG.
 """
 import sys, os
+import secrets
 
 # Ensure the backend package root is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Disable rate limiting during tests
 os.environ["TESTING"] = "true"
+
+# Provide deterministic encryption keys for the test session so every test
+# that hits the PII model properties has working encrypt/decrypt. Only
+# populated if the env doesn't already set them — CI/dev runs that want a
+# specific value can override via the shell environment. Without this the
+# pre-push hook runs pytest without PII_ENCRYPTION_KEY and the property
+# setters raise ValueError across the whole suite.
+os.environ.setdefault("ENCRYPTION_KEY", secrets.token_hex(32))
+os.environ.setdefault("PII_ENCRYPTION_KEY", secrets.token_hex(32))
 
 import pytest
 from sqlalchemy import create_engine, event, JSON

@@ -50,7 +50,11 @@ class Settings(BaseSettings):
 
     # Encryption — 64-char hex string = 32 bytes for AES-256-GCM
     # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+    # ENCRYPTION_KEY      — SPDI (glucose, BP, SpO2, weight, notes)
+    # PII_ENCRYPTION_KEY  — PII (name, email, phone) + HMAC blind indexes + OTP hashing
+    # Kept separate so a compromise of one key does not expose the other domain.
     ENCRYPTION_KEY: Optional[str] = None
+    PII_ENCRYPTION_KEY: Optional[str] = None
 
     # HTTPS — enable in production behind TLS termination
     REQUIRE_HTTPS: bool = False

@@ -5,6 +5,7 @@ from typing import Annotated
 import models
 import auth
 from database import get_db
+from encryption_service import hash_email
 
 
 def get_current_user(
@@ -27,7 +28,7 @@ def get_current_user(
     email: str = payload.get("sub")
     if email is None:
         raise credentials_exception
-    user = db.query(models.User).filter(models.User.email == email).first()
+    user = db.query(models.User).filter(models.User.email_hash == hash_email(email)).first()
     if user is None:
         raise credentials_exception
     if not user.is_active:

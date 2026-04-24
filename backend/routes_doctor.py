@@ -196,11 +196,12 @@ def register_doctor(data: schemas.DoctorRegister, db: Session = Depends(get_db))
     Doctor must be verified by admin before accessing patient data.
     """
     # Check email uniqueness
-    if db.query(models.User).filter(models.User.email == data.email).first():
+    from encryption_service import hash_email, hash_nmc
+    if db.query(models.User).filter(models.User.email_hash == hash_email(data.email)).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # Check NMC uniqueness
-    if db.query(models.DoctorProfile).filter(models.DoctorProfile.nmc_number == data.nmc_number).first():
+    if db.query(models.DoctorProfile).filter(models.DoctorProfile.nmc_hash == hash_nmc(data.nmc_number)).first():
         raise HTTPException(status_code=400, detail="NMC number already registered")
 
     # Create user
@@ -579,9 +580,11 @@ def get_verified_doctor_directory(
         db.query(models.DoctorProfile, models.User)
         .join(models.User, models.User.id == models.DoctorProfile.user_id)
         .filter(models.DoctorProfile.is_verified == True)  # noqa: E712
-        .order_by(models.User.full_name.asc())
         .all()
     )
+    # PII note: `full_name` is encrypted at rest — ORDER BY on the ciphertext
+    # column would sort by random bytes. Decrypt into memory and sort in Python.
+    rows.sort(key=lambda r: (r[1].full_name or "").casefold())
     return [
         {
             "doctor_name": u.full_name,

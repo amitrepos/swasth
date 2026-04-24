@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from database import get_db
 from main import app
+from encryption_service import hash_email
 
 # Test timezones
 TIMEZONES = {
@@ -133,7 +134,7 @@ class TestConsentTimestampTimezone:
 
         # Check database timestamp
         from models import User
-        user = db.query(User).filter_by(email="consent_tz_india@test.com").first()
+        user = db.query(User).filter(User.email_hash == hash_email("consent_tz_india@test.com")).first()
         assert user is not None
         assert user.timezone == user_tz
         assert user.consent_timestamp is not None
@@ -163,7 +164,7 @@ class TestConsentTimestampTimezone:
 
         # Check database timestamp
         from models import User
-        user = db.query(User).filter_by(email="consent_tz_usa@test.com").first()
+        user = db.query(User).filter(User.email_hash == hash_email("consent_tz_usa@test.com")).first()
         assert user is not None
         assert user.timezone == user_tz
         assert user.consent_timestamp is not None
@@ -225,7 +226,7 @@ class TestLoginTimestampTimezone:
         assert response.status_code == 200
 
         from models import User
-        user = db.query(User).filter_by(email=email).first()
+        user = db.query(User).filter(User.email_hash == hash_email(email)).first()
         assert user.last_login_at is not None
 
     def test_login_updates_last_login_in_user_timezone_usa(
@@ -241,7 +242,7 @@ class TestLoginTimestampTimezone:
         assert response.status_code == 200
 
         from models import User
-        user = db.query(User).filter_by(email=email).first()
+        user = db.query(User).filter(User.email_hash == hash_email(email)).first()
         assert user.last_login_at is not None
 
 
@@ -303,7 +304,7 @@ class TestAIConsentTimestampTimezone:
         assert response.status_code == 201
 
         from models import User
-        user = db.query(User).filter_by(email="ai_consent_tz@test.com").first()
+        user = db.query(User).filter(User.email_hash == hash_email("ai_consent_tz@test.com")).first()
         assert user.ai_consent is True
         assert user.ai_consent_timestamp is not None
 
@@ -343,7 +344,7 @@ class TestNullTimezoneHandling:
         assert response.status_code == 200
 
         # Check that last_login_at was updated with default timezone
-        user = db.query(User).filter_by(email="null_tz_user@test.com").first()
+        user = db.query(User).filter(User.email_hash == hash_email("null_tz_user@test.com")).first()
         assert user.last_login_at is not None
 
     def test_password_reset_with_null_timezone(self, client, db):
@@ -404,12 +405,15 @@ class TestMultipleTimezoneUsers:
             )
             assert response.status_code == 201
 
-        # Verify all users were created with correct timezones
+        # Verify all users were created with correct timezones. email is
+        # encrypted so SQL LIKE is not usable — look up each expected user
+        # individually via the HMAC blind-index.
         from models import User
+        expected_emails = [f"multi_tz_user_{i}@test.com" for i in range(len(timezones))]
         users = db.query(User).filter(
-            User.email.like("multi_tz_user_%@test.com")
+            User.email_hash.in_([hash_email(e) for e in expected_emails])
         ).all()
-        
+
         assert len(users) == len(timezones)
         stored_timezones = {user.timezone for user in users}
         assert stored_timezones == set(timezones)

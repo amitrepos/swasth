@@ -37,7 +37,7 @@ Legend: ✅ Done &nbsp;|&nbsp; 🔄 Partial &nbsp;|&nbsp; ❌ Not started
 
 ## Task E17 — PII Encryption at Rest (DPDPA-gap)
 
-**Priority:** HIGH &nbsp;|&nbsp; **Status:** ❌ Not started &nbsp;|&nbsp; **Owner:** _unassigned_ &nbsp;|&nbsp; **Est:** 3–4 engineering days (incl. migration + backfill + tests) &nbsp;|&nbsp; **Opened:** 2026-04-23
+**Priority:** HIGH &nbsp;|&nbsp; **Status:** 🔄 In progress (branch `feat/pii-encryption-batch`) &nbsp;|&nbsp; **Owner:** Amit &nbsp;|&nbsp; **Est:** 3–4 engineering days (incl. migration + backfill + tests) &nbsp;|&nbsp; **Opened:** 2026-04-23 &nbsp;|&nbsp; **Approach change 2026-04-24:** pre-pilot zero-user state → destructive single-PR migration (TRUNCATE + reseed test accounts) instead of 6-PR dual-write dance. Batched with E4 (OTP hash), DoctorProfile contact cols, DoctorPatientLink.is_primary.
 
 ### Why this exists
 Current encryption at rest covers **SPDI (health values only)** — AES-256-GCM on glucose/BP/SpO2/weight/notes via `backend/encryption_service.py`, wired in `routes_health.py:100-112` and `routes_profiles.py:112`. **Patient PII is still plaintext** in Postgres. Under DPDPA 2023 a name + phone + email + DOB of a patient is "personal data" and, combined with health readings, "sensitive personal data." A DB dump, backup leak, or compromised read-replica today exposes identifiable patient records. This is the single biggest compliance gap before Play Store Production / doctor portal / NRI paid rollout.

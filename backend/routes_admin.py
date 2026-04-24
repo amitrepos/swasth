@@ -625,7 +625,8 @@ def admin_create_user(
             ),
         )
 
-    if db.query(models.User).filter(models.User.email == body.email).first():
+    from encryption_service import hash_email
+    if db.query(models.User).filter(models.User.email_hash == hash_email(body.email)).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
     now_utc = datetime.now(timezone.utc)

@@ -114,26 +114,16 @@ def normalize_phone(raw: str) -> str:
 # ---------------------------------------------------------------------------
 
 def lookup_user_by_phone(phone_canonical: str, db: Session) -> Optional[models.User]:
-    """Find an active user whose phone number matches (tries several formats)."""
-    # Try exact match first
-    user = db.query(models.User).filter(
-        models.User.phone_number == phone_canonical,
+    """Find an active user whose phone number matches (via normalized hash)."""
+    from encryption_service import hash_phone
+    # Normalized hash already handles +91/10-digit/various format variants
+    h = hash_phone(phone_canonical)
+    if h is None:
+        return None
+    return db.query(models.User).filter(
+        models.User.phone_hash == h,
         models.User.is_active == True,
     ).first()
-    if user:
-        return user
-
-    # Try without country code (stored as 10-digit in DB?)
-    if phone_canonical.startswith("+91") and len(phone_canonical) == 13:
-        ten_digit = phone_canonical[3:]
-        user = db.query(models.User).filter(
-            models.User.phone_number == ten_digit,
-            models.User.is_active == True,
-        ).first()
-        if user:
-            return user
-
-    return None
 
 
 # ---------------------------------------------------------------------------
