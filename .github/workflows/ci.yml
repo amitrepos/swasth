@@ -7,9 +7,35 @@ on:
     branches: [master]
 
 jobs:
+  # ── Change detection — gates backend/flutter jobs on relevant paths only ──
+  # Prevents CI from running backend pytest for a docs-only or .claude/*
+  # settings PR. Mirrors the local pre-push hook's doc-only skip logic.
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      flutter: ${{ steps.filter.outputs.flutter }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            flutter:
+              - 'lib/**'
+              - 'test/**'
+              - 'pubspec.yaml'
+              - 'pubspec.lock'
+
   # ── Backend tests (Python / FastAPI) ──────────────────────────────────────
   backend-tests:
     name: Backend Tests
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,6 +61,8 @@ jobs:
   # ── Flutter analysis + tests ──────────────────────────────────────────────
   flutter-checks:
     name: Flutter Analyze & Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.flutter == 'true'
     runs-on: ubuntu-latest
 
     steps:

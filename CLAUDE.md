@@ -1,5 +1,8 @@
 # Swasth Health App — Claude Code Instructions
 
+## Response Length Rule
+Full rule lives in `.claude/output-styles/swasth-concise.md` (active via `settings.local.json` → `outputStyle`). Enforced by `UserPromptSubmit` + `Stop` hooks. TL;DR: ≤ 100 words, bullets only, end with "Want an elaborative answer?" — unless user uses an elaborate trigger.
+
 ## Project Overview
 Flutter + FastAPI health monitoring app. Target: Bihar pilot.
 Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
