@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:swasth_app/screens/nutrition_result_screen.dart';
 import 'package:swasth_app/models/nutrition_analysis_result.dart';
 import 'package:swasth_app/services/storage_service.dart';
+import 'package:swasth_app/services/connectivity_service.dart';
 
 import '../helpers/test_app.dart';
 import '../helpers/finders.dart';
@@ -181,9 +182,10 @@ void main() {
     testWidgets(
       'Save meal with offline queue when no connectivity',
       (tester) async {
-        // This test verifies the offline save path exists
-        // In a real E2E test, we would mock ConnectivityService
-        // For now, we verify the button is present and clickable
+        // Enable connectivity test mode and set to offline
+        ConnectivityService.useTestMode();
+        ConnectivityService.setTestReachable(false);
+
         env = await _createNutritionResultScreen(tester);
 
         // Scroll to save button
@@ -200,11 +202,17 @@ void main() {
         await tester.tap(saveButton);
         await pumpN(tester, frames: 20);
 
-        // The meal should be saved (either online or queued offline)
-        // In test environment with mock HTTP, it goes online path
-        expect(env.tracker.hasCalled('POST', '/meals'), isTrue);
+        // The meal should be queued offline (not sent via HTTP)
+        expect(env.tracker.hasCalled('POST', '/meals'), isFalse);
+        
+        // Verify it was added to sync queue
+        final queue = await StorageService().getSyncQueue();
+        expect(queue, isNotEmpty);
+        expect(queue.first['category'], equals('MODERATE_CARB'));
+
+        // Reset test mode
+        ConnectivityService.resetTestMode();
       },
-      skip: true, // Offline path not mocked yet - requires ConnectivityService mock
     );
   });
 

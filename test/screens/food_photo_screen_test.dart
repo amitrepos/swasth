@@ -1,9 +1,10 @@
+library;
+
 /// Tests for FoodPhotoScreen and MealResultScreen.
 ///
 /// Covers: food_photo_screen renders camera/gallery options,
 /// meal_result_screen renders badge + tip + disclaimer,
 /// and "Not correct? Change" button exists.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -23,6 +24,17 @@ Widget _wrap(Widget child) {
     supportedLocales: AppLocalizations.supportedLocales,
     home: child,
   );
+}
+
+/// Pump multiple frames — safe replacement for pumpAndSettle().
+Future<void> pumpN(
+  WidgetTester tester, {
+  int frames = 10,
+  Duration interval = const Duration(milliseconds: 100),
+}) async {
+  for (var i = 0; i < frames; i++) {
+    await tester.pump(interval);
+  }
 }
 
 /// Test classification result.
@@ -172,9 +184,8 @@ void main() {
     await tester.pumpWidget(
       _wrap(const FoodPhotoScreen(profileId: 1)),
     );
-    // Use pump with timeout instead of pumpAndSettle to avoid hanging
-    // Camera initialization may take some time to fail in test environment
-    await tester.pump(const Duration(seconds: 3));
+    // Use pumpN instead of pumpAndSettle to avoid hanging on camera init
+    await pumpN(tester, frames: 30);
 
     // Should find the app bar title
     expect(find.text('Take Food Photo'), findsOneWidget);
@@ -186,10 +197,8 @@ void main() {
     await tester.pumpWidget(
       _wrap(const FoodPhotoScreen(profileId: 1)),
     );
-    // Use pump with timeout instead of pumpAndSettle to avoid hanging
-    // Camera initialization may take some time to fail in test environment
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pump(const Duration(seconds: 3));
+    // Use pumpN instead of pumpAndSettle to avoid hanging on camera init
+    await pumpN(tester, frames: 60);
 
     // In test environment, camera plugin is not available so the screen
     // may be in loading state or error state. We verify the screen renders.

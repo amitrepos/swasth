@@ -4,7 +4,6 @@
 // If these guarantees break, every screen's error message will silently
 // regress. Dedicated unit coverage is cheap and worth it.
 
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

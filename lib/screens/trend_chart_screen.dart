@@ -699,7 +699,7 @@ class _MiniLineChart extends StatelessWidget {
               barWidth: 2,
               dotData: FlDotData(
                 show: dotRadius >= 2,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: color,
                   strokeWidth: 1,
@@ -844,7 +844,7 @@ class _MiniBpChart extends StatelessWidget {
               barWidth: 2,
               dotData: FlDotData(
                 show: dotRadius >= 2,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: _kSysColor,
                   strokeWidth: 1,
@@ -872,7 +872,7 @@ class _MiniBpChart extends StatelessWidget {
                 barWidth: 1.5,
                 dotData: FlDotData(
                   show: dotRadius >= 2,
-                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                     radius: dotRadius - 0.5,
                     color: _kDiaColor,
                     strokeWidth: 1,
@@ -1136,9 +1136,9 @@ class _GlucoseChart extends StatelessWidget {
               barWidth: 2.5,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (spot, _, __, ___) {
+                getDotPainter: (p0, p1, p2, p3) {
                   // find nearest reading by x proximity
-                  final r = _nearestReading(spot.x, readings, windowStart);
+                  final r = _nearestReading(p0.x, readings, windowStart);
                   return FlDotCirclePainter(
                     radius: dotRadius,
                     color: _dotColor(r?.statusFlag),
@@ -1276,7 +1276,7 @@ class _BpChart extends StatelessWidget {
               barWidth: 2.5,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: _kSysColor,
                   strokeWidth: 1.5,
@@ -1304,7 +1304,7 @@ class _BpChart extends StatelessWidget {
                 barWidth: 2,
                 dotData: FlDotData(
                   show: true,
-                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                     radius: dotRadius - 0.5,
                     color: _kDiaColor,
                     strokeWidth: 1.5,
@@ -1627,7 +1627,7 @@ class _WeightChart extends StatelessWidget {
               barWidth: 3,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
                   radius: dotRadius + 1,
                   color: _kWeightColor,
                   strokeWidth: 2,

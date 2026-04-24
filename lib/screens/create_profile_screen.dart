@@ -18,6 +18,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final StorageService _storageService = StorageService();
 
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _ageController = TextEditingController();
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
@@ -68,6 +69,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
     _ageController.dispose();
     _heightController.dispose();
     _weightController.dispose();
@@ -87,6 +89,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
 
       final data = {
         'name': _nameController.text,
+        'phone_number': _phoneController.text,
         'relationship': _selectedRelationship,
         'age': int.tryParse(_ageController.text),
         'gender': _selectedGender,
@@ -153,6 +156,27 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                       validator: (value) => (value == null || value.isEmpty)
                           ? 'Enter a name'
                           : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      key: const Key('profile_phone'),
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        labelText: l10n.phoneNumberLabel,
+                        hintText: l10n.phoneNumberHint,
+                        prefixIcon: const Icon(Icons.phone_outlined),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return l10n.phoneValidationEmpty;
+                        }
+                        if (!RegExp(r'^\+?\d{10,15}$').hasMatch(value)) {
+                          return l10n.phoneValidationInvalid;
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
 

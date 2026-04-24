@@ -264,7 +264,6 @@ async def parse_food_image(
         if mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
             return {"error": f"Unsupported file type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}"}
 
-        import ai_service
         result_text = ai_service.generate_vision_insight(
             FOOD_CLASSIFICATION_PROMPT, image_bytes, profile_id, db,
             prompt_summary="food-classification",

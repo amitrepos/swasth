@@ -718,5 +718,8 @@
   "carbsUnit": "कार्ब्स",
   "proteinUnit": "प्रोटीन",
   "fatUnit": "वसा",
-  "useQuickSelect": "त्वरित चयन करें"
+  "useQuickSelect": "त्वरित चयन करें",
+  "phoneNumberLabel": "फ़ोन नंबर",
+  "phoneNumberHint": "जैसे 9876543210",
+  "phoneValidationInvalid": "कृपया सही फोन नंबर डालें (10-15 अंक)"
 }

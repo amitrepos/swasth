@@ -72,7 +72,7 @@ class TestAdminMetrics:
         db.add(user)
         db.flush()
 
-        profile = models.Profile(name="Metrics Profile")
+        profile = models.Profile(name="Metrics Profile", phone_number="9876500002")
         db.add(profile)
         db.flush()
 

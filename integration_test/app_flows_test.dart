@@ -1,3 +1,5 @@
+library;
+
 /// Integration tests for critical user flows.
 ///
 /// These run on a real device/emulator and test actual UI interactions.

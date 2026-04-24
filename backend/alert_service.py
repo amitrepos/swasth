@@ -266,7 +266,7 @@ def dispatch_critical_alert(
                     patient_name=patient_name,
                     alert_text_en=alert_en,
                     alert_text_hi=alert_hi,
-                ),
+                )[0],
             )
             if ok:
                 result.whatsapp_sent += 1

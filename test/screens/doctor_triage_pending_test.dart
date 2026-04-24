@@ -1,10 +1,11 @@
+library;
+
 /// Phase 4 widget tests for DoctorTriageScreen — pending requests
 /// section + accept attestation dialog.
 ///
 /// Uses per-test MockClient via ApiClient.httpClientOverride +
 /// in-memory storage. Never uses pumpAndSettle() because the screen
 /// has continuous animations.
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

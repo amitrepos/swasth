@@ -2,7 +2,7 @@
 # Related: backend/main.py, lib/services/health_reading_service.dart
 
 """Health Readings API Routes"""
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -21,7 +21,7 @@ from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
 from health_utils import generate_meal_insights
-from report_service import trigger_single_user_report
+from report_service import trigger_single_profile_report, send_weekly_reports
 from models import ReportTriggerType
 
 _enabled = os.environ.get("TESTING", "").lower() != "true"
@@ -1345,24 +1345,20 @@ def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
 # Private helpers
 # ---------------------------------------------------------------------------
 
-@router.post("/report/manual-trigger")
+@router.post("/report/manual-trigger", status_code=202)
+@limiter.limit("1/hour", key_func=get_remote_address)
 def manually_trigger_whatsapp_report(
-    db: Session = Depends(get_db),
+    request: Request,
+    background_tasks: BackgroundTasks,
     user: models.User = Depends(get_current_user),
 ):
-    """Manually request a daily-style health report to be sent via WhatsApp."""
-    if not user.phone_number:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User does not have a phone number configured."
-        )
-        
-    success = trigger_single_user_report(db, user, trigger_type=ReportTriggerType.MANUAL)
-    
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate or send report. Check if there are any health readings for the last 24h."
-        )
-        
-    return {"message": "Report generated and queued for delivery via WhatsApp."}
+    """
+    Manually trigger WhatsApp health reports for all profiles owned by the current user.
+    Limited to 1 request per hour to prevent spam.
+    """
+    background_tasks.add_task(
+        send_weekly_reports,
+        trigger_type=ReportTriggerType.MANUAL,
+        user_id=user.id,
+    )
+    return {"message": "Report generation started. You will receive a WhatsApp message shortly."}

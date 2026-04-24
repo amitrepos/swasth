@@ -1,10 +1,11 @@
+library;
+
 /// Tests for LinkDoctorScreen — patient-facing doctor linking flow.
 ///
 /// Covers: doctor lookup by code (success + 404), card rendering with
 /// verification badge, and confirmation dialog before linking. Uses
 /// ApiClient.httpClientOverride with a per-test MockClient; never uses
 /// pumpAndSettle() because the screen has continuous animations.
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

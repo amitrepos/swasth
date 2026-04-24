@@ -1,8 +1,9 @@
+library;
+
 /// Tests for QuickSelectScreen — meal logging quick select buttons.
 ///
 /// Covers: 3 primary buttons render, "More options" expands, tap calls
 /// service with correct category, and meal type auto-detection by time.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

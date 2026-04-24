@@ -35,11 +35,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedMealType = widget.mealType ?? _detectMealType();
-  }
-
-  String _detectMealType() {
-    return detectMealType();
+    _selectedMealType = widget.mealType ?? detectMealType();
   }
 
   Color _carbLevelColor() {
@@ -84,8 +80,18 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
     }
   }
 
-  /// Maps carb_level (low/medium/high) to MealLog category.
+  /// Maps carb_level (low/medium/high) and is_high_protein flag to MealLog category.
+  ///
+  /// When the AI returns is_high_protein: true with carb_level: "medium" 
+  /// (e.g. a chicken salad), the meal is logged as HIGH_PROTEIN instead of 
+  /// MODERATE_CARB. This is clinically important for a diabetes app where 
+  /// protein-rich meals have different glucose impact than carb-heavy meals.
   String _categoryFromCarbLevel() {
+    // High protein flag overrides carb-based classification
+    if (widget.result.isHighProtein == true) {
+      return 'HIGH_PROTEIN';
+    }
+    
     switch (widget.result.carbLevel.toLowerCase()) {
       case 'low':
         return 'LOW_CARB';
@@ -126,6 +132,14 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         return;
       }
 
+      // NOTE (C3): Nutrition data is intentionally ephemeral — only category,
+      // glucose_impact, and meal_type are persisted to the database. The full 
+      // breakdown computed by Gemini (total_calories, total_carbs_g, protein, 
+      // fat, fiber, micronutrients, meal_score) is displayed to the user but 
+      // discarded on save. This is a deliberate design decision to avoid a 
+      // database migration and keep the meal_logs table lean. If persistence 
+      // is needed in the future, add new columns to meal_logs and update the 
+      // MealLogCreate model to include these fields.
       final mealLog = MealLogCreate(
         profileId: widget.profileId,
         mealType: _selectedMealType,

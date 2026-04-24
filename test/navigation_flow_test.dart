@@ -1,3 +1,5 @@
+library;
+
 /// Navigation flow tests — verify that user actions trigger correct navigation.
 ///
 /// These tests use WidgetTester to simulate taps and verify that

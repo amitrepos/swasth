@@ -191,7 +191,7 @@ class TestDoctorPatientLink:
         db.add_all([doctor, patient])
         db.flush()
 
-        profile = models.Profile(name="Patient Profile")
+        profile = models.Profile(name="Patient Profile", phone_number="9876543210")
         db.add(profile)
         db.flush()
 
@@ -298,7 +298,7 @@ class TestDoctorNote:
         db.add(doctor)
         db.flush()
 
-        profile = models.Profile(name="Note Patient")
+        profile = models.Profile(name="Note Patient", phone_number="9876543210")
         db.add(profile)
         db.flush()
 
@@ -325,7 +325,7 @@ class TestDoctorNote:
         db.add(doctor)
         db.flush()
 
-        profile = models.Profile(name="Share Patient")
+        profile = models.Profile(name="Share Patient", phone_number="9876543210")
         db.add(profile)
         db.flush()
 
@@ -356,7 +356,7 @@ class TestDoctorAccessLog:
         db.add(doctor)
         db.flush()
 
-        profile = models.Profile(name="Log Patient")
+        profile = models.Profile(name="Log Patient", phone_number="9876543210")
         db.add(profile)
         db.flush()
 
@@ -382,7 +382,7 @@ class TestDoctorAccessLog:
         db.add(doctor)
         db.flush()
 
-        profile = models.Profile(name="MultiLog Patient")
+        profile = models.Profile(name="MultiLog Patient", phone_number="9876543210")
         db.add(profile)
         db.flush()
 
@@ -519,7 +519,7 @@ class TestDoctorDependencies:
         db.add(doctor)
         db.flush()
 
-        profile = models.Profile(name="Dep Patient")
+        profile = models.Profile(name="Dep Patient", phone_number="9876543210")
         db.add(profile)
         db.flush()
 
@@ -576,7 +576,7 @@ class TestDoctorDependencies:
         db.add(doctor)
         db.flush()
 
-        profile = models.Profile(name="Unlinked Patient")
+        profile = models.Profile(name="Unlinked Patient", phone_number="9876543210")
         db.add(profile)
         db.flush()
 

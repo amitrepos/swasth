@@ -12,8 +12,9 @@ class ProfileModel {
   final String? doctorName;
   final String? doctorSpecialty;
   final String? doctorWhatsapp;
+  final String phoneNumber;
   final String accessLevel; // "owner" or "viewer"
-  final String? relationship; // "father", "mother", etc.
+  final String? relationship;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -31,6 +32,7 @@ class ProfileModel {
     this.doctorName,
     this.doctorSpecialty,
     this.doctorWhatsapp,
+    required this.phoneNumber,
     required this.accessLevel,
     this.relationship,
     required this.createdAt,
@@ -54,6 +56,7 @@ class ProfileModel {
       doctorName: json['doctor_name'] as String?,
       doctorSpecialty: json['doctor_specialty'] as String?,
       doctorWhatsapp: json['doctor_whatsapp'] as String?,
+      phoneNumber: json['phone_number'] as String,
       accessLevel: json['access_level'],
       relationship: json['relationship'] as String?,
       createdAt: DateTime.parse(json['created_at']),
@@ -75,7 +78,12 @@ class ProfileModel {
       'medical_conditions': medicalConditions,
       'other_medical_condition': otherMedicalCondition,
       'current_medications': medications,
+      'doctor_name': doctorName,
+      'doctor_specialty': doctorSpecialty,
+      'doctor_whatsapp': doctorWhatsapp,
+      'phone_number': phoneNumber,
       'access_level': accessLevel,
+      'relationship': relationship,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };

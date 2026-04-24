@@ -2,6 +2,7 @@
 import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock
+import models
 
 
 # ---------------------------------------------------------------------------
@@ -463,7 +464,7 @@ class TestMealAnalyzeNutrition:
 
     @patch("ai_service.generate_vision_insight")
     def test_analyze_nutrition_returns_error_on_failure(self, mock_vision, client, auth_headers, db, test_user):
-        """When AI fails, returns error dict (not 500)."""
+        """When AI fails, returns 502 error."""
         from config import settings as real_settings
         with patch("routes_meals.settings") as mock_settings:
             mock_settings.GEMINI_API_KEY = real_settings.GEMINI_API_KEY or "fake-key"
@@ -575,6 +576,48 @@ class TestMealAnalyzeNutrition:
             files={"file": ("food.jpg", fake_image, "image/jpeg")},
         )
         assert resp.status_code == 401
+
+    def test_analyze_nutrition_cross_user_denied(self, client, db, test_user, auth_headers):
+        """User A cannot call analyze-nutrition with User B's profile_id."""
+        from auth import get_password_hash, create_access_token
+        from utils.phone import normalize_phone
+
+        # Create a second user with their own profile
+        user_b = models.User(
+            email="userb@swasth.app",
+            password_hash=get_password_hash("UserB@1234"),
+            full_name="User B",
+            phone_number=normalize_phone("9876500099"),
+        )
+        db.add(user_b)
+        db.flush()
+
+        profile_b = models.Profile(
+            name="User B Profile",
+            phone_number=normalize_phone("9876500099"),
+        )
+        db.add(profile_b)
+        db.flush()
+
+        access_b = models.ProfileAccess(
+            user_id=user_b.id,
+            profile_id=profile_b.id,
+            access_level="owner",
+        )
+        db.add(access_b)
+        db.flush()
+
+        # User A (test_user) tries to analyze nutrition for User B's profile
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_b.id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,  # User A's auth token
+        )
+        # Should be denied — either 403 or 404 (profile not accessible)
+        assert resp.status_code in [403, 404]
 
     @patch("routes_meals.settings")
     def test_analyze_nutrition_file_too_large(self, mock_settings, client, auth_headers, db, test_user):

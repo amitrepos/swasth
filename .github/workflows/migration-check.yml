@@ -76,6 +76,9 @@ jobs:
       DATABASE_URL: postgresql://swasth_ci:swasth_ci_pw@localhost:5432/swasth_ci
       # Minimal env so config.py loads — values don't matter for schema work.
       SECRET_KEY: ci-only-not-a-real-secret-32-chars-long-padding
+      # Opt-in flag required by destructive-downgrade guards (e.g. 0005).
+      # Only safe here because the round-trip runs against an ephemeral Postgres.
+      SWASTH_ALLOW_DESTRUCTIVE_DOWNGRADE: "1"
 
     steps:
       - uses: actions/checkout@v4

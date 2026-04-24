@@ -10,7 +10,6 @@ import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/meal_type_detector.dart';
-import 'meal_result_screen.dart';
 import 'nutrition_result_screen.dart';
 
 /// Camera error types for localized error messages
@@ -194,7 +193,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
           builder: (_) => NutritionResultScreen(
             profileId: widget.profileId,
             result: nutritionResult,
-            mealType: _detectMealType(),
+            mealType: detectMealType(),
             onFallbackToQuickSelect: widget.onFallbackToQuickSelect,
           ),
         ),
@@ -230,10 +229,6 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
     } else {
       Navigator.of(context).pop();
     }
-  }
-
-  String _detectMealType() {
-    return detectMealType();
   }
 
   @override

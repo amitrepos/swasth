@@ -3362,6 +3362,12 @@ abstract class AppLocalizations {
   /// **'Phone Number'**
   String get phoneNumberLabel;
 
+  /// No description provided for @phoneNumberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 9876543210'**
+  String get phoneNumberHint;
+
   /// No description provided for @phoneValidationInvalid.
   ///
   /// In en, this message translates to:

@@ -1781,11 +1781,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get emailOrPhoneLabel => 'Email or Phone Number';
 
   @override
-  String get phoneNumberLabel => 'Phone Number';
+  String get phoneNumberLabel => 'फ़ोन नंबर';
 
   @override
-  String get phoneValidationInvalid =>
-      'Please enter a valid phone number (10-15 digits)';
+  String get phoneNumberHint => 'जैसे 9876543210';
+
+  @override
+  String get phoneValidationInvalid => 'कृपया सही फोन नंबर डालें (10-15 अंक)';
 
   @override
   String get continueButton => 'Continue';

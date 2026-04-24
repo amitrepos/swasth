@@ -11,6 +11,7 @@ from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_owner_or_403
 from email_service import email_service
 from encryption_service import encrypt_float
+from utils.phone import normalize_phone
 
 router = APIRouter()
 
@@ -39,6 +40,7 @@ def _build_profile_response(profile: models.Profile, access_level: str, relation
         doctor_name=profile.doctor_name,
         doctor_specialty=profile.doctor_specialty,
         doctor_whatsapp=profile.doctor_whatsapp,
+        phone_number=profile.phone_number,
         access_level=access_level,
         relationship=rel,
         created_at=profile.created_at,
@@ -87,6 +89,7 @@ def create_profile(
         medical_conditions=data.medical_conditions,
         other_medical_condition=data.other_medical_condition,
         current_medications=data.current_medications,
+        phone_number=normalize_phone(data.phone_number) or None,
     )
     db.add(profile)
     db.flush()   # populate profile.id before creating access row
@@ -147,7 +150,10 @@ def update_profile(
 
     update_data = data.dict(exclude_unset=True)
     for field, value in update_data.items():
-        setattr(profile, field, value)
+        if field == "phone_number":
+            setattr(profile, field, normalize_phone(value) or None if value else None)
+        else:
+            setattr(profile, field, value)
 
     db.commit()
     db.refresh(profile)
@@ -275,7 +281,8 @@ def list_profile_access(
     db: Session = Depends(get_db),
 ):
     """List all users who have access to this profile. Any member can view."""
-    get_profile_access_or_403(profile_id, user, db)
+    caller_access = get_profile_access_or_403(profile_id, user, db)
+    caller_is_owner = caller_access.access_level == "owner"
 
     accesses = (
         db.query(models.ProfileAccess)
@@ -291,15 +298,16 @@ def list_profile_access(
             rel = a.relationship
             if not rel and a.access_level == "owner" and profile:
                 rel = profile.relationship
+            # phone_number and last_login_at are PII — restrict to owner only
             result.append({
                 "user_id": u.id,
                 "full_name": u.full_name,
                 "email": u.email,
-                "phone_number": u.phone_number,
+                "phone_number": u.phone_number if caller_is_owner else None,
                 "access_level": a.access_level,
                 "relationship": rel,
                 "granted_at": a.created_at,
-                "last_login_at": u.last_login_at,
+                "last_login_at": u.last_login_at if caller_is_owner else None,
             })
     return result
 

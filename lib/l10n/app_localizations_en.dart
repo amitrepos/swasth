@@ -1782,6 +1782,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneNumberLabel => 'Phone Number';
 
   @override
+  String get phoneNumberHint => 'e.g. 9876543210';
+
+  @override
   String get phoneValidationInvalid =>
       'Please enter a valid phone number (10-15 digits)';
 
