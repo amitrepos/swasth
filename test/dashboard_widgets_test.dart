@@ -1,3 +1,5 @@
+library;
+
 /// Regression tests for all dashboard sections.
 ///
 /// These tests verify that every widget on the home screen renders without
@@ -35,6 +37,7 @@ final _testProfile = ProfileModel(
   name: 'Test User',
   age: 45,
   gender: 'Male',
+  phoneNumber: '918700151250',
   accessLevel: 'owner',
   createdAt: DateTime.now(),
   doctorName: 'Dr. Sharma',
@@ -362,6 +365,7 @@ void main() {
       final noDocProfile = ProfileModel(
         id: 2,
         name: 'No Doctor User',
+        phoneNumber: '918700151250',
         accessLevel: 'owner',
         createdAt: DateTime.now(),
       );

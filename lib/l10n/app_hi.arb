@@ -682,5 +682,8 @@
   "emailVerificationFailed": "कोड नहीं भेज पाए, दोबारा कोशिश करें",
   "otpValidationEmpty": "कृपया कोड डालें",
   "otpValidationLength": "कोड 6 अंकों का होना चाहिए",
-  "otpValidationDigitsOnly": "कोड में केवल नंबर होने चाहिए"
+  "otpValidationDigitsOnly": "कोड में केवल नंबर होने चाहिए",
+  "phoneNumberLabel": "फ़ोन नंबर",
+  "phoneNumberHint": "जैसे 9876543210",
+  "phoneValidationInvalid": "कृपया सही फोन नंबर डालें (10-15 अंक)"
 }

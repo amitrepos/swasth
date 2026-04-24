@@ -70,7 +70,7 @@ class TestAccountDeletion:
         db.add(other_user)
         db.flush()
 
-        other_profile = models.Profile(name="Other")
+        other_profile = models.Profile(name="Other", phone_number=other_user.phone_number)
         db.add(other_profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=other_user.id, profile_id=other_profile.id, access_level="owner"))
@@ -92,7 +92,7 @@ class TestAccountDeletion:
 
     def test_delete_nullifies_logged_by_on_others_readings(self, client, test_user, auth_headers, db):
         # Another profile where test_user logged a reading
-        other_profile = models.Profile(name="Papa")
+        other_profile = models.Profile(name="Papa", phone_number="9876543210")
         db.add(other_profile)
         db.flush()
 

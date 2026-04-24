@@ -42,6 +42,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   // Health info controllers
   final _ageController = TextEditingController();
+  final _phoneEditController = TextEditingController();
   final _heightEditController = TextEditingController();
   final _weightEditController = TextEditingController();
 
@@ -62,6 +63,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     _ageController.dispose();
+    _phoneEditController.dispose();
     _heightEditController.dispose();
     _weightEditController.dispose();
     _doctorNameController.dispose();
@@ -422,6 +424,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _initHealthControllers() {
     _ageController.text = _profile?.age?.toString() ?? '';
+    _phoneEditController.text = _profile?.phoneNumber ?? '';
     _heightEditController.text = _profile?.height?.toString() ?? '';
     _weightEditController.text = _profile?.weight?.toString() ?? '';
     _doctorNameController.text = _profile?.doctorName ?? '';
@@ -436,6 +439,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (token == null) throw Exception('Not authenticated');
 
       final data = <String, dynamic>{
+        'phone_number': _phoneEditController.text.trim(),
         'doctor_name': _doctorNameController.text.trim().isEmpty
             ? null
             : _doctorNameController.text.trim(),
@@ -696,6 +700,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   label: l10n.bloodGroupField,
                   value: _profile?.bloodGroup ?? '—',
                 ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  key: const Key('profile_phone_edit'),
+                  controller: _phoneEditController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: l10n.phoneNumberLabel,
+                    hintText: l10n.phoneNumberHint,
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return null; // Optional in profile edit
+                    }
+                    if (!RegExp(r'^\+?\d{10,15}$').hasMatch(value)) {
+                      return l10n.phoneValidationInvalid;
+                    }
+                    return null;
+                  },
+                ),
               ]),
               if (_profile?.medicalConditions != null &&
                   _profile!.medicalConditions!.isNotEmpty)
@@ -766,6 +790,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   icon: Icons.cake,
                   label: l10n.ageField,
                   value: l10n.ageYears('${_profile?.age ?? "?"}'),
+                ),
+                _buildInfoCard(
+                  icon: Icons.phone_outlined,
+                  label: l10n.phoneNumberLabel,
+                  value: _profile?.phoneNumber ?? '—',
                 ),
                 _buildInfoCard(
                   icon: Icons.male,

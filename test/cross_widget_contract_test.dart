@@ -1,3 +1,5 @@
+library;
+
 /// Cross-widget contract tests — verify data flows between screens correctly.
 ///
 /// These tests catch regressions where one screen depends on another's

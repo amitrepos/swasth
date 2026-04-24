@@ -155,6 +155,7 @@ class TestProfileSharingFlow:
         profile = client.post("/api/profiles", json={
             "name": "Dad Health",
             "age": 65,
+            "phone_number": "9876543210",
         }, headers=owner_headers)
         assert profile.status_code == 201
         profile_id = profile.json()["id"]

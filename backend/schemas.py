@@ -50,6 +50,15 @@ def _validate_password_strength(v: str) -> str:
     return v
 
 
+def _validate_phone_number_helper(v: str | None) -> str | None:
+    if v is None:
+        return v
+    stripped = re.sub(r'[\s\-]', '', v)
+    if not _PHONE_PATTERN.match(stripped):
+        raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
+    return stripped
+
+
 # ---------------------------------------------------------------------------
 # Auth schemas
 # ---------------------------------------------------------------------------
@@ -89,6 +98,10 @@ class UserRegister(BaseModel):
         if 'password' in values and v != values['password']:
             raise ValueError('Passwords do not match')
         return v
+
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        return _validate_phone_number_helper(v)
 
     @validator('timezone')
     def validate_timezone(cls, v):
@@ -203,7 +216,7 @@ class ResetPasswordRequest(BaseModel):
 class CheckAccountExistsRequest(BaseModel):
     """Request to check if an account exists by email or phone."""
     email: Optional[EmailStr] = None
-    phone_number: Optional[str] = Field(None, min_length=10, max_length=15)
+    phone_number: Optional[str] = None
 
     @validator('email')
     def normalize_email(cls, v):
@@ -211,12 +224,7 @@ class CheckAccountExistsRequest(BaseModel):
 
     @validator('phone_number')
     def validate_phone_number(cls, v):
-        if v is not None:
-            stripped = re.sub(r'[\s\-]', '', v)
-            if not _PHONE_PATTERN.match(stripped):
-                raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
-            return stripped
-        return v
+        return _validate_phone_number_helper(v)
 
 
 class PhoneOTPRequest(BaseModel):
@@ -225,24 +233,18 @@ class PhoneOTPRequest(BaseModel):
 
     @validator('phone_number')
     def validate_phone_number(cls, v):
-        stripped = re.sub(r'[\s\-]', '', v)
-        if not _PHONE_PATTERN.match(stripped):
-            raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
-        return stripped
+        return _validate_phone_number_helper(v)
 
 
 class PhoneOTPVerifyRequest(BaseModel):
     """Request to verify phone OTP and login/register."""
-    phone_number: str = Field(..., min_length=10, max_length=15)
+    phone_number: str
     otp: str = Field(..., min_length=6, max_length=6)
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)
 
     @validator('phone_number')
     def validate_phone_number(cls, v):
-        stripped = re.sub(r'[\s\-]', '', v)
-        if not _PHONE_PATTERN.match(stripped):
-            raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
-        return stripped
+        return _validate_phone_number_helper(v)
 
 
 class UpdateUserRequest(BaseModel):
@@ -252,6 +254,10 @@ class UpdateUserRequest(BaseModel):
     current_password: Optional[str] = None
     new_password: Optional[str] = None
     confirm_password: Optional[str] = None
+
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        return _validate_phone_number_helper(v)
 
     @validator('new_password')
     def validate_new_password(cls, v):
@@ -284,6 +290,11 @@ class ProfileCreate(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
+    phone_number: Optional[str] = None
+
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        return _validate_phone_number_helper(v)
 
     @validator('relationship')
     def validate_relationship(cls, v):
@@ -325,6 +336,11 @@ class ProfileUpdate(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
+    phone_number: Optional[str] = None
+
+    @validator('phone_number')
+    def validate_phone_number(cls, v):
+        return _validate_phone_number_helper(v)
 
     @validator('gender')
     def validate_gender(cls, v):
@@ -361,6 +377,7 @@ class ProfileResponse(BaseModel):
     doctor_name: Optional[str] = None
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
+    phone_number: Optional[str] = None
     access_level: str           # "owner" or "viewer" — injected per-user at query time
     relationship: Optional[str] = None  # "father", "mother", etc. — only for viewers
     created_at: datetime
@@ -663,7 +680,7 @@ class AdminCreateUser(BaseModel):
     email: EmailStr
     password: str
     full_name: str = Field(..., min_length=2, max_length=100)
-    phone_number: str = Field(..., min_length=10, max_length=20)
+    phone_number: str = Field(..., min_length=10, max_length=15)
     role: str = Field(..., pattern="^(patient|doctor)$")
     nmc_number: Optional[str] = Field(None, min_length=5, max_length=20)
     specialty: Optional[str] = None
@@ -689,10 +706,7 @@ class AdminCreateUser(BaseModel):
 
     @validator('phone_number')
     def validate_phone_number(cls, v):
-        stripped = re.sub(r'[\s\-]', '', v)
-        if not _PHONE_PATTERN.match(stripped):
-            raise ValueError('Phone number must be 10-15 digits, optionally starting with +')
-        return stripped
+        return _validate_phone_number_helper(v)
 
     @validator('nmc_number', always=True)
     def nmc_required_for_doctor(cls, v, values):

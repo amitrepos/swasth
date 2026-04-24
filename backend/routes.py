@@ -13,6 +13,7 @@ import auth
 from email_service import email_service
 from sms_service import sms_service
 from database import get_db
+from utils.phone import normalize_phone
 from config import settings
 from dependencies import get_current_user
 
@@ -42,7 +43,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         email=user.email,
         password_hash=auth.get_password_hash(user.password),
         full_name=user.full_name,
-        phone_number=user.phone_number,
+        phone_number=normalize_phone(user.phone_number) or None,
         timezone=user.timezone,
         consent_timestamp=now_utc if user.consent_app_version else None,
         consent_app_version=user.consent_app_version,
@@ -64,6 +65,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         medical_conditions=user.medical_conditions,
         other_medical_condition=user.other_medical_condition,
         current_medications=user.current_medications,
+        phone_number=normalize_phone(user.phone_number) or None,
     )
     db.add(db_profile)
     db.flush()  # Get db_profile.id
@@ -126,7 +128,8 @@ def check_account_exists(
         return {"exists": False}
     
     if body.phone_number:
-        user = db.query(models.User).filter(models.User.phone_number == body.phone_number).first()
+        normalized = normalize_phone(body.phone_number)
+        user = db.query(models.User).filter(models.User.phone_number == normalized).first()
         if user:
             return {"exists": True, "login_method": "phone_otp"}
         return {"exists": False}
@@ -275,7 +278,7 @@ def update_profile(
         user.full_name = user_update.full_name
     
     if user_update.phone_number:
-        user.phone_number = user_update.phone_number
+        user.phone_number = normalize_phone(user_update.phone_number) or None
 
     # Update timestamp with UTC (convert to local time at display)
     now_utc = datetime.now(pytz.UTC)
@@ -399,9 +402,10 @@ def send_phone_otp(
     if not, it's a registration flow. The client will know based on the
     /check-account response.
     """
+    normalized = normalize_phone(body.phone_number)
     # Invalidate any previous unused OTPs for this phone number
     db.query(models.PhoneOTP).filter(
-        models.PhoneOTP.phone_number == body.phone_number,
+        models.PhoneOTP.phone_number == normalized,
         models.PhoneOTP.is_used == False,
     ).update({"is_used": True})
 
@@ -410,7 +414,7 @@ def send_phone_otp(
     otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
     
     db.add(models.PhoneOTP(
-        phone_number=body.phone_number,
+        phone_number=normalized,
         otp=otp,
         expires_at=otp_expires,
     ))
@@ -418,7 +422,7 @@ def send_phone_otp(
 
     # Send SMS via Twilio
     sms_sent = sms_service.send_sms(
-        to_number=body.phone_number,
+        to_number=normalized,
         body=f"Your Swasth app verification code is: {otp}. Valid for {settings.OTP_EXPIRE_MINUTES} minutes.",
     )
 
@@ -449,9 +453,10 @@ def verify_phone_otp_and_login(
     - Verify OTP
     - Create a new user account (returns flag for client to complete registration)
     """
+    normalized = normalize_phone(body.phone_number)
     # Find valid OTP
     otp_record = db.query(models.PhoneOTP).filter(
-        models.PhoneOTP.phone_number == body.phone_number,
+        models.PhoneOTP.phone_number == normalized,
         models.PhoneOTP.otp == body.otp,
         models.PhoneOTP.is_used == False,
         models.PhoneOTP.expires_at > datetime.utcnow(),
@@ -469,7 +474,7 @@ def verify_phone_otp_and_login(
 
     # Check if user exists
     user = db.query(models.User).filter(
-        models.User.phone_number == body.phone_number
+        models.User.phone_number == normalized
     ).first()
 
     if user:
@@ -494,14 +499,14 @@ def verify_phone_otp_and_login(
         
         # Generate a unique email for phone-only users
         import uuid
-        temp_email = f"phone_{body.phone_number}@swasth.local"
+        temp_email = f"phone_{normalized}@swasth.local"
         
         # Create user with minimal info
         new_user = models.User(
             email=temp_email,
             password_hash=auth.get_password_hash(str(uuid.uuid4())),  # Random password
             full_name=body.full_name or "New User",
-            phone_number=body.phone_number,
+            phone_number=normalized,
             timezone="UTC",
             consent_timestamp=now_utc,
             consent_app_version="phone-otp",
@@ -513,6 +518,7 @@ def verify_phone_otp_and_login(
         # Create default profile
         new_profile = models.Profile(
             name="My Health",
+            phone_number=normalized, # phone_number OK because phone-OTP login requires it
         )
         db.add(new_profile)
         db.flush()

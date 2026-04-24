@@ -85,7 +85,7 @@ class TestFamilyStreaks:
         db.add(other_user)
         db.flush()
 
-        other_profile = models.Profile(name="Other Health", age=40)
+        other_profile = models.Profile(name="Other Health", age=40, phone_number="9876543215")
         db.add(other_profile)
         db.flush()
 

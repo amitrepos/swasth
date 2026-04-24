@@ -8,6 +8,7 @@ from unittest.mock import patch
 from tests.conftest import TEST_USER_EMAIL, TEST_USER_PASSWORD
 import models
 from auth import get_password_hash, create_access_token
+from utils.phone import normalize_phone
 
 
 def _second_user(db):
@@ -16,7 +17,7 @@ def _second_user(db):
         email="viewer@swasth.app",
         password_hash=get_password_hash("View@1234"),
         full_name="Viewer User",
-        phone_number="9876500099",
+        phone_number=normalize_phone("9876500099"),
     )
     db.add(u)
     db.flush()
@@ -63,6 +64,7 @@ class TestCreateProfile:
             "relationship": "mother",
             "age": 65,
             "gender": "Female",
+            "phone_number": "9876543210",
         }, headers=auth_headers)
         assert resp.status_code == 201
         body = resp.json()
@@ -70,12 +72,21 @@ class TestCreateProfile:
         assert body["access_level"] == "owner"
 
     def test_create_profile_minimal(self, client, test_user, auth_headers):
-        resp = client.post(self.URL, json={"name": "Quick Profile"}, headers=auth_headers)
+        resp = client.post(self.URL, json={
+            "name": "Quick Profile",
+            "phone_number": "9876543210",
+        }, headers=auth_headers)
         assert resp.status_code == 201
 
     def test_create_profile_unauthenticated(self, client):
-        resp = client.post(self.URL, json={"name": "Test"})
+        resp = client.post(self.URL, json={"name": "Test", "phone_number": "9876543210"})
         assert resp.status_code == 401
+
+    def test_create_profile_no_phone(self, client, test_user, auth_headers):
+        """M4: Verify creating a profile without a phone number stores NULL (not empty string)."""
+        resp = client.post(self.URL, json={"name": "No Phone"}, headers=auth_headers)
+        assert resp.status_code == 201
+        assert resp.json()["phone_number"] is None
 
 
 # ===========================================================================
@@ -130,6 +141,23 @@ class TestUpdateProfile:
         resp = client.put(f"/api/profiles/{pid}", json={"name": "Hacked"}, headers=viewer_headers)
         assert resp.status_code == 403
 
+    def test_update_profile_invalid_phone_rejected(self, client, test_user, auth_headers, db):
+        """M4: Verify that providing an invalid phone number returns a 422 error."""
+        pid = _get_profile_id(db, test_user.id)
+        resp = client.put(f"/api/profiles/{pid}", json={
+            "phone_number": "abc",
+        }, headers=auth_headers)
+        # Validation error from Pydantic schema (ProfileUpdate)
+        assert resp.status_code == 422
+
+    def test_clear_profile_phone_number(self, client, test_user, auth_headers, db):
+        pid = _get_profile_id(db, test_user.id)
+        resp = client.put(f"/api/profiles/{pid}", json={"phone_number": None}, headers=auth_headers)
+        assert resp.status_code == 200
+        profile = db.query(models.Profile).filter(models.Profile.id == pid).first()
+        db.refresh(profile)
+        assert profile.phone_number is None
+
 
 # ===========================================================================
 # DELETE /api/profiles/{profile_id}
@@ -139,7 +167,11 @@ class TestDeleteProfile:
 
     def test_delete_profile(self, client, test_user, auth_headers, db):
         # Create a separate profile to delete (don't delete the default one)
-        resp = client.post("/api/profiles", json={"name": "To Delete"}, headers=auth_headers)
+        resp = client.post("/api/profiles", json={
+            "name": "To Delete",
+            "phone_number": "9876543210"
+        }, headers=auth_headers)
+        assert resp.status_code == 201
         pid = resp.json()["id"]
 
         del_resp = client.delete(f"/api/profiles/{pid}", headers=auth_headers)
@@ -307,7 +339,7 @@ class TestPendingInvites:
     def test_list_pending_invites(self, mock_email, client, test_user, auth_headers, db):
         # Create a second user who sends invite to test_user
         owner = _second_user(db)
-        profile = models.Profile(name="Shared Profile")
+        profile = models.Profile(name="Shared Profile", phone_number=normalize_phone("9876543214"))
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -343,7 +375,7 @@ class TestRespondToInvite:
 
     def test_accept_invite(self, client, test_user, auth_headers, db):
         owner = _second_user(db)
-        profile = models.Profile(name="Family Profile")
+        profile = models.Profile(name="Family Profile", phone_number=normalize_phone("9876543214"))
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -366,7 +398,7 @@ class TestRespondToInvite:
 
     def test_reject_invite(self, client, test_user, auth_headers, db):
         owner = _second_user(db)
-        profile = models.Profile(name="Rejected Profile")
+        profile = models.Profile(name="Rejected Profile", phone_number=normalize_phone("9876543214"))
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -387,7 +419,7 @@ class TestRespondToInvite:
 
     def test_expired_invite(self, client, test_user, auth_headers, db):
         owner = _second_user(db)
-        profile = models.Profile(name="Expired Profile")
+        profile = models.Profile(name="Expired Profile", phone_number=normalize_phone("9876543214"))
         db.add(profile)
         db.flush()
         db.add(models.ProfileAccess(user_id=owner.id, profile_id=profile.id, access_level="owner"))
@@ -437,3 +469,64 @@ class TestUserProfileUpdate:
             "new_password": "Changed@1234",
         }, headers=auth_headers)
         assert resp.status_code == 400
+
+    def test_update_phone_stores_e164(self, client, test_user, auth_headers, db):
+        resp = client.put(self.URL, json={"phone_number": "9876543210"}, headers=auth_headers)
+        assert resp.status_code == 200
+        db.refresh(test_user)
+        assert test_user.phone_number == "+919876543210"
+
+    def test_update_phone_already_e164_unchanged(self, client, test_user, auth_headers, db):
+        resp = client.put(self.URL, json={"phone_number": "+919876543210"}, headers=auth_headers)
+        assert resp.status_code == 200
+        db.refresh(test_user)
+        assert test_user.phone_number == "+919876543210"
+
+
+# ===========================================================================
+# POST /api/auth/phone-otp/verify — OTP login/registration
+# (M2: integration test for the new-user branch so WhatsApp inbound matching
+# by phone does not silently break if the Profile constructor changes.)
+# ===========================================================================
+
+class TestPhoneOTPVerifyNewUser:
+    URL = "/api/auth/phone-otp/verify"
+
+    def test_new_user_gets_profile_with_normalized_phone(self, client, db):
+        from datetime import datetime, timedelta
+
+        normalized = "+919999111122"
+        # Seed a valid, unused OTP for the normalized phone
+        otp = models.PhoneOTP(
+            phone_number=normalized,
+            otp="123456",
+            expires_at=datetime.utcnow() + timedelta(minutes=5),
+            is_used=False,
+        )
+        db.add(otp)
+        db.commit()
+
+        resp = client.post(
+            self.URL,
+            json={"phone_number": "9999111122", "otp": "123456", "full_name": "Phone User"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["access_token"]  # login succeeded
+
+        # User row stores E.164 — inbound matching relies on this
+        created_user = db.query(models.User).filter(models.User.phone_number == normalized).first()
+        assert created_user is not None
+        assert created_user.phone_number == normalized
+
+        # Default Profile created with matching E.164 phone — WhatsApp inbound
+        # photo routing matches on this field, so the assignment must not
+        # silently disappear in a future refactor.
+        access = (
+            db.query(models.ProfileAccess)
+            .filter(models.ProfileAccess.user_id == created_user.id)
+            .first()
+        )
+        assert access is not None
+        profile = db.query(models.Profile).filter(models.Profile.id == access.profile_id).first()
+        assert profile is not None
+        assert profile.phone_number == normalized

@@ -6,6 +6,7 @@ import random
 from datetime import datetime, timedelta
 from database import SessionLocal, engine, Base
 from auth import get_password_hash
+from utils.phone import normalize_phone
 import models
 
 # Ensure tables exist
@@ -101,7 +102,7 @@ def create_user_with_data(u):
         email=u["email"],
         password_hash=get_password_hash(u["password"]),
         full_name=u["full_name"],
-        phone_number=u["phone"],
+        phone_number=normalize_phone(u["phone"]) or None,
         consent_timestamp=datetime.utcnow(),
         consent_app_version="1.0.0",
         consent_language="en",
@@ -119,6 +120,7 @@ def create_user_with_data(u):
         doctor_name=u["doctor_name"],
         doctor_specialty=u["doctor_specialty"],
         doctor_whatsapp=u["doctor_whatsapp"],
+        phone_number=normalize_phone(u["phone"]) or None,
     )
     db.add(profile)
     db.flush()
