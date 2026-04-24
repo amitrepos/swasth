@@ -25,13 +25,11 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
-              - '.github/workflows/ci.yml'
             flutter:
               - 'lib/**'
               - 'test/**'
               - 'pubspec.yaml'
               - 'pubspec.lock'
-              - '.github/workflows/ci.yml'
 
   # ── Backend tests (Python / FastAPI) ──────────────────────────────────────
   backend-tests:
