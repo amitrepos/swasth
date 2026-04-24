@@ -203,6 +203,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         await StorageService().saveToken(token);
 
         // Fetch and save user data
+        // Silently ignore errors: token is already stored, and user data
+        // will be fetched on next app launch or when needed.
         try {
           final userData = await _apiService.getCurrentUser(token);
           await StorageService().saveUserData(userData);
@@ -226,7 +228,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               MaterialPageRoute(
                 builder: (_) => EmailVerificationScreen(
                   email: email,
-                  requiresInitialSend: true, // OTP not sent on failure path
+                  requiresInitialSend: false, // OTP already sent successfully
                 ),
               ),
             );

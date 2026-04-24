@@ -276,7 +276,11 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
     }
   }
 
-  Future<void> _sendOTPAndNavigateToVerification(String email) async {
+  Future<void> _sendOTPAndNavigateToVerification(
+    String email, {
+    int retryCount = 0,
+  }) async {
+    const maxRetries = 3;
     final l10n = AppLocalizations.of(context)!;
     bool otpSendSuccess = false;
     
@@ -289,6 +293,24 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
     } catch (e) {
       // If sending OTP fails, show error dialog with retry option
       if (mounted) {
+        // Guard against infinite recursion on repeated server failures
+        if (retryCount >= maxRetries) {
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(l10n.error),
+              content: Text('Failed to send verification code after $maxRetries attempts. Please try again later.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(l10n.cancel),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+
         await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -302,8 +324,8 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  // Retry sending OTP
-                  _sendOTPAndNavigateToVerification(email);
+                  // Retry sending OTP with incremented counter
+                  _sendOTPAndNavigateToVerification(email, retryCount: retryCount + 1);
                 },
                 child: Text(l10n.retry),
               ),

@@ -225,17 +225,22 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              TextButton(
-                onPressed: _isLoading ? null : _sendVerificationEmail,
-                child: Text(
-                  l10n.sendVerificationCode,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.statusNormal,
-                    fontWeight: FontWeight.w500,
+              // Only show "Send Verification Code" button when OTP needs to be sent manually
+              // (e.g., from registration flow). Hidden when OTP was pre-sent (login flow)
+              // to respect the 30-second resend cooldown.
+              if (widget.requiresInitialSend)
+                TextButton(
+                  key: const Key('email_verify_send_code'),
+                  onPressed: _isLoading ? null : _sendVerificationEmail,
+                  child: Text(
+                    l10n.sendVerificationCode,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.statusNormal,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(height: 48),
 
               // OTP Field

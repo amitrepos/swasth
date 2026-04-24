@@ -28,9 +28,8 @@ limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 @limiter.limit("5/minute")
 def register(request: Request, user: schemas.UserRegister, db: Session = Depends(get_db)):
     """Register a new user and create their initial 'My Health' profile."""
-    
+
     user.email = user.email.strip().lower()
-    
     db_user = db.query(models.User).filter(models.User.email_hash == hash_email(user.email)).first()
     if db_user:
         raise HTTPException(
