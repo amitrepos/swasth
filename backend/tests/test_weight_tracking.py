@@ -10,6 +10,7 @@ import models
 _REG_BASE = {
     "email": "newuser@swasth.app",
     "password": "Strong@123",
+    "confirm_password": "Strong@123",
     "full_name": "New User",
     "phone_number": "9000000001",
     "age": 30,
@@ -23,7 +24,7 @@ _REG_BASE = {
 def test_register_with_weight_creates_health_reading(client, db):
     """POST /register with weight must create a HealthReading of type 'weight'."""
     payload = {**_REG_BASE, "weight": 72.5}
-    resp = client.post("/api/register", json=payload)
+    resp = client.post("/api/auth/register", json=payload)
     assert resp.status_code == 201
 
     profile = db.query(models.Profile).filter_by(name="My Health").first()
@@ -44,7 +45,7 @@ def test_register_with_weight_creates_health_reading(client, db):
 def test_register_without_weight_creates_no_weight_reading(client, db):
     """POST /register without weight must NOT create a weight HealthReading."""
     payload = {**_REG_BASE, "email": "noweight@swasth.app"}
-    resp = client.post("/api/register", json=payload)
+    resp = client.post("/api/auth/register", json=payload)
     assert resp.status_code == 201
 
     profile = db.query(models.Profile).filter_by(name="My Health").first()
@@ -59,7 +60,7 @@ def test_register_without_weight_creates_no_weight_reading(client, db):
 def test_register_weight_reading_appears_in_readings_api(client, db):
     """Weight reading created at registration must be retrievable via GET /readings."""
     payload = {**_REG_BASE, "email": "weightapi@swasth.app", "weight": 68.0}
-    reg_resp = client.post("/api/register", json=payload)
+    reg_resp = client.post("/api/auth/register", json=payload)
     assert reg_resp.status_code == 201
 
     from auth import create_access_token
