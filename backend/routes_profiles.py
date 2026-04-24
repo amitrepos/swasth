@@ -10,7 +10,7 @@ import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_owner_or_403
 from email_service import email_service
-from encryption_service import encrypt_float
+from encryption_service import encrypt_float, hash_email
 from utils.phone import normalize_phone
 
 router = APIRouter()
@@ -202,7 +202,7 @@ def send_invite(
         db.query(models.ProfileInvite)
         .filter(
             models.ProfileInvite.profile_id == profile_id,
-            models.ProfileInvite.invited_email == data.email.lower(),
+            models.ProfileInvite.invited_email_hash == hash_email(data.email),
             models.ProfileInvite.status == "pending",
         )
         .first()
@@ -211,7 +211,7 @@ def send_invite(
         raise HTTPException(status_code=409, detail="A pending invite already exists for this email")
 
     # Check if the invitee already has access
-    invitee_user = db.query(models.User).filter(models.User.email == data.email.lower()).first()
+    invitee_user = db.query(models.User).filter(models.User.email_hash == hash_email(data.email)).first()
     if invitee_user:
         already_has_access = (
             db.query(models.ProfileAccess)
@@ -406,7 +406,7 @@ def list_pending_invites(
     invites = (
         db.query(models.ProfileInvite)
         .filter(
-            models.ProfileInvite.invited_email == user.email.lower(),
+            models.ProfileInvite.invited_email_hash == hash_email(user.email),
             models.ProfileInvite.status == "pending",
             models.ProfileInvite.expires_at > now,
         )
@@ -444,7 +444,7 @@ def respond_to_invite(
         db.query(models.ProfileInvite)
         .filter(
             models.ProfileInvite.id == invite_id,
-            models.ProfileInvite.invited_email == user.email.lower(),
+            models.ProfileInvite.invited_email_hash == hash_email(user.email),
             models.ProfileInvite.status == "pending",
         )
         .first()

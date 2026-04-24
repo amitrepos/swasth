@@ -43,7 +43,7 @@ class TestRegisterEmailVerified:
             models.EmailVerificationOTP.user_id == user_id,
         ).first()
         assert otp_record is not None
-        assert len(otp_record.otp) == 64  # SHA-256 hex digest
+        assert len(otp_record.otp_hash) == 64  # HMAC-SHA256 hex digest
 
 
 # ---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ class TestSendEmailVerification:
         ).first()
         assert otp_record is not None
         assert otp_record.email == test_user.email
-        assert len(otp_record.otp) == 64  # SHA-256 hex digest
+        assert len(otp_record.otp_hash) == 64  # HMAC-SHA256 hex digest
         assert otp_record.is_used is False
 
     def test_send_verification_unauthenticated(self, client):
@@ -83,16 +83,15 @@ class TestSendEmailVerification:
 
 class TestVerifyEmail:
     def _create_otp(self, db, user, otp="123456", expired=False):
-        """Helper to insert a verification OTP record (hashed)."""
+        """Helper to insert a verification OTP record. Model __init__ hashes the OTP."""
         if expired:
             expires_at = datetime.utcnow() - timedelta(minutes=1)
         else:
             expires_at = datetime.utcnow() + timedelta(minutes=10)
-        otp_hash = hashlib.sha256(otp.encode()).hexdigest()
         record = models.EmailVerificationOTP(
             user_id=user.id,
             email=user.email,
-            otp=otp_hash,
+            otp=otp,  # raw OTP — __init__ hashes via HMAC(PII_KEY)
             expires_at=expires_at,
         )
         db.add(record)
@@ -153,12 +152,11 @@ class TestVerifyEmail:
 
 class TestResendOTP:
     def test_resend_invalidates_old_otps(self, client, auth_headers, db, test_user):
-        # Create first OTP manually
-        otp_hash = hashlib.sha256("111111".encode()).hexdigest()
+        # Create first OTP manually (__init__ hashes the raw OTP)
         first = models.EmailVerificationOTP(
             user_id=test_user.id,
             email=test_user.email,
-            otp=otp_hash,
+            otp="111111",
             expires_at=datetime.utcnow() + timedelta(minutes=10),
         )
         db.add(first)

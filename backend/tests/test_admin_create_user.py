@@ -10,6 +10,7 @@ from pydantic import ValidationError
 import models
 import schemas
 from auth import get_password_hash, create_access_token
+from encryption_service import hash_email
 
 
 # ---------------------------------------------------------------------------
@@ -92,7 +93,7 @@ class TestAdminCreateUserEndpoint:
         # DB side-effects
         created = (
             db.query(models.User)
-            .filter_by(email="newpatient@test.com")
+            .filter(models.User.email_hash == hash_email("newpatient@test.com"))
             .first()
         )
         assert created is not None
@@ -140,7 +141,7 @@ class TestAdminCreateUserEndpoint:
         assert resp.status_code == 501
         # No user should be created
         assert (
-            db.query(models.User).filter_by(email="newpatient@test.com").first()
+            db.query(models.User).filter(models.User.email_hash == hash_email("newpatient@test.com")).first()
             is None
         )
 

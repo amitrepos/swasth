@@ -514,7 +514,8 @@ class TestPhoneOTPVerifyNewUser:
         assert resp.json()["access_token"]  # login succeeded
 
         # User row stores E.164 — inbound matching relies on this
-        created_user = db.query(models.User).filter(models.User.phone_number == normalized).first()
+        from encryption_service import hash_phone
+        created_user = db.query(models.User).filter(models.User.phone_hash == hash_phone(normalized)).first()
         assert created_user is not None
         assert created_user.phone_number == normalized
 

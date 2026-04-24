@@ -1,7 +1,48 @@
-from sqlalchemy import Column, Integer, String, Float, Text, ARRAY, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index, Enum, JSON
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index, Enum, JSON
 from sqlalchemy.sql import func
 from database import Base
+from encryption_service import (
+    encrypt_pii, decrypt_pii,
+    encrypt_pii_list, decrypt_pii_list,
+    hash_email, hash_phone, hash_nmc,
+)
 import enum
+from typing import Optional, List
+
+
+def _enc_str(v: Optional[str]) -> Optional[str]:
+    """Encrypt a string; empty → None so DB column stays clean."""
+    if v is None or v == "":
+        return None
+    return encrypt_pii(v)
+
+
+def _enc_int(v: Optional[int]) -> Optional[str]:
+    return None if v is None else encrypt_pii(str(v))
+
+
+def _dec_int(token: Optional[str]) -> Optional[int]:
+    plain = decrypt_pii(token)
+    if plain is None:
+        return None
+    try:
+        return int(plain)
+    except (TypeError, ValueError):
+        return None
+
+
+def _enc_float(v: Optional[float]) -> Optional[str]:
+    return None if v is None else encrypt_pii(str(v))
+
+
+def _dec_float(token: Optional[str]) -> Optional[float]:
+    plain = decrypt_pii(token)
+    if plain is None:
+        return None
+    try:
+        return float(plain)
+    except (TypeError, ValueError):
+        return None
 
 
 class UserRole(str, enum.Enum):
@@ -12,15 +53,80 @@ class UserRole(str, enum.Enum):
 
 
 class User(Base):
-    """Auth identity only. Health data lives in Profile."""
+    """Auth identity only. Health data lives in Profile.
+
+    PII (email, full_name, phone_number) is encrypted at rest under
+    PII_ENCRYPTION_KEY. Lookups for login (email) and phone-OTP use HMAC
+    blind-indexes (email_hash, phone_hash). `password_hash` stays as-is
+    — it is already a one-way bcrypt/argon hash, re-encrypting would
+    break login.
+    """
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
+
+    # PII — encrypted. email/phone nullable to support phone-only or email-only accounts.
+    email_enc = Column(Text, nullable=True)                                   # AES-256-GCM(email)
+    email_hash = Column(String(64), unique=True, index=True, nullable=True)   # HMAC-SHA256(lower(trim(email))) — multiple NULLs allowed
+    full_name_enc = Column(Text, nullable=False)                              # AES-256-GCM(full_name)
+    phone_number_enc = Column(Text, nullable=True)                            # AES-256-GCM(phone_number) — may be empty for email-only accounts
+    phone_hash = Column(String(64), index=True, nullable=True)                # HMAC-SHA256(E.164(phone)) — nullable when no phone
+
     password_hash = Column(String, nullable=False)
-    full_name = Column(String, nullable=False)
-    phone_number = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+
+    # Transparent plaintext accessors. Existing callers continue to use
+    # `user.email = ...` / `user.email` and we handle encrypt/decrypt + hash
+    # internally. Queries must use User.email_hash / User.phone_hash directly.
+    _PLAINTEXT_KWARGS = ("email", "full_name", "phone_number")
+
+    def __init__(self, **kwargs):
+        plaintexts = {k: kwargs.pop(k) for k in list(kwargs) if k in self._PLAINTEXT_KWARGS}
+        super().__init__(**kwargs)
+        for k, v in plaintexts.items():
+            setattr(self, k, v)
+
+    @property
+    def email(self) -> Optional[str]:
+        return decrypt_pii(self.email_enc)
+
+    @email.setter
+    def email(self, value: Optional[str]) -> None:
+        # Empty / None → clear both. Supports phone-only accounts where the
+        # backend generated a synthetic email and the user has no real one yet.
+        if value is None or value == "":
+            self.email_enc = None
+            self.email_hash = None
+            return
+        self.email_enc = encrypt_pii(value)
+        self.email_hash = hash_email(value)
+
+    @property
+    def full_name(self) -> Optional[str]:
+        return decrypt_pii(self.full_name_enc)
+
+    @full_name.setter
+    def full_name(self, value: Optional[str]) -> None:
+        enc = _enc_str(value)
+        if enc is None:
+            raise ValueError("User.full_name cannot be empty")
+        self.full_name_enc = enc
+
+    @property
+    def phone_number(self) -> Optional[str]:
+        return decrypt_pii(self.phone_number_enc)
+
+    @phone_number.setter
+    def phone_number(self, value: Optional[str]) -> None:
+        # Empty / None → clear both columns. Alert dispatch flows treat
+        # "no phone" as a valid user state (alert_service skips whatsapp/sms).
+        if value is None or value == "":
+            self.phone_number_enc = None
+            self.phone_hash = None
+            return
+        self.phone_number_enc = encrypt_pii(value)
+        self.phone_hash = hash_phone(value)
+
     consent_timestamp = Column(DateTime(timezone=True), nullable=True)
     consent_app_version = Column(String, nullable=True)
     consent_language = Column(String, nullable=True)
@@ -37,26 +143,175 @@ class User(Base):
 
 
 class Profile(Base):
-    """Health identity for a person. One user can own/access many profiles."""
+    """Health identity for a person. One user can own/access many profiles.
+
+    All PII and health-condition free-text is encrypted at rest under
+    PII_ENCRYPTION_KEY. Quasi-identifiers (age, gender, blood group, etc.)
+    are also encrypted per E17 scope — DPDPA treats them as personal data
+    when combined with health readings. Weight stays plaintext here because
+    HealthReading is the source of truth for encrypted weight history.
+    """
     __tablename__ = "profiles"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)                        # "My Health", "Papa", "Mummy"
-    relationship = Column(String, nullable=True)                 # "myself", "father", "mother", etc.
-    age = Column(Integer, nullable=True)
-    gender = Column(String, nullable=True)                       # Male / Female / Other
-    height = Column(Float, nullable=True)                        # cm
-    weight = Column(Float, nullable=True)                        # kg
-    blood_group = Column(String, nullable=True)
-    medical_conditions = Column(ARRAY(String), nullable=True)
-    other_medical_condition = Column(Text, nullable=True)
-    current_medications = Column(Text, nullable=True)
-    doctor_name = Column(String, nullable=True)
-    doctor_specialty = Column(String, nullable=True)
-    doctor_whatsapp = Column(String, nullable=True)             # full number e.g. +917001234567
-    phone_number = Column(String, nullable=True, index=True)    # profile's own phone number
+
+    # Core identity (encrypted)
+    name_enc = Column(Text, nullable=False)                           # "My Health", "Papa", "Mummy"
+    relationship_enc = Column(Text, nullable=True)                    # "myself", "father", ...
+    gender_enc = Column(Text, nullable=True)                          # Male / Female / Other
+    age_enc = Column(Text, nullable=True)                             # int as encrypted string
+    height_enc = Column(Text, nullable=True)                          # float cm, encrypted string
+    blood_group_enc = Column(Text, nullable=True)
+
+    # Weight remains a plain float — current weight snapshot; history lives in HealthReading.weight_value_enc
+    weight = Column(Float, nullable=True)                             # kg
+
+    # Health conditions (encrypted)
+    medical_conditions_enc = Column(Text, nullable=True)              # JSON-list-of-strings under PII key
+    other_medical_condition_enc = Column(Text, nullable=True)
+    current_medications_enc = Column(Text, nullable=True)
+
+    # Legacy free-text doctor fields (encrypted). New code should use DoctorPatientLink.
+    doctor_name_enc = Column(Text, nullable=True)
+    doctor_specialty_enc = Column(Text, nullable=True)
+    doctor_whatsapp_enc = Column(Text, nullable=True)
+
+    # Profile's own phone (encrypted + hash for lookup)
+    phone_number_enc = Column(Text, nullable=True)
+    phone_hash = Column(String(64), index=True, nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    _PLAINTEXT_KWARGS = (
+        "name", "relationship", "gender", "age", "height", "blood_group",
+        "medical_conditions", "other_medical_condition", "current_medications",
+        "doctor_name", "doctor_specialty", "doctor_whatsapp", "phone_number",
+    )
+
+    def __init__(self, **kwargs):
+        plaintexts = {k: kwargs.pop(k) for k in list(kwargs) if k in self._PLAINTEXT_KWARGS}
+        super().__init__(**kwargs)
+        for k, v in plaintexts.items():
+            setattr(self, k, v)
+
+    # --- name (required) ---
+    @property
+    def name(self) -> Optional[str]:
+        return decrypt_pii(self.name_enc)
+
+    @name.setter
+    def name(self, value: Optional[str]) -> None:
+        enc = _enc_str(value)
+        if enc is None:
+            raise ValueError("Profile.name cannot be empty")
+        self.name_enc = enc
+
+    # --- optional string fields ---
+    @property
+    def relationship(self) -> Optional[str]:
+        return decrypt_pii(self.relationship_enc)
+
+    @relationship.setter
+    def relationship(self, value: Optional[str]) -> None:
+        self.relationship_enc = _enc_str(value)
+
+    @property
+    def gender(self) -> Optional[str]:
+        return decrypt_pii(self.gender_enc)
+
+    @gender.setter
+    def gender(self, value: Optional[str]) -> None:
+        self.gender_enc = _enc_str(value)
+
+    @property
+    def blood_group(self) -> Optional[str]:
+        return decrypt_pii(self.blood_group_enc)
+
+    @blood_group.setter
+    def blood_group(self, value: Optional[str]) -> None:
+        self.blood_group_enc = _enc_str(value)
+
+    @property
+    def other_medical_condition(self) -> Optional[str]:
+        return decrypt_pii(self.other_medical_condition_enc)
+
+    @other_medical_condition.setter
+    def other_medical_condition(self, value: Optional[str]) -> None:
+        self.other_medical_condition_enc = _enc_str(value)
+
+    @property
+    def current_medications(self) -> Optional[str]:
+        return decrypt_pii(self.current_medications_enc)
+
+    @current_medications.setter
+    def current_medications(self, value: Optional[str]) -> None:
+        self.current_medications_enc = _enc_str(value)
+
+    @property
+    def doctor_name(self) -> Optional[str]:
+        return decrypt_pii(self.doctor_name_enc)
+
+    @doctor_name.setter
+    def doctor_name(self, value: Optional[str]) -> None:
+        self.doctor_name_enc = _enc_str(value)
+
+    @property
+    def doctor_specialty(self) -> Optional[str]:
+        return decrypt_pii(self.doctor_specialty_enc)
+
+    @doctor_specialty.setter
+    def doctor_specialty(self, value: Optional[str]) -> None:
+        self.doctor_specialty_enc = _enc_str(value)
+
+    @property
+    def doctor_whatsapp(self) -> Optional[str]:
+        return decrypt_pii(self.doctor_whatsapp_enc)
+
+    @doctor_whatsapp.setter
+    def doctor_whatsapp(self, value: Optional[str]) -> None:
+        self.doctor_whatsapp_enc = _enc_str(value)
+
+    # --- numeric fields ---
+    @property
+    def age(self) -> Optional[int]:
+        return _dec_int(self.age_enc)
+
+    @age.setter
+    def age(self, value: Optional[int]) -> None:
+        self.age_enc = _enc_int(value)
+
+    @property
+    def height(self) -> Optional[float]:
+        return _dec_float(self.height_enc)
+
+    @height.setter
+    def height(self, value: Optional[float]) -> None:
+        self.height_enc = _enc_float(value)
+
+    # --- list field ---
+    @property
+    def medical_conditions(self) -> Optional[List[str]]:
+        return decrypt_pii_list(self.medical_conditions_enc)
+
+    @medical_conditions.setter
+    def medical_conditions(self, value: Optional[List[str]]) -> None:
+        # None stays None; empty list still encrypts as "[]"
+        self.medical_conditions_enc = encrypt_pii_list(value) if value is not None else None
+
+    # --- phone + hash ---
+    @property
+    def phone_number(self) -> Optional[str]:
+        return decrypt_pii(self.phone_number_enc)
+
+    @phone_number.setter
+    def phone_number(self, value: Optional[str]) -> None:
+        if value is None or value == "":
+            self.phone_number_enc = None
+            self.phone_hash = None
+            return
+        self.phone_number_enc = encrypt_pii(value)
+        self.phone_hash = hash_phone(value)
 
 
 class ProfileAccess(Base):
@@ -76,15 +331,21 @@ class ProfileAccess(Base):
 
 
 class ProfileInvite(Base):
-    """Pending invite for a user to gain viewer access to a profile."""
+    """Pending invite for a user to gain viewer access to a profile.
+
+    The invitee's email is encrypted (invited_email_enc) with a blind-index
+    (invited_email_hash) so the accept flow can still dedupe and look up
+    the pending row by email without decrypting the whole table.
+    """
     __tablename__ = "profile_invites"
 
     id = Column(Integer, primary_key=True, index=True)
     profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     invited_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    invited_email = Column(String, nullable=False, index=True)
+    invited_email_enc = Column(Text, nullable=False)
+    invited_email_hash = Column(String(64), index=True, nullable=False)
     invited_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    relationship = Column(String, nullable=True)                 # "father", "mother", etc.
+    relationship_enc = Column(Text, nullable=True)
     access_level = Column(String, nullable=False, default="viewer", server_default="viewer")  # "viewer" or "editor"
     status = Column(String, nullable=False, default="pending")   # "pending", "accepted", "rejected"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -92,10 +353,42 @@ class ProfileInvite(Base):
 
     __table_args__ = (
         # Partial unique index — only prevent duplicate PENDING invites.
-        # Accepted/rejected invites should not block re-inviting.
-        Index("uq_profile_invite_email_pending", "profile_id", "invited_email",
+        # Accepted/rejected invites should not block re-inviting. Dedupe now
+        # uses the HMAC hash instead of plaintext email.
+        Index("uq_profile_invite_email_pending", "profile_id", "invited_email_hash",
               unique=True, postgresql_where="status = 'pending'"),
     )
+
+    _PLAINTEXT_KWARGS = ("invited_email", "relationship")
+
+    def __init__(self, **kwargs):
+        plaintexts = {k: kwargs.pop(k) for k in list(kwargs) if k in self._PLAINTEXT_KWARGS}
+        super().__init__(**kwargs)
+        for k, v in plaintexts.items():
+            setattr(self, k, v)
+
+    @property
+    def invited_email(self) -> Optional[str]:
+        return decrypt_pii(self.invited_email_enc)
+
+    @invited_email.setter
+    def invited_email(self, value: Optional[str]) -> None:
+        enc = _enc_str(value)
+        if enc is None:
+            raise ValueError("ProfileInvite.invited_email cannot be empty")
+        self.invited_email_enc = enc
+        h = hash_email(value)
+        if h is None:
+            raise ValueError("ProfileInvite.invited_email: PII_ENCRYPTION_KEY not configured")
+        self.invited_email_hash = h
+
+    @property
+    def relationship(self) -> Optional[str]:
+        return decrypt_pii(self.relationship_enc)
+
+    @relationship.setter
+    def relationship(self, value: Optional[str]) -> None:
+        self.relationship_enc = _enc_str(value)
 
 
 class HealthReading(Base):
@@ -291,39 +584,91 @@ class MealLog(Base):
     )
 
 
+from encryption_service import hash_otp as _hash_otp
+
+
+def _otp_email_property(self) -> Optional[str]:
+    return decrypt_pii(self.email_enc)
+
+
+def _otp_phone_property(self) -> Optional[str]:
+    return decrypt_pii(self.phone_number_enc)
+
+
+def _otp_init(self, **kwargs):
+    """Shared __init__ for OTP tables that intercepts plaintext email/phone/otp kwargs."""
+    email = kwargs.pop("email", None)
+    phone_number = kwargs.pop("phone_number", None)
+    otp = kwargs.pop("otp", None)
+    super(type(self), self).__init__(**kwargs)
+    if email is not None:
+        enc = encrypt_pii(email)
+        h = hash_email(email)
+        if enc is None or h is None:
+            raise ValueError(f"{type(self).__name__}: PII_ENCRYPTION_KEY not configured")
+        self.email_enc = enc
+        self.email_hash = h
+    if phone_number is not None:
+        enc = encrypt_pii(phone_number)
+        h = hash_phone(phone_number)
+        if enc is None or h is None:
+            raise ValueError(f"{type(self).__name__}: PII_ENCRYPTION_KEY not configured")
+        self.phone_number_enc = enc
+        self.phone_hash = h
+    if otp is not None:
+        oh = _hash_otp(otp)
+        if oh is None:
+            raise ValueError(f"{type(self).__name__}: cannot hash empty OTP")
+        self.otp_hash = oh
+
+
 class PasswordResetOTP(Base):
+    """Password reset OTP. Email encrypted + hash for lookup; OTP is HMAC-hashed."""
     __tablename__ = "password_reset_otps"
 
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, nullable=False)
-    otp = Column(String, nullable=False)
+    email_enc = Column(Text, nullable=False)
+    email_hash = Column(String(64), index=True, nullable=False)
+    otp_hash = Column(String(64), nullable=False)                  # HMAC-SHA256(otp)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime, nullable=False)
     is_used = Column(Boolean, default=False)
 
+    __init__ = _otp_init
+    email = property(_otp_email_property)
+
 
 class EmailVerificationOTP(Base):
+    """Email verification OTP. Email encrypted + hash for lookup; OTP is HMAC-hashed."""
     __tablename__ = "email_verification_otps"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    email = Column(String, nullable=False)
-    otp = Column(String, nullable=False)
+    email_enc = Column(Text, nullable=False)
+    email_hash = Column(String(64), index=True, nullable=False)
+    otp_hash = Column(String(64), nullable=False)                  # HMAC-SHA256(otp)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime, nullable=False)
     is_used = Column(Boolean, default=False, server_default="false")
+
+    __init__ = _otp_init
+    email = property(_otp_email_property)
 
 
 class PhoneOTP(Base):
-    """OTP for phone number verification during login/registration."""
+    """OTP for phone verification. Phone encrypted + hash for lookup; OTP is HMAC-hashed."""
     __tablename__ = "phone_otps"
 
     id = Column(Integer, primary_key=True, index=True)
-    phone_number = Column(String, nullable=False, index=True)
-    otp = Column(String, nullable=False)
+    phone_number_enc = Column(Text, nullable=False)
+    phone_hash = Column(String(64), index=True, nullable=False)
+    otp_hash = Column(String(64), nullable=False)                  # HMAC-SHA256(otp)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime, nullable=False)
     is_used = Column(Boolean, default=False, server_default="false")
+
+    __init__ = _otp_init
+    phone_number = property(_otp_phone_property)
 
 
 # ---------------------------------------------------------------------------
@@ -331,12 +676,28 @@ class PhoneOTP(Base):
 # ---------------------------------------------------------------------------
 
 class DoctorProfile(Base):
-    """Doctor-specific profile data. Linked 1:1 to a User with role=doctor."""
+    """Doctor-specific profile data. Linked 1:1 to a User with role=doctor.
+
+    PII (NMC number + contact numbers) is encrypted at rest under
+    PII_ENCRYPTION_KEY. Uniqueness of NMC is enforced via `nmc_hash`.
+    `specialty`, `clinic_name`, `doctor_code` are business/public data —
+    not PII, kept plaintext. Doctor's full name lives on User.full_name_enc.
+    """
     __tablename__ = "doctor_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
-    nmc_number = Column(String, unique=True, nullable=False)       # NMC / State Medical Council registration
+
+    # NMC / State Medical Council registration — PII under DPDPA. Encrypted + blind-index for uniqueness.
+    nmc_number_enc = Column(Text, nullable=False)
+    nmc_hash = Column(String(64), unique=True, index=True, nullable=False)
+
+    # Doctor contact numbers (new) — needed for Priority Call / WhatsApp flows (see tracker line 213)
+    phone_number_enc = Column(Text, nullable=True)
+    phone_hash = Column(String(64), index=True, nullable=True)
+    whatsapp_number_enc = Column(Text, nullable=True)
+    whatsapp_hash = Column(String(64), index=True, nullable=True)
+
     specialty = Column(String, nullable=True)                       # "General Physician", "Endocrinologist", etc.
     clinic_name = Column(String, nullable=True)
     doctor_code = Column(String(8), unique=True, nullable=False, index=True)  # e.g. "DRRAJ52" — patients use this to link
@@ -345,6 +706,55 @@ class DoctorProfile(Base):
     verified_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    _PLAINTEXT_KWARGS = ("nmc_number", "phone_number", "whatsapp_number")
+
+    def __init__(self, **kwargs):
+        plaintexts = {k: kwargs.pop(k) for k in list(kwargs) if k in self._PLAINTEXT_KWARGS}
+        super().__init__(**kwargs)
+        for k, v in plaintexts.items():
+            setattr(self, k, v)
+
+    @property
+    def nmc_number(self) -> Optional[str]:
+        return decrypt_pii(self.nmc_number_enc)
+
+    @nmc_number.setter
+    def nmc_number(self, value: Optional[str]) -> None:
+        enc = _enc_str(value)
+        if enc is None:
+            raise ValueError("DoctorProfile.nmc_number cannot be empty")
+        self.nmc_number_enc = enc
+        h = hash_nmc(value)
+        if h is None:
+            raise ValueError("DoctorProfile.nmc_number: PII_ENCRYPTION_KEY not configured")
+        self.nmc_hash = h
+
+    @property
+    def phone_number(self) -> Optional[str]:
+        return decrypt_pii(self.phone_number_enc)
+
+    @phone_number.setter
+    def phone_number(self, value: Optional[str]) -> None:
+        if value is None or value == "":
+            self.phone_number_enc = None
+            self.phone_hash = None
+            return
+        self.phone_number_enc = encrypt_pii(value)
+        self.phone_hash = hash_phone(value)
+
+    @property
+    def whatsapp_number(self) -> Optional[str]:
+        return decrypt_pii(self.whatsapp_number_enc)
+
+    @whatsapp_number.setter
+    def whatsapp_number(self, value: Optional[str]) -> None:
+        if value is None or value == "":
+            self.whatsapp_number_enc = None
+            self.whatsapp_hash = None
+            return
+        self.whatsapp_number_enc = encrypt_pii(value)
+        self.whatsapp_hash = hash_phone(value)
 
 
 class DoctorPatientLink(Base):
@@ -403,10 +813,21 @@ class DoctorPatientLink(Base):
     compliance_7d = Column(Integer, default=0)                      # readings count in last 7 days
     trend_direction = Column(String, nullable=True)                 # "improving", "worsening", "stable"
 
+    # Primary doctor flag — only one active link per profile can be primary.
+    # Tracker line 200: clinical risk if the dashboard routes "message my doctor"
+    # to the wrong active link. Partial unique index enforces it at DB level.
+    is_primary = Column(Boolean, nullable=False, default=False, server_default="false")
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
         UniqueConstraint("doctor_id", "profile_id", name="uq_doctor_patient"),
+        Index(
+            "uq_primary_doctor_per_profile",
+            "profile_id",
+            unique=True,
+            postgresql_where="is_primary = true AND status = 'active'",
+        ),
     )
 
 

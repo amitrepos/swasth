@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-import hashlib
 import logging
 import os
 import pytz
@@ -16,6 +15,7 @@ from database import get_db
 from utils.phone import normalize_phone
 from config import settings
 from dependencies import get_current_user
+from encryption_service import hash_email, hash_phone, hash_otp
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -28,7 +28,7 @@ limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 def register(request: Request, user: schemas.UserRegister, db: Session = Depends(get_db)):
     """Register a new user and create their initial 'My Health' profile."""
     user.email = user.email.strip().lower()
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    db_user = db.query(models.User).filter(models.User.email_hash == hash_email(user.email)).first()
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -84,12 +84,11 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
     # 4. Send email verification OTP (best-effort)
     try:
         otp = email_service.generate_otp()
-        otp_hash = hashlib.sha256(otp.encode()).hexdigest()
         otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
         db.add(models.EmailVerificationOTP(
             user_id=db_user.id,
             email=db_user.email,
-            otp=otp_hash,
+            otp=otp,  # __init__ hashes via HMAC(PII_KEY)
             expires_at=otp_expires,
         ))
         db.commit()
@@ -122,14 +121,14 @@ def check_account_exists(
     """
     if body.email:
         body.email = body.email.strip().lower()
-        user = db.query(models.User).filter(models.User.email == body.email).first()
+        user = db.query(models.User).filter(models.User.email_hash == hash_email(body.email)).first()
         if user:
             return {"exists": True, "login_method": "email_password"}
         return {"exists": False}
-    
+
     if body.phone_number:
         normalized = normalize_phone(body.phone_number)
-        user = db.query(models.User).filter(models.User.phone_number == normalized).first()
+        user = db.query(models.User).filter(models.User.phone_hash == hash_phone(normalized)).first()
         if user:
             return {"exists": True, "login_method": "phone_otp"}
         return {"exists": False}
@@ -144,7 +143,7 @@ def check_account_exists(
 @limiter.limit("10/minute")
 def login(request: Request, user: schemas.UserLogin, db: Session = Depends(get_db)):
     """Login user and return JWT token."""
-    db_user = db.query(models.User).filter(models.User.email == user.email.strip().lower()).first()
+    db_user = db.query(models.User).filter(models.User.email_hash == hash_email(user.email.strip().lower())).first()
     if not db_user or not auth.verify_password(user.password, db_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -207,7 +206,7 @@ def request_password_reset(
         "expires_in_minutes": settings.OTP_EXPIRE_MINUTES,
     }
 
-    user = db.query(models.User).filter(models.User.email == body.email).first()
+    user = db.query(models.User).filter(models.User.email_hash == hash_email(body.email)).first()
     if not user:
         logger.info("forgot_password: unknown email attempt")
         return generic_response
@@ -244,7 +243,7 @@ def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Ses
     if not otp_record:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OTP")
 
-    user = db.query(models.User).filter(models.User.email == body.email).first()
+    user = db.query(models.User).filter(models.User.email_hash == hash_email(body.email)).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -325,13 +324,12 @@ def send_email_verification(
     ).update({"is_used": True})
 
     otp = email_service.generate_otp()
-    otp_hash = hashlib.sha256(otp.encode()).hexdigest()
     otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
 
     db.add(models.EmailVerificationOTP(
         user_id=user.id,
         email=user.email,
-        otp=otp_hash,
+        otp=otp,  # __init__ hashes via HMAC(PII_KEY)
         expires_at=otp_expires,
     ))
     db.commit()
@@ -354,10 +352,9 @@ def verify_email(
     if user.email_verified:
         return {"message": "Email verified successfully"}
 
-    otp_hash = hashlib.sha256(body.otp.encode()).hexdigest()
     otp_record = db.query(models.EmailVerificationOTP).filter(
         models.EmailVerificationOTP.user_id == user.id,
-        models.EmailVerificationOTP.otp == otp_hash,
+        models.EmailVerificationOTP.otp_hash == hash_otp(body.otp),
         models.EmailVerificationOTP.is_used == False,
         models.EmailVerificationOTP.expires_at > datetime.utcnow(),
     ).first()
@@ -405,17 +402,17 @@ def send_phone_otp(
     normalized = normalize_phone(body.phone_number)
     # Invalidate any previous unused OTPs for this phone number
     db.query(models.PhoneOTP).filter(
-        models.PhoneOTP.phone_number == normalized,
+        models.PhoneOTP.phone_hash == hash_phone(normalized),
         models.PhoneOTP.is_used == False,
     ).update({"is_used": True})
 
     # Generate new OTP
     otp = email_service.generate_otp()
     otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
-    
+
     db.add(models.PhoneOTP(
         phone_number=normalized,
-        otp=otp,
+        otp=otp,  # __init__ hashes via HMAC(PII_KEY)
         expires_at=otp_expires,
     ))
     db.commit()
@@ -456,8 +453,8 @@ def verify_phone_otp_and_login(
     normalized = normalize_phone(body.phone_number)
     # Find valid OTP
     otp_record = db.query(models.PhoneOTP).filter(
-        models.PhoneOTP.phone_number == normalized,
-        models.PhoneOTP.otp == body.otp,
+        models.PhoneOTP.phone_hash == hash_phone(normalized),
+        models.PhoneOTP.otp_hash == hash_otp(body.otp),
         models.PhoneOTP.is_used == False,
         models.PhoneOTP.expires_at > datetime.utcnow(),
     ).first()
@@ -474,7 +471,7 @@ def verify_phone_otp_and_login(
 
     # Check if user exists
     user = db.query(models.User).filter(
-        models.User.phone_number == normalized
+        models.User.phone_hash == hash_phone(normalized)
     ).first()
 
     if user:
@@ -584,14 +581,14 @@ def delete_account(
         models.ProfileInvite.invited_by_user_id == user.id,
     ).delete()
     db.query(models.ProfileInvite).filter(
-        models.ProfileInvite.invited_email == user.email.lower(),
+        models.ProfileInvite.invited_email_hash == hash_email(user.email),
     ).delete()
     db.query(models.ProfileInvite).filter(
         models.ProfileInvite.invited_user_id == user.id,
     ).update({"invited_user_id": None})
 
     # 6. Delete password reset OTPs and email verification OTPs
-    db.query(models.PasswordResetOTP).filter(models.PasswordResetOTP.email == user.email).delete()
+    db.query(models.PasswordResetOTP).filter(models.PasswordResetOTP.email_hash == hash_email(user.email)).delete()
     db.query(models.EmailVerificationOTP).filter(models.EmailVerificationOTP.user_id == user.id).delete()
 
     # 7. Delete the user
@@ -608,8 +605,8 @@ def delete_account(
 def _get_valid_otp(db: Session, email: str, otp: str):
     """Return a valid, unused, unexpired OTP record or None."""
     return db.query(models.PasswordResetOTP).filter(
-        models.PasswordResetOTP.email == email,
-        models.PasswordResetOTP.otp == otp,
+        models.PasswordResetOTP.email_hash == hash_email(email),
+        models.PasswordResetOTP.otp_hash == hash_otp(otp),
         models.PasswordResetOTP.is_used == False,
         models.PasswordResetOTP.expires_at > datetime.utcnow(),
     ).first()
