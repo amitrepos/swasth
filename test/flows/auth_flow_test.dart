@@ -87,6 +87,47 @@ void main() {
       expect(find.byType(SelectProfileScreen), findsOneWidget);
     });
 
+    testWidgets('Login with unverified email sends OTP before navigation', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtLogin(tester);
+
+      // Step 1: Enter email and tap continue
+      await tester.enterText(loginEmail, 'test@swasth.app');
+      await pumpN(tester, frames: 3);
+
+      await tester.tap(loginButton);
+      await pumpN(tester, frames: 50);
+
+      // Step 2: Enter password
+      expect(find.byKey(const Key('login_password')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('login_password')),
+        'Test1234!',
+      );
+      await pumpN(tester, frames: 3);
+
+      // Step 3: Tap login to submit
+      await tester.tap(loginButton);
+      await pumpN(tester, frames: 50);
+
+      // Verify login was called
+      expect(env.tracker.hasCalled('POST', '/login'), isTrue);
+
+      // Email verification dialog appears (email_verified=false in mock)
+      // Tap "Verify Now" to trigger OTP send + navigation
+      final verifyNowButton = find.text('Verify Now');
+      expect(verifyNowButton, findsOneWidget);
+      await tester.tap(verifyNowButton);
+      await pumpN(tester, frames: 50);
+
+      // Assert that send-email-verification was called BEFORE navigation
+      expect(env.tracker.hasCalled('POST', '/send-email-verification'), isTrue);
+
+      // Should now be on EmailVerificationScreen
+      expect(find.byKey(const Key('email_verify_otp_field')), findsOneWidget);
+    });
+
     testWidgets('Register link exists on login screen', (tester) async {
       env = await TestEnv.createAtLogin(tester);
 

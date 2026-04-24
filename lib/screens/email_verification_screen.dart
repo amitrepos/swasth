@@ -31,7 +31,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   @override
   void initState() {
     super.initState();
-    // Don't auto-send OTP - OTP is sent when user clicks 'Verify' from login popup
+    // OTP is dispatched by UnifiedLoginScreen before navigating here.
   }
 
   @override
@@ -71,17 +71,24 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           ),
         );
       }
-    } finally {
+      // Only start timer on success, not on failure
       if (mounted) {
         setState(() => _isLoading = false);
-        _startResendTimer();
       }
+      return; // Exit early on failure
+    }
+    
+    // Only start timer after successful send
+    if (mounted) {
+      setState(() => _isLoading = false);
+      _startResendTimer();
     }
   }
 
   void _startResendTimer() {
     _resendTimer?.cancel();
-    setState(() => _resendCountdown = 30); // Changed from 60 to 30 seconds
+    // 30-second cooldown: balances anti-spam with email delivery delays in India (BSNL/Airtel routing)
+    setState(() => _resendCountdown = 30);
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted || _resendCountdown <= 0) {
         timer.cancel();
@@ -209,7 +216,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Verification code has been sent to your email',
+                l10n.sendVerificationCode,
                 style: TextStyle(
                   fontSize: 14,
                   color: AppColors.statusNormal,

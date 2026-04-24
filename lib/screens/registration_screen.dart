@@ -104,15 +104,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     final l10n = AppLocalizations.of(context)!;
 
-    // Validate full name is not empty
-    final fullName = _fullNameController.text.trim();
-    if (fullName.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Full name is required')));
-      return;
-    }
-
     if (_selectedConditions.contains('Other') &&
         _otherConditionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(
@@ -131,6 +122,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               : _emailController.text.trim())
           : _emailController.text.trim();
 
+      final fullName = _fullNameController.text.trim();
       final userData = {
         'email': email,
         'password': widget.isPhoneVerified
@@ -156,13 +148,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             : null,
       };
 
-      // Debug: Verify userData before navigation
-      print('=== BEFORE CONSENT SCREEN ===');
-      print('full_name value: "${userData['full_name']}"');
-      print('full_name type: ${userData['full_name'].runtimeType}');
-      print('full_name length: ${(userData['full_name'] as String).length}');
-      print('============================');
-
       // Navigate to consent screen — registration API is called after consent
       if (mounted) {
         Navigator.pushReplacement(
@@ -178,14 +163,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     userData['consent_app_version'] = appVersion;
                     userData['consent_language'] = language;
                     userData['ai_consent'] = aiConsent;
-                    
-                    // Debug: Print the full registration payload
-                    print('=== REGISTRATION PAYLOAD ===');
-                    print('full_name: ${userData['full_name']}');
-                    print('email: ${userData['email']}');
-                    print('phone_number: ${userData['phone_number']}');
-                    print('Full userData: $userData');
-                    print('===========================');
                     
                     await _apiService.register(userData);
                   },

@@ -29,9 +29,6 @@ limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 def register(request: Request, user: schemas.UserRegister, db: Session = Depends(get_db)):
     """Register a new user and create their initial 'My Health' profile."""
     
-    # Debug: Log the parsed registration data
-    logger.info(f"Registration attempt - email={user.email}, full_name='{user.full_name}' (len={len(user.full_name)}), phone={user.phone_number}")
-    
     user.email = user.email.strip().lower()
     
     db_user = db.query(models.User).filter(models.User.email_hash == hash_email(user.email)).first()
