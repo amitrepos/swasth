@@ -208,9 +208,124 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    raise RuntimeError(
-        "Downgrade not supported for 0006_pii_encryption_batch: plaintext PII "
-        "columns were dropped and affected tables were truncated. Restore from "
-        "backup instead. If you must rewind the schema, create a new forward "
-        "migration rather than attempting to reverse this one."
+    """Restore plaintext schema columns as NULLABLE and drop the _enc/_hash
+    columns. Data is not restored — the ciphertext cannot be reversed back
+    into a row that never had plaintext. This downgrade exists purely to
+    satisfy the CI round-trip (bootstrap-then-stamp → downgrade → upgrade).
+
+    Hard-blocked outside of an opt-in environment so a hand-typed
+    `alembic downgrade -1` against prod cannot accidentally wipe the
+    encrypted state. CI sets SWASTH_ALLOW_DESTRUCTIVE_DOWNGRADE=1.
+    """
+    import os
+
+    if os.environ.get("SWASTH_ALLOW_DESTRUCTIVE_DOWNGRADE") != "1":
+        raise RuntimeError(
+            "Refusing to downgrade 0007_pii_encryption_batch: this drops the "
+            "encrypted PII columns. Ciphertext cannot be reversed into a row "
+            "that never had plaintext. Restore from backup, or set "
+            "SWASTH_ALLOW_DESTRUCTIVE_DOWNGRADE=1 if this is a disposable DB."
+        )
+
+    # ---------- doctor_patient_links ----------
+    op.drop_index("uq_primary_doctor_per_profile", table_name="doctor_patient_links")
+    op.drop_column("doctor_patient_links", "is_primary")
+
+    # ---------- doctor_profiles ----------
+    op.drop_index("ix_doctor_profiles_whatsapp_hash", table_name="doctor_profiles")
+    op.drop_index("ix_doctor_profiles_phone_hash", table_name="doctor_profiles")
+    op.drop_index("ix_doctor_profiles_nmc_hash", table_name="doctor_profiles")
+    op.drop_column("doctor_profiles", "whatsapp_hash")
+    op.drop_column("doctor_profiles", "whatsapp_number_enc")
+    op.drop_column("doctor_profiles", "phone_hash")
+    op.drop_column("doctor_profiles", "phone_number_enc")
+    op.drop_column("doctor_profiles", "nmc_hash")
+    op.drop_column("doctor_profiles", "nmc_number_enc")
+    op.add_column("doctor_profiles", sa.Column("nmc_number", sa.String(), nullable=True))
+    op.create_index("ix_doctor_profiles_nmc_number", "doctor_profiles", ["nmc_number"], unique=True)
+
+    # ---------- phone_otps ----------
+    op.drop_index("ix_phone_otps_phone_hash", table_name="phone_otps")
+    op.drop_column("phone_otps", "otp_hash")
+    op.drop_column("phone_otps", "phone_hash")
+    op.drop_column("phone_otps", "phone_number_enc")
+    op.add_column("phone_otps", sa.Column("phone_number", sa.String(), nullable=True))
+    op.add_column("phone_otps", sa.Column("otp", sa.String(), nullable=True))
+    op.create_index("ix_phone_otps_phone_number", "phone_otps", ["phone_number"], unique=False)
+
+    # ---------- email_verification_otps ----------
+    op.drop_index("ix_email_verification_otps_email_hash", table_name="email_verification_otps")
+    op.drop_column("email_verification_otps", "otp_hash")
+    op.drop_column("email_verification_otps", "email_hash")
+    op.drop_column("email_verification_otps", "email_enc")
+    op.add_column("email_verification_otps", sa.Column("email", sa.String(), nullable=True))
+    op.add_column("email_verification_otps", sa.Column("otp", sa.String(), nullable=True))
+
+    # ---------- password_reset_otps ----------
+    op.drop_index("ix_password_reset_otps_email_hash", table_name="password_reset_otps")
+    op.drop_column("password_reset_otps", "otp_hash")
+    op.drop_column("password_reset_otps", "email_hash")
+    op.drop_column("password_reset_otps", "email_enc")
+    op.add_column("password_reset_otps", sa.Column("email", sa.String(), nullable=True))
+    op.add_column("password_reset_otps", sa.Column("otp", sa.String(), nullable=True))
+
+    # ---------- profile_invites ----------
+    op.drop_index("uq_profile_invite_email_pending", table_name="profile_invites")
+    op.drop_index("ix_profile_invites_invited_email_hash", table_name="profile_invites")
+    op.drop_column("profile_invites", "relationship_enc")
+    op.drop_column("profile_invites", "invited_email_hash")
+    op.drop_column("profile_invites", "invited_email_enc")
+    op.add_column("profile_invites", sa.Column("invited_email", sa.String(), nullable=True))
+    op.add_column("profile_invites", sa.Column("relationship", sa.String(), nullable=True))
+    op.create_index("ix_profile_invites_invited_email", "profile_invites", ["invited_email"], unique=False)
+    op.create_index(
+        "uq_profile_invite_email_pending",
+        "profile_invites",
+        ["profile_id", "invited_email"],
+        unique=True,
+        postgresql_where=sa.text("status = 'pending'"),
     )
+
+    # ---------- profiles ----------
+    op.drop_index("ix_profiles_phone_hash", table_name="profiles")
+    op.drop_column("profiles", "phone_hash")
+    op.drop_column("profiles", "phone_number_enc")
+    op.drop_column("profiles", "doctor_whatsapp_enc")
+    op.drop_column("profiles", "doctor_specialty_enc")
+    op.drop_column("profiles", "doctor_name_enc")
+    op.drop_column("profiles", "current_medications_enc")
+    op.drop_column("profiles", "other_medical_condition_enc")
+    op.drop_column("profiles", "medical_conditions_enc")
+    op.drop_column("profiles", "blood_group_enc")
+    op.drop_column("profiles", "height_enc")
+    op.drop_column("profiles", "age_enc")
+    op.drop_column("profiles", "gender_enc")
+    op.drop_column("profiles", "relationship_enc")
+    op.drop_column("profiles", "name_enc")
+    op.add_column("profiles", sa.Column("name", sa.String(), nullable=True))
+    op.add_column("profiles", sa.Column("relationship", sa.String(), nullable=True))
+    op.add_column("profiles", sa.Column("gender", sa.String(), nullable=True))
+    op.add_column("profiles", sa.Column("age", sa.Integer(), nullable=True))
+    op.add_column("profiles", sa.Column("height", sa.Float(), nullable=True))
+    op.add_column("profiles", sa.Column("blood_group", sa.String(), nullable=True))
+    op.add_column("profiles", sa.Column("medical_conditions", sa.ARRAY(sa.String()), nullable=True))
+    op.add_column("profiles", sa.Column("other_medical_condition", sa.Text(), nullable=True))
+    op.add_column("profiles", sa.Column("current_medications", sa.Text(), nullable=True))
+    op.add_column("profiles", sa.Column("doctor_name", sa.String(), nullable=True))
+    op.add_column("profiles", sa.Column("doctor_specialty", sa.String(), nullable=True))
+    op.add_column("profiles", sa.Column("doctor_whatsapp", sa.String(), nullable=True))
+    op.add_column("profiles", sa.Column("phone_number", sa.String(), nullable=True))
+    op.create_index("ix_profiles_phone_number", "profiles", ["phone_number"], unique=False)
+
+    # ---------- users ----------
+    op.drop_index("ix_users_phone_hash", table_name="users")
+    op.drop_index("ix_users_email_hash", table_name="users")
+    op.drop_column("users", "phone_hash")
+    op.drop_column("users", "phone_number_enc")
+    op.drop_column("users", "full_name_enc")
+    op.drop_column("users", "email_hash")
+    op.drop_column("users", "email_enc")
+    op.add_column("users", sa.Column("email", sa.String(), nullable=True))
+    op.add_column("users", sa.Column("full_name", sa.String(), nullable=True))
+    op.add_column("users", sa.Column("phone_number", sa.String(), nullable=True))
+    op.create_index("ix_users_email", "users", ["email"], unique=True)
