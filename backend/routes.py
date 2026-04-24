@@ -12,6 +12,7 @@ import auth
 from email_service import email_service
 from sms_service import sms_service
 from database import get_db
+from encryption_service import encrypt_float
 from utils.phone import normalize_phone
 from config import settings
 from dependencies import get_current_user
@@ -77,7 +78,26 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         access_level="owner",
     )
     db.add(db_access)
-    
+
+    # Auto-log first weight reading if provided at registration
+    if user.weight is not None:
+        try:
+            enc = encrypt_float(user.weight)
+        except Exception:
+            logger.warning("Weight reading encryption failed during registration")
+            enc = None
+        db.add(models.HealthReading(
+            profile_id=db_profile.id,
+            logged_by=db_user.id,
+            reading_type="weight",
+            weight_value=user.weight,
+            weight_unit="kg",
+            value_numeric=user.weight,
+            unit_display="kg",
+            reading_timestamp=now_utc,
+            weight_value_enc=enc,
+        ))
+
     db.commit()
     db.refresh(db_user)
 

@@ -124,9 +124,10 @@ class _SelectProfileScreenState extends State<SelectProfileScreen> {
       if (widget.pushedFromShell) {
         Navigator.pop(context);
       } else {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const ShellScreen()),
+          (route) => false,
         );
       }
     }

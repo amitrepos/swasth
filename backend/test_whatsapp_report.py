@@ -116,7 +116,7 @@ def run_existing_profile_reports_test(request_phone: str):
 
 if __name__ == "__main__":
     # --- IMPORTANT: CHANGE THIS TO YOUR PHONE NUMBER ---
-    TEST_PHONE = "918700151250" 
+    TEST_PHONE = "+918700151250" 
     # ---------------------------------------------------
     
     if TEST_PHONE == "918700151250":

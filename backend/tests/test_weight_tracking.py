@@ -2,6 +2,93 @@ import pytest
 from datetime import datetime, timedelta, timezone
 import models
 
+
+# ---------------------------------------------------------------------------
+# Registration weight auto-log
+# ---------------------------------------------------------------------------
+
+_REG_BASE = {
+    "email": "newuser@swasth.app",
+    "password": "Strong@123",
+    "confirm_password": "Strong@123",
+    "full_name": "New User",
+    "phone_number": "9000000001",
+    "age": 30,
+    "gender": "Male",
+    "height": 170.0,
+    "consent_app_version": "1.0",
+    "consent_language": "en",
+}
+
+
+def _auth_headers(email):
+    from auth import create_access_token
+    return {"Authorization": f"Bearer {create_access_token(data={'sub': email})}"}
+
+
+def _first_profile_id(client, email):
+    """Get the first profile ID for a user via the /profiles API."""
+    resp = client.get("/api/profiles", headers=_auth_headers(email))
+    assert resp.status_code == 200, f"GET /profiles failed: {resp.text}"
+    profiles = resp.json()
+    assert profiles, f"No profiles returned for {email}"
+    return profiles[0]["id"]
+
+
+def test_register_with_weight_creates_health_reading(client, db):
+    """POST /register with weight must create a weight HealthReading visible via API."""
+    payload = {**_REG_BASE, "weight": 72.5}
+    resp = client.post("/api/auth/register", json=payload)
+    assert resp.status_code == 201
+
+    email = _REG_BASE["email"]
+    profile_id = _first_profile_id(client, email)
+    resp = client.get(
+        f"/api/readings?profile_id={profile_id}&reading_type=weight",
+        headers=_auth_headers(email),
+    )
+    assert resp.status_code == 200
+    readings = resp.json()
+    assert any(
+        r["reading_type"] == "weight" and r["weight_value"] == 72.5
+        for r in readings
+    ), "Weight HealthReading must be created at registration"
+
+
+def test_register_without_weight_creates_no_weight_reading(client, db):
+    """POST /register without weight must NOT create a weight HealthReading."""
+    email = "noweight@swasth.app"
+    payload = {**_REG_BASE, "email": email}
+    resp = client.post("/api/auth/register", json=payload)
+    assert resp.status_code == 201
+
+    profile_id = _first_profile_id(client, email)
+    resp = client.get(
+        f"/api/readings?profile_id={profile_id}&reading_type=weight",
+        headers=_auth_headers(email),
+    )
+    assert resp.status_code == 200
+    readings = resp.json()
+    assert not any(r["reading_type"] == "weight" for r in readings), \
+        "No weight HealthReading should be created when weight is omitted"
+
+
+def test_register_weight_reading_appears_in_readings_api(client, db):
+    """Weight reading created at registration must be retrievable via GET /readings."""
+    email = "weightapi@swasth.app"
+    payload = {**_REG_BASE, "email": email, "weight": 68.0}
+    resp = client.post("/api/auth/register", json=payload)
+    assert resp.status_code == 201
+
+    profile_id = _first_profile_id(client, email)
+    resp = client.get(
+        f"/api/readings?profile_id={profile_id}&reading_type=weight",
+        headers=_auth_headers(email),
+    )
+    assert resp.status_code == 200
+    readings = resp.json()
+    assert any(r["reading_type"] == "weight" and r["weight_value"] == 68.0 for r in readings)
+
 def _pid(db):
     return db.query(models.Profile).first().id
 
