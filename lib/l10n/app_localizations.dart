@@ -3314,6 +3314,12 @@ abstract class AppLocalizations {
   /// **'Verification code sent to your email'**
   String get emailVerificationOtpSent;
 
+  /// No description provided for @sendVerificationCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Verification Code'**
+  String get sendVerificationCode;
+
   /// No description provided for @emailVerificationFailed.
   ///
   /// In en, this message translates to:

@@ -14,7 +14,19 @@ def _enc_str(v: Optional[str]) -> Optional[str]:
     """Encrypt a string; empty → None so DB column stays clean."""
     if v is None or v == "":
         return None
-    return encrypt_pii(v)
+    
+    from encryption_service import encrypt_pii
+    result = encrypt_pii(v)
+    
+    # Debug: Log encryption failures
+    if result is None:
+        from encryption_service import _pii_key
+        import logging
+        logger = logging.getLogger(__name__)
+        key = _pii_key()
+        logger.error(f"Failed to encrypt full_name='{v}' - PII key is {'None' if key is None else 'valid'}")
+    
+    return result
 
 
 def _enc_int(v: Optional[int]) -> Optional[str]:

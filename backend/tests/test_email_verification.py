@@ -27,9 +27,12 @@ class TestRegisterEmailVerified:
         data = resp.json()
         assert data["email_verified"] is False
 
-    def test_register_creates_verification_otp(self, client, db):
-        with patch.object(email_service, "send_email_verification_otp", return_value=True), \
-             patch.object(email_service, "send_welcome_email", return_value=True):
+    def test_register_does_not_create_verification_otp(self, client, db):
+        """Registration should NOT automatically create/send verification OTP.
+        
+        User must explicitly request OTP via send-email-verification endpoint.
+        """
+        with patch.object(email_service, "send_welcome_email", return_value=True):
             resp = client.post("/api/auth/register", json={
                 "email": "verify_otp_reg@test.com",
                 "password": "Test@1234",
@@ -42,8 +45,8 @@ class TestRegisterEmailVerified:
         otp_record = db.query(models.EmailVerificationOTP).filter(
             models.EmailVerificationOTP.user_id == user_id,
         ).first()
-        assert otp_record is not None
-        assert len(otp_record.otp_hash) == 64  # HMAC-SHA256 hex digest
+        # No OTP should be created during registration
+        assert otp_record is None
 
 
 # ---------------------------------------------------------------------------

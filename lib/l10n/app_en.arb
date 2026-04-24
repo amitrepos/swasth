@@ -866,6 +866,7 @@
   "verifyNow": "Verify Now",
   "verifyLater": "Later",
   "emailVerificationOtpSent": "Verification code sent to your email",
+  "sendVerificationCode": "Send Verification Code",
   "emailVerificationFailed": "Failed to send verification code",
   "otpValidationEmpty": "Please enter the code",
   "otpValidationLength": "Code must be 6 digits",

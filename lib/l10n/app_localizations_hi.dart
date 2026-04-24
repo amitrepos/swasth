@@ -1760,6 +1760,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get emailVerificationOtpSent => 'सत्यापन कोड आपके ईमेल पर भेजा गया';
 
   @override
+  String get sendVerificationCode => 'सत्यापन कोड भेजें';
+
+  @override
   String get emailVerificationFailed => 'कोड नहीं भेज पाए, दोबारा कोशिश करें';
 
   @override

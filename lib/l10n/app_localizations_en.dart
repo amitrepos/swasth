@@ -1758,6 +1758,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emailVerificationOtpSent => 'Verification code sent to your email';
 
   @override
+  String get sendVerificationCode => 'Send Verification Code';
+
+  @override
   String get emailVerificationFailed => 'Failed to send verification code';
 
   @override

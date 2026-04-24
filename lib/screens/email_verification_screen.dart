@@ -31,7 +31,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   @override
   void initState() {
     super.initState();
-    _sendVerificationEmail();
+    // Don't auto-send OTP - OTP is sent when user clicks 'Verify' from login popup
   }
 
   @override
@@ -42,6 +42,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   }
 
   Future<void> _sendVerificationEmail() async {
+    // Prevent multiple clicks while loading
+    if (_isLoading) return;
+    
+    setState(() => _isLoading = true);
+    
     try {
       final token = await StorageService().getToken();
       if (token != null) {
@@ -66,13 +71,17 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _startResendTimer();
+      }
     }
-    _startResendTimer();
   }
 
   void _startResendTimer() {
     _resendTimer?.cancel();
-    setState(() => _resendCountdown = 60);
+    setState(() => _resendCountdown = 30); // Changed from 60 to 30 seconds
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted || _resendCountdown <= 0) {
         timer.cancel();
@@ -198,6 +207,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 style: const TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Verification code has been sent to your email',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.statusNormal,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 48),
 
               // OTP Field
@@ -272,7 +291,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   ],
                 ],
               ),
-              const SizedBox(height: 16),
 
               // Skip for now
               TextButton(

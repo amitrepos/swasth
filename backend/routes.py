@@ -28,7 +28,12 @@ limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 @limiter.limit("5/minute")
 def register(request: Request, user: schemas.UserRegister, db: Session = Depends(get_db)):
     """Register a new user and create their initial 'My Health' profile."""
+    
+    # Debug: Log the parsed registration data
+    logger.info(f"Registration attempt - email={user.email}, full_name='{user.full_name}' (len={len(user.full_name)}), phone={user.phone_number}")
+    
     user.email = user.email.strip().lower()
+    
     db_user = db.query(models.User).filter(models.User.email_hash == hash_email(user.email)).first()
     if db_user:
         raise HTTPException(
@@ -101,22 +106,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
     db.commit()
     db.refresh(db_user)
 
-    # 4. Send email verification OTP (best-effort)
-    try:
-        otp = email_service.generate_otp()
-        otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
-        db.add(models.EmailVerificationOTP(
-            user_id=db_user.id,
-            email=db_user.email,
-            otp=otp,  # __init__ hashes via HMAC(PII_KEY)
-            expires_at=otp_expires,
-        ))
-        db.commit()
-        email_service.send_email_verification_otp(db_user.email, otp, db_user.full_name)
-    except Exception:
-        pass  # best-effort — user can resend later
-
-    # 5. Send welcome email (best-effort)
+    # 4. Send welcome email (best-effort)
     try:
         email_service.send_welcome_email(db_user.email, db_user.full_name)
     except Exception:

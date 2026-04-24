@@ -246,6 +246,25 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
             );
 
             if (mounted && shouldVerify == true) {
+              // Send OTP before navigating to verification screen
+              try {
+                final token = await StorageService().getToken();
+                if (token != null) {
+                  await _apiService.sendEmailVerification(token);
+                }
+              } catch (e) {
+                // If sending OTP fails, still navigate to verification screen
+                // User can retry from there
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to send verification code. Please try again.'),
+                      backgroundColor: AppColors.statusCritical,
+                    ),
+                  );
+                }
+              }
+              
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
