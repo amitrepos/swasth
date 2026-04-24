@@ -53,6 +53,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
   CameraController? _controller;
   bool _isInitialized = false;
   bool _isProcessing = false;
+  bool _userCancelled = false;
   CameraErrorType? _cameraError;
   VoidCallback? _lastRetryAction;
 
@@ -118,6 +119,22 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
 
     setState(() => _isProcessing = true);
     final platformFile = result.files.single;
+    
+    // Guard against null bytes (can occur on some Android versions and web)
+    final fileBytes = platformFile.bytes;
+    if (fileBytes == null) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.foodPhotoFailed),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+      return;
+    }
+    
     // Infer MIME type from file extension since PlatformFile doesn't provide it
     final ext = platformFile.extension?.toLowerCase();
     String? inferredMimeType;
@@ -129,7 +146,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
       inferredMimeType = 'image/jpeg';
     }
     final xfile = XFile.fromData(
-      platformFile.bytes!,
+      fileBytes,
       name: platformFile.name,
       mimeType: inferredMimeType,
     );
@@ -139,6 +156,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
   Future<void> _classifyImage(XFile file) async {
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
+    _userCancelled = false; // Reset cancellation flag for new attempt
 
     // Show loading dialog with cancel button for poor network conditions
     showDialog(
@@ -157,6 +175,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: () {
+                    _userCancelled = true;
                     Navigator.of(context).pop(); // dismiss dialog
                     if (mounted) {
                       Navigator.of(context).pop(); // return to previous screen
@@ -185,7 +204,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
           .analyzeNutrition(widget.profileId, file, token);
 
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
-      if (!mounted) return;
+      if (!mounted || _userCancelled) return;
 
       Navigator.push(
         context,

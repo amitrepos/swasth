@@ -78,6 +78,13 @@ class MealLogCreate {
   final double? confidence;
   final bool userConfirmed;
   final String? userCorrectedCategory;
+  // Nutrition fields (from Gemini Vision analysis)
+  final double? totalCalories;
+  final double? totalCarbsG;
+  final double? totalProteinG;
+  final double? totalFatG;
+  final double? totalFiberG;
+  final int? mealScore;
 
   MealLogCreate({
     required this.profileId,
@@ -91,6 +98,12 @@ class MealLogCreate {
     this.confidence,
     this.userConfirmed = true,
     this.userCorrectedCategory,
+    this.totalCalories,
+    this.totalCarbsG,
+    this.totalProteinG,
+    this.totalFatG,
+    this.totalFiberG,
+    this.mealScore,
   });
 
   Map<String, dynamic> toJson() {
@@ -107,6 +120,13 @@ class MealLogCreate {
       'user_confirmed': userConfirmed,
       if (userCorrectedCategory != null)
         'user_corrected_category': userCorrectedCategory,
+      // Nutrition fields
+      if (totalCalories != null) 'total_calories': totalCalories,
+      if (totalCarbsG != null) 'total_carbs_g': totalCarbsG,
+      if (totalProteinG != null) 'total_protein_g': totalProteinG,
+      if (totalFatG != null) 'total_fat_g': totalFatG,
+      if (totalFiberG != null) 'total_fiber_g': totalFiberG,
+      if (mealScore != null) 'meal_score': mealScore,
     };
   }
 }

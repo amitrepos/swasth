@@ -151,6 +151,9 @@ class MealService {
     if (response.statusCode == 200) {
       try {
         final json = jsonDecode(response.body);
+        // Note: analyze_nutrition backend raises HTTPException for all errors,
+        // so it never returns {"error": ...} on HTTP 200. This check is kept
+        // as a defensive measure in case the backend behavior changes.
         if (json is Map<String, dynamic> && json.containsKey('error')) {
           final errorMsg = json['error'];
           throw ValidationException(

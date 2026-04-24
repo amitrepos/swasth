@@ -138,6 +138,9 @@ void main() {
     testWidgets('Save meal button calls API and navigates back on success', (tester) async {
       env = await _createNutritionResultScreen(tester);
 
+      // Verify the screen is currently visible
+      expect(find.byType(NutritionResultScreen), findsOneWidget);
+
       // Scroll to save button
       await tester.dragUntilVisible(
         find.byKey(const Key('save_meal_button')),
@@ -154,6 +157,8 @@ void main() {
       expect(env.tracker.hasCalled('POST', '/meals'), isTrue);
 
       // Verify navigation back (screen should be popped)
+      expect(find.byType(NutritionResultScreen), findsNothing);
+      
       final body = env.tracker.lastRequestBody('POST', '/meals');
       expect(body, isNotNull);
       expect(body!['meal_type'], isIn(['BREAKFAST', 'LUNCH', 'SNACK', 'DINNER']));

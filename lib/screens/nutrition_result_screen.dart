@@ -132,14 +132,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         return;
       }
 
-      // NOTE (C3): Nutrition data is intentionally ephemeral — only category,
-      // glucose_impact, and meal_type are persisted to the database. The full 
-      // breakdown computed by Gemini (total_calories, total_carbs_g, protein, 
-      // fat, fiber, micronutrients, meal_score) is displayed to the user but 
-      // discarded on save. This is a deliberate design decision to avoid a 
-      // database migration and keep the meal_logs table lean. If persistence 
-      // is needed in the future, add new columns to meal_logs and update the 
-      // MealLogCreate model to include these fields.
+      // Persist nutrition data from Gemini analysis for clinical tracking
       final mealLog = MealLogCreate(
         profileId: widget.profileId,
         mealType: _selectedMealType,
@@ -147,6 +140,13 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         glucoseImpact: _glucoseImpactFromSugarLevel(),
         inputMethod: 'PHOTO_GEMINI',
         timestamp: DateTime.now(),
+        // Nutrition fields from Gemini analysis
+        totalCalories: widget.result.totalCalories,
+        totalCarbsG: widget.result.totalCarbsG,
+        totalProteinG: widget.result.totalProteinG,
+        totalFatG: widget.result.totalFatG,
+        totalFiberG: widget.result.totalFiberG,
+        mealScore: widget.result.mealScore,
       );
 
       // Check connectivity and queue offline if needed
@@ -178,6 +178,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         Navigator.of(context).pop(true);
       }
     } catch (e) {
+      debugPrint('Error saving meal: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

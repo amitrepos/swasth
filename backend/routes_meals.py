@@ -9,12 +9,15 @@ from slowapi.util import get_remote_address
 import os
 import json
 import re
+import logging
 import ai_service
 import models
 import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
@@ -125,6 +128,13 @@ async def create_meal(
         user_confirmed=meal_data.user_confirmed,
         user_corrected_category=meal_data.user_corrected_category,
         timestamp=meal_data.timestamp,
+        # Nutrition fields
+        total_calories=meal_data.total_calories,
+        total_carbs_g=meal_data.total_carbs_g,
+        total_protein_g=meal_data.total_protein_g,
+        total_fat_g=meal_data.total_fat_g,
+        total_fiber_g=meal_data.total_fiber_g,
+        meal_score=meal_data.meal_score,
     )
     db.add(meal)
     db.commit()
@@ -246,9 +256,7 @@ async def parse_food_image(
         return {"error": "No AI API key configured"}
 
     try:
-        image_bytes = await file.read()
-        if len(image_bytes) > settings.MAX_UPLOAD_SIZE_BYTES:
-            return {"error": f"File too large. Max size: {settings.MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"}
+        # Validate MIME type before reading file to avoid loading large invalid files
         mime_type = file.content_type or "image/jpeg"
         
         # Defence-in-depth: validate MIME type against allowlist
@@ -263,6 +271,10 @@ async def parse_food_image(
         
         if mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
             return {"error": f"Unsupported file type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}"}
+
+        image_bytes = await file.read()
+        if len(image_bytes) > settings.MAX_UPLOAD_SIZE_BYTES:
+            return {"error": f"File too large. Max size: {settings.MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"}
 
         result_text = ai_service.generate_vision_insight(
             FOOD_CLASSIFICATION_PROMPT, image_bytes, profile_id, db,
@@ -389,14 +401,19 @@ async def analyze_nutrition(
                 detail="AI could not process the image. Please try again.",
             )
 
-        json_match = re.search(r"\{[\s\S]*\}", result_text, re.DOTALL)
-        if not json_match:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="AI returned unexpected format. Please try again.",
-            )
-
-        parsed = json.loads(json_match.group())
+        # Try parsing directly first (handles clean JSON responses)
+        parsed = None
+        try:
+            parsed = json.loads(result_text.strip())
+        except json.JSONDecodeError:
+            # Fall back to regex extraction for responses with trailing text
+            json_match = re.search(r"\{[\s\S]*\}", result_text, re.DOTALL)
+            if not json_match:
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="AI returned unexpected format. Please try again.",
+                )
+            parsed = json.loads(json_match.group())
 
         # Validate required fields
         if "foods" not in parsed or not isinstance(parsed["foods"], list):
@@ -477,8 +494,6 @@ async def analyze_nutrition(
             detail="AI returned unexpected format. Please try again.",
         )
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Nutrition analysis failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
