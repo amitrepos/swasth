@@ -21,15 +21,25 @@ _REG_BASE = {
 }
 
 
+def _profile_for_email(db, email):
+    """Return the profile owned by the just-registered user — no name dependency."""
+    db.expire_all()  # flush any stale session cache after endpoint's db.commit()
+    user = db.query(models.User).filter_by(email=email).first()
+    assert user is not None, f"User {email} not found after registration"
+    access = db.query(models.ProfileAccess).filter_by(user_id=user.id).first()
+    assert access is not None, f"ProfileAccess not found for {email}"
+    profile = db.query(models.Profile).filter_by(id=access.profile_id).first()
+    assert profile is not None, f"Profile not found for {email}"
+    return profile
+
+
 def test_register_with_weight_creates_health_reading(client, db):
     """POST /register with weight must create a HealthReading of type 'weight'."""
     payload = {**_REG_BASE, "weight": 72.5}
     resp = client.post("/api/auth/register", json=payload)
     assert resp.status_code == 201
 
-    profile = db.query(models.Profile).filter_by(name="My Health").first()
-    assert profile is not None
-
+    profile = _profile_for_email(db, _REG_BASE["email"])
     reading = (
         db.query(models.HealthReading)
         .filter_by(profile_id=profile.id, reading_type="weight")
@@ -48,7 +58,7 @@ def test_register_without_weight_creates_no_weight_reading(client, db):
     resp = client.post("/api/auth/register", json=payload)
     assert resp.status_code == 201
 
-    profile = db.query(models.Profile).filter_by(name="My Health").first()
+    profile = _profile_for_email(db, "noweight@swasth.app")
     reading = (
         db.query(models.HealthReading)
         .filter_by(profile_id=profile.id, reading_type="weight")
@@ -59,15 +69,16 @@ def test_register_without_weight_creates_no_weight_reading(client, db):
 
 def test_register_weight_reading_appears_in_readings_api(client, db):
     """Weight reading created at registration must be retrievable via GET /readings."""
-    payload = {**_REG_BASE, "email": "weightapi@swasth.app", "weight": 68.0}
-    reg_resp = client.post("/api/auth/register", json=payload)
-    assert reg_resp.status_code == 201
+    email = "weightapi@swasth.app"
+    payload = {**_REG_BASE, "email": email, "weight": 68.0}
+    resp = client.post("/api/auth/register", json=payload)
+    assert resp.status_code == 201
 
     from auth import create_access_token
-    token = create_access_token(data={"sub": "weightapi@swasth.app"})
+    token = create_access_token(data={"sub": email})
     headers = {"Authorization": f"Bearer {token}"}
 
-    profile = db.query(models.Profile).filter_by(name="My Health").first()
+    profile = _profile_for_email(db, email)
     resp = client.get(
         f"/api/readings?profile_id={profile.id}&reading_type=weight",
         headers=headers,
