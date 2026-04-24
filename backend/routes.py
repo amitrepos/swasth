@@ -101,22 +101,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
     db.commit()
     db.refresh(db_user)
 
-    # 4. Send email verification OTP (best-effort)
-    try:
-        otp = email_service.generate_otp()
-        otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
-        db.add(models.EmailVerificationOTP(
-            user_id=db_user.id,
-            email=db_user.email,
-            otp=otp,  # __init__ hashes via HMAC(PII_KEY)
-            expires_at=otp_expires,
-        ))
-        db.commit()
-        email_service.send_email_verification_otp(db_user.email, otp, db_user.full_name)
-    except Exception:
-        pass  # best-effort — user can resend later
-
-    # 5. Send welcome email (best-effort)
+    # 4. Send welcome email (best-effort)
     try:
         email_service.send_welcome_email(db_user.email, db_user.full_name)
     except Exception:

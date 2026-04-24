@@ -79,6 +79,7 @@ class _ConsentScreenState extends State<ConsentScreen> {
           backgroundColor: AppColors.statusNormal,
         ),
       );
+      // Navigate to login screen - email verification popup will be shown after login
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const UnifiedLoginScreen()),
