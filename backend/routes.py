@@ -81,18 +81,21 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
 
     # Auto-log first weight reading if provided at registration
     if user.weight is not None:
-        weight_reading = models.HealthReading(
-            profile_id=db_profile.id,
-            logged_by=db_user.id,
-            reading_type="weight",
-            weight_value=user.weight,
-            weight_unit="kg",
-            value_numeric=user.weight,
-            unit_display="kg",
-            reading_timestamp=now_utc,
-            weight_value_enc=encrypt_float(user.weight),
-        )
-        db.add(weight_reading)
+        try:
+            weight_reading = models.HealthReading(
+                profile_id=db_profile.id,
+                logged_by=db_user.id,
+                reading_type="weight",
+                weight_value=user.weight,
+                weight_unit="kg",
+                value_numeric=user.weight,
+                unit_display="kg",
+                reading_timestamp=now_utc,
+                weight_value_enc=encrypt_float(user.weight),
+            )
+            db.add(weight_reading)
+        except (ValueError, Exception):
+            logger.warning("Weight reading skipped during registration: encryption error")
 
     db.commit()
     db.refresh(db_user)

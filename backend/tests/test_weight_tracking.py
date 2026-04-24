@@ -2,6 +2,79 @@ import pytest
 from datetime import datetime, timedelta, timezone
 import models
 
+
+# ---------------------------------------------------------------------------
+# Registration weight auto-log
+# ---------------------------------------------------------------------------
+
+_REG_BASE = {
+    "email": "newuser@swasth.app",
+    "password": "Strong@123",
+    "full_name": "New User",
+    "phone_number": "9000000001",
+    "age": 30,
+    "gender": "Male",
+    "height": 170.0,
+    "consent_app_version": "1.0",
+    "consent_language": "en",
+}
+
+
+def test_register_with_weight_creates_health_reading(client, db):
+    """POST /register with weight must create a HealthReading of type 'weight'."""
+    payload = {**_REG_BASE, "weight": 72.5}
+    resp = client.post("/api/register", json=payload)
+    assert resp.status_code == 201
+
+    profile = db.query(models.Profile).filter_by(name="My Health").first()
+    assert profile is not None
+
+    reading = (
+        db.query(models.HealthReading)
+        .filter_by(profile_id=profile.id, reading_type="weight")
+        .first()
+    )
+    assert reading is not None, "Weight HealthReading must be created at registration"
+    assert reading.weight_value == 72.5
+    assert reading.value_numeric == 72.5
+    assert reading.unit_display == "kg"
+    assert reading.logged_by is not None
+
+
+def test_register_without_weight_creates_no_weight_reading(client, db):
+    """POST /register without weight must NOT create a weight HealthReading."""
+    payload = {**_REG_BASE, "email": "noweight@swasth.app"}
+    resp = client.post("/api/register", json=payload)
+    assert resp.status_code == 201
+
+    profile = db.query(models.Profile).filter_by(name="My Health").first()
+    reading = (
+        db.query(models.HealthReading)
+        .filter_by(profile_id=profile.id, reading_type="weight")
+        .first()
+    )
+    assert reading is None, "No weight HealthReading should be created when weight is omitted"
+
+
+def test_register_weight_reading_appears_in_readings_api(client, db):
+    """Weight reading created at registration must be retrievable via GET /readings."""
+    payload = {**_REG_BASE, "email": "weightapi@swasth.app", "weight": 68.0}
+    reg_resp = client.post("/api/register", json=payload)
+    assert reg_resp.status_code == 201
+
+    from auth import create_access_token
+    token = create_access_token(data={"sub": "weightapi@swasth.app"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    profile = db.query(models.Profile).filter_by(name="My Health").first()
+    resp = client.get(
+        f"/api/readings?profile_id={profile.id}&reading_type=weight",
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    readings = resp.json()
+    assert any(r["reading_type"] == "weight" and r["weight_value"] == 68.0 for r in readings)
+
 def _pid(db):
     return db.query(models.Profile).first().id
 
