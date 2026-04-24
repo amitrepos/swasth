@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from pydantic import Field
+from typing import Optional, List, ClassVar
 
 
 class Settings(BaseSettings):
@@ -73,6 +74,10 @@ class Settings(BaseSettings):
     # WhatsApp Inbound Webhook
     TWILIO_WEBHOOK_VALIDATE: bool = False    # Set True in production to verify Twilio HMAC signatures
     WHATSAPP_SESSION_TTL_MINUTES: int = 10   # How long to wait for profile selection reply
+
+    # File upload limits
+    MAX_UPLOAD_SIZE_BYTES: int = 10_485_760  # 10 MB max for food photos
+    ALLOWED_IMAGE_MIME_TYPES: List[str] = Field(default_factory=lambda: ["image/jpeg", "image/png", "image/webp"])
 
     class Config:
         env_file = ".env"

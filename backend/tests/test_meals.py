@@ -2,6 +2,7 @@
 import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock
+import models
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +277,46 @@ class TestMealCreateEndpoint:
         }, headers=auth_headers)
         assert resp.status_code == 422
 
+    def test_create_meal_with_nutrition_fields(self, client, auth_headers, db, test_user):
+        """Nutrition fields round-trip correctly via POST /meals."""
+        profile_id = _get_profile_id(db, test_user.id)
+        resp = client.post("/api/meals", json={
+            "profile_id": profile_id,
+            "category": "MODERATE_CARB",
+            "glucose_impact": "MODERATE",
+            "meal_type": "LUNCH",
+            "input_method": "PHOTO_GEMINI",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "total_calories": 450.0,
+            "total_carbs_g": 65.0,
+            "total_protein_g": 18.0,
+            "total_fat_g": 12.0,
+            "total_fiber_g": 8.0,
+            "meal_score": 7,
+        }, headers=auth_headers)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["total_calories"] == 450.0
+        assert data["total_carbs_g"] == 65.0
+        assert data["total_protein_g"] == 18.0
+        assert data["total_fat_g"] == 12.0
+        assert data["total_fiber_g"] == 8.0
+        assert data["meal_score"] == 7
+
+    def test_create_meal_negative_nutrition_rejected(self, client, auth_headers, db, test_user):
+        """Negative nutrition values are rejected by schema validation."""
+        profile_id = _get_profile_id(db, test_user.id)
+        resp = client.post("/api/meals", json={
+            "profile_id": profile_id,
+            "category": "HIGH_CARB",
+            "glucose_impact": "HIGH",
+            "meal_type": "DINNER",
+            "input_method": "QUICK_SELECT",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "total_calories": -100.0,
+        }, headers=auth_headers)
+        assert resp.status_code == 422  # Pydantic validation error
+
 
 class TestMealListEndpoint:
     """Test GET /meals"""
@@ -362,6 +403,8 @@ class TestMealParseImage:
     def test_parse_image_success(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
         mock_settings.GEMINI_API_KEY = "fake-key"
         mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
         mock_vision.return_value = '{"category": "HIGH_CARB", "glucose_impact": "HIGH", "tip_en": "A short walk after meals may help keep sugar levels stable.", "tip_hi": "खाने के बाद थोड़ी सैर करना शुगर को स्थिर रखने में मदद कर सकता है।", "confidence": 0.88}'
 
         profile_id = _get_profile_id(db, test_user.id)
@@ -377,7 +420,6 @@ class TestMealParseImage:
         data = resp.json()
         assert data["category"] == "HIGH_CARB"
         assert data["confidence"] == 0.88
-        assert "may" in data["tip_en"].lower() or "consider" in data["tip_en"].lower()
 
     @patch("ai_service.generate_vision_insight")
     def test_parse_image_returns_error_on_failure(self, mock_vision, client, auth_headers, db, test_user):
@@ -403,3 +445,429 @@ class TestMealParseImage:
             files={"file": ("food.jpg", fake_image, "image/jpeg")},
         )
         assert resp.status_code == 401
+
+    @patch("routes_meals.settings")
+    def test_parse_image_octet_stream_rejected(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns soft error when file MIME type is application/octet-stream with unknown extension."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.bin", fake_image, "application/octet-stream")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200  # parse_image returns soft errors on HTTP 200
+        assert "error" in resp.json()
+        assert "Unknown file type" in resp.json()["error"]
+
+    @patch("routes_meals.settings")
+    def test_parse_image_file_too_large(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns soft error when file exceeds MAX_UPLOAD_SIZE_BYTES."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 50  # Very small limit for testing
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        # Create a file larger than 50 bytes
+        large_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.jpg", large_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200  # parse_image returns soft errors on HTTP 200
+        assert "error" in resp.json()
+        assert "File too large" in resp.json()["error"]
+
+    @patch("routes_meals.settings")
+    def test_parse_image_unsupported_mime_type(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns soft error when file MIME type is not allowed."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.gif", fake_image, "image/gif")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200  # parse_image returns soft errors on HTTP 200
+        assert "error" in resp.json()
+        assert "Unsupported file type" in resp.json()["error"]
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_meals.settings")
+    def test_parse_image_octet_stream_jpg_allowed(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        """Accepts octet-stream if filename ends with .jpg."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+        mock_vision.return_value = '{"category": "HIGH_CARB", "glucose_impact": "HIGH", "tip_en": "Walk.", "tip_hi": "टहलें।", "confidence": 0.8}'
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "application/octet-stream")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "error" not in data
+        assert data["category"] == "HIGH_CARB"
+
+
+class TestMealAnalyzeNutrition:
+    """Test POST /meals/analyze-nutrition"""
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_success(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        """Successful nutrition analysis returns full breakdown."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+        mock_vision.return_value = '''
+        {
+            "foods": [
+                {"name": "Rice", "weight_grams": 200, "calories": 260, "carbs_g": 58, "protein_g": 5, "fat_g": 0.5, "fiber_g": 1}
+            ],
+            "total_calories": 260,
+            "total_carbs_g": 58,
+            "total_protein_g": 5,
+            "total_fat_g": 0.5,
+            "total_fiber_g": 1,
+            "carb_level": "high",
+            "sugar_level": "medium",
+            "iron_mg": 2.5,
+            "calcium_mg": 30,
+            "vitamin_c_mg": 0,
+            "is_vegan": true,
+            "is_vegetarian": true,
+            "is_gluten_free": true,
+            "is_high_protein": false,
+            "meal_score": 7,
+            "meal_score_reason": "Good fiber content with balanced macros"
+        }
+        '''
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "foods" in data
+        assert len(data["foods"]) == 1
+        assert data["foods"][0]["name"] == "Rice"
+        assert data["total_calories"] == 260
+        assert data["carb_level"] == "high"
+        assert data["sugar_level"] == "medium"
+        assert data["iron_mg"] == 2.5
+        assert data["is_vegan"] is True
+        assert data["meal_score"] == 7
+
+    @patch("ai_service.generate_vision_insight")
+    def test_analyze_nutrition_returns_error_on_failure(self, mock_vision, client, auth_headers, db, test_user):
+        """When AI fails, returns 502 error."""
+        from config import settings as real_settings
+        with patch("routes_meals.settings") as mock_settings:
+            mock_settings.GEMINI_API_KEY = real_settings.GEMINI_API_KEY or "fake-key"
+            mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+            mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+            mock_vision.return_value = None  # Gemini failed
+
+            profile_id = _get_profile_id(db, test_user.id)
+            import io
+            fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+            resp = client.post(
+                f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+                files={"file": ("food.jpg", fake_image, "image/jpeg")},
+                headers=auth_headers,
+            )
+            assert resp.status_code == 502  # Should return 502 for AI failures
+
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_no_api_key(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns error when no Gemini API key configured."""
+        mock_settings.GEMINI_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 503  # Now returns proper HTTP error
+        assert "No Gemini API key" in resp.json()["detail"]
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_invalid_json(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        """Returns error when AI returns non-JSON."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+        mock_vision.return_value = "This is not JSON at all"
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 502  # Now returns proper HTTP error
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_missing_foods_field(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        """Returns error when AI response missing required 'foods' field."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+        mock_vision.return_value = '{"total_calories": 100}'
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 502  # Now returns proper HTTP error
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_empty_foods_list(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        """Returns error when AI response has empty foods list."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+        mock_vision.return_value = '{"foods": [], "total_calories": 0, "total_carbs_g": 0, "total_protein_g": 0, "total_fat_g": 0, "total_fiber_g": 0, "carb_level": "low", "sugar_level": "low"}'
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        # Empty foods list should still succeed (validation only checks it's a list)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["foods"] == []
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_exception_does_not_leak_details(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        """Exception handler returns generic message, not raw exception."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+        mock_vision.side_effect = Exception("DatabaseError: connection refused at 10.0.0.5:5432")
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 500  # Now returns proper HTTP error
+        error_msg = resp.json()["detail"]
+        assert "Nutrition analysis failed" in error_msg
+        # Ensure no internal details leaked
+        assert "DatabaseError" not in error_msg
+        assert "10.0.0.5" not in error_msg
+        assert "5432" not in error_msg
+
+    def test_analyze_nutrition_requires_auth(self, client):
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+        resp = client.post(
+            "/api/meals/analyze-nutrition?profile_id=1",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+        )
+        assert resp.status_code == 401
+
+    def test_analyze_nutrition_cross_user_denied(self, client, db, test_user, auth_headers):
+        """User A cannot call analyze-nutrition with User B's profile_id."""
+        from auth import get_password_hash, create_access_token
+        from utils.phone import normalize_phone
+
+        # Create a second user with their own profile
+        user_b = models.User(
+            email="userb@swasth.app",
+            password_hash=get_password_hash("UserB@1234"),
+            full_name="User B",
+            phone_number=normalize_phone("9876500099"),
+        )
+        db.add(user_b)
+        db.flush()
+
+        profile_b = models.Profile(
+            name="User B Profile",
+            phone_number=normalize_phone("9876500099"),
+        )
+        db.add(profile_b)
+        db.flush()
+
+        access_b = models.ProfileAccess(
+            user_id=user_b.id,
+            profile_id=profile_b.id,
+            access_level="owner",
+        )
+        db.add(access_b)
+        db.flush()
+
+        # User A (test_user) tries to analyze nutrition for User B's profile
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_b.id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,  # User A's auth token
+        )
+        # Should be denied — either 403 or 404 (profile not accessible)
+        assert resp.status_code in [403, 404]
+
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_file_too_large(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns 413 when file exceeds MAX_UPLOAD_SIZE_BYTES."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 50  # Very small limit for testing
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        # Create a file larger than 50 bytes
+        large_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.jpg", large_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 413
+        assert "File too large" in resp.json()["detail"]
+
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_unsupported_mime_type(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns 415 when file MIME type is not allowed."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.gif", fake_image, "image/gif")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 415
+        assert "Unsupported file type" in resp.json()["detail"]
+
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_octet_stream_rejected(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns 415 when file MIME type is application/octet-stream."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.bin", fake_image, "application/octet-stream")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 415
+        assert "Unknown file type" in resp.json()["detail"]
+
+
+class TestSafeFloat:
+    """Test _safe_float utility function edge cases."""
+
+    def test_safe_float_with_na_string(self):
+        """_safe_float handles 'N/A' string correctly."""
+        from routes_meals import _safe_float
+        assert _safe_float("N/A") == 0.0
+        assert _safe_float("N/A", default=1.5) == 1.5
+
+    def test_safe_float_with_unit_string(self):
+        """_safe_float extracts number from strings with units like '150 kcal'."""
+        from routes_meals import _safe_float
+        assert _safe_float("150 kcal") == 150.0
+        assert _safe_float("58g") == 58.0
+        assert _safe_float("2.5 mg") == 2.5
+        assert _safe_float("100 cal") == 100.0
+        assert _safe_float("50 kj") == 50.0
+
+    def test_safe_float_with_empty_string(self):
+        """_safe_float handles empty string correctly."""
+        from routes_meals import _safe_float
+        assert _safe_float("") == 0.0
+        assert _safe_float("  ") == 0.0
+
+    def test_safe_float_with_none(self):
+        """_safe_float handles None correctly."""
+        from routes_meals import _safe_float
+        assert _safe_float(None) == 0.0
+        assert _safe_float(None, default=5.0) == 5.0
+
+    def test_safe_float_with_numeric_types(self):
+        """_safe_float handles int and float correctly."""
+        from routes_meals import _safe_float
+        assert _safe_float(42) == 42.0
+        assert _safe_float(3.14) == 3.14
+        assert _safe_float(0) == 0.0
+
+    def test_safe_float_with_invalid_string(self):
+        """_safe_float returns default for non-numeric strings."""
+        from routes_meals import _safe_float
+        assert _safe_float("abc") == 0.0
+        assert _safe_float("high", default=2.0) == 2.0

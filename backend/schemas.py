@@ -573,6 +573,38 @@ MEAL_TYPE_OPTIONS = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"]
 MEAL_INPUT_METHODS = ["PHOTO_GEMINI", "QUICK_SELECT"]
 
 
+class FoodItemNutrition(BaseModel):
+    """Individual food item nutrition data."""
+    name: str = Field(..., max_length=100)
+    weight_grams: float = Field(..., ge=0)
+    calories: float = Field(..., ge=0)
+    carbs_g: float = Field(..., ge=0)
+    protein_g: float = Field(..., ge=0)
+    fat_g: float = Field(..., ge=0)
+    fiber_g: float = Field(..., ge=0)
+
+
+class NutritionAnalysisResult(BaseModel):
+    """Detailed nutrition analysis from Gemini Vision."""
+    foods: List[FoodItemNutrition]
+    total_calories: float = Field(..., ge=0)
+    total_carbs_g: float = Field(..., ge=0)
+    total_protein_g: float = Field(..., ge=0)
+    total_fat_g: float = Field(..., ge=0)
+    total_fiber_g: float = Field(..., ge=0)
+    carb_level: Literal["low", "medium", "high"]
+    sugar_level: Literal["low", "medium", "high"]
+    iron_mg: Optional[float] = Field(None, ge=0)
+    calcium_mg: Optional[float] = Field(None, ge=0)
+    vitamin_c_mg: Optional[float] = Field(None, ge=0)
+    is_vegan: Optional[bool] = None
+    is_vegetarian: Optional[bool] = None
+    is_gluten_free: Optional[bool] = None
+    is_high_protein: Optional[bool] = None
+    meal_score: Optional[int] = Field(None, ge=1, le=10)
+    meal_score_reason: Optional[str] = Field(None, max_length=200)
+
+
 class MealLogCreate(BaseModel):
     profile_id: int
     category: str
@@ -585,6 +617,13 @@ class MealLogCreate(BaseModel):
     confidence: Optional[float] = None
     user_confirmed: bool = True
     user_corrected_category: Optional[str] = None
+    # Nutrition fields (from Gemini Vision analysis)
+    total_calories: Optional[float] = Field(None, ge=0)
+    total_carbs_g: Optional[float] = Field(None, ge=0)
+    total_protein_g: Optional[float] = Field(None, ge=0)
+    total_fat_g: Optional[float] = Field(None, ge=0)
+    total_fiber_g: Optional[float] = Field(None, ge=0)
+    meal_score: Optional[int] = Field(None, ge=1, le=10)
 
     @validator('category')
     def validate_category(cls, v):
@@ -633,6 +672,13 @@ class MealLogResponse(BaseModel):
     user_corrected_category: Optional[str] = None
     timestamp: datetime
     created_at: datetime
+    # Nutrition fields
+    total_calories: Optional[float] = None
+    total_carbs_g: Optional[float] = None
+    total_protein_g: Optional[float] = None
+    total_fat_g: Optional[float] = None
+    total_fiber_g: Optional[float] = None
+    meal_score: Optional[int] = None
 
     class Config:
         from_attributes = True

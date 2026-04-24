@@ -276,6 +276,14 @@ class MealLog(Base):
     user_confirmed = Column(Boolean, default=False)
     user_corrected_category = Column(String, nullable=True)  # If user overrode Gemini
 
+    # Nutrition data (from Gemini Vision analysis)
+    total_calories = Column(Float, nullable=True)
+    total_carbs_g = Column(Float, nullable=True)
+    total_protein_g = Column(Float, nullable=True)
+    total_fat_g = Column(Float, nullable=True)
+    total_fiber_g = Column(Float, nullable=True)
+    meal_score = Column(Integer, nullable=True)        # 1-10 health rating
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (

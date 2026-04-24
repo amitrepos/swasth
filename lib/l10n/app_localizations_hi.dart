@@ -1293,6 +1293,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get mealSavedSuccess => 'खाना दर्ज हो गया!';
 
   @override
+  String get mealSavedOffline =>
+      'भोजन ऑफ़लाइन सहेजा गया। कनेक्ट होने पर सिंक होगा।';
+
+  @override
   String get mealTypeBreakfast => 'सुबह का नाश्ता';
 
   @override
@@ -1321,6 +1325,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get foodPhotoFailed => 'खाना पहचान नहीं पाए। कृपया खुद चुनें।';
+
+  @override
+  String get cameraNotFound => 'इस डिवाइस पर कैमरा नहीं मिला।';
+
+  @override
+  String get cameraError => 'कैमरा शुरू नहीं हो सका। कृपया फिर से कोशिश करें।';
 
   @override
   String get foodResultTitle => 'खाने का नतीजा';
@@ -1818,4 +1828,104 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get accountCreatedSuccess =>
       'Account created successfully! Please complete your profile.';
+
+  @override
+  String get nutritionAnalysisTitle => 'पोषण विश्लेषण';
+
+  @override
+  String get carbLevel => 'कार्ब्स';
+
+  @override
+  String get sugarLevel => 'शुगर';
+
+  @override
+  String get totalNutrition => 'कुल पोषण';
+
+  @override
+  String get detectedFoods => 'पहचाने गए खाने के पदार्थ';
+
+  @override
+  String get noFoodsDetected =>
+      'कोई खास खाना नहीं मिला। यह लिक्विड मील या साफ नहीं दिखने वाली तस्वीरों में हो सकता है।';
+
+  @override
+  String get micronutrients => 'सूक्ष्म पोषक तत्व';
+
+  @override
+  String get dietFlags => 'आहार जानकारी';
+
+  @override
+  String get saveMeal => 'भोजन सहेजें';
+
+  @override
+  String get mealHealthScore => 'भोजन स्वास्थ्य स्कोर';
+
+  @override
+  String get calories => 'कैलोरी';
+
+  @override
+  String get carbs => 'कार्ब्स';
+
+  @override
+  String get protein => 'प्रोटीन';
+
+  @override
+  String get fat => 'वसा';
+
+  @override
+  String get vegan => 'वेगन';
+
+  @override
+  String get vegetarian => 'शाकाहारी';
+
+  @override
+  String get glutenFree => 'ग्लूटेन मुक्त';
+
+  @override
+  String get highProtein => 'उच्च प्रोटीन';
+
+  @override
+  String get analysisTypeTitle => 'विश्लेषण प्रकार चुनें';
+
+  @override
+  String get quickClassification => 'त्वरित वर्गीकरण';
+
+  @override
+  String get quickClassificationDesc => 'कार्ब स्तर + स्वास्थ्य सुझाव (तेज़)';
+
+  @override
+  String get detailedNutrition => 'विस्तृत पोषण';
+
+  @override
+  String get detailedNutritionDesc => 'पूर्ण मैक्रो, माइक्रो और आहार फ्लैग';
+
+  @override
+  String get nutritionAnalyzing => 'पोषण विवरण का विश्लेषण...';
+
+  @override
+  String get iron => 'आयरन';
+
+  @override
+  String get calcium => 'कैल्शियम';
+
+  @override
+  String get vitaminC => 'विटामिन सी';
+
+  @override
+  String get kcalUnit => 'किलोकैलोरी';
+
+  @override
+  String get gramsUnit => 'ग्राम';
+
+  @override
+  String get carbsUnit => 'कार्ब्स';
+
+  @override
+  String get proteinUnit => 'प्रोटीन';
+
+  @override
+  String get fatUnit => 'वसा';
+
+  @override
+  String get useQuickSelect => 'त्वरित चयन करें';
 }

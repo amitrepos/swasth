@@ -2486,6 +2486,12 @@ abstract class AppLocalizations {
   /// **'Meal logged!'**
   String get mealSavedSuccess;
 
+  /// Shown when a meal is saved while device is offline, queued for later sync.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal saved offline. Will sync when connected.'**
+  String get mealSavedOffline;
+
   /// No description provided for @mealTypeBreakfast.
   ///
   /// In en, this message translates to:
@@ -2545,6 +2551,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not classify food. Please select manually.'**
   String get foodPhotoFailed;
+
+  /// Error message when device has no camera available
+  ///
+  /// In en, this message translates to:
+  /// **'No camera found on this device.'**
+  String get cameraNotFound;
+
+  /// Generic camera error message - never leak raw exception details to user
+  ///
+  /// In en, this message translates to:
+  /// **'Camera initialization failed. Please try again.'**
+  String get cameraError;
 
   /// No description provided for @foodResultTitle.
   ///
@@ -3427,6 +3445,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account created successfully! Please complete your profile.'**
   String get accountCreatedSuccess;
+
+  /// Title for the detailed nutrition analysis screen showing macros, micros, and diet flags
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition Analysis'**
+  String get nutritionAnalysisTitle;
+
+  /// Label for carbohydrate level badge (low/medium/high) in nutrition analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Carb Level'**
+  String get carbLevel;
+
+  /// Label for sugar level badge (low/medium/high) in nutrition analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Sugar'**
+  String get sugarLevel;
+
+  /// Section header for total macronutrients summary
+  ///
+  /// In en, this message translates to:
+  /// **'Total Nutrition'**
+  String get totalNutrition;
+
+  /// Section header for list of individual food items detected in the photo
+  ///
+  /// In en, this message translates to:
+  /// **'Detected Foods'**
+  String get detectedFoods;
+
+  /// Empty state message when AI returns empty foods array
+  ///
+  /// In en, this message translates to:
+  /// **'No specific foods detected. This may happen with liquid meals or unclear images.'**
+  String get noFoodsDetected;
+
+  /// Section header for micronutrients (iron, calcium, vitamin C)
+  ///
+  /// In en, this message translates to:
+  /// **'Micronutrients'**
+  String get micronutrients;
+
+  /// Section header for diet type flags (vegan, vegetarian, gluten-free, high protein)
+  ///
+  /// In en, this message translates to:
+  /// **'Diet Information'**
+  String get dietFlags;
+
+  /// Button text to save the analyzed meal to the meal log
+  ///
+  /// In en, this message translates to:
+  /// **'Save Meal Log'**
+  String get saveMeal;
+
+  /// Label for the meal health score (1-10) shown in the score card
+  ///
+  /// In en, this message translates to:
+  /// **'Meal Health Score'**
+  String get mealHealthScore;
+
+  /// Label for calories in the macronutrients grid
+  ///
+  /// In en, this message translates to:
+  /// **'Calories'**
+  String get calories;
+
+  /// Label for carbohydrates (grams) in the macronutrients grid
+  ///
+  /// In en, this message translates to:
+  /// **'Carbs'**
+  String get carbs;
+
+  /// Label for protein (grams) in the macronutrients grid
+  ///
+  /// In en, this message translates to:
+  /// **'Protein'**
+  String get protein;
+
+  /// Label for fat (grams) in the macronutrients grid
+  ///
+  /// In en, this message translates to:
+  /// **'Fat'**
+  String get fat;
+
+  /// Diet flag label indicating the meal is vegan
+  ///
+  /// In en, this message translates to:
+  /// **'Vegan'**
+  String get vegan;
+
+  /// Diet flag label indicating the meal is vegetarian
+  ///
+  /// In en, this message translates to:
+  /// **'Vegetarian'**
+  String get vegetarian;
+
+  /// Diet flag label indicating the meal is gluten-free
+  ///
+  /// In en, this message translates to:
+  /// **'Gluten Free'**
+  String get glutenFree;
+
+  /// Diet flag label indicating the meal is high in protein
+  ///
+  /// In en, this message translates to:
+  /// **'High Protein'**
+  String get highProtein;
+
+  /// Title for the screen where user chooses between quick classification or detailed nutrition analysis
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Analysis Type'**
+  String get analysisTypeTitle;
+
+  /// Button text for fast carb level detection option
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Classification'**
+  String get quickClassification;
+
+  /// Description text for quick classification option
+  ///
+  /// In en, this message translates to:
+  /// **'Carb level + health tip (fast)'**
+  String get quickClassificationDesc;
+
+  /// Button text for full nutrition analysis option with macros and micros
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed Nutrition'**
+  String get detailedNutrition;
+
+  /// Description text for detailed nutrition analysis option
+  ///
+  /// In en, this message translates to:
+  /// **'Full macros, micros & diet flags'**
+  String get detailedNutritionDesc;
+
+  /// Loading message shown while AI analyzes the food photo for nutrition details
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing nutrition details...'**
+  String get nutritionAnalyzing;
+
+  /// Label for iron micronutrient in mg
+  ///
+  /// In en, this message translates to:
+  /// **'Iron'**
+  String get iron;
+
+  /// Label for calcium micronutrient in mg
+  ///
+  /// In en, this message translates to:
+  /// **'Calcium'**
+  String get calcium;
+
+  /// Label for vitamin C micronutrient in mg
+  ///
+  /// In en, this message translates to:
+  /// **'Vitamin C'**
+  String get vitaminC;
+
+  /// Unit abbreviation for kilocalories
+  ///
+  /// In en, this message translates to:
+  /// **'kcal'**
+  String get kcalUnit;
+
+  /// Unit abbreviation for grams
+  ///
+  /// In en, this message translates to:
+  /// **'g'**
+  String get gramsUnit;
+
+  /// Short label for carbohydrates in mini macro badges
+  ///
+  /// In en, this message translates to:
+  /// **'carbs'**
+  String get carbsUnit;
+
+  /// Short label for protein in mini macro badges
+  ///
+  /// In en, this message translates to:
+  /// **'protein'**
+  String get proteinUnit;
+
+  /// Short label for fat in mini macro badges
+  ///
+  /// In en, this message translates to:
+  /// **'fat'**
+  String get fatUnit;
+
+  /// Button text to fallback to manual meal selection if photo analysis fails
+  ///
+  /// In en, this message translates to:
+  /// **'Use Quick Select instead'**
+  String get useQuickSelect;
 }
 
 class _AppLocalizationsDelegate

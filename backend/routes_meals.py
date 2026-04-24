@@ -2,18 +2,22 @@
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Any, List, Optional
 from datetime import datetime, date, timedelta, timezone
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import os
 import json
 import re
+import logging
+import ai_service
 import models
 import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
@@ -50,6 +54,51 @@ Respond ONLY in this exact JSON format, nothing else:
   "confidence": 0.9
 }"""
 
+# ---------------------------------------------------------------------------
+# Detailed Nutrition Analysis Prompt — full nutrient breakdown
+# ---------------------------------------------------------------------------
+
+NUTRITION_ANALYSIS_PROMPT = """You are a nutrition expert. Analyze this food image and return ONLY valid JSON with:
+- foods: array of detected items with estimated weight in grams
+- per_item: calories, carbs_g, protein_g, fat_g, fiber_g
+- total: summed macros
+- carb_level: "low" (<20g), "medium" (20–50g), or "high" (>50g)
+- sugar_level: "low", "medium", or "high"
+- micronutrients: iron_mg, calcium_mg, vitamin_c_mg estimates
+- flags: is_vegan, is_vegetarian, is_gluten_free, is_high_protein booleans
+- meal_score: health rating 1–10 with a one-line reason
+
+Respond ONLY in this exact JSON format, nothing else:
+{
+  "foods": [
+    {
+      "name": "Brown Rice",
+      "weight_grams": 150,
+      "calories": 165,
+      "carbs_g": 35,
+      "protein_g": 4,
+      "fat_g": 1.5,
+      "fiber_g": 2
+    }
+  ],
+  "total_calories": 450,
+  "total_carbs_g": 65,
+  "total_protein_g": 18,
+  "total_fat_g": 12,
+  "total_fiber_g": 8,
+  "carb_level": "high",
+  "sugar_level": "low",
+  "iron_mg": 3.5,
+  "calcium_mg": 120,
+  "vitamin_c_mg": 15,
+  "is_vegan": false,
+  "is_vegetarian": true,
+  "is_gluten_free": true,
+  "is_high_protein": false,
+  "meal_score": 7,
+  "meal_score_reason": "Good fiber content with balanced macros"
+}"""
+
 
 # ---------------------------------------------------------------------------
 # POST /meals — save a meal log
@@ -79,6 +128,13 @@ async def create_meal(
         user_confirmed=meal_data.user_confirmed,
         user_corrected_category=meal_data.user_corrected_category,
         timestamp=meal_data.timestamp,
+        # Nutrition fields
+        total_calories=meal_data.total_calories,
+        total_carbs_g=meal_data.total_carbs_g,
+        total_protein_g=meal_data.total_protein_g,
+        total_fat_g=meal_data.total_fat_g,
+        total_fiber_g=meal_data.total_fiber_g,
+        meal_score=meal_data.meal_score,
     )
     db.add(meal)
     db.commit()
@@ -200,16 +256,30 @@ async def parse_food_image(
         return {"error": "No AI API key configured"}
 
     try:
-        image_bytes = await file.read()
-        mime_type = file.content_type or "image/jpeg"
+        # Validate MIME type before reading file to avoid loading large invalid files
+        mime_type = file.content_type
+        
+        # Defence-in-depth: validate MIME type against allowlist
         if mime_type == "application/octet-stream":
             fname = (file.filename or "").lower()
             if fname.endswith(".png"):
                 mime_type = "image/png"
-            else:
+            elif fname.endswith(".webp"):
+                mime_type = "image/webp"
+            elif fname.endswith(".jpg") or fname.endswith(".jpeg"):
                 mime_type = "image/jpeg"
+            else:
+                # Reject unknown types instead of defaulting to JPEG
+                return {"error": "Unknown file type. Please upload a valid image (JPEG, PNG, or WebP)."}
+        
+        if not mime_type or mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
+            return {"error": f"Unsupported file type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}"}
 
-        import ai_service
+        # Read and validate file size AFTER MIME validation
+        image_bytes = await file.read()
+        if len(image_bytes) > settings.MAX_UPLOAD_SIZE_BYTES:
+            return {"error": f"File too large. Max size: {settings.MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"}
+
         result_text = ai_service.generate_vision_insight(
             FOOD_CLASSIFICATION_PROMPT, image_bytes, profile_id, db,
             prompt_summary="food-classification",
@@ -249,3 +319,187 @@ async def parse_food_image(
         return {"error": "AI returned unexpected format. Please use Quick Select."}
     except Exception:
         return {"error": "Food classification failed. Please use Quick Select."}
+
+
+# ---------------------------------------------------------------------------
+# POST /meals/analyze-nutrition — detailed nutrition analysis
+# ---------------------------------------------------------------------------
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    """Safely convert a value to float, handling N/A, null, strings with units, etc."""
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    # Try to extract numeric value from string (e.g., "150 kcal" -> 150.0)
+    if isinstance(value, str):
+        # Remove common units and whitespace
+        cleaned = value.strip().lower()
+        # Remove common suffixes (longer suffixes first to avoid partial matches)
+        for suffix in ['kcal', 'cal', 'mg', 'kj', 'g']:
+            cleaned = cleaned.replace(suffix, '').strip()
+        try:
+            return float(cleaned)
+        except (ValueError, TypeError):
+            return default
+    return default
+
+
+@router.post(
+    "/meals/analyze-nutrition",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.NutritionAnalysisResult,
+)
+@limiter.limit("3/minute")
+async def analyze_nutrition(
+    request: Request,
+    profile_id: int = Query(..., gt=0),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Analyze food photo for detailed nutrition breakdown using Gemini Vision."""
+    get_profile_access_or_403(profile_id, user, db)
+
+    # DeepSeek does not support vision — Gemini is the only supported provider here.
+    if not settings.GEMINI_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No Gemini API key configured",
+        )
+
+    try:
+        # Validate MIME type before reading file
+        mime_type = file.content_type
+        if mime_type == "application/octet-stream":
+            # Reject unknown types instead of defaulting to JPEG
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Unknown file type. Please upload a valid image (JPEG, PNG, or WebP).",
+            )
+        
+        if not mime_type or mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=f"Unsupported file type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}",
+            )
+
+        # Read and validate file size
+        image_bytes = await file.read()
+        if len(image_bytes) > settings.MAX_UPLOAD_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File too large. Max size: {settings.MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB",
+            )
+
+        result_text = ai_service.generate_vision_insight(
+            NUTRITION_ANALYSIS_PROMPT, image_bytes, profile_id, db,
+            prompt_summary="nutrition-analysis",
+            mime_type=mime_type,
+        )
+
+        if not result_text:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="AI could not process the image. Please try again.",
+            )
+
+        # Try parsing directly first (handles clean JSON responses)
+        parsed = None
+        try:
+            parsed = json.loads(result_text.strip())
+        except json.JSONDecodeError:
+            # Fall back to regex extraction for responses with trailing text
+            json_match = re.search(r"\{[\s\S]*\}", result_text, re.DOTALL)
+            if not json_match:
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="AI returned unexpected format. Please try again.",
+                )
+            parsed = json.loads(json_match.group())
+
+        # Validate required fields
+        if "foods" not in parsed or not isinstance(parsed["foods"], list):
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Invalid food data returned",
+            )
+
+        # Validate and clean food items
+        validated_foods = []
+        for food in parsed["foods"]:
+            validated_foods.append({
+                "name": str(food.get("name", "Unknown")),
+                "weight_grams": float(food.get("weight_grams", 0)),
+                "calories": float(food.get("calories", 0)),
+                "carbs_g": float(food.get("carbs_g", 0)),
+                "protein_g": float(food.get("protein_g", 0)),
+                "fat_g": float(food.get("fat_g", 0)),
+                "fiber_g": float(food.get("fiber_g", 0)),
+            })
+
+        # Build response with validation
+        carb_level = parsed.get("carb_level", "medium")
+        if carb_level not in ("low", "medium", "high"):
+            carb_level = "medium"
+        
+        sugar_level = parsed.get("sugar_level", "medium")
+        if sugar_level not in ("low", "medium", "high"):
+            sugar_level = "medium"
+        
+        meal_score = parsed.get("meal_score")
+        if meal_score is not None:
+            try:
+                meal_score = max(1, min(10, int(meal_score)))
+            except (ValueError, TypeError):
+                meal_score = None
+        
+        response = {
+            "foods": validated_foods,
+            "total_calories": _safe_float(parsed.get("total_calories", 0)),
+            "total_carbs_g": _safe_float(parsed.get("total_carbs_g", 0)),
+            "total_protein_g": _safe_float(parsed.get("total_protein_g", 0)),
+            "total_fat_g": _safe_float(parsed.get("total_fat_g", 0)),
+            "total_fiber_g": _safe_float(parsed.get("total_fiber_g", 0)),
+            "carb_level": carb_level,
+            "sugar_level": sugar_level,
+        }
+
+        # Optional fields
+        if "iron_mg" in parsed:
+            response["iron_mg"] = _safe_float(parsed["iron_mg"])
+        if "calcium_mg" in parsed:
+            response["calcium_mg"] = _safe_float(parsed["calcium_mg"])
+        if "vitamin_c_mg" in parsed:
+            response["vitamin_c_mg"] = _safe_float(parsed["vitamin_c_mg"])
+        if "is_vegan" in parsed:
+            response["is_vegan"] = bool(parsed["is_vegan"])
+        if "is_vegetarian" in parsed:
+            response["is_vegetarian"] = bool(parsed["is_vegetarian"])
+        if "is_gluten_free" in parsed:
+            response["is_gluten_free"] = bool(parsed["is_gluten_free"])
+        if "is_high_protein" in parsed:
+            response["is_high_protein"] = bool(parsed["is_high_protein"])
+        if meal_score is not None:
+            response["meal_score"] = meal_score
+        if "meal_score_reason" in parsed:
+            # Trim verbose responses to prevent payload bloat
+            reason = str(parsed["meal_score_reason"])[:200]
+            response["meal_score_reason"] = reason
+
+        return response
+
+    except HTTPException:
+        raise
+    except (json.JSONDecodeError, KeyError):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="AI returned unexpected format. Please try again.",
+        )
+    except Exception as e:
+        logger.error(f"Nutrition analysis failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nutrition analysis failed. Please try again.",
+        )

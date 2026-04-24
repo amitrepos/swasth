@@ -92,4 +92,15 @@ abstract final class AppColors {
   static const Color bgCard2Dark = bgGroupedDark;
   static const Color bgPill2 = bgPill;
   static const Color bgPill2Dark = bgPillDark;
+
+  // ── Camera screen colors ─────────────────────────────────────────────────
+  static const Color cameraBackground = Color(0xFF000000); // black
+  static const Color cameraForeground = Color(0xFFFFFFFF); // white
+  static const Color cameraOverlay = Color(0x8A000000); // black54
+  static const Color cameraOverlayText = Color(0xB3FFFFFF); // white70
+  static const Color cameraIconDisabled = Color(0x80FFFFFF); // white54
+  static const Color cameraButtonBorder = Color(0xFFFFFFFF); // white
+  static const Color cameraButtonEnabled = Color(0xFFFFFFFF); // white
+  static const Color cameraButtonDisabled = Color(0xFF9E9E9E); // grey
+  static const Color cameraButtonIcon = Color(0xDE000000); // black87
 }

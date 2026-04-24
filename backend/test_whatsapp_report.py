@@ -29,7 +29,7 @@ def normalize_phone(phone: str) -> str:
         return f"+{phone}"
     return phone
 
-def test_existing_profile_reports(request_phone: str):
+def run_existing_profile_reports_test(request_phone: str):
     db = SessionLocal()
     try:
         normalized = normalize_phone(request_phone)
@@ -124,6 +124,6 @@ if __name__ == "__main__":
         sys.exit(1)
     
     print(f"🚀 Starting profile report test for: {TEST_PHONE}")
-    test_existing_profile_reports(TEST_PHONE)
+    run_existing_profile_reports_test(TEST_PHONE)
     
     print("\n🏁 Test complete. Check your WhatsApp!")
