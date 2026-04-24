@@ -17,6 +17,13 @@ class MealLog {
   final String? userCorrectedCategory;
   final DateTime timestamp;
   final DateTime createdAt;
+  // Nutrition fields (from Gemini Vision analysis)
+  final double? totalCalories;
+  final double? totalCarbsG;
+  final double? totalProteinG;
+  final double? totalFatG;
+  final double? totalFiberG;
+  final int? mealScore;
 
   MealLog({
     required this.id,
@@ -34,6 +41,12 @@ class MealLog {
     this.userCorrectedCategory,
     required this.timestamp,
     required this.createdAt,
+    this.totalCalories,
+    this.totalCarbsG,
+    this.totalProteinG,
+    this.totalFatG,
+    this.totalFiberG,
+    this.mealScore,
   });
 
   static DateTime _parseUtc(dynamic val) {
@@ -62,6 +75,13 @@ class MealLog {
       userCorrectedCategory: json['user_corrected_category'],
       timestamp: _parseUtc(json['timestamp']),
       createdAt: _parseUtc(json['created_at']),
+      // Nutrition fields
+      totalCalories: (json['total_calories'] as num?)?.toDouble(),
+      totalCarbsG: (json['total_carbs_g'] as num?)?.toDouble(),
+      totalProteinG: (json['total_protein_g'] as num?)?.toDouble(),
+      totalFatG: (json['total_fat_g'] as num?)?.toDouble(),
+      totalFiberG: (json['total_fiber_g'] as num?)?.toDouble(),
+      mealScore: json['meal_score'] as int?,
     );
   }
 }

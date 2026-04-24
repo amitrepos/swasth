@@ -257,7 +257,7 @@ async def parse_food_image(
 
     try:
         # Validate MIME type before reading file to avoid loading large invalid files
-        mime_type = file.content_type or "image/jpeg"
+        mime_type = file.content_type
         
         # Defence-in-depth: validate MIME type against allowlist
         if mime_type == "application/octet-stream":
@@ -266,12 +266,16 @@ async def parse_food_image(
                 mime_type = "image/png"
             elif fname.endswith(".webp"):
                 mime_type = "image/webp"
-            else:
+            elif fname.endswith(".jpg") or fname.endswith(".jpeg"):
                 mime_type = "image/jpeg"
+            else:
+                # Reject unknown types instead of defaulting to JPEG
+                return {"error": "Unknown file type. Please upload a valid image (JPEG, PNG, or WebP)."}
         
-        if mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
+        if not mime_type or mime_type not in settings.ALLOWED_IMAGE_MIME_TYPES:
             return {"error": f"Unsupported file type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}"}
 
+        # Read and validate file size AFTER MIME validation
         image_bytes = await file.read()
         if len(image_bytes) > settings.MAX_UPLOAD_SIZE_BYTES:
             return {"error": f"File too large. Max size: {settings.MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"}

@@ -17,6 +17,36 @@ import 'api_exception.dart';
 class MealService {
   static String get _baseUrl => '${AppConfig.serverHost}/api/meals';
 
+  /// Helper to build and send a multipart image request.
+  /// Reduces duplication between parseImage and analyzeNutrition.
+  Future<http.Response> _sendImageRequest({
+    required String endpoint,
+    required int profileId,
+    required XFile file,
+    required String token,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    final uri = Uri.parse('$_baseUrl/$endpoint?profile_id=$profileId');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll(ApiClient.headers(token: token));
+    final bytes = await file.readAsBytes();
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: file.name,
+        contentType: MediaType.parse(file.mimeType ?? 'image/jpeg'),
+      ),
+    );
+
+    try {
+      final streamed = await request.send().timeout(timeout);
+      return await http.Response.fromStream(streamed);
+    } catch (_) {
+      throw const NetworkException();
+    }
+  }
+
   /// Save a new meal log via POST /api/meals.
   Future<MealLog> saveMeal(MealLogCreate data, String token) async {
     final body = await ApiClient.sendJsonObject(
@@ -78,29 +108,12 @@ class MealService {
     XFile file,
     String token,
   ) async {
-    final uri = Uri.parse('$_baseUrl/parse-image?profile_id=$profileId');
-    final request = http.MultipartRequest('POST', uri)
-      ..headers.addAll(ApiClient.headers(token: token));
-    final bytes = await file.readAsBytes();
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'file',
-        bytes,
-        filename: file.name,
-        contentType: MediaType.parse(file.mimeType ?? 'image/jpeg'),
-      ),
+    final response = await _sendImageRequest(
+      endpoint: 'parse-image',
+      profileId: profileId,
+      file: file,
+      token: token,
     );
-
-    http.Response response;
-    try {
-      final streamed = await request.send().timeout(
-        const Duration(seconds: 30),
-      );
-      response = await http.Response.fromStream(streamed);
-    } catch (_) {
-      // Any transport-level failure during multipart upload — treat as network.
-      throw const NetworkException();
-    }
 
     if (response.statusCode == 200) {
       try {
@@ -125,28 +138,12 @@ class MealService {
     XFile file,
     String token,
   ) async {
-    final uri = Uri.parse('$_baseUrl/analyze-nutrition?profile_id=$profileId');
-    final request = http.MultipartRequest('POST', uri)
-      ..headers.addAll(ApiClient.headers(token: token));
-    final bytes = await file.readAsBytes();
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'file',
-        bytes,
-        filename: file.name,
-        contentType: MediaType.parse(file.mimeType ?? 'image/jpeg'),
-      ),
+    final response = await _sendImageRequest(
+      endpoint: 'analyze-nutrition',
+      profileId: profileId,
+      file: file,
+      token: token,
     );
-
-    http.Response response;
-    try {
-      final streamed = await request.send().timeout(
-        const Duration(seconds: 30),
-      );
-      response = await http.Response.fromStream(streamed);
-    } catch (_) {
-      throw const NetworkException();
-    }
 
     if (response.statusCode == 200) {
       try {

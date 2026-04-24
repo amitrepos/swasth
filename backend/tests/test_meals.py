@@ -277,6 +277,46 @@ class TestMealCreateEndpoint:
         }, headers=auth_headers)
         assert resp.status_code == 422
 
+    def test_create_meal_with_nutrition_fields(self, client, auth_headers, db, test_user):
+        """Nutrition fields round-trip correctly via POST /meals."""
+        profile_id = _get_profile_id(db, test_user.id)
+        resp = client.post("/api/meals", json={
+            "profile_id": profile_id,
+            "category": "MODERATE_CARB",
+            "glucose_impact": "MODERATE",
+            "meal_type": "LUNCH",
+            "input_method": "PHOTO_GEMINI",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "total_calories": 450.0,
+            "total_carbs_g": 65.0,
+            "total_protein_g": 18.0,
+            "total_fat_g": 12.0,
+            "total_fiber_g": 8.0,
+            "meal_score": 7,
+        }, headers=auth_headers)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["total_calories"] == 450.0
+        assert data["total_carbs_g"] == 65.0
+        assert data["total_protein_g"] == 18.0
+        assert data["total_fat_g"] == 12.0
+        assert data["total_fiber_g"] == 8.0
+        assert data["meal_score"] == 7
+
+    def test_create_meal_negative_nutrition_rejected(self, client, auth_headers, db, test_user):
+        """Negative nutrition values are rejected by schema validation."""
+        profile_id = _get_profile_id(db, test_user.id)
+        resp = client.post("/api/meals", json={
+            "profile_id": profile_id,
+            "category": "HIGH_CARB",
+            "glucose_impact": "HIGH",
+            "meal_type": "DINNER",
+            "input_method": "QUICK_SELECT",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "total_calories": -100.0,
+        }, headers=auth_headers)
+        assert resp.status_code == 422  # Pydantic validation error
+
 
 class TestMealListEndpoint:
     """Test GET /meals"""
@@ -405,6 +445,94 @@ class TestMealParseImage:
             files={"file": ("food.jpg", fake_image, "image/jpeg")},
         )
         assert resp.status_code == 401
+
+    @patch("routes_meals.settings")
+    def test_parse_image_octet_stream_rejected(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns soft error when file MIME type is application/octet-stream with unknown extension."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.bin", fake_image, "application/octet-stream")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200  # parse_image returns soft errors on HTTP 200
+        assert "error" in resp.json()
+        assert "Unknown file type" in resp.json()["error"]
+
+    @patch("routes_meals.settings")
+    def test_parse_image_file_too_large(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns soft error when file exceeds MAX_UPLOAD_SIZE_BYTES."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 50  # Very small limit for testing
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        # Create a file larger than 50 bytes
+        large_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.jpg", large_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200  # parse_image returns soft errors on HTTP 200
+        assert "error" in resp.json()
+        assert "File too large" in resp.json()["error"]
+
+    @patch("routes_meals.settings")
+    def test_parse_image_unsupported_mime_type(self, mock_settings, client, auth_headers, db, test_user):
+        """Returns soft error when file MIME type is not allowed."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.gif", fake_image, "image/gif")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200  # parse_image returns soft errors on HTTP 200
+        assert "error" in resp.json()
+        assert "Unsupported file type" in resp.json()["error"]
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_meals.settings")
+    def test_parse_image_octet_stream_jpg_allowed(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        """Accepts octet-stream if filename ends with .jpg."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.DEEPSEEK_API_KEY = ""
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+        mock_vision.return_value = '{"category": "HIGH_CARB", "glucose_impact": "HIGH", "tip_en": "Walk.", "tip_hi": "टहलें।", "confidence": 0.8}'
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/parse-image?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "application/octet-stream")},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "error" not in data
+        assert data["category"] == "HIGH_CARB"
 
 
 class TestMealAnalyzeNutrition:
@@ -541,6 +669,29 @@ class TestMealAnalyzeNutrition:
             headers=auth_headers,
         )
         assert resp.status_code == 502  # Now returns proper HTTP error
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_meals.settings")
+    def test_analyze_nutrition_empty_foods_list(self, mock_settings, mock_vision, client, auth_headers, db, test_user):
+        """Returns error when AI response has empty foods list."""
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"]
+        mock_settings.MAX_UPLOAD_SIZE_BYTES = 10_485_760
+        mock_vision.return_value = '{"foods": [], "total_calories": 0, "total_carbs_g": 0, "total_protein_g": 0, "total_fat_g": 0, "total_fiber_g": 0, "carb_level": "low", "sugar_level": "low"}'
+
+        profile_id = _get_profile_id(db, test_user.id)
+        import io
+        fake_image = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+        resp = client.post(
+            f"/api/meals/analyze-nutrition?profile_id={profile_id}",
+            files={"file": ("food.jpg", fake_image, "image/jpeg")},
+            headers=auth_headers,
+        )
+        # Empty foods list should still succeed (validation only checks it's a list)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["foods"] == []
 
     @patch("ai_service.generate_vision_insight")
     @patch("routes_meals.settings")

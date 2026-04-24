@@ -618,11 +618,11 @@ class MealLogCreate(BaseModel):
     user_confirmed: bool = True
     user_corrected_category: Optional[str] = None
     # Nutrition fields (from Gemini Vision analysis)
-    total_calories: Optional[float] = None
-    total_carbs_g: Optional[float] = None
-    total_protein_g: Optional[float] = None
-    total_fat_g: Optional[float] = None
-    total_fiber_g: Optional[float] = None
+    total_calories: Optional[float] = Field(None, ge=0)
+    total_carbs_g: Optional[float] = Field(None, ge=0)
+    total_protein_g: Optional[float] = Field(None, ge=0)
+    total_fat_g: Optional[float] = Field(None, ge=0)
+    total_fiber_g: Optional[float] = Field(None, ge=0)
     meal_score: Optional[int] = Field(None, ge=1, le=10)
 
     @validator('category')

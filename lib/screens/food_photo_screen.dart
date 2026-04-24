@@ -238,7 +238,10 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: l10n.retry,
-          onPressed: retry ?? _capturePhoto,
+          onPressed: () {
+            if (!mounted) return;
+            (retry ?? _capturePhoto)();
+          },
         ),
       ),
     );
