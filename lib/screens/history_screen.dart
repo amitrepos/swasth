@@ -180,14 +180,27 @@ class HistoryScreenState extends State<HistoryScreen> {
   /// applying the active filter. Sorted by timestamp desc.
   List<_TimelineItem> get _timelineItems {
     final items = <_TimelineItem>[];
+    
+    // Filter readings based on selected filter type
+    List<HealthReading> filteredReadings = _readings;
+    if (_filterType == 'glucose' || _filterType == 'blood_pressure') {
+      filteredReadings = _readings
+          .where((r) => r.readingType == _filterType)
+          .toList();
+    }
+    
+    // Add readings to timeline (when filter is null or a reading type)
     if (_filterType == null ||
         _filterType == 'glucose' ||
         _filterType == 'blood_pressure') {
-      items.addAll(_readings.map(_ReadingItem.new));
+      items.addAll(filteredReadings.map(_ReadingItem.new));
     }
+    
+    // Add meals to timeline (when filter is null or meals)
     if (_filterType == null || _filterType == 'meals') {
       items.addAll(_meals.map(_MealItem.new));
     }
+    
     items.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return items;
   }
@@ -379,6 +392,8 @@ class HistoryScreenState extends State<HistoryScreen> {
               setState(() {
                 _filterType = value == 'all' ? null : value;
               });
+              // Reload data with the new filter
+              _loadReadings();
             },
             itemBuilder: (context) => [
               PopupMenuItem(value: 'all', child: Text(l10n.allReadings)),
