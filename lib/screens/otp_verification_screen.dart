@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
@@ -23,6 +24,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   bool _isLoading = false;
   int _resendCountdown = 0;
+  Timer? _resendTimer;
 
   @override
   void initState() {
@@ -33,17 +35,20 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   void dispose() {
     _otpController.dispose();
+    _resendTimer?.cancel();
     super.dispose();
   }
 
   void _startResendTimer() {
+    _resendTimer?.cancel();
     setState(() => _resendCountdown = 60);
-
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted && _resendCountdown > 0) {
-        setState(() => _resendCountdown--);
-        _startResendTimer();
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _resendCountdown <= 0) {
+        timer.cancel();
+        return;
       }
+      setState(() => _resendCountdown--);
+      if (_resendCountdown <= 0) timer.cancel();
     });
   }
 
