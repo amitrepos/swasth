@@ -131,10 +131,13 @@ class ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       _messagesLoaded = true;
       if (e is UnauthorizedException) {
-        if (mounted) await ErrorMapper.showSnack(context, e);
+        if (mounted) {
+          setState(() => _isLoading = false);
+          await ErrorMapper.showSnack(context, e);
+        }
         return;
       }
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

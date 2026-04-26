@@ -125,7 +125,11 @@ class HistoryScreenState extends State<HistoryScreen> {
       
       if (mounted) setState(() => _readings = filteredReadings);
     } catch (e) {
-      // Try loading cached readings for offline use
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
+      // Non-auth / offline error: serve cached readings if available.
       final cached = await StorageService().getCachedReadings(widget.profileId);
       if (cached != null && cached.isNotEmpty) {
         var readings = cached.map((j) => HealthReading.fromJson(j)).toList();
@@ -134,27 +138,14 @@ class HistoryScreenState extends State<HistoryScreen> {
               .where((r) => r.readingType == _filterType)
               .toList();
         }
-        // Filter out steps readings from history
         readings = readings.where((r) => r.readingType != 'steps').toList();
-        
         readings.sort(
           (a, b) => b.readingTimestamp.compareTo(a.readingTimestamp),
         );
         if (mounted) setState(() => _readings = readings);
         return;
       }
-      // No cache and API failed. Clear readings and fall through to
-      // the empty-state UI — the "No readings yet" card with a refresh
-      // button in the AppBar is a calmer UX than a red snackbar on
-      // fresh installs where the user legitimately has no history.
-      // Only surface a snackbar for clearly user-actionable errors
-      // (token missing — user must re-login).
       if (mounted) setState(() => _readings = []);
-      if (mounted && e.toString().contains('Not authenticated')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Please sign in again to see your history')),
-        );
-      }
     }
   }
 

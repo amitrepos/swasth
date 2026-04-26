@@ -257,47 +257,52 @@ class _HomeScreenState extends State<HomeScreen>
       _careCircleLoading = true;
     });
 
-    // Load recent readings for activity feed
     try {
-      final readings = await _readingService.getReadings(
-        token: token,
-        profileId: profileId,
-        limit: 10,
-      );
-      if (mounted) setState(() => _activityReadings = readings);
-    } catch (e) {
-      if (e is UnauthorizedException) {
-        if (mounted) await ErrorMapper.showSnack(context, e);
-        return;
+      // Load recent readings for activity feed
+      try {
+        final readings = await _readingService.getReadings(
+          token: token,
+          profileId: profileId,
+          limit: 10,
+        );
+        if (mounted) setState(() => _activityReadings = readings);
+      } catch (e) {
+        if (e is UnauthorizedException) rethrow;
       }
-    }
 
-    // Load recent meals for the same activity feed (last 7 days).
-    // Failure is silent — meals are an enrichment, not the primary
-    // signal. Empty list keeps the feed working with readings only.
-    try {
-      final meals = await _mealService.getMeals(profileId, token, days: 7);
-      if (mounted) setState(() => _activityMeals = meals);
-    } catch (e) {
-      if (e is UnauthorizedException) {
-        if (mounted) await ErrorMapper.showSnack(context, e);
-        return;
+      // Load recent meals — enrichment only; failure keeps feed working.
+      try {
+        final meals = await _mealService.getMeals(profileId, token, days: 7);
+        if (mounted) setState(() => _activityMeals = meals);
+      } catch (e) {
+        if (e is UnauthorizedException) rethrow;
+        if (mounted) setState(() => _activityMeals = []);
       }
-      if (mounted) setState(() => _activityMeals = []);
-    }
-    if (mounted) setState(() => _activityLoading = false);
 
-    // Load care circle members
-    try {
-      final members = await _profileService.getProfileAccess(token, profileId);
-      if (mounted) setState(() => _careCircleMembers = members);
-    } catch (e) {
-      if (e is UnauthorizedException) {
-        if (mounted) await ErrorMapper.showSnack(context, e);
-        return;
+      // Load care circle members
+      try {
+        final members = await _profileService.getProfileAccess(token, profileId);
+        if (mounted) setState(() => _careCircleMembers = members);
+      } catch (e) {
+        if (e is UnauthorizedException) rethrow;
+      }
+    } on UnauthorizedException catch (e) {
+      if (mounted) {
+        setState(() {
+          _activityLoading = false;
+          _careCircleLoading = false;
+        });
+        await ErrorMapper.showSnack(context, e);
+      }
+      return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _activityLoading = false;
+          _careCircleLoading = false;
+        });
       }
     }
-    if (mounted) setState(() => _careCircleLoading = false);
   }
 
   Future<void> _logout(BuildContext ctx) async {
