@@ -59,7 +59,9 @@ class TrendChartScreenState extends State<TrendChartScreen>
   Future<void> refresh() async {
     _summaries.clear();
     _summaryLoading.clear();
-    await _loadReadings();
+    await _loadReadings(); // always fetches period=7 summary
+    final activePeriod = [7, 30, 90][_tabController.index];
+    if (activePeriod != 7) _loadSummary(activePeriod);
   }
 
   @override

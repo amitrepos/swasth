@@ -38,6 +38,10 @@ class ChatScreenState extends State<ChatScreen> {
   String _lastSugar = '--';
   bool _canEdit = true;
 
+  // Guards sendInitialMessage from firing before _loadMessages completes
+  bool _messagesLoaded = false;
+  String? _pendingInitialMessage;
+
   @override
   void initState() {
     super.initState();
@@ -60,8 +64,15 @@ class ChatScreenState extends State<ChatScreen> {
   void refreshVitals() => _loadVitals();
 
   /// Called by ShellScreen to send a message without rebuilding the widget.
-  void sendInitialMessage(String message) =>
+  /// Queues the message if _loadMessages hasn't completed yet to avoid
+  /// a race where the optimistic entry gets overwritten by the server list.
+  void sendInitialMessage(String message) {
+    if (_messagesLoaded) {
       _sendMessage(imageDescription: message);
+    } else {
+      _pendingInitialMessage = message;
+    }
+  }
 
   @override
   void dispose() {
@@ -105,7 +116,15 @@ class ChatScreenState extends State<ChatScreen> {
         _isLoading = false;
       });
       _scrollToBottom();
+      // Deliver any message queued before load completed
+      _messagesLoaded = true;
+      if (_pendingInitialMessage != null) {
+        final msg = _pendingInitialMessage!;
+        _pendingInitialMessage = null;
+        _sendMessage(imageDescription: msg);
+      }
     } catch (_) {
+      _messagesLoaded = true;
       setState(() => _isLoading = false);
     }
   }

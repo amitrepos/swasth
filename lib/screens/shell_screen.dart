@@ -14,7 +14,6 @@ import '../widgets/offline_banner.dart';
 import 'home_screen.dart';
 import 'history_screen.dart';
 import 'streaks_screen.dart';
-import 'insights_screen.dart';
 import 'trend_chart_screen.dart';
 import 'chat_screen.dart';
 import 'select_profile_screen.dart';

@@ -128,6 +128,11 @@ def save_reading(
         ).delete()
         db.commit()
     except Exception:
+        logger.warning(
+            "TrendSummaryCache invalidation failed for profile %s",
+            reading.profile_id,
+            exc_info=True,
+        )
         db.rollback()
 
     # ── Critical alert: send email to family members ─────────────────

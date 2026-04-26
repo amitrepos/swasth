@@ -238,3 +238,66 @@ class TestTrendSummarySharedProfile:
 
         resp = client.get(self.URL, params={"profile_id": other.id, "period": 7}, headers=auth_headers)
         assert resp.status_code == 403
+
+
+class TestTrendSummaryCacheInvalidation:
+    """Saving a reading must wipe TrendSummaryCache for that profile."""
+
+    READINGS_URL = "/api/readings"
+
+    def _post_glucose(self, client, pid, auth_headers):
+        from datetime import datetime
+        return client.post(self.READINGS_URL, json={
+            "profile_id": pid,
+            "reading_type": "glucose",
+            "glucose_value": 110.0,
+            "glucose_unit": "mg/dL",
+            "value_numeric": 110.0,
+            "unit_display": "mg/dL",
+            "status_flag": "NORMAL",
+            "reading_timestamp": datetime.utcnow().isoformat(),
+        }, headers=auth_headers)
+
+    def test_save_reading_invalidates_trend_cache(self, client, test_user, auth_headers, db):
+        """A pre-existing TrendSummaryCache row must be deleted when a new reading is saved."""
+        from datetime import date
+        pid = _get_pid(db, test_user.id)
+
+        # Plant a cache entry for today
+        cache_entry = models.TrendSummaryCache(
+            profile_id=pid,
+            period_days=7,
+            cache_date=date.today(),
+            summary_text="Stale summary that must be wiped",
+            model_used="test",
+        )
+        db.add(cache_entry)
+        db.commit()
+        assert db.query(models.TrendSummaryCache).filter_by(profile_id=pid).count() == 1
+
+        resp = self._post_glucose(client, pid, auth_headers)
+        assert resp.status_code == 201
+
+        remaining = db.query(models.TrendSummaryCache).filter_by(profile_id=pid).count()
+        assert remaining == 0, "TrendSummaryCache must be cleared after saving a reading"
+
+    def test_save_reading_succeeds_when_cache_delete_fails(self, client, test_user, auth_headers, db, monkeypatch):
+        """Cache deletion failure must not prevent the reading from being saved."""
+        import routes_health
+
+        # Replace TrendSummaryCache with an unmapped class so db.query() raises
+        # InvalidRequestError (a pre-DB error — no transaction is started).
+        monkeypatch.setattr(
+            routes_health.models,
+            "TrendSummaryCache",
+            type("_BrokenCache", (), {}),
+        )
+        # db.rollback() is a no-op here: InvalidRequestError never starts a DB
+        # transaction, so rolling back would damage the test fixture's outer
+        # transaction. Production code calls it for safety; we neutralise it.
+        monkeypatch.setattr(db, "rollback", lambda: None)
+
+        pid = _get_pid(db, test_user.id)
+        resp = self._post_glucose(client, pid, auth_headers)
+        # Reading must still be committed even when cache invalidation raises
+        assert resp.status_code == 201
