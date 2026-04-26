@@ -249,10 +249,12 @@ class TestCancelInvite:
 
     @patch("routes_profiles.email_service.send_profile_invite_email")
     def test_cancel_invite(self, mock_email, client, test_user, auth_headers, db):
+        invitee = _second_user(db)
         pid = _get_profile_id(db, test_user.id)
         create_resp = client.post(f"/api/profiles/{pid}/invite", json={
-            "email": "cancel@test.com",
+            "email": invitee.email,
         }, headers=auth_headers)
+        assert create_resp.status_code == 201
         invite_id = create_resp.json()["invite_id"]
 
         resp = client.delete(f"/api/profiles/{pid}/invites/{invite_id}", headers=auth_headers)
