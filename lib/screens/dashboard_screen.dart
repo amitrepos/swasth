@@ -443,6 +443,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       }
     } catch (e) {
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
       print('Error saving BP reading: $e');
     }
   }
@@ -506,6 +510,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       }
     } catch (e) {
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
       print('Error saving reading: $e');
     }
   }

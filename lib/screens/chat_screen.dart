@@ -7,6 +7,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../services/chat_service.dart';
+import '../services/api_exception.dart';
 import '../services/error_mapper.dart';
 import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
@@ -100,7 +101,11 @@ class ChatScreenState extends State<ChatScreen> {
             ? '${glucose.toStringAsFixed(0)} mg/dL'
             : '--';
       });
-    } catch (_) {}
+    } catch (e) {
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+      }
+    }
   }
 
   Future<void> _loadMessages() async {
@@ -123,8 +128,12 @@ class ChatScreenState extends State<ChatScreen> {
         _pendingInitialMessage = null;
         _sendMessage(imageDescription: msg);
       }
-    } catch (_) {
+    } catch (e) {
       _messagesLoaded = true;
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
       setState(() => _isLoading = false);
     }
   }

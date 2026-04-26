@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../models/meal_log.dart';
+import '../services/api_exception.dart';
 import '../services/error_mapper.dart';
 import '../services/health_reading_service.dart';
 import '../services/meal_service.dart';
@@ -168,10 +169,12 @@ class HistoryScreenState extends State<HistoryScreen> {
       );
       meals.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       if (mounted) setState(() => _meals = meals);
-    } catch (_) {
-      // Silent: meals are a secondary timeline source. A backend
-      // failure should not block the readings list. The user sees
-      // readings only, no error toast.
+    } catch (e) {
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
+      // Silent for non-auth errors: meals are a secondary timeline source.
       if (mounted) setState(() => _meals = []);
     }
   }
