@@ -422,14 +422,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       // Check if backend skipped this as a duplicate
       if (saveResult['skipped'] == true) {
-        print(
+        debugPrint(
           'BP reading skipped by backend (duplicate seq: ${healthReading.seq})',
         );
         return;
       }
 
       final saved = saveResult['reading'] as HealthReading;
-      print(
+      debugPrint(
         'BP reading saved successfully - ID: ${saved.id}, seq: ${saved.seq}',
       );
 
@@ -443,7 +443,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       }
     } catch (e) {
-      print('Error saving BP reading: $e');
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
+      debugPrint('Error saving BP reading: $e');
     }
   }
 
@@ -475,7 +479,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
 
         if (isDuplicate) {
-          print('Duplicate reading detected (timestamp), skipping save');
+          debugPrint('Duplicate reading detected (timestamp), skipping save');
           return;
         }
       }
@@ -487,14 +491,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       // Check if backend skipped this as a duplicate
       if (saveResult['skipped'] == true) {
-        print(
+        debugPrint(
           'Reading skipped by backend (duplicate seq: ${healthReading.seq})',
         );
         return;
       }
 
       final saved = saveResult['reading'] as HealthReading;
-      print('Saved reading ID: ${saved.id}, seq: ${saved.seq}');
+      debugPrint('Saved reading ID: ${saved.id}, seq: ${saved.seq}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -506,7 +510,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       }
     } catch (e) {
-      print('Error saving reading: $e');
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
+      debugPrint('Error saving reading: $e');
     }
   }
 

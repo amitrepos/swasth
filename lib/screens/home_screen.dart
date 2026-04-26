@@ -42,6 +42,8 @@ import '../utils/health_helpers.dart' as helpers;
 import '../services/reminder_service.dart';
 import '../services/pedometer_service.dart';
 import '../services/background_step_service.dart';
+import '../services/error_mapper.dart';
+import '../services/api_exception.dart';
 import '../main.dart' show routeObserver;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -182,7 +184,11 @@ class _HomeScreenState extends State<HomeScreen>
           _pts = helpers.streakToPoints(_streak);
         });
       }
-    } catch (_) {
+    } catch (e) {
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
       final cached = await _storageService.getCachedHealthScore(profileId);
       if (cached != null && mounted) {
         setState(() {
@@ -195,7 +201,12 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final profile = await _profileService.getProfile(token, profileId);
       if (mounted) setState(() => _activeProfile = profile);
-    } catch (_) {}
+    } catch (e) {
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
+    }
 
     _loadLinkedDoctors(token, profileId);
 
@@ -215,7 +226,11 @@ class _HomeScreenState extends State<HomeScreen>
             .map((e) => Map<String, dynamic>.from(e))
             .toList();
       });
-    } catch (_) {
+    } catch (e) {
+      if (e is UnauthorizedException) {
+        if (mounted) await ErrorMapper.showSnack(context, e);
+        return;
+      }
       if (mounted) setState(() => _linkedDoctors = []);
     }
   }
@@ -242,33 +257,52 @@ class _HomeScreenState extends State<HomeScreen>
       _careCircleLoading = true;
     });
 
-    // Load recent readings for activity feed
     try {
-      final readings = await _readingService.getReadings(
-        token: token,
-        profileId: profileId,
-        limit: 10,
-      );
-      if (mounted) setState(() => _activityReadings = readings);
-    } catch (_) {}
+      // Load recent readings for activity feed
+      try {
+        final readings = await _readingService.getReadings(
+          token: token,
+          profileId: profileId,
+          limit: 10,
+        );
+        if (mounted) setState(() => _activityReadings = readings);
+      } catch (e) {
+        if (e is UnauthorizedException) rethrow;
+      }
 
-    // Load recent meals for the same activity feed (last 7 days).
-    // Failure is silent — meals are an enrichment, not the primary
-    // signal. Empty list keeps the feed working with readings only.
-    try {
-      final meals = await _mealService.getMeals(profileId, token, days: 7);
-      if (mounted) setState(() => _activityMeals = meals);
-    } catch (_) {
-      if (mounted) setState(() => _activityMeals = []);
+      // Load recent meals — enrichment only; failure keeps feed working.
+      try {
+        final meals = await _mealService.getMeals(profileId, token, days: 7);
+        if (mounted) setState(() => _activityMeals = meals);
+      } catch (e) {
+        if (e is UnauthorizedException) rethrow;
+        if (mounted) setState(() => _activityMeals = []);
+      }
+
+      // Load care circle members
+      try {
+        final members = await _profileService.getProfileAccess(token, profileId);
+        if (mounted) setState(() => _careCircleMembers = members);
+      } catch (e) {
+        if (e is UnauthorizedException) rethrow;
+      }
+    } on UnauthorizedException catch (e) {
+      if (mounted) {
+        setState(() {
+          _activityLoading = false;
+          _careCircleLoading = false;
+        });
+        await ErrorMapper.showSnack(context, e);
+      }
+      return;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _activityLoading = false;
+          _careCircleLoading = false;
+        });
+      }
     }
-    if (mounted) setState(() => _activityLoading = false);
-
-    // Load care circle members
-    try {
-      final members = await _profileService.getProfileAccess(token, profileId);
-      if (mounted) setState(() => _careCircleMembers = members);
-    } catch (_) {}
-    if (mounted) setState(() => _careCircleLoading = false);
   }
 
   Future<void> _logout(BuildContext ctx) async {
