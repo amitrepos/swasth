@@ -16,6 +16,7 @@ from typing import Optional
 import auth
 import models
 import schemas
+from utils.datetime_helpers import utc_isoformat
 from database import get_db
 from dependencies import get_current_user
 from doctor_utils import ensure_unique_doctor_code
@@ -79,7 +80,7 @@ def get_metrics(
 ):
     """Core metrics dashboard — DAU, MAU, retention, engagement, clinical outcomes."""
     today = date.today()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # ── User counts ──────────────────────────────────────────────────
     total_users = db.query(func.count(models.User.id)).scalar() or 0
@@ -119,7 +120,7 @@ def get_metrics(
         returned = 0
         for u in cohort:
             if u.last_login_at:
-                login = u.last_login_at.replace(tzinfo=None) if u.last_login_at.tzinfo else u.last_login_at
+                login = u.last_login_at if u.last_login_at.tzinfo else u.last_login_at.replace(tzinfo=timezone.utc)
                 if login >= signup_end:
                     returned += 1
         return round(returned / len(cohort) * 100, 1)
@@ -225,7 +226,7 @@ def get_metrics(
         readings_by_day.append({"date": day.isoformat(), "count": count})
 
     return {
-        "generated_at": now.isoformat(),
+        "generated_at": utc_isoformat(now),
 
         # User counts
         "total_users": total_users,
@@ -314,8 +315,8 @@ def list_users(
             "ai_consent": u.ai_consent,
             "profiles_count": profile_count,
             "total_readings": total_readings,
-            "last_login": u.last_login_at.isoformat() if u.last_login_at else None,
-            "signed_up": u.created_at.isoformat() if u.created_at else None,
+            "last_login": utc_isoformat(u.last_login_at),
+            "signed_up": utc_isoformat(u.created_at),
         })
 
     return {"users": result, "total": len(result)}
@@ -701,11 +702,11 @@ def list_doctors(
             "clinic_name": dp.clinic_name,
             "doctor_code": dp.doctor_code,
             "is_verified": dp.is_verified,
-            "verified_at": dp.verified_at.isoformat() if dp.verified_at else None,
-            "created_at": dp.created_at.isoformat() if dp.created_at else None,
+            "verified_at": utc_isoformat(dp.verified_at),
+            "created_at": utc_isoformat(dp.created_at),
             "patient_count": patient_count,
             "last_access": last_access.isoformat() if last_access else None,
-            "time_in_queue_hours": round((datetime.utcnow() - dp.created_at.replace(tzinfo=None)).total_seconds() / 3600, 1) if dp.created_at and not dp.is_verified else None,
+            "time_in_queue_hours": round((datetime.now(timezone.utc) - (dp.created_at if dp.created_at.tzinfo else dp.created_at.replace(tzinfo=timezone.utc))).total_seconds() / 3600, 1) if dp.created_at and not dp.is_verified else None,
         })
 
     _audit_log(db, user, "VIEW_DOCTORS_LIST")
@@ -730,7 +731,7 @@ def verify_doctor(
         raise HTTPException(status_code=400, detail="Doctor is already verified")
 
     dp.is_verified = True
-    dp.verified_at = datetime.utcnow()
+    dp.verified_at = datetime.now(timezone.utc)
     dp.verified_by = user.id
 
     _audit_log(db, user, "VERIFY_DOCTOR", target_user_id=user_id,
@@ -780,12 +781,12 @@ def consent_dashboard(
             "id": u.id,
             "email": u.email,
             "full_name": u.full_name,
-            "consent_timestamp": u.consent_timestamp.isoformat() if u.consent_timestamp else None,
+            "consent_timestamp": utc_isoformat(u.consent_timestamp),
             "consent_app_version": u.consent_app_version,
             "consent_language": u.consent_language,
             "ai_consent": u.ai_consent,
-            "ai_consent_timestamp": u.ai_consent_timestamp.isoformat() if u.ai_consent_timestamp else None,
-            "signed_up": u.created_at.isoformat() if u.created_at else None,
+            "ai_consent_timestamp": utc_isoformat(u.ai_consent_timestamp),
+            "signed_up": utc_isoformat(u.created_at),
         }
         if u.consent_timestamp:
             consented.append(record)
@@ -813,7 +814,7 @@ def get_alerts(
     user: models.User = Depends(_require_admin),
 ):
     """Computed alerts — critical readings, pending doctors, AI fallback, inactivity."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     alerts = []
 
     # 1. Critical readings unaddressed (no doctor note within 24h)
@@ -827,7 +828,7 @@ def get_alerts(
             models.DoctorNote.created_at >= r.created_at,
         ).first()
         if not has_note:
-            hours_ago = round((now - r.created_at.replace(tzinfo=None)).total_seconds() / 3600, 1)
+            hours_ago = round((now - (r.created_at if r.created_at.tzinfo else r.created_at.replace(tzinfo=timezone.utc))).total_seconds() / 3600, 1)
             if hours_ago >= 24:
                 alerts.append({
                     "type": "CRITICAL_READING_UNADDRESSED",
@@ -847,7 +848,7 @@ def get_alerts(
     ).all()
     for dp, u in pending_doctors:
         if dp.created_at:
-            hours_pending = (now - dp.created_at.replace(tzinfo=None)).total_seconds() / 3600
+            hours_pending = (now - (dp.created_at if dp.created_at.tzinfo else dp.created_at.replace(tzinfo=timezone.utc))).total_seconds() / 3600
             severity = "MEDIUM" if hours_pending >= 48 else "INFO"
             alerts.append({
                 "type": "DOCTOR_PENDING_VERIFICATION",
@@ -883,8 +884,8 @@ def get_alerts(
         if last_reading is None:
             continue
 
-        last_reading_naive = last_reading.replace(tzinfo=None) if last_reading.tzinfo else last_reading
-        if last_reading_naive >= seven_days_ago:
+        last_reading_aware = last_reading if last_reading.tzinfo else last_reading.replace(tzinfo=timezone.utc)
+        if last_reading_aware >= seven_days_ago:
             continue
 
         # Check if high-risk (had critical readings recently)
@@ -893,7 +894,7 @@ def get_alerts(
             models.HealthReading.status_flag == "CRITICAL",
         ).first()
 
-        days_inactive = (now - last_reading_naive).days
+        days_inactive = (now - last_reading_aware).days
         if had_critical and days_inactive >= 7:
             alerts.append({
                 "type": "PATIENT_INACTIVE_HIGH_RISK",

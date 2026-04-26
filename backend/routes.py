@@ -1,11 +1,10 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
 import os
-import pytz
 import models
 import schemas
 import auth
@@ -38,7 +37,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
 
     # 1. Create User (auth only)
     # Store UTC time directly — convert to local time at read/display time
-    now_utc = datetime.now(pytz.UTC)
+    now_utc = datetime.now(timezone.utc)
     
     db_user = models.User(
         email=user.email,
@@ -156,7 +155,7 @@ def login(request: Request, user: schemas.UserLogin, db: Session = Depends(get_d
             headers={"WWW-Authenticate": "Bearer"},
         )
     # Update last_login with UTC timestamp (convert to local time at display)
-    now_utc = datetime.now(pytz.UTC)
+    now_utc = datetime.now(timezone.utc)
     db_user.last_login_at = now_utc
     db.commit()
     access_token = auth.create_access_token(data={"sub": db_user.email})
@@ -217,7 +216,7 @@ def request_password_reset(
         return generic_response
 
     otp = email_service.generate_otp()
-    expires_at = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
     db.add(models.PasswordResetOTP(email=body.email, otp=otp, expires_at=expires_at))
     db.commit()
 
@@ -254,7 +253,7 @@ def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Ses
 
     user.password_hash = auth.get_password_hash(body.new_password)
     # Update timestamp with UTC (convert to local time at display)
-    now_utc = datetime.now(pytz.UTC)
+    now_utc = datetime.now(timezone.utc)
     user.updated_at = now_utc
     otp_record.is_used = True
     db.commit()
@@ -285,7 +284,7 @@ def update_profile(
         user.phone_number = normalize_phone(user_update.phone_number) or None
 
     # Update timestamp with UTC (convert to local time at display)
-    now_utc = datetime.now(pytz.UTC)
+    now_utc = datetime.now(timezone.utc)
     user.updated_at = now_utc
     db.commit()
     db.refresh(user)
@@ -304,7 +303,7 @@ def grant_ai_consent(
     """Grant consent for AI-powered health insights (third-party processing)."""
     user.ai_consent = True
     # Record consent timestamp with UTC (convert to local time at display)
-    now_utc = datetime.now(pytz.UTC)
+    now_utc = datetime.now(timezone.utc)
     user.ai_consent_timestamp = now_utc
     db.commit()
     return {"message": "AI consent granted"}
@@ -329,7 +328,7 @@ def send_email_verification(
     ).update({"is_used": True})
 
     otp = email_service.generate_otp()
-    otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+    otp_expires = datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
 
     db.add(models.EmailVerificationOTP(
         user_id=user.id,
@@ -361,7 +360,7 @@ def verify_email(
         models.EmailVerificationOTP.user_id == user.id,
         models.EmailVerificationOTP.otp_hash == hash_otp(body.otp),
         models.EmailVerificationOTP.is_used == False,
-        models.EmailVerificationOTP.expires_at > datetime.utcnow(),
+        models.EmailVerificationOTP.expires_at > datetime.now(timezone.utc),
     ).first()
 
     if not otp_record:
@@ -373,7 +372,7 @@ def verify_email(
     # Mark OTP as used and verify user
     otp_record.is_used = True
     user.email_verified = True
-    user.email_verified_at = datetime.now(pytz.UTC)
+    user.email_verified_at = datetime.now(timezone.utc)
     db.commit()
 
     return {"message": "Email verified successfully"}
@@ -413,7 +412,7 @@ def send_phone_otp(
 
     # Generate new OTP
     otp = email_service.generate_otp()
-    otp_expires = datetime.utcnow() + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+    otp_expires = datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
 
     db.add(models.PhoneOTP(
         phone_number=normalized,
@@ -461,7 +460,7 @@ def verify_phone_otp_and_login(
         models.PhoneOTP.phone_hash == hash_phone(normalized),
         models.PhoneOTP.otp_hash == hash_otp(body.otp),
         models.PhoneOTP.is_used == False,
-        models.PhoneOTP.expires_at > datetime.utcnow(),
+        models.PhoneOTP.expires_at > datetime.now(timezone.utc),
     ).first()
 
     if not otp_record:
@@ -488,7 +487,7 @@ def verify_phone_otp_and_login(
             )
 
         # Update last_login
-        now_utc = datetime.now(pytz.UTC)
+        now_utc = datetime.now(timezone.utc)
         user.last_login_at = now_utc
         db.commit()
 
@@ -497,7 +496,7 @@ def verify_phone_otp_and_login(
         return {"access_token": access_token, "token_type": "bearer", "is_new_user": False}
     else:
         # REGISTRATION FLOW: Create minimal account, client will complete profile
-        now_utc = datetime.now(pytz.UTC)
+        now_utc = datetime.now(timezone.utc)
         
         # Generate a unique email for phone-only users
         import uuid
@@ -569,7 +568,7 @@ def delete_account(
     db.query(models.ReportGenerationLog).filter(models.ReportGenerationLog.user_id == user.id).delete()
     
     # Update timestamp with UTC
-    now_utc = datetime.now(pytz.UTC)
+    now_utc = datetime.now(timezone.utc)
 
     # 2. Nullify logged_by on readings this user logged on other people's profiles
     db.query(models.HealthReading).filter(
@@ -613,5 +612,5 @@ def _get_valid_otp(db: Session, email: str, otp: str):
         models.PasswordResetOTP.email_hash == hash_email(email),
         models.PasswordResetOTP.otp_hash == hash_otp(otp),
         models.PasswordResetOTP.is_used == False,
-        models.PasswordResetOTP.expires_at > datetime.utcnow(),
+        models.PasswordResetOTP.expires_at > datetime.now(timezone.utc),
     ).first()

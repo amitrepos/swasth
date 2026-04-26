@@ -67,10 +67,13 @@ backend/swasth.db
 # Backup directories
 ios_backup/
 
-# Domain expert review markers — per-clone state, content-hash keyed
+# Claude Code — per-developer state (never push, still pull team changes)
+.claude/settings.local.json
+.claude/sessions/
+.claude/statusline-state/
 .claude/markers/
+.claude/compact-state.md
 
 # Personal operational docs — local-only (see memory: project_india_trip_2026)
 docs/INDIA_TRIP_APR_MAY_2026.md
 docs/FOUNDER_KIT_CHECKLIST.md
-.claude/statusline-state/

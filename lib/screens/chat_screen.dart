@@ -193,7 +193,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.add({
         'user_message': displayText,
         'ai_response': null,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTime.now().toUtc().toIso8601String(),
       });
       _isSending = true;
       _selectedImage = null;

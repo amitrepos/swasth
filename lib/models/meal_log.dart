@@ -1,6 +1,8 @@
 // Meal log data model — mirrors backend MealLogCreate / MealLogResponse schemas.
 // Related: backend/schemas.py (MealLogCreate, MealLogResponse)
 
+import '../utils/datetime_utils.dart';
+
 class MealLog {
   final int id;
   final int profileId;
@@ -49,15 +51,6 @@ class MealLog {
     this.mealScore,
   });
 
-  static DateTime _parseUtc(dynamic val) {
-    if (val == null) return DateTime.now();
-    final dtStr = val.toString();
-    if (!dtStr.endsWith('Z') && !dtStr.contains('+')) {
-      return DateTime.parse('${dtStr}Z').toLocal();
-    }
-    return DateTime.parse(dtStr).toLocal();
-  }
-
   factory MealLog.fromJson(Map<String, dynamic> json) {
     return MealLog(
       id: json['id'],
@@ -73,8 +66,8 @@ class MealLog {
       confidence: (json['confidence'] as num?)?.toDouble(),
       userConfirmed: json['user_confirmed'] ?? true,
       userCorrectedCategory: json['user_corrected_category'],
-      timestamp: _parseUtc(json['timestamp']),
-      createdAt: _parseUtc(json['created_at']),
+      timestamp: DateTimeUtils.parseUtc(json['timestamp']),
+      createdAt: DateTimeUtils.parseUtc(json['created_at']),
       // Nutrition fields
       totalCalories: (json['total_calories'] as num?)?.toDouble(),
       totalCarbsG: (json['total_carbs_g'] as num?)?.toDouble(),

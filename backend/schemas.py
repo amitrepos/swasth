@@ -1,7 +1,7 @@
 import re
-from pydantic import BaseModel, EmailStr, validator, Field
+from pydantic import BaseModel, EmailStr, validator, Field, field_validator
 from typing import Optional, List, Literal
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 
 # Options
@@ -529,6 +529,13 @@ class HealthReadingCreate(BaseModel):
     notes: Optional[str] = None
     reading_timestamp: datetime
     seq: Optional[int] = None                # Device sequence number for BLE deduplication
+
+    @field_validator('reading_timestamp', mode='after')
+    @classmethod
+    def _normalize_ts(cls, v: datetime) -> datetime:
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
 
 
 class HealthReadingResponse(BaseModel):

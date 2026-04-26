@@ -132,7 +132,7 @@ def test_twilio_send_whatsapp_template_success():
         assert content_vars["2"] == "22 Apr 2026"
 
 def test_twilio_send_whatsapp_template_sanitize_newlines():
-    """Test that template variables preserve \\n for Twilio line breaks, collapse tabs/extra spaces."""
+    """Test that template variables replace \n with space (Twilio constraint), collapse tabs/extra spaces."""
     service = TwilioWhatsAppService()
     service.from_number = "+14155238886"
 
@@ -147,8 +147,9 @@ def test_twilio_send_whatsapp_template_sanitize_newlines():
 
         call_args = mock_client.messages.create.call_args
         content_vars = json.loads(call_args[1]["content_variables"])
-        # Newlines preserved — Twilio renders them as line breaks
-        assert "\n" in content_vars["3"]
+        # Newlines replaced with spaces
+        assert "\n" not in content_vars["3"]
+        assert "👤 *Deepak* 🩸 Sugar: : 120 mg/dL (High)" in content_vars["3"] or "👤 *Deepak* 🩸 Sugar: 120 mg/dL (High)" in content_vars["3"]
         # Tabs collapsed to spaces
         assert "\t" not in content_vars["3"]
         # Runs of spaces collapsed to single space

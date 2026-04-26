@@ -2,7 +2,9 @@
 # Save session state when Claude Code session ends
 # Called by Stop hook in settings.local.json
 
-PROJECT_DIR="/Users/amitkumarmishra/workspace/swasth/swasth_app"
+# Dynamically resolve project root (dir where .claude/ exists)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SESSIONS_DIR="$PROJECT_DIR/.claude/sessions"
 TIMESTAMP=$(date '+%Y-%m-%d_%H-%M')
 SESSION_FILE="$SESSIONS_DIR/session_${TIMESTAMP}.md"

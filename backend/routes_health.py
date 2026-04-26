@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
@@ -28,6 +28,7 @@ _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 from encryption_service import encrypt, encrypt_float
 from health_utils import age_context_bp, age_context_glucose, classify_spo2
+from utils.datetime_helpers import ensure_utc
 
 router = APIRouter()
 
@@ -203,7 +204,7 @@ def get_health_score(
     profile_age = profile.age if profile else None
 
     today = date.today()
-    seven_days_ago = datetime.combine(today - timedelta(days=6), datetime.min.time())
+    seven_days_ago = datetime.combine(today - timedelta(days=6), datetime.min.time(), tzinfo=timezone.utc)
 
     # Fetch last 7 days of readings
     recent = (
@@ -216,9 +217,9 @@ def get_health_score(
         .all()
     )
 
-    # Today's readings
-    today_start = datetime.combine(today, datetime.min.time())
-    today_readings = [r for r in recent if r.reading_timestamp.replace(tzinfo=None) >= today_start]
+    # Today's readings — compare in UTC; ensure_utc handles naive SQLite timestamps in tests
+    today_start = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
+    today_readings = [r for r in recent if ensure_utc(r.reading_timestamp) >= today_start]
 
     today_glucose = next((r for r in today_readings if r.reading_type == 'glucose'), None)
     today_bp = next((r for r in today_readings if r.reading_type == 'blood_pressure'), None)
@@ -235,7 +236,7 @@ def get_health_score(
     days_with_readings = set()
     for r in db.query(models.HealthReading).filter(
         models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
+        models.HealthReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time(), tzinfo=timezone.utc),
     ).all():
         days_with_readings.add(r.reading_timestamp.date())
 
@@ -333,8 +334,8 @@ def get_health_score(
     last_logged = recent[0].reading_timestamp if recent else None
 
     # --- 90-day averages for Vital Summary ---
-    ninety_days_ago = datetime.combine(today - timedelta(days=89), datetime.min.time())
-    prev_90_start = datetime.combine(today - timedelta(days=179), datetime.min.time())
+    ninety_days_ago = datetime.combine(today - timedelta(days=89), datetime.min.time(), tzinfo=timezone.utc)
+    prev_90_start = datetime.combine(today - timedelta(days=179), datetime.min.time(), tzinfo=timezone.utc)
 
     avg_glucose_90d = db.query(func.avg(models.HealthReading.glucose_value)).filter(
         models.HealthReading.profile_id == profile_id,
@@ -598,7 +599,7 @@ def get_ai_insight(
 
     # ── AI consent gate — return rule-based fallback if user hasn't consented ──
     if not user.ai_consent:
-        thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time())
+        thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time(), tzinfo=timezone.utc)
         recent = (
             db.query(models.HealthReading)
             .filter(
@@ -632,20 +633,15 @@ def get_ai_insight(
 
     if latest_insight and latest_reading:
         # Compare: if no new readings since last insight, return cached
-        insight_time = latest_insight.created_at
-        reading_time = latest_reading.reading_timestamp
-        # Make both offset-naive for comparison
-        if insight_time and hasattr(insight_time, 'replace'):
-            insight_time = insight_time.replace(tzinfo=None)
-        if reading_time and hasattr(reading_time, 'replace'):
-            reading_time = reading_time.replace(tzinfo=None)
+        insight_time = ensure_utc(latest_insight.created_at)
+        reading_time = ensure_utc(latest_reading.reading_timestamp)
         if insight_time and reading_time and reading_time <= insight_time:
             return {"insight": latest_insight.response_text}
 
     # ── Need fresh insight — fetch data ───────────────────────────────
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
 
-    thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time())
+    thirty_days_ago = datetime.combine(date.today() - timedelta(days=29), datetime.min.time(), tzinfo=timezone.utc)
     recent = (
         db.query(models.HealthReading)
         .filter(
@@ -778,7 +774,7 @@ Use suggestive language only ("may help", "consider")."""
 def _build_shareable_summary(profile_id: int, period: int, db: Session):
     """Build a shareable text summary for the given profile and period."""
     today = date.today()
-    period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time())
+    period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time(), tzinfo=timezone.utc)
 
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
     profile_name = profile.name if profile else "Patient"
@@ -902,8 +898,8 @@ def get_trend_summary(
     base_insight = latest_insight.response_text if latest_insight else ""
 
     # ── 2. Compute period-specific data stats ────────────────────────
-    period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time())
-    prev_period_start = datetime.combine(today - timedelta(days=period * 2 - 1), datetime.min.time())
+    period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time(), tzinfo=timezone.utc)
+    prev_period_start = datetime.combine(today - timedelta(days=period * 2 - 1), datetime.min.time(), tzinfo=timezone.utc)
 
     readings = (
         db.query(models.HealthReading)
@@ -1060,7 +1056,7 @@ def get_family_streaks(
         days_with_readings = set()
         for r in db.query(models.HealthReading).filter(
             models.HealthReading.profile_id == access.profile_id,
-            models.HealthReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time()),
+            models.HealthReading.reading_timestamp >= datetime.combine(today - timedelta(days=60), datetime.min.time(), tzinfo=timezone.utc),
         ).all():
             days_with_readings.add(r.reading_timestamp.date())
 

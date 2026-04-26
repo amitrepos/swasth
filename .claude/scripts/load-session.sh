@@ -2,7 +2,9 @@
 # Load previous session context when Claude Code starts
 # Called by SessionStart hook in settings.local.json
 
-PROJECT_DIR="/Users/amitkumarmishra/workspace/swasth/swasth_app"
+# Dynamically resolve project root (dir where .claude/ exists)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SESSIONS_DIR="$PROJECT_DIR/.claude/sessions"
 LATEST="$SESSIONS_DIR/latest.md"
 LEARNINGS_DIR="$PROJECT_DIR/.claude/learnings"
