@@ -18,10 +18,10 @@ class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, required this.profileId, this.initialMessage});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<ChatScreen> createState() => ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class ChatScreenState extends State<ChatScreen> {
   final ChatService _chatService = ChatService();
   final StorageService _storageService = StorageService();
   final TextEditingController _inputController = TextEditingController();
@@ -55,6 +55,13 @@ class _ChatScreenState extends State<ChatScreen> {
     final level = await _storageService.getActiveProfileAccessLevel();
     if (mounted) setState(() => _canEdit = level != 'viewer');
   }
+
+  /// Called by ShellScreen when switching to the Chat tab.
+  void refreshVitals() => _loadVitals();
+
+  /// Called by ShellScreen to send a message without rebuilding the widget.
+  void sendInitialMessage(String message) =>
+      _sendMessage(imageDescription: message);
 
   @override
   void dispose() {

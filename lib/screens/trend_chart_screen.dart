@@ -20,10 +20,10 @@ class TrendChartScreen extends StatefulWidget {
   const TrendChartScreen({super.key, required this.profileId});
 
   @override
-  State<TrendChartScreen> createState() => _TrendChartScreenState();
+  State<TrendChartScreen> createState() => TrendChartScreenState();
 }
 
-class _TrendChartScreenState extends State<TrendChartScreen>
+class TrendChartScreenState extends State<TrendChartScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final HealthReadingService _readingService = HealthReadingService();
@@ -43,6 +43,23 @@ class _TrendChartScreenState extends State<TrendChartScreen>
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
     _loadReadings();
+  }
+
+  @override
+  void didUpdateWidget(TrendChartScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.profileId != widget.profileId) {
+      _summaries.clear();
+      _summaryLoading.clear();
+      _loadReadings();
+    }
+  }
+
+  /// Called by ShellScreen when switching to the Insights tab.
+  Future<void> refresh() async {
+    _summaries.clear();
+    _summaryLoading.clear();
+    await _loadReadings();
   }
 
   @override
@@ -142,6 +159,7 @@ class _TrendChartScreenState extends State<TrendChartScreen>
                 _TrendView(
                   readings: _allReadings,
                   days: 7,
+                  onRefresh: refresh,
                   summary: _summaries[7],
                   summaryLoading: _summaryLoading[7] ?? false,
                   profileId: widget.profileId,
@@ -149,6 +167,7 @@ class _TrendChartScreenState extends State<TrendChartScreen>
                 _TrendView(
                   readings: _allReadings,
                   days: 30,
+                  onRefresh: refresh,
                   summary: _summaries[30],
                   summaryLoading: _summaryLoading[30] ?? false,
                   profileId: widget.profileId,
@@ -156,6 +175,7 @@ class _TrendChartScreenState extends State<TrendChartScreen>
                 _TrendView(
                   readings: _allReadings,
                   days: 90,
+                  onRefresh: refresh,
                   summary: _summaries[90],
                   summaryLoading: _summaryLoading[90] ?? false,
                   profileId: widget.profileId,
@@ -176,10 +196,12 @@ class _TrendView extends StatelessWidget {
   final String? summary;
   final bool summaryLoading;
   final int profileId;
+  final Future<void> Function() onRefresh;
 
   const _TrendView({
     required this.readings,
     required this.days,
+    required this.onRefresh,
     this.summary,
     this.summaryLoading = false,
     required this.profileId,
@@ -236,7 +258,7 @@ class _TrendView extends StatelessWidget {
         : 2.0;
 
     return RefreshIndicator(
-      onRefresh: () async {},
+      onRefresh: onRefresh,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
