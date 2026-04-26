@@ -37,6 +37,15 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _heading(l10n.ppRightsTitle),
             _body(l10n.ppRights),
             const SizedBox(height: 20),
+            _heading(l10n.ppDoctorSharingTitle),
+            _body(l10n.ppDoctorSharing),
+            const SizedBox(height: 20),
+            _heading(l10n.ppWhatsAppTitle),
+            _body(l10n.ppWhatsApp),
+            const SizedBox(height: 20),
+            _heading(l10n.ppLiabilityTitle),
+            _body(l10n.ppLiability),
+            const SizedBox(height: 20),
             _heading(l10n.ppContactTitle),
             _body(l10n.ppContact),
             const SizedBox(height: 40),
@@ -47,15 +56,23 @@ class PrivacyPolicyScreen extends StatelessWidget {
   }
 
   Widget _heading(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text,
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary)),
-      );
-
-  Widget _body(String text) => Text(text,
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      text,
       style: const TextStyle(
-          fontSize: 14, height: 1.6, color: AppColors.textSecondary));
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      ),
+    ),
+  );
+
+  Widget _body(String text) => Text(
+    text,
+    style: const TextStyle(
+      fontSize: 14,
+      height: 1.6,
+      color: AppColors.textSecondary,
+    ),
+  );
 }

@@ -28,13 +28,14 @@ void main() {
   Widget buildConsentScreen({Future<void> Function()? onAcceptCalled}) {
     return _wrap(
       ConsentScreen(
-        onAccept: ({
-          required String appVersion,
-          required String language,
-          required bool aiConsent,
-        }) async {
-          onAcceptCalled?.call();
-        },
+        onAccept:
+            ({
+              required String appVersion,
+              required String language,
+              required bool aiConsent,
+            }) async {
+              onAcceptCalled?.call();
+            },
       ),
     );
   }
@@ -70,7 +71,10 @@ void main() {
     await tester.pumpWidget(buildConsentScreen());
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.open_in_new), findsOneWidget);
+    expect(
+      find.byIcon(Icons.open_in_new),
+      findsNWidgets(2),
+    ); // Privacy Policy + ToS
   });
 
   testWidgets('accept button exists', (tester) async {
