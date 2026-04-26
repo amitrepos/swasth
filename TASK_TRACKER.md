@@ -279,7 +279,7 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 | B7 | Height input | ✅ Done | Height field in `create_profile_screen.dart` and `profile_screen.dart`. |
 | B8 | Confirmation screen | ✅ Done | `reading_confirmation_screen.dart` — "We read X — correct?" with edit + save. |
 | B9 | "Log for someone else" | ✅ Done | Switch active profile in `select_profile_screen.dart` before logging — all readings go to active profile. |
-| B10 | Phone pedometer | ❌ Not started | No `pedometer` package in `pubspec.yaml`. No step counting. |
+| B10 | Phone pedometer | ✅ Done | `pedometer_service.dart` + `background_step_service.dart`. `pedometer: ^4.0.2` in pubspec. Requests activity recognition permission, streams StepCount, stores daily steps locally, syncs to backend. |
 | B11 | Reading reminders | ❌ Not started | No `flutter_local_notifications` in `pubspec.yaml`. No reminder scheduling. |
 | B12 | Weekly weight reminder | ❌ Not started | Depends on B11. |
 | B13 | Blurry photo detection | ✅ Done | `photo_scan_screen.dart` — near-empty OCR result shows "Photo is blurry — retake" dialog. |
@@ -328,6 +328,7 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 | C26 | Care Circle widget | ✅ Done | Family avatars with role badges (Owner/Editor/Viewer), relationship, last active, Call/WhatsApp/Email. Full-width. Both dashboards. PRs #77, #79, #80. |
 | C27 | Manage Access UX | ✅ Done | "PROFILE SHARED WITH" header, empty state, colored initials, edit relationship dialog. PR #81. |
 | C28 | BMI in vitals grid | ✅ Done | Moved BMI from full-width row into 2x2 grid replacing SpO2. PR #74. |
+| C29 | Health Connect integration (Android) | ❌ Future | Post-pilot / NRI tier. Replace `pedometer` package with `health` Flutter plugin (wraps Android Health Connect + iOS HealthKit). Auto-reads HR, sleep, glucose, BP from Mi Band/Fitbit/glucometers. **Trigger:** when NRI tier launches or a doctor requests HR/sleep trends. No new UI surfaces until then — empty data cards are worse than no cards. Learn: Health Connect SDK + permission model first. |
 
 ---
 
@@ -341,15 +342,15 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 | D4 | BMI-to-glucose insight | ❌ Not started | Depends on C3 (BMI). |
 | D5 | Weight-glucose correlation | ❌ Not started | No weight tracking (B3/B6). |
 | D6 | Weekly summary | 🔄 Partial | Trend chart provides 7-day view. No aggregated weekly report (avg/min/max summary card or export). |
-| D7 | Abnormal value alert (immediate) | ❌ Not started | Backend detects CRITICAL status in `routes_health.py` but no push notification or WhatsApp trigger. No FCM. |
-| D8 | WhatsApp Business API integration | ❌ Not started | No Twilio/Gupshup in backend. `email_service.py` is for password reset only. No `share_plus` package. |
+| D7 | Abnormal value alert (immediate) | ✅ Done | `alert_service.py` — `dispatch_critical_alert()` fans out CRITICAL/HIGH-STAGE-2 alerts to all family members via Twilio WhatsApp. Deduplication window prevents spam. Logged to `critical_alert_logs` for audit. Wired in `routes_health.py:123-163`. |
+| D8 | WhatsApp Business API integration | ✅ Done | `twilio_service.py` — Twilio client with `send_whatsapp()`, `send_whatsapp_template()`, `send_critical_alert_whatsapp()`. Used by `alert_service.py` + `report_service.py`. |
 | D9 | Per-profile notification preferences | ❌ Not started | No notification preference UI or storage. Depends on D7/D8. |
 | D10 | Daily WhatsApp summary | ❌ Not started | Depends on D8. |
-| D11 | Weekly WhatsApp summary | ❌ Not started | Depends on D8. |
+| D11 | Weekly WhatsApp summary (family/NRI) | ✅ Done | `report_service.py` — `send_weekly_reports()` sends consolidated weekly health summary to profile owner via Twilio WhatsApp. Grouped by recipient. AI-generated insight included. Scheduled task. |
 | D12 | Alert WhatsApp message | ❌ Not started | Depends on D8. |
 | D13 | Push notifications (FCM backup) | ❌ Not started | `firebase_messaging` not in `pubspec.yaml`. No FCM config. |
 | D14 | Doctor referral code | ✅ Done | `doctor_name`, `doctor_specialty`, `doctor_whatsapp` columns on `profiles` table. "Doctor Details" section on profile screen (owner-only). Edit dialog with save via `updateProfile`. Ready for D15 WhatsApp sending. |
-| D15 | Doctor weekly WhatsApp summary | ❌ Not started | Depends on D8 + D14. |
+| D15 | Doctor weekly WhatsApp summary | ❌ Not started | D8 ✅ done. D14 ✅ done. Still needs implementation: send weekly patient summary to `doctor_whatsapp` number on profile. ~2 hours. |
 | D16 | Streak notifications | ❌ Not started | Streak calculated and shown visually. No push/WhatsApp alert when streak is broken or reached. |
 | D17 | AI Doctor card (multi-model) | ✅ Done | `GET /api/readings/ai-insight` — compact prompt (averages+ranges). Gemini 2.5 Flash → DeepSeek V3 → rule-based fallback. Smart DB cache (only calls LLM on new readings). All calls logged to `ai_insight_logs` table for audit. Urgent tone for Stage 2 BP / CRITICAL. |
 | D18 | Consent & Privacy notice | ✅ Done | Scroll-to-accept consent screen shown after registration. Stores consent_timestamp, app_version, language in users table. EN + HI. |
@@ -361,6 +362,8 @@ Ran `orphan-scan.sh` which detected 7 stale local branches with commits whose co
 | D24 | Food Photo Classification | ✅ Done | All 6 steps complete. Backend: model, API, 5 insight rules. Frontend: Quick Select, Food Photo, Meal Result, dashboard integration. 55 tests, 100% coverage on health_utils. PR #65. |
 | D25 | E2E integration tests (pre-prod gate) | ❌ Not started | Flutter integration_test: register → log reading → log meal → see insight. Network failure → offline queue → sync. Language switch mid-flow. Blocks production deployment. Use `integration_test` package. |
 | D26 | Boundary value tests for health classifications | ❌ Not started | classify_bp at 131/132 systolic, 86/87 diastolic boundaries. classify_glucose at 70, 130, 180 exact boundaries. carb_glucose_correlation timezone-aware vs naive datetime. |
+| D27 | AI eval harness — Indian clinical cases | ❌ Future | Pre-scale gate. Build 200-500 golden test cases (T2DM, hypertension, hypothyroid) to measure ai_service.py accuracy, hallucination rate, refusal behavior. Trigger: before fine-tuning MedGemma or custom clinical decision logic. Not needed while ai_service.py calls Gemini/DeepSeek with rule-based prompts. Learn: MedQA benchmarks, LLM-as-judge. |
+| D28 | Ambient ASR — doctor consultation auto-notes | ❌ Future | Post Module E (doctor portal). Doctor opens consultation → mic records → MedASR (Google, open-source, HuggingFace) transcribes clinical audio → LLM extracts diagnosis (ICD-10), medications, LOINC observations → auto-fills doctor notes (E6). Use IndicWhisper for Hindi/Hinglish accuracy. Self-host on Hetzner (zero per-call cost). Trigger: after E6 (doctor clinical notes) is live and 5+ doctors actively using portal. |
 
 ---
 

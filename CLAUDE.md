@@ -17,7 +17,8 @@ Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
 ## Key Files (read these first)
 - `WORKING-CONTEXT.md` — **live sprint board** (current branch, PRs, blockers, priorities)
 - `RULES.md` — **Must Always / Must Never rules**, commit style, model routing
-- `TASK_TRACKER.md` — full feature status across all modules (A–D)
+- `TASK_TRACKER_PENDING.md` — **active working file** — all incomplete tasks, prioritized (🔴 blocker → 🟡 nice-to-have → 🔵 post-pilot → ⚪ future)
+- `TASK_TRACKER_COMPLETED.md` — archive of 75 shipped tasks + PR log (read-only reference)
 - `KNOWN_ISSUES.md` — deferred issues tracked for pre-production
 - `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md` — **legal checklist for doctor portal** (NMC, DPDPA, SaMD, liability)
 - `AUDIT.md` — change log (update on every session)
@@ -77,7 +78,7 @@ Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
 **Skills used:** none (reads files)
 **Actions:**
 - Read `WORKING-CONTEXT.md` — what sprint, what branch, what blockers
-- Read `TASK_TRACKER.md` — does this feature exist? what's its status?
+- Read `TASK_TRACKER_PENDING.md` — does this feature exist? what's its status? what tier is it?
 - Read `.claude/learnings/` — any past patterns relevant to this work?
 - Ask clarifying questions ONLY if genuinely ambiguous
 **GATE:** Context is loaded. Proceed.
@@ -477,4 +478,4 @@ See `RULES.md` for the full list. Critical rules:
 - All HTTP via `ApiClient.headers()` + `ApiClient.errorDetail()`
 - All auth via `Depends(get_current_user)`
 - No `print()` in backend
-- Check `TASK_TRACKER.md` before starting any new feature work
+- Check `TASK_TRACKER_PENDING.md` before starting any new feature work

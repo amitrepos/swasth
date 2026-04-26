@@ -2183,7 +2183,7 @@ abstract class AppLocalizations {
   /// No description provided for @consentAiBody.
   ///
   /// In en, this message translates to:
-  /// **'Swasth uses third-party AI services (Google Gemini and DeepSeek) to generate personalised health recommendations. A summary of my health data (not raw readings) may be sent to these services. I can opt out at any time, and rule-based insights will be used instead.'**
+  /// **'Swasth uses third-party AI services (Google Gemini and DeepSeek) to generate personalised health insights. A summary of my health data (not raw readings) may be sent to these services. I can opt out at any time, and rule-based insights will be used instead.\n\nAll AI-generated content is a health observation only — not medical advice. Always consult your doctor before making any changes to medication or treatment.'**
   String get consentAiBody;
 
   /// No description provided for @consentAccept.
@@ -3643,6 +3643,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use Quick Select instead'**
   String get useQuickSelect;
+
+  /// NMC-required disclaimer shown on all AI-generated health insights
+  ///
+  /// In en, this message translates to:
+  /// **'This is information, not a prescription. Consult your doctor before making any changes.'**
+  String get nmcDisclaimer;
 }
 
 class _AppLocalizationsDelegate

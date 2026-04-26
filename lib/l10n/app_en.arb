@@ -521,7 +521,7 @@
   "consentRightsTitle": "My Rights",
   "consentRights": "I can withdraw my consent or ask to delete my data at any time through the app settings.",
   "consentAiTitle": "AI-Powered Insights",
-  "consentAiBody": "Swasth uses third-party AI services (Google Gemini and DeepSeek) to generate personalised health recommendations. A summary of my health data (not raw readings) may be sent to these services. I can opt out at any time, and rule-based insights will be used instead.",
+  "consentAiBody": "Swasth uses third-party AI services (Google Gemini and DeepSeek) to generate personalised health insights. A summary of my health data (not raw readings) may be sent to these services. I can opt out at any time, and rule-based insights will be used instead.\n\nAll AI-generated content is a health observation only — not medical advice. Always consult your doctor before making any changes to medication or treatment.",
   "consentAccept": "I Accept",
   "consentDecline": "I Decline",
   "consentDeclineTitle": "Decline Consent?",
@@ -1034,5 +1034,9 @@
   "useQuickSelect": "Use Quick Select instead",
   "@useQuickSelect": {
     "description": "Button text to fallback to manual meal selection if photo analysis fails"
+  },
+  "nmcDisclaimer": "This is information, not a prescription. Consult your doctor before making any changes.",
+  "@nmcDisclaimer": {
+    "description": "NMC-required disclaimer shown on all AI-generated health insights"
   }
 }
