@@ -196,14 +196,26 @@ class TestSendInvite:
 
     @patch("routes_profiles.email_service.send_profile_invite_email")
     def test_send_invite_success(self, mock_email, client, test_user, auth_headers, db):
+        invitee = _second_user(db)
         pid = _get_profile_id(db, test_user.id)
         resp = client.post(f"/api/profiles/{pid}/invite", json={
-            "email": "friend@test.com",
+            "email": invitee.email,
             "relationship": "friend",
             "access_level": "editor",
         }, headers=auth_headers)
         assert resp.status_code == 201
         assert "invite_id" in resp.json()
+
+    @patch("routes_profiles.email_service.send_profile_invite_email")
+    def test_nonexistent_email_returns_404(self, mock_email, client, test_user, auth_headers, db):
+        """Inviting an email not registered in the system must return 404."""
+        pid = _get_profile_id(db, test_user.id)
+        resp = client.post(f"/api/profiles/{pid}/invite", json={
+            "email": "nobody@notregistered.com",
+        }, headers=auth_headers)
+        assert resp.status_code == 404
+        assert "register" in resp.json()["detail"].lower()
+        mock_email.assert_not_called()
 
     @patch("routes_profiles.email_service.send_profile_invite_email")
     def test_cannot_invite_self(self, mock_email, client, test_user, auth_headers, db):
@@ -216,14 +228,15 @@ class TestSendInvite:
 
     @patch("routes_profiles.email_service.send_profile_invite_email")
     def test_duplicate_invite_rejected(self, mock_email, client, test_user, auth_headers, db):
+        invitee = _second_user(db)
         pid = _get_profile_id(db, test_user.id)
         # First invite
         client.post(f"/api/profiles/{pid}/invite", json={
-            "email": "dup@test.com",
+            "email": invitee.email,
         }, headers=auth_headers)
         # Second invite — same email
         resp = client.post(f"/api/profiles/{pid}/invite", json={
-            "email": "dup@test.com",
+            "email": invitee.email,
         }, headers=auth_headers)
         assert resp.status_code == 409
 
@@ -236,10 +249,12 @@ class TestCancelInvite:
 
     @patch("routes_profiles.email_service.send_profile_invite_email")
     def test_cancel_invite(self, mock_email, client, test_user, auth_headers, db):
+        invitee = _second_user(db)
         pid = _get_profile_id(db, test_user.id)
         create_resp = client.post(f"/api/profiles/{pid}/invite", json={
-            "email": "cancel@test.com",
+            "email": invitee.email,
         }, headers=auth_headers)
+        assert create_resp.status_code == 201
         invite_id = create_resp.json()["invite_id"]
 
         resp = client.delete(f"/api/profiles/{pid}/invites/{invite_id}", headers=auth_headers)
