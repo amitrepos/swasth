@@ -210,25 +210,31 @@ def send_invite(
     if existing:
         raise HTTPException(status_code=409, detail="A pending invite already exists for this email")
 
-    # Check if the invitee already has access
+    # Verify the invitee has a registered account
     invitee_user = db.query(models.User).filter(models.User.email_hash == hash_email(data.email)).first()
-    if invitee_user:
-        already_has_access = (
-            db.query(models.ProfileAccess)
-            .filter(
-                models.ProfileAccess.profile_id == profile_id,
-                models.ProfileAccess.user_id == invitee_user.id,
-            )
-            .first()
+    if not invitee_user:
+        raise HTTPException(
+            status_code=404,
+            detail="No account found with this email address. Ask them to register first.",
         )
-        if already_has_access:
-            raise HTTPException(status_code=409, detail="This user already has access to the profile")
+
+    # Check if the invitee already has access
+    already_has_access = (
+        db.query(models.ProfileAccess)
+        .filter(
+            models.ProfileAccess.profile_id == profile_id,
+            models.ProfileAccess.user_id == invitee_user.id,
+        )
+        .first()
+    )
+    if already_has_access:
+        raise HTTPException(status_code=409, detail="This user already has access to the profile")
 
     invite = models.ProfileInvite(
         profile_id=profile_id,
         invited_by_user_id=user.id,
         invited_email=data.email.lower(),
-        invited_user_id=invitee_user.id if invitee_user else None,
+        invited_user_id=invitee_user.id,
         relationship=data.relationship,
         access_level=data.access_level or "viewer",
         status="pending",
