@@ -88,6 +88,24 @@ class TestCreateProfile:
         assert resp.status_code == 201
         assert resp.json()["phone_number"] is None
 
+    def test_relationship_stored_in_profile_access(self, client, test_user, auth_headers, db):
+        """Relationship must be saved to ProfileAccess, not just Profile."""
+        resp = client.post(self.URL, json={
+            "name": "Dad Health",
+            "relationship": "father",
+            "phone_number": "9876543211",
+        }, headers=auth_headers)
+        assert resp.status_code == 201
+        pid = resp.json()["id"]
+
+        access = db.query(models.ProfileAccess).filter_by(
+            profile_id=pid, user_id=test_user.id
+        ).first()
+        assert access is not None
+        assert access.relationship == "father", (
+            "ProfileAccess.relationship must match what was submitted at profile creation"
+        )
+
 
 # ===========================================================================
 # GET /api/profiles/{profile_id}

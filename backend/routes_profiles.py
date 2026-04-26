@@ -98,6 +98,7 @@ def create_profile(
         user_id=user.id,
         profile_id=profile.id,
         access_level="owner",
+        relationship=data.relationship,
     )
     db.add(access)
     
