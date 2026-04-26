@@ -153,6 +153,15 @@ class _AiInsightCardState extends State<AiInsightCard> {
                               ),
                             ),
                           ),
+                        const SizedBox(height: 6),
+                        Text(
+                          AppLocalizations.of(context)!.nmcDisclaimer,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                       ],
                     );
                   },

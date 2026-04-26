@@ -1126,7 +1126,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get consentAiBody =>
-      'Swasth uses third-party AI services (Google Gemini and DeepSeek) to generate personalised health recommendations. A summary of my health data (not raw readings) may be sent to these services. I can opt out at any time, and rule-based insights will be used instead.';
+      'Swasth uses third-party AI services (Google Gemini and DeepSeek) to generate personalised health insights. A summary of my health data (not raw readings) may be sent to these services. I can opt out at any time, and rule-based insights will be used instead.\n\nAll AI-generated content is a health observation only — not medical advice. Always consult your doctor before making any changes to medication or treatment.';
 
   @override
   String get consentAccept => 'I Accept';
@@ -1927,4 +1927,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get useQuickSelect => 'Use Quick Select instead';
+
+  @override
+  String get nmcDisclaimer =>
+      'This is information, not a prescription. Consult your doctor before making any changes.';
 }

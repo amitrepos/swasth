@@ -123,7 +123,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
         setState(() => _selectedImage = file);
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -154,7 +154,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// Get the appropriate color for the file icon background/foreground
   Color _getFileIconColor({bool foreground = false}) {
-    return foreground ? AppColors.primary : AppColors.primary.withValues(alpha: 0.1);
+    return foreground
+        ? AppColors.primary
+        : AppColors.primary.withValues(alpha: 0.1);
   }
 
   Future<void> _sendMessage({String? imageDescription}) async {
@@ -165,14 +167,21 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_isSending || _remainingQuota <= 0) return;
 
     if (imageDescription == null) _inputController.clear();
-    
+
     // Build display text
     String displayText = text;
     if (imageFile != null && text.isEmpty) {
       // Check if it's an image or other file
       final extension = imageFile.extension?.toLowerCase();
-      final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(extension);
-      
+      final isImage = [
+        'jpg',
+        'jpeg',
+        'png',
+        'gif',
+        'webp',
+        'bmp',
+      ].contains(extension);
+
       if (isImage) {
         displayText = 'Analyzing uploaded image...';
       } else {
@@ -202,7 +211,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ((!kIsWeb && imageFile.path != null)
                 ? await File(imageFile.path!).readAsBytes()
                 : null);
-                
+
         if (bytes != null) {
           // Send image as base64
           final base64Str = base64Encode(bytes);
@@ -446,6 +455,20 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
               ),
+
+            // --- NMC disclaimer (shown to all users, not just editors) ---
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Text(
+                AppLocalizations.of(context)!.nmcDisclaimer,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
 
             // --- Input bar (hidden for viewers) ---
             if (_canEdit)
