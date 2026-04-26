@@ -14,7 +14,7 @@ import '../widgets/offline_banner.dart';
 import 'home_screen.dart';
 import 'history_screen.dart';
 import 'streaks_screen.dart';
-import 'insights_screen.dart';
+import 'trend_chart_screen.dart';
 import 'chat_screen.dart';
 import 'select_profile_screen.dart';
 
@@ -27,13 +27,11 @@ class ShellScreen extends StatefulWidget {
     final state = _ShellScreenState._instance;
     if (state == null) return;
     if (index == 4 && chatMessage != null) {
-      state._chatInitialMessage = chatMessage;
-      // Force rebuild Chat by changing its key
-      // ignore: invalid_use_of_protected_member
-      state.setState(() {
-        state._chatRebuildKey++;
-        state._currentIndex = index;
-      });
+      state.setState(() => state._currentIndex = index);
+      // Send message directly into the existing Chat state — no full rebuild needed
+      Future.microtask(
+        () => state._chatKey.currentState?.sendInitialMessage(chatMessage),
+      );
     } else {
       state._onTap(index);
     }
@@ -51,9 +49,9 @@ class _ShellScreenState extends State<ShellScreen> {
   bool _isOffline = false;
   Timer? _connectivityTimer;
   Timer? _profileRefreshTimer;
-  String? _chatInitialMessage;
-  int _chatRebuildKey = 0;
   final _historyKey = GlobalKey<HistoryScreenState>();
+  final _insightsKey = GlobalKey<TrendChartScreenState>();
+  final _chatKey = GlobalKey<ChatScreenState>();
 
   @override
   void initState() {
@@ -170,14 +168,13 @@ class _ShellScreenState extends State<ShellScreen> {
                   const HomeScreen(),
                   HistoryScreen(key: _historyKey, profileId: _profileId!),
                   StreaksScreen(key: ValueKey('streaks_$_profileId')),
-                  InsightsScreen(
-                    key: ValueKey('insights_$_profileId'),
+                  TrendChartScreen(
+                    key: _insightsKey,
                     profileId: _profileId!,
                   ),
                   ChatScreen(
-                    key: ValueKey('chat_${_profileId}_$_chatRebuildKey'),
+                    key: _chatKey,
                     profileId: _profileId!,
-                    initialMessage: _chatInitialMessage,
                   ),
                 ],
               ),
@@ -251,13 +248,10 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   void _onTap(int index) {
-    // Clear chat message when switching away from chat or switching normally
-    if (index != 4) _chatInitialMessage = null;
     setState(() => _currentIndex = index);
-    // Auto-refresh History when switching to it
-    if (index == 1) {
-      _historyKey.currentState?.refresh();
-    }
+    if (index == 1) _historyKey.currentState?.refresh();
+    if (index == 3) _insightsKey.currentState?.refresh();
+    if (index == 4) _chatKey.currentState?.refreshVitals();
   }
 }
 

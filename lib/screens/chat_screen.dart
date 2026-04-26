@@ -18,10 +18,10 @@ class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, required this.profileId, this.initialMessage});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<ChatScreen> createState() => ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class ChatScreenState extends State<ChatScreen> {
   final ChatService _chatService = ChatService();
   final StorageService _storageService = StorageService();
   final TextEditingController _inputController = TextEditingController();
@@ -37,6 +37,10 @@ class _ChatScreenState extends State<ChatScreen> {
   String _lastBp = '--';
   String _lastSugar = '--';
   bool _canEdit = true;
+
+  // Guards sendInitialMessage from firing before _loadMessages completes
+  bool _messagesLoaded = false;
+  String? _pendingInitialMessage;
 
   @override
   void initState() {
@@ -54,6 +58,20 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _loadAccessLevel() async {
     final level = await _storageService.getActiveProfileAccessLevel();
     if (mounted) setState(() => _canEdit = level != 'viewer');
+  }
+
+  /// Called by ShellScreen when switching to the Chat tab.
+  void refreshVitals() => _loadVitals();
+
+  /// Called by ShellScreen to send a message without rebuilding the widget.
+  /// Queues the message if _loadMessages hasn't completed yet to avoid
+  /// a race where the optimistic entry gets overwritten by the server list.
+  void sendInitialMessage(String message) {
+    if (_messagesLoaded) {
+      _sendMessage(imageDescription: message);
+    } else {
+      _pendingInitialMessage = message;
+    }
   }
 
   @override
@@ -98,7 +116,15 @@ class _ChatScreenState extends State<ChatScreen> {
         _isLoading = false;
       });
       _scrollToBottom();
+      // Deliver any message queued before load completed
+      _messagesLoaded = true;
+      if (_pendingInitialMessage != null) {
+        final msg = _pendingInitialMessage!;
+        _pendingInitialMessage = null;
+        _sendMessage(imageDescription: msg);
+      }
     } catch (_) {
+      _messagesLoaded = true;
       setState(() => _isLoading = false);
     }
   }

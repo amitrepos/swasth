@@ -121,6 +121,20 @@ def save_reading(
     for k in stale:
         del _insight_cache[k]
 
+    # Invalidate TrendSummaryCache so Insights tab reflects new readings
+    try:
+        db.query(models.TrendSummaryCache).filter(
+            models.TrendSummaryCache.profile_id == reading.profile_id
+        ).delete()
+        db.commit()
+    except Exception:
+        logger.warning(
+            "TrendSummaryCache invalidation failed for profile %s",
+            reading.profile_id,
+            exc_info=True,
+        )
+        db.rollback()
+
     # ── Critical alert: send email to family members ─────────────────
     alert = None
     if reading.status_flag in ("CRITICAL", "HIGH - STAGE 2"):
