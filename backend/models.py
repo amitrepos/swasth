@@ -442,7 +442,7 @@ class HealthReading(Base):
     weight_value_enc = Column(Text, nullable=True)
     notes_enc = Column(Text, nullable=True)
 
-    reading_timestamp = Column(DateTime, nullable=False)
+    reading_timestamp = Column(DateTime(timezone=True), nullable=False)
     seq = Column(Integer, nullable=True)                     # Device sequence number for deduplication
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -631,7 +631,7 @@ class PasswordResetOTP(Base):
     email_hash = Column(String(64), index=True, nullable=False)
     otp_hash = Column(String(64), nullable=False)                  # HMAC-SHA256(otp)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    expires_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     is_used = Column(Boolean, default=False)
 
     __init__ = _otp_init
@@ -648,7 +648,7 @@ class EmailVerificationOTP(Base):
     email_hash = Column(String(64), index=True, nullable=False)
     otp_hash = Column(String(64), nullable=False)                  # HMAC-SHA256(otp)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    expires_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     is_used = Column(Boolean, default=False, server_default="false")
 
     __init__ = _otp_init
@@ -664,7 +664,7 @@ class PhoneOTP(Base):
     phone_hash = Column(String(64), index=True, nullable=False)
     otp_hash = Column(String(64), nullable=False)                  # HMAC-SHA256(otp)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    expires_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     is_used = Column(Boolean, default=False, server_default="false")
 
     __init__ = _otp_init

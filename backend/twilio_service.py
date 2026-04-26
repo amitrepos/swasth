@@ -91,9 +91,9 @@ class TwilioWhatsAppService:
             # Also sanitize each value: remove newlines, tabs, and multiple spaces
             content_vars_dict = {}
             for i, var in enumerate(variables, start=1):
-                # Collapse tabs and runs of spaces; preserve \n for Twilio line breaks
-                sanitized = re.sub(r" +", " ", var.replace('\t', ' '))
-                content_vars_dict[str(i)] = sanitized.strip()
+                # Twilio Content API rejects \n inside variable values (error 21656)
+                sanitized = re.sub(r"\s+", " ", var).strip()
+                content_vars_dict[str(i)] = sanitized
             
             message = self.client.messages.create(
                 from_=final_from,

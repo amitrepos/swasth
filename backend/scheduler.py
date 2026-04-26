@@ -27,7 +27,8 @@ def start_scheduler():
         # Sent every Sunday morning as a comprehensive family summary.
         scheduler.add_job(
             weekly_reports_job,
-            trigger=CronTrigger(day_of_week='sun', hour=9, minute=0),
+            #trigger=CronTrigger(day_of_week='sun', hour=9, minute=0),
+            trigger=CronTrigger(minute ='*'),
             id="weekly_whatsapp_reports",
             name="Generate and send weekly health reports to all users",
             replace_existing=True

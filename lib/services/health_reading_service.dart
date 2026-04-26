@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import '../services/ocr_service.dart';
+import '../utils/datetime_utils.dart';
 import 'api_client.dart';
 import 'api_exception.dart';
 
@@ -75,15 +76,6 @@ class HealthReading {
     required this.createdAt,
   });
 
-  static DateTime _parseUtc(dynamic val) {
-    if (val == null) return DateTime.now();
-    final dtStr = val.toString();
-    if (!dtStr.endsWith('Z') && !dtStr.contains('+')) {
-      return DateTime.parse('${dtStr}Z').toLocal();
-    }
-    return DateTime.parse(dtStr).toLocal();
-  }
-
   factory HealthReading.fromJson(Map<String, dynamic> json) {
     return HealthReading(
       id: json['id'],
@@ -112,11 +104,11 @@ class HealthReading {
       unitDisplay: json['unit_display'] ?? '',
       statusFlag: json['status_flag'],
       notes: json['notes'],
-      readingTimestamp: _parseUtc(json['reading_timestamp']),
+      readingTimestamp: DateTimeUtils.parseUtc(json['reading_timestamp']),
       seq: json['seq'],
       createdAt: json['created_at'] != null
-          ? _parseUtc(json['created_at'])
-          : _parseUtc(json['reading_timestamp']),
+          ? DateTimeUtils.parseUtc(json['created_at'])
+          : DateTimeUtils.parseUtc(json['reading_timestamp']),
     );
   }
 
@@ -143,7 +135,7 @@ class HealthReading {
       'unit_display': unitDisplay,
       'status_flag': statusFlag,
       'notes': notes,
-      'reading_timestamp': readingTimestamp.toIso8601String(),
+      'reading_timestamp': readingTimestamp.toUtc().toIso8601String(),
       'seq': seq,
     };
   }
@@ -280,8 +272,8 @@ class HealthReadingService {
       stepsGoal: stepsGoal,
       valueNumeric: stepsCount.toDouble(),
       unitDisplay: 'steps',
-      readingTimestamp: DateTime.now(),
-      createdAt: DateTime.now(),
+      readingTimestamp: DateTime.now().toUtc(),
+      createdAt: DateTime.now().toUtc(),
     );
     await ApiClient.send(
       () => ApiClient.httpClient.post(

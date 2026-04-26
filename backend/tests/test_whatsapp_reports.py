@@ -49,12 +49,12 @@ def test_send_weekly_reports_dispatches_to_normalized_owner_phone(mock_ai, mock_
     args = mock_whatsapp.send_whatsapp_template.call_args[0]
     assert args[0] == "+918700151250"
 
-# 2. Test Consolidated Reports for Multi-Profile Owners
+# 2. Test Individual Profile Reports
 @patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
-def test_send_weekly_reports_consolidated_messages(mock_ai, mock_whatsapp, mock_settings, db):
-    """Verify multiple profiles for the same owner result in ONE consolidated WhatsApp message."""
+def test_send_weekly_reports_separate_messages(mock_ai, mock_whatsapp, mock_settings, db):
+    """Verify multiple profiles for the same owner result in separate WhatsApp messages (one per profile)."""
     mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     user = User(
         email="multi@test.com", 
@@ -88,19 +88,19 @@ def test_send_weekly_reports_consolidated_messages(mock_ai, mock_whatsapp, mock_
     
     send_weekly_reports(db=db)
     
-    # After consolidation fix (M3), multiple profiles for same owner result in ONE call
-    assert mock_whatsapp.send_whatsapp_template.call_count == 1
+    # After removal of consolidation, multiple profiles for same owner result in separate calls
+    assert mock_whatsapp.send_whatsapp_template.call_count == 2
     
     calls = mock_whatsapp.send_whatsapp_template.call_args_list
     # Check recipients (both should go to owner's phone +919999999999)
     recipients = [c[0][0] for c in calls]
     assert "+919999999999" in recipients
-    assert len(recipients) == 1
+    assert len(recipients) == 2
     
-    # Both names should be in the consolidated body (var3 at index 2)
-    report_body = calls[0][0][2][2]
-    assert "Deepak" in report_body
-    assert "Papa" in report_body
+    # Each call should contain the specific profile name
+    names = [c[0][2][2] for c in calls]
+    assert any("Deepak" in name for name in names)
+    assert any("Papa" in name for name in names)
 
 # 3. Test 7-Day Window and No Readings
 @patch("report_service.settings")
@@ -241,12 +241,12 @@ def test_whatsapp_delivery_error_logging(mock_ai, mock_whatsapp, mock_settings, 
     assert delivery_log.status == WhatsAppMessageStatus.FAILED
     assert delivery_log.error_message == "Twilio Error 123"
 
-# 7. Multi-profile Consolidation (M3)
+# 7. Multi-profile Separate Reports
 @patch("report_service.settings")
 @patch("report_service.whatsapp_service")
 @patch("report_service.ai_report_service")
 def test_consolidated_multi_profile_report(mock_ai, mock_whatsapp, mock_settings, db):
-    """Verify that multiple profiles for the same owner result in ONE consolidated WhatsApp message."""
+    """Verify that multiple profiles for the same owner result in separate WhatsApp messages (one per profile)."""
     mock_settings.TWILIO_REPORT_CONTENT_SID = "HXmock"
     
     user = User(email="con@test.com", phone_number="+919999999994", password_hash="h", full_name="Consolidator", is_active=True)
@@ -271,13 +271,16 @@ def test_consolidated_multi_profile_report(mock_ai, mock_whatsapp, mock_settings
     
     send_weekly_reports(db=db)
     
-    # CRITICAL: Should only be called ONCE (consolidated)
-    assert mock_whatsapp.send_whatsapp_template.call_count == 1
+    # After removal of consolidation, multiple profiles for same owner result in separate calls (3 profiles = 3 calls)
+    assert mock_whatsapp.send_whatsapp_template.call_count == 3
     
-    args = mock_whatsapp.send_whatsapp_template.call_args[0]
-    assert args[0] == "+919999999994" # Recipient
-    # Variable {{3}} should contain all profile names
-    report_body = args[2][2]
-    assert "Self" in report_body
-    assert "Papa" in report_body
-    assert "Mummy" in report_body
+    args_list = mock_whatsapp.send_whatsapp_template.call_args_list
+    # All should be to the same owner's phone
+    for call in args_list:
+        assert call[0][0] == "+919999999994"
+    
+    # Collect all names in the bodies
+    bodies = [call[0][2][2] for call in args_list]
+    assert any("Self" in b for b in bodies)
+    assert any("Papa" in b for b in bodies)
+    assert any("Mummy" in b for b in bodies)

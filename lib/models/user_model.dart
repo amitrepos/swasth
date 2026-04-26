@@ -1,3 +1,5 @@
+import '../utils/datetime_utils.dart';
+
 class UserModel {
   final int id;
   final String email;
@@ -43,7 +45,7 @@ class UserModel {
       currentMedications: json['current_medications'],
       medicalConditions: List<String>.from(json['medical_conditions'] ?? []),
       otherMedicalCondition: json['other_medical_condition'],
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: DateTimeUtils.parseUtc(json['created_at']),
     );
   }
 

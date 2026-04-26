@@ -1,3 +1,5 @@
+import '../utils/datetime_utils.dart';
+
 class InviteModel {
   final int id;
   final int profileId;
@@ -24,8 +26,8 @@ class InviteModel {
       profileName: json['profile_name'],
       invitedByName: json['invited_by_name'],
       status: json['status'],
-      expiresAt: DateTime.parse(json['expires_at']),
-      createdAt: DateTime.parse(json['created_at']),
+      expiresAt: DateTimeUtils.parseUtc(json['expires_at']),
+      createdAt: DateTimeUtils.parseUtc(json['created_at']),
     );
   }
 

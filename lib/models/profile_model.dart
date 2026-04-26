@@ -1,3 +1,5 @@
+import '../utils/datetime_utils.dart';
+
 class ProfileModel {
   final int id;
   final String name;
@@ -59,9 +61,9 @@ class ProfileModel {
       phoneNumber: json['phone_number'] as String,
       accessLevel: json['access_level'],
       relationship: json['relationship'] as String?,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: DateTimeUtils.parseUtc(json['created_at']),
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
+          ? DateTimeUtils.parseUtc(json['updated_at'])
           : null,
     );
   }
