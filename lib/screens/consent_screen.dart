@@ -4,6 +4,7 @@ import '../services/error_mapper.dart';
 import '../theme/app_theme.dart';
 import 'unified_login_screen.dart';
 import 'privacy_policy_screen.dart';
+import 'terms_of_service_screen.dart';
 
 /// Privacy consent screen shown after registration form.
 /// User must scroll to bottom before "Accept" is enabled.
@@ -218,17 +219,31 @@ class _ConsentScreenState extends State<ConsentScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  Center(
-                    child: TextButton.icon(
-                      icon: const Icon(Icons.open_in_new, size: 16),
-                      label: Text(l10n.privacyPolicy),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const PrivacyPolicyScreen(),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    children: [
+                      TextButton.icon(
+                        icon: const Icon(Icons.open_in_new, size: 16),
+                        label: Text(l10n.privacyPolicy),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PrivacyPolicyScreen(),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        icon: const Icon(Icons.open_in_new, size: 16),
+                        label: Text(l10n.tosTitle),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TermsOfServiceScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
 

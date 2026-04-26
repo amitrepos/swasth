@@ -1166,7 +1166,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ppAi =>
-      'Swasth uses third-party AI services — Google Gemini and DeepSeek — to generate health recommendations. A summarised version of your data (averages and ranges, not individual readings) is sent to these services. You can opt out of AI processing at any time; rule-based insights will be used instead.';
+      'Swasth uses third-party AI services — Google Gemini and DeepSeek — to generate health insights. A summarised version of your data (averages and ranges, not individual readings) is sent to these services. You can opt out of AI processing at any time; rule-based insights will be used instead. All AI-generated content is informational only and does not constitute medical advice.';
 
   @override
   String get ppSharingTitle => 'Data Sharing';
@@ -1197,11 +1197,84 @@ class AppLocalizationsEn extends AppLocalizations {
       'Under Indian data protection law (SPDI Rules 2011 and DPDP Act 2023), you have the right to: access your data, correct inaccuracies, withdraw consent, request deletion of your data, and file a grievance. To exercise these rights, use the in-app settings or contact us.';
 
   @override
+  String get ppDoctorSharingTitle => 'Doctor Data Sharing';
+
+  @override
+  String get ppDoctorSharing =>
+      'If you link a doctor to your profile, your health readings, trends, and profile information (name, age, conditions, medications) will be visible to that doctor. You control this sharing — you can revoke doctor access at any time from your profile settings. Doctors cannot modify your data.';
+
+  @override
+  String get ppWhatsAppTitle => 'WhatsApp Notifications';
+
+  @override
+  String get ppWhatsApp =>
+      'Swasth uses Twilio WhatsApp Business API to send you health alerts and weekly summaries. These messages are sent to the phone number you provide. You will receive: (1) immediate alerts when a critical reading is recorded, (2) optional weekly health summaries. You can opt out of WhatsApp messages via Settings → Notifications in the app, or by contacting support@swasth.app.';
+
+  @override
+  String get ppLiabilityTitle => 'Limitation of Liability';
+
+  @override
+  String get ppLiability =>
+      'Swasth is a health monitoring tool, not a medical device or clinical service. The app does not provide diagnosis, treatment, or prescription. All insights are informational. Swasth is not liable for any health decisions made based on app content. Always consult a qualified doctor for medical advice. In case of emergency, call 112.';
+
+  @override
   String get ppContactTitle => 'Contact';
 
   @override
   String get ppContact =>
-      'For privacy-related questions or grievances, contact: support@swasth.app';
+      'For privacy-related questions or grievances, contact our Grievance Officer: support@swasth.app. We will respond within 30 days of receiving your request.';
+
+  @override
+  String get tosTitle => 'Terms of Service';
+
+  @override
+  String get tosAcceptanceTitle => 'Acceptance of Terms';
+
+  @override
+  String get tosAcceptance =>
+      'By using Swasth, you agree to these Terms of Service. If you do not agree, do not use the app. These terms apply to all users including patients, family members, and caregivers.';
+
+  @override
+  String get tosServiceTitle => 'Service Description';
+
+  @override
+  String get tosService =>
+      'Swasth is a personal health monitoring app that helps you track blood glucose, blood pressure, and related health metrics. It provides AI-generated health insights for informational purposes only. Swasth is not a clinical service, telemedicine platform, or regulated medical device.';
+
+  @override
+  String get tosAiTitle => 'AI Insights Disclaimer';
+
+  @override
+  String get tosAi =>
+      'AI-generated content in Swasth is informational only. It is not a substitute for professional medical advice, diagnosis, or prescription. Never change medication, diet, or treatment based solely on app insights. Always consult your doctor before making health decisions.';
+
+  @override
+  String get tosDoctorTitle => 'Doctor Data Sharing';
+
+  @override
+  String get tosDoctor =>
+      'When you link a doctor to your profile, you consent to sharing your health data with that doctor. Swasth is not responsible for how doctors use the data shared with them. Doctors using the platform are independently responsible for compliance with NMC ethical guidelines. You can revoke doctor access at any time.';
+
+  @override
+  String get tosLiabilityTitle => 'Limitation of Liability';
+
+  @override
+  String get tosLiability =>
+      'To the maximum extent permitted by Indian law, Swasth and its founders, employees, and service providers shall not be liable for any health outcomes, clinical decisions, or damages arising from use of this app. The app is provided \'as is\'. Platform liability is limited to the subscription fee paid, if any.';
+
+  @override
+  String get tosTerminationTitle => 'Account Termination';
+
+  @override
+  String get tosTermination =>
+      'You may delete your account at any time from the app settings. All your data will be permanently deleted within 30 days. Swasth may suspend accounts that violate these terms.';
+
+  @override
+  String get tosGoverningTitle => 'Governing Law';
+
+  @override
+  String get tosGoverning =>
+      'These terms are governed by the laws of India. Disputes shall be subject to the exclusive jurisdiction of courts in New Delhi, India. These terms comply with the Digital Personal Data Protection Act 2023 (DPDPA). Last updated: May 2026.';
 
   @override
   String get chatTitle => 'Swasth AI';
