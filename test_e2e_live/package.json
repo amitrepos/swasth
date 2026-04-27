@@ -1,0 +1,21 @@
+{
+  "name": "test_e2e_live",
+  "version": "2.0.0",
+  "description": "Playwright E2E tests against live AWS deployment (app.swasth.health). Covers patient, relative/caregiver, and doctor flows.",
+  "scripts": {
+    "test": "playwright test",
+    "test:patient": "playwright test tests/patient.spec.js",
+    "test:relative": "playwright test tests/relative.spec.js",
+    "test:doctor": "playwright test tests/doctor.spec.js",
+    "test:smoke": "playwright test tests/smoke.spec.js",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "report": "playwright show-report"
+  },
+  "dependencies": {
+    "playwright": "^1.59.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

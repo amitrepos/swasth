@@ -1,9 +1,9 @@
 enum Flavor {
   staging(
-    serverHost: 'https://65.109.226.36:8443',
+    serverHost: 'https://staging-api.swasth.health',
     displayName: 'Swasth Staging',
   ),
-  production(serverHost: 'https://65.109.226.36:8444', displayName: 'Swasth');
+  production(serverHost: 'https://api.swasth.health', displayName: 'Swasth');
 
   const Flavor({required this.serverHost, required this.displayName});
 

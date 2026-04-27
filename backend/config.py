@@ -41,7 +41,13 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[str] = None
     
     # CORS settings
-    CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:8080"]
+    CORS_ORIGINS: list = [
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "https://app.swasth.health",
+        "https://swasth.health",
+        "https://www.swasth.health",
+    ]
 
     # Chat quota — configurable rate limiting
     CHAT_QUOTA_LIMIT: int = 5              # max questions per period
