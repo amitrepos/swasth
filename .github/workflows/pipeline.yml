@@ -150,8 +150,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: test_e2e_live/package-lock.json
 
       - name: Install npm dependencies
         run: npm ci
