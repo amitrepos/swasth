@@ -2666,6 +2666,24 @@ abstract class AppLocalizations {
   /// **'Dinner'**
   String get mealTypeDinner;
 
+  /// Section header for recent meals in doctor patient detail screen
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Meals'**
+  String get sectionMeals;
+
+  /// Empty state when no meals found in last 7 days
+  ///
+  /// In en, this message translates to:
+  /// **'No meals logged in the last 7 days'**
+  String get noMealsLast7Days;
+
+  /// Button to show all meals
+  ///
+  /// In en, this message translates to:
+  /// **'Show all {count} meals'**
+  String showAllMeals(int count);
+
   /// No description provided for @mealDisclaimer.
   ///
   /// In en, this message translates to:

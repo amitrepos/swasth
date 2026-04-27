@@ -1113,6 +1113,184 @@ class TestDoctorNotes:
 
 
 # ---------------------------------------------------------------------------
+# GET /api/doctor/patients/{id}/meals
+# ---------------------------------------------------------------------------
+
+class TestPatientMeals:
+    """Tests for GET /api/doctor/patients/{profile_id}/meals endpoint."""
+
+    @pytest.fixture()
+    def patient_with_meals(self, db, patient_user):
+        """Add some meal logs to the patient profile."""
+        _, profile = patient_user
+        now = datetime.now(timezone.utc)
+
+        meals = [
+            models.MealLog(
+                profile_id=profile.id,
+                category="high_carb",
+                meal_type="BREAKFAST",
+                input_method="quick_select",
+                confidence=0.9,
+                glucose_impact="MODERATE",
+                meal_score=6,
+                timestamp=now - timedelta(hours=2),
+            ),
+            models.MealLog(
+                profile_id=profile.id,
+                category="low_carb",
+                meal_type="LUNCH",
+                input_method="quick_select",
+                confidence=0.95,
+                glucose_impact="LOW",
+                meal_score=8,
+                timestamp=now - timedelta(hours=6),
+            ),
+            models.MealLog(
+                profile_id=profile.id,
+                category="sweets",
+                meal_type="SNACK",
+                input_method="photo",
+                confidence=0.85,
+                glucose_impact="HIGH",
+                meal_score=4,
+                timestamp=now - timedelta(days=2),  # Changed from 1 day to 2 days
+            ),
+        ]
+        db.add_all(meals)
+        db.flush()
+        return meals
+
+    def test_get_meals_success(
+        self, client, doctor_headers, patient_user, linked_doctor_patient, patient_with_meals
+    ):
+        """Happy path: doctor can view patient's meals with photo_path=None for privacy."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/meals", headers=doctor_headers
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 3
+        # Most recent first
+        assert body[0]["meal_type"] == "BREAKFAST"
+        assert body[0]["category"] == "high_carb"
+        assert body[0]["glucose_impact"] == "MODERATE"
+        assert body[0]["meal_score"] == 6
+        # Photo path must be None for privacy
+        assert body[0]["photo_path"] is None
+        assert body[1]["photo_path"] is None
+        assert body[2]["photo_path"] is None
+
+    def test_get_meals_unauthorized_doctor(
+        self, client, doctor_headers, patient_user
+    ):
+        """Doctor without link access should get 403."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/meals", headers=doctor_headers
+        )
+        assert resp.status_code == 403
+
+    def test_get_meals_patient_cannot_access(
+        self, client, patient_headers, patient_user
+    ):
+        """Patient cannot use doctor endpoint to view meals."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/meals", headers=patient_headers
+        )
+        assert resp.status_code == 403
+
+    def test_get_meals_days_validation_exceeds_30(
+        self, client, doctor_headers, patient_user, linked_doctor_patient
+    ):
+        """Requesting days > 30 should be rejected with 422."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/meals?days=31",
+            headers=doctor_headers,
+        )
+        assert resp.status_code == 422
+
+    def test_get_meals_days_validation_valid(
+        self, client, doctor_headers, patient_user, linked_doctor_patient, patient_with_meals
+    ):
+        """Valid days parameter (within 1-30 range) should work."""
+        _, profile = patient_user
+        # Test with days=7 (default)
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/meals?days=7",
+            headers=doctor_headers,
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        # All 3 meals are within 7 days
+        assert len(body) == 3
+
+        # Test with days=1 (should only get meals from last 24 hours)
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/meals?days=1",
+            headers=doctor_headers,
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        # BREAKFAST (2h ago) and LUNCH (6h ago) are within 24 hours
+        assert len(body) == 2
+        # Most recent first
+        assert body[0]["meal_type"] == "BREAKFAST"
+        assert body[1]["meal_type"] == "LUNCH"
+
+    def test_get_meals_empty(
+        self, client, doctor_headers, patient_user, linked_doctor_patient
+    ):
+        """Doctor can access endpoint but patient has no meals."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/meals", headers=doctor_headers
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_get_meals_audit_log_written(
+        self, client, db, doctor_user, doctor_headers, patient_user, linked_doctor_patient
+    ):
+        """DPDPA: Viewing meals must write to DoctorAccessLog with action=viewed_meals."""
+        _, profile = patient_user
+        
+        # Count existing logs before the request
+        initial_count = (
+            db.query(models.DoctorAccessLog)
+            .filter(
+                models.DoctorAccessLog.doctor_id == doctor_user.id,
+                models.DoctorAccessLog.profile_id == profile.id,
+                models.DoctorAccessLog.action == "viewed_meals",
+            )
+            .count()
+        )
+
+        # Make the request
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/meals", headers=doctor_headers
+        )
+        assert resp.status_code == 200
+
+        # Verify audit log was created
+        audit_logs = (
+            db.query(models.DoctorAccessLog)
+            .filter(
+                models.DoctorAccessLog.doctor_id == doctor_user.id,
+                models.DoctorAccessLog.profile_id == profile.id,
+                models.DoctorAccessLog.action == "viewed_meals",
+            )
+            .all()
+        )
+        assert len(audit_logs) == initial_count + 1
+        # Verify the endpoint is recorded
+        assert audit_logs[-1].endpoint == f"/api/doctor/patients/{profile.id}/meals"
+
+
+# ---------------------------------------------------------------------------
 # POST /api/doctor/verify/{doctor_id} (Admin)
 # ---------------------------------------------------------------------------
 

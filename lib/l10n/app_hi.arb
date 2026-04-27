@@ -489,6 +489,21 @@
   "mealTypeLunch": "दोपहर का खाना",
   "mealTypeSnack": "नाश्ता",
   "mealTypeDinner": "रात का खाना",
+  "sectionMeals": "हाल के भोजन",
+  "@sectionMeals": {
+    "description": "डॉक्टर पेजेंट डिटेल स्क्रीन में हाल के भोजन का सेक्शन हेडर"
+  },
+  "noMealsLast7Days": "पिछले 7 दिनों में कोई भोजन दर्ज नहीं",
+  "@noMealsLast7Days": {
+    "description": "खाली स्थिति जब पिछले 7 दिनों में कोई भोजन नहीं मिला"
+  },
+  "showAllMeals": "सभी {count} भोजन दिखाएं",
+  "@showAllMeals": {
+    "description": "सभी भोजन दिखाने का बटन",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "mealDisclaimer": "सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं",
   "foodPhotoTitle": "खाने की फोटो लें",
   "foodPhotoHint": "कैमरा अपने खाने की तरफ करें",

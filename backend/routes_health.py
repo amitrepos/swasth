@@ -70,6 +70,29 @@ def save_reading(
                 "existing_id": existing_seq.id,
             }
 
+    # ── Steps deduplication: check if same step count already exists today ─
+    if reading.reading_type == 'steps' and reading.steps_count is not None:
+        today = date.today()
+        today_start = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
+        today_end = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
+        
+        # Find the latest steps reading for today
+        latest_today_steps = db.query(models.HealthReading).filter(
+            models.HealthReading.profile_id == reading.profile_id,
+            models.HealthReading.reading_type == 'steps',
+            models.HealthReading.reading_timestamp >= today_start,
+            models.HealthReading.reading_timestamp <= today_end,
+        ).order_by(models.HealthReading.reading_timestamp.desc()).first()
+        
+        if latest_today_steps and latest_today_steps.steps_count == reading.steps_count:
+            # Same step count already exists for today - skip storing
+            return {
+                "skipped": True,
+                "reason": "duplicate_steps",
+                "steps_count": reading.steps_count,
+                "existing_id": latest_today_steps.id,
+            }
+
     db_reading = models.HealthReading(
         profile_id=reading.profile_id,
         logged_by=user.id,

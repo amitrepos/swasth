@@ -1399,6 +1399,17 @@ class AppLocalizationsHi extends AppLocalizations {
   String get mealTypeDinner => 'रात का खाना';
 
   @override
+  String get sectionMeals => 'हाल के भोजन';
+
+  @override
+  String get noMealsLast7Days => 'पिछले 7 दिनों में कोई भोजन दर्ज नहीं';
+
+  @override
+  String showAllMeals(int count) {
+    return 'सभी $count भोजन दिखाएं';
+  }
+
+  @override
   String get mealDisclaimer => 'सामान्य स्वास्थ्य के लिए, चिकित्सा सलाह नहीं';
 
   @override

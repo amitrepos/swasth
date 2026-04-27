@@ -100,6 +100,7 @@ class StorageService {
   static const String _lastStepsDateKey = 'last_steps_date';
   static const String _stepsGoalKey = 'steps_goal';
   static const String _baselineStepsKey = 'baseline_steps';
+  static const String _lastSyncedStepsKey = 'last_synced_steps';
 
   Future<void> saveToken(String token) async {
     await _store.write(_tokenKey, token);
@@ -350,6 +351,17 @@ class StorageService {
   /// Get baseline step count
   Future<int?> getBaselineSteps() async {
     final value = await _store.read(_baselineStepsKey);
+    return value != null ? int.tryParse(value) : null;
+  }
+
+  /// Save last synced step count (to avoid duplicate syncs)
+  Future<void> saveLastSyncedSteps(int steps) async {
+    await _store.write(_lastSyncedStepsKey, steps.toString());
+  }
+
+  /// Get last synced step count
+  Future<int?> getLastSyncedSteps() async {
+    final value = await _store.read(_lastSyncedStepsKey);
     return value != null ? int.tryParse(value) : null;
   }
 }

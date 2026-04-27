@@ -622,6 +622,21 @@
   "mealTypeLunch": "Lunch",
   "mealTypeSnack": "Snack",
   "mealTypeDinner": "Dinner",
+  "sectionMeals": "Recent Meals",
+  "@sectionMeals": {
+    "description": "Section header for recent meals in doctor patient detail screen"
+  },
+  "noMealsLast7Days": "No meals logged in the last 7 days",
+  "@noMealsLast7Days": {
+    "description": "Empty state when no meals found in last 7 days"
+  },
+  "showAllMeals": "Show all {count} meals",
+  "@showAllMeals": {
+    "description": "Button to show all meals",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "mealDisclaimer": "For general wellness, not medical advice",
   "foodPhotoTitle": "Take Food Photo",
   "foodPhotoHint": "Point camera at your food",

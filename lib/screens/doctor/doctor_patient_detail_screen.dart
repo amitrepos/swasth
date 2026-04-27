@@ -31,6 +31,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
   Map<String, dynamic>? _profile;
   Map<String, dynamic>? _summary;
   List<Map<String, dynamic>> _readings = [];
+  List<Map<String, dynamic>> _meals = [];
   List<Map<String, dynamic>> _notes = [];
   bool _loading = true;
   String? _error;
@@ -62,6 +63,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
         _doctorService.getPatientProfile(token, widget.profileId),
         _doctorService.getPatientSummary(token, widget.profileId),
         _doctorService.getPatientReadings(token, widget.profileId),
+        _doctorService.getPatientMeals(token, widget.profileId),
         _doctorService.getNotes(token, widget.profileId),
       ]);
 
@@ -70,7 +72,8 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
         _profile = results[0] as Map<String, dynamic>;
         _summary = results[1] as Map<String, dynamic>;
         _readings = (results[2] as List).cast<Map<String, dynamic>>();
-        _notes = (results[3] as List).cast<Map<String, dynamic>>();
+        _meals = (results[3] as List).cast<Map<String, dynamic>>();
+        _notes = (results[4] as List).cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
@@ -203,6 +206,10 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
 
         // Recent readings
         _buildReadingsSection(),
+        const SizedBox(height: 16),
+
+        // Recent meals
+        _buildMealsSection(),
         const SizedBox(height: 16),
 
         // Doctor notes
@@ -506,6 +513,173 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
     );
   }
 
+  Widget _buildMealsSection() {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.sectionMeals,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (_meals.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              l10n.noMealsLast7Days,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          )
+        else
+          ..._meals.take(10).map(_buildMealRow),
+        if (_meals.length > 10)
+          TextButton(
+            onPressed: () {},
+            child: Text(l10n.showAllMeals(_meals.length)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMealRow(Map<String, dynamic> meal) {
+    final mealType = meal['meal_type'] as String? ?? '';
+    final category = meal['category'] as String? ?? '';
+    final timestamp = meal['timestamp'] as String?;
+    final glucoseImpact = meal['glucose_impact'] as String? ?? '';
+    final mealScore = meal['meal_score'] as int?;
+
+    return GlassCard(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          Icon(
+            Icons.restaurant,
+            size: 16,
+            color: _mealImpactColor(glucoseImpact),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      _localizedMealType(context, mealType),
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (mealScore != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _mealScoreColor(mealScore).withValues(
+                            alpha: 0.12,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Score: $mealScore/10',
+                          style: TextStyle(
+                            color: _mealScoreColor(mealScore),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                Text(
+                  category.replaceAll('_', ' '),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                if (timestamp != null)
+                  Text(
+                    _formatTimestamp(timestamp),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (glucoseImpact.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _mealImpactColor(glucoseImpact).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                glucoseImpact,
+                style: TextStyle(
+                  color: _mealImpactColor(glucoseImpact),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _localizedMealType(BuildContext context, String mealType) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (mealType) {
+      case 'BREAKFAST':
+        return l10n.mealTypeBreakfast;
+      case 'LUNCH':
+        return l10n.mealTypeLunch;
+      case 'SNACK':
+        return l10n.mealTypeSnack;
+      case 'DINNER':
+        return l10n.mealTypeDinner;
+      default:
+        return mealType;
+    }
+  }
+
+  Color _mealImpactColor(String glucoseImpact) {
+    switch (glucoseImpact) {
+      case 'LOW':
+        return AppColors.statusNormal;
+      case 'MODERATE':
+        return AppColors.amber;
+      case 'HIGH':
+        return AppColors.statusHigh;
+      case 'VERY_HIGH':
+        return AppColors.statusCritical;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  Color _mealScoreColor(int score) {
+    if (score >= 8) return AppColors.statusNormal;
+    if (score >= 6) return AppColors.amber;
+    if (score >= 4) return AppColors.statusHigh;
+    return AppColors.statusCritical;
+  }
+
   Widget _buildNotesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -531,8 +705,9 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
 
         // Add note input
         GlassCard(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(4),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: TextField(
@@ -545,24 +720,24 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
                       fontSize: 14,
                     ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: EdgeInsets.fromLTRB(12, 12, 12, 12),
                     isDense: true,
                   ),
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 14,
                   ),
-                  maxLines: 2,
-                  minLines: 1,
+                  maxLines: 4,
+                  minLines: 3,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
               IconButton(
                 key: const Key('submitNoteBtn'),
                 icon: _addingNote
                     ? const SizedBox(
                         width: 20,
-                        height: 20,
+                        height: 40,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.send, color: AppColors.primary),

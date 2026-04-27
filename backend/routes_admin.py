@@ -667,7 +667,7 @@ def admin_create_user(
 
 @router.get("/admin/doctors")
 def list_doctors(
-    verified: Optional[str] = Query(None, regex="^(true|false|all)$"),
+    verified: Optional[str] = Query(None, pattern="^(true|false|all)$"),
     db: Session = Depends(get_db),
     user: models.User = Depends(_require_admin),
 ):
