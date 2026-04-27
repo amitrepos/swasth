@@ -6,6 +6,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
+import '../services/api_service.dart';
+import '../services/api_exception.dart';
+import '../services/error_mapper.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/sync_service.dart';
@@ -41,7 +44,8 @@ class ShellScreen extends StatefulWidget {
   State<ShellScreen> createState() => _ShellScreenState();
 }
 
-class _ShellScreenState extends State<ShellScreen> {
+class _ShellScreenState extends State<ShellScreen>
+    with WidgetsBindingObserver {
   static _ShellScreenState? _instance;
   int _currentIndex = 0;
   int? _profileId;
@@ -57,6 +61,7 @@ class _ShellScreenState extends State<ShellScreen> {
   void initState() {
     super.initState();
     _instance = this;
+    WidgetsBinding.instance.addObserver(this);
     _loadProfile();
     _checkConnectivity();
     // Listen for profile switches from other screens
@@ -72,10 +77,28 @@ class _ShellScreenState extends State<ShellScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _connectivityTimer?.cancel();
     _profileRefreshTimer?.cancel();
     if (_instance == this) _instance = null;
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _validateSession();
+  }
+
+  Future<void> _validateSession() async {
+    final token = await StorageService().getToken();
+    if (token == null || !mounted) return;
+    try {
+      await ApiService().getCurrentUser(token);
+    } on UnauthorizedException catch (e) {
+      if (mounted) await ErrorMapper.showSnack(context, e);
+    } catch (_) {
+      // Network errors — offline, don't force logout
+    }
   }
 
   Future<void> _refreshProfileIfChanged() async {
@@ -119,7 +142,10 @@ class _ShellScreenState extends State<ShellScreen> {
     
     // Auto-sync when coming back online
     if (wasOffline && reachable) {
-      SyncService().syncPendingReadings();
+      final result = await SyncService().syncPendingReadings();
+      if (result.authExpired && mounted) {
+        await ErrorMapper.showSnack(context, const UnauthorizedException());
+      }
     }
   }
 

@@ -9,6 +9,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 
 import 'providers/language_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/unified_login_screen.dart';
 import 'theme/app_theme.dart';
 
 /// Global observer — HomeScreen subscribes to know when it becomes active again.
@@ -149,6 +150,9 @@ class SwasthApp extends ConsumerWidget {
         );
       },
       home: const SplashScreen(),
+      routes: {
+        '/login': (_) => const UnifiedLoginScreen(),
+      },
     );
   }
 }
