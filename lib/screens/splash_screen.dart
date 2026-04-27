@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import '../services/api_service.dart';
@@ -17,6 +19,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   final _storage = StorageService();
+  String _loadingMessage = 'Initializing...';
 
   @override
   void initState() {
@@ -25,11 +28,30 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _attemptAutoLogin() async {
+    setState(() => _loadingMessage = 'Checking connection...');
+    
+    // Add timeout to prevent indefinite loading
+    try {
+      await Future.any([
+        _performAutoLogin(),
+        Future.delayed(const Duration(seconds: 15), () => throw Exception('Login timeout')),
+      ]);
+    } catch (e) {
+      debugPrint('Auto-login error: $e');
+      if (mounted) {
+        // On timeout or error, go to login screen
+        _goToLogin();
+      }
+    }
+  }
+
+  Future<void> _performAutoLogin() async {
     final token = await _storage.getToken();
     final reachable = await ConnectivityService().isServerReachable();
 
     // SCENARIO 1: OFFLINE
     if (!reachable) {
+      setState(() => _loadingMessage = 'Working offline...');
       final lastLogin = await _storage.getLastLoginTimestamp();
       if (lastLogin != null) {
         final daysSince = DateTime.now().difference(lastLogin).inDays;
@@ -45,6 +67,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // SCENARIO 2: ONLINE - TOKEN REUSE
     if (token != null) {
       try {
+        setState(() => _loadingMessage = 'Loading your profile...');
         final userData = await ApiService().getCurrentUser(token);
         await _storage.saveUserData(userData);
         // Note: We intentionally do NOT call saveLastLoginTimestamp here
@@ -59,9 +82,11 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     // SCENARIO 3: ONLINE - CREDENTIAL FALLBACK
+    setState(() => _loadingMessage = 'Checking saved credentials...');
     final creds = await _storage.getSavedCredentials();
     if (creds != null) {
       try {
+        setState(() => _loadingMessage = 'Signing in...');
         final resp = await ApiService().login(creds.email, creds.password);
         final newToken = resp['access_token'] as String?;
         if (newToken != null) {
@@ -132,6 +157,14 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 32),
             const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              _loadingMessage,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
       ),
