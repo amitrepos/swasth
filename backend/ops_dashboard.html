@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swasth Ops Monitor</title>
+<style>
+  :root {
+    --green: #16a34a; --green-bg: #f0fdf4; --green-border: #bbf7d0;
+    --amber: #d97706; --amber-bg: #fffbeb; --amber-border: #fde68a;
+    --red: #dc2626;   --red-bg: #fff5f5;   --red-border: #fecaca;
+    --blue: #2563eb;  --blue-bg: #eff6ff;  --blue-border: #bfdbfe;
+    --gray: #6b7280;  --sidebar-w: 220px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background: #f9fafb; color: #111827; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: var(--sidebar-w); background: #1f2937; color: #d1d5db;
+             display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .sidebar-logo { padding: 20px 16px 16px; border-bottom: 1px solid #374151; }
+  .sidebar-logo h1 { color: #fff; font-size: 16px; font-weight: 700; }
+  .sidebar-logo p { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+  .nav-link { display: block; padding: 10px 16px; font-size: 13px; cursor: pointer;
+              border-left: 3px solid transparent; transition: all 0.15s; color: #d1d5db; }
+  .nav-link:hover { background: #374151; color: #fff; }
+  .nav-link.active { background: #374151; border-left-color: #3b82f6; color: #fff; font-weight: 600; }
+  .nav-section { padding: 12px 16px 4px; font-size: 10px; text-transform: uppercase;
+                 letter-spacing: 0.08em; color: #6b7280; }
+  .sidebar-footer { margin-top: auto; padding: 12px 16px; font-size: 11px; color: #6b7280;
+                    border-top: 1px solid #374151; }
+  .back-link { color: #60a5fa; text-decoration: none; font-size: 12px; }
+  .back-link:hover { text-decoration: underline; }
+
+  /* Main */
+  .main { flex: 1; overflow-y: auto; padding: 24px; }
+  .page { display: none; }
+  .page.active { display: block; }
+  h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--gray); margin-bottom: 20px; }
+
+  /* Status bar */
+  .status-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+                padding: 10px 16px; background: #fff; border-radius: 8px;
+                border: 1px solid #e5e7eb; font-size: 13px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.green { background: var(--green); }
+  .status-dot.red { background: var(--red); }
+  .status-dot.amber { background: var(--amber); }
+  .refresh-btn { margin-left: auto; padding: 6px 14px; background: #3b82f6; color: #fff;
+                 border: none; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .refresh-btn:hover { background: #2563eb; }
+  .last-updated { font-size: 11px; color: var(--gray); }
+
+  /* Grid */
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2,1fr); }
+                              .grid-3 { grid-template-columns: repeat(2,1fr); } }
+
+  /* Cards */
+  .card { background: #fff; border-radius: 10px; border: 1px solid #e5e7eb; padding: 16px; }
+  .card-label { font-size: 11px; color: var(--gray); text-transform: uppercase;
+                letter-spacing: 0.05em; margin-bottom: 6px; }
+  .card-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .card-sub { font-size: 12px; color: var(--gray); margin-top: 4px; }
+
+  /* Traffic light */
+  .tl-card { background: #fff; border-radius: 10px; border: 1px solid #e5e7eb;
+             padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .tl-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .tl-dot.green { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+  .tl-dot.amber { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
+  .tl-dot.red   { background: var(--red);   box-shadow: 0 0 0 3px var(--red-bg); }
+  .tl-dot.gray  { background: #d1d5db; }
+  .tl-label { font-size: 13px; font-weight: 600; }
+  .tl-sub { font-size: 11px; color: var(--gray); }
+
+  /* Section heading */
+  .section-heading { font-size: 13px; font-weight: 700; text-transform: uppercase;
+                     letter-spacing: 0.06em; color: var(--gray); margin: 24px 0 12px; }
+
+  /* Alert table */
+  .alert-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff;
+                 border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb; }
+  .alert-table th { background: #f9fafb; text-align: left; padding: 10px 14px;
+                    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+                    border-bottom: 1px solid #e5e7eb; color: var(--gray); }
+  .alert-table td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; }
+  .alert-table tr:last-child td { border-bottom: none; }
+  .tier-badge { display: inline-block; padding: 2px 8px; border-radius: 4px;
+                font-size: 11px; font-weight: 700; }
+  .tier-badge.P0 { background: var(--red-bg); color: var(--red); }
+  .tier-badge.P1 { background: var(--amber-bg); color: var(--amber); }
+  .tier-badge.P2 { background: var(--blue-bg); color: var(--blue); }
+
+  /* Color classes for card values */
+  .val-green { color: var(--green); }
+  .val-amber { color: var(--amber); }
+  .val-red   { color: var(--red); }
+  .val-gray  { color: var(--gray); }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 40px; color: var(--gray); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1>Swasth Ops</h1>
+    <p>Production Monitor</p>
+  </div>
+  <div class="nav-section">Monitoring</div>
+  <div class="nav-link active" onclick="showPage('system')">System Health</div>
+  <div class="nav-link" onclick="showPage('ai')">AI Status</div>
+  <div class="nav-section">Operations</div>
+  <div class="nav-link" onclick="showPage('user')">User Ops</div>
+  <div class="nav-link" onclick="showPage('clinical')">Clinical Ops</div>
+  <div class="nav-link" onclick="showPage('doctor')">Doctor Ops</div>
+  <div class="nav-link" onclick="showPage('whatsapp')">WhatsApp / Email</div>
+  <div class="nav-section">Alerts</div>
+  <div class="nav-link" onclick="showPage('alerts')">Alert History</div>
+  <div class="sidebar-footer">
+    <a href="/api/admin" class="back-link">← Business Dashboard</a>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-dot green" id="global-dot"></div>
+    <span id="global-status">Loading...</span>
+    <span class="last-updated" id="last-updated-label"></span>
+    <button class="refresh-btn" onclick="loadOpsData()">Refresh</button>
+  </div>
+
+  <!-- SYSTEM HEALTH -->
+  <div id="page-system" class="page active">
+    <h2>System Health</h2>
+    <p class="subtitle">Infrastructure status — t3.micro (1GB RAM, 2 vCPU burstable)</p>
+    <div class="grid-4" id="system-tl-cards"></div>
+    <div class="section-heading">Performance</div>
+    <div class="grid-4" id="system-perf-cards"></div>
+    <div class="section-heading">Slowest Endpoints (P95)</div>
+    <table class="alert-table" id="slow-endpoints-table">
+      <thead><tr><th>Endpoint</th><th>P95 Latency</th><th>Requests</th></tr></thead>
+      <tbody id="slow-endpoints-body"></tbody>
+    </table>
+  </div>
+
+  <!-- AI STATUS -->
+  <div id="page-ai" class="page">
+    <h2>AI Status</h2>
+    <p class="subtitle">Gemini + DeepSeek key health and fallback rates</p>
+    <div class="grid-3" id="ai-summary-cards"></div>
+    <div class="section-heading">Per-Key Stats</div>
+    <table class="alert-table" id="ai-key-table">
+      <thead><tr><th>Key #</th><th>Model</th><th>Requests Today</th><th>Last 429</th><th>Last Success</th></tr></thead>
+      <tbody id="ai-key-body"></tbody>
+    </table>
+  </div>
+
+  <!-- USER OPS -->
+  <div id="page-user" class="page">
+    <h2>User Operations</h2>
+    <p class="subtitle">Login health, registrations, session activity</p>
+    <div class="grid-4" id="user-cards"></div>
+  </div>
+
+  <!-- CLINICAL OPS -->
+  <div id="page-clinical" class="page">
+    <h2>Clinical Operations</h2>
+    <p class="subtitle">Critical readings, alert delivery, AI health advice quality</p>
+    <div class="grid-3" id="clinical-cards"></div>
+  </div>
+
+  <!-- DOCTOR OPS -->
+  <div id="page-doctor" class="page">
+    <h2>Doctor Operations</h2>
+    <p class="subtitle">Verification queue, activity, patient links</p>
+    <div class="grid-3" id="doctor-cards"></div>
+  </div>
+
+  <!-- WHATSAPP / EMAIL -->
+  <div id="page-whatsapp" class="page">
+    <h2>WhatsApp &amp; Email</h2>
+    <p class="subtitle">Message delivery rates and channel health</p>
+    <div class="grid-3" id="wa-cards"></div>
+  </div>
+
+  <!-- ALERT HISTORY -->
+  <div id="page-alerts" class="page">
+    <h2>Alert History</h2>
+    <p class="subtitle">Recent P0/P1/P2 alerts fired (last 20)</p>
+    <table class="alert-table">
+      <thead><tr><th>Time</th><th>Tier</th><th>Alert</th><th>Email Sent</th></tr></thead>
+      <tbody id="alert-history-body"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+let _lastData = null;
+let _secondsAgo = 0;
+let _ticker;
+
+// ---------------------------------------------------------------------------
+// Navigation
+// ---------------------------------------------------------------------------
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ---------------------------------------------------------------------------
+// Data fetch
+// ---------------------------------------------------------------------------
+async function fetchJson(url) {
+  const res = await fetch(url, { credentials: 'include' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+async function loadOpsData() {
+  try {
+    const data = await fetchJson('/api/admin/ops-metrics');
+    _lastData = data;
+    _secondsAgo = 0;
+    renderAll(data);
+  } catch (e) {
+    document.getElementById('global-status').textContent = 'Error loading data: ' + e.message;
+    document.getElementById('global-dot').className = 'status-dot red';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function tl(label, sub, status) {
+  const color = status === 'green' ? 'green' : status === 'amber' ? 'amber' : status === 'red' ? 'red' : 'gray';
+  return `<div class="tl-card">
+    <div class="tl-dot ${color}"></div>
+    <div><div class="tl-label">${label}</div><div class="tl-sub">${sub}</div></div>
+  </div>`;
+}
+
+function metricCard(label, value, sub, color) {
+  return `<div class="card">
+    <div class="card-label">${label}</div>
+    <div class="card-value val-${color || 'gray'}">${value}</div>
+    ${sub ? `<div class="card-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+function pct(v) { return v != null ? (v * 100).toFixed(1) + '%' : '—'; }
+function ms(v) { return v != null ? v + ' ms' : '—'; }
+function num(v) { return v != null ? v : '—'; }
+function colorPct(v, warn, crit) {
+  if (v == null) return 'gray';
+  return v >= crit ? 'red' : v >= warn ? 'amber' : 'green';
+}
+function colorNum(v, warn, crit) {
+  if (v == null) return 'gray';
+  return v >= crit ? 'red' : v >= warn ? 'amber' : 'green';
+}
+
+// ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+function renderAll(d) {
+  renderSystem(d.system);
+  renderAI(d.ai);
+  renderUser(d.user_ops);
+  renderClinical(d.clinical_ops);
+  renderDoctor(d.doctor_ops);
+  renderWA(d.whatsapp_ops);
+  renderAlerts(d.recent_alerts);
+  updateGlobalStatus(d.system);
+}
+
+function updateGlobalStatus(sys) {
+  const allGood = sys.api_healthy && sys.db_healthy && !sys.all_ai_keys_failed
+    && !sys.swap_active && (sys.memory_pct || 0) < 0.9;
+  const anyBad = !sys.db_healthy || sys.all_ai_keys_failed || sys.swap_active
+    || (sys.memory_pct || 0) >= 0.9;
+  const dot = document.getElementById('global-dot');
+  const lbl = document.getElementById('global-status');
+  if (anyBad) { dot.className = 'status-dot red'; lbl.textContent = 'DEGRADED — check alerts'; }
+  else if ((sys.memory_pct || 0) >= 0.8 || (sys.concurrent_requests || 0) >= 25) {
+    dot.className = 'status-dot amber'; lbl.textContent = 'Warning — review metrics';
+  } else { dot.className = 'status-dot green'; lbl.textContent = 'All systems healthy'; }
+}
+
+function renderSystem(s) {
+  const tls = [
+    tl('API', 'Responding', s.api_healthy ? 'green' : 'red'),
+    tl('Database', s.db_healthy ? 'Connected' : 'UNREACHABLE', s.db_healthy ? 'green' : 'red'),
+    tl('Gemini AI', s.gemini_healthy ? 'Healthy' : 'Degraded', s.gemini_healthy ? 'green' : 'amber'),
+    tl('DeepSeek AI', s.deepseek_healthy ? 'Healthy' : 'Degraded', s.deepseek_healthy ? 'green' : 'amber'),
+    tl('Scheduler', s.scheduler_healthy ? 'Running' : 'STALE', s.scheduler_healthy ? 'green' : 'red'),
+    tl('Swap', s.swap_active ? 'ACTIVE — OOM risk' : 'Inactive', s.swap_active ? 'red' : 'green'),
+    tl('CPU Credits', s.cpu_burst_credits_low ? 'LOW — throttle risk' : 'OK', s.cpu_burst_credits_low ? 'amber' : 'green'),
+    tl('All AI Failed', s.all_ai_keys_failed ? 'YES — P0' : 'No', s.all_ai_keys_failed ? 'red' : 'green'),
+  ];
+  document.getElementById('system-tl-cards').innerHTML = tls.join('');
+
+  const memPct = s.memory_pct || 0;
+  const diskPct = s.disk_pct || 0;
+  const conc = s.concurrent_requests || 0;
+  document.getElementById('system-perf-cards').innerHTML = [
+    metricCard('Memory Usage', pct(memPct), s.memory_rss_mb + ' MB used', colorPct(memPct, 0.8, 0.9)),
+    metricCard('Disk Usage', pct(diskPct), '', colorPct(diskPct, 0.7, 0.85)),
+    metricCard('Concurrent Req', num(conc), 'peak: ' + num(s.concurrent_peak), colorNum(conc, 25, 40)),
+    metricCard('Errors (5xx/5m)', num(s.error_rate_5xx_5min), '4xx: ' + num(s.error_rate_4xx_5min), colorNum(s.error_rate_5xx_5min, 5, 10)),
+    metricCard('P50 Latency', ms(s.p50_latency_ms), '', colorNum(s.p50_latency_ms, 500, 2000)),
+    metricCard('P95 Latency', ms(s.p95_latency_ms), '', colorNum(s.p95_latency_ms, 1000, 3000)),
+    metricCard('File Descriptors', num(s.file_descriptors), '', colorNum(s.file_descriptors, 500, 900)),
+    metricCard('Mem Growth', (s.memory_growth_mb_per_hour || 0) + ' MB/hr', 'leak detection', colorNum(s.memory_growth_mb_per_hour, 50, 100)),
+  ].join('');
+
+  const tbody = document.getElementById('slow-endpoints-body');
+  if (s.top_slow_endpoints && s.top_slow_endpoints.length) {
+    tbody.innerHTML = s.top_slow_endpoints.map(e =>
+      `<tr><td>${e.endpoint}</td><td>${e.p95_ms} ms</td><td>${e.count}</td></tr>`
+    ).join('');
+  } else {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty">No data yet</td></tr>';
+  }
+}
+
+function renderAI(ai) {
+  const fallback = ai.fallback_rate_1h || 0;
+  document.getElementById('ai-summary-cards').innerHTML = [
+    metricCard('Fallback Rate (1h)', pct(fallback), 'Gemini→DeepSeek→rules', colorPct(fallback, 0.15, 0.30)),
+    metricCard('Keys Tracked', num(ai.key_stats ? ai.key_stats.length : 0), '', 'gray'),
+    metricCard('All Keys Failed', ai.all_ai_failed ? 'YES' : 'No', 'P0 if yes', ai.all_ai_failed ? 'red' : 'green'),
+  ].join('');
+
+  const tbody = document.getElementById('ai-key-body');
+  if (ai.key_stats && ai.key_stats.length) {
+    tbody.innerHTML = ai.key_stats.map(k =>
+      `<tr><td>${k.index}</td><td>${k.model || '—'}</td><td>${k.requests_today || 0}</td>
+       <td>${k.last_429_at ? new Date(k.last_429_at).toLocaleTimeString() : '—'}</td>
+       <td>${k.last_success_at ? new Date(k.last_success_at).toLocaleTimeString() : '—'}</td></tr>`
+    ).join('');
+  } else {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No AI calls recorded yet</td></tr>';
+  }
+}
+
+function renderUser(u) {
+  document.getElementById('user-cards').innerHTML = [
+    metricCard('New Regs Today', num(u.new_registrations_today), 'yesterday: ' + num(u.new_registrations_yesterday), 'gray'),
+    metricCard('Stuck Sessions', num(u.stuck_sessions_count), 'no login+reading in 7d', colorNum(u.stuck_sessions_count, 5, 20)),
+    metricCard('No Reading >7d', num(u.patients_no_reading_7d), 'silent high-risk patients', colorNum(u.patients_no_reading_7d, 3, 10)),
+  ].join('');
+}
+
+function renderClinical(c) {
+  const failRate = c.critical_alerts_sent_today + c.critical_alerts_failed_today > 0
+    ? c.critical_alerts_failed_today / (c.critical_alerts_sent_today + c.critical_alerts_failed_today) : 0;
+  document.getElementById('clinical-cards').innerHTML = [
+    metricCard('Critical Unacked >2h', num(c.critical_alerts_unacked_2h), 'patient safety', colorNum(c.critical_alerts_unacked_2h, 1, 3)),
+    metricCard('Alerts Sent Today', num(c.critical_alerts_sent_today), '', 'green'),
+    metricCard('Alerts Failed Today', num(c.critical_alerts_failed_today), pct(failRate) + ' fail rate', colorNum(c.critical_alerts_failed_today, 1, 3)),
+    metricCard('Chat Quota Hits', num(c.chat_quota_exhaustions_today), 'users at daily limit', colorNum(c.chat_quota_exhaustions_today, 5, 20)),
+    metricCard('AI P95 Latency', ms(c.avg_ai_latency_p95_ms), '', colorNum(c.avg_ai_latency_p95_ms, 3000, 8000)),
+  ].join('');
+}
+
+function renderDoctor(d) {
+  document.getElementById('doctor-cards').innerHTML = [
+    metricCard('Pending Verifications', num(d.pending_doctor_verifications), 'P2 alert if >5', colorNum(d.pending_doctor_verifications, 3, 5)),
+    metricCard('Doctor Logins Today', num(d.doctor_logins_today), '', 'gray'),
+    metricCard('Active Patient Links', num(d.active_doctor_patient_links), '', 'gray'),
+  ].join('');
+}
+
+function renderWA(wa) {
+  document.getElementById('wa-cards').innerHTML = [
+    metricCard('WA Sent Today', num(wa.wa_sent_today), '', 'green'),
+    metricCard('WA Failed Today', num(wa.wa_failed_today), pct(wa.wa_fail_rate_today) + ' fail rate', colorNum(wa.wa_failed_today, 3, 10)),
+    metricCard('Active Inbound Sessions', num(wa.inbound_sessions_active), '', 'gray'),
+    metricCard('Report Success Rate', pct(wa.report_success_rate_today), 'weekly reports', colorPct(wa.report_success_rate_today == null ? 1 : wa.report_success_rate_today, 0.9, 0.7)),
+  ].join('');
+}
+
+function renderAlerts(alerts) {
+  const tbody = document.getElementById('alert-history-body');
+  if (!alerts || !alerts.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">No alerts fired yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = alerts.map(a => `
+    <tr>
+      <td>${a.created_at ? new Date(a.created_at).toLocaleString() : '—'}</td>
+      <td><span class="tier-badge ${a.tier}">${a.tier}</span></td>
+      <td>${a.title}</td>
+      <td>${a.email_sent ? '✓ Sent' : '— Suppressed'}</td>
+    </tr>`).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Ticker — "last updated N seconds ago"
+// ---------------------------------------------------------------------------
+function startTicker() {
+  clearInterval(_ticker);
+  _ticker = setInterval(() => {
+    _secondsAgo++;
+    document.getElementById('last-updated-label').textContent =
+      _lastData ? `Last updated ${_secondsAgo}s ago` : '';
+  }, 1000);
+}
+
+// ---------------------------------------------------------------------------
+// Auto-refresh every 30s
+// ---------------------------------------------------------------------------
+loadOpsData();
+startTicker();
+setInterval(loadOpsData, 30000);
+</script>
+</body>
+</html>

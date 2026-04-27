@@ -16,6 +16,8 @@ from typing import Optional
 import auth
 import models
 import schemas
+import ops_metrics
+import ops_health
 from utils.datetime_helpers import utc_isoformat
 from database import get_db
 from dependencies import get_current_user
@@ -28,6 +30,7 @@ _limiter_enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_limiter_enabled)
 
 _DASHBOARD_HTML = os.path.join(os.path.dirname(__file__), "admin_dashboard.html")
+_OPS_DASHBOARD_HTML = os.path.join(os.path.dirname(__file__), "ops_dashboard.html")
 
 
 # ---------------------------------------------------------------------------
@@ -969,3 +972,134 @@ def get_audit_log(
         })
 
     return {"entries": result, "total": total, "page": page, "per_page": per_page}
+
+
+# ---------------------------------------------------------------------------
+# Operational monitoring endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/ops", response_class=HTMLResponse)
+def get_ops_dashboard(current_user: models.User = Depends(_require_admin)):
+    """Serve the ops monitoring dashboard SPA."""
+    try:
+        with open(_OPS_DASHBOARD_HTML, "r") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=503, detail="Ops dashboard not available.")
+
+
+@router.get("/admin/ops-health")
+def get_ops_health_snapshot(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(_require_admin),
+):
+    """Return the latest SystemHealthSnapshot row (for external uptime monitors)."""
+    snap = db.query(models.SystemHealthSnapshot).order_by(
+        models.SystemHealthSnapshot.snapshot_at.desc()
+    ).first()
+    if not snap:
+        return {"status": "no_snapshot_yet", "message": "P0 check has not run yet."}
+    return {
+        "snapshot_at": snap.snapshot_at.isoformat() if snap.snapshot_at else None,
+        "api_healthy": snap.api_healthy,
+        "db_healthy": snap.db_healthy,
+        "gemini_healthy": snap.gemini_healthy,
+        "deepseek_healthy": snap.deepseek_healthy,
+        "all_ai_keys_failed": snap.all_ai_keys_failed,
+        "scheduler_healthy": snap.scheduler_healthy,
+        "memory_pct": snap.memory_pct,
+        "swap_active": snap.swap_active,
+        "disk_pct": snap.disk_pct,
+        "concurrent_requests": snap.concurrent_requests,
+        "error_rate_5xx_5min": snap.error_rate_5xx_5min,
+    }
+
+
+@router.get("/admin/ops-metrics")
+def get_ops_metrics(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(_require_admin),
+):
+    """Full operational metrics payload — all categories. Zero PHI."""
+    now = datetime.now(timezone.utc)
+
+    # In-memory metrics
+    errors = ops_metrics.get_error_rate(300)
+    latency = ops_metrics.get_latency_percentiles()
+    ai_stats = ops_metrics.get_ai_key_stats()
+    mem_trend = ops_metrics.get_memory_growth_trend()
+    top_slow = ops_metrics.get_top_slow_endpoints(5)
+
+    # Resource checks
+    mem_info = ops_health.check_memory()
+    disk_info = ops_health.check_disk()
+    ai_info = ops_health.check_ai_health()
+    scheduler_info = ops_metrics.get_scheduler_health()
+
+    # DB aggregate queries
+    user_ops = ops_health.get_user_ops_metrics(db)
+    clinical_ops = ops_health.get_clinical_ops_metrics(db)
+    doctor_ops = ops_health.get_doctor_ops_metrics(db)
+    wa_ops = ops_health.get_whatsapp_ops_metrics(db)
+
+    # Recent alert history (last 20 rows, no PHI)
+    recent_alerts = []
+    alert_rows = db.query(models.OpsAlertLog).order_by(
+        models.OpsAlertLog.created_at.desc()
+    ).limit(20).all()
+    for row in alert_rows:
+        recent_alerts.append({
+            "id": row.id,
+            "alert_key": row.alert_key,
+            "tier": row.tier,
+            "title": row.title,
+            "email_sent": row.email_sent,
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+        })
+
+    return {
+        "generated_at": now.isoformat(),
+        "system": {
+            "api_healthy": True,
+            "db_healthy": ops_health.check_db_health(db)["db_healthy"],
+            "gemini_healthy": ai_info["gemini_healthy"],
+            "deepseek_healthy": ai_info["deepseek_healthy"],
+            "all_ai_keys_failed": ai_info["all_ai_keys_failed"],
+            "scheduler_healthy": ops_health.check_scheduler_health(),
+            "error_rate_5xx_5min": errors["errors_5xx"],
+            "error_rate_4xx_5min": errors["errors_4xx"],
+            "error_rate_401_5min": errors["errors_401"],
+            "error_rate_422_5min": errors["errors_422"],
+            "p50_latency_ms": latency["p50_ms"],
+            "p95_latency_ms": latency["p95_ms"],
+            "concurrent_requests": ops_metrics.get_concurrent_count(),
+            "concurrent_peak": ops_metrics.get_concurrent_peak(),
+            "memory_pct": mem_info["memory_pct"],
+            "memory_rss_mb": mem_info["memory_rss_mb"],
+            "swap_active": mem_info["swap_active"],
+            "disk_pct": disk_info["disk_pct"],
+            "cpu_burst_credits_low": ops_health.check_cpu_burst_credits(),
+            "file_descriptors": ops_health.check_file_descriptors(),
+            "memory_growth_mb_per_hour": mem_trend["trend_mb_per_hour"],
+            "top_slow_endpoints": top_slow,
+        },
+        "ai": {
+            "fallback_rate_1h": ai_info["ai_fallback_rate_1h"],
+            "key_stats": [
+                {
+                    "index": idx,
+                    "model": s.get("model"),
+                    "requests_today": s.get("requests_today", 0),
+                    "last_429_at": s.get("last_429_at"),
+                    "last_success_at": s.get("last_success_at"),
+                }
+                for idx, s in ai_stats.items()
+            ],
+        },
+        "user_ops": user_ops,
+        "clinical_ops": clinical_ops,
+        "doctor_ops": doctor_ops,
+        "whatsapp_ops": wa_ops,
+        "scheduler": scheduler_info,
+        "recent_alerts": recent_alerts,
+    }
