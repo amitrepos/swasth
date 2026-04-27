@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
@@ -20,7 +21,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   final _storage = StorageService();
-  String _loadingMessage = 'Initializing...';
+  String _loadingMessage = '';
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
@@ -68,7 +69,9 @@ class _SplashScreenState extends State<SplashScreen>
     }
     
     // Start auto-login after first dependency change
-    if (_loadingMessage == 'Initializing...') {
+    final l10n = AppLocalizations.of(context)!;
+    if (_loadingMessage.isEmpty) {
+      _loadingMessage = l10n.splashInitializing;
       _attemptAutoLogin();
     }
   }
@@ -80,7 +83,8 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _attemptAutoLogin() async {
-    setState(() => _loadingMessage = 'Checking connection...');
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _loadingMessage = l10n.splashCheckingConnection);
     
     // Add timeout to prevent indefinite loading
     try {
@@ -98,12 +102,13 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _performAutoLogin() async {
+    final l10n = AppLocalizations.of(context)!;
     final token = await _storage.getToken();
     final reachable = await ConnectivityService().isServerReachable();
 
     // SCENARIO 1: OFFLINE
     if (!reachable) {
-      setState(() => _loadingMessage = 'Working offline...');
+      setState(() => _loadingMessage = l10n.splashWorkingOffline);
       final lastLogin = await _storage.getLastLoginTimestamp();
       if (lastLogin != null) {
         final daysSince = DateTime.now().difference(lastLogin).inDays;
@@ -119,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen>
     // SCENARIO 2: ONLINE - TOKEN REUSE
     if (token != null) {
       try {
-        setState(() => _loadingMessage = 'Loading your profile...');
+        setState(() => _loadingMessage = l10n.splashLoadingProfile);
         final userData = await ApiService().getCurrentUser(token);
         await _storage.saveUserData(userData);
         // Note: We intentionally do NOT call saveLastLoginTimestamp here
@@ -134,11 +139,11 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     // SCENARIO 3: ONLINE - CREDENTIAL FALLBACK
-    setState(() => _loadingMessage = 'Checking saved credentials...');
+    setState(() => _loadingMessage = l10n.splashCheckingCredentials);
     final creds = await _storage.getSavedCredentials();
     if (creds != null) {
       try {
-        setState(() => _loadingMessage = 'Signing in...');
+        setState(() => _loadingMessage = l10n.splashSigningIn);
         final resp = await ApiService().login(creds.email, creds.password);
         final newToken = resp['access_token'] as String?;
         if (newToken != null) {
@@ -191,6 +196,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       body: Center(
@@ -217,7 +223,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 children: [
                   Text(
-                    'Swasth',
+                    l10n.splashAppName,
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
@@ -227,7 +233,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Your Health Companion',
+                    l10n.splashTagline,
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -244,7 +250,7 @@ class _SplashScreenState extends State<SplashScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              _loadingMessage,
+              _loadingMessage.isEmpty ? l10n.splashInitializing : _loadingMessage,
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,

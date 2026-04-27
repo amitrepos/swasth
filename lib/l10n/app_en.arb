@@ -1074,5 +1074,37 @@
   "nmcDisclaimer": "This is information, not a prescription. Consult your doctor before making any changes.",
   "@nmcDisclaimer": {
     "description": "NMC-required disclaimer shown on all AI-generated health insights"
+  },
+  "splashAppName": "Swasth",
+  "@splashAppName": {
+    "description": "App name displayed on splash screen"
+  },
+  "splashTagline": "Your Health Companion",
+  "@splashTagline": {
+    "description": "Tagline displayed on splash screen below app name"
+  },
+  "splashInitializing": "Initializing...",
+  "@splashInitializing": {
+    "description": "Loading message shown during app initialization on splash screen"
+  },
+  "splashCheckingConnection": "Checking connection...",
+  "@splashCheckingConnection": {
+    "description": "Loading message when checking network connectivity on splash screen"
+  },
+  "splashWorkingOffline": "Working offline...",
+  "@splashWorkingOffline": {
+    "description": "Loading message when app is operating in offline mode on splash screen"
+  },
+  "splashLoadingProfile": "Loading your profile...",
+  "@splashLoadingProfile": {
+    "description": "Loading message when fetching user profile data on splash screen"
+  },
+  "splashCheckingCredentials": "Checking saved credentials...",
+  "@splashCheckingCredentials": {
+    "description": "Loading message when checking for saved login credentials on splash screen"
+  },
+  "splashSigningIn": "Signing in...",
+  "@splashSigningIn": {
+    "description": "Loading message when performing automatic sign-in on splash screen"
   }
 }

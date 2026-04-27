@@ -3805,6 +3805,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This is information, not a prescription. Consult your doctor before making any changes.'**
   String get nmcDisclaimer;
+
+  /// App name displayed on splash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Swasth'**
+  String get splashAppName;
+
+  /// Tagline displayed on splash screen below app name
+  ///
+  /// In en, this message translates to:
+  /// **'Your Health Companion'**
+  String get splashTagline;
+
+  /// Loading message shown during app initialization on splash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Initializing...'**
+  String get splashInitializing;
+
+  /// Loading message when checking network connectivity on splash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Checking connection...'**
+  String get splashCheckingConnection;
+
+  /// Loading message when app is operating in offline mode on splash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Working offline...'**
+  String get splashWorkingOffline;
+
+  /// Loading message when fetching user profile data on splash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your profile...'**
+  String get splashLoadingProfile;
+
+  /// Loading message when checking for saved login credentials on splash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Checking saved credentials...'**
+  String get splashCheckingCredentials;
+
+  /// Loading message when performing automatic sign-in on splash screen
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in...'**
+  String get splashSigningIn;
 }
 
 class _AppLocalizationsDelegate

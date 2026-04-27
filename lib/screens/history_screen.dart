@@ -346,7 +346,7 @@ class HistoryScreenState extends State<HistoryScreen> {
         return AppColors.amber; // Yellow/amber
       case 'HIGH_CARB':
       case 'SWEETS':
-        return const Color(0xFFFF8C42); // Orange (not red - not clinical)
+        return AppColors.carbLoadHigh; // Orange (not red - not clinical)
       default:
         return AppColors.textSecondary;
     }

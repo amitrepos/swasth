@@ -2025,4 +2025,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get nmcDisclaimer =>
       'This is information, not a prescription. Consult your doctor before making any changes.';
+
+  @override
+  String get splashAppName => 'Swasth';
+
+  @override
+  String get splashTagline => 'Your Health Companion';
+
+  @override
+  String get splashInitializing => 'Initializing...';
+
+  @override
+  String get splashCheckingConnection => 'Checking connection...';
+
+  @override
+  String get splashWorkingOffline => 'Working offline...';
+
+  @override
+  String get splashLoadingProfile => 'Loading your profile...';
+
+  @override
+  String get splashCheckingCredentials => 'Checking saved credentials...';
+
+  @override
+  String get splashSigningIn => 'Signing in...';
 }
