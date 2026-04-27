@@ -458,6 +458,111 @@ class BrevoEmailService:
             logger.error("Failed to send critical alert email", exc_info=True)
             return False
 
+    def send_doctor_decline_notification(
+        self,
+        recipient_email: str,
+        recipient_name: str,
+        profile_name: str,
+        doctor_name: str,
+        decline_reason: str | None = None,
+    ) -> bool:
+        """Send notification when a doctor declines a patient link request.
+
+        Args:
+            recipient_email: Email of the profile owner/patient.
+            recipient_name: Name of the profile owner/patient.
+            profile_name: Name of the profile that requested the link.
+            doctor_name: Name of the doctor who declined.
+            decline_reason: Optional reason provided by the doctor.
+
+        Returns:
+            True if email sent successfully, False otherwise.
+        """
+        if not self.smtp_login or not self.sender_password:
+            return False
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = f"{self.sender_name} <{self.sender_email}>"
+            msg['To'] = recipient_email
+            msg['Subject'] = f"Doctor Link Request Declined — {profile_name}"
+
+            reason_html = ""
+            reason_text = ""
+            if decline_reason:
+                reason_html = f"""
+                <div class="reason-box">
+                    <p><strong>Reason provided by the doctor:</strong></p>
+                    <p>{decline_reason}</p>
+                </div>
+                """
+                reason_text = f"""
+                <p><strong>Doctor's reason:</strong> {decline_reason}</p>
+                """
+
+            body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #f59e0b; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }}
+        .info-box {{ background-color: #fff; border: 2px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 8px; }}
+        .reason-box {{ background-color: #fff3cd; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }}
+        .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Swasth Health App</h1>
+            <p>Doctor Link Request Update</p>
+        </div>
+
+        <div class="content">
+            <p>Dear {recipient_name},</p>
+
+            <p>We're writing to inform you that your request to link <strong>{profile_name}</strong>'s health profile with <strong>{doctor_name}</strong> has been declined.</p>
+
+            <div class="info-box">
+                <p><strong>Profile:</strong> {profile_name}</p>
+                <p><strong>Doctor:</strong> {doctor_name}</p>
+                <p><strong>Status:</strong> Declined</p>
+            </div>
+
+            {reason_html}
+
+            <p>You can still request to link with another doctor by searching for their doctor code in the Swasth app.</p>
+
+            <p>If you have any questions or need assistance, please feel free to reach out to our support team.</p>
+
+            <p>Best regards,<br>
+            <strong>The Swasth Health Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>&copy; 2026 Swasth Health App. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+            """
+
+            msg.attach(MIMEText(body, 'html'))
+
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.smtp_login, self.sender_password)
+                server.send_message(msg)
+
+            return True
+
+        except Exception:
+            logger.error("Error sending doctor decline notification email", exc_info=True)
+            return False
+
 
 # Create singleton instance
 email_service = BrevoEmailService()

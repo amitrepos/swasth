@@ -281,6 +281,13 @@
   "noDoctorLinked": "अभी तक कोई डॉक्टर नहीं जोड़ा गया।",
   "linkADoctorCta": "डॉक्टर जोड़ें",
   "doctorPendingAcceptBadge": "डॉक्टर की स्वीकृति बाकी",
+  "doctorDeclinedBadge": "अनुरोध अस्वीकृत",
+  "doctorDeclineReason": "कारण: {reason}",
+  "@doctorDeclineReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "addDoctor": "डॉक्टर जोड़ें",
   "editDoctor": "डॉक्टर की जानकारी बदलें",
   "editDoctorTitle": "डॉक्टर की जानकारी",

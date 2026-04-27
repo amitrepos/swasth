@@ -128,6 +128,40 @@ class TwilioWhatsAppService:
         )
         return self.send_whatsapp(to_number, body)
 
+    def send_doctor_decline_notification(
+        self,
+        to_number: str,
+        profile_name: str,
+        doctor_name: str,
+        decline_reason: str | None = None,
+    ) -> tuple[bool, str | None, str | None]:
+        """Send WhatsApp notification when a doctor declines a patient link request.
+
+        Args:
+            to_number: Recipient's phone number (e.g. "+919876543210")
+            profile_name: Name of the profile that requested the link.
+            doctor_name: Name of the doctor who declined.
+            decline_reason: Optional reason provided by the doctor.
+
+        Returns:
+            (success, message_sid, error_message)
+        """
+        if not self.client or not self.from_number:
+            return False, None, "Twilio client not configured"
+
+        reason_text = ""
+        if decline_reason:
+            reason_text = f"\n\n*Doctor's reason:* {decline_reason}"
+
+        body = (
+            f"📋 *Swasth Health — Doctor Link Update*\n\n"
+            f"Your request to link *{profile_name}* with *{doctor_name}* has been *declined*."
+            f"{reason_text}\n\n"
+            f"You can still request to link with another doctor by searching for their doctor code in the Swasth app.\n\n"
+            f"— Swasth Health App"
+        )
+        return self.send_whatsapp(to_number, body)
+
 
 # Create singleton instance
 whatsapp_service = TwilioWhatsAppService()

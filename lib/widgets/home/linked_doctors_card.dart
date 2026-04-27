@@ -36,9 +36,12 @@ class LinkedDoctorsCard extends StatelessWidget {
   ///
   /// Rule: prefer `status='active'`, most recently linked first. If none
   /// are active, fall back to the most recent `pending_doctor_accept`
-  /// so the patient sees their pending request.
+  /// so the patient sees their pending request. If neither exists, show
+  /// the most recent `revoked` so the patient sees their declined request.
   Map<String, dynamic>? _pickPrimary() {
     if (linkedDoctors.isEmpty) return null;
+    
+    // Prefer active links
     final actives = linkedDoctors.where((d) => d['status'] == 'active').toList()
       ..sort((a, b) {
         final aTs = (a['linked_since'] ?? '') as String;
@@ -46,6 +49,8 @@ class LinkedDoctorsCard extends StatelessWidget {
         return bTs.compareTo(aTs);
       });
     if (actives.isNotEmpty) return actives.first;
+    
+    // Then pending requests
     final pending =
         linkedDoctors
             .where((d) => d['status'] == 'pending_doctor_accept')
@@ -55,7 +60,19 @@ class LinkedDoctorsCard extends StatelessWidget {
             final bTs = (b['linked_since'] ?? '') as String;
             return bTs.compareTo(aTs);
           });
-    return pending.isNotEmpty ? pending.first : null;
+    if (pending.isNotEmpty) return pending.first;
+    
+    // Finally, show recently revoked/declined
+    final revoked =
+        linkedDoctors
+            .where((d) => d['status'] == 'revoked')
+            .toList()
+          ..sort((a, b) {
+            final aTs = (a['revoked_at'] ?? '') as String;
+            final bTs = (b['revoked_at'] ?? '') as String;
+            return bTs.compareTo(aTs);
+          });
+    return revoked.isNotEmpty ? revoked.first : null;
   }
 
   @override
@@ -68,8 +85,29 @@ class LinkedDoctorsCard extends StatelessWidget {
     }
 
     final isPending = primary['status'] == 'pending_doctor_accept';
+    final isRevoked = primary['status'] == 'revoked';
     final name = (primary['doctor_name'] as String?) ?? '';
     final specialty = (primary['specialty'] as String?) ?? '';
+    final revokeReason = primary['revoke_reason'] as String?;
+
+    // Determine status indicators
+    IconData statusIcon;
+    Color statusColor;
+    String statusText;
+
+    if (isRevoked) {
+      statusIcon = Icons.cancel;
+      statusColor = AppColors.statusCritical;
+      statusText = l10n.doctorDeclinedBadge;
+    } else if (isPending) {
+      statusIcon = Icons.schedule;
+      statusColor = AppColors.warning;
+      statusText = l10n.doctorPendingAcceptBadge;
+    } else {
+      statusIcon = Icons.check_circle;
+      statusColor = AppColors.success;
+      statusText = l10n.physicianConnected;
+    }
 
     return GlassCard(
       borderRadius: 24,
@@ -80,11 +118,14 @@ class LinkedDoctorsCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.12),
+              color: statusColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Center(
-              child: Text('👩‍⚕️', style: TextStyle(fontSize: 22)),
+            child: Center(
+              child: Text(
+                isRevoked ? '❌' : '👩‍⚕️',
+                style: const TextStyle(fontSize: 22),
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -123,27 +164,36 @@ class LinkedDoctorsCard extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      isPending ? Icons.schedule : Icons.check_circle,
+                      statusIcon,
                       size: 16,
-                      color: isPending ? AppColors.warning : AppColors.success,
+                      color: statusColor,
                     ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        isPending
-                            ? l10n.doctorPendingAcceptBadge
-                            : l10n.physicianConnected,
+                        statusText,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: isPending
-                              ? AppColors.warning
-                              : AppColors.success,
+                          color: statusColor,
                         ),
                       ),
                     ),
                   ],
                 ),
+                // Show decline reason if available
+                if (isRevoked && revokeReason != null && revokeReason.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      l10n.doctorDeclineReason(revokeReason),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
