@@ -564,5 +564,123 @@ class BrevoEmailService:
             return False
 
 
+    def send_ops_alert_email(
+        self,
+        recipient_email: str,
+        tier: str,
+        title: str,
+        metrics: dict,
+        timestamp: str,
+    ) -> bool:
+        """Send an operational alert email to the support desk.
+
+        Used for P0/P1/P2 tiered alerts only. Internal ops email — NOT patient-facing.
+        PHI invariant: metrics dict must contain only aggregate counts, rates, and booleans.
+        Never pass user IDs, email addresses, or health values here.
+        """
+        if not self.smtp_login or not self.sender_password:
+            return False
+
+        tier_config = {
+            "P0": {
+                "color": "#dc2626",
+                "bg": "#fff5f5",
+                "border": "#dc2626",
+                "label": "IMMEDIATE ACTION REQUIRED",
+                "subject_prefix": "[P0 CRITICAL]",
+            },
+            "P1": {
+                "color": "#d97706",
+                "bg": "#fffbeb",
+                "border": "#d97706",
+                "label": "Attention Required (15 min SLA)",
+                "subject_prefix": "[P1 WARNING]",
+            },
+            "P2": {
+                "color": "#2563eb",
+                "bg": "#eff6ff",
+                "border": "#2563eb",
+                "label": "Weekly Ops Digest",
+                "subject_prefix": "[P2 Digest]",
+            },
+        }
+        cfg = tier_config.get(tier, tier_config["P1"])
+
+        # Build metrics table rows — flatten nested dicts one level deep
+        rows = []
+        for k, v in metrics.items():
+            if isinstance(v, dict):
+                for sub_k, sub_v in v.items():
+                    rows.append(f"<tr><td style='padding:6px 12px;color:#555'>{k} / {sub_k}</td>"
+                                f"<td style='padding:6px 12px;font-weight:600'>{sub_v}</td></tr>")
+            else:
+                rows.append(f"<tr><td style='padding:6px 12px;color:#555'>{k}</td>"
+                            f"<td style='padding:6px 12px;font-weight:600'>{v}</td></tr>")
+        metrics_table = "".join(rows) if rows else "<tr><td colspan='2'>No details</td></tr>"
+
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = f"Swasth Ops <{self.sender_email}>"
+            msg['To'] = recipient_email
+            msg['Subject'] = f"{cfg['subject_prefix']} {title} — Swasth Production"
+
+            body = f"""<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }}
+        .container {{ max-width: 600px; margin: 24px auto; background: #fff; border-radius: 8px; overflow: hidden; }}
+        .header {{ background: {cfg['color']}; color: #fff; padding: 20px 24px; }}
+        .header h2 {{ margin: 0 0 4px 0; font-size: 18px; }}
+        .header p {{ margin: 0; font-size: 13px; opacity: 0.9; }}
+        .badge {{ display: inline-block; background: rgba(255,255,255,0.25); border-radius: 4px;
+                  padding: 2px 10px; font-size: 12px; font-weight: bold; margin-bottom: 8px; }}
+        .alert-box {{ background: {cfg['bg']}; border-left: 4px solid {cfg['border']};
+                      margin: 20px 24px; padding: 12px 16px; border-radius: 4px; }}
+        .alert-box strong {{ color: {cfg['color']}; }}
+        table {{ width: calc(100% - 48px); margin: 0 24px 20px; border-collapse: collapse;
+                 font-size: 14px; }}
+        th {{ background: #f9fafb; text-align: left; padding: 8px 12px; color: #374151;
+              font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }}
+        tr:nth-child(even) {{ background: #f9fafb; }}
+        .footer {{ font-size: 11px; color: #9ca3af; padding: 16px 24px;
+                   border-top: 1px solid #e5e7eb; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="badge">{tier}</div>
+            <h2>{title}</h2>
+            <p>{cfg['label']} &nbsp;·&nbsp; {timestamp}</p>
+        </div>
+        <div class="alert-box">
+            <strong>{tier} Alert</strong> — Swasth Production server requires attention.
+        </div>
+        <table>
+            <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+            <tbody>{metrics_table}</tbody>
+        </table>
+        <div class="footer">
+            Swasth Ops Monitor &nbsp;·&nbsp; Internal use only &nbsp;·&nbsp;
+            No patient data in this email &nbsp;·&nbsp; {timestamp}
+        </div>
+    </div>
+</body>
+</html>"""
+
+            msg.attach(MIMEText(body, 'html'))
+
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.smtp_login, self.sender_password)
+                server.send_message(msg)
+            return True
+
+        except Exception:
+            logger.error("Failed to send ops alert email tier=%s title=%s", tier, title, exc_info=True)
+            return False
+
+
 # Create singleton instance
 email_service = BrevoEmailService()
