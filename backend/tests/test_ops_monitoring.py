@@ -395,3 +395,195 @@ class TestOpsAlertLogModel:
         assert loaded.email_sent is True
         body = json.loads(loaded.body_json)
         assert body["error_count"] == 15
+
+
+# ---------------------------------------------------------------------------
+# 10. ops_metrics — AI call recording
+# ---------------------------------------------------------------------------
+
+class TestOpsMetricsAiRecording:
+    def setup_method(self):
+        with ops_metrics._ai_lock:
+            ops_metrics._ai_key_stats.clear()
+        with ops_metrics._ai_lock:
+            ops_metrics._ai_fallback_events.clear()
+
+    def test_record_ai_call_increments_requests(self):
+        ops_metrics.record_ai_call(key_index=0, model="gemini-pro", fallback=False, latency_ms=200)
+        ops_metrics.record_ai_call(key_index=0, model="gemini-pro", fallback=False, latency_ms=150)
+        stats = ops_metrics.get_ai_key_stats()
+        assert stats[0]["requests_today"] == 2
+
+    def test_record_ai_call_tracks_fallback(self):
+        ops_metrics.record_ai_call(key_index=1, model="deepseek-chat", fallback=True, latency_ms=300)
+        stats = ops_metrics.get_ai_key_stats()
+        assert stats[1]["fallbacks_today"] == 1
+
+    def test_record_ai_call_tracks_429(self):
+        ops_metrics.record_ai_call(key_index=0, model="gemini-pro", fallback=False, latency_ms=50, hit_429=True)
+        stats = ops_metrics.get_ai_key_stats()
+        assert stats[0]["last_429_at"] is not None
+
+    def test_get_ai_fallback_rate_returns_zero_when_empty(self):
+        rate = ops_metrics.get_ai_fallback_rate(1)
+        assert rate == 0.0
+
+    def test_record_scheduler_run_tracks_job(self):
+        ops_metrics.record_scheduler_run("ops_p0_check", success=True)
+        health = ops_metrics.get_scheduler_health()
+        assert "ops_p0_check" in health
+        assert health["ops_p0_check"]["success"] is True
+
+    def test_record_memory_sample_stored(self):
+        initial_len = len(ops_metrics._memory_samples)
+        ops_metrics.record_memory_sample(512 * 1024 * 1024)
+        assert len(ops_metrics._memory_samples) == initial_len + 1
+
+
+# ---------------------------------------------------------------------------
+# 11. ops_health — system resource checks (macOS-safe: fallback paths)
+# ---------------------------------------------------------------------------
+
+class TestOpsHealthSystemChecks:
+    def test_check_memory_returns_dict_with_keys(self):
+        import ops_health
+        result = ops_health.check_memory()
+        assert "memory_pct" in result
+        assert "memory_rss_mb" in result
+        assert "swap_active" in result
+        assert isinstance(result["memory_pct"], float)
+
+    def test_check_disk_returns_dict(self):
+        import ops_health
+        result = ops_health.check_disk()
+        assert "disk_pct" in result
+        assert 0.0 <= result["disk_pct"] <= 1.0
+
+    def test_check_file_descriptors_returns_int(self):
+        import ops_health
+        result = ops_health.check_file_descriptors()
+        assert isinstance(result, int)
+        assert result >= 0
+
+    def test_check_cpu_burst_credits_returns_bool(self):
+        import ops_health
+        result = ops_health.check_cpu_burst_credits()
+        assert isinstance(result, bool)
+
+    def test_check_db_health_returns_healthy(self, db):
+        import ops_health
+        result = ops_health.check_db_health(db)
+        assert result["db_healthy"] is True
+        assert "db_pool_used" in result
+        assert "db_pool_size" in result
+
+    def test_check_ai_health_returns_dict(self):
+        import ops_health
+        result = ops_health.check_ai_health()
+        assert "gemini_healthy" in result
+        assert "all_ai_keys_failed" in result
+        assert "ai_fallback_rate_1h" in result
+
+    def test_check_scheduler_health_true_when_no_jobs(self):
+        import ops_health
+        with patch.object(ops_metrics, "get_scheduler_health", return_value={}):
+            result = ops_health.check_scheduler_health()
+        assert result is True
+
+
+# ---------------------------------------------------------------------------
+# 12. fire_alert — full path (email sent + OpsAlertLog written)
+# ---------------------------------------------------------------------------
+
+class TestFireAlert:
+    def _make_candidate(self, key="P0_test_fire", tier="P0"):
+        return ops_alerting.AlertCandidate(
+            alert_key=key, tier=tier, title="Test alert", body={"test": True}
+        )
+
+    def test_fire_alert_sends_email_and_logs(self, db):
+        mock_svc = MagicMock()
+        mock_svc.send_ops_alert_email.return_value = True
+
+        candidate = self._make_candidate()
+        result = ops_alerting.fire_alert(candidate, db, mock_svc)
+
+        assert result is True
+        mock_svc.send_ops_alert_email.assert_called_once()
+        log = db.query(models.OpsAlertLog).filter_by(alert_key="P0_test_fire").first()
+        assert log is not None
+        assert log.email_sent is True
+
+    def test_fire_alert_suppressed_does_not_send_email(self, db):
+        # Pre-insert a recent alert to trigger suppression
+        existing = models.OpsAlertLog(
+            alert_key="P0_suppressed_key",
+            tier="P0",
+            title="Already fired",
+            email_sent=True,
+            email_sent_at=datetime.now(timezone.utc),
+        )
+        db.add(existing)
+        db.commit()
+
+        mock_svc = MagicMock()
+        candidate = self._make_candidate(key="P0_suppressed_key")
+        result = ops_alerting.fire_alert(candidate, db, mock_svc)
+
+        assert result is False
+        mock_svc.send_ops_alert_email.assert_not_called()
+
+    def test_fire_p2_digest_sends_combined_email(self, db):
+        mock_svc = MagicMock()
+        mock_svc.send_ops_alert_email.return_value = True
+
+        candidates = [
+            ops_alerting.AlertCandidate("P2_a", "P2", "Issue A", {"count": 3}),
+            ops_alerting.AlertCandidate("P2_b", "P2", "Issue B", {"count": 7}),
+        ]
+        result = ops_alerting.fire_p2_digest(candidates, db, mock_svc)
+        assert result is True
+        mock_svc.send_ops_alert_email.assert_called_once()
+
+    def test_fire_p2_digest_empty_candidates_returns_false(self, db):
+        mock_svc = MagicMock()
+        result = ops_alerting.fire_p2_digest([], db, mock_svc)
+        assert result is False
+        mock_svc.send_ops_alert_email.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# 13. evaluate_p1 — with flag enabled
+# ---------------------------------------------------------------------------
+
+class TestP1Evaluation:
+    def _make_snap(self, **kwargs):
+        defaults = dict(
+            api_healthy=True, db_healthy=True, all_ai_keys_failed=False,
+            memory_pct=0.5, swap_active=False, concurrent_requests=10,
+            error_rate_5xx_5min=0, ai_fallback_rate_1h=0.0,
+            critical_alerts_unacked_2h=0, cpu_burst_credits_low=False, disk_pct=0.5,
+        )
+        defaults.update(kwargs)
+        return models.SystemHealthSnapshot(**defaults)
+
+    def test_p1_disabled_by_default_returns_empty(self):
+        snap = self._make_snap(error_rate_5xx_5min=20)
+        candidates = ops_alerting.evaluate_p1(snap)
+        assert candidates == []
+
+    def test_p1_error_rate_fires_when_enabled(self):
+        from config import settings
+        snap = self._make_snap(error_rate_5xx_5min=20)
+        with patch.object(settings, "OPS_P1_ALERTS_ENABLED", True):
+            candidates = ops_alerting.evaluate_p1(snap)
+        keys = [c.alert_key for c in candidates]
+        assert "P1_error_rate_spike" in keys
+
+    def test_p1_ai_fallback_fires_when_enabled(self):
+        from config import settings
+        snap = self._make_snap(ai_fallback_rate_1h=0.5)
+        with patch.object(settings, "OPS_P1_ALERTS_ENABLED", True):
+            candidates = ops_alerting.evaluate_p1(snap)
+        keys = [c.alert_key for c in candidates]
+        assert "P1_ai_fallback_spike" in keys
