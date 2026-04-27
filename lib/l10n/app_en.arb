@@ -328,6 +328,12 @@
       "name": { "type": "String" }
     }
   },
+  "linkedDoctorsRevokeReasonLabel": "Reason: {reason}",
+  "@linkedDoctorsRevokeReasonLabel": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "adminMenuTooltip": "Admin",
   "adminMenuDashboard": "Open dashboard",
   "adminMenuCreateUser": "Create user",
@@ -598,6 +604,7 @@
   "heartFaceCaution": "Stay alert today",
   "heartFaceUrgent": "Need doctor's help",
   "heartCallDoctor": "Call your doctor now",
+  "doctorContactNotAvailable": "No doctor contact available. Please link a doctor first.",
   "quickSelectTitle": "Log Meal",
   "mealHighCarb": "Heavy — Rice / Roti",
   "mealLowCarb": "Light — Sabzi / Dal",
@@ -804,6 +811,7 @@
   "linkDoctorPickerSubtitle": "Tap the doctor you want to share your readings with.",
   "linkDoctorAlreadyLinked": "This doctor can already see this profile.",
   "linkDoctorAlreadyLinkedBadge": "Already sharing",
+  "linkDoctorPreviouslyDeclinedBadge": "Previously declined - can request again",
   "linkDoctorOr": "OR",
   "linkDoctorEnterNewCode": "Enter a new doctor's code",
   "linkDoctorConsentTitle": "How did you meet this doctor?",

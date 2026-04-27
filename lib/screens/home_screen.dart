@@ -596,13 +596,41 @@ class _HomeScreenState extends State<HomeScreen>
                                     }
                                   }
                                 : null,
-                            onCallDoctor:
-                                _activeProfile?.doctorWhatsapp?.isNotEmpty ==
-                                    true
-                                ? () => _callDoctor(
-                                    _activeProfile!.doctorWhatsapp!,
-                                  )
-                                : null,
+                            onCallDoctor: _activeProfile?.doctorWhatsapp?.isNotEmpty == true
+                                ? () => _callDoctor(_activeProfile!.doctorWhatsapp!)
+                                : _linkedDoctors.isNotEmpty
+                                    ? () {
+                                        // Try to call the first linked active doctor
+                                        final activeDoctors = _linkedDoctors
+                                            .where((d) => d['status'] == 'active')
+                                            .toList();
+                                        if (activeDoctors.isNotEmpty) {
+                                          final firstDoctor = activeDoctors.first;
+                                          // Prefer WhatsApp number, fall back to phone number
+                                          final phone = firstDoctor['whatsapp_number'] as String? ?? 
+                                                      firstDoctor['phone_number'] as String?;
+                                          if (phone != null && phone.isNotEmpty) {
+                                            _callDoctor(phone);
+                                          } else {
+                                            final l10n = AppLocalizations.of(context)!;
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(l10n.doctorContactNotAvailable),
+                                                duration: const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          }
+                                        } else {
+                                          final l10n = AppLocalizations.of(context)!;
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(l10n.doctorContactNotAvailable),
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    : null,
                             onInfoTap: () {
                               final score =
                                   (data?['score'] as num?)?.toInt() ?? 50;

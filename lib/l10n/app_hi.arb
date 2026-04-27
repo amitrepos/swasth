@@ -251,6 +251,12 @@
       "name": { "type": "String" }
     }
   },
+  "linkedDoctorsRevokeReasonLabel": "कारण: {reason}",
+  "@linkedDoctorsRevokeReasonLabel": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "adminMenuTooltip": "एडमिन",
   "adminMenuDashboard": "डैशबोर्ड खोलें",
   "adminMenuCreateUser": "यूज़र बनाएं",
@@ -468,6 +474,7 @@
   "heartFaceCaution": "आज ध्यान रखें",
   "heartFaceUrgent": "डॉक्टर की ज़रूरत",
   "heartCallDoctor": "अभी डॉक्टर को कॉल करें",
+  "doctorContactNotAvailable": "कोई डॉक्टर संपर्क उपलब्ध नहीं है। कृपया पहले एक डॉक्टर लिंक करें।",
   "quickSelectTitle": "खाना दर्ज करें",
   "mealHighCarb": "भारी खाना — चावल / रोटी",
   "mealLowCarb": "हल्का खाना — सब्ज़ी / दाल",
@@ -620,6 +627,7 @@
   "linkDoctorPickerSubtitle": "जिस डॉक्टर के साथ अपनी रीडिंग साझा करना चाहते हैं, उन पर टैप करें।",
   "linkDoctorAlreadyLinked": "यह डॉक्टर पहले से इस प्रोफाइल को देख सकते हैं।",
   "linkDoctorAlreadyLinkedBadge": "पहले से जुड़े",
+  "linkDoctorPreviouslyDeclinedBadge": "पहले अस्वीकृत - फिर से अनुरोध कर सकते हैं",
   "linkDoctorOr": "या",
   "linkDoctorEnterNewCode": "नया डॉक्टर कोड डालें",
   "linkDoctorConsentTitle": "डॉक्टर से कैसे मिले हैं?",

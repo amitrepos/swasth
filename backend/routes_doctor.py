@@ -429,6 +429,9 @@ def revoke_doctor_link(
 
     # Allow revoking either an active link OR a pending-accept link
     # (patient withdraws their request before the doctor reviews it).
+    # CRITICAL: Must filter by status to avoid stale revoked rows when
+    # re-linking is enabled. Without this, .first() may return an old
+    # revoked row instead of the current active link.
     link = db.query(models.DoctorPatientLink).filter(
         models.DoctorPatientLink.doctor_id == dp.user_id,
         models.DoctorPatientLink.profile_id == profile_id,
@@ -507,6 +510,7 @@ def list_linked_doctors(
             "is_verified": dp.is_verified,
             "linked_since": link.consent_granted_at,
             "status": link.status,
+            "whatsapp_number": dp.whatsapp_number,
             "revoke_reason": link.revoke_reason if link.status == "revoked" else None,
             "revoked_at": link.revoked_at,
         })

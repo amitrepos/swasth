@@ -677,6 +677,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String linkedDoctorsRevokeReasonLabel(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
   String get adminMenuTooltip => 'Admin';
 
   @override
@@ -1347,6 +1352,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get heartCallDoctor => 'Call your doctor now';
 
   @override
+  String get doctorContactNotAvailable =>
+      'No doctor contact available. Please link a doctor first.';
+
+  @override
   String get quickSelectTitle => 'Log Meal';
 
   @override
@@ -1625,6 +1634,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get linkDoctorAlreadyLinkedBadge => 'Already sharing';
+
+  @override
+  String get linkDoctorPreviouslyDeclinedBadge =>
+      'Previously declined - can request again';
 
   @override
   String get linkDoctorOr => 'OR';
