@@ -1,0 +1,365 @@
+name: CI/CD Pipeline
+
+# Single unified pipeline: unit tests → staging → Playwright E2E gate → production
+#
+# Flow:
+#   unit-tests
+#     ├── deploy-staging-backend  (parallel)
+#     └── deploy-staging-web      (parallel)
+#           └── playwright-e2e    (GATE — must pass before prod)
+#                 ├── deploy-prod-backend  (parallel)
+#                 └── deploy-prod-web      (parallel)
+#                       └── smoke-prod
+#
+# Prod deploy is BLOCKED until Playwright E2E passes against staging.
+# On push to master AND manually triggerable (for rollbacks / re-runs).
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Stage 1: Unit tests ─────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests (backend + Flutter)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Backend (pytest) ──────────────────────────────────────────────────
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+        working-directory: backend
+      - name: Run pytest with coverage (fails below 85%)
+        run: python -m pytest tests/ -v --tb=short --cov=. --cov-config=.coveragerc
+        working-directory: backend
+
+      # ── Flutter (analyze + test) ──────────────────────────────────────────
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Create .env for asset bundling
+        run: echo "SERVER_HOST=http://localhost:8000" > .env
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - run: flutter test
+
+  # ── Stage 2a: Deploy backend → staging ──────────────────────────────────────
+  deploy-staging-backend:
+    name: Deploy Backend → Staging
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy backend to server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "backend/"
+          target: "/var/www/swasth/"
+          overwrite: true
+
+      - name: Install deps + migrate + restart staging
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            export DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}"
+            source /var/www/swasth/venv/bin/activate
+            cd /var/www/swasth/backend
+            pip install -r requirements.txt -q
+            alembic upgrade head || { echo "❌ alembic upgrade head failed"; exit 1; }
+            pm2 restart swasth-staging || \
+              DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}" SERVER_PORT=8008 \
+              pm2 start "python3 -B main.py" --name "swasth-staging" --cwd /var/www/swasth/backend
+            echo "✅ Staging backend deployed (staging-api.swasth.health)"
+
+      - name: Verify staging backend health
+        run: |
+          sleep 5
+          curl -s --max-time 10 https://staging-api.swasth.health/health | grep -q '"status":"healthy"'
+          echo "✅ staging-api.swasth.health healthy"
+
+  # ── Stage 2b: Build & deploy Flutter web → staging ──────────────────────────
+  deploy-staging-web:
+    name: Build & Deploy Flutter Web → Staging
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create .env for asset bundling
+        run: echo "SERVER_HOST=http://localhost:8000" > .env
+
+      - run: flutter pub get
+
+      - name: Build Flutter Web (staging flavor)
+        run: flutter build web --release --target lib/main_staging.dart
+
+      - name: Deploy staging web to server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "build/web/*"
+          target: "/var/www/swasth_staging/web"
+          strip_components: 2
+          overwrite: true
+
+      - name: Reload Nginx
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✅ Staging Flutter web deployed (staging-app.swasth.health)"
+
+  # ── Stage 3: Playwright E2E gate ────────────────────────────────────────────
+  # This is the GATE. Prod deploy only runs if all tests here pass.
+  playwright-e2e:
+    name: Playwright E2E (staging gate — must pass before prod)
+    needs: [deploy-staging-backend, deploy-staging-web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: test_e2e_live/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+        working-directory: test_e2e_live
+
+      - name: Install Playwright + Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: test_e2e_live
+
+      - name: Run Playwright E2E against staging
+        working-directory: test_e2e_live
+        env:
+          TARGET: https://staging-app.swasth.health
+          API_URL: https://staging-api.swasth.health
+          STAGING_API_URL: https://staging-api.swasth.health
+          PATIENT_EMAIL: ${{ secrets.PLAYWRIGHT_PATIENT_EMAIL }}
+          PATIENT_PASS: ${{ secrets.PLAYWRIGHT_PATIENT_PASS }}
+          RELATIVE_EMAIL: ${{ secrets.PLAYWRIGHT_RELATIVE_EMAIL }}
+          RELATIVE_PASS: ${{ secrets.PLAYWRIGHT_RELATIVE_PASS }}
+          DOCTOR_EMAIL: ${{ secrets.PLAYWRIGHT_DOCTOR_EMAIL }}
+          DOCTOR_PASS: ${{ secrets.PLAYWRIGHT_DOCTOR_PASS }}
+        run: npx playwright test --reporter=list
+
+      - name: Upload Playwright report on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: test_e2e_live/playwright-report/
+          retention-days: 7
+
+  # ── Stage 4a: Deploy backend → production ───────────────────────────────────
+  # Only runs after Playwright gate passes.
+  deploy-prod-backend:
+    name: Deploy Backend → Production
+    needs: [playwright-e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy backend to server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "backend/"
+          target: "/var/www/swasth/"
+          overwrite: true
+
+      - name: Install deps + migrate + restart prod
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            source /var/www/swasth/venv/bin/activate
+            cd /var/www/swasth/backend
+            pip install -r requirements.txt -q
+            alembic upgrade head || { echo "❌ alembic upgrade head failed"; exit 1; }
+            pm2 restart swasth-backend || \
+              pm2 start "python3 -B main.py" --name "swasth-backend" --cwd /var/www/swasth/backend
+            echo "✅ Backend PROD deployed (api.swasth.health)"
+
+  # ── Stage 4b: Build & deploy Flutter web → production ───────────────────────
+  deploy-prod-web:
+    name: Build & Deploy Flutter Web → Production
+    needs: [playwright-e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create .env for asset bundling
+        run: echo "SERVER_HOST=http://localhost:8000" > .env
+
+      - run: flutter pub get
+
+      - name: Build Flutter Web (production flavor)
+        run: flutter build web --release --target lib/main_production.dart
+
+      - name: Deploy prod web to server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "build/web/*"
+          target: "/var/www/swasth/web"
+          strip_components: 2
+          overwrite: true
+
+      - name: Reload Nginx
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo nginx -t && sudo systemctl reload nginx
+            echo "✅ Flutter Web PROD deployed (app.swasth.health)"
+
+  # ── Stage 5: Post-deploy smoke test ────────────────────────────────────────
+  smoke-prod:
+    name: Post-deploy smoke test (production)
+    needs: [deploy-prod-backend, deploy-prod-web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit production health endpoint
+        run: |
+          set -e
+          echo "=== /health ==="
+          curl -s --max-time 10 https://api.swasth.health/health | tee /tmp/health.json
+          grep -q '"status":"healthy"' /tmp/health.json
+          echo "✅ /health returns healthy"
+
+      - name: Verify supported reading_types end-to-end
+        env:
+          SMOKE_EMAIL: ${{ secrets.SMOKE_USER_EMAIL }}
+          SMOKE_PASS: ${{ secrets.SMOKE_USER_PASSWORD }}
+        run: |
+          set -e
+          if [ -z "$SMOKE_EMAIL" ] || [ -z "$SMOKE_PASS" ]; then
+            echo "⚠️  SMOKE_USER_* secrets not set — skipping reading_type smoke test."
+            exit 0
+          fi
+
+          python3 <<'PYEOF'
+          import json, os, sys, urllib.request
+
+          EMAIL = os.environ["SMOKE_EMAIL"]
+          PASS  = os.environ["SMOKE_PASS"]
+          BASE  = "https://api.swasth.health"
+
+          def post(path, body, token=None):
+              req = urllib.request.Request(
+                  BASE + path,
+                  data=json.dumps(body).encode(),
+                  headers={"Content-Type": "application/json",
+                           **({"Authorization": f"Bearer {token}"} if token else {})},
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=15) as r:
+                      return r.status, json.loads(r.read() or b"{}")
+              except urllib.error.HTTPError as e:
+                  return e.code, json.loads(e.read() or b"{}")
+
+          def get(path, token):
+              req = urllib.request.Request(
+                  BASE + path,
+                  headers={"Authorization": f"Bearer {token}"},
+              )
+              with urllib.request.urlopen(req, timeout=15) as r:
+                  return json.loads(r.read())
+
+          status, body = post("/api/auth/login", {"email": EMAIL, "password": PASS})
+          if status != 200 or "access_token" not in body:
+              print(f"❌ Login failed: HTTP {status}, body={body}")
+              sys.exit(1)
+          token = body["access_token"]
+          print(f"✅ Login OK (email={EMAIL})")
+
+          profiles = get("/api/profiles/", token)
+          if not profiles:
+              print("❌ No profiles visible to smoke user")
+              sys.exit(1)
+          profile_id = profiles[0]["id"]
+          print(f"✅ Profile ID: {profile_id}")
+
+          UNITS = {
+              "blood_pressure": "mmHg",
+              "glucose":        "mg/dL",
+              "spo2":           "%",
+              "steps":          "steps",
+              "weight":         "kg",
+          }
+          for rt, unit in UNITS.items():
+              payload = {
+                  "profile_id": profile_id,
+                  "reading_type": rt,
+                  "value_numeric": 0,
+                  "unit_display": unit,
+                  "reading_timestamp": "2026-01-01T00:00:00Z",
+              }
+              if rt == "blood_pressure":
+                  payload.update(systolic=0, diastolic=0, bp_unit="mmHg")
+              elif rt == "glucose":
+                  payload.update(glucose_value=0, glucose_unit="mg/dL")
+              elif rt == "spo2":
+                  payload.update(spo2_value=0, spo2_unit="%")
+              elif rt == "steps":
+                  payload.update(steps_count=0)
+              elif rt == "weight":
+                  payload.update(weight_value=0, weight_unit="kg")
+
+              status, body = post("/api/readings", payload, token=token)
+              if status in (200, 201):
+                  print(f"✅ reading_type={rt} accepted (HTTP {status})")
+              else:
+                  print(f"❌ reading_type={rt} rejected: HTTP {status}, body={body}")
+                  sys.exit(1)
+
+          print("✅ All reading_types round-trip to production")
+          PYEOF
