@@ -14,12 +14,25 @@ concurrency:
 
 jobs:
   # ── Stage 1: deploy backend ────────────────────────────────────────────────
+  # EC2 was set up via tar+scp (no .git on server) — we scp backend/ from the
+  # GitHub runner instead of git-pulling on the server.
   deploy-backend:
     name: Deploy Backend to PROD
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy PROD FastAPI
+
+      - name: Copy backend to server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "backend/"
+          target: "/var/www/swasth/"
+          overwrite: true
+
+      - name: Install deps + migrate + restart PROD
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -27,14 +40,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            cd /var/www/swasth
-            git fetch origin master
-            git reset --hard origin/master
-            echo "✅ Repo synced to $(git rev-parse --short HEAD)"
-
-            source venv/bin/activate
-            cd backend
-            pip install -r requirements.txt
+            source /var/www/swasth/venv/bin/activate
+            cd /var/www/swasth/backend
+            pip install -r requirements.txt -q
 
             echo "Running Alembic migrations..."
             current_rev=$(alembic current 2>/dev/null | awk '{print $1}' | grep -E '^[0-9]{4}$' || true)
