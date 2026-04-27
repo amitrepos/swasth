@@ -89,7 +89,12 @@ Future<void> _init(Flavor flavor) async {
     '[swasth] flavor=${flavor.name} serverHost=${AppConfig.serverHost}',
   );
 
-  await ReminderService().initialize();
+  // On web, skip ReminderService initialization (local notifications not supported)
+  // This speeds up web startup significantly
+  if (!kIsWeb) {
+    await ReminderService().initialize();
+  }
+  
   final langCode = await StorageService().getLanguage() ?? 'en';
 
   runApp(
