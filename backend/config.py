@@ -81,6 +81,30 @@ class Settings(BaseSettings):
     CRITICAL_ALERT_DEDUPE_MINUTES: int = 30  # Suppress repeat alerts to same profile within window
     CRITICAL_ALERTS_ENABLED: bool = True     # Kill switch for the whole feature
 
+    # Operational Monitoring & Alerting
+    OPS_ALERT_EMAIL: str = "support@swasth.health"   # destination for all tiered ops alerts
+    OPS_ALERTS_ENABLED: bool = True                   # master kill switch
+    OPS_P0_ALERTS_ENABLED: bool = True                # P0: immediate (API down, DB down, all AI failed)
+    OPS_P1_ALERTS_ENABLED: bool = False               # P1: disabled at launch — enable one-by-one as team matures
+    OPS_P2_ALERTS_ENABLED: bool = True                # P2: weekly digest (Sundays 08:00 IST)
+    OPS_P0_COOLDOWN_MINUTES: int = 15                 # dedup window — same alert_key suppressed within window
+    OPS_P1_COOLDOWN_MINUTES: int = 60
+    OPS_P2_COOLDOWN_HOURS: int = 168                  # 7 days — weekly digest
+    # P0 thresholds
+    OPS_CONCURRENT_P0_THRESHOLD: int = 40
+    OPS_MEMORY_P0_THRESHOLD: float = 0.90             # 90% RAM usage
+    OPS_CRITICAL_ALERT_FAIL_P0_THRESHOLD: float = 0.50  # >50% critical alerts failing
+    # P1 thresholds (off by default)
+    OPS_ERROR_RATE_P1_THRESHOLD: int = 10             # 500s per 5-min window
+    OPS_AI_FALLBACK_P1_THRESHOLD: float = 0.30        # 30% fallback rate
+    OPS_CONCURRENT_P1_THRESHOLD: int = 25
+    OPS_MEMORY_P1_THRESHOLD: float = 0.80             # 80% RAM usage
+    OPS_DISK_P1_THRESHOLD: float = 0.85               # 85% disk usage
+    OPS_AI_KEY_QUOTA_P1_THRESHOLD: float = 0.80       # 80% of daily quota used
+    # P2 thresholds (weekly digest)
+    OPS_PENDING_DOCTORS_P2_THRESHOLD: int = 5
+    OPS_NO_READING_DAYS_THRESHOLD: int = 7            # patients with no reading in N days
+
     # WhatsApp Inbound Webhook
     TWILIO_WEBHOOK_VALIDATE: bool = False    # Set True in production to verify Twilio HMAC signatures
     WHATSAPP_SESSION_TTL_MINUTES: int = 10   # How long to wait for profile selection reply

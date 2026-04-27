@@ -988,3 +988,78 @@ class WhatsAppInboundLog(Base):
     __table_args__ = (
         Index("ix_wa_inbound_phone_time", "phone_number", "created_at"),
     )
+
+
+class OpsAlertLog(Base):
+    """
+    Deduplication ledger for operational alerts (P0/P1/P2).
+
+    PHI invariant: body_json stores ONLY aggregate counts, rates, and booleans.
+    Never store user IDs, email addresses, names, or health readings here.
+    """
+    __tablename__ = "ops_alert_logs"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    alert_key     = Column(String(100), nullable=False, index=True)  # stable ID for dedup e.g. "P0_db_down"
+    tier          = Column(String(5), nullable=False)                # "P0" | "P1" | "P2"
+    title         = Column(String(200), nullable=False)
+    body_json     = Column(Text, nullable=True)                      # JSON — aggregate counts/rates only
+    email_sent    = Column(Boolean, default=False, nullable=False)
+    email_sent_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_at   = Column(DateTime(timezone=True), nullable=True)
+    created_at    = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    __table_args__ = (
+        Index("ix_ops_alert_key_time", "alert_key", "created_at"),
+    )
+
+
+class SystemHealthSnapshot(Base):
+    """
+    Periodic snapshot of system + operational health metrics.
+
+    PHI invariant: all columns are aggregate counts, rates, percentages, or booleans.
+    No PHI stored here.
+    """
+    __tablename__ = "system_health_snapshots"
+
+    id                           = Column(Integer, primary_key=True, index=True)
+    snapshot_at                  = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    # System
+    api_healthy                  = Column(Boolean, nullable=False, default=True)
+    db_healthy                   = Column(Boolean, nullable=False, default=True)
+    db_pool_used                 = Column(Integer, nullable=True)   # checked-out connections
+    db_pool_size                 = Column(Integer, nullable=True)   # total pool size
+    db_slow_queries_1h           = Column(Integer, nullable=True)   # queries >500ms in last hour
+    gemini_healthy               = Column(Boolean, nullable=True)
+    deepseek_healthy             = Column(Boolean, nullable=True)
+    all_ai_keys_failed           = Column(Boolean, nullable=True, default=False)
+    scheduler_healthy            = Column(Boolean, nullable=True)
+    error_rate_5xx_5min          = Column(Integer, nullable=True)   # 500s in last 5 min
+    error_rate_4xx_5min          = Column(Integer, nullable=True)
+    error_rate_401_5min          = Column(Integer, nullable=True)
+    error_rate_422_5min          = Column(Integer, nullable=True)
+    p50_latency_ms               = Column(Integer, nullable=True)
+    p95_latency_ms               = Column(Integer, nullable=True)
+    concurrent_requests          = Column(Integer, nullable=True)
+    concurrent_peak              = Column(Integer, nullable=True)
+    memory_pct                   = Column(Float, nullable=True)     # 0.0–1.0
+    memory_rss_mb                = Column(Float, nullable=True)
+    swap_active                  = Column(Boolean, nullable=True, default=False)
+    disk_pct                     = Column(Float, nullable=True)     # 0.0–1.0
+    cpu_burst_credits_low        = Column(Boolean, nullable=True, default=False)
+    file_descriptors             = Column(Integer, nullable=True)
+    memory_growth_mb_per_hour    = Column(Float, nullable=True)
+
+    # AI
+    ai_fallback_rate_1h          = Column(Float, nullable=True)     # 0.0–1.0
+
+    # Clinical ops (aggregate counts, no PHI)
+    pending_doctor_verifications = Column(Integer, nullable=True)
+    critical_alerts_unacked_2h   = Column(Integer, nullable=True)
+    critical_alerts_failed_today = Column(Integer, nullable=True)
+    patients_no_reading_7d       = Column(Integer, nullable=True)
+
+    # WhatsApp
+    whatsapp_fail_rate_today     = Column(Float, nullable=True)     # 0.0–1.0
