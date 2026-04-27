@@ -57,6 +57,11 @@ class _ShellScreenState extends State<ShellScreen>
   final _insightsKey = GlobalKey<TrendChartScreenState>();
   final _chatKey = GlobalKey<ChatScreenState>();
 
+  // Session-expiry guards (C1 / M1 / M2)
+  bool _handlingSessionExpiry = false; // C1: prevents duplicate dialog + double-nav
+  bool _validating = false;            // M2: prevents concurrent _validateSession calls
+  DateTime? _lastValidationTime;       // M1: debounce — skip if validated < 5 min ago
+
   @override
   void initState() {
     super.initState();
@@ -80,24 +85,51 @@ class _ShellScreenState extends State<ShellScreen>
     WidgetsBinding.instance.removeObserver(this);
     _connectivityTimer?.cancel();
     _profileRefreshTimer?.cancel();
+    _handlingSessionExpiry = false;
+    _validating = false;
     if (_instance == this) _instance = null;
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _validateSession();
+    if (state == AppLifecycleState.resumed) { _validateSession(); }
   }
 
   Future<void> _validateSession() async {
-    final token = await StorageService().getToken();
-    if (token == null || !mounted) return;
+    // M2: skip if a validation call is already in-flight
+    if (_validating) return;
+    // M1: debounce — skip if we validated successfully within the last 5 minutes
+    final now = DateTime.now();
+    if (_lastValidationTime != null &&
+        now.difference(_lastValidationTime!) < const Duration(minutes: 5)) {
+      return;
+    }
+
+    _validating = true;
     try {
+      final token = await StorageService().getToken();
+      if (token == null || !mounted) return;
       await ApiService().getCurrentUser(token);
+      _lastValidationTime = DateTime.now(); // update only on success
     } on UnauthorizedException catch (e) {
-      if (mounted) await ErrorMapper.showSnack(context, e);
+      if (mounted) await _handleSessionExpiry(e);
     } catch (_) {
       // Network errors — offline, don't force logout
+    } finally {
+      _validating = false;
+    }
+  }
+
+  /// C1: single entry-point for session expiry — prevents duplicate dialogs
+  /// from concurrent _validateSession + _checkConnectivity 401 paths.
+  Future<void> _handleSessionExpiry(Object error) async {
+    if (_handlingSessionExpiry || !mounted) return;
+    _handlingSessionExpiry = true;
+    try {
+      await ErrorMapper.showSnack(context, error);
+    } finally {
+      _handlingSessionExpiry = false;
     }
   }
 
@@ -143,8 +175,8 @@ class _ShellScreenState extends State<ShellScreen>
     // Auto-sync when coming back online
     if (wasOffline && reachable) {
       final result = await SyncService().syncPendingReadings();
-      if (result.authExpired && mounted) {
-        await ErrorMapper.showSnack(context, const UnauthorizedException());
+      if (result.authExpired) {
+        await _handleSessionExpiry(const UnauthorizedException());
       }
     }
   }
