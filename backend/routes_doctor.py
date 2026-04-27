@@ -432,10 +432,13 @@ def revoke_doctor_link(
     link = db.query(models.DoctorPatientLink).filter(
         models.DoctorPatientLink.doctor_id == dp.user_id,
         models.DoctorPatientLink.profile_id == profile_id,
-        models.DoctorPatientLink.status.in_(["active", "pending_doctor_accept"]),
     ).first()
     if not link:
         raise HTTPException(status_code=404, detail="No link found to revoke")
+    
+    # If already revoked or withdrawn, return success (idempotent)
+    if link.status in ("revoked", "withdrawn"):
+        return {"detail": "Doctor access already revoked"}
 
     # Patient-initiated withdrawal of a pending request uses "withdrawn" status
     # (doesn't appear in the patient's linked doctors list).
@@ -507,6 +510,8 @@ def list_linked_doctors(
             "is_verified": dp.is_verified,
             "linked_since": link.consent_granted_at,
             "status": link.status,
+            "phone_number": u.phone_number,
+            "whatsapp_number": dp.whatsapp_number,
             "revoke_reason": link.revoke_reason if link.status == "revoked" else None,
             "revoked_at": link.revoked_at,
         })

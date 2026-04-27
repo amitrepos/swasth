@@ -2570,6 +2570,12 @@ abstract class AppLocalizations {
   /// **'Call your doctor now'**
   String get heartCallDoctor;
 
+  /// No description provided for @doctorContactNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No doctor contact available. Please link a doctor first.'**
+  String get doctorContactNotAvailable;
+
   /// No description provided for @quickSelectTitle.
   ///
   /// In en, this message translates to:
@@ -3073,6 +3079,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Already sharing'**
   String get linkDoctorAlreadyLinkedBadge;
+
+  /// No description provided for @linkDoctorPreviouslyDeclinedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Previously declined - can request again'**
+  String get linkDoctorPreviouslyDeclinedBadge;
 
   /// No description provided for @linkDoctorOr.
   ///

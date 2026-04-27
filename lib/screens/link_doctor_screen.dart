@@ -34,6 +34,9 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
   // Picker state
   List<Map<String, dynamic>>? _directoryDoctors;
   Set<String> _alreadyLinkedCodes = <String>{};
+  // Track doctors who rejected the patient's request (status='revoked')
+  // so we can show a different badge and allow re-requesting
+  Set<String> _rejectedByCodes = <String>{};
   bool _isLoadingPicker = true;
 
   // Code-entry state
@@ -84,17 +87,27 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
       // Cross-reference with the current profile's linked doctors so
       // the picker can mark already-linked cards as disabled.
       Set<String> alreadyLinked = <String>{};
+      Set<String> rejectedBy = <String>{};
       if (profileId != null) {
         try {
           final linked = await _doctorService.getLinkedDoctors(
             token,
             profileId,
           );
-          alreadyLinked = linked
-              .whereType<Map<String, dynamic>>()
-              .map((d) => (d['doctor_code'] as String?) ?? '')
-              .where((c) => c.isNotEmpty)
-              .toSet();
+          for (final d in linked.whereType<Map<String, dynamic>>()) {
+            final code = (d['doctor_code'] as String?) ?? '';
+            final status = (d['status'] as String?) ?? 'active';
+            if (code.isEmpty) continue;
+            
+            // Only active or pending doctors are "already linked"
+            // Revoked doctors should be available for re-request
+            if (status == 'active' || status == 'pending_doctor_accept') {
+              alreadyLinked.add(code);
+            } else if (status == 'revoked') {
+              // Track rejected doctors separately
+              rejectedBy.add(code);
+            }
+          }
         } catch (_) {
           // Non-fatal — picker still works without the "already linked" hint.
         }
@@ -104,6 +117,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
       setState(() {
         _directoryDoctors = directory;
         _alreadyLinkedCodes = alreadyLinked;
+        _rejectedByCodes = rejectedBy;
         _activeProfileId = profileId;
         _isLoadingPicker = false;
         // If the directory is empty (no verified doctors on the
@@ -408,6 +422,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
     final clinic = doctor['clinic_name'] as String?;
     final code = (doctor['doctor_code'] as String?) ?? '';
     final alreadyLinked = _alreadyLinkedCodes.contains(code);
+    final previouslyRejected = _rejectedByCodes.contains(code);
     final initial = name.isNotEmpty ? name.trim()[0].toUpperCase() : '?';
 
     return Padding(
@@ -422,11 +437,15 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
             onTap: alreadyLinked ? null : () => _selectFromPicker(doctor),
             leading: CircleAvatar(
               radius: 22,
-              backgroundColor: AppColors.primary.withOpacity(0.15),
+              backgroundColor: previouslyRejected
+                  ? AppColors.statusCritical.withOpacity(0.15)
+                  : AppColors.primary.withOpacity(0.15),
               child: Text(
                 initial,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppColors.primary,
+                  color: previouslyRejected
+                      ? AppColors.statusCritical
+                      : AppColors.primary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -459,11 +478,25 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
                       ),
                     ),
                   ),
+                if (previouslyRejected && !alreadyLinked)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      l10n.linkDoctorPreviouslyDeclinedBadge,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.statusCritical,
+                        fontWeight: FontWeight.w600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
               ],
             ),
             trailing: alreadyLinked
                 ? const Icon(Icons.check_circle, color: AppColors.statusNormal)
-                : const Icon(Icons.arrow_forward_ios, size: 16),
+                : previouslyRejected
+                    ? const Icon(Icons.refresh, color: AppColors.statusCritical)
+                    : const Icon(Icons.arrow_forward_ios, size: 16),
           ),
         ),
       ),

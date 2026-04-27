@@ -1020,13 +1020,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final code = (doctor['doctor_code'] as String?) ?? '';
     final status = (doctor['status'] as String?) ?? 'active';
     final isPending = status == 'pending_doctor_accept';
+    final isRevoked = status == 'revoked';
     final isRevoking = _revokingCodes.contains(code);
     final initial = name.isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+    final revokeReason = doctor['revoke_reason'] as String?;
 
-    final avatarBg = isPending
-        ? AppColors.statusElevated.withOpacity(0.15)
-        : AppColors.primary.withOpacity(0.15);
-    final avatarFg = isPending ? AppColors.statusElevated : AppColors.primary;
+    Color avatarBg;
+    Color avatarFg;
+    
+    if (isRevoked) {
+      avatarBg = AppColors.statusCritical.withOpacity(0.15);
+      avatarFg = AppColors.statusCritical;
+    } else if (isPending) {
+      avatarBg = AppColors.statusElevated.withOpacity(0.15);
+      avatarFg = AppColors.statusElevated;
+    } else {
+      avatarBg = AppColors.primary.withOpacity(0.15);
+      avatarFg = AppColors.primary;
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1088,28 +1099,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ],
                         ),
                       ),
+                    if (isRevoked && revokeReason != null && revokeReason.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Reason: $revokeReason',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.statusCritical,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
-              IconButton(
-                key: Key('profile_revoke_button_$code'),
-                tooltip: isPending
-                    ? l10n.linkedDoctorsCancelRequest
-                    : l10n.linkedDoctorsRevoke,
-                onPressed: isRevoking
-                    ? null
-                    : () => _revokeLinkedDoctor(doctor),
-                icon: isRevoking
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        isPending ? Icons.close : Icons.link_off,
-                        color: AppColors.statusCritical,
-                      ),
-              ),
+              // Only show action button for active or pending doctors
+              if (!isRevoked)
+                IconButton(
+                  key: Key('profile_revoke_button_$code'),
+                  tooltip: isPending
+                      ? l10n.linkedDoctorsCancelRequest
+                      : l10n.linkedDoctorsRevoke,
+                  onPressed: isRevoking
+                      ? null
+                      : () => _revokeLinkedDoctor(doctor),
+                  icon: isRevoking
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          isPending ? Icons.close : Icons.link_off,
+                          color: AppColors.statusCritical,
+                        ),
+                ),
             ],
           ),
         ),
