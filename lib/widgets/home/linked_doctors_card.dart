@@ -186,7 +186,7 @@ class LinkedDoctorsCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      'Reason: $revokeReason',
+                      l10n.doctorDeclineReason(revokeReason),
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,

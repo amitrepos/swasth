@@ -1520,6 +1520,12 @@ abstract class AppLocalizations {
   /// **'Request declined'**
   String get doctorDeclinedBadge;
 
+  /// No description provided for @doctorDeclineReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String doctorDeclineReason(String reason);
+
   /// No description provided for @addDoctor.
   ///
   /// In en, this message translates to:

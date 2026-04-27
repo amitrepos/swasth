@@ -771,6 +771,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get doctorDeclinedBadge => 'Request declined';
 
   @override
+  String doctorDeclineReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
   String get addDoctor => 'Add Doctor';
 
   @override

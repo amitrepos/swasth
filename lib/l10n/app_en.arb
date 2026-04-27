@@ -359,6 +359,12 @@
   "linkADoctorCta": "Link a doctor",
   "doctorPendingAcceptBadge": "Awaiting doctor",
   "doctorDeclinedBadge": "Request declined",
+  "doctorDeclineReason": "Reason: {reason}",
+  "@doctorDeclineReason": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "addDoctor": "Add Doctor",
   "editDoctor": "Edit Doctor Details",
   "editDoctorTitle": "Doctor Details",

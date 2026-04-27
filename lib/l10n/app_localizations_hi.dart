@@ -770,6 +770,11 @@ class AppLocalizationsHi extends AppLocalizations {
   String get doctorDeclinedBadge => 'अनुरोध अस्वीकृत';
 
   @override
+  String doctorDeclineReason(String reason) {
+    return 'कारण: $reason';
+  }
+
+  @override
   String get addDoctor => 'डॉक्टर जोड़ें';
 
   @override
