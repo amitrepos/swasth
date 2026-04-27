@@ -877,12 +877,60 @@ class TestDoctorAcceptFlow:
         body = resp.json()
         assert body["status"] == "revoked"
 
-        # Link is gone from the patient list + triage
+        # Revoked link should still appear in the patient list (for 7 days)
+        # so the patient can see the decline status and reason
         linked = client.get(
             f"/api/doctor/link/{profile.id}", headers=patient_headers
         )
         assert linked.status_code == 200
-        assert linked.json() == []
+        linked_data = linked.json()
+        assert len(linked_data) == 1
+        assert linked_data[0]["status"] == "revoked"
+        assert linked_data[0]["revoke_reason"] == "Not currently accepting new patients"
+
+    def test_doctor_decline_sends_notifications(
+        self,
+        client,
+        db,
+        doctor_user,
+        doctor_headers,
+        patient_user,
+        patient_headers,
+    ):
+        """When a doctor declines a link request, email and WhatsApp notifications
+        should be sent to the profile owner."""
+        from unittest.mock import patch
+        _, profile = patient_user
+        self._create_pending_link(client, patient_headers, profile.id)
+
+        with patch("email_service.email_service.send_doctor_decline_notification") as mock_email, \
+             patch("twilio_service.whatsapp_service.send_doctor_decline_notification") as mock_whatsapp:
+            mock_email.return_value = True
+            mock_whatsapp.return_value = (True, "SMxxx", None)
+
+            resp = client.post(
+                f"/api/doctor/patients/{profile.id}/decline",
+                headers=doctor_headers,
+                json={"reason": "Not accepting new patients"},
+            )
+            assert resp.status_code == 200
+
+            # Email should be called with correct args
+            mock_email.assert_called_once()
+            email_kwargs = mock_email.call_args[1]
+            assert email_kwargs["recipient_email"] == "patient@test.com"
+            assert email_kwargs["recipient_name"] == "Ramesh Kumar"
+            assert email_kwargs["profile_name"] == "Ramesh Health"
+            assert email_kwargs["doctor_name"] == "Dr. Rajesh Verma"
+            assert email_kwargs["decline_reason"] == "Not accepting new patients"
+
+            # WhatsApp should be called with correct args
+            mock_whatsapp.assert_called_once()
+            whatsapp_kwargs = mock_whatsapp.call_args[1]
+            assert whatsapp_kwargs["to_number"] == "9876500002"
+            assert whatsapp_kwargs["profile_name"] == "Ramesh Health"
+            assert whatsapp_kwargs["doctor_name"] == "Dr. Rajesh Verma"
+            assert whatsapp_kwargs["decline_reason"] == "Not accepting new patients"
 
     def test_patient_can_withdraw_pending_request(
         self, client, doctor_user, patient_user, patient_headers

@@ -767,6 +767,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get doctorPendingAcceptBadge => 'डॉक्टर की स्वीकृति बाकी';
 
   @override
+  String get doctorDeclinedBadge => 'अनुरोध अस्वीकृत';
+
+  @override
   String get addDoctor => 'डॉक्टर जोड़ें';
 
   @override

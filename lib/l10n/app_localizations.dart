@@ -1514,6 +1514,12 @@ abstract class AppLocalizations {
   /// **'Awaiting doctor'**
   String get doctorPendingAcceptBadge;
 
+  /// No description provided for @doctorDeclinedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Request declined'**
+  String get doctorDeclinedBadge;
+
   /// No description provided for @addDoctor.
   ///
   /// In en, this message translates to:

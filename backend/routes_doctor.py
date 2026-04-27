@@ -17,6 +17,8 @@ from database import get_db
 from dependencies import get_current_user, get_doctor_patient_access, get_profile_access_or_403
 from doctor_utils import ensure_unique_doctor_code
 from models import UserRole
+from email_service import email_service
+from twilio_service import whatsapp_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -451,34 +453,54 @@ def list_linked_doctors(
 ):
     """List doctors linked to a patient profile (for patient app).
 
-    Includes both `active` and `pending_doctor_accept` rows so the
-    patient can see a "waiting for doctor" badge in the UI. Revoked
-    rows are excluded.
+    Includes `active`, `pending_doctor_accept`, and recently `revoked`
+    (last 7 days) rows so the patient can see pending requests and
+    recent declines with reasons.
     """
     get_profile_access_or_403(profile_id, user, db)
 
+    # Include active, pending, and recently revoked (last 7 days)
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    
     links = (
         db.query(models.DoctorPatientLink, models.DoctorProfile, models.User)
         .join(models.DoctorProfile, models.DoctorProfile.user_id == models.DoctorPatientLink.doctor_id)
         .join(models.User, models.User.id == models.DoctorPatientLink.doctor_id)
         .filter(
             models.DoctorPatientLink.profile_id == profile_id,
-            models.DoctorPatientLink.status.in_(["active", "pending_doctor_accept"]),
+            models.DoctorPatientLink.status.in_(
+                ["active", "pending_doctor_accept", "revoked"]
+            ),
         )
         .all()
     )
 
-    return [
-        {
+    result = []
+    for link, dp, u in links:
+        # Filter out old revoked links (older than 7 days)
+        if link.status == "revoked":
+            if link.revoked_at is None:
+                continue
+            # Ensure both datetimes are timezone-aware for comparison
+            revoked_at = link.revoked_at
+            if revoked_at.tzinfo is None:
+                # Assume UTC if timezone-naive
+                revoked_at = revoked_at.replace(tzinfo=timezone.utc)
+            if revoked_at < seven_days_ago:
+                continue
+        
+        result.append({
             "doctor_name": u.full_name,
             "specialty": dp.specialty,
             "doctor_code": dp.doctor_code,
             "is_verified": dp.is_verified,
             "linked_since": link.consent_granted_at,
             "status": link.status,
-        }
-        for link, dp, u in links
-    ]
+            "revoke_reason": link.revoke_reason if link.status == "revoked" else None,
+            "revoked_at": link.revoked_at,
+        })
+
+    return result
 
 
 @router.get("/known-doctors")
@@ -751,6 +773,75 @@ def decline_patient_link(
         endpoint="POST /api/doctor/patients/{id}/decline",
     )
     db.commit()
+
+    # --- Send notification to profile owner(s) ---
+    try:
+        profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
+        if profile:
+            profile_name = profile.name or "Unknown Profile"
+            doctor_name = user.full_name or "Unknown Doctor"
+
+            # Find all users with owner access to this profile
+            owner_accesses = (
+                db.query(models.ProfileAccess)
+                .filter(
+                    models.ProfileAccess.profile_id == profile_id,
+                    models.ProfileAccess.access_level == "owner",
+                )
+                .all()
+            )
+
+            for owner_access in owner_accesses:
+                owner_user = db.query(models.User).filter(
+                    models.User.id == owner_access.user_id
+                ).first()
+                if not owner_user:
+                    continue
+
+                recipient_name = owner_user.full_name or "User"
+
+                # Send email notification
+                if owner_user.email:
+                    email_ok = email_service.send_doctor_decline_notification(
+                        recipient_email=owner_user.email,
+                        recipient_name=recipient_name,
+                        profile_name=profile_name,
+                        doctor_name=doctor_name,
+                        decline_reason=data.reason,
+                    )
+                    if email_ok:
+                        logger.info(
+                            f"Sent decline notification email to {owner_user.email} "
+                            f"for profile {profile_id} declined by doctor {user.id}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Failed to send decline notification email to {owner_user.email}"
+                        )
+
+                # Send WhatsApp notification
+                if owner_user.phone_number:
+                    wa_ok, wa_sid, wa_err = whatsapp_service.send_doctor_decline_notification(
+                        to_number=owner_user.phone_number,
+                        profile_name=profile_name,
+                        doctor_name=doctor_name,
+                        decline_reason=data.reason,
+                    )
+                    if wa_ok:
+                        logger.info(
+                            f"Sent decline notification WhatsApp to {owner_user.phone_number} "
+                            f"(SID: {wa_sid}) for profile {profile_id}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Failed to send decline notification WhatsApp to {owner_user.phone_number}: {wa_err}"
+                        )
+    except Exception:
+        # Notification failures should not break the decline operation
+        logger.error(
+            "Error sending decline notifications (non-fatal)",
+            exc_info=True,
+        )
 
     return {"detail": "Link declined", "status": "revoked"}
 
