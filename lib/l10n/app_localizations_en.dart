@@ -1399,6 +1399,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mealTypeDinner => 'Dinner';
 
   @override
+  String get sectionMeals => 'Recent Meals';
+
+  @override
+  String get noMealsLast7Days => 'No meals logged in the last 7 days';
+
+  @override
+  String showAllMeals(int count) {
+    return 'Show all $count meals';
+  }
+
+  @override
   String get mealDisclaimer => 'For general wellness, not medical advice';
 
   @override

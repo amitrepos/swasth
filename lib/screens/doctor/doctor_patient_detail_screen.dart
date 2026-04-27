@@ -514,12 +514,13 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
   }
 
   Widget _buildMealsSection() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Recent Meals',
-          style: TextStyle(
+        Text(
+          l10n.sectionMeals,
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -527,11 +528,11 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
         ),
         const SizedBox(height: 8),
         if (_meals.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
-              'No meals logged in the last 7 days',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              l10n.noMealsLast7Days,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
           )
         else
@@ -539,7 +540,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
         if (_meals.length > 10)
           TextButton(
             onPressed: () {},
-            child: Text('Show all ${_meals.length} meals'),
+            child: Text(l10n.showAllMeals(_meals.length)),
           ),
       ],
     );
@@ -570,7 +571,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
                 Row(
                   children: [
                     Text(
-                      _localizedMealType(mealType),
+                      _localizedMealType(context, mealType),
                       style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 15,
@@ -641,16 +642,17 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
     );
   }
 
-  String _localizedMealType(String mealType) {
+  String _localizedMealType(BuildContext context, String mealType) {
+    final l10n = AppLocalizations.of(context)!;
     switch (mealType) {
       case 'BREAKFAST':
-        return 'Breakfast';
+        return l10n.mealTypeBreakfast;
       case 'LUNCH':
-        return 'Lunch';
+        return l10n.mealTypeLunch;
       case 'SNACK':
-        return 'Snack';
+        return l10n.mealTypeSnack;
       case 'DINNER':
-        return 'Dinner';
+        return l10n.mealTypeDinner;
       default:
         return mealType;
     }
