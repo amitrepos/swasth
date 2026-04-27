@@ -1,5 +1,7 @@
 name: DEV Auto Deploy
 
+# Deploys to AWS staging backend (staging-api.swasth.health) on every master push.
+# Runs tests first — backend + Flutter. No Flutter web deploy (staging is API-only).
 on:
   push:
     branches: [master]
@@ -38,14 +40,16 @@ jobs:
       - run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - run: flutter test
 
-  # ── Deploy backend to DEV ──────────────────────────────────────────────────
-  deploy-backend:
-    name: Deploy Backend to DEV
+  # ── Deploy staging backend to AWS ─────────────────────────────────────────
+  # Restarts swasth-staging (port 8008) → staging-api.swasth.health
+  # Shares codebase at /var/www/swasth with prod backend (different PM2 process).
+  deploy-staging-backend:
+    name: Deploy Staging Backend to AWS
     needs: [backend-tests, flutter-checks]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy DEV FastAPI
+      - name: Deploy Staging FastAPI
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -54,84 +58,30 @@ jobs:
           script: |
             set -e
             cd /var/www/swasth
-            # Hard-reset to origin/master instead of `git pull` — the
-            # pull was silently failing whenever the server's local
-            # repo diverged (e.g. from manual in-place edits or old
-            # merge artifacts), leaving dev stuck on stale code. The
-            # reset is idempotent, immune to divergence, and always
-            # produces a working tree that exactly matches origin.
-            # Any legitimate in-place admin work should go through a
-            # PR, not a direct file edit on the server.
             git fetch origin master
             git reset --hard origin/master
             echo "✅ Repo synced to $(git rev-parse --short HEAD)"
 
-            # venv lives at backend/venv/ — cd BEFORE activating, otherwise
-            # `source venv/bin/activate` resolves relative to /var/www/swasth
-            # and fails with "No such file or directory" (the deploy-halting
-            # bug that caused PR #111 and #112 deploys to silently leave the
-            # backend process running stale in-memory code).
-            cd backend
             source venv/bin/activate
+            cd backend
             pip install -r requirements.txt
 
-            # Run any new DB migrations. Each migration script is
-            # idempotent (checks for column existence before ALTER)
-            # so re-running on every deploy is safe. If you add a
-            # new migration, append it here.
-            echo "Running DB migrations..."
-            for f in migrate_add_doctor_link_states.py; do
-              if [ -f "$f" ]; then
-                echo "  → $f"
-                python3 "$f" || { echo "❌ Migration $f failed"; exit 1; }
-              fi
-            done
-            echo "✅ Migrations complete"
+            echo "Running Alembic migrations..."
+            current_rev=$(alembic current 2>/dev/null | awk '{print $1}' | grep -E '^[0-9]{4}$' || true)
+            if [ -z "$current_rev" ]; then
+              echo "  First-time alembic adoption — stamping at 0002"
+              alembic stamp 0002 || { echo "❌ alembic stamp 0002 failed"; exit 1; }
+            else
+              echo "  Current revision: $current_rev"
+            fi
+            alembic upgrade head || { echo "❌ alembic upgrade head failed"; exit 1; }
+            echo "✅ Alembic migrations complete"
 
-            # Restart or start the DEV backend via PM2
-            pm2 restart swasth-backend || pm2 start "python3 main.py" --name "swasth-backend" --cwd /var/www/swasth/backend
-            echo "✅ Backend DEV deployed on port 8007"
+            pm2 restart swasth-staging || SERVER_PORT=8008 pm2 start "python3 -B main.py" --name "swasth-staging" --cwd /var/www/swasth/backend
+            echo "✅ Staging backend deployed (staging-api.swasth.health)"
 
-  # ── Build & deploy Flutter web to DEV ──────────────────────────────────────
-  deploy-web:
-    name: Deploy Flutter Web to DEV
-    needs: [backend-tests, flutter-checks]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Create .env for asset bundling
-        run: echo "SERVER_HOST=http://localhost:8000" > .env
-
-      - run: flutter pub get
-
-      - name: Build Flutter Web
+      - name: Verify staging health
         run: |
-          flutter build web --release \
-            --dart-define=SERVER_HOST=https://${{ secrets.SERVER_HOST }}:8443
-
-      - name: Deploy web to server
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "build/web/*"
-          target: "/var/www/swasth/web"
-          strip_components: 2
-          overwrite: true
-
-      - name: Reload Nginx
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            sudo nginx -t && sudo systemctl reload nginx
-            echo "✅ Flutter Web DEV deployed"
+          sleep 5
+          curl -s --max-time 10 https://staging-api.swasth.health/health | grep -q '"status":"healthy"'
+          echo "✅ staging-api.swasth.health is healthy"

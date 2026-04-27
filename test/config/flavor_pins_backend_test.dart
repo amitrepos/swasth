@@ -19,14 +19,14 @@ void main() {
     Flavor.resetForTesting();
   });
 
-  test('Flavor.production → production backend on :8444', () {
+  test('Flavor.production → production backend (AWS)', () {
     Flavor.set(Flavor.production);
-    expect(AppConfig.serverHost, 'https://65.109.226.36:8444');
+    expect(AppConfig.serverHost, 'https://api.swasth.health');
   });
 
-  test('Flavor.staging → staging backend on :8443', () {
+  test('Flavor.staging → staging backend (AWS)', () {
     Flavor.set(Flavor.staging);
-    expect(AppConfig.serverHost, 'https://65.109.226.36:8443');
+    expect(AppConfig.serverHost, 'https://staging-api.swasth.health');
   });
 
   test('staging and production backends are different hosts', () {
