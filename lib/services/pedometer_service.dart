@@ -26,6 +26,7 @@ class PedometerService {
   int _stepsGoal = 7500; // Default daily goal
   DateTime? _lastStepDate;
   int _baselineSteps = 0; // Steps count at the start of today
+  int _lastSyncedSteps = -1; // Track last synced step count to avoid duplicates
   
   /// Current step count for today
   int get todaySteps => _todaySteps;
@@ -117,14 +118,17 @@ class PedometerService {
           savedDate.day != today.day) {
         _todaySteps = 0;
         _lastStepDate = today;
+        _lastSyncedSteps = -1; // Reset synced count for new day
+        await _storage.saveLastSyncedSteps(-1); // Also reset in storage
         // We'll set baseline when we get the first step event
         _baselineSteps = 0;
         debugPrint('PedometerService: New day, resetting steps to 0');
       } else {
         _todaySteps = savedSteps ?? 0;
         _baselineSteps = savedBaseline ?? 0;
+        _lastSyncedSteps = await _storage.getLastSyncedSteps() ?? -1;
         _lastStepDate = savedDate;
-        debugPrint('PedometerService: Loaded saved steps: $_todaySteps, baseline: $_baselineSteps');
+        debugPrint('PedometerService: Loaded saved steps: $_todaySteps, baseline: $_baselineSteps, lastSynced: $_lastSyncedSteps');
       }
 
       // Load steps goal
@@ -152,6 +156,7 @@ class PedometerService {
         debugPrint('PedometerService: New day detected, resetting steps');
         _baselineSteps = event.steps;
         _todaySteps = 0;
+        _lastSyncedSteps = -1; // Reset synced count for new day
         _lastStepDate = today;
       } else {
         // Calculate today's steps by subtracting baseline from current absolute count
@@ -197,7 +202,13 @@ class PedometerService {
   /// Sync today's steps to the backend
   Future<bool> syncStepsToBackend() async {
     try {
-      debugPrint('PedometerService: Syncing steps to backend: $_todaySteps');
+      // Only sync if step count has changed since last sync
+      if (_todaySteps == _lastSyncedSteps) {
+        debugPrint('PedometerService: Steps unchanged ($_todaySteps), skipping sync');
+        return false;
+      }
+      
+      debugPrint('PedometerService: Syncing steps to backend: $_todaySteps (was: $_lastSyncedSteps)');
       
       final token = await _storage.getToken();
       final profileId = await _storage.getActiveProfileId();
@@ -217,6 +228,10 @@ class PedometerService {
         stepsGoal: _stepsGoal,
       );
 
+      // Update last synced count
+      _lastSyncedSteps = _todaySteps;
+      await _storage.saveLastSyncedSteps(_todaySteps);
+      
       debugPrint('PedometerService: Steps synced successfully');
       return true;
     } catch (e) {

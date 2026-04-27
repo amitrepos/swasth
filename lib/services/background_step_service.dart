@@ -85,14 +85,23 @@ Future<void> _syncStepsToBackend() async {
     if (todaySteps < 0) {
       debugPrint('BackgroundStepService: Negative steps, resetting baseline');
       await storage.saveBaselineSteps(currentSteps);
+      await storage.saveLastSyncedSteps(-1); // Reset synced count
       return;
     }
 
-    debugPrint('BackgroundStepService: Syncing $todaySteps steps to backend');
+    // Check if steps have changed since last sync
+    final lastSyncedSteps = await storage.getLastSyncedSteps() ?? -1;
+    if (todaySteps == lastSyncedSteps) {
+      debugPrint('BackgroundStepService: Steps unchanged ($todaySteps), skipping sync');
+      return;
+    }
+
+    debugPrint('BackgroundStepService: Syncing $todaySteps steps to backend (was: $lastSyncedSteps)');
     
     // Save to local storage
     await storage.saveTodaySteps(todaySteps);
     await storage.saveLastStepsDate(DateTime.now());
+    await storage.saveLastSyncedSteps(todaySteps);
 
     // Sync to backend
     final readingService = HealthReadingService();

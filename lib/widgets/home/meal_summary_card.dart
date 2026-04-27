@@ -112,21 +112,6 @@ class MealSummaryCardState extends State<MealSummaryCard> {
                 ),
               ),
             ),
-            if (hasMeals && widget.onTapLogMeal != null && !widget.readOnly)
-              GestureDetector(
-                // Generic "+" — no specific meal type, fall back to
-                // detectMealType() in QuickSelectScreen.
-                onTap: () => widget.onTapLogMeal!(null),
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 18),
-                ),
-              ),
           ],
         ),
         const SizedBox(height: 12),
