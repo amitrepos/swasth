@@ -703,8 +703,9 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
 
         // Add note input
         GlassCard(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(4),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: TextField(
@@ -717,24 +718,24 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
                       fontSize: 14,
                     ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: EdgeInsets.fromLTRB(12, 12, 12, 12),
                     isDense: true,
                   ),
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 14,
                   ),
-                  maxLines: 2,
-                  minLines: 1,
+                  maxLines: 4,
+                  minLines: 3,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
               IconButton(
                 key: const Key('submitNoteBtn'),
                 icon: _addingNote
                     ? const SizedBox(
                         width: 20,
-                        height: 20,
+                        height: 40,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.send, color: AppColors.primary),
