@@ -1,0 +1,50 @@
+name: Playwright Full Suite (Nightly)
+
+# Runs all 80 E2E tests against staging every night at 02:00 UTC (07:30 IST).
+# Also manually triggerable for debugging.
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  playwright-full:
+    name: Playwright Full Suite — staging (all 80 tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install npm dependencies
+        run: npm ci
+        working-directory: test_e2e_live
+
+      - name: Install Playwright + Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: test_e2e_live
+
+      - name: Run full Playwright suite against staging (chromium only)
+        working-directory: test_e2e_live
+        env:
+          TARGET: https://staging-app.swasth.health
+          API_URL: https://staging-api.swasth.health
+          STAGING_API_URL: https://staging-api.swasth.health
+          PATIENT_EMAIL: ${{ secrets.PLAYWRIGHT_PATIENT_EMAIL }}
+          PATIENT_PASS: ${{ secrets.PLAYWRIGHT_PATIENT_PASS }}
+          RELATIVE_EMAIL: ${{ secrets.PLAYWRIGHT_RELATIVE_EMAIL }}
+          RELATIVE_PASS: ${{ secrets.PLAYWRIGHT_RELATIVE_PASS }}
+          DOCTOR_EMAIL: ${{ secrets.PLAYWRIGHT_DOCTOR_EMAIL }}
+          DOCTOR_PASS: ${{ secrets.PLAYWRIGHT_DOCTOR_PASS }}
+        run: npx playwright test --project=chromium --reporter=list
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightly-playwright-report-${{ github.run_id }}
+          path: test_e2e_live/playwright-report/
+          retention-days: 7
