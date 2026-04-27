@@ -1334,6 +1334,12 @@ abstract class AppLocalizations {
   /// **'{name} can no longer see your readings.'**
   String linkedDoctorsRevokeSuccess(String name);
 
+  /// No description provided for @linkedDoctorsRevokeReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String linkedDoctorsRevokeReasonLabel(String reason);
+
   /// No description provided for @adminMenuTooltip.
   ///
   /// In en, this message translates to:

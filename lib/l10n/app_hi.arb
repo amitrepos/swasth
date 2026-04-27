@@ -251,6 +251,12 @@
       "name": { "type": "String" }
     }
   },
+  "linkedDoctorsRevokeReasonLabel": "कारण: {reason}",
+  "@linkedDoctorsRevokeReasonLabel": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "adminMenuTooltip": "एडमिन",
   "adminMenuDashboard": "डैशबोर्ड खोलें",
   "adminMenuCreateUser": "यूज़र बनाएं",

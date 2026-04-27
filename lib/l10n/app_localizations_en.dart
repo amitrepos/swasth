@@ -677,6 +677,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String linkedDoctorsRevokeReasonLabel(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
   String get adminMenuTooltip => 'Admin';
 
   @override

@@ -1103,7 +1103,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          'Reason: $revokeReason',
+                          l10n.linkedDoctorsRevokeReasonLabel(revokeReason),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.statusCritical,
                             fontStyle: FontStyle.italic,

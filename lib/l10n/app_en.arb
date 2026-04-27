@@ -328,6 +328,12 @@
       "name": { "type": "String" }
     }
   },
+  "linkedDoctorsRevokeReasonLabel": "Reason: {reason}",
+  "@linkedDoctorsRevokeReasonLabel": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
   "adminMenuTooltip": "Admin",
   "adminMenuDashboard": "Open dashboard",
   "adminMenuCreateUser": "Create user",

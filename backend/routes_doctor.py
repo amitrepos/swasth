@@ -510,7 +510,6 @@ def list_linked_doctors(
             "is_verified": dp.is_verified,
             "linked_since": link.consent_granted_at,
             "status": link.status,
-            "phone_number": u.phone_number,
             "whatsapp_number": dp.whatsapp_number,
             "revoke_reason": link.revoke_reason if link.status == "revoked" else None,
             "revoked_at": link.revoked_at,

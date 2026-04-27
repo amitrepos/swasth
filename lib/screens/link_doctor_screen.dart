@@ -104,8 +104,13 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
             if (status == 'active' || status == 'pending_doctor_accept') {
               alreadyLinked.add(code);
             } else if (status == 'revoked') {
-              // Track rejected doctors separately
-              rejectedBy.add(code);
+              // Only track as "rejected" if the doctor declined (has a reason).
+              // Patient-initiated revocations (no reason) should NOT show
+              // the "Previously declined" badge.
+              final revokeReason = d['revoke_reason'] as String?;
+              if (revokeReason != null && revokeReason.isNotEmpty) {
+                rejectedBy.add(code);
+              }
             }
           }
         } catch (_) {
