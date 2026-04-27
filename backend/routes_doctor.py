@@ -437,7 +437,15 @@ def revoke_doctor_link(
     if not link:
         raise HTTPException(status_code=404, detail="No link found to revoke")
 
-    link.status = "revoked"
+    # Patient-initiated withdrawal of a pending request uses "withdrawn" status
+    # (doesn't appear in the patient's linked doctors list).
+    # Active link revocations or doctor-declined links use "revoked" status
+    # (shows for 7 days so patient can see decline reason).
+    if link.status == "pending_doctor_accept":
+        link.status = "withdrawn"
+    else:
+        link.status = "revoked"
+    
     link.is_active = False
     link.revoked_at = datetime.now(timezone.utc)
     db.commit()
@@ -460,6 +468,9 @@ def list_linked_doctors(
     get_profile_access_or_403(profile_id, user, db)
 
     # Include active, pending, and recently revoked (last 7 days)
+    # Note: "withdrawn" links (patient-initiated) are excluded — they
+    # disappear immediately. "revoked" links (doctor-declined) show for
+    # 7 days so the patient can see the decline reason.
     seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     links = (
