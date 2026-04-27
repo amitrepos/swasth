@@ -429,16 +429,16 @@ def revoke_doctor_link(
 
     # Allow revoking either an active link OR a pending-accept link
     # (patient withdraws their request before the doctor reviews it).
+    # CRITICAL: Must filter by status to avoid stale revoked rows when
+    # re-linking is enabled. Without this, .first() may return an old
+    # revoked row instead of the current active link.
     link = db.query(models.DoctorPatientLink).filter(
         models.DoctorPatientLink.doctor_id == dp.user_id,
         models.DoctorPatientLink.profile_id == profile_id,
+        models.DoctorPatientLink.status.in_(["active", "pending_doctor_accept"]),
     ).first()
     if not link:
         raise HTTPException(status_code=404, detail="No link found to revoke")
-    
-    # If already revoked or withdrawn, return success (idempotent)
-    if link.status in ("revoked", "withdrawn"):
-        return {"detail": "Doctor access already revoked"}
 
     # Patient-initiated withdrawal of a pending request uses "withdrawn" status
     # (doesn't appear in the patient's linked doctors list).
