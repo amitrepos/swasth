@@ -55,23 +55,13 @@
       pointer-events: none;
     }
     
-    .loading-logo {
-      width: 80px;
-      height: 80px;
-      background: #0ea5e9;
-      border-radius: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    .loading-logo-img {
+      width: 120px;
+      height: 120px;
       margin-bottom: 24px;
       box-shadow: 0 8px 32px rgba(14, 165, 233, 0.3);
       animation: pulse 2s ease-in-out infinite;
-    }
-    
-    .loading-logo svg {
-      width: 48px;
-      height: 48px;
-      fill: white;
+      border-radius: 24px;
     }
     
     .loading-title {
@@ -115,11 +105,7 @@
 <body>
   <!-- Loading overlay shown immediately while Flutter loads -->
   <div id="loading-overlay">
-    <div class="loading-logo">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-      </svg>
-    </div>
+    <img src="icons/Icon-192.png" alt="Swasth Logo" class="loading-logo-img">
     <div class="loading-title">Swasth</div>
     <div class="loading-subtitle">Your Health Companion</div>
     <div class="loading-spinner"></div>

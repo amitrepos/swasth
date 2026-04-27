@@ -17,14 +17,66 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   final _storage = StorageService();
   String _loadingMessage = 'Initializing...';
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+  bool _logoLoaded = false;
+  final Image _logoImage = Image.asset('assets/logo.png', width: 120, height: 120);
 
   @override
   void initState() {
     super.initState();
-    _attemptAutoLogin();
+    
+    // Initialize animation controller for logo
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _opacityAnimation = Tween<double>(
+      begin: 0.85,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Preload the logo image after dependencies are ready
+    if (!_logoLoaded) {
+      precacheImage(_logoImage.image, context).then((_) {
+        if (mounted) {
+          setState(() => _logoLoaded = true);
+        }
+      });
+    }
+    
+    // Start auto-login after first dependency change
+    if (_loadingMessage == 'Initializing...') {
+      _attemptAutoLogin();
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _attemptAutoLogin() async {
@@ -145,24 +197,58 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.health_and_safety, size: 80, color: AppColors.primary),
-            const SizedBox(height: 16),
-            Text(
-              'Swasth',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+            AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return AnimatedOpacity(
+                  opacity: _logoLoaded ? _opacityAnimation.value : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: _logoImage,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            AnimatedOpacity(
+              opacity: _logoLoaded ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Column(
+                children: [
+                  Text(
+                    'Swasth',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your Health Companion',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 32),
-            const CircularProgressIndicator(),
+            const SizedBox(height: 40),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              strokeWidth: 3,
+            ),
             const SizedBox(height: 16),
             Text(
               _loadingMessage,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: AppColors.textSecondary,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ],
