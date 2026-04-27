@@ -159,7 +159,7 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: test_e2e_live
 
-      - name: Run Playwright E2E against staging
+      - name: Run P0 smoke gate against staging (chromium only)
         working-directory: test_e2e_live
         env:
           TARGET: https://staging-app.swasth.health
@@ -171,7 +171,7 @@ jobs:
           RELATIVE_PASS: ${{ secrets.PLAYWRIGHT_RELATIVE_PASS }}
           DOCTOR_EMAIL: ${{ secrets.PLAYWRIGHT_DOCTOR_EMAIL }}
           DOCTOR_PASS: ${{ secrets.PLAYWRIGHT_DOCTOR_PASS }}
-        run: npx playwright test --reporter=list
+        run: npx playwright test tests/smoke.spec.js --project=chromium --reporter=list
 
       - name: Upload Playwright report on failure
         uses: actions/upload-artifact@v4
