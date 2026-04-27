@@ -142,7 +142,10 @@ class _ShellScreenState extends State<ShellScreen>
     
     // Auto-sync when coming back online
     if (wasOffline && reachable) {
-      SyncService().syncPendingReadings();
+      final result = await SyncService().syncPendingReadings();
+      if (result.authExpired && mounted) {
+        await ErrorMapper.showSnack(context, const UnauthorizedException());
+      }
     }
   }
 

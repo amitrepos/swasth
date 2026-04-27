@@ -7,9 +7,10 @@ import 'api_exception.dart';
 class SyncResult {
   final int synced;
   final int failed;
+  final bool authExpired;
   bool get hadPending => synced + failed > 0;
 
-  SyncResult({required this.synced, required this.failed});
+  SyncResult({required this.synced, required this.failed, this.authExpired = false});
 }
 
 class SyncService {
@@ -64,12 +65,12 @@ class SyncService {
           await readingService.saveReading(reading, token);
           synced++;
         } on UnauthorizedException {
-          // Token expired mid-sync — preserve unprocessed items, clear token.
-          // ShellScreen's WidgetsBindingObserver will detect and show logout dialog on next resume.
+          // Token expired mid-sync — preserve unprocessed items, clear token,
+          // and signal authExpired so ShellScreen can show the logout dialog immediately.
           final unprocessed = queue.sublist(i);
           await storage.saveSyncQueue([...remaining, ...unprocessed]);
           await storage.deleteToken();
-          return SyncResult(synced: synced, failed: unprocessed.length);
+          return SyncResult(synced: synced, failed: unprocessed.length, authExpired: true);
         } catch (_) {
           remaining.add(json);
         }
