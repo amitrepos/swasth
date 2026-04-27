@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # Security settings
     SECRET_KEY: str = "your-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 2  # TODO: restore to 30 before production
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Brevo SMTP settings
     BREVO_SMTP_SERVER: str = "smtp-relay.brevo.com"
