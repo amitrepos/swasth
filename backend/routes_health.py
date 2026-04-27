@@ -240,7 +240,7 @@ def get_health_score(
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
     profile_age = profile.age if profile else None
 
-    today = date.today()
+    today = datetime.now(timezone.utc).date()  # use UTC date so timestamp comparisons are consistent
     seven_days_ago = datetime.combine(today - timedelta(days=6), datetime.min.time(), tzinfo=timezone.utc)
 
     # Fetch last 7 days of readings
