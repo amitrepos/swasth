@@ -103,6 +103,10 @@ class ErrorMapper {
     required String loginRoute,
   }) async {
     final l10n = AppLocalizations.of(context)!;
+    // Capture navigator before any await — context may be unmounted by the
+    // time the dialog resolves and clearAll() completes.
+    final navigator = Navigator.of(context);
+
     SemanticsService.sendAnnouncement(
       View.of(context),
       message,
@@ -125,7 +129,6 @@ class ErrorMapper {
     );
 
     await StorageService().clearAll();
-    if (!context.mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(loginRoute, (_) => false);
+    navigator.pushNamedAndRemoveUntil(loginRoute, (_) => false);
   }
 }

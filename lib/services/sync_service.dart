@@ -2,6 +2,7 @@ import 'connectivity_service.dart';
 import 'storage_service.dart';
 import 'health_reading_service.dart';
 import 'api_service.dart';
+import 'api_exception.dart';
 
 class SyncResult {
   final int synced;
@@ -52,7 +53,8 @@ class SyncService {
       int synced = 0;
       final remaining = <Map<String, dynamic>>[];
 
-      for (final json in queue) {
+      for (int i = 0; i < queue.length; i++) {
+        final json = queue[i];
         try {
           final reading = HealthReading.fromJson({
             ...json,
@@ -61,6 +63,13 @@ class SyncService {
           });
           await readingService.saveReading(reading, token);
           synced++;
+        } on UnauthorizedException {
+          // Token expired mid-sync — preserve unprocessed items, clear token.
+          // ShellScreen's WidgetsBindingObserver will detect and show logout dialog on next resume.
+          final unprocessed = queue.sublist(i);
+          await storage.saveSyncQueue([...remaining, ...unprocessed]);
+          await storage.deleteToken();
+          return SyncResult(synced: synced, failed: unprocessed.length);
         } catch (_) {
           remaining.add(json);
         }
