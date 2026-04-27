@@ -68,23 +68,19 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
+            export DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}"
             source /var/www/swasth/venv/bin/activate
             cd /var/www/swasth/backend
             pip install -r requirements.txt -q
 
-            echo "Running Alembic migrations..."
-            current_rev=$(alembic current 2>/dev/null | awk '{print $1}' | grep -E '^[0-9]{4}$' || true)
-            if [ -z "$current_rev" ]; then
-              echo "  First-time alembic adoption — stamping at 0002"
-              alembic stamp 0002 || { echo "❌ alembic stamp 0002 failed"; exit 1; }
-            else
-              echo "  Current revision: $current_rev"
-            fi
+            echo "Running Alembic migrations (staging DB)..."
             alembic upgrade head || { echo "❌ alembic upgrade head failed"; exit 1; }
             echo "✅ Alembic migrations complete"
 
-            pm2 restart swasth-staging || SERVER_PORT=8008 pm2 start "python3 -B main.py" --name "swasth-staging" --cwd /var/www/swasth/backend
-            echo "✅ Staging backend deployed (staging-api.swasth.health)"
+            pm2 restart swasth-staging || \
+              DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}" SERVER_PORT=8008 \
+              pm2 start "python3 -B main.py" --name "swasth-staging" --cwd /var/www/swasth/backend
+            echo "✅ Staging backend deployed (staging-api.swasth.health, swasth_staging DB)"
 
       - name: Verify staging health
         run: |
