@@ -198,7 +198,7 @@ jobs:
               elif rt == "weight":
                   payload.update(weight_value=0, weight_unit="kg")
 
-              status, body = post("/api/health/readings", payload, token=token)
+              status, body = post("/api/readings", payload, token=token)
               if status in (200, 201):
                   print(f"✅ reading_type={rt} accepted (HTTP {status})")
               else:
