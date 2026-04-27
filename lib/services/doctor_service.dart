@@ -148,6 +148,19 @@ class DoctorService {
     );
   }
 
+  Future<List<dynamic>> getPatientMeals(
+    String token,
+    int profileId, {
+    int days = 7,
+  }) {
+    return ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/patients/$profileId/meals?days=$days'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
+  }
+
   Future<Map<String, dynamic>> lookupDoctor(String token, String doctorCode) {
     return ApiClient.sendJsonObject(
       () => ApiClient.httpClient.get(

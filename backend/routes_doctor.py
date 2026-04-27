@@ -4,7 +4,7 @@ All doctor-specific endpoints live here. This file NEVER imports from
 routes_chat.py — doctor access to patient data is deliberately scoped
 to readings, trends, and profile info (not AI chat history).
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 from datetime import datetime, timezone, timedelta
@@ -1148,6 +1148,66 @@ def list_doctor_notes(
             updated_at=n.updated_at,
         )
         for n in notes
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Patient Meals (doctor view)
+# ---------------------------------------------------------------------------
+
+@router.get("/patients/{profile_id}/meals")
+def get_patient_meals(
+    profile_id: int,
+    days: int = Query(7, ge=1, le=30),
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get patient's meal logs (doctor view). Max 30 days."""
+    link = get_doctor_patient_access(profile_id, user, db)
+    _log_doctor_access(db, user.id, profile_id, "viewed_meals", f"/api/doctor/patients/{profile_id}/meals")
+
+    days = min(days, 30)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    meals = (
+        db.query(models.MealLog)
+        .filter(
+            models.MealLog.profile_id == profile_id,
+            models.MealLog.timestamp >= since,
+        )
+        .order_by(models.MealLog.timestamp.desc())
+        .limit(100)
+        .all()
+    )
+
+    db.commit()
+
+    return [
+        {
+            "id": m.id,
+            "profile_id": m.profile_id,
+            "category": m.category,
+            "glucose_impact": m.glucose_impact,
+            "meal_type": m.meal_type,
+            "input_method": m.input_method,
+            "confidence": m.confidence,
+            "user_confirmed": m.user_confirmed,
+            "user_corrected_category": m.user_corrected_category,
+            "timestamp": m.timestamp,
+            "created_at": m.created_at,
+            # Nutrition fields
+            "total_calories": m.total_calories,
+            "total_carbs_g": m.total_carbs_g,
+            "total_protein_g": m.total_protein_g,
+            "total_fat_g": m.total_fat_g,
+            "total_fiber_g": m.total_fiber_g,
+            "meal_score": m.meal_score,
+            # Photo path excluded for doctor privacy
+            "photo_path": None,
+            "tip_en": m.tip_en,
+            "tip_hi": m.tip_hi,
+        }
+        for m in meals
     ]
 
 
