@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
@@ -17,18 +18,73 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   final _storage = StorageService();
-  String _loadingMessage = 'Initializing...';
+  String _loadingMessage = '';
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+  bool _logoLoaded = false;
+  final Image _logoImage = Image.asset('assets/logo.png', width: 120, height: 120);
 
   @override
   void initState() {
     super.initState();
-    _attemptAutoLogin();
+    
+    // Initialize animation controller for logo
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _opacityAnimation = Tween<double>(
+      begin: 0.85,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Preload the logo image after dependencies are ready
+    if (!_logoLoaded) {
+      precacheImage(_logoImage.image, context).then((_) {
+        if (mounted) {
+          setState(() => _logoLoaded = true);
+        }
+      });
+    }
+    
+    // Start auto-login after first dependency change
+    final l10n = AppLocalizations.of(context)!;
+    if (_loadingMessage.isEmpty) {
+      _loadingMessage = l10n.splashInitializing;
+      _attemptAutoLogin();
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _attemptAutoLogin() async {
-    setState(() => _loadingMessage = 'Checking connection...');
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _loadingMessage = l10n.splashCheckingConnection);
     
     // Add timeout to prevent indefinite loading
     try {
@@ -46,12 +102,13 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _performAutoLogin() async {
+    final l10n = AppLocalizations.of(context)!;
     final token = await _storage.getToken();
     final reachable = await ConnectivityService().isServerReachable();
 
     // SCENARIO 1: OFFLINE
     if (!reachable) {
-      setState(() => _loadingMessage = 'Working offline...');
+      setState(() => _loadingMessage = l10n.splashWorkingOffline);
       final lastLogin = await _storage.getLastLoginTimestamp();
       if (lastLogin != null) {
         final daysSince = DateTime.now().difference(lastLogin).inDays;
@@ -67,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // SCENARIO 2: ONLINE - TOKEN REUSE
     if (token != null) {
       try {
-        setState(() => _loadingMessage = 'Loading your profile...');
+        setState(() => _loadingMessage = l10n.splashLoadingProfile);
         final userData = await ApiService().getCurrentUser(token);
         await _storage.saveUserData(userData);
         // Note: We intentionally do NOT call saveLastLoginTimestamp here
@@ -82,11 +139,11 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     // SCENARIO 3: ONLINE - CREDENTIAL FALLBACK
-    setState(() => _loadingMessage = 'Checking saved credentials...');
+    setState(() => _loadingMessage = l10n.splashCheckingCredentials);
     final creds = await _storage.getSavedCredentials();
     if (creds != null) {
       try {
-        setState(() => _loadingMessage = 'Signing in...');
+        setState(() => _loadingMessage = l10n.splashSigningIn);
         final resp = await ApiService().login(creds.email, creds.password);
         final newToken = resp['access_token'] as String?;
         if (newToken != null) {
@@ -139,30 +196,65 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.health_and_safety, size: 80, color: AppColors.primary),
-            const SizedBox(height: 16),
-            Text(
-              'Swasth',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+            AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return AnimatedOpacity(
+                  opacity: _logoLoaded ? _opacityAnimation.value : 0.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: _logoImage,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            AnimatedOpacity(
+              opacity: _logoLoaded ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Column(
+                children: [
+                  Text(
+                    l10n.splashAppName,
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.splashTagline,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 32),
-            const CircularProgressIndicator(),
+            const SizedBox(height: 40),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              strokeWidth: 3,
+            ),
             const SizedBox(height: 16),
             Text(
-              _loadingMessage,
+              _loadingMessage.isEmpty ? l10n.splashInitializing : _loadingMessage,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: AppColors.textSecondary,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ],

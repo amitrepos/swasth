@@ -103,4 +103,7 @@ abstract final class AppColors {
   static const Color cameraButtonEnabled = Color(0xFFFFFFFF); // white
   static const Color cameraButtonDisabled = Color(0xFF9E9E9E); // grey
   static const Color cameraButtonIcon = Color(0xDE000000); // black87
+
+  // ── Meal carb-load colors (informational, not clinical) ──────────────────
+  static const Color carbLoadHigh = Color(0xFFFF8C42); // Orange — informational, not clinical
 }

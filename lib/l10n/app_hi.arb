@@ -758,5 +758,37 @@
   "phoneNumberLabel": "फ़ोन नंबर",
   "phoneNumberHint": "जैसे 9876543210",
   "phoneValidationInvalid": "कृपया सही फोन नंबर डालें (10-15 अंक)",
-  "nmcDisclaimer": "यह जानकारी है, दवाई नहीं। कोई भी बदलाव करने से पहले अपने डॉक्टर से मिलें।"
+  "nmcDisclaimer": "यह जानकारी है, दवाई नहीं। कोई भी बदलाव करने से पहले अपने डॉक्टर से मिलें।",
+  "splashAppName": "स्वस्थ",
+  "@splashAppName": {
+    "description": "स्प्लैश स्क्रीन पर ऐप का नाम"
+  },
+  "splashTagline": "आपका स्वास्थ्य साथी",
+  "@splashTagline": {
+    "description": "स्प्लैश स्क्रीन पर ऐप नाम के नीचे टैगलाइन"
+  },
+  "splashInitializing": "शुरू हो रहा है...",
+  "@splashInitializing": {
+    "description": "स्प्लैश स्क्रीन पर ऐप शुरू होने के दौरान लोडिंग संदेश"
+  },
+  "splashCheckingConnection": "कनेक्शन जाँच रहे हैं...",
+  "@splashCheckingConnection": {
+    "description": "स्प्लैश स्क्रीन पर नेटवर्क कनेक्टिविटी जाँचते समय लोडिंग संदेश"
+  },
+  "splashWorkingOffline": "ऑफ़लाइन काम कर रहे हैं...",
+  "@splashWorkingOffline": {
+    "description": "स्प्लैश स्क्रीन पर ऑफ़लाइन मोड में काम करने का संदेश"
+  },
+  "splashLoadingProfile": "आपकी प्रोफ़ाइल लोड हो रही है...",
+  "@splashLoadingProfile": {
+    "description": "स्प्लैश स्क्रीन पर यूज़र प्रोफ़ाइल डेटा लोड करते समय संदेश"
+  },
+  "splashCheckingCredentials": "सेव किए गए क्रेडेंशियल जाँच रहे हैं...",
+  "@splashCheckingCredentials": {
+    "description": "स्प्लैश स्क्रीन पर सेव किए गए लॉगिन क्रेडेंशियल जाँचते समय संदेश"
+  },
+  "splashSigningIn": "साइन इन हो रहा है...",
+  "@splashSigningIn": {
+    "description": "स्प्लैश स्क्रीन पर ऑटोमैटिक साइन-इन करते समय संदेश"
+  }
 }

@@ -2026,4 +2026,29 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get nmcDisclaimer =>
       'यह जानकारी है, दवाई नहीं। कोई भी बदलाव करने से पहले अपने डॉक्टर से मिलें।';
+
+  @override
+  String get splashAppName => 'स्वस्थ';
+
+  @override
+  String get splashTagline => 'आपका स्वास्थ्य साथी';
+
+  @override
+  String get splashInitializing => 'शुरू हो रहा है...';
+
+  @override
+  String get splashCheckingConnection => 'कनेक्शन जाँच रहे हैं...';
+
+  @override
+  String get splashWorkingOffline => 'ऑफ़लाइन काम कर रहे हैं...';
+
+  @override
+  String get splashLoadingProfile => 'आपकी प्रोफ़ाइल लोड हो रही है...';
+
+  @override
+  String get splashCheckingCredentials =>
+      'सेव किए गए क्रेडेंशियल जाँच रहे हैं...';
+
+  @override
+  String get splashSigningIn => 'साइन इन हो रहा है...';
 }

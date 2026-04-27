@@ -316,59 +316,61 @@ class HistoryScreenState extends State<HistoryScreen> {
   /// category, not what happened to the patient's glucose. Causation
   /// language is forbidden in Stage 1 (NMC § 3.3 — non-doctor clinical
   /// advice). Stage 2 will introduce a doctor-reviewed rule-based summary.
-  String _localizedCarbLoad(String impact, AppLocalizations l10n) {
-    switch (impact) {
-      case 'LOW':
+  /// Maps category (LOW_CARB, MODERATE_CARB, HIGH_CARB, HIGH_PROTEIN, SWEETS)
+  /// to localized carb load label for display.
+  String _localizedCarbLoadFromCategory(String category, AppLocalizations l10n) {
+    switch (category) {
+      case 'LOW_CARB':
         return l10n.mealCarbLoadLow;
-      case 'MODERATE':
+      case 'MODERATE_CARB':
         return l10n.mealCarbLoadModerate;
-      case 'HIGH':
+      case 'HIGH_CARB':
+      case 'SWEETS':
         return l10n.mealCarbLoadHigh;
-      case 'VERY_HIGH':
-        return l10n.mealCarbLoadVeryHigh;
+      case 'HIGH_PROTEIN':
+        return l10n.mealCarbLoadLow; // High protein typically has low carb impact
       default:
-        return impact;
+        return l10n.mealCarbLoadModerate;
     }
   }
 
-  /// Carb-load colour palette is intentionally non-clinical:
+  /// Maps category to carb-load colour palette.
   /// `statusCritical` (red) is reserved for actual clinical readings
-  /// (BP/glucose) and must never be used here, otherwise meals visually
-  /// equate to abnormal vitals — see Dr. Rajesh's review feedback.
-  Color _carbLoadColor(String impact) {
-    switch (impact) {
-      case 'LOW':
-        return AppColors.statusNormal;
-      case 'MODERATE':
-        return AppColors.amber;
-      case 'HIGH':
-        return AppColors.amber;
-      case 'VERY_HIGH':
-        // Deliberately neutral — the "sugary meal" pill is informational,
-        // not a warning. textSecondary keeps it visible without coding it
-        // as a clinical alert.
-        return AppColors.textSecondary;
+  /// (BP/glucose) and must never be used here.
+  Color _carbLoadColorFromCategory(String category) {
+    switch (category) {
+      case 'LOW_CARB':
+      case 'HIGH_PROTEIN':
+        return AppColors.success; // Green
+      case 'MODERATE_CARB':
+        return AppColors.amber; // Yellow/amber
+      case 'HIGH_CARB':
+      case 'SWEETS':
+        return AppColors.carbLoadHigh; // Orange (not red - not clinical)
       default:
         return AppColors.textSecondary;
     }
   }
 
-  /// Non-color shape cue per carb-load level for color-blind safety.
+  /// Non-color shape cue per category for color-blind safety.
   /// Icons describe food content, not severity.
-  IconData _carbLoadIcon(String impact) {
-    switch (impact) {
-      case 'LOW':
+  IconData _carbLoadIconFromCategory(String category) {
+    switch (category) {
+      case 'LOW_CARB':
         return Icons.eco;
-      case 'MODERATE':
+      case 'MODERATE_CARB':
         return Icons.restaurant;
-      case 'HIGH':
+      case 'HIGH_CARB':
         return Icons.rice_bowl;
-      case 'VERY_HIGH':
+      case 'SWEETS':
         return Icons.cake_outlined;
+      case 'HIGH_PROTEIN':
+        return Icons.fitness_center;
       default:
         return Icons.restaurant;
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -566,9 +568,10 @@ class HistoryScreenState extends State<HistoryScreen> {
       '_',
       ' ',
     );
-    final carbColor = _carbLoadColor(meal.glucoseImpact);
-    final carbIcon = _carbLoadIcon(meal.glucoseImpact);
-    final carbLabel = _localizedCarbLoad(meal.glucoseImpact, l10n);
+    // Use category (not glucoseImpact) for visual indicators to ensure consistency
+    final carbColor = _carbLoadColorFromCategory(meal.userCorrectedCategory ?? meal.category);
+    final carbIcon = _carbLoadIconFromCategory(meal.userCorrectedCategory ?? meal.category);
+    final carbLabel = _localizedCarbLoadFromCategory(meal.userCorrectedCategory ?? meal.category, l10n);
 
     return GlassCard(
       key: Key('history_meal_tile_${meal.id}'),

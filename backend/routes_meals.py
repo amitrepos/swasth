@@ -66,37 +66,38 @@ NUTRITION_ANALYSIS_PROMPT = """You are a nutrition expert. Analyze this food ima
 - sugar_level: "low", "medium", or "high"
 - micronutrients: iron_mg, calcium_mg, vitamin_c_mg estimates
 - flags: is_vegan, is_vegetarian, is_gluten_free, is_high_protein booleans
-- meal_score: health rating 1–10 with a one-line reason
+- meal_score: health rating 1–10 (calculate based on nutritional quality: consider balance of macros, fiber content, processing level, sugar content, and overall healthiness. 1=very unhealthy, 10=excellent nutritional value)
+- meal_score_reason: one-line explanation for the score
 
 Respond ONLY in this exact JSON format, nothing else:
 {
   "foods": [
     {
-      "name": "Brown Rice",
-      "weight_grams": 150,
-      "calories": 165,
-      "carbs_g": 35,
-      "protein_g": 4,
-      "fat_g": 1.5,
-      "fiber_g": 2
+      "name": "Food item name",
+      "weight_grams": estimated_weight,
+      "calories": calorie_count,
+      "carbs_g": carbs_grams,
+      "protein_g": protein_grams,
+      "fat_g": fat_grams,
+      "fiber_g": fiber_grams
     }
   ],
-  "total_calories": 450,
-  "total_carbs_g": 65,
-  "total_protein_g": 18,
-  "total_fat_g": 12,
-  "total_fiber_g": 8,
-  "carb_level": "high",
-  "sugar_level": "low",
-  "iron_mg": 3.5,
-  "calcium_mg": 120,
-  "vitamin_c_mg": 15,
-  "is_vegan": false,
-  "is_vegetarian": true,
-  "is_gluten_free": true,
-  "is_high_protein": false,
-  "meal_score": 7,
-  "meal_score_reason": "Good fiber content with balanced macros"
+  "total_calories": total_calories,
+  "total_carbs_g": total_carbs,
+  "total_protein_g": total_protein,
+  "total_fat_g": total_fat,
+  "total_fiber_g": total_fiber,
+  "carb_level": "low/medium/high",
+  "sugar_level": "low/medium/high",
+  "iron_mg": iron_value,
+  "calcium_mg": calcium_value,
+  "vitamin_c_mg": vitamin_c_value,
+  "is_vegan": true_or_false,
+  "is_vegetarian": true_or_false,
+  "is_gluten_free": true_or_false,
+  "is_high_protein": true_or_false,
+  "meal_score": calculated_score_1_to_10,
+  "meal_score_reason": "brief reason for the score"
 }"""
 
 
