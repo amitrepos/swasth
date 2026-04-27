@@ -152,5 +152,35 @@ void main() {
       // Should still be on registration (validation failed)
       expect(find.byType(RegistrationScreen), findsOneWidget);
     });
+
+    testWidgets('Registration password fields have visibility toggle', (
+      tester,
+    ) async {
+      env = await TestEnv.create(
+        tester,
+        startScreen: const RegistrationScreen(),
+      );
+
+      // Scroll to password field
+      await scrollUntilVisible(tester, regPassword);
+
+      // Find the visibility toggle icons (there should be 2 - one for each password field)
+      final visibilityIcons = find.byIcon(Icons.visibility_off);
+      expect(visibilityIcons, findsNWidgets(2));
+
+      // Tap the first visibility icon (password field)
+      await tester.tap(visibilityIcons.first);
+      await pumpN(tester);
+
+      // Icon should change to visibility (showing password)
+      expect(find.byIcon(Icons.visibility), findsOneWidget);
+
+      // Tap again to hide
+      await tester.tap(find.byIcon(Icons.visibility));
+      await pumpN(tester);
+
+      // Icon should change back to visibility_off
+      expect(find.byIcon(Icons.visibility_off), findsNWidgets(2));
+    });
   });
 }

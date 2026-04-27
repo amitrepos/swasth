@@ -54,6 +54,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   ];
 
   bool _passwordsMatch = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   bool _isLoading = false;
 
@@ -281,10 +283,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 TextFormField(
                   key: const Key('reg_password'),
                   controller: _passwordController,
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     labelText: l10n.passwordLabel,
                     prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -304,10 +316,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 TextFormField(
                   key: const Key('reg_confirm_password'),
                   controller: _confirmPasswordController,
-                  obscureText: true,
+                  obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
                     labelText: l10n.confirmPasswordLabel,
                     prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                      },
+                    ),
                     errorText:
                         !_passwordsMatch &&
                             _confirmPasswordController.text.isNotEmpty
