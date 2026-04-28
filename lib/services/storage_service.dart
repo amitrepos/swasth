@@ -289,12 +289,19 @@ class StorageService {
 
   Future<void> clearAll() async {
     // Wipe all secure storage, then restore the keys we explicitly want to
-    // persist across logout (language preference). Saved email/password
-    // live in SharedPreferences and are NOT touched here.
+    // persist across logout: language preference, sync queue (unsent
+    // offline readings — losing them would lose user data), and saved
+    // credentials when stored in secure storage (test mode only).
     final language = await _store.read(_languageKey);
+    final syncQueue = await _store.read(_syncQueueKey);
+    final savedEmail = await _store.read(_savedEmailKey);
+    final savedPassword = await _store.read(_savedPasswordKey);
     await _store.deleteAll();
-    if (language != null) {
-      await _store.write(_languageKey, language);
+    if (language != null) await _store.write(_languageKey, language);
+    if (syncQueue != null) await _store.write(_syncQueueKey, syncQueue);
+    if (savedEmail != null) await _store.write(_savedEmailKey, savedEmail);
+    if (savedPassword != null) {
+      await _store.write(_savedPasswordKey, savedPassword);
     }
   }
 
@@ -306,10 +313,18 @@ class StorageService {
     final token = await _store.read(_tokenKey);
     final user = await _store.read(_userKey);
     final language = await _store.read(_languageKey);
+    final syncQueue = await _store.read(_syncQueueKey);
+    final savedEmail = await _store.read(_savedEmailKey);
+    final savedPassword = await _store.read(_savedPasswordKey);
     await _store.deleteAll();
     if (token != null) await _store.write(_tokenKey, token);
     if (user != null) await _store.write(_userKey, user);
     if (language != null) await _store.write(_languageKey, language);
+    if (syncQueue != null) await _store.write(_syncQueueKey, syncQueue);
+    if (savedEmail != null) await _store.write(_savedEmailKey, savedEmail);
+    if (savedPassword != null) {
+      await _store.write(_savedPasswordKey, savedPassword);
+    }
   }
 
   Future<void> clearEverything() async {
