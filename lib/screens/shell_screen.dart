@@ -202,8 +202,8 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
           final profiles = await ProfileService().getProfiles(token);
           final ids = profiles.map((p) => p.id).toSet();
           if (!ids.contains(id)) {
-            // Stale — pick the first available profile or go to SelectProfile
-            await storage.clearAll();
+            // Stale — clear user-scoped cache (KEEP token) and pick first
+            await storage.clearUserScopedCacheKeepToken();
             if (ids.isNotEmpty) {
               final first = profiles.first;
               await storage.saveActiveProfileId(first.id);

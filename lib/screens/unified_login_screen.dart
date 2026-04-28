@@ -32,7 +32,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _rememberMe = false;
-  
+
   // State management for different steps
   String _loginStep = 'input'; // 'input', 'password', 'loading'
   String _loginMethod = ''; // 'email_password', 'phone_otp'
@@ -150,14 +150,16 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
                 ),
               ),
             );
-            
+
             // If it's an email, we should prefill it in the registration form
             // We'll need to handle this differently - for now, just navigate
             if (_isEmail(input) && mounted) {
               // Show a message that they need to complete registration
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Please complete your registration with email: $input'),
+                  content: Text(
+                    'Please complete your registration with email: $input',
+                  ),
                   backgroundColor: AppColors.statusNormal,
                 ),
               );
@@ -187,14 +189,16 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     try {
-      final response = await _apiService.login(
-        email,
-        _passwordController.text,
-      );
+      final response = await _apiService.login(email, _passwordController.text);
 
       if (mounted) {
         final token = response['access_token'];
         if (token != null) {
+          // First clear any cached profile/readings from a previous user
+          // on the same browser session, THEN save the new token. Prevents
+          // showing the previous user's profile and data after switching
+          // accounts.
+          await StorageService().clearUserScopedCacheKeepToken();
           await StorageService().saveToken(token);
 
           if (_rememberMe) {
@@ -297,9 +301,8 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PhoneOTPVerificationScreen(
-              phoneNumber: phoneNumber,
-            ),
+            builder: (context) =>
+                PhoneOTPVerificationScreen(phoneNumber: phoneNumber),
           ),
         );
       }
@@ -425,7 +428,8 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
                   children: [
                     Checkbox(
                       value: _rememberMe,
-                      onChanged: (v) => setState(() => _rememberMe = v ?? false),
+                      onChanged: (v) =>
+                          setState(() => _rememberMe = v ?? false),
                       activeColor: Theme.of(context).colorScheme.primary,
                     ),
                     Text(
@@ -461,8 +465,9 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
                 onPressed: _isLoading
                     ? null
                     : _loginStep == 'password'
-                        ? () => _loginWithEmailPassword(_inputController.text.trim())
-                        : _checkAccountAndProceed,
+                    ? () =>
+                          _loginWithEmailPassword(_inputController.text.trim())
+                    : _checkAccountAndProceed,
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,

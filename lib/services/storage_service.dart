@@ -288,16 +288,28 @@ class StorageService {
   // ── Clear auth data (logout) — keeps sync queue & cache intact ─────────
 
   Future<void> clearAll() async {
-    await _store.delete(_tokenKey);
-    await _store.delete(_userKey);
-    await _store.delete(_activeProfileIdKey);
-    await _store.delete(_activeProfileNameKey);
-    // NOTE: We intentionally do NOT clear saved credentials here.
-    // If user checked "Remember me", their credentials should persist
-    // across logout so they don't have to re-type them.
-    // Credentials are only cleared when:
-    // 1. User logs in WITHOUT "Remember me" checked
-    // 2. User manually clears app data
+    // Wipe all secure storage, then restore the keys we explicitly want to
+    // persist across logout (language preference). Saved email/password
+    // live in SharedPreferences and are NOT touched here.
+    final language = await _store.read(_languageKey);
+    await _store.deleteAll();
+    if (language != null) {
+      await _store.write(_languageKey, language);
+    }
+  }
+
+  /// Clear cached data tied to the previous logged-in user, but KEEP the
+  /// auth token + saved credentials. Use this on the FIRST screen after
+  /// login so the next screen doesn't reuse stale profile_id / cached
+  /// readings from a previous user on the same browser.
+  Future<void> clearUserScopedCacheKeepToken() async {
+    final token = await _store.read(_tokenKey);
+    final user = await _store.read(_userKey);
+    final language = await _store.read(_languageKey);
+    await _store.deleteAll();
+    if (token != null) await _store.write(_tokenKey, token);
+    if (user != null) await _store.write(_userKey, user);
+    if (language != null) await _store.write(_languageKey, language);
   }
 
   Future<void> clearEverything() async {
