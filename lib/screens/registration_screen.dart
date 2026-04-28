@@ -99,7 +99,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
   }
 
+  String? _emailErrorText;
+
   Future<void> _register() async {
+    // Clear previous email error before re-validating
+    setState(() => _emailErrorText = null);
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -123,6 +128,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ? 'phone_${_phoneController.text.trim()}@swasth.local'
               : _emailController.text.trim())
           : _emailController.text.trim();
+
+      // Pre-flight email uniqueness check — show error on this page, not consent.
+      if (!widget.isPhoneVerified && email.isNotEmpty) {
+        final result = await _apiService.checkAccountExists(email: email);
+        if (result['exists'] == true) {
+          setState(() => _emailErrorText = 'This email is already registered. Please log in or use a different email.');
+          return;
+        }
+      }
 
       final userData = {
         'email': email,
@@ -149,9 +163,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             : null,
       };
 
-      // Navigate to consent screen — registration API is called after consent
+      // Navigate to consent screen — registration API is called after consent.
+      // Use push (not pushReplacement) so the user can press back to fix their details.
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => ConsentScreen(
@@ -179,7 +194,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -219,9 +234,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 key: const Key('reg_email'),
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                onChanged: (_) {
+                  if (_emailErrorText != null) setState(() => _emailErrorText = null);
+                },
                 decoration: InputDecoration(
                   labelText: l10n.emailLabel + (widget.isPhoneVerified ? ' (Optional)' : ''),
                   prefixIcon: const Icon(Icons.email),
+                  errorText: _emailErrorText,
                 ),
                 validator: (value) {
                   // Email is optional for phone-verified users
