@@ -490,6 +490,21 @@ class TestOpsHealthSystemChecks:
             result = ops_health.check_scheduler_health()
         assert result is True
 
+    def test_check_db_slow_queries_returns_zero_when_extension_missing(self, db):
+        import ops_health
+        # pg_stat_statements not installed in test DB — should rollback and return 0
+        result = ops_health.check_db_slow_queries(db)
+        assert result == 0
+
+    def test_check_db_slow_queries_returns_count_when_available(self, db):
+        import ops_health
+        from unittest.mock import MagicMock
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 3
+        with patch.object(db, "execute", return_value=mock_result):
+            result = ops_health.check_db_slow_queries(db)
+        assert result == 3
+
 
 # ---------------------------------------------------------------------------
 # 12. fire_alert — full path (email sent + OpsAlertLog written)
