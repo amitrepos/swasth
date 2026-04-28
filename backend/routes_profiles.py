@@ -150,11 +150,28 @@ def update_profile(
         raise HTTPException(status_code=404, detail="Profile not found")
 
     update_data = data.dict(exclude_unset=True)
+    old_weight = profile.weight
+
     for field, value in update_data.items():
         if field == "phone_number":
             setattr(profile, field, normalize_phone(value) or None if value else None)
         else:
             setattr(profile, field, value)
+
+    # Auto-log a weight HealthReading when weight is added/changed via Edit Profile
+    new_weight = update_data.get("weight")
+    if new_weight is not None and new_weight != old_weight:
+        db.add(models.HealthReading(
+            profile_id=profile.id,
+            logged_by=user.id,
+            reading_type="weight",
+            weight_value=new_weight,
+            weight_unit="kg",
+            value_numeric=new_weight,
+            unit_display="kg",
+            reading_timestamp=datetime.now(),
+            weight_value_enc=encrypt_float(new_weight),
+        ))
 
     db.commit()
     db.refresh(profile)

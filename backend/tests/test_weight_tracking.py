@@ -162,6 +162,57 @@ def test_bmi_insight_overweight_fallback(client, auth_headers, db):
     assert "Overweight" in insight
     assert "27.7" in insight or "27.6" in insight # Floating point precision check
 
+def test_edit_profile_weight_creates_health_reading(client, db):
+    """PUT /profiles/{id} with weight must create a weight HealthReading (regression test)."""
+    email = "editweight@swasth.app"
+    payload = {**_REG_BASE, "email": email}  # register WITHOUT weight
+    resp = client.post("/api/auth/register", json=payload)
+    assert resp.status_code == 201
+
+    headers = _auth_headers(email)
+    profile_id = _first_profile_id(client, email)
+
+    # Confirm no weight reading exists yet
+    resp = client.get(f"/api/readings?profile_id={profile_id}&reading_type=weight", headers=headers)
+    assert resp.status_code == 200
+    assert not any(r["reading_type"] == "weight" for r in resp.json())
+
+    # Add weight via Edit Profile
+    resp = client.put(f"/api/profiles/{profile_id}", json={"weight": 65.0}, headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["weight"] == 65.0
+
+    # Weight HealthReading must now exist
+    resp = client.get(f"/api/readings?profile_id={profile_id}&reading_type=weight", headers=headers)
+    assert resp.status_code == 200
+    readings = resp.json()
+    assert any(
+        r["reading_type"] == "weight" and r["weight_value"] == 65.0
+        for r in readings
+    ), "PUT /profiles must create a weight HealthReading when weight is first set"
+
+
+def test_edit_profile_weight_change_creates_new_reading(client, db):
+    """PUT /profiles/{id} updating weight to a new value must add a second HealthReading."""
+    email = "editweight2@swasth.app"
+    payload = {**_REG_BASE, "email": email, "weight": 70.0}
+    resp = client.post("/api/auth/register", json=payload)
+    assert resp.status_code == 201
+
+    headers = _auth_headers(email)
+    profile_id = _first_profile_id(client, email)
+
+    # Change weight via Edit Profile
+    resp = client.put(f"/api/profiles/{profile_id}", json={"weight": 72.0}, headers=headers)
+    assert resp.status_code == 200
+
+    resp = client.get(f"/api/readings?profile_id={profile_id}&reading_type=weight", headers=headers)
+    readings = [r for r in resp.json() if r["reading_type"] == "weight"]
+    assert len(readings) == 2, "Two readings: one from registration, one from edit"
+    values = {r["weight_value"] for r in readings}
+    assert 70.0 in values and 72.0 in values
+
+
 def test_shareable_summary_includes_weight(client, auth_headers, db):
     """Verify the text summary includes Weight averages."""
     pid = _pid(db)
