@@ -799,7 +799,7 @@ class DoctorRegister(BaseModel):
     nmc_number: str = Field(..., min_length=4, max_length=20)
     specialty: Optional[str] = None
     clinic_name: Optional[str] = None
-    timezone: str = "Asia/Kolkata"
+    timezone: str = "UTC"
 
     @validator('email')
     def normalize_email(cls, v):
