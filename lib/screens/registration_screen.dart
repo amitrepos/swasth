@@ -133,7 +133,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       if (!widget.isPhoneVerified && email.isNotEmpty) {
         final result = await _apiService.checkAccountExists(email: email);
         if (result['exists'] == true) {
-          setState(() => _emailErrorText = 'This email is already registered. Please log in or use a different email.');
+          setState(() => _emailErrorText = l10n.emailAlreadyRegistered);
           return;
         }
       }
