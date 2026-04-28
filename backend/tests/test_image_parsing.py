@@ -345,6 +345,34 @@ class TestParseImageBpValidation:
 
     @patch("ai_service.generate_vision_insight")
     @patch("routes_health.settings")
+    def test_bp_pulse_rate_key_fallback(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        """Gemini returning 'pulse_rate' instead of 'pulse' must still be captured."""
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"systolic": 130, "diastolic": 85, "pulse_rate": 68}'
+        resp = _post(client, auth_headers, "blood_pressure")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["systolic"] == 130
+        assert body["diastolic"] == 85
+        assert body["pulse"] == 68
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
+    def test_bp_heart_rate_key_fallback(self, mock_settings, mock_ai, client, test_user, auth_headers):
+        """Gemini returning 'heart_rate' must still be captured as pulse."""
+        mock_settings.GEMINI_API_KEY = "fake"
+        mock_settings.DEEPSEEK_API_KEY = None
+        mock_settings.REQUIRE_HTTPS = False
+        mock_ai.return_value = '{"systolic": 118, "diastolic": 76, "heart_rate": 75}'
+        resp = _post(client, auth_headers, "blood_pressure")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["pulse"] == 75
+
+    @patch("ai_service.generate_vision_insight")
+    @patch("routes_health.settings")
     def test_bp_null_systolic(self, mock_settings, mock_ai, client, test_user, auth_headers):
         mock_settings.GEMINI_API_KEY = "fake"
         mock_settings.DEEPSEEK_API_KEY = None
