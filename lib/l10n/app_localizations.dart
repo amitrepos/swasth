@@ -296,6 +296,12 @@ abstract class AppLocalizations {
   /// **'Please enter a valid email'**
   String get emailValidationInvalid;
 
+  /// No description provided for @emailAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'This email is already registered. Please log in or use a different email.'**
+  String get emailAlreadyRegistered;
+
   /// No description provided for @passwordValidationEmpty.
   ///
   /// In en, this message translates to:

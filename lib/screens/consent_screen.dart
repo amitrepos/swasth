@@ -133,7 +133,6 @@ class _ConsentScreenState extends State<ConsentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.consentTitle),
-        automaticallyImplyLeading: false,
       ),
       body: Column(
         children: [

@@ -33,6 +33,7 @@
   "loginSuccessful": "लॉग इन सफल!",
   "emailValidationEmpty": "कृपया अपना ईमेल डालें",
   "emailValidationInvalid": "कृपया सही ईमेल डालें",
+  "emailAlreadyRegistered": "यह ईमेल पहले से पंजीकृत है। कृपया लॉग इन करें या कोई अलग ईमेल उपयोग करें।",
   "passwordValidationEmpty": "कृपया अपना पासवर्ड डालें",
   "registerTitle": "रजिस्टर",
   "accountDetailsSection": "खाता जानकारी",

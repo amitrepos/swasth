@@ -111,6 +111,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get emailValidationInvalid => 'कृपया सही ईमेल डालें';
 
   @override
+  String get emailAlreadyRegistered =>
+      'यह ईमेल पहले से पंजीकृत है। कृपया लॉग इन करें या कोई अलग ईमेल उपयोग करें।';
+
+  @override
   String get passwordValidationEmpty => 'कृपया अपना पासवर्ड डालें';
 
   @override

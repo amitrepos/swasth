@@ -111,6 +111,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emailValidationInvalid => 'Please enter a valid email';
 
   @override
+  String get emailAlreadyRegistered =>
+      'This email is already registered. Please log in or use a different email.';
+
+  @override
   String get passwordValidationEmpty => 'Please enter your password';
 
   @override

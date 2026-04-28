@@ -45,6 +45,7 @@
   "loginSuccessful": "Login successful!",
   "emailValidationEmpty": "Please enter your email",
   "emailValidationInvalid": "Please enter a valid email",
+  "emailAlreadyRegistered": "This email is already registered. Please log in or use a different email.",
   "passwordValidationEmpty": "Please enter your password",
   "registerTitle": "Register",
   "accountDetailsSection": "Account Details",
