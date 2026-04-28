@@ -28,7 +28,7 @@ from pathlib import Path
 def parse_args():
     parser = argparse.ArgumentParser(description="Seed test users into Swasth DB")
     parser.add_argument(
-        "--env", choices=["prod", "dev", "local"], required=True,
+        "--env", choices=["prod", "staging", "local"], required=True,
         help="Target environment"
     )
     parser.add_argument(
@@ -43,18 +43,21 @@ def parse_args():
 
 ENV_CONFIG = {
     "prod": {
-        "backend_path": "/var/www/swasth_prod/backend",
-        "venv_python": "/var/www/swasth_prod/venv/bin/python3",
-        "label": "PROD (swasth_prod DB, port 8009)",
-    },
-    "dev": {
         "backend_path": "/var/www/swasth/backend",
-        "venv_python": "/var/www/swasth/backend/venv/bin/python3",
-        "label": "DEV (swasth_db DB, port 8007)",
+        "venv_python": "/var/www/swasth/venv/bin/python3",
+        "db_url_override": None,
+        "label": "PROD (swasth_prod DB, port 8007)",
+    },
+    "staging": {
+        "backend_path": "/var/www/swasth/backend",
+        "venv_python": "/var/www/swasth/venv/bin/python3",
+        "db_url_override": "postgresql://swasth_admin:swasth_temp_change_me@127.0.0.1:5432/swasth_staging",
+        "label": "STAGING (swasth_staging DB, port 8008)",
     },
     "local": {
         "backend_path": str(Path(__file__).parent.parent),
         "venv_python": sys.executable,
+        "db_url_override": None,
         "label": "LOCAL (dev machine)",
     },
 }
@@ -137,14 +140,17 @@ def glucose_status(val):
 
 # ── Seeder ────────────────────────────────────────────────────────────────────
 
-def seed(args, backend_path):
+def seed(args, backend_path, db_url_override=None):
     sys.path.insert(0, backend_path)
     os.chdir(backend_path)
+
+    if db_url_override:
+        os.environ["DATABASE_URL"] = db_url_override
 
     from database import SessionLocal
     from models import User, Profile, ProfileAccess, HealthReading
     from auth import get_password_hash
-    from encryption_service import encrypt_float, hash_email
+    from encryption_service import encrypt_float, hash_email, encrypt_pii, hash_phone, normalize_phone
 
     db = SessionLocal()
     NOW = datetime.now(timezone.utc)
@@ -163,12 +169,16 @@ def seed(args, backend_path):
             if args.dry_run:
                 print(f"  [DRY-RUN] Would create user: {email}")
                 continue
+            norm_phone = normalize_phone(u_def["phone_number"])
             user = User(
                 email=email,
                 full_name=u_def["full_name"],
-                phone_number=u_def["phone_number"],
+                phone_number_enc=encrypt_pii(norm_phone),
+                phone_hash=hash_phone(norm_phone),
                 password_hash=get_password_hash(u_def["password"]),
                 is_active=True,
+                email_verified=True,
+                email_verified_at=NOW,
             )
             db.add(user)
             db.flush()
@@ -291,4 +301,4 @@ if __name__ == "__main__":
     print(f"\n{'[DRY-RUN] ' if args.dry_run else ''}Seeding → {cfg['label']}")
     print(f"Days: {args.days} | Users: {len(TEST_USERS)}\n")
 
-    seed(args, cfg["backend_path"])
+    seed(args, cfg["backend_path"], db_url_override=cfg.get("db_url_override"))

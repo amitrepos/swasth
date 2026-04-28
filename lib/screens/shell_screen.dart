@@ -12,6 +12,7 @@ import '../services/error_mapper.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/sync_service.dart';
+import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/offline_banner.dart';
 import 'home_screen.dart';
@@ -44,8 +45,7 @@ class ShellScreen extends StatefulWidget {
   State<ShellScreen> createState() => _ShellScreenState();
 }
 
-class _ShellScreenState extends State<ShellScreen>
-    with WidgetsBindingObserver {
+class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
   static _ShellScreenState? _instance;
   int _currentIndex = 0;
   int? _profileId;
@@ -58,9 +58,10 @@ class _ShellScreenState extends State<ShellScreen>
   final _chatKey = GlobalKey<ChatScreenState>();
 
   // Session-expiry guards (C1 / M1 / M2)
-  bool _handlingSessionExpiry = false; // C1: prevents duplicate dialog + double-nav
-  bool _validating = false;            // M2: prevents concurrent _validateSession calls
-  DateTime? _lastValidationTime;       // M1: debounce — skip if validated < 5 min ago
+  bool _handlingSessionExpiry =
+      false; // C1: prevents duplicate dialog + double-nav
+  bool _validating = false; // M2: prevents concurrent _validateSession calls
+  DateTime? _lastValidationTime; // M1: debounce — skip if validated < 5 min ago
 
   @override
   void initState() {
@@ -93,7 +94,9 @@ class _ShellScreenState extends State<ShellScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) { _validateSession(); }
+    if (state == AppLifecycleState.resumed) {
+      _validateSession();
+    }
   }
 
   Future<void> _validateSession() async {
@@ -154,7 +157,7 @@ class _ShellScreenState extends State<ShellScreen>
     if (!mounted) return;
     final wasOffline = _isOffline;
     setState(() => _isOffline = !reachable);
-    
+
     // Show snackbar when coming back online
     if (wasOffline && reachable && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -171,7 +174,7 @@ class _ShellScreenState extends State<ShellScreen>
         ),
       );
     }
-    
+
     // Auto-sync when coming back online
     if (wasOffline && reachable) {
       final result = await SyncService().syncPendingReadings();
@@ -184,11 +187,38 @@ class _ShellScreenState extends State<ShellScreen>
   Future<void> _loadProfile() async {
     final storage = StorageService();
     var id = await storage.getActiveProfileId();
-    // Retry once if null — storage may not have flushed yet
     if (id == null) {
       await Future.delayed(const Duration(milliseconds: 300));
       id = await storage.getActiveProfileId();
     }
+    if (!mounted) return;
+
+    // Validate the cached profile_id belongs to the current user.
+    // Stale ids from a previous session (different user) cause 403 errors.
+    if (id != null) {
+      try {
+        final token = await storage.getToken();
+        if (token != null) {
+          final profiles = await ProfileService().getProfiles(token);
+          final ids = profiles.map((p) => p.id).toSet();
+          if (!ids.contains(id)) {
+            // Stale — pick the first available profile or go to SelectProfile
+            await storage.clearAll();
+            if (ids.isNotEmpty) {
+              final first = profiles.first;
+              await storage.saveActiveProfileId(first.id);
+              await storage.saveActiveProfileName(first.name);
+              id = first.id;
+            } else {
+              id = null;
+            }
+          }
+        }
+      } catch (_) {
+        // Network error — proceed with cached id; 403s will surface inline
+      }
+    }
+
     if (!mounted) return;
     if (id == null) {
       Navigator.pushReplacement(
@@ -226,14 +256,8 @@ class _ShellScreenState extends State<ShellScreen>
                   const HomeScreen(),
                   HistoryScreen(key: _historyKey, profileId: _profileId!),
                   StreaksScreen(key: ValueKey('streaks_$_profileId')),
-                  TrendChartScreen(
-                    key: _insightsKey,
-                    profileId: _profileId!,
-                  ),
-                  ChatScreen(
-                    key: _chatKey,
-                    profileId: _profileId!,
-                  ),
+                  TrendChartScreen(key: _insightsKey, profileId: _profileId!),
+                  ChatScreen(key: _chatKey, profileId: _profileId!),
                 ],
               ),
             ),

@@ -38,6 +38,7 @@ def _ops_p0_check():
     except Exception:
         logger.error("[SCHEDULER] ops_p0_check failed", exc_info=True)
         ops_metrics.record_scheduler_run("ops_p0_check", success=False)
+        db.rollback()
     finally:
         db.close()
 
@@ -62,6 +63,7 @@ def _ops_p1_check():
     except Exception:
         logger.error("[SCHEDULER] ops_p1_check failed", exc_info=True)
         ops_metrics.record_scheduler_run("ops_p1_check", success=False)
+        db.rollback()
     finally:
         db.close()
 
@@ -83,6 +85,7 @@ def _ops_p2_digest():
     except Exception:
         logger.error("[SCHEDULER] ops_p2_digest failed", exc_info=True)
         ops_metrics.record_scheduler_run("ops_p2_digest", success=False)
+        db.rollback()
     finally:
         db.close()
 
