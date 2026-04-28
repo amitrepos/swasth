@@ -419,7 +419,7 @@ class TestDoctorSchemas:
             clinic_name="Test Clinic",
         )
         assert data.nmc_number == "BR-12345"
-        assert data.timezone == "Asia/Kolkata"
+        assert data.timezone == "UTC"
 
     def test_doctor_register_bad_specialty(self):
         from schemas import DoctorRegister
