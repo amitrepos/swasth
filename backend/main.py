@@ -1,4 +1,5 @@
 import logging
+import time
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
@@ -10,6 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from database import engine, Base
 from config import settings
+import ops_metrics  # must import before Base.metadata.create_all so middleware attaches first
 import models
 import routes_whatsapp
 import routes
@@ -121,6 +123,7 @@ async def _unhandled_exception_handler(request: Request, exc: Exception):
         request.method,
         exc_info=True,
     )
+    ops_metrics.record_request(request.url.path, 0, 500)
     return JSONResponse(
         status_code=500,
         content={"detail": "An unexpected error occurred. Please try again."},
@@ -156,6 +159,23 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Ops telemetry middleware — measures per-request latency + tracks concurrent count
+# Must run AFTER security headers so latency includes the full request cycle.
+# ---------------------------------------------------------------------------
+@app.middleware("http")
+async def ops_telemetry(request: Request, call_next):
+    ops_metrics.increment_concurrent()
+    t_start = time.perf_counter()
+    try:
+        response: Response = await call_next(request)
+        latency_ms = int((time.perf_counter() - t_start) * 1000)
+        ops_metrics.record_request(request.url.path, latency_ms, response.status_code)
+        return response
+    finally:
+        ops_metrics.decrement_concurrent()
 
 
 # ---------------------------------------------------------------------------
