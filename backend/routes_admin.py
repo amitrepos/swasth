@@ -979,8 +979,8 @@ def get_audit_log(
 # ---------------------------------------------------------------------------
 
 @router.get("/admin/ops", response_class=HTMLResponse)
-def get_ops_dashboard(current_user: models.User = Depends(_require_admin)):
-    """Serve the ops monitoring dashboard SPA."""
+def get_ops_dashboard():
+    """Serve the ops monitoring dashboard SPA. Auth enforced by JS (same pattern as /admin)."""
     try:
         with open(_OPS_DASHBOARD_HTML, "r") as f:
             return HTMLResponse(content=f.read())
