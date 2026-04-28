@@ -1280,7 +1280,13 @@ async def parse_image_with_gemini(
         if device_type == "blood_pressure":
             sys = parsed.get("systolic")
             dia = parsed.get("diastolic")
-            pulse = parsed.get("pulse")
+            # Gemini sometimes returns pulse under different key names
+            pulse = (
+                parsed.get("pulse")
+                or parsed.get("pulse_rate")
+                or parsed.get("heart_rate")
+                or parsed.get("hr")
+            )
             if sys is not None and not (70 <= sys <= 250):
                 sys = None
             if dia is not None and not (40 <= dia <= 150):

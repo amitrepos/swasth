@@ -83,16 +83,22 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     final r = widget.ocrResult;
     if (r == null) return;
 
-    if (isGlucose && r.glucoseValue != null) {
-      _glucoseController.text = r.glucoseValue!.toStringAsFixed(0);
-    } else if (!isGlucose) {
+    if (isGlucose) {
+      if (r.glucoseValue != null)
+        _glucoseController.text = r.glucoseValue!.toStringAsFixed(0);
+    } else if (isWeight) {
+      // isWeight must be checked BEFORE the generic !isGlucose branch,
+      // otherwise the weight controller is never populated (dead code bug).
+      if (r.weightValue != null)
+        _weightController.text = r.weightValue!.toStringAsFixed(1);
+    } else {
+      // blood_pressure (and spo2 / steps, which don't come from photo scan)
       if (r.systolic != null)
         _systolicController.text = r.systolic!.toStringAsFixed(0);
       if (r.diastolic != null)
         _diastolicController.text = r.diastolic!.toStringAsFixed(0);
-      if (r.pulse != null) _pulseController.text = r.pulse!.toStringAsFixed(0);
-    } else if (isWeight && r.weightValue != null) {
-      _weightController.text = r.weightValue!.toStringAsFixed(1);
+      if (r.pulse != null)
+        _pulseController.text = r.pulse!.toStringAsFixed(0);
     }
   }
 

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -377,7 +377,8 @@ class HealthReadingService {
   /// the reading values. Returns an OcrResult on success, null on failure.
   /// Caller falls back to local OCR when null is returned.
   Future<OcrResult?> parseImageWithGemini(
-    File imageFile,
+    Uint8List imageBytes,
+    String fileName,
     String deviceType,
     String token,
   ) async {
@@ -386,7 +387,7 @@ class HealthReadingService {
     );
     final request = http.MultipartRequest('POST', uri)
       ..headers.addAll(ApiClient.headers(token: token))
-      ..files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+      ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: fileName));
 
     http.Response response;
     try {

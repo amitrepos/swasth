@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
@@ -80,7 +79,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       if (_isFlashOn) await _controller!.setFlashMode(FlashMode.auto);
 
       final XFile xfile = await _controller!.takePicture();
-      final file = File(xfile.path);
+      final imageBytes = await xfile.readAsBytes();
 
       if (!mounted) return;
 
@@ -110,7 +109,8 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       final token = await StorageService().getToken();
       if (token != null) {
         result = await HealthReadingService().parseImageWithGemini(
-          file,
+          imageBytes,
+          xfile.name,
           widget.deviceType,
           token,
         );
