@@ -204,10 +204,62 @@
 
 </div>
 
+<style>
+  .login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .login-box { background: #fff; padding: 36px; border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2); width: 340px; }
+  .login-box h2 { margin-bottom: 20px; font-size: 18px; color: #111827; }
+  .login-box input { width: 100%; padding: 10px 14px; border: 1px solid #d1d5db;
+    border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+  .login-box button { width: 100%; padding: 11px; background: #1f2937; color: #fff;
+    border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .login-box .err { color: #dc2626; font-size: 13px; margin-bottom: 10px; display: none; }
+</style>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>⚡ Swasth Ops Monitor</h2>
+    <div class="err" id="loginErr">Invalid credentials or not an admin</div>
+    <input type="email" id="loginEmail" placeholder="Admin email" />
+    <input type="password" id="loginPassword" placeholder="Password" />
+    <button onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
 <script>
+let _token = localStorage.getItem('swasth_ops_token') || '';
 let _lastData = null;
 let _secondsAgo = 0;
 let _ticker;
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const pass  = document.getElementById('loginPassword').value;
+  try {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email, password: pass}),
+    });
+    const d = await r.json();
+    if (!d.access_token) throw new Error('no token');
+    // verify admin access
+    const check = await fetch('/api/admin/ops-metrics', {headers: {'Authorization': 'Bearer ' + d.access_token}});
+    if (check.status === 403) throw new Error('not admin');
+    _token = d.access_token;
+    localStorage.setItem('swasth_ops_token', _token);
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadOpsData();
+  } catch(e) {
+    document.getElementById('loginErr').style.display = 'block';
+    document.getElementById('loginErr').textContent = e.message === 'not admin' ? 'Not an admin account.' : 'Invalid credentials.';
+  }
+}
+
+if (_token) document.getElementById('loginOverlay').style.display = 'none';
 
 // ---------------------------------------------------------------------------
 // Navigation
@@ -223,12 +275,18 @@ function showPage(name) {
 // Data fetch
 // ---------------------------------------------------------------------------
 async function fetchJson(url) {
-  const res = await fetch(url, { credentials: 'include' });
+  const res = await fetch(url, { headers: _token ? {'Authorization': 'Bearer ' + _token} : {} });
+  if (res.status === 401 || res.status === 403) {
+    _token = ''; localStorage.removeItem('swasth_ops_token');
+    document.getElementById('loginOverlay').style.display = 'flex';
+    throw new Error('HTTP ' + res.status);
+  }
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
 async function loadOpsData() {
+  if (!_token) return;
   try {
     const data = await fetchJson('/api/admin/ops-metrics');
     _lastData = data;
