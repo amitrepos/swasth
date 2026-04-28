@@ -213,6 +213,25 @@ def test_edit_profile_weight_change_creates_new_reading(client, db):
     assert 70.0 in values and 72.0 in values
 
 
+def test_edit_profile_same_weight_does_not_create_duplicate_reading(client, db):
+    """PUT /profiles/{id} with the same weight must NOT create a second HealthReading."""
+    email = "sameweight@swasth.app"
+    payload = {**_REG_BASE, "email": email, "weight": 68.0}
+    resp = client.post("/api/auth/register", json=payload)
+    assert resp.status_code == 201
+
+    headers = _auth_headers(email)
+    profile_id = _first_profile_id(client, email)
+
+    # PUT same weight twice
+    client.put(f"/api/profiles/{profile_id}", json={"weight": 68.0}, headers=headers)
+    client.put(f"/api/profiles/{profile_id}", json={"weight": 68.0}, headers=headers)
+
+    resp = client.get(f"/api/readings?profile_id={profile_id}&reading_type=weight", headers=headers)
+    readings = [r for r in resp.json() if r["reading_type"] == "weight"]
+    assert len(readings) == 1, "Same weight submitted twice must not create duplicate readings"
+
+
 def test_shareable_summary_includes_weight(client, auth_headers, db):
     """Verify the text summary includes Weight averages."""
     pid = _pid(db)

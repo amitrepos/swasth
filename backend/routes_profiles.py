@@ -112,7 +112,7 @@ def create_profile(
             weight_unit="kg",
             value_numeric=profile.weight,
             unit_display="kg",
-            reading_timestamp=datetime.now(),
+            reading_timestamp=datetime.now(timezone.utc),
             weight_value_enc=encrypt_float(profile.weight)
         )
         db.add(weight_reading)
@@ -169,7 +169,7 @@ def update_profile(
             weight_unit="kg",
             value_numeric=new_weight,
             unit_display="kg",
-            reading_timestamp=datetime.now(),
+            reading_timestamp=datetime.now(timezone.utc),
             weight_value_enc=encrypt_float(new_weight),
         ))
 
