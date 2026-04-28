@@ -138,6 +138,7 @@ def check_db_slow_queries(db: Session) -> int:
         """))
         return result.scalar() or 0
     except Exception:
+        db.rollback()  # pg_stat_statements not installed — reset aborted txn
         return 0
 
 
