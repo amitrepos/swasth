@@ -21,6 +21,10 @@
   "errSessionExpired": "आपका खाता फिर से खोलना होगा। कृपया लॉग इन करें।",
   "errServer": "हमारी तरफ से अभी कुछ दिक्कत है। कृपया थोड़ी देर बाद फिर कोशिश करें।",
   "errGeneric": "कुछ गड़बड़ हुई। कृपया फिर कोशिश करें।",
+  "aiInsightEmptyState": "बेहतर स्वास्थ्य जानकारी के लिए रोज़ाना रीडिंग लॉग करें।",
+  "@aiInsightEmptyState": {
+    "description": "AI Insight card में दिखाया जाने वाला placeholder text जब अभी कोई insight उपलब्ध नहीं है। मरीज़ों को रीडिंग लॉग करने के लिए प्रोत्साहित करता है।"
+  },
   "loginTitle": "लॉग इन",
   "emailLabel": "ईमेल",
   "passwordLabel": "पासवर्ड",

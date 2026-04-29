@@ -33,6 +33,10 @@
   "@errGeneric": {
     "description": "Fallback for any unexpected exception that doesn't fit a known category."
   },
+  "aiInsightEmptyState": "Log daily readings for the best health insights.",
+  "@aiInsightEmptyState": {
+    "description": "Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly."
+  },
   "loginTitle": "Login",
   "emailLabel": "Email",
   "passwordLabel": "Password",

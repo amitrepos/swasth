@@ -23,7 +23,7 @@ def _clean_ai_response(response_text: str) -> str:
     Otherwise, return the text as-is.
     """
     # DEBUG: Log raw response
-    logger.info(f"Raw AI response (first 300 chars): {response_text[:300]}")
+    logger.debug(f"Raw AI response (first 300 chars): {response_text[:300]}")
     
     # Strip markdown code blocks if present
     cleaned_text = response_text.strip()

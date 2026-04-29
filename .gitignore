@@ -64,6 +64,9 @@ backend/*.db
 backend/*.sqlite3
 backend/swasth.db
 
+# pytest artifacts
+backend/.coverage
+
 # Backup directories
 ios_backup/
 

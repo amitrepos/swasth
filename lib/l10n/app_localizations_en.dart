@@ -75,6 +75,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errGeneric => 'Something went wrong. Please try again.';
 
   @override
+  String get aiInsightEmptyState =>
+      'Log daily readings for the best health insights.';
+
+  @override
   String get loginTitle => 'Login';
 
   @override

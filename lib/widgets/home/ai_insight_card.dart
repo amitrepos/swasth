@@ -105,9 +105,10 @@ class _AiInsightCardState extends State<AiInsightCard> {
                       );
                     }
                     final text = snap.data ?? '';
+                    final l10n = AppLocalizations.of(context)!;
                     final displayText = text.isNotEmpty
                         ? text
-                        : 'Log daily readings for the best health insights.';
+                        : l10n.aiInsightEmptyState;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

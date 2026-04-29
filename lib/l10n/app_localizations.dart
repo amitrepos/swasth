@@ -224,6 +224,12 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get errGeneric;
 
+  /// Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly.
+  ///
+  /// In en, this message translates to:
+  /// **'Log daily readings for the best health insights.'**
+  String get aiInsightEmptyState;
+
   /// No description provided for @loginTitle.
   ///
   /// In en, this message translates to:

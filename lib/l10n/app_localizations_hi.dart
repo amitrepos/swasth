@@ -75,6 +75,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get errGeneric => 'कुछ गड़बड़ हुई। कृपया फिर कोशिश करें।';
 
   @override
+  String get aiInsightEmptyState =>
+      'बेहतर स्वास्थ्य जानकारी के लिए रोज़ाना रीडिंग लॉग करें।';
+
+  @override
   String get loginTitle => 'लॉग इन';
 
   @override
