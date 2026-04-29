@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # DeepSeek AI (fallback) — sign up at platform.deepseek.com
     DEEPSEEK_API_KEY: Optional[str] = None
 
-    # Groq AI (kept for future use, not used for vision — Gemini is more accurate)
+    # Groq AI (vision fallback when Gemini rate limits hit)
     GROQ_API_KEY: Optional[str] = None
     
     # CORS settings

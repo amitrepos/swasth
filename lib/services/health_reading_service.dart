@@ -340,7 +340,16 @@ class HealthReadingService {
           headers: ApiClient.headers(token: token),
         ),
       );
-      return (data['insight'] as String?) ?? '';
+      final insight = (data['insight'] as String?) ?? '';
+      
+      // DEBUG: Print exactly what we received
+      print('\n' + '='*80);
+      print('🟡 FRONTEND AI INSIGHT RECEIVED:');
+      print('='*80);
+      print(insight);
+      print('='*80 + '\n');
+      
+      return insight;
     } on UnauthorizedException {
       rethrow;
     } on ApiException {

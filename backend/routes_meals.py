@@ -406,13 +406,22 @@ async def analyze_nutrition(
                 detail="AI could not process the image. Please try again.",
             )
 
+        # Strip markdown code blocks if present (AI models often wrap JSON in ```)
+        cleaned_text = result_text.strip()
+        if cleaned_text.startswith('```'):
+            first_newline = cleaned_text.find('\n')
+            if first_newline != -1:
+                cleaned_text = cleaned_text[first_newline:].strip()
+            if cleaned_text.endswith('```'):
+                cleaned_text = cleaned_text[:-3].strip()
+
         # Try parsing directly first (handles clean JSON responses)
         parsed = None
         try:
-            parsed = json.loads(result_text.strip())
+            parsed = json.loads(cleaned_text)
         except json.JSONDecodeError:
             # Fall back to regex extraction for responses with trailing text
-            json_match = re.search(r"\{[\s\S]*\}", result_text, re.DOTALL)
+            json_match = re.search(r"\{[\s\S]*\}", cleaned_text, re.DOTALL)
             if not json_match:
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,

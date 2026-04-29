@@ -8,6 +8,86 @@ import ai_service
 import models
 
 
+class TestResponseCleanup:
+    """Verify AI responses are cleaned up for human readability."""
+
+    def test_json_nutrition_response_formatted(self, db, test_user):
+        """Nutrition JSON should be formatted as human-readable text."""
+        nutrition_json = '{"total_calories": 845, "total_protein_g": 44.4, "meal_score": 6, "meal_score_reason": "Good meal", "carb_level": "high", "is_high_protein": true}'
+        
+        with patch.object(ai_service, '_try_deepseek', return_value={
+            'text': nutrition_json, 'error': None, 'tokens': 40, 'ms': 200,
+        }), patch('ai_service.settings') as mock_settings:
+            mock_settings.DEEPSEEK_API_KEY = 'fake-key'
+            mock_settings.GEMINI_API_KEY = None
+            result = ai_service.generate_health_insight('prompt', 1, db, 'nutrition')
+            
+            # Should be formatted, not raw JSON
+            assert 'Meal Score: 6/10' in result
+            assert 'Good meal' in result
+            assert '{' not in result  # Should not contain raw JSON
+
+    def test_json_with_insight_field_extracted(self, db, test_user):
+        """JSON with 'insight' field should extract the text."""
+        json_response = '{"insight": "Your health is improving.", "status": "success"}'
+        
+        with patch.object(ai_service, '_try_deepseek', return_value={
+            'text': json_response, 'error': None, 'tokens': 40, 'ms': 200,
+        }), patch('ai_service.settings') as mock_settings:
+            mock_settings.DEEPSEEK_API_KEY = 'fake-key'
+            mock_settings.GEMINI_API_KEY = None
+            result = ai_service.generate_health_insight('prompt', 1, db, 'test')
+            
+            assert result == 'Your health is improving.'
+
+    def test_regular_text_unchanged(self, db, test_user):
+        """Regular text responses should remain unchanged."""
+        regular_text = 'Your glucose levels are stable. Keep up the good work!'
+        
+        with patch.object(ai_service, '_try_deepseek', return_value={
+            'text': regular_text, 'error': None, 'tokens': 40, 'ms': 200,
+        }), patch('ai_service.settings') as mock_settings:
+            mock_settings.DEEPSEEK_API_KEY = 'fake-key'
+            mock_settings.GEMINI_API_KEY = None
+            result = ai_service.generate_health_insight('prompt', 1, db, 'test')
+            
+            assert result == regular_text
+
+    def test_generic_json_formatted(self, db, test_user):
+        """Generic JSON should be formatted as key-value pairs."""
+        generic_json = '{"glucose_avg": 95, "bp_trend": "improving", "status": "good"}'
+        
+        with patch.object(ai_service, '_try_deepseek', return_value={
+            'text': generic_json, 'error': None, 'tokens': 40, 'ms': 200,
+        }), patch('ai_service.settings') as mock_settings:
+            mock_settings.DEEPSEEK_API_KEY = 'fake-key'
+            mock_settings.GEMINI_API_KEY = None
+            result = ai_service.generate_health_insight('prompt', 1, db, 'test')
+            
+            # Should be formatted nicely
+            assert 'Glucose Avg: 95' in result
+            assert 'Bp Trend: improving' in result
+
+    def test_markdown_wrapped_json_formatted(self, db, test_user):
+        """JSON wrapped in markdown code blocks should be stripped and formatted."""
+        markdown_json = '''```json
+{"total_calories": 255, "meal_score": 7, "meal_score_reason": "Good meal", "carb_level": "medium"}
+```'''
+        
+        with patch.object(ai_service, '_try_deepseek', return_value={
+            'text': markdown_json, 'error': None, 'tokens': 40, 'ms': 200,
+        }), patch('ai_service.settings') as mock_settings:
+            mock_settings.DEEPSEEK_API_KEY = 'fake-key'
+            mock_settings.GEMINI_API_KEY = None
+            result = ai_service.generate_health_insight('prompt', 1, db, 'test')
+            
+            # Should strip markdown and format
+            assert 'Meal Score: 7/10' in result
+            assert 'Good meal' in result
+            assert '```' not in result  # No markdown
+            assert '{' not in result  # No raw JSON
+
+
 class TestFallbackChain:
     """Verify Gemini → DeepSeek → None fallback order."""
 

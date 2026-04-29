@@ -649,7 +649,8 @@ def get_ai_insight(
         total_count = db.query(func.count(models.HealthReading.id)).filter(
             models.HealthReading.profile_id == profile_id,
         ).scalar() or 0
-        return {"insight": _rule_based_insight(recent, db, total_count=total_count), "ai_consent_required": True}
+        insight = _rule_based_insight(recent, db, total_count=total_count)
+        return {"insight": insight, "ai_consent_required": True}
 
     # ── Smart cache: only call LLM when new readings exist ────────────
     latest_insight = (
@@ -657,6 +658,9 @@ def get_ai_insight(
         .filter(
             models.AiInsightLog.profile_id == profile_id,
             models.AiInsightLog.model_used != "failed",
+            # Exclude nutrition analysis logs (prompt_summary contains 'nutrition')
+            (models.AiInsightLog.prompt_summary.is_(None)) | 
+            (models.AiInsightLog.prompt_summary.notlike('%nutrition%')),
         )
         .order_by(models.AiInsightLog.created_at.desc())
         .first()
@@ -799,12 +803,15 @@ Use suggestive language only ("may help", "consider")."""
         # Append top meal insight if available (max 1 to keep it concise)
         if meal_tips:
             insight = f"{insight}\n\n{meal_tips[0]}"
+        
+        logger.info(f"AI Insight response for profile {profile_id}: {insight[:200]}...")
         return {"insight": insight}
 
     # All AI models failed — use rule-based fallback and log it
     ai_service._log(db, profile_id, "rule-based", prompt_summary, fallback, None, None, None)
     if meal_tips:
         fallback = f"{fallback}\n\n{meal_tips[0]}"
+    
     return {"insight": fallback}
 
 
@@ -928,11 +935,19 @@ def get_trend_summary(
         .filter(
             models.AiInsightLog.profile_id == profile_id,
             models.AiInsightLog.model_used != "failed",
+            # Exclude nutrition analysis logs (prompt_summary contains 'nutrition')
+            (models.AiInsightLog.prompt_summary.is_(None)) | 
+            (models.AiInsightLog.prompt_summary.notlike('%nutrition%')),
         )
         .order_by(models.AiInsightLog.id.desc())
         .first()
     )
     base_insight = latest_insight.response_text if latest_insight else ""
+    
+    # Clean the insight if it contains JSON (defensive check)
+    if base_insight and ('{' in base_insight or '```' in base_insight):
+        import ai_service
+        base_insight = ai_service._clean_ai_response(base_insight)
 
     # ── 2. Compute period-specific data stats ────────────────────────
     period_start = datetime.combine(today - timedelta(days=period - 1), datetime.min.time(), tzinfo=timezone.utc)
@@ -1067,6 +1082,13 @@ def get_trend_summary(
     except Exception:
         db.rollback()
 
+    # DEBUG: Print trend summary
+    print("\n" + "="*80)
+    print(f"🟣 BACKEND {period}-DAY TREND SUMMARY:")
+    print("="*80)
+    print(summary)
+    print("="*80 + "\n")
+    
     return {"summary": summary, "period": period, "cached": False}
 
 

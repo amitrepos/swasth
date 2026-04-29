@@ -60,7 +60,7 @@ void showMealInputModal(
               ),
               onPressed: () async {
                 Navigator.pop(context);
-                await Navigator.push(
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => QuickSelectScreen(
@@ -69,7 +69,10 @@ void showMealInputModal(
                     ),
                   ),
                 );
-                onMealSaved();
+                // Refresh home screen if meal was saved successfully
+                if (result == true) {
+                  onMealSaved();
+                }
               },
             ),
             const SizedBox(height: 12),
@@ -85,11 +88,12 @@ void showMealInputModal(
               ),
               onPressed: () async {
                 Navigator.pop(context);
-                await Navigator.push(
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => FoodPhotoScreen(
                       profileId: profileId,
+                      mealType: mealType,
                       onFallbackToQuickSelect: () {
                         Navigator.pushReplacement(
                           context,
@@ -104,7 +108,10 @@ void showMealInputModal(
                     ),
                   ),
                 );
-                onMealSaved();
+                // Refresh home screen if meal was saved successfully
+                if (result == true) {
+                  onMealSaved();
+                }
               },
             ),
             const SizedBox(height: 8),
