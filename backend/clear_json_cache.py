@@ -34,6 +34,7 @@ def clear_json_cached_insights():
         )
         
         logger.info(f"Found {len(insights)} cached insights to clear")
+        print(f"Found {len(insights)} cached insights")
         
         # Delete all matching insights
         for insight in insights:
@@ -41,10 +42,12 @@ def clear_json_cached_insights():
         
         db.commit()
         logger.info(f"Deleted {len(insights)} cached insights")
+        print(f"Deleted {len(insights)} cached insights")
         
     except Exception as e:
         db.rollback()
         logger.error(f"Error clearing cached insights: {str(e)}")
+        print(f"Error: {str(e)}")
     finally:
         db.close()
 
