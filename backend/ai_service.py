@@ -76,12 +76,18 @@ def _clean_ai_response(response_text: str) -> str:
                 logger.info(f"Formatted generic JSON to: {result[:200]}")
                 return result
         
+        # If it's a list or other JSON type, try to format it
+        if not isinstance(data, dict):
+            # For arrays or other JSON types, return cleaned text
+            logger.info(f"JSON parsed but not a dict (type: {type(data).__name__}), returning cleaned text")
+            return cleaned_text
+        
         logger.info("Response is not JSON, returning as-is")
-        return response_text
+        return cleaned_text
     except (json.JSONDecodeError, TypeError, ValueError) as e:
         # Not JSON, return as-is
         logger.info(f"JSON parse failed ({e}), returning as-is")
-        return response_text
+        return cleaned_text
 
 
 def _format_nutrition_json(data: dict, response_text: str = "") -> str:

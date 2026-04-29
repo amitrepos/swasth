@@ -14,12 +14,13 @@ def clear_json_cached_insights(dry_run: bool = True, limit: int = MAX_ROWS_PER_R
     """
     Clear AI insight logs that contain JSON cached data.
     
-    This function removes insights that:
-    - Contain markdown code blocks (```)
-    - Contain JSON foods arrays
-    - Have 'nutrition' in their prompt_summary
+    This function removes insights that contain raw JSON indicators:
+    - Markdown code blocks (```)
+    - JSON foods arrays ("foods")
+    - JSON object start ({")
+    - Raw nutrition JSON fields (total_calories, meal_score)
     
-    These are typically old cached insights that need to be refreshed.
+    NOTE: Does NOT delete based on prompt_summary to avoid data loss of valid formatted insights.
     
     Args:
         dry_run: If True, only counts matching rows without deleting
@@ -27,14 +28,18 @@ def clear_json_cached_insights(dry_run: bool = True, limit: int = MAX_ROWS_PER_R
     """
     db = SessionLocal()
     try:
-        # Query for insights matching any of the criteria
+        # Query for insights matching JSON cache patterns
+        # IMPORTANT: Only delete based on response_text content (raw JSON indicators)
+        # Do NOT delete based on prompt_summary alone (would delete valid formatted insights)
         insights_query = (
             db.query(AiInsightLog)
             .filter(
                 or_(
                     AiInsightLog.response_text.like("%```%"),
                     AiInsightLog.response_text.like('%"foods"%'),
-                    AiInsightLog.prompt_summary.like("%nutrition%")
+                    AiInsightLog.response_text.like('{"%'),
+                    AiInsightLog.response_text.like("%total_calories%"),
+                    AiInsightLog.response_text.like("%meal_score%"),
                 )
             )
         )
