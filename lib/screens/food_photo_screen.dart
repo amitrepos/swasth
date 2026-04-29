@@ -35,6 +35,10 @@ class _CameraColors {
 class FoodPhotoScreen extends StatefulWidget {
   final int profileId;
 
+  /// Pre-selected meal type, set when the user reaches this screen
+  /// from a specific dashboard slot tap (Breakfast / Lunch / Snack / Dinner).
+  final String? mealType;
+
   /// Called when Gemini fails or times out, so the parent can navigate
   /// to Quick Select instead.
   final VoidCallback? onFallbackToQuickSelect;
@@ -42,6 +46,7 @@ class FoodPhotoScreen extends StatefulWidget {
   const FoodPhotoScreen({
     super.key,
     required this.profileId,
+    this.mealType,
     this.onFallbackToQuickSelect,
   });
 
@@ -206,17 +211,22 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
       if (!mounted || _userCancelled) return;
 
-      Navigator.push(
+      final result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => NutritionResultScreen(
             profileId: widget.profileId,
             result: nutritionResult,
-            mealType: detectMealType(),
+            mealType: widget.mealType ?? detectMealType(),
             onFallbackToQuickSelect: widget.onFallbackToQuickSelect,
           ),
         ),
       );
+      
+      // If meal was saved successfully, pop back to home screen
+      if (result == true && mounted) {
+        Navigator.of(context).pop(true);
+      }
     } on TimeoutException {
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
       _showFallbackSnackbar();

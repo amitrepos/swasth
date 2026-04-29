@@ -105,9 +105,10 @@ class _AiInsightCardState extends State<AiInsightCard> {
                       );
                     }
                     final text = snap.data ?? '';
+                    final l10n = AppLocalizations.of(context)!;
                     final displayText = text.isNotEmpty
-                        ? '"$text"'
-                        : '"Log daily readings for the best health insights."';
+                        ? text
+                        : l10n.aiInsightEmptyState;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -117,7 +118,6 @@ class _AiInsightCardState extends State<AiInsightCard> {
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: AppColors.textPrimary,
-                            fontStyle: FontStyle.italic,
                             height: 1.4,
                           ),
                           maxLines: _expanded ? null : 2,
@@ -157,7 +157,7 @@ class _AiInsightCardState extends State<AiInsightCard> {
                         Text(
                           AppLocalizations.of(context)!.nmcDisclaimer,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             color: AppColors.textSecondary,
                             fontStyle: FontStyle.italic,
                           ),
