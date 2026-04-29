@@ -343,9 +343,6 @@ class HealthReadingService {
       );
       final insight = (data['insight'] as String?) ?? '';
       
-      // DEBUG: Log AI insight received (only in debug mode)
-      debugPrint('\n${'='*80}\n🟡 FRONTEND AI INSIGHT RECEIVED:\n${'='*80}\n$insight\n${'='*80}\n');
-      
       return insight;
     } on UnauthorizedException {
       rethrow;

@@ -1,7 +1,10 @@
 """Utility to clear JSON cached AI insights from the database."""
+import logging
 from sqlalchemy import or_
 from database import SessionLocal
 from models import AiInsightLog
+
+logger = logging.getLogger(__name__)
 
 
 def clear_json_cached_insights():
@@ -30,18 +33,18 @@ def clear_json_cached_insights():
             .all()
         )
         
-        print(f"Found {len(insights)} cached insights to clear")
+        logger.info(f"Found {len(insights)} cached insights to clear")
         
         # Delete all matching insights
         for insight in insights:
             db.delete(insight)
         
         db.commit()
-        print(f"Deleted {len(insights)} cached insights")
+        logger.info(f"Deleted {len(insights)} cached insights")
         
     except Exception as e:
         db.rollback()
-        print(f"Error: {str(e)}")
+        logger.error(f"Error clearing cached insights: {str(e)}")
     finally:
         db.close()
 

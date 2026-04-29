@@ -64,10 +64,10 @@ def _clean_ai_response(response_text: str) -> str:
                 if value is not None and value != '':
                     # Format key for display
                     display_key = key.replace('_', ' ').title()
-                    if isinstance(value, (int, float)):
-                        formatted_parts.append(f"{display_key}: {value}")
-                    elif isinstance(value, bool):
+                    if isinstance(value, bool):
                         formatted_parts.append(f"{display_key}: {'Yes' if value else 'No'}")
+                    elif isinstance(value, (int, float)):
+                        formatted_parts.append(f"{display_key}: {value}")
                     elif isinstance(value, str):
                         formatted_parts.append(f"{display_key}: {value}")
             
