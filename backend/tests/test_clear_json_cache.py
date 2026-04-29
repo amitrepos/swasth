@@ -21,9 +21,11 @@ class TestClearJsonCachedInsights:
         mock_insight.profile_id = 100
         mock_insight.prompt_summary = "Daily insight"
 
-        mock_db.query.return_value.filter.return_value.all.return_value = [mock_insight]
+        mock_filter = mock_db.query.return_value.filter.return_value
+        mock_filter.count.return_value = 1
+        mock_filter.limit.return_value.all.return_value = [mock_insight]
 
-        clear_json_cached_insights()
+        clear_json_cached_insights(dry_run=False)
 
         mock_db.delete.assert_called_once_with(mock_insight)
         mock_db.commit.assert_called_once()
@@ -40,9 +42,11 @@ class TestClearJsonCachedInsights:
         mock_insight.profile_id = 101
         mock_insight.prompt_summary = "Nutrition analysis"
 
-        mock_db.query.return_value.filter.return_value.all.return_value = [mock_insight]
+        mock_filter = mock_db.query.return_value.filter.return_value
+        mock_filter.count.return_value = 1
+        mock_filter.limit.return_value.all.return_value = [mock_insight]
 
-        clear_json_cached_insights()
+        clear_json_cached_insights(dry_run=False)
 
         mock_db.delete.assert_called_once_with(mock_insight)
         mock_db.commit.assert_called_once()
@@ -58,14 +62,16 @@ class TestClearJsonCachedInsights:
         mock_insight.profile_id = 102
         mock_insight.prompt_summary = "Meal nutrition breakdown"
 
-        mock_db.query.return_value.filter.return_value.all.return_value = [mock_insight]
+        mock_filter = mock_db.query.return_value.filter.return_value
+        mock_filter.count.return_value = 1
+        mock_filter.limit.return_value.all.return_value = [mock_insight]
 
-        clear_json_cached_insights()
+        clear_json_cached_insights(dry_run=False)
 
         mock_db.delete.assert_called_once_with(mock_insight)
 
     @patch("clear_json_cache.SessionLocal")
-    def test_clears_multiple_insights(self, mock_session, capsys):
+    def test_clears_multiple_insights(self, mock_session, caplog):
         """Should delete all matching insights."""
         mock_db = MagicMock()
         mock_session.return_value = mock_db
@@ -76,70 +82,76 @@ class TestClearJsonCachedInsights:
             MagicMock(id=3, profile_id=102, prompt_summary="Insight 3"),
         ]
 
-        mock_db.query.return_value.filter.return_value.all.return_value = mock_insights
+        mock_filter = mock_db.query.return_value.filter.return_value
+        mock_filter.count.return_value = 3
+        mock_filter.limit.return_value.all.return_value = mock_insights
 
-        clear_json_cached_insights()
+        with caplog.at_level("INFO"):
+            clear_json_cached_insights(dry_run=False)
 
         assert mock_db.delete.call_count == 3
         mock_db.commit.assert_called_once()
 
-        captured = capsys.readouterr()
-        assert "Found 3 cached insights" in captured.out
-        assert "Deleted 3 cached insights" in captured.out
+        assert "Found 3 cached insights" in caplog.text
+        assert "Successfully deleted 3 cached insights" in caplog.text
 
     @patch("clear_json_cache.SessionLocal")
-    def test_handles_no_insights_found(self, mock_session, capsys):
+    def test_handles_no_insights_found(self, mock_session, caplog):
         """Should handle case when no insights match criteria."""
         mock_db = MagicMock()
         mock_session.return_value = mock_db
 
-        mock_db.query.return_value.filter.return_value.all.return_value = []
+        mock_filter = mock_db.query.return_value.filter.return_value
+        mock_filter.count.return_value = 0
 
-        clear_json_cached_insights()
+        with caplog.at_level("INFO"):
+            clear_json_cached_insights(dry_run=False)
 
         mock_db.delete.assert_not_called()
-        mock_db.commit.assert_called_once()
+        mock_db.commit.assert_not_called()
 
-        captured = capsys.readouterr()
-        assert "Found 0 cached insights" in captured.out
-        assert "Deleted 0 cached insights" in captured.out
+        assert "Found 0 cached insights" in caplog.text
+        assert "No cached insights to clear" in caplog.text
 
     @patch("clear_json_cache.SessionLocal")
-    def test_handles_database_error(self, mock_session, capsys):
+    def test_handles_database_error(self, mock_session, caplog):
         """Should rollback and handle database errors gracefully."""
         mock_db = MagicMock()
         mock_session.return_value = mock_db
 
-        mock_db.query.return_value.filter.return_value.all.side_effect = Exception(
+        mock_db.query.return_value.filter.return_value.count.side_effect = Exception(
             "Database connection lost"
         )
 
-        # Should not raise
-        clear_json_cached_insights()
+        # Should raise the exception
+        with pytest.raises(Exception, match="Database connection lost"):
+            clear_json_cached_insights(dry_run=False)
 
         mock_db.rollback.assert_called_once()
         mock_db.close.assert_called_once()
 
-        captured = capsys.readouterr()
-        assert "Error: Database connection lost" in captured.out
+        assert "Error clearing cached insights" in caplog.text
 
     @patch("clear_json_cache.SessionLocal")
-    def test_rollback_on_commit_error(self, mock_session, capsys):
+    def test_rollback_on_commit_error(self, mock_session, caplog):
         """Should rollback if commit fails."""
         mock_db = MagicMock()
         mock_session.return_value = mock_db
 
         mock_insight = MagicMock(id=1, profile_id=100, prompt_summary="Test")
-        mock_db.query.return_value.filter.return_value.all.return_value = [mock_insight]
+        mock_filter = mock_db.query.return_value.filter.return_value
+        mock_filter.count.return_value = 1
+        mock_filter.limit.return_value.all.return_value = [mock_insight]
         mock_db.commit.side_effect = Exception("Commit failed")
 
-        clear_json_cached_insights()
+        # Should raise the exception
+        with pytest.raises(Exception, match="Commit failed"):
+            clear_json_cached_insights(dry_run=False)
 
         mock_db.rollback.assert_called_once()
         mock_db.close.assert_called_once()
 
-        captured = capsys.readouterr()
-        assert "Error: Commit failed" in captured.out
+        assert "Error clearing cached insights" in caplog.text
 
     @patch("clear_json_cache.SessionLocal")
     def test_closes_db_session_on_success(self, mock_session):
@@ -147,21 +159,25 @@ class TestClearJsonCachedInsights:
         mock_db = MagicMock()
         mock_session.return_value = mock_db
 
-        mock_db.query.return_value.filter.return_value.all.return_value = []
+        mock_query = mock_db.query.return_value
+        mock_query.filter.return_value.all.return_value = []
+        mock_query.filter.return_value.count.return_value = 0
 
         clear_json_cached_insights()
 
         mock_db.close.assert_called_once()
 
     @patch("clear_json_cache.SessionLocal")
-    def test_closes_db_session_on_error(self, mock_session):
+    def test_closes_db_session_on_error(self, mock_session, caplog):
         """Should close database session even on error."""
         mock_db = MagicMock()
         mock_session.return_value = mock_db
 
         mock_db.query.side_effect = Exception("Query failed")
 
-        clear_json_cached_insights()
+        # Should raise the exception
+        with pytest.raises(Exception, match="Query failed"):
+            clear_json_cached_insights(dry_run=False)
 
         mock_db.close.assert_called_once()
 
@@ -172,9 +188,10 @@ class TestClearJsonCachedInsights:
         mock_session.return_value = mock_db
 
         import models
-        mock_db.query.return_value.filter.return_value.all.return_value = []
+        mock_filter = mock_db.query.return_value.filter.return_value
+        mock_filter.count.return_value = 0
 
-        clear_json_cached_insights()
+        clear_json_cached_insights(dry_run=False)
 
         # Verify query was made on AiInsightLog model
         mock_db.query.assert_called_once()
