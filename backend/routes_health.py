@@ -1082,12 +1082,8 @@ def get_trend_summary(
     except Exception:
         db.rollback()
 
-    # DEBUG: Print trend summary
-    print("\n" + "="*80)
-    print(f"🟣 BACKEND {period}-DAY TREND SUMMARY:")
-    print("="*80)
-    print(summary)
-    print("="*80 + "\n")
+    # Log trend summary for debugging
+    logger.info(f"\n{'='*80}\n🟣 BACKEND {period}-DAY TREND SUMMARY:\n{'='*80}\n{summary}\n{'='*80}\n")
     
     return {"summary": summary, "period": period, "cached": False}
 

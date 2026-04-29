@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
@@ -342,12 +343,8 @@ class HealthReadingService {
       );
       final insight = (data['insight'] as String?) ?? '';
       
-      // DEBUG: Print exactly what we received
-      print('\n' + '='*80);
-      print('🟡 FRONTEND AI INSIGHT RECEIVED:');
-      print('='*80);
-      print(insight);
-      print('='*80 + '\n');
+      // DEBUG: Log AI insight received (only in debug mode)
+      debugPrint('\n${'='*80}\n🟡 FRONTEND AI INSIGHT RECEIVED:\n${'='*80}\n$insight\n${'='*80}\n');
       
       return insight;
     } on UnauthorizedException {

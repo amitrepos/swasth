@@ -6,11 +6,14 @@ Vision chain: Gemini (with key rotation) → Groq → DeepSeek text → None
 Every call is logged to the ai_insight_logs table for compliance.
 """
 import json
+import logging
 import time
 from typing import Optional
 from sqlalchemy.orm import Session
 from config import settings
 import models
+
+logger = logging.getLogger(__name__)
 
 
 def _clean_ai_response(response_text: str) -> str:
@@ -20,8 +23,6 @@ def _clean_ai_response(response_text: str) -> str:
     Otherwise, return the text as-is.
     """
     # DEBUG: Log raw response
-    import logging
-    logger = logging.getLogger(__name__)
     logger.info(f"Raw AI response (first 300 chars): {response_text[:300]}")
     
     # Strip markdown code blocks if present
@@ -46,7 +47,7 @@ def _clean_ai_response(response_text: str) -> str:
         if isinstance(data, dict):
             # Check if this looks like a nutrition analysis
             if 'total_calories' in data or 'meal_score' in data:
-                formatted = _format_nutrition_json(data)
+                formatted = _format_nutrition_json(data, response_text)
                 logger.info(f"Formatted nutrition JSON to: {formatted[:200]}")
                 return formatted
             # For other JSON, try to extract meaningful text
@@ -83,7 +84,7 @@ def _clean_ai_response(response_text: str) -> str:
         return response_text
 
 
-def _format_nutrition_json(data: dict) -> str:
+def _format_nutrition_json(data: dict, response_text: str = "") -> str:
     """Format nutrition analysis JSON into human-readable text."""
     lines = []
     
