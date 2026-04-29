@@ -53,14 +53,42 @@ void main() {
     test('IST conversion: 12:22 UTC formats as 05:52 PM local (when in IST)',
         () {
       // Only meaningful to assert when the test host is actually in IST.
-      // Skipped otherwise so the test is portable across CI environments.
+      // markTestSkipped() so CI explicitly reports this as skipped rather
+      // than silently passing — without it, a regression on non-IST CI
+      // would look identical to a healthy run.
       final offset = DateTime.now().timeZoneOffset;
       final isIst = offset.inMinutes == 330;
       if (!isIst) {
+        markTestSkipped(
+          'Host timezone is ${offset.inMinutes}min from UTC; IST-specific '
+          'wall-clock assertion only runs on IST machines.',
+        );
         return;
       }
       final utc = DateTime.utc(2026, 4, 29, 12, 22);
       expect(fmt.format(utc.toLocal()), 'Apr 29, 2026 • 05:52 PM');
+    });
+
+    test('midnight (00:XX) renders as 12:XX AM, not 0:XX AM', () {
+      // Regression test for activity_feed_card._formatTime. The 12-hour
+      // clock has no "0" hour: midnight → 12 AM, noon → 12 PM.
+      String format12h(DateTime dt) {
+        final local = dt.toLocal();
+        final h24 = local.hour;
+        final h = h24 == 0 ? 12 : (h24 > 12 ? h24 - 12 : h24);
+        final ampm = h24 >= 12 ? 'PM' : 'AM';
+        final min = local.minute.toString().padLeft(2, '0');
+        return '$h:$min $ampm';
+      }
+
+      // 00:15 local → "12:15 AM"
+      expect(format12h(DateTime(2026, 4, 29, 0, 15)), '12:15 AM');
+      // 12:00 local → "12:00 PM"
+      expect(format12h(DateTime(2026, 4, 29, 12, 0)), '12:00 PM');
+      // 13:05 local → "1:05 PM"
+      expect(format12h(DateTime(2026, 4, 29, 13, 5)), '1:05 PM');
+      // 23:59 local → "11:59 PM"
+      expect(format12h(DateTime(2026, 4, 29, 23, 59)), '11:59 PM');
     });
   });
 }

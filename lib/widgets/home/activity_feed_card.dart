@@ -323,8 +323,10 @@ String _formatTime(DateTime dt) {
   if (diff.inHours < 24) return '${diff.inHours}h ago';
   if (diff.inDays == 1) return 'Yesterday';
 
-  final h = local.hour > 12 ? local.hour - 12 : local.hour;
-  final ampm = local.hour >= 12 ? 'PM' : 'AM';
+  // 12-hour clock: 0 → 12 AM, 12 → 12 PM, 13 → 1 PM
+  final hour24 = local.hour;
+  final h = hour24 == 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
+  final ampm = hour24 >= 12 ? 'PM' : 'AM';
   final min = local.minute.toString().padLeft(2, '0');
   return '${local.day}/${local.month} $h:$min $ampm';
 }
