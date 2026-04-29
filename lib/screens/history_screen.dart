@@ -544,7 +544,7 @@ class HistoryScreenState extends State<HistoryScreen> {
             Text(
               DateFormat(
                 'MMM dd, yyyy • hh:mm a',
-              ).format(reading.readingTimestamp),
+              ).format(reading.readingTimestamp.toLocal()),
               style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
