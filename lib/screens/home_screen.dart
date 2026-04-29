@@ -611,10 +611,15 @@ class _HomeScreenState extends State<HomeScreen>
                                       ?? activeDoctors.first['phone_number'] as String?;
                                   if (phone != null && phone.isNotEmpty) {
                                     _callDoctor(phone);
-                                    return;
+                                  } else {
+                                    // Doctor linked but hasn't provided a number
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(l10n.doctorContactNotAvailable)),
+                                    );
                                   }
+                                  return;
                                 }
-                                // No linked doctor or no number — prompt to link one
+                                // No doctor linked at all — prompt to link one
                                 _openLinkDoctorScreen();
                               },
                             onInfoTap: () {
@@ -911,8 +916,12 @@ class _HomeScreenState extends State<HomeScreen>
                   ?? activeDoctors.first['phone_number'] as String?;
               if (phone != null && phone.isNotEmpty) {
                 _callDoctor(phone);
-                return;
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.doctorContactNotAvailable)),
+                );
               }
+              return;
             }
             _openLinkDoctorScreen();
           },
