@@ -314,16 +314,17 @@ class _TimelineRow extends StatelessWidget {
 }
 
 String _formatTime(DateTime dt) {
+  final local = dt.toLocal();
   final now = DateTime.now();
-  final diff = now.difference(dt);
+  final diff = now.difference(local);
 
   if (diff.inMinutes < 1) return 'Just now';
   if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
   if (diff.inHours < 24) return '${diff.inHours}h ago';
   if (diff.inDays == 1) return 'Yesterday';
 
-  final h = dt.hour > 12 ? dt.hour - 12 : dt.hour;
-  final ampm = dt.hour >= 12 ? 'PM' : 'AM';
-  final min = dt.minute.toString().padLeft(2, '0');
-  return '${dt.day}/${dt.month} $h:$min $ampm';
+  final h = local.hour > 12 ? local.hour - 12 : local.hour;
+  final ampm = local.hour >= 12 ? 'PM' : 'AM';
+  final min = local.minute.toString().padLeft(2, '0');
+  return '${local.day}/${local.month} $h:$min $ampm';
 }

@@ -627,7 +627,7 @@ class HistoryScreenState extends State<HistoryScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                DateFormat('MMM dd, yyyy • hh:mm a').format(meal.timestamp),
+                DateFormat('MMM dd, yyyy • hh:mm a').format(meal.timestamp.toLocal()),
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
