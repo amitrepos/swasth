@@ -328,7 +328,45 @@ class _HomeScreenState extends State<HomeScreen>
     final uri = Uri.parse('tel:$cleaned');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.doctorContactNotAvailable),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
+  }
+
+  /// Single handler for all "Call your doctor" button taps.
+  /// Priority: legacy whatsapp field → active linked doctor → link prompt.
+  void _handleCallDoctorTap() {
+    final l10n = AppLocalizations.of(context)!;
+    if (_activeProfile?.doctorWhatsapp?.isNotEmpty == true) {
+      _callDoctor(_activeProfile!.doctorWhatsapp!);
+      return;
+    }
+    final activeDoctors = _linkedDoctors
+        .where((d) => d['status'] == 'active')
+        .toList();
+    if (activeDoctors.isNotEmpty) {
+      final phone = activeDoctors.first['whatsapp_number'] as String?
+          ?? activeDoctors.first['phone_number'] as String?;
+      if (phone != null && phone.isNotEmpty) {
+        _callDoctor(phone);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.doctorContactNotAvailable),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    _openLinkDoctorScreen();
   }
 
   final GlobalKey<MealSummaryCardState> _mealSummaryKey =
@@ -596,32 +634,7 @@ class _HomeScreenState extends State<HomeScreen>
                                     }
                                   }
                                 : null,
-                            onCallDoctor: () {
-                                // Legacy field (pre-link design)
-                                if (_activeProfile?.doctorWhatsapp?.isNotEmpty == true) {
-                                  _callDoctor(_activeProfile!.doctorWhatsapp!);
-                                  return;
-                                }
-                                // Try active linked doctor
-                                final activeDoctors = _linkedDoctors
-                                    .where((d) => d['status'] == 'active')
-                                    .toList();
-                                if (activeDoctors.isNotEmpty) {
-                                  final phone = activeDoctors.first['whatsapp_number'] as String?
-                                      ?? activeDoctors.first['phone_number'] as String?;
-                                  if (phone != null && phone.isNotEmpty) {
-                                    _callDoctor(phone);
-                                  } else {
-                                    // Doctor linked but hasn't provided a number
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(l10n.doctorContactNotAvailable)),
-                                    );
-                                  }
-                                  return;
-                                }
-                                // No doctor linked at all — prompt to link one
-                                _openLinkDoctorScreen();
-                              },
+                            onCallDoctor: _handleCallDoctorTap,
                             onInfoTap: () {
                               final score =
                                   (data?['score'] as num?)?.toInt() ?? 50;
@@ -903,28 +916,7 @@ class _HomeScreenState extends State<HomeScreen>
                   }
                 }
               : null,
-          onCallDoctor: () {
-            if (_activeProfile?.doctorWhatsapp?.isNotEmpty == true) {
-              _callDoctor(_activeProfile!.doctorWhatsapp!);
-              return;
-            }
-            final activeDoctors = _linkedDoctors
-                .where((d) => d['status'] == 'active')
-                .toList();
-            if (activeDoctors.isNotEmpty) {
-              final phone = activeDoctors.first['whatsapp_number'] as String?
-                  ?? activeDoctors.first['phone_number'] as String?;
-              if (phone != null && phone.isNotEmpty) {
-                _callDoctor(phone);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.doctorContactNotAvailable)),
-                );
-              }
-              return;
-            }
-            _openLinkDoctorScreen();
-          },
+          onCallDoctor: _handleCallDoctorTap,
           onInfoTap: () {
             final score = (data?['score'] as num?)?.toInt() ?? 50;
             final flagData = helpers.computeFlag(
