@@ -395,6 +395,16 @@ class TestListLinkedDoctors:
         assert len(body) == 1
         assert body[0]["doctor_name"] == "Dr. Rajesh Verma"
         assert body[0]["doctor_code"] == "DRRAJ52"
+        # Patient must receive at least one contact channel for "Call your
+        # doctor". whatsapp_number is optional at registration; phone_number
+        # is mandatory and acts as the fallback. Both must be present in the
+        # response so the Flutter `whatsapp ?? phone` chain has data to use.
+        assert "whatsapp_number" in body[0]
+        assert "phone_number" in body[0]
+        assert body[0]["phone_number"], (
+            "doctor's phone_number must surface to the linked patient — "
+            "without it the in-app call button cannot dial"
+        )
 
     def test_list_empty(self, client, patient_user, patient_headers):
         _, profile = patient_user

@@ -279,7 +279,7 @@ class _HealthScoreRingState extends State<HealthScoreRing>
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton.icon(
-                      onPressed: widget.onCallDoctor ?? widget.onTap,
+                      onPressed: widget.onCallDoctor,
                       icon: const Icon(
                         Icons.phone,
                         color: Colors.white,
