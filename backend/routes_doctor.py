@@ -511,6 +511,12 @@ def list_linked_doctors(
             "linked_since": link.consent_granted_at,
             "status": link.status,
             "whatsapp_number": dp.whatsapp_number,
+            # Patient needs SOME way to reach the doctor when health is
+            # urgent. whatsapp_number is optional during doctor registration,
+            # so fall back to the doctor's primary phone (User.phone_number).
+            # The link is patient-initiated and doctor-accepted, so contact
+            # exposure is consensual.
+            "phone_number": u.phone_number,
             "revoke_reason": link.revoke_reason if link.status == "revoked" else None,
             "revoked_at": link.revoked_at,
         })
