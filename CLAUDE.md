@@ -19,7 +19,6 @@ Backend: Python/FastAPI + PostgreSQL. Frontend: Flutter (web + mobile).
 - `RULES.md` — **Must Always / Must Never rules**, commit style, model routing
 - `TASK_TRACKER_PENDING.md` — **active working file** — all incomplete tasks, prioritized (🔴 blocker → 🟡 nice-to-have → 🔵 post-pilot → ⚪ future)
 - `TASK_TRACKER_COMPLETED.md` — archive of 75 shipped tasks + PR log (read-only reference)
-- `KNOWN_ISSUES.md` — deferred issues tracked for pre-production
 - `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md` — **legal checklist for doctor portal** (NMC, DPDPA, SaMD, liability)
 - `AUDIT.md` — change log (update on every session)
 - `.claude/sessions/latest.md` — previous session summary (auto-loaded)
