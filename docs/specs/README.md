@@ -42,10 +42,10 @@ These are living operational docs — check them often:
 - `CLAUDE.md` — Claude Code development pipeline and enforced gates.
 - `RULES.md` — Must-always / must-never coding rules.
 - `WORKING-CONTEXT.md` — Current sprint, live branches, blockers.
-- `TASK_TRACKER.md` — Feature status across all modules.
+- `TASK_TRACKER_PENDING.md` — All incomplete tasks, prioritized.
+- `TASK_TRACKER_COMPLETED.md` — Archive of shipped tasks.
 - `AUDIT.md` — Session change log (append-only).
 - `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md` — NMC / DPDPA / SaMD legal checklist.
-- `docs/QUICKSTART.md` — Fast setup reference (less structured than these specs).
 - `backend/migrations/README.md` — Alembic migration workflow.
 
 ---
