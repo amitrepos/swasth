@@ -5,6 +5,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
 import os
+import uuid
 import models
 import schemas
 import auth
@@ -429,7 +430,11 @@ def send_phone_otp(
     if settings.TWILIO_SERVICE_SID:
         sms_sent = sms_service.send_verify_otp(to_number=normalized)
         if not sms_sent:
-            logger.warning(f"Failed to send Verify OTP to {body.phone_number}")
+            logger.error(f"Failed to send Verify OTP to {body.phone_number}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Failed to send OTP. Please try again."
+            )
     else:
         # Invalidate any previous unused OTPs for this phone number
         db.query(models.PhoneOTP).filter(
@@ -455,9 +460,11 @@ def send_phone_otp(
         )
     
         if not sms_sent:
-            logger.warning(f"Failed to send SMS OTP to {body.phone_number}")
-            # In development/testing, we still return success so the flow can continue
-            # In production, you might want to raise an error
+            logger.error(f"Failed to send SMS OTP to {body.phone_number}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Failed to send OTP. Please try again."
+            )
     
     return {
         "message": "OTP sent successfully",
@@ -542,8 +549,8 @@ def verify_phone_otp_and_login(
         now_utc = datetime.now(timezone.utc)
         
         # Generate a unique email for phone-only users
-        import uuid
-        temp_email = f"phone_{normalized}@swasth.local"
+        fake_id = uuid.uuid4().hex
+        temp_email = f"phone_user_{fake_id}@swasth.local"
         
         # Create user with minimal info
         new_user = models.User(
