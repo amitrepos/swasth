@@ -126,7 +126,7 @@ class MealLogCreate {
       'glucose_impact': glucoseImpact,
       'meal_type': mealType,
       'input_method': inputMethod,
-      'timestamp': timestamp.toIso8601String(),
+      'timestamp': timestamp.toUtc().toIso8601String(),
       if (tipEn != null) 'tip_en': tipEn,
       if (tipHi != null) 'tip_hi': tipHi,
       if (confidence != null) 'confidence': confidence,
