@@ -191,8 +191,11 @@ async def _handle_photo(
         reading = svc.save_health_reading(reading_data, profile.id, user.id, db)
 
         if reading:
-            user_tz = ZoneInfo(user.timezone) if getattr(user, "timezone", None) else timezone.utc
-            local_dt = datetime.now(user_tz)
+            tz_name = getattr(user, "timezone", None) or "Asia/Kolkata"
+            if tz_name == "UTC":
+                tz_name = "Asia/Kolkata"
+            user_tz = ZoneInfo(tz_name)
+            local_dt = reading.reading_timestamp.astimezone(user_tz)
             svc.send_reply(
                 phone,
                 f"✅ {reading_summary} saved for *{profile.name}*.\n\n"
@@ -330,8 +333,11 @@ async def _handle_text(
         return
 
     reading_summary = svc.format_reading_summary(session.pending_reading_json)
-    user_tz = ZoneInfo(user.timezone) if getattr(user, "timezone", None) else timezone.utc
-    local_dt = datetime.now(user_tz)
+    tz_name = getattr(user, "timezone", None) or "Asia/Kolkata"
+    if tz_name == "UTC":
+        tz_name = "Asia/Kolkata"
+    user_tz = ZoneInfo(tz_name)
+    local_dt = reading.reading_timestamp.astimezone(user_tz)
     svc.send_reply(
         phone,
         f"✅ {reading_summary} saved for *{profile_name}*.\n\n"
