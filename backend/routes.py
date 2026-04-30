@@ -5,6 +5,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
 import os
+import uuid
 import models
 import schemas
 import auth
@@ -34,6 +35,16 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
+        
+    if user.phone_number:
+        normalized_phone = normalize_phone(user.phone_number)
+        if normalized_phone:
+            phone_user = db.query(models.User).filter(models.User.phone_hash == hash_phone(normalized_phone)).first()
+            if phone_user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Phone number already registered. Please use a different phone number or login."
+                )
 
     # 1. Create User (auth only)
     # Store UTC time directly — convert to local time at read/display time
@@ -281,7 +292,18 @@ def update_profile(
         user.full_name = user_update.full_name
     
     if user_update.phone_number:
-        user.phone_number = normalize_phone(user_update.phone_number) or None
+        normalized_phone = normalize_phone(user_update.phone_number)
+        if normalized_phone:
+            phone_user = db.query(models.User).filter(
+                models.User.phone_hash == hash_phone(normalized_phone),
+                models.User.id != user.id
+            ).first()
+            if phone_user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Phone number already registered to another account. Please use a different phone number."
+                )
+        user.phone_number = normalized_phone or None
 
     # Update timestamp with UTC (convert to local time at display)
     now_utc = datetime.now(timezone.utc)
@@ -404,33 +426,45 @@ def send_phone_otp(
     /check-account response.
     """
     normalized = normalize_phone(body.phone_number)
-    # Invalidate any previous unused OTPs for this phone number
-    db.query(models.PhoneOTP).filter(
-        models.PhoneOTP.phone_hash == hash_phone(normalized),
-        models.PhoneOTP.is_used == False,
-    ).update({"is_used": True})
-
-    # Generate new OTP
-    otp = email_service.generate_otp()
-    otp_expires = datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
-
-    db.add(models.PhoneOTP(
-        phone_number=normalized,
-        otp=otp,  # __init__ hashes via HMAC(PII_KEY)
-        expires_at=otp_expires,
-    ))
-    db.commit()
-
-    # Send SMS via Twilio
-    sms_sent = sms_service.send_sms(
-        to_number=normalized,
-        body=f"Your Swasth app verification code is: {otp}. Valid for {settings.OTP_EXPIRE_MINUTES} minutes.",
-    )
-
-    if not sms_sent:
-        logger.warning(f"Failed to send SMS OTP to {body.phone_number}")
-        # In development/testing, we still return success so the flow can continue
-        # In production, you might want to raise an error
+    
+    if settings.TWILIO_SERVICE_SID:
+        sms_sent = sms_service.send_verify_otp(to_number=normalized)
+        if not sms_sent:
+            logger.error(f"Failed to send Verify OTP to {body.phone_number}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Failed to send OTP. Please try again."
+            )
+    else:
+        # Invalidate any previous unused OTPs for this phone number
+        db.query(models.PhoneOTP).filter(
+            models.PhoneOTP.phone_hash == hash_phone(normalized),
+            models.PhoneOTP.is_used == False,
+        ).update({"is_used": True})
+    
+        # Generate new OTP
+        otp = email_service.generate_otp()
+        otp_expires = datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+    
+        db.add(models.PhoneOTP(
+            phone_number=normalized,
+            otp=otp,  # __init__ hashes via HMAC(PII_KEY)
+            expires_at=otp_expires,
+        ))
+        db.commit()
+    
+        # Send SMS via Twilio
+        sms_sent = sms_service.send_sms(
+            to_number=normalized,
+            body=f"Your Swasth app verification code is: {otp}. Valid for {settings.OTP_EXPIRE_MINUTES} minutes.",
+        )
+    
+        if not sms_sent:
+            logger.error(f"Failed to send SMS OTP to {body.phone_number}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Failed to send OTP. Please try again."
+            )
     
     return {
         "message": "OTP sent successfully",
@@ -455,23 +489,39 @@ def verify_phone_otp_and_login(
     - Create a new user account (returns flag for client to complete registration)
     """
     normalized = normalize_phone(body.phone_number)
-    # Find valid OTP
-    otp_record = db.query(models.PhoneOTP).filter(
-        models.PhoneOTP.phone_hash == hash_phone(normalized),
-        models.PhoneOTP.otp_hash == hash_otp(body.otp),
-        models.PhoneOTP.is_used == False,
-        models.PhoneOTP.expires_at > datetime.now(timezone.utc),
-    ).first()
-
-    if not otp_record:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired OTP"
-        )
-
-    # Mark OTP as used
-    otp_record.is_used = True
-    db.commit()
+    
+    if settings.TWILIO_SERVICE_SID:
+        is_valid = sms_service.check_verify_otp(to_number=normalized, code=body.otp)
+        if not is_valid:
+            # Twilio specifically handles codes like '123456', if it's not approved, reject
+            # But let's allow "123456" in testing/development environments if TWILIO_SMS_NUMBER is not used actually? 
+            # Or assume Verify will handle true sending.
+            # In dev, maybe "123456" should pass? 
+            # Let's strictly rely on verify.
+            
+            # fallback for default stub test OTPs if really needed, but the user expects twilio integration
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired OTP"
+            )
+    else:
+        # Find valid OTP
+        otp_record = db.query(models.PhoneOTP).filter(
+            models.PhoneOTP.phone_hash == hash_phone(normalized),
+            models.PhoneOTP.otp_hash == hash_otp(body.otp),
+            models.PhoneOTP.is_used == False,
+            models.PhoneOTP.expires_at > datetime.now(timezone.utc),
+        ).first()
+    
+        if not otp_record:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired OTP"
+            )
+    
+        # Mark OTP as used
+        otp_record.is_used = True
+        db.commit()
 
     # Check if user exists
     user = db.query(models.User).filter(
@@ -499,8 +549,8 @@ def verify_phone_otp_and_login(
         now_utc = datetime.now(timezone.utc)
         
         # Generate a unique email for phone-only users
-        import uuid
-        temp_email = f"phone_{normalized}@swasth.local"
+        fake_id = uuid.uuid4().hex
+        temp_email = f"phone_user_{fake_id}@swasth.local"
         
         # Create user with minimal info
         new_user = models.User(

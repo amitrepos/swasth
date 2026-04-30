@@ -525,15 +525,16 @@ class TestUserProfileUpdate:
 class TestPhoneOTPVerifyNewUser:
     URL = "/api/auth/phone-otp/verify"
 
+    @patch("routes.settings.TWILIO_SERVICE_SID", None)
     def test_new_user_gets_profile_with_normalized_phone(self, client, db):
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
 
         normalized = "+919999111122"
         # Seed a valid, unused OTP for the normalized phone
         otp = models.PhoneOTP(
             phone_number=normalized,
             otp="123456",
-            expires_at=datetime.utcnow() + timedelta(minutes=5),
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
             is_used=False,
         )
         db.add(otp)

@@ -75,6 +75,7 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: Optional[str] = None
     TWILIO_WHATSAPP_NUMBER: Optional[str] = None  # e.g. "whatsapp:+14155238886"
     TWILIO_SMS_NUMBER: Optional[str] = None  # e.g. "+14155238886" — SMS disabled until set
+    TWILIO_SERVICE_SID: Optional[str] = None  # Twilio Verify Service SID
     TWILIO_REPORT_CONTENT_SID: Optional[str] = None  # Approved WhatsApp template SID for weekly report delivery
 
     # Critical Alert Dispatch (D7)
