@@ -1040,6 +1040,32 @@ class TestPatientProfile:
         resp = client.get(f"/api/doctor/patients/{profile.id}/profile", headers=doctor_headers)
         assert resp.status_code == 403
 
+    def test_bmi_reflects_latest_weight_reading(
+        self, client, doctor_headers, patient_user, linked_doctor_patient, db
+    ):
+        """Doctor profile/BMI must reflect the latest weight HealthReading,
+        not the (possibly stale) Profile.weight snapshot."""
+        _, profile = patient_user
+        # Profile.weight starts at 75kg (height 170cm => BMI 25.95). Patient logs new weight.
+        new_reading = models.HealthReading(
+            profile_id=profile.id,
+            reading_type="weight",
+            weight_value=68.0,
+            weight_unit="kg",
+            value_numeric=68.0,
+            unit_display="kg",
+            reading_timestamp=datetime.now(timezone.utc),
+        )
+        db.add(new_reading)
+        db.flush()
+
+        resp = client.get(f"/api/doctor/patients/{profile.id}/profile", headers=doctor_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        # 68 / (1.70^2) = 23.5
+        assert body["weight"] == 68.0, f"Expected latest weight 68.0, got {body['weight']}"
+        assert body["bmi"] == 23.5, f"Expected BMI 23.5, got {body['bmi']}"
+
 
 # ---------------------------------------------------------------------------
 # GET /api/doctor/patients/{id}/summary

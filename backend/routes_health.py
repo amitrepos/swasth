@@ -136,6 +136,16 @@ def save_reading(
         db_reading.notes_enc = encrypt(reading.notes)
 
     db.add(db_reading)
+
+    # Keep Profile.weight in sync with the latest weight reading so doctor screen,
+    # profile screen, and BMI calculations reflect the patient's current weight.
+    if reading.reading_type == "weight" and reading.weight_value is not None:
+        profile = db.query(models.Profile).filter(
+            models.Profile.id == reading.profile_id
+        ).first()
+        if profile is not None:
+            profile.weight = reading.weight_value
+
     db.commit()
     db.refresh(db_reading)
 

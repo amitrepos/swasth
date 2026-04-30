@@ -232,6 +232,31 @@ def test_edit_profile_same_weight_does_not_create_duplicate_reading(client, db):
     assert len(readings) == 1, "Same weight submitted twice must not create duplicate readings"
 
 
+def test_post_weight_reading_updates_profile_weight(client, auth_headers, db):
+    """POST /api/readings with reading_type=weight must keep Profile.weight in sync
+    so doctor screen, profile screen, and BMI reflect the latest weight."""
+    pid = _pid(db)
+    profile = db.query(models.Profile).filter(models.Profile.id == pid).first()
+    profile.weight = 70.0
+    db.flush()
+
+    payload = {
+        "profile_id": pid,
+        "reading_type": "weight",
+        "value_numeric": 64.5,
+        "weight_value": 64.5,
+        "weight_unit": "kg",
+        "unit_display": "kg",
+        "reading_timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    resp = client.post("/api/readings", json=payload, headers=auth_headers)
+    assert resp.status_code == 201
+
+    db.expire_all()
+    profile = db.query(models.Profile).filter(models.Profile.id == pid).first()
+    assert profile.weight == 64.5, f"Profile.weight must update to 64.5, got {profile.weight}"
+
+
 def test_shareable_summary_includes_weight(client, auth_headers, db):
     """Verify the text summary includes Weight averages."""
     pid = _pid(db)
