@@ -1,7 +1,7 @@
 # Swasth — Pending Tasks (Active Working File)
 
-**Last Updated:** 2026-04-26
-**Source of truth for all incomplete work. Completed tasks → see TASK_TRACKER.md.**
+**Last Updated:** 2026-04-30
+**Source of truth for all incomplete work. Completed tasks → see TASK_TRACKER_COMPLETED.md.**
 
 Legend: 🔴 POC Blocker | 🟡 POC Nice-to-Have | 🔵 Post-Pilot | ⚪ Future/Defer
 
@@ -11,7 +11,9 @@ Legend: 🔴 POC Blocker | 🟡 POC Nice-to-Have | 🔵 Post-Pilot | ⚪ Future/
 
 | # | Task | Notes |
 |---|------|-------|
-| TLS | Replace self-signed cert | Blocks Android APK for real users. Needs real domain + Let's Encrypt. Details in TASK_TRACKER.md top section. |
+| TLS | Replace self-signed cert | Blocks Android APK for real users. Needs real domain + Let's Encrypt. See "Reference Notes → TLS cert" below. |
+| SEC1 | Rotate Postgres `swasth_admin` password | HIGH. Prod `.env` on EC2 13.127.215.113 still uses placeholder `swasth_temp_change_me`. Steps: `ALTER USER swasth_admin WITH PASSWORD '<strong>'`, update prod `.env` + GH Actions `STAGING_DATABASE_URL`, restart backend, smoke-test. Discovered 2026-04-29 during teammate DB onboarding. |
+| SEC2 | Restrict SSH ingress on `swasth-ec2-sg` | HIGH (not P0). SG `sg-0383cfbd2ca13f4f7` (ap-south-1) allows 22/tcp from `0.0.0.0/0` because GH Actions deploys from dynamic IPs. Mitigations: managed prefix list (Lambda), migrate to SSM, or CI-temporary-allow pattern. Discovered 2026-04-29. |
 | L1 | AWS Mumbai migration | CRITICAL. Blocks Play Store production. Do AFTER current bug fixes. Architecture: (1) EC2 t3.small — FastAPI + Nginx + Flutter web build. (2) RDS t3.micro PostgreSQL — all patient data, encrypted at rest, automated backups, HIPAA-eligible. (3) S3 bucket Mumbai — OCR images (future). (4) AWS Elastic IP — permanent static IP, free when attached to running instance. Steps: provision EC2+RDS in ap-south-1, scp backend files, pg_dump Hetzner → restore RDS, point api.swasth.health DNS to Elastic IP, run certbot, remove _PilotHttpOverrides from main.dart, rebuild APK. |
 | L2 | Doctor Platform Use Agreement | CRITICAL. Lawyer must draft. Liability, clinical responsibility, NMC compliance. Blocks doctor onboarding. |
 | L3 | Professional Indemnity Insurance | CRITICAL. Rs 25-50L coverage. ~Rs 15-25K/yr. Blocks doctor onboarding. |
@@ -145,6 +147,35 @@ Legend: 🔴 POC Blocker | 🟡 POC Nice-to-Have | 🔵 Post-Pilot | ⚪ Future/
 | D28 | Ambient ASR (MedASR) | After E6 (doctor notes) live + 5 doctors using portal |
 | G10-G21 | Advanced admin features | Population health, cohort segmentation, breach tooling |
 | F10 | Investor video | Phase 3 — pitch meetings |
+| TD1 | Move `FoodClassificationResult` to `lib/models/` | Currently in `lib/screens/meal_result_screen.dart`. `NutritionAnalysisResult` is correctly in `lib/models/`. Low priority, no functional impact. |
+
+---
+
+## Reference Notes
+
+### TLS cert (linked to 🔴 TLS row above)
+
+Backend at `65.109.226.36:8443` currently uses a self-signed certificate. Browsers let users click past the warning, but `dart:io` on Android/iOS hard-rejects with `CERTIFICATE_VERIFY_FAILED: self signed certificate`, breaking every API call from native mobile builds.
+
+**Temporary workaround (2026-04-11):** `lib/main.dart` installs a `_PilotHttpOverrides` class that trusts self-signed certs **only** for host `65.109.226.36` (other hosts still use normal TLS trust chain, web builds unaffected via `kIsWeb` guard). This unblocks the APK for pilot device testing.
+
+**Must remove before public release:**
+1. Point a real domain at the backend (or the server's IP if Let's Encrypt allows — it doesn't; needs a domain).
+2. Provision a Let's Encrypt cert via certbot on the server.
+3. Update nginx / uvicorn TLS config to use the real cert.
+4. Delete `_PilotHttpOverrides` from `lib/main.dart` and its `HttpOverrides.global` install in `main()`.
+5. Delete the `dart:io` imports that became unused.
+6. Rebuild APK and verify handshake succeeds without the override.
+
+**Why this is a hard blocker:** Shipping a cert-bypass in a public release means anyone on the patient's Wi-Fi can MITM every API call (tokens, health data, meal logs). It's scoped to one IP today, but "pilot-only" code has a way of surviving into GA if it's not tracked.
+
+### Pilot data note — meals logged before 2026-04-11
+
+Meals logged before the slot-tap fix (PR landing 2026-04-11) may have the wrong `meal_type` in the database. `quick_select_screen.dart` was hardcoding `mealType: detectMealType()` (wall-clock time), so any patient who tapped a specific slot ("Breakfast" / "Lunch" / "Snack" / "Dinner") had their saved `meal_type` overwritten with whatever slot the current hour matched. Fix plumbs the tapped slot type through `MealSummaryCard → home_screen → modal → QuickSelectScreen`.
+
+**Impact:** anyone running `SELECT meal_type, count(*) FROM meal_logs GROUP BY meal_type` on pilot data will see a skew. If you need clean aggregate analytics on historical pilot data, EXCLUDE meals logged before the PR landed OR recompute `meal_type` from `created_at` using the old time-based rule for the pre-fix window only.
+
+**Not backfilling:** per Dr. Rajesh's review, rewriting history has its own integrity risks (a patient's 4pm Breakfast would get relabelled to Snack if we retroactively ran the old rule, which is MORE wrong than leaving it alone). Small pilot N, no clinical decisions yet ride on historical `meal_type`. Revisit if/when pilot volume grows.
 
 ---
 
