@@ -10,7 +10,9 @@ from typing import Optional
 from twilio.rest import Client
 
 from config import settings
+import logging
 
+logger = logging.getLogger(__name__)
 
 class TwilioSmsService:
     """Service for sending SMS messages via Twilio.
@@ -57,6 +59,38 @@ class TwilioSmsService:
             return bool(message.sid)
         except Exception as e:
             print(f"Error sending Twilio SMS: {e}")
+            return False
+
+    def send_verify_otp(self, to_number: str) -> bool:
+        """Send an OTP using Twilio Verify."""
+        service_sid = settings.TWILIO_SERVICE_SID
+        
+        if not self.client or not service_sid:
+            logger.error(f"Cannot send Verify OTP: client initialized={bool(self.client)}, service_sid={service_sid}")
+            return False
+        try:
+            verification = self.client.verify.v2.services(service_sid).verifications.create(
+                to=to_number, channel="sms"
+            )
+            return verification.status in ["pending", "approved"]
+        except Exception as e:
+            logger.error(f"Error sending Verify OTP to {to_number}: {e}", exc_info=True)
+            return False
+
+    def check_verify_otp(self, to_number: str, code: str) -> bool:
+        """Check an OTP using Twilio Verify."""
+        service_sid = settings.TWILIO_SERVICE_SID
+        
+        if not self.client or not service_sid:
+            logger.error(f"Cannot check Verify OTP: client initialized={bool(self.client)}, service_sid={service_sid}")
+            return False
+        try:
+            verification_check = self.client.verify.v2.services(service_sid).verification_checks.create(
+                to=to_number, code=code
+            )
+            return verification_check.status == "approved"
+        except Exception as e:
+            logger.error(f"Error checking Verify OTP for {to_number}: {e}", exc_info=True)
             return False
 
     def send_critical_alert_sms(
