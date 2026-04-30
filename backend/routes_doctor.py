@@ -1009,17 +1009,31 @@ def get_patient_profile(
 
     db.commit()
 
+    # Prefer the latest weight reading over the (possibly stale) Profile snapshot
+    # so the doctor screen and BMI always reflect the patient's current weight.
+    last_weight = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile.id,
+            models.HealthReading.reading_type == "weight",
+            models.HealthReading.weight_value.isnot(None),
+        )
+        .order_by(models.HealthReading.reading_timestamp.desc())
+        .first()
+    )
+    current_weight = last_weight.weight_value if last_weight else profile.weight
+
     return {
         "id": profile.id,
         "name": profile.name,
         "age": profile.age,
         "gender": profile.gender,
         "height": profile.height,
-        "weight": profile.weight,
+        "weight": current_weight,
         "blood_group": profile.blood_group,
         "medical_conditions": profile.medical_conditions,
         "current_medications": profile.current_medications,
-        "bmi": round(profile.weight / ((profile.height / 100) ** 2), 1) if profile.weight and profile.height else None,
+        "bmi": round(current_weight / ((profile.height / 100) ** 2), 1) if current_weight and profile.height else None,
     }
 
 
