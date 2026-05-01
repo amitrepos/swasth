@@ -1,0 +1,198 @@
+
+.swasth-mockup-wrap {
+  width: 100%;
+  height: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+  background: #eef4f7;
+  border-radius: 24px;
+  padding: 16px 12px 10px;
+  font-family: 'Poppins', sans-serif;
+  text-align: left;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mockup-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.mockup-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+.swasth-mockup-wrap .top-bar { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2px; }
+.swasth-mockup-wrap .brand { font-size:10px; color:#888; letter-spacing:1px; font-weight:600; }
+.swasth-mockup-wrap .top-icons { display:flex; gap:8px; align-items:center; }
+.swasth-mockup-wrap .top-icons span { font-size:16px; cursor:pointer; }
+.swasth-mockup-wrap .avatar { width:24px;height:24px;border-radius:50%;background:#2e7d32;color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center; }
+.swasth-mockup-wrap .greeting { font-size:16px; font-weight:700; color:#1a1a1a; margin:0; }
+.swasth-mockup-wrap .user-name { font-size:11px; color:#2e7d32; font-weight:500; }
+
+.swasth-mockup-wrap .badges {
+  display:flex; gap:0; margin:10px 0 10px;
+  background:#fff; border-radius:10px; overflow:hidden;
+  border: 1px solid #e0e0e0;
+}
+.swasth-mockup-wrap .badge {
+  flex:1; text-align:center; padding:6px 2px; font-size:9px; font-weight:600; color:#444;
+  border-right:1px solid #e8e8e8; display:flex; align-items:center; justify-content:center; gap:3px;
+}
+.swasth-mockup-wrap .badge:last-child { border-right:none; }
+
+.swasth-mockup-wrap .health-card {
+  background:#fff; border-radius:16px; padding:12px 12px 10px;
+  text-align:center; margin-bottom:12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.swasth-mockup-wrap .doing-great { color:#2e7d32; font-size:12px; font-weight:600; margin-bottom:8px; }
+
+/* HEART */
+.swasth-mockup-wrap .heart-container {
+  position:relative; display:inline-block;
+  width:100px; height:90px;
+  margin-bottom:6px;
+}
+
+.swasth-mockup-wrap .heart-svg {
+  width:100px; height:90px;
+  animation: heartbeat 1.2s ease-in-out infinite;
+  transform-origin: center;
+  filter: drop-shadow(0 3px 12px rgba(46,125,50,0.3));
+}
+
+@keyframes heartbeat {
+  0%   { transform: scale(1); }
+  14%  { transform: scale(1.1); }
+  28%  { transform: scale(1); }
+  42%  { transform: scale(1.06); }
+  56%  { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+.swasth-mockup-wrap .heart-score {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%, -48%);
+  font-size:24px; font-weight:700; color:#fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  pointer-events:none;
+  animation: score-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes score-pulse {
+  0%   { transform: translate(-50%,-48%) scale(1); }
+  14%  { transform: translate(-50%,-48%) scale(1.08); }
+  28%  { transform: translate(-50%,-48%) scale(1); }
+  42%  { transform: translate(-50%,-48%) scale(1.04); }
+  56%  { transform: translate(-50%,-48%) scale(1); }
+  100% { transform: translate(-50%,-48%) scale(1); }
+}
+
+/* Pulse ring effect */
+.swasth-mockup-wrap .pulse-ring {
+  position:absolute; top:50%; left:50%;
+  width:80px; height:80px;
+  margin:-40px 0 0 -40px;
+  border-radius:50%;
+  background: rgba(46,125,50,0.15);
+  animation: ring-pulse 1.2s ease-out infinite;
+  pointer-events:none;
+}
+.swasth-mockup-wrap .pulse-ring-2 {
+  animation-delay: 0.15s;
+  background: rgba(46,125,50,0.08);
+}
+
+@keyframes ring-pulse {
+  0%   { transform: scale(0.85); opacity:0; }
+  14%  { transform: scale(1.2); opacity:1; }
+  40%  { transform: scale(1.4); opacity:0; }
+  100% { transform: scale(1.4); opacity:0; }
+}
+
+.swasth-mockup-wrap .all-well { display:flex; align-items:center; justify-content:center; gap:4px; font-size:12px; font-weight:500; color:#444; margin:4px 0 8px; }
+.swasth-mockup-wrap .smiley { font-size:14px; }
+
+.swasth-mockup-wrap .progress-bar-bg { background:#e8f5e9; border-radius:6px; height:6px; overflow:hidden; margin-bottom:8px; }
+.swasth-mockup-wrap .progress-bar-fill { height:100%; background:linear-gradient(90deg,#43a047,#2e7d32); border-radius:6px; width:82%; animation: bar-anim 2s ease-in-out infinite alternate; }
+@keyframes bar-anim { from{width:78%} to{width:86%} }
+
+.swasth-mockup-wrap .health-msg { font-size:10px; color:#555; line-height:1.4; }
+
+.swasth-mockup-wrap .section-title { font-size:10px; font-weight:700; color:#888; letter-spacing:1px; margin:0 0 8px; }
+
+.swasth-mockup-wrap .vitals-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.swasth-mockup-wrap .vital-card {
+  background:#fff; border-radius:12px; padding:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.04);
+}
+.swasth-mockup-wrap .vital-label { font-size:9px; color:#999; font-weight:600; letter-spacing:0.5px; margin-bottom:2px; }
+.swasth-mockup-wrap .vital-value { font-size:15px; font-weight:700; color:#2e7d32; }
+.swasth-mockup-wrap .vital-value.orange { color:#e65100; }
+.swasth-mockup-wrap .vital-footer { font-size:9px; color:#aaa; margin-top:1px; }
+.swasth-mockup-wrap .vital-row { display:flex; align-items:flex-start; justify-content:space-between; }
+.swasth-mockup-wrap .add-btn {
+  width:22px; height:22px; background:#1a1a2e; border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:16px; cursor:pointer; line-height:1; font-weight:300;
+  flex-shrink:0;
+}
+.swasth-mockup-wrap .bmi-label { font-size:9px; color:#e65100; font-weight:600; }
+
+.swasth-mockup-wrap .bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  margin-top: 12px;
+  background: #fff;
+  padding: 10px 4px 8px;
+  border-radius: 12px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+}
+
+.swasth-mockup-wrap .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: all 0.2s;
+}
+
+.swasth-mockup-wrap .nav-item.active {
+  opacity: 1;
+  color: #2e7d32;
+}
+
+.swasth-mockup-wrap .nav-icon {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.swasth-mockup-wrap .nav-label {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.swasth-mockup-wrap .streak-nav {
+  width: 28px;
+  height: 28px;
+  background: #fff3e0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  margin-bottom: -2px;
+  box-shadow: 0 2px 6px rgba(255,152,0,0.2);
+}
+
+
