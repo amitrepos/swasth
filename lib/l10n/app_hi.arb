@@ -209,6 +209,7 @@
   "readingUpdated": "रीडिंग अपडेट हुई",
   "weightLabel": "वज़न",
   "weightValidation": "मान्य वज़न दर्ज करें (1–400 किग्रा)",
+  "pulseValidation": "मान्य पल्स दर्ज करें (30–220 bpm)",
   "notes": "नोट्स (वैकल्पिक)",
   "statusNormal": "सामान्य",
   "statusElevated": "थोड़ा अधिक",

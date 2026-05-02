@@ -221,12 +221,13 @@ async def delete_meal(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    """Delete a meal log. Requires access to the profile."""
+    """Delete a meal log. Requires editor/owner access — viewers cannot
+    delete meals (consistent with delete_reading + update_reading)."""
     meal = db.query(models.MealLog).filter(models.MealLog.id == meal_id).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
 
-    get_profile_access_or_403(meal.profile_id, user, db)
+    get_profile_editor_or_403(meal.profile_id, user, db)
 
     db.delete(meal)
     db.commit()

@@ -572,6 +572,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get weightValidation => 'मान्य वज़न दर्ज करें (1–400 किग्रा)';
 
   @override
+  String get pulseValidation => 'मान्य पल्स दर्ज करें (30–220 bpm)';
+
+  @override
   String get notes => 'नोट्स (वैकल्पिक)';
 
   @override

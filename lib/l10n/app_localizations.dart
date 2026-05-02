@@ -1154,6 +1154,12 @@ abstract class AppLocalizations {
   /// **'Enter a valid weight (1–400 kg)'**
   String get weightValidation;
 
+  /// No description provided for @pulseValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid pulse (30–220 bpm)'**
+  String get pulseValidation;
+
   /// No description provided for @notes.
   ///
   /// In en, this message translates to:

@@ -575,6 +575,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weightValidation => 'Enter a valid weight (1–400 kg)';
 
   @override
+  String get pulseValidation => 'Enter a valid pulse (30–220 bpm)';
+
+  @override
   String get notes => 'Notes (optional)';
 
   @override

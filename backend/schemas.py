@@ -542,17 +542,22 @@ class HealthReadingUpdate(BaseModel):
     """Partial update for an existing reading. `reading_type` is immutable
     (cannot convert glucose↔BP). Only fields relevant to the existing
     reading_type are honored. Server recomputes status_flag, value_numeric,
-    and unit_display."""
-    glucose_value: Optional[float] = None
+    and unit_display.
+
+    Range bounds mirror Flutter validators (see edit_reading_screen.dart)
+    so a direct API call cannot store nonsensical values that would
+    poison AI insights or BMI calculations.
+    """
+    glucose_value: Optional[float] = Field(None, ge=20, le=600)
     glucose_unit: Optional[str] = None
     sample_type: Optional[str] = None
 
-    systolic: Optional[float] = None
-    diastolic: Optional[float] = None
-    pulse_rate: Optional[float] = None
+    systolic: Optional[float] = Field(None, ge=60, le=260)
+    diastolic: Optional[float] = Field(None, ge=30, le=160)
+    pulse_rate: Optional[float] = Field(None, ge=30, le=220)
     bp_unit: Optional[str] = None
 
-    weight_value: Optional[float] = None
+    weight_value: Optional[float] = Field(None, ge=1, le=400)
     weight_unit: Optional[str] = None
 
     notes: Optional[str] = None

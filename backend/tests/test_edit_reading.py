@@ -230,6 +230,134 @@ def test_edit_notes_only(client, auth_headers, db):
     assert resp.json()["glucose_value"] == 100.0  # unchanged
 
 
+def test_edit_foreign_reading_returns_403(client, auth_headers, db):
+    """A user with no access to a profile must get 403 when trying to
+    edit a reading on that profile. This guards against silent regression
+    of get_profile_editor_or_403 in dependencies.py."""
+    pid = _pid(db)
+    r = _r(db, pid, "glucose", 100.0, glucose_value=100.0, status_flag="NORMAL")
+    db.commit()
+
+    # Create a stranger user with NO ProfileAccess to this profile
+    from auth import create_access_token, get_password_hash
+    stranger = models.User(
+        email="stranger@swasth.app",
+        password_hash=get_password_hash("X@123abc"),
+        full_name="Stranger",
+        phone_number="9999999999",
+    )
+    db.add(stranger)
+    db.commit()
+    stranger_headers = {
+        "Authorization": f"Bearer {create_access_token(data={'sub': stranger.email})}"
+    }
+
+    resp = client.put(
+        f"/api/readings/{r.id}",
+        json={"glucose_value": 110.0},
+        headers=stranger_headers,
+    )
+    assert resp.status_code == 403, (
+        f"Foreign user must get 403, got {resp.status_code}: {resp.text}"
+    )
+
+    # Verify the row was NOT modified
+    db.expire_all()
+    refreshed = db.query(models.HealthReading).filter(
+        models.HealthReading.id == r.id
+    ).first()
+    assert refreshed.glucose_value == 100.0, "Glucose must not be modified by foreign user"
+
+
+def test_delete_foreign_reading_returns_403(client, auth_headers, db):
+    """Foreign user must not be able to delete another user's reading."""
+    pid = _pid(db)
+    r = _r(db, pid, "glucose", 120.0, glucose_value=120.0, status_flag="NORMAL")
+    db.commit()
+
+    from auth import create_access_token, get_password_hash
+    stranger = models.User(
+        email="stranger2@swasth.app",
+        password_hash=get_password_hash("X@123abc"),
+        full_name="Stranger Two",
+        phone_number="9999999998",
+    )
+    db.add(stranger)
+    db.commit()
+    stranger_headers = {
+        "Authorization": f"Bearer {create_access_token(data={'sub': stranger.email})}"
+    }
+
+    resp = client.delete(f"/api/readings/{r.id}", headers=stranger_headers)
+    assert resp.status_code == 403
+
+    # Reading must still exist
+    db.expire_all()
+    assert db.query(models.HealthReading).filter(
+        models.HealthReading.id == r.id
+    ).first() is not None
+
+
+def test_viewer_cannot_edit_reading(client, auth_headers, db):
+    """A user with viewer-level ProfileAccess must NOT be able to edit
+    readings — only owner/editor can."""
+    pid = _pid(db)
+    r = _r(db, pid, "glucose", 100.0, glucose_value=100.0, status_flag="NORMAL")
+
+    from auth import create_access_token, get_password_hash
+    viewer = models.User(
+        email="viewer@swasth.app",
+        password_hash=get_password_hash("X@123abc"),
+        full_name="Viewer",
+        phone_number="9999999997",
+    )
+    db.add(viewer)
+    db.flush()
+    db.add(models.ProfileAccess(user_id=viewer.id, profile_id=pid, access_level="viewer"))
+    db.commit()
+    viewer_headers = {
+        "Authorization": f"Bearer {create_access_token(data={'sub': viewer.email})}"
+    }
+
+    resp = client.put(
+        f"/api/readings/{r.id}",
+        json={"glucose_value": 110.0},
+        headers=viewer_headers,
+    )
+    assert resp.status_code == 403
+
+
+def test_edit_glucose_out_of_range_rejected(client, auth_headers, db):
+    """Pydantic Field validators must reject nonsensical values that
+    bypass the Flutter UI. Mirrors edit_reading_screen.dart bounds."""
+    pid = _pid(db)
+    r = _r(db, pid, "glucose", 100.0, glucose_value=100.0, status_flag="NORMAL")
+    db.commit()
+
+    resp = client.put(
+        f"/api/readings/{r.id}",
+        json={"glucose_value": 999999.0},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422, "Out-of-range glucose must be rejected"
+
+
+def test_edit_systolic_out_of_range_rejected(client, auth_headers, db):
+    pid = _pid(db)
+    r = _r(
+        db, pid, "blood_pressure", 120.0,
+        systolic=120.0, diastolic=80.0, status_flag="NORMAL",
+    )
+    db.commit()
+
+    resp = client.put(
+        f"/api/readings/{r.id}",
+        json={"systolic": 5000.0, "diastolic": 80.0},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422
+
+
 def test_edit_nonexistent_reading_returns_404(client, auth_headers, db):
     resp = client.put(
         "/api/readings/9999999",

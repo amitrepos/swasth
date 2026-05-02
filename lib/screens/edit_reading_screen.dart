@@ -97,7 +97,7 @@ class _EditReadingScreenState extends State<EditReadingScreen> {
     if (v == null || v.trim().isEmpty) return null;
     final d = double.tryParse(v.trim());
     if (d == null || d < 30 || d > 220) {
-      return AppLocalizations.of(context)!.pulseLabel;
+      return AppLocalizations.of(context)!.pulseValidation;
     }
     return null;
   }

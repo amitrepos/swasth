@@ -1255,7 +1255,9 @@ def get_reading(
 
 
 @router.put("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
+@limiter.limit("30/minute")
 def update_reading(
+    request: Request,
     reading_id: int,
     payload: schemas.HealthReadingUpdate,
     db: Session = Depends(get_db),
@@ -1400,7 +1402,9 @@ def update_reading(
 
 
 @router.delete("/readings/{reading_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("30/minute")
 def delete_reading(
+    request: Request,
     reading_id: int,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
@@ -1453,6 +1457,7 @@ def delete_reading(
             profile_id,
             exc_info=True,
         )
+        db.rollback()
 
     db.commit()
 
