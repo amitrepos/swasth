@@ -554,6 +554,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readingDeleted => 'Reading deleted';
 
   @override
+  String get deleteMeal => 'Delete Meal';
+
+  @override
+  String get deleteMealConfirm => 'Are you sure you want to delete this meal?';
+
+  @override
+  String get mealDeleted => 'Meal deleted';
+
+  @override
+  String get editReading => 'Edit Reading';
+
+  @override
+  String get readingUpdated => 'Reading updated';
+
+  @override
+  String get weightLabel => 'Weight';
+
+  @override
+  String get weightValidation => 'Enter a valid weight (1–400 kg)';
+
+  @override
+  String get notes => 'Notes (optional)';
+
+  @override
   String get statusNormal => 'Normal';
 
   @override

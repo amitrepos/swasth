@@ -52,10 +52,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+class HomeScreenState extends State<HomeScreen>
     with RouteAware, SingleTickerProviderStateMixin {
   final StorageService _storageService = StorageService();
   final HealthReadingService _readingService = HealthReadingService();
@@ -104,6 +104,13 @@ class _HomeScreenState extends State<HomeScreen>
     _loadProfileInfo();
     SyncService().syncPendingReadings();
     _initializePedometer();
+  }
+
+  /// Called by ShellScreen when the Home tab becomes active. Re-fetches
+  /// the wellness score + AI insight so edits/deletes performed in the
+  /// History tab are reflected on the dashboard.
+  void refresh() {
+    if (_activeProfileId != null) _refreshHealthScore(_activeProfileId!);
   }
 
   /// Initialize pedometer service for step counting

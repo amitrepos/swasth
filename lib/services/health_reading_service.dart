@@ -317,6 +317,24 @@ class HealthReadingService {
     return HealthReading.fromJson(body);
   }
 
+  /// Update an existing reading. `reading_type` is immutable on the
+  /// backend; pass only the fields relevant to the stored type. Server
+  /// recomputes status_flag, value_numeric, and unit_display.
+  Future<HealthReading> updateReading(
+    int readingId,
+    Map<String, dynamic> updates,
+    String token,
+  ) async {
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.put(
+        Uri.parse('$baseUrl/readings/$readingId'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode(updates),
+      ),
+    );
+    return HealthReading.fromJson(body);
+  }
+
   /// Delete a reading.
   Future<void> deleteReading(int readingId, String token) async {
     await ApiClient.send(

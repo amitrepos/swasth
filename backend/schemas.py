@@ -538,6 +538,36 @@ class HealthReadingCreate(BaseModel):
         return v.astimezone(timezone.utc)
 
 
+class HealthReadingUpdate(BaseModel):
+    """Partial update for an existing reading. `reading_type` is immutable
+    (cannot convert glucose↔BP). Only fields relevant to the existing
+    reading_type are honored. Server recomputes status_flag, value_numeric,
+    and unit_display."""
+    glucose_value: Optional[float] = None
+    glucose_unit: Optional[str] = None
+    sample_type: Optional[str] = None
+
+    systolic: Optional[float] = None
+    diastolic: Optional[float] = None
+    pulse_rate: Optional[float] = None
+    bp_unit: Optional[str] = None
+
+    weight_value: Optional[float] = None
+    weight_unit: Optional[str] = None
+
+    notes: Optional[str] = None
+    reading_timestamp: Optional[datetime] = None
+
+    @field_validator('reading_timestamp', mode='after')
+    @classmethod
+    def _normalize_ts(cls, v: Optional[datetime]) -> Optional[datetime]:
+        if v is None:
+            return v
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        return v.astimezone(timezone.utc)
+
+
 class HealthReadingResponse(BaseModel):
     id: int
     profile_id: int

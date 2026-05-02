@@ -9,6 +9,7 @@ import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import 'edit_reading_screen.dart';
 
 /// Unified timeline of health events for one profile.
 ///
@@ -234,6 +235,54 @@ class HistoryScreenState extends State<HistoryScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.readingDeleted),
+              backgroundColor: AppColors.statusNormal,
+            ),
+          );
+          _loadAll();
+        }
+      } catch (e) {
+        if (mounted) {
+          await ErrorMapper.showSnack(context, e);
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteMeal(int id) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteMeal),
+        content: Text(l10n.deleteMealConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusCritical,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final token = await StorageService().getToken();
+        if (token == null) throw Exception('Not authenticated');
+
+        await _mealService.deleteMeal(id, token);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.mealDeleted),
               backgroundColor: AppColors.statusNormal,
             ),
           );
@@ -550,16 +599,44 @@ class HistoryScreenState extends State<HistoryScreen> {
           ],
         ),
         trailing: _canEdit
-            ? IconButton(
-                icon: const Icon(Icons.delete_outline),
-                color: AppColors.statusCritical,
-                onPressed: () => _deleteReading(reading.id),
-                tooltip: l10n.delete,
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isEditableType(reading.readingType))
+                    IconButton(
+                      key: Key('history_edit_reading_${reading.id}'),
+                      icon: const Icon(Icons.edit_outlined),
+                      color: AppColors.textSecondary,
+                      onPressed: () => _editReading(reading),
+                      tooltip: l10n.editReading,
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    color: AppColors.statusCritical,
+                    onPressed: () => _deleteReading(reading.id),
+                    tooltip: l10n.delete,
+                  ),
+                ],
               )
             : null,
         isThreeLine: true,
       ),
     );
+  }
+
+  bool _isEditableType(String type) =>
+      type == 'glucose' || type == 'blood_pressure' || type == 'weight';
+
+  Future<void> _editReading(HealthReading reading) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditReadingScreen(reading: reading),
+      ),
+    );
+    if (updated == true) {
+      _loadAll();
+    }
   }
 
   Widget _buildMealTile(MealLog meal, AppLocalizations l10n) {
@@ -632,6 +709,14 @@ class HistoryScreenState extends State<HistoryScreen> {
               ),
             ],
           ),
+          trailing: _canEdit
+              ? IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: AppColors.statusCritical,
+                  onPressed: () => _deleteMeal(meal.id),
+                  tooltip: l10n.delete,
+                )
+              : null,
           isThreeLine: true,
         ),
       ),

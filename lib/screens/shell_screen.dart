@@ -53,6 +53,7 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
   bool _isOffline = false;
   Timer? _connectivityTimer;
   Timer? _profileRefreshTimer;
+  final _homeKey = GlobalKey<HomeScreenState>();
   final _historyKey = GlobalKey<HistoryScreenState>();
   final _insightsKey = GlobalKey<TrendChartScreenState>();
   final _chatKey = GlobalKey<ChatScreenState>();
@@ -253,7 +254,7 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
               child: IndexedStack(
                 index: _currentIndex,
                 children: [
-                  const HomeScreen(),
+                  HomeScreen(key: _homeKey),
                   HistoryScreen(key: _historyKey, profileId: _profileId!),
                   StreaksScreen(key: ValueKey('streaks_$_profileId')),
                   TrendChartScreen(key: _insightsKey, profileId: _profileId!),
@@ -331,6 +332,7 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
 
   void _onTap(int index) {
     setState(() => _currentIndex = index);
+    if (index == 0) _homeKey.currentState?.refresh();
     if (index == 1) _historyKey.currentState?.refresh();
     if (index == 3) _insightsKey.currentState?.refresh();
     if (index == 4) _chatKey.currentState?.refreshVitals();
