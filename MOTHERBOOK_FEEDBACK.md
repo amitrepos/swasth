@@ -307,6 +307,7 @@ When other docs disagree with `MOTHERBOOK.md`, motherbook wins.
 - `docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md` — legal requirements
 - `docs/HEALTH_SIGNAL_LOGIC.md` — clinical spec for the FOFO signal engine
 - `docs/SESSION_2026-05-02_FOFO_DIGEST.md` — full FOFO session digest with persona panels
+- `docs/INVESTOR_3YR_MODEL.md` — locked 3-year financial model (conservative 8-city). Use when investor asks revenue, expenses, ROI, break-even.
 - Pitch deck, outreach drafts, founder-pitch — all derive from sections of this file + the motherbook
 
 ---
