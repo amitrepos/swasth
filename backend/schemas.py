@@ -1,7 +1,7 @@
 import re
 from pydantic import BaseModel, EmailStr, validator, Field, field_validator
 from typing import Optional, List, Literal
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 
 # Options
@@ -560,17 +560,36 @@ class HealthReadingUpdate(BaseModel):
     weight_value: Optional[float] = Field(None, ge=1, le=400)
     weight_unit: Optional[str] = None
 
-    notes: Optional[str] = None
+    # Cap notes length to prevent oversized payloads from exhausting DB
+    # storage. 2000 chars is generous for clinical context.
+    notes: Optional[str] = Field(None, max_length=2000)
     reading_timestamp: Optional[datetime] = None
 
     @field_validator('reading_timestamp', mode='after')
     @classmethod
-    def _normalize_ts(cls, v: Optional[datetime]) -> Optional[datetime]:
+    def _normalize_and_bound_ts(cls, v: Optional[datetime]) -> Optional[datetime]:
+        """Normalize to UTC and reject nonsensical timestamps.
+
+        - Allow up to 5 min in the future (clock-skew tolerance).
+        - Reject timestamps older than 2 years — health readings are
+          near-real-time data; backdating arbitrarily would skew trend
+          analysis and AI insights.
+        """
         if v is None:
             return v
         if v.tzinfo is None:
-            return v.replace(tzinfo=timezone.utc)
-        return v.astimezone(timezone.utc)
+            v = v.replace(tzinfo=timezone.utc)
+        else:
+            v = v.astimezone(timezone.utc)
+
+        now = datetime.now(timezone.utc)
+        max_future = now + timedelta(minutes=5)
+        max_past = now - timedelta(days=730)  # ~2 years
+        if v > max_future:
+            raise ValueError("reading_timestamp cannot be more than 5 minutes in the future")
+        if v < max_past:
+            raise ValueError("reading_timestamp cannot be more than 2 years in the past")
+        return v
 
 
 class HealthReadingResponse(BaseModel):

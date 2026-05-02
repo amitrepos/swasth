@@ -477,6 +477,105 @@ def test_edit_refreshes_doctor_triage_link(client, auth_headers, db):
     assert refreshed.last_reading_type == "glucose"
 
 
+def test_delete_survives_cache_invalidation_failure(
+    client, auth_headers, db, monkeypatch
+):
+    """Even if cache invalidation raises, the reading deletion must
+    persist. Regression for the rollback-wipes-delete bug."""
+    pid = _pid(db)
+    r = _r(db, pid, "glucose", 100.0, glucose_value=100.0, status_flag="NORMAL")
+    db.commit()
+    rid = r.id
+
+    # Force the AiInsightLog query to blow up so the cache try/except fires
+    import routes_health as rh
+
+    real_query = rh.models.AiInsightLog
+    class _Boom:
+        @classmethod
+        def __getattr__(cls, name):
+            raise RuntimeError("simulated cache failure")
+    # Patch only the AiInsightLog reference used in the cache block
+    orig_update = None
+    from sqlalchemy.orm import Query
+
+    def _explode(*a, **kw):
+        raise RuntimeError("simulated cache failure")
+
+    monkeypatch.setattr(Query, "update", _explode)
+
+    resp = client.delete(f"/api/readings/{rid}", headers=auth_headers)
+    assert resp.status_code == 204, resp.text
+
+    db.expire_all()
+    survivor = db.query(models.HealthReading).filter(
+        models.HealthReading.id == rid
+    ).first()
+    assert survivor is None, (
+        "Reading deletion must persist even if cache invalidation fails"
+    )
+
+
+def test_notes_oversized_rejected(client, auth_headers, db):
+    """notes max_length=2000 must reject oversized payloads."""
+    pid = _pid(db)
+    r = _r(db, pid, "glucose", 100.0, glucose_value=100.0, status_flag="NORMAL")
+    db.commit()
+
+    huge = "x" * 5000
+    resp = client.put(
+        f"/api/readings/{r.id}",
+        json={"notes": huge},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422, "notes >2000 chars must be rejected"
+
+
+def test_reading_timestamp_far_future_rejected(client, auth_headers, db):
+    """Timestamps more than 5 minutes in the future must be rejected."""
+    pid = _pid(db)
+    r = _r(db, pid, "glucose", 100.0, glucose_value=100.0, status_flag="NORMAL")
+    db.commit()
+
+    far_future = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+    resp = client.put(
+        f"/api/readings/{r.id}",
+        json={"glucose_value": 100.0, "reading_timestamp": far_future},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422
+
+
+def test_reading_timestamp_far_past_rejected(client, auth_headers, db):
+    """Timestamps older than 2 years must be rejected."""
+    pid = _pid(db)
+    r = _r(db, pid, "glucose", 100.0, glucose_value=100.0, status_flag="NORMAL")
+    db.commit()
+
+    far_past = (datetime.now(timezone.utc) - timedelta(days=1000)).isoformat()
+    resp = client.put(
+        f"/api/readings/{r.id}",
+        json={"glucose_value": 100.0, "reading_timestamp": far_past},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422
+
+
+def test_reading_timestamp_recent_past_accepted(client, auth_headers, db):
+    """Timestamps within the 2-year window must be accepted."""
+    pid = _pid(db)
+    r = _r(db, pid, "glucose", 100.0, glucose_value=100.0, status_flag="NORMAL")
+    db.commit()
+
+    recent = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
+    resp = client.put(
+        f"/api/readings/{r.id}",
+        json={"glucose_value": 100.0, "reading_timestamp": recent},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+
+
 def test_edit_invalidates_trend_cache(client, auth_headers, db):
     """Editing a reading must wipe TrendSummaryCache so AI re-evaluates."""
     pid = _pid(db)

@@ -1420,17 +1420,19 @@ def delete_reading(
     profile_id = db_reading.profile_id
     was_weight = db_reading.reading_type == "weight"
 
+    # ── Stage 1: commit the delete + weight resync as ONE atomic unit ──
+    # Cache invalidation MUST run in its own transactional boundary —
+    # if cache work fails and we rollback within the same transaction,
+    # the deletion gets reverted too and we'd return 204 while the row
+    # still exists in the DB.
     db.delete(db_reading)
-    db.flush()
 
-    # If a weight reading was removed, re-sync Profile.weight to whatever
-    # the newest remaining weight reading is. Otherwise Profile.weight
-    # could point at a now-deleted row.
     if was_weight:
         latest_weight = db.query(models.HealthReading).filter(
             models.HealthReading.profile_id == profile_id,
             models.HealthReading.reading_type == "weight",
             models.HealthReading.weight_value.isnot(None),
+            models.HealthReading.id != reading_id,
         ).order_by(models.HealthReading.reading_timestamp.desc()).first()
         profile = db.query(models.Profile).filter(
             models.Profile.id == profile_id
@@ -1438,8 +1440,11 @@ def delete_reading(
         if profile is not None:
             profile.weight = latest_weight.weight_value if latest_weight else None
 
-    # Invalidate caches so AI re-evaluates after deletion. See
-    # update_reading() above for the same three-cache rationale.
+    db.commit()
+
+    # ── Stage 2: cache invalidation in a fresh transaction ─────────────
+    # Failures here must NOT undo the delete. _insight_cache is
+    # in-memory so it's free to clear unconditionally.
     stale = [k for k in _insight_cache if k[0] == profile_id]
     for k in stale:
         del _insight_cache[k]
@@ -1451,15 +1456,14 @@ def delete_reading(
             models.AiInsightLog.profile_id == profile_id,
             models.AiInsightLog.model_used != "invalidated",
         ).update({"model_used": "invalidated"})
+        db.commit()
     except Exception:
         logger.warning(
             "Insight cache invalidation failed for profile %s",
             profile_id,
             exc_info=True,
         )
-        db.rollback()
-
-    db.commit()
+        db.rollback()  # safe — only rolls back the cache work, delete is already committed
 
     _refresh_doctor_triage_for_profile(db, profile_id)
 
