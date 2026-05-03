@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="A 2-minute story for NRIs whose parents live in India. Plus a 4-question survey." />
+  <title>Swasth — The 3am Call You Don't Want</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://swasth.health/survey.html" />
+  <meta property="og:title" content="The 3am call you don't want — Swasth" />
+  <meta property="og:description" content="A 2-minute story for NRI children of elderly Indian parents. What if she didn't have to be alone?" />
+  <meta property="og:image" content="https://swasth.health/logo.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      /* Swasth brand tokens — mirror of web/landing/src/index.css */
+      --background: hsl(204 100% 97%);     /* sky-50 */
+      --bg-grad-start: hsl(204 100% 97%);
+      --bg-grad-end: hsl(199 89% 94%);     /* sky-100 */
+      --foreground: hsl(217 33% 17%);      /* slate-800 */
+      --muted-fg: hsl(215 16% 47%);
+
+      --primary: hsl(199 89% 48%);         /* sky-500 */
+      --primary-700: hsl(199 89% 38%);
+      --primary-soft: hsl(199 89% 94%);    /* sky-100 */
+      --primary-foreground: #ffffff;
+
+      --accent: hsl(38 92% 50%);           /* amber-500 */
+      --accent-soft: hsl(48 100% 92%);
+      --accent-fg: hsl(26 90% 30%);
+
+      --hero-gradient: linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(217, 91%, 60%) 100%);
+
+      --card: #ffffff;
+      --border: hsl(199 89% 90%);
+      --border-strong: hsl(199 30% 80%);
+
+      --shadow-soft: 0 8px 32px -4px rgba(14, 165, 233, 0.10);
+      --shadow-strong: 0 20px 50px -10px rgba(14, 165, 233, 0.18);
+
+      --radius: 16px;
+      --radius-lg: 24px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
+      background-attachment: fixed;
+      color: var(--foreground);
+      line-height: 1.65;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ---------- Top nav ---------- */
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: saturate(160%) blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topnav-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      color: var(--primary-700);
+      font-size: 18px;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+    }
+    .brand img { width: 30px; height: 30px; border-radius: 8px; }
+    .brand .dot { color: var(--accent); }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+      transition: transform 0.1s, box-shadow 0.15s;
+    }
+    .nav-cta:hover { box-shadow: 0 6px 18px rgba(14, 165, 233, 0.5); transform: translateY(-1px); }
+
+    /* ---------- Layout ---------- */
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 36px 20px 80px;
+    }
+
+    /* ---------- Hero badge ---------- */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-700);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+    }
+    .badge .pulse {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    /* ---------- Story card ---------- */
+    .story {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 40px 32px;
+      box-shadow: var(--shadow-strong);
+      border: 1px solid #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .story::before {
+      content: "";
+      position: absolute;
+      top: -100px; right: -100px;
+      width: 280px; height: 280px;
+      background: var(--hero-gradient);
+      opacity: 0.06;
+      border-radius: 50%;
+      filter: blur(40px);
+    }
+    .story h1 {
+      font-size: 34px;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      margin-bottom: 24px;
+      font-weight: 800;
+      background: var(--hero-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      position: relative;
+    }
+    .story p {
+      margin-bottom: 18px;
+      color: var(--foreground);
+      position: relative;
+    }
+    .story em { color: var(--muted-fg); font-style: italic; }
+    .story strong { color: var(--primary-700); font-weight: 700; }
+    .story .punch {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary-700);
+      margin-top: 32px;
+      margin-bottom: 20px;
+      letter-spacing: -0.015em;
+    }
+    .story .price-card {
+      margin-top: 32px;
+      padding: 22px 24px;
+      background: linear-gradient(135deg, var(--accent-soft) 0%, #fff8e1 100%);
+      border: 1.5px solid hsl(38 92% 70%);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .story .price-card .amount {
+      display: block;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent-fg);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .story .price-card .sub {
+      color: var(--accent-fg);
+      font-weight: 600;
+      font-size: 15px;
+      opacity: 0.85;
+    }
+
+    /* ---------- Section divider ---------- */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 44px 0 28px;
+      color: var(--primary-700);
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border-strong);
+    }
+
+    /* ---------- Survey card ---------- */
+    .survey {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid #fff;
+    }
+    .survey h2 {
+      font-size: 26px;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      font-weight: 800;
+      color: var(--foreground);
+    }
+    .survey .lead {
+      color: var(--muted-fg);
+      font-size: 15px;
+      margin-bottom: 28px;
+    }
+
+    .q { margin-bottom: 24px; }
+    .q label.q-label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--foreground);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+    .q .hint {
+      display: block;
+      color: var(--muted-fg);
+      font-weight: 500;
+      font-size: 14px;
+      margin-top: -4px;
+      margin-bottom: 10px;
+    }
+    textarea, input[type="text"], input[type="email"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1.5px solid var(--border-strong);
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 16px;
+      color: var(--foreground);
+      background: #f8fbfd;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+      resize: vertical;
+      min-height: 48px;
+    }
+    textarea { min-height: 88px; line-height: 1.5; }
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .radio-group label {
+      flex: 1;
+      min-width: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 16px;
+      border: 1.5px solid var(--border-strong);
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 15px;
+      background: #f8fbfd;
+      transition: all 0.15s;
+      min-height: 48px;
+    }
+    .radio-group input[type="radio"] {
+      accent-color: var(--primary);
+      width: 18px; height: 18px; margin: 0;
+    }
+    .radio-group label:has(input:checked) {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary-700);
+      box-shadow: 0 4px 14px rgba(14, 165, 233, 0.18);
+    }
+
+    .reason { display: none; margin-top: 14px; }
+    .reason.show { display: block; animation: slideDown 0.2s ease-out; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+    .yes-box {
+      display: none;
+      margin-top: 16px;
+      padding: 20px 22px;
+      background: linear-gradient(135deg, var(--primary-soft) 0%, #e0f2fe 100%);
+      border: 1.5px solid var(--primary);
+      border-radius: 14px;
+      text-align: center;
+      animation: slideDown 0.2s ease-out;
+    }
+    .yes-box.show { display: block; }
+    .yes-box .yes-msg {
+      font-weight: 700;
+      color: var(--primary-700);
+      font-size: 16px;
+      margin-bottom: 14px;
+    }
+    .yes-box .yes-cta {
+      display: inline-block;
+      width: 100%;
+      padding: 16px 20px;
+      background: var(--hero-gradient);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35);
+      min-height: 56px;
+      box-sizing: border-box;
+    }
+    .yes-box .yes-hint {
+      margin-top: 12px;
+      color: var(--muted-fg);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 18px;
+      background: var(--hero-gradient);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      margin-top: 8px;
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35);
+      transition: transform 0.05s, box-shadow 0.15s;
+      min-height: 56px;
+    }
+    .submit-btn:hover { box-shadow: 0 12px 30px rgba(14, 165, 233, 0.5); }
+    .submit-btn:active { transform: scale(0.99); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .thank-you {
+      display: none;
+      text-align: center;
+      padding: 48px 20px;
+    }
+    .thank-you.show { display: block; }
+    .thank-you .check {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px;
+      font-size: 36px;
+    }
+    .thank-you h2 { color: var(--primary-700); margin-bottom: 12px; font-size: 26px; font-weight: 800; }
+    .thank-you p { color: var(--muted-fg); margin-bottom: 24px; }
+    .thank-you a {
+      display: inline-block;
+      padding: 16px 32px;
+      background: var(--hero-gradient);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 800;
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35);
+    }
+
+    /* ---------- Footer ---------- */
+    .footer {
+      text-align: center;
+      margin-top: 48px;
+      padding: 24px 16px;
+      color: var(--muted-fg);
+      font-size: 14px;
+    }
+    .footer a {
+      color: var(--primary-700);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .footer a:hover { text-decoration: underline; }
+    .footer .learn-more {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 12px 24px;
+      background: #fff;
+      color: var(--primary-700);
+      border: 1.5px solid var(--border-strong);
+      border-radius: 999px;
+      font-weight: 700;
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 600px) {
+      .story { padding: 28px 22px; }
+      .survey { padding: 28px 22px; }
+      .story h1 { font-size: 26px; }
+      .story .punch { font-size: 19px; }
+      .story .price-card .amount { font-size: 24px; }
+      .topnav-inner { padding: 12px 16px; }
+      .nav-cta { padding: 8px 14px; font-size: 13px; }
+      body { font-size: 16px; }
+      .wrap { padding: 24px 16px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top nav -->
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <a class="brand" href="https://swasth.health">
+        <img src="/logo.png" alt="" onerror="this.style.display='none'" />
+        <span>Swasth<span class="dot">.</span></span>
+      </a>
+      <a class="nav-cta" href="https://swasth.health" target="_blank" rel="noopener">
+        Visit swasth.health →
+      </a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+
+    <span class="badge"><span class="pulse"></span>For NRI Families</span>
+
+    <article class="story">
+      <h1>The 3am call you don't want.</h1>
+
+      <p>3am. Your phone rings. A call from home. <em>"Maa ko hospital le ja rahe hain — chest pain."</em></p>
+
+      <p>By the time you land, she's in ICU. Heart attack. She'll survive — barely.</p>
+
+      <p>Three days in ICU. Tests. Angioplasty. Flight back. Unpaid leave. <strong>Rs 7 lakh in nine days.</strong></p>
+
+      <p>The money isn't the worst part. The worst part is sitting outside the ICU at 2am, scrolling her WhatsApp, wondering when her health started to drift. <em>You weren't watching. She was alone.</em></p>
+
+      <p class="punch">What if you could prevent this?</p>
+
+      <p>Swasth is the daily health companion her doctor recommends. She tracks her medical metrics, her food, her physical activity — all through Swasth. Her doctor reviews weekly. The Swasth coaching team checks in. The AI quietly notices the drift no one else would catch.</p>
+
+      <p>Three sets of eyes. Every day. The slow rise in week 4 becomes a doctor's call in week 5 — not an ambulance in week 52.</p>
+
+      <p><strong>Imagine she has people who watch over her — the way she once watched over you.</strong> Every quarter a report lands in your inbox: <em>"BP was trending up. Medication was adjusted. Cardiac risk: stable."</em> You took proactive action — and we didn't even have to tell you.</p>
+
+      <p>You sleep at night. She isn't alone. Neither are you.</p>
+
+      <div class="price-card">
+        <span class="amount">Rs 999 / month</span>
+        <span class="sub">Less than the cost of one ICU night.</span>
+      </div>
+    </article>
+
+    <div class="divider">Help us build this right</div>
+
+    <section class="survey" id="survey" aria-labelledby="surveyHeading">
+      <h2 id="surveyHeading">4 questions. ~2 minutes.</h2>
+      <p class="lead">Honest answers help most. Your story shapes Swasth.</p>
+
+      <form id="surveyForm" onsubmit="return submitSurvey(event)">
+        <div class="q">
+          <label class="q-label" for="q1">1. In the last 12 months, did you have a health scare with your parent? What happened?</label>
+          <textarea id="q1" name="q1" placeholder="e.g. Mom had chest pain in February. We flew home for two weeks…"></textarea>
+        </div>
+
+        <div class="q">
+          <label class="q-label" for="q2">2. Today, how do you keep tabs on their health from where you live?</label>
+          <textarea id="q2" name="q2" placeholder="e.g. Daily WhatsApp call. I trust they'll tell me if something's wrong…"></textarea>
+        </div>
+
+        <div class="q">
+          <label class="q-label">3. Would you sign up for Swasth's waitlist right now?</label>
+          <div class="radio-group" role="radiogroup">
+            <label><input type="radio" name="q3" value="Yes" required onchange="handleQ3('yes')" /> Yes</label>
+            <label><input type="radio" name="q3" value="Maybe" onchange="handleQ3('reason')" /> Maybe</label>
+            <label><input type="radio" name="q3" value="No" onchange="handleQ3('reason')" /> No</label>
+          </div>
+
+          <div class="yes-box" id="yesBox">
+            <p class="yes-msg">Wonderful 🙏 Tap below to join the waitlist now.</p>
+            <a href="https://swasth.health/#waitlist" target="_blank" rel="noopener" class="yes-cta">
+              Join the waitlist on swasth.health →
+            </a>
+            <p class="yes-hint">After joining, please come back and submit this survey so we know your story.</p>
+          </div>
+
+          <div class="reason" id="reasonBox">
+            <label class="q-label" for="q4" style="margin-top: 14px;">What's holding you back?</label>
+            <span class="hint">Honest objections help us most. Price, trust, parent won't use it, already have something — anything.</span>
+            <textarea id="q4" name="q4" placeholder="What's the real reason?"></textarea>
+          </div>
+        </div>
+
+        <div class="q">
+          <label class="q-label" for="email">Your email <span style="font-weight: 500; color: var(--muted-fg);">(optional — only for early-access updates)</span></label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Submit my answers</button>
+      </form>
+
+      <div class="thank-you" id="thankYou" role="status" aria-live="polite">
+        <div class="check">🙏</div>
+        <h2>Thank you</h2>
+        <p>Your answer helps us build something real for families like yours.</p>
+        <a href="https://swasth.health" id="ctaLink">Visit swasth.health →</a>
+      </div>
+    </section>
+
+    <div class="footer">
+      <p>Want to know more about Swasth?</p>
+      <a class="learn-more" href="https://swasth.health" target="_blank" rel="noopener">Visit swasth.health →</a>
+      <p style="margin-top: 24px;">Swasth · Made for families across borders.</p>
+    </div>
+
+  </div>
+
+  <script>
+    // Replace with deployed Google Apps Script web app URL when ready
+    const GOOGLE_SCRIPT_URL = "";
+
+    function handleQ3(state) {
+      const reasonBox = document.getElementById("reasonBox");
+      const yesBox = document.getElementById("yesBox");
+      if (state === "yes") {
+        reasonBox.classList.remove("show");
+        yesBox.classList.add("show");
+      } else if (state === "reason") {
+        yesBox.classList.remove("show");
+        reasonBox.classList.add("show");
+      } else {
+        yesBox.classList.remove("show");
+        reasonBox.classList.remove("show");
+      }
+    }
+
+    async function submitSurvey(e) {
+      e.preventDefault();
+      const btn = document.getElementById("submitBtn");
+      btn.disabled = true;
+      btn.textContent = "Submitting…";
+
+      const data = {
+        q1_health_scare: document.getElementById("q1").value,
+        q2_current_tracking: document.getElementById("q2").value,
+        q3_signup: document.querySelector('input[name="q3"]:checked')?.value || "",
+        q4_reason_no: document.getElementById("q4").value,
+        email: document.getElementById("email").value,
+        timestamp: new Date().toISOString(),
+        referrer: document.referrer || "direct",
+        user_agent: navigator.userAgent
+      };
+
+      try {
+        if (GOOGLE_SCRIPT_URL) {
+          await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          });
+        } else {
+          console.log("Survey response (no endpoint configured):", data);
+        }
+
+        document.getElementById("surveyForm").style.display = "none";
+        const ty = document.getElementById("thankYou");
+        ty.classList.add("show");
+
+        if (data.q3_signup === "Yes") {
+          document.getElementById("ctaLink").textContent = "Join the waitlist at swasth.health →";
+          setTimeout(() => { window.location.href = "https://swasth.health/#waitlist"; }, 1500);
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = "Submit my answers";
+        alert("Something went wrong. Please try again.");
+      }
+      return false;
+    }
+  </script>
+</body>
+</html>
