@@ -287,6 +287,45 @@ MockClient createMockClient({
       );
     }
 
+    // PUT /readings/{id} — edit existing reading. Echoes back the
+    // updated fields so the UI can refresh the tile.
+    if (RegExp(r'/readings/\d+$').hasMatch(path) && method == 'PUT') {
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      final id = int.tryParse(path.split('/').last) ?? 0;
+      // Pretend the existing row was a glucose reading; return merged
+      // payload with sensible defaults for fields the test didn't send.
+      return http.Response(
+        jsonEncode({
+          'id': id,
+          'profile_id': 1,
+          'reading_type': 'glucose',
+          'glucose_value': body['glucose_value'] ?? 110.0,
+          'glucose_unit': 'mg/dL',
+          'systolic': body['systolic'],
+          'diastolic': body['diastolic'],
+          'pulse_rate': body['pulse_rate'],
+          'weight_value': body['weight_value'],
+          'value_numeric': (body['glucose_value'] ?? body['systolic'] ?? body['weight_value'] ?? 110.0),
+          'unit_display': 'mg/dL',
+          'status_flag': 'NORMAL',
+          'notes': body['notes'],
+          'reading_timestamp': DateTime.now().toIso8601String(),
+          'created_at': DateTime.now().toIso8601String(),
+        }),
+        200,
+      );
+    }
+
+    // DELETE /readings/{id} — 204 No Content
+    if (RegExp(r'/readings/\d+$').hasMatch(path) && method == 'DELETE') {
+      return http.Response('', 204);
+    }
+
+    // DELETE /meals/{id} — 204 No Content
+    if (RegExp(r'/meals/\d+$').hasMatch(path) && method == 'DELETE') {
+      return http.Response('', 204);
+    }
+
     if (path.endsWith('/readings') && method == 'GET') {
       return http.Response(
         jsonEncode([

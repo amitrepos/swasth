@@ -551,6 +551,33 @@ class AppLocalizationsHi extends AppLocalizations {
   String get readingDeleted => 'रीडिंग हटाई गई';
 
   @override
+  String get deleteMeal => 'भोजन हटाएं';
+
+  @override
+  String get deleteMealConfirm => 'क्या आप वाकई यह भोजन हटाना चाहते हैं?';
+
+  @override
+  String get mealDeleted => 'भोजन हटाया गया';
+
+  @override
+  String get editReading => 'रीडिंग संपादित करें';
+
+  @override
+  String get readingUpdated => 'रीडिंग अपडेट हुई';
+
+  @override
+  String get weightLabel => 'वज़न';
+
+  @override
+  String get weightValidation => 'मान्य वज़न दर्ज करें (1–400 किग्रा)';
+
+  @override
+  String get pulseValidation => 'मान्य पल्स दर्ज करें (30–220 bpm)';
+
+  @override
+  String get notes => 'नोट्स (वैकल्पिक)';
+
+  @override
   String get statusNormal => 'सामान्य';
 
   @override

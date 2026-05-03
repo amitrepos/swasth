@@ -27,12 +27,61 @@ from models import ReportTriggerType
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 from encryption_service import encrypt, encrypt_float
-from health_utils import age_context_bp, age_context_glucose, classify_spo2
+from health_utils import age_context_bp, age_context_glucose, classify_bp, classify_glucose, classify_spo2
 from utils.datetime_helpers import ensure_utc
 
 router = APIRouter()
 
 _VALID_READING_TYPES = {'glucose', 'blood_pressure', 'spo2', 'steps', 'weight'}
+
+
+def _refresh_doctor_triage_for_profile(db: Session, profile_id: int) -> None:
+    """Recompute the DoctorPatientLink triage cache for every active link
+    on this profile.
+
+    The doctor's patient-detail screen returns `triage_status`,
+    `compliance_7d`, `trend_direction`, and `last_reading_*` directly off
+    the link row (cached). Without this refresh, editing or deleting a
+    reading leaves stale triage values on the doctor dashboard until the
+    doctor next opens the triage list.
+
+    Lazy-imported to avoid a circular import between routes_health and
+    routes_doctor. Failures must never break the reading write — caller
+    is expected to have already committed the reading change.
+    """
+    try:
+        from routes_doctor import _compute_triage_status  # local import
+        from datetime import datetime as _dt, timezone as _tz
+
+        active_links = (
+            db.query(models.DoctorPatientLink)
+            .filter(
+                models.DoctorPatientLink.profile_id == profile_id,
+                models.DoctorPatientLink.status == "active",
+            )
+            .all()
+        )
+        if not active_links:
+            return
+
+        triage = _compute_triage_status(profile_id, db)
+        now = _dt.now(_tz.utc)
+        for link in active_links:
+            link.triage_status = triage["triage_status"]
+            link.last_reading_value = triage["last_reading_value"]
+            link.last_reading_type = triage["last_reading_type"]
+            link.last_reading_at = triage["last_reading_at"]
+            link.compliance_7d = triage["compliance_7d"]
+            link.trend_direction = triage["trend_direction"]
+            link.triage_updated_at = now
+        db.commit()
+    except Exception:
+        logger.warning(
+            "Doctor triage refresh failed for profile %s",
+            profile_id,
+            exc_info=True,
+        )
+        db.rollback()
 
 # Cache: one Gemini call per (profile_id, date) — clears on server restart
 _insight_cache: dict[tuple[int, str], str] = {}
@@ -668,8 +717,12 @@ def get_ai_insight(
         .filter(
             models.AiInsightLog.profile_id == profile_id,
             models.AiInsightLog.model_used != "failed",
+            # 'invalidated' is set when a reading is edited or deleted —
+            # forces a fresh AI evaluation so the dashboard reflects the
+            # corrected values.
+            models.AiInsightLog.model_used != "invalidated",
             # Exclude nutrition analysis logs (prompt_summary contains 'nutrition')
-            (models.AiInsightLog.prompt_summary.is_(None)) | 
+            (models.AiInsightLog.prompt_summary.is_(None)) |
             (models.AiInsightLog.prompt_summary.notlike('%nutrition%')),
         )
         .order_by(models.AiInsightLog.created_at.desc())
@@ -945,8 +998,12 @@ def get_trend_summary(
         .filter(
             models.AiInsightLog.profile_id == profile_id,
             models.AiInsightLog.model_used != "failed",
+            # 'invalidated' is set when a reading is edited or deleted —
+            # forces a fresh AI evaluation so the dashboard reflects the
+            # corrected values.
+            models.AiInsightLog.model_used != "invalidated",
             # Exclude nutrition analysis logs (prompt_summary contains 'nutrition')
-            (models.AiInsightLog.prompt_summary.is_(None)) | 
+            (models.AiInsightLog.prompt_summary.is_(None)) |
             (models.AiInsightLog.prompt_summary.notlike('%nutrition%')),
         )
         .order_by(models.AiInsightLog.id.desc())
@@ -1197,8 +1254,157 @@ def get_reading(
     return db_reading
 
 
+@router.put("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
+@limiter.limit("30/minute")
+def update_reading(
+    request: Request,
+    reading_id: int,
+    payload: schemas.HealthReadingUpdate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Edit an existing reading.
+
+    - `reading_type` is immutable. Glucose/BP/weight fields are honored
+      only when relevant to the stored type.
+    - Server recomputes `status_flag`, `value_numeric`, `unit_display`,
+      and re-encrypts encrypted columns.
+    - Weight edits re-sync `Profile.weight` to the **newest** weight
+      reading after the update — editing an older weight must NOT
+      overwrite the latest.
+    - Invalidates AI insight + trend caches (same as create) so AI
+      evaluation reflects the corrected value on next load.
+    - Does NOT re-dispatch critical alerts on edit (avoid spam).
+    """
+    db_reading = db.query(models.HealthReading).filter(
+        models.HealthReading.id == reading_id
+    ).first()
+    if not db_reading:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
+
+    get_profile_editor_or_403(db_reading.profile_id, user, db)
+
+    rtype = db_reading.reading_type
+    data = payload.dict(exclude_unset=True)
+
+    if rtype == "glucose":
+        if "glucose_value" in data and data["glucose_value"] is not None:
+            v = float(data["glucose_value"])
+            db_reading.glucose_value = v
+            db_reading.glucose_value_enc = encrypt_float(v)
+            db_reading.value_numeric = v
+            db_reading.status_flag = classify_glucose(v)
+        if "glucose_unit" in data and data["glucose_unit"]:
+            db_reading.glucose_unit = data["glucose_unit"]
+            db_reading.unit_display = data["glucose_unit"]
+        if "sample_type" in data:
+            db_reading.sample_type = data["sample_type"]
+
+    elif rtype == "blood_pressure":
+        sys_v = data.get("systolic", db_reading.systolic) if "systolic" in data else db_reading.systolic
+        dia_v = data.get("diastolic", db_reading.diastolic) if "diastolic" in data else db_reading.diastolic
+        if "systolic" in data and data["systolic"] is not None:
+            db_reading.systolic = float(data["systolic"])
+            db_reading.systolic_enc = encrypt_float(float(data["systolic"]))
+            sys_v = float(data["systolic"])
+        if "diastolic" in data and data["diastolic"] is not None:
+            db_reading.diastolic = float(data["diastolic"])
+            db_reading.diastolic_enc = encrypt_float(float(data["diastolic"]))
+            dia_v = float(data["diastolic"])
+        if "pulse_rate" in data and data["pulse_rate"] is not None:
+            db_reading.pulse_rate = float(data["pulse_rate"])
+            db_reading.pulse_rate_enc = encrypt_float(float(data["pulse_rate"]))
+        if "bp_unit" in data and data["bp_unit"]:
+            db_reading.bp_unit = data["bp_unit"]
+            db_reading.unit_display = data["bp_unit"]
+        if sys_v is not None and dia_v is not None:
+            db_reading.status_flag = classify_bp(float(sys_v), float(dia_v))
+            db_reading.value_numeric = float(sys_v)
+
+    elif rtype == "weight":
+        if "weight_value" in data and data["weight_value"] is not None:
+            v = float(data["weight_value"])
+            db_reading.weight_value = v
+            db_reading.weight_value_enc = encrypt_float(v)
+            db_reading.value_numeric = v
+            db_reading.status_flag = "NORMAL"
+        if "weight_unit" in data and data["weight_unit"]:
+            db_reading.weight_unit = data["weight_unit"]
+            db_reading.unit_display = data["weight_unit"]
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Edit not supported for reading_type '{rtype}'",
+        )
+
+    if "notes" in data:
+        db_reading.notes = data["notes"]
+        db_reading.notes_enc = encrypt(data["notes"]) if data["notes"] is not None else None
+
+    if "reading_timestamp" in data and data["reading_timestamp"] is not None:
+        db_reading.reading_timestamp = data["reading_timestamp"]
+
+    db.add(db_reading)
+    db.flush()
+
+    # Re-sync Profile.weight to the NEWEST weight reading. Editing an
+    # older weight reading must not clobber the latest one.
+    if rtype == "weight":
+        latest_weight = db.query(models.HealthReading).filter(
+            models.HealthReading.profile_id == db_reading.profile_id,
+            models.HealthReading.reading_type == "weight",
+            models.HealthReading.weight_value.isnot(None),
+        ).order_by(models.HealthReading.reading_timestamp.desc()).first()
+        if latest_weight is not None:
+            profile = db.query(models.Profile).filter(
+                models.Profile.id == db_reading.profile_id
+            ).first()
+            if profile is not None:
+                profile.weight = latest_weight.weight_value
+
+    db.commit()
+    db.refresh(db_reading)
+
+    # Mirror create-flow cache invalidation so AI re-evaluates with the
+    # corrected reading. Three caches:
+    #   1. _insight_cache (in-memory, per-day Gemini cache)
+    #   2. TrendSummaryCache (DB, used by Insights tab)
+    #   3. AiInsightLog "smart cache" — the dashboard ai-insight endpoint
+    #      compares latest_insight.created_at vs latest_reading.reading_timestamp.
+    #      Editing a reading does NOT change its timestamp, so without
+    #      explicit invalidation the dashboard would keep returning the
+    #      stale cached insight. We mark recent rows as 'invalidated' so
+    #      they're skipped by the cache lookup but kept for audit.
+    stale = [k for k in _insight_cache if k[0] == db_reading.profile_id]
+    for k in stale:
+        del _insight_cache[k]
+    try:
+        db.query(models.TrendSummaryCache).filter(
+            models.TrendSummaryCache.profile_id == db_reading.profile_id
+        ).delete()
+        db.query(models.AiInsightLog).filter(
+            models.AiInsightLog.profile_id == db_reading.profile_id,
+            models.AiInsightLog.model_used != "invalidated",
+        ).update({"model_used": "invalidated"})
+        db.commit()
+    except Exception:
+        logger.warning(
+            "Insight cache invalidation failed for profile %s",
+            db_reading.profile_id,
+            exc_info=True,
+        )
+        db.rollback()
+
+    _refresh_doctor_triage_for_profile(db, db_reading.profile_id)
+
+    return db_reading
+
+
 @router.delete("/readings/{reading_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("30/minute")
 def delete_reading(
+    request: Request,
     reading_id: int,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
@@ -1210,9 +1416,57 @@ def delete_reading(
 
     # Verify editor/owner access (viewers cannot delete readings)
     get_profile_editor_or_403(db_reading.profile_id, user, db)
-    
+
+    profile_id = db_reading.profile_id
+    was_weight = db_reading.reading_type == "weight"
+
+    # ── Stage 1: commit the delete + weight resync as ONE atomic unit ──
+    # Cache invalidation MUST run in its own transactional boundary —
+    # if cache work fails and we rollback within the same transaction,
+    # the deletion gets reverted too and we'd return 204 while the row
+    # still exists in the DB.
     db.delete(db_reading)
+
+    if was_weight:
+        latest_weight = db.query(models.HealthReading).filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == "weight",
+            models.HealthReading.weight_value.isnot(None),
+            models.HealthReading.id != reading_id,
+        ).order_by(models.HealthReading.reading_timestamp.desc()).first()
+        profile = db.query(models.Profile).filter(
+            models.Profile.id == profile_id
+        ).first()
+        if profile is not None:
+            profile.weight = latest_weight.weight_value if latest_weight else None
+
     db.commit()
+
+    # ── Stage 2: cache invalidation in a fresh transaction ─────────────
+    # Failures here must NOT undo the delete. _insight_cache is
+    # in-memory so it's free to clear unconditionally.
+    stale = [k for k in _insight_cache if k[0] == profile_id]
+    for k in stale:
+        del _insight_cache[k]
+    try:
+        db.query(models.TrendSummaryCache).filter(
+            models.TrendSummaryCache.profile_id == profile_id
+        ).delete()
+        db.query(models.AiInsightLog).filter(
+            models.AiInsightLog.profile_id == profile_id,
+            models.AiInsightLog.model_used != "invalidated",
+        ).update({"model_used": "invalidated"})
+        db.commit()
+    except Exception:
+        logger.warning(
+            "Insight cache invalidation failed for profile %s",
+            profile_id,
+            exc_info=True,
+        )
+        db.rollback()  # safe — only rolls back the cache work, delete is already committed
+
+    _refresh_doctor_triage_for_profile(db, profile_id)
+
     return Response(status_code=204)
 
 

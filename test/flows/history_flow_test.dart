@@ -183,6 +183,87 @@ void main() {
       expect(find.text('No readings yet'), findsNothing);
     });
 
+    // ──────────────────────────────────────────────────────────────────
+    // Edit reading + delete meal flows (PR: edit + delete sync)
+    // ──────────────────────────────────────────────────────────────────
+
+    testWidgets('Tap edit pencil on glucose tile → opens EditReadingScreen', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtHistory(tester);
+
+      // Reading id=2 from mock is glucose. Edit icon is keyed.
+      final editBtn = find.byKey(const Key('history_edit_reading_2'));
+      expect(editBtn, findsOneWidget,
+          reason: 'Edit pencil must render on glucose reading tile');
+      await tester.tap(editBtn);
+      await pumpN(tester, frames: 10);
+
+      // Edit screen should be on stack — glucose value field present.
+      expect(find.byKey(const Key('edit_glucose_value')), findsOneWidget);
+    });
+
+    testWidgets('Edit glucose → save → PUT /readings/{id} fires + list reloads', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtHistory(tester);
+
+      await tester.tap(find.byKey(const Key('history_edit_reading_2')));
+      await pumpN(tester, frames: 10);
+
+      // Replace the value
+      await tester.enterText(
+        find.byKey(const Key('edit_glucose_value')),
+        '95',
+      );
+      await pumpN(tester, frames: 5);
+
+      env.tracker.clear();
+      await tester.tap(find.byKey(const Key('edit_reading_save')));
+      await pumpN(tester, frames: 20);
+
+      expect(
+        env.tracker.hasCalled('PUT', '/readings/2'),
+        isTrue,
+        reason: 'Save must call PUT /readings/{id}',
+      );
+      final body = env.tracker.lastRequestBody('PUT', '/readings/2');
+      expect(body?['glucose_value'], 95.0,
+          reason: 'PUT body must carry the new glucose value');
+      // After save we pop back; history must refetch readings.
+      expect(env.tracker.hasCalled('GET', '/readings'), isTrue);
+    });
+
+    testWidgets('Delete meal → DELETE /meals/{id} fires + list reloads', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtHistory(tester);
+
+      // Find delete icon inside the breakfast tile (id=101)
+      final tile = find.byKey(const Key('history_meal_tile_101'));
+      expect(tile, findsOneWidget);
+      final deleteBtn = find.descendant(
+        of: tile,
+        matching: find.byIcon(Icons.delete_outline),
+      );
+      expect(deleteBtn, findsOneWidget,
+          reason: 'Delete icon must render on meal tile for editor profiles');
+
+      await tester.tap(deleteBtn);
+      await pumpN(tester, frames: 10);
+
+      // Confirm the dialog
+      env.tracker.clear();
+      await tester.tap(find.text('Delete'));
+      await pumpN(tester, frames: 20);
+
+      expect(
+        env.tracker.hasCalled('DELETE', '/meals/101'),
+        isTrue,
+        reason: 'Confirming the dialog must call DELETE /meals/{id}',
+      );
+    });
+
     testWidgets('Empty everything still shows the empty state', (tester) async {
       env = await TestEnv.createAtHistory(
         tester,

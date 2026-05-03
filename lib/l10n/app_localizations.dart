@@ -1112,6 +1112,60 @@ abstract class AppLocalizations {
   /// **'Reading deleted'**
   String get readingDeleted;
 
+  /// No description provided for @deleteMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Meal'**
+  String get deleteMeal;
+
+  /// No description provided for @deleteMealConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this meal?'**
+  String get deleteMealConfirm;
+
+  /// No description provided for @mealDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal deleted'**
+  String get mealDeleted;
+
+  /// No description provided for @editReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Reading'**
+  String get editReading;
+
+  /// No description provided for @readingUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading updated'**
+  String get readingUpdated;
+
+  /// No description provided for @weightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get weightLabel;
+
+  /// No description provided for @weightValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid weight (1–400 kg)'**
+  String get weightValidation;
+
+  /// No description provided for @pulseValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid pulse (30–220 bpm)'**
+  String get pulseValidation;
+
+  /// No description provided for @notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get notes;
+
   /// No description provided for @statusNormal.
   ///
   /// In en, this message translates to:
