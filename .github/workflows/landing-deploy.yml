@@ -1,0 +1,88 @@
+name: Deploy Landing (web/landing → swasth.health)
+
+# Sync web/landing/ to the prod EC2's /var/www/swasth_interest_form/ on every
+# master push that touches landing files. Keeps the monorepo as source of
+# truth without needing to install npm deps on the small EC2 (which OOMs).
+#
+# Why /var/www/swasth_interest_form/ and not /var/www/swasth/web/landing/?
+# Historical: the standalone interest_form directory has node_modules already
+# installed and a stable PM2 process. Running `npm install` on the t3.micro
+# is unsafe under load. Source files only — Vite HMR picks up the changes.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "web/landing/src/**"
+      - "web/landing/public/**"
+      - "web/landing/index.html"
+      - ".github/workflows/landing-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: landing-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Sync landing source + restart PM2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync src/ to prod
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "web/landing/src/*"
+          target: "/var/www/swasth_interest_form/src/"
+          strip_components: 3
+          overwrite: true
+
+      - name: Sync public/ to prod
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "web/landing/public/*"
+          target: "/var/www/swasth_interest_form/public/"
+          strip_components: 3
+          overwrite: true
+
+      - name: Sync index.html to prod
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "web/landing/index.html"
+          target: "/var/www/swasth_interest_form/"
+          strip_components: 2
+          overwrite: true
+
+      - name: Restart PM2 + verify
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            pm2 restart swasth-interest-form --update-env
+            sleep 8
+            curl -sI --max-time 10 https://swasth.health/ | head -1
+            curl -sI --max-time 10 https://swasth.health/survey | head -1
+            echo "✅ Landing deployed"
+
+      - name: Smoke test from runner
+        run: |
+          set -e
+          sleep 4
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://swasth.health/survey)
+          if [ "$code" != "200" ]; then
+            echo "❌ /survey returned HTTP $code"
+            exit 1
+          fi
+          echo "✅ https://swasth.health/survey returned 200"
