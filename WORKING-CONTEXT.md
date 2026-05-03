@@ -1,5 +1,6 @@
 # Swasth — Working Context (Live Sprint Board)
 
+> **Strategy spine:** `MOTHERBOOK.md` (phases + triggers + pitches). Everything else flows from it.
 > **Updated:** 2026-04-10 (end of day)
 > **Sprint:** Bihar Pilot Prep
 > **Branch:** `master` (all Session A PRs merged; Session B still has branches in flight)

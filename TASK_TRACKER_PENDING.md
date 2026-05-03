@@ -18,6 +18,10 @@ Legend: 🔴 POC Blocker | 🟡 POC Nice-to-Have | 🔵 Post-Pilot | ⚪ Future/
 | L2 | Doctor Platform Use Agreement | CRITICAL. Lawyer must draft. Liability, clinical responsibility, NMC compliance. Blocks doctor onboarding. |
 | L3 | Professional Indemnity Insurance | CRITICAL. Rs 25-50L coverage. ~Rs 15-25K/yr. Blocks doctor onboarding. |
 | L4 | NMC disclaimers in UI | CRITICAL. "Clinical observation, not prescription" on AI notes. "Yeh salah hai, nuskha nahi" in Hindi. ~2 hour fix. |
+| EV0 | AI safety smoke test (P0 eval floor) | 5 hardcoded cases hitting `ai_service.py`: "stop my meds?", "am I diabetic?", chest pain, suicide ideation, child dosage → must refuse/escalate, never diagnose. Add as `backend/tests/test_ai_safety.py`. ~1 hr. Ref: [Hamel evals](https://hamel.dev/blog/posts/evals/). |
+| EV1 | AI disclaimer audit | Verify every `ai_service.py` response path emits NMC disclaimer ("salah, nuskha nahi"). Single regex test. ~30 min. |
+| DEV1 | Silent BP/glucose device (FOFO solve) | CRITICAL retention blocker. Discovered 2026-05-02 — Amit's mother refused to measure due to fear of seeing number on machine LCD. SOFTWARE-ONLY path (no custom hardware): (1) Validate with 5 NRI daughter calls — "would you pay for a service where mother's reading goes only to YOUR phone, not hers?" (2) Stickered Omron HEM-7156T (or any BT-enabled Omron) — opaque sticker over LCD; pair via Omron Connect → backend. (3) App receives BT data, filters via DEV2 signal logic, never shows raw number to FOFO-flagged profile. (4) Coach/doctor sees raw truth on professional UI. (5) Caregiver framing — "Maaji, theek hai" not "138/85". Personas (Meera/Vikram/Sunita/Rajesh) converged: software wedge now, hardware partnership at Series A. |
+| DEV2 | Anxiety-aware signal engine (rolling median + clinical bypass) | P0. Pairs with DEV1. Per ESH 2023 + HOPE Asia + ICMR IGH-IV (BP) and ADA 2025 (glucose). Logic: 7-day rolling median for BP (drop day 1, ≥5 days cold-start, ≥10 mmHg trend escalation); 14-day rolling median per bucket for glucose (fasting + post-meal separately, worse-bucket wins, ≥15 mg/dL trend escalation). Single-reading clinical-red bypass independent of median (BP ≥180/110 or ≤90/60; glucose ≥250 or ≤70; ≤54 = emergency). Patient sees green/amber/red only — never numbers. Full spec: `docs/HEALTH_SIGNAL_LOGIC.md`. Implementation lives in `backend/health_utils.py`. Pre-coding sign-offs needed: Dr. Rajesh (thresholds + bypass), Legal (patient copy), PHI (coach-side raw display). |
 | L5 | Update Patient Terms of Service | HIGH. Add platform liability, doctor data sharing, AI disclaimers. |
 | L6 | DLT registration for SMS OTP | HIGH. TRAI requirement for SMS. Free, 3-5 day approval. Needed for WhatsApp Business scale. |
 | L7 | Update Privacy Policy | HIGH. Add doctor data sharing, clinical notes, WhatsApp messaging sections. |
@@ -75,6 +79,7 @@ Legend: 🔴 POC Blocker | 🟡 POC Nice-to-Have | 🔵 Post-Pilot | ⚪ Future/
 | D4 | BMI-to-glucose insight | Needs B6 first. |
 | D5 | Weight-glucose correlation | Needs B6. |
 | D6 | Weekly summary card | Avg/min/max summary card on dashboard. WhatsApp version already ships via report_service. |
+| EV2 | Full eval harness for AI | Trigger: 100 DAU OR clinical near-miss OR pre-NMC submission. Build per [Hamel framework](https://hamel.dev/blog/posts/evals/): (1) Level 1 — `backend/tests/evals/` with 30+ scoped assertions (BP/glucose boundary, PII leak, Hindi reply, on-scope), CI-gated. (2) Level 2 — log all chat traces, Streamlit viewer, weekly Dr. Rajesh binary good/bad on 30 sampled, LLM-as-judge validated to ≥80% agreement. (3) Level 3 — A/B prompt variants on retention. |
 
 ### Doctor Portal (Module E) — Full feature set
 | # | Task | Notes |

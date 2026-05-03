@@ -1,5 +1,7 @@
 # Swasth — Project Rules
 
+> **Strategy spine:** `MOTHERBOOK.md` — phases + triggers + 2-min pitches. When code conflicts with strategy, motherbook wins.
+
 ## Must Always
 1. **Use `AppColors.*`** for all semantic colors — never raw `Colors.*`
 2. **Use `AppLocalizations.of(context).*`** for all user-facing strings — never hardcode
