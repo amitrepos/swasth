@@ -198,8 +198,10 @@ def read_root():
     return {"message": "Welcome to Swasth Health App API"}
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
+    # HEAD support so external uptime monitors (UptimeRobot free tier defaults
+    # to HEAD; GET requires a paid plan) get a 200 instead of 405.
     return {"status": "healthy"}
 
 
