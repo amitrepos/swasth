@@ -56,17 +56,19 @@ String impactIcon(String glucoseImpact) {
 class QuickSelectScreen extends StatefulWidget {
   final int profileId;
 
-  /// Pre-selected meal type, set when the user reaches this screen
-  /// from a specific dashboard slot tap (Breakfast / Lunch / Snack /
-  /// Dinner). When `null` (e.g. user opened the generic meal modal),
-  /// the screen falls back to [detectMealType] which uses the current
-  /// hour. The fallback is the bug we're fixing — without an explicit
-  /// type, a user tapping "Breakfast" at 4pm got their meal saved
-  /// as `SNACK` because 3-6pm is the snack window in
-  /// [detectMealType].
+  /// Pre-selected meal type
   final String? mealType;
 
-  const QuickSelectScreen({super.key, required this.profileId, this.mealType});
+  /// If provided, this screen will update the existing meal instead of
+  /// creating a new one.
+  final int? mealId;
+
+  const QuickSelectScreen({
+    super.key,
+    required this.profileId,
+    this.mealType,
+    this.mealId,
+  });
 
   @override
   State<QuickSelectScreen> createState() => _QuickSelectScreenState();
@@ -97,22 +99,25 @@ class _QuickSelectScreenState extends State<QuickSelectScreen> {
         profileId: widget.profileId,
         category: category,
         glucoseImpact: glucoseImpactFor(category),
-        // Prefer the explicit meal type passed in (from a dashboard
-        // slot tap). Fall back to time-based detection only when the
-        // user reached this screen without tapping a specific slot.
         mealType: widget.mealType ?? detectMealType(),
         inputMethod: 'QUICK_SELECT',
         timestamp: DateTime.now(),
         userConfirmed: true,
       );
 
-      await _mealService.saveMeal(data, token);
+      if (widget.mealId != null) {
+        await _mealService.updateMeal(widget.mealId!, data, token);
+      } else {
+        await _mealService.saveMeal(data, token);
+      }
 
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.mealSavedSuccess),
+            content: Text(
+              widget.mealId != null ? l10n.mealSavedSuccess : l10n.mealSavedSuccess,
+            ),
             duration: const Duration(seconds: 2),
             backgroundColor: AppColors.success,
           ),

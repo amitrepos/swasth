@@ -9,7 +9,10 @@ import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/home/meal_input_modal.dart';
 import 'edit_reading_screen.dart';
+import 'quick_select_screen.dart';
+import 'meal_result_screen.dart';
 
 /// Unified timeline of health events for one profile.
 ///
@@ -710,16 +713,43 @@ class HistoryScreenState extends State<HistoryScreen> {
             ],
           ),
           trailing: _canEdit
-              ? IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  color: AppColors.statusCritical,
-                  onPressed: () => _deleteMeal(meal.id),
-                  tooltip: l10n.delete,
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      key: Key('history_edit_meal_${meal.id}'),
+                      icon: const Icon(Icons.edit_outlined),
+                      color: AppColors.textSecondary,
+                      onPressed: () => _editMeal(meal),
+                      tooltip: l10n.editMeal,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      color: AppColors.statusCritical,
+                      onPressed: () => _deleteMeal(meal.id),
+                      tooltip: l10n.delete,
+                    ),
+                  ],
                 )
               : null,
           isThreeLine: true,
         ),
       ),
+    );
+  }
+
+  Future<void> _editMeal(MealLog meal) async {
+    showMealInputModal(
+      context,
+      profileId: widget.profileId,
+      mealType: meal.mealType,
+      mealId: meal.id,
+      existingMealType: meal.mealType,
+      onMealSaved: () {
+        if (mounted) {
+          _loadAll();
+        }
+      },
     );
   }
 }

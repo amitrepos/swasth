@@ -9,11 +9,11 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/meal_type_detector.dart';
 
-/// Shows detailed nutrition analysis result: macros, micros, flags, meal score.
 class NutritionResultScreen extends StatefulWidget {
   final int profileId;
   final NutritionAnalysisResult result;
   final String? mealType;
+  final int? mealId;
   final VoidCallback? onFallbackToQuickSelect;
 
   const NutritionResultScreen({
@@ -21,6 +21,7 @@ class NutritionResultScreen extends StatefulWidget {
     required this.profileId,
     required this.result,
     this.mealType,
+    this.mealId,
     this.onFallbackToQuickSelect,
   });
 
@@ -151,8 +152,8 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
 
       // Check connectivity and queue offline if needed
       final isOnline = await ConnectivityService().isServerReachable();
-      if (!isOnline) {
-        // Queue for offline sync
+      if (!isOnline && widget.mealId == null) {
+        // Queue for offline sync (only for new meals; updates require online)
         await StorageService().addToSyncQueue(mealLog.toJson());
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -166,7 +167,11 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         return;
       }
 
-      await MealService().saveMeal(mealLog, token);
+      if (widget.mealId != null) {
+        await MealService().updateMeal(widget.mealId!, mealLog, token);
+      } else {
+        await MealService().saveMeal(mealLog, token);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -717,6 +717,48 @@ class MealLogCreate(BaseModel):
         return v
 
 
+class MealLogUpdate(BaseModel):
+    category: Optional[str] = None
+    glucose_impact: Optional[str] = None
+    meal_type: Optional[str] = None
+    timestamp: Optional[datetime] = None
+    tip_en: Optional[str] = None
+    tip_hi: Optional[str] = None
+    user_confirmed: Optional[bool] = None
+    user_corrected_category: Optional[str] = None
+    # Nutrition fields
+    total_calories: Optional[float] = Field(None, ge=0)
+    total_carbs_g: Optional[float] = Field(None, ge=0)
+    total_protein_g: Optional[float] = Field(None, ge=0)
+    total_fat_g: Optional[float] = Field(None, ge=0)
+    total_fiber_g: Optional[float] = Field(None, ge=0)
+    meal_score: Optional[int] = Field(None, ge=1, le=10)
+
+    @validator('category')
+    def validate_category(cls, v):
+        if v is not None and v not in MEAL_CATEGORIES:
+            raise ValueError(f'category must be one of: {", ".join(MEAL_CATEGORIES)}')
+        return v
+
+    @validator('glucose_impact')
+    def validate_glucose_impact(cls, v):
+        if v is not None and v not in GLUCOSE_IMPACT_OPTIONS:
+            raise ValueError(f'glucose_impact must be one of: {", ".join(GLUCOSE_IMPACT_OPTIONS)}')
+        return v
+
+    @validator('meal_type')
+    def validate_meal_type(cls, v):
+        if v is not None and v not in MEAL_TYPE_OPTIONS:
+            raise ValueError(f'meal_type must be one of: {", ".join(MEAL_TYPE_OPTIONS)}')
+        return v
+
+    @validator('user_corrected_category')
+    def validate_corrected_category(cls, v):
+        if v is not None and v not in MEAL_CATEGORIES:
+            raise ValueError(f'user_corrected_category must be one of: {", ".join(MEAL_CATEGORIES)}')
+        return v
+
+
 class MealLogResponse(BaseModel):
     id: int
     profile_id: int

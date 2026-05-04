@@ -206,6 +206,7 @@
   "deleteMealConfirm": "क्या आप वाकई यह भोजन हटाना चाहते हैं?",
   "mealDeleted": "भोजन हटाया गया",
   "editReading": "रीडिंग संपादित करें",
+  "editMeal": "भोजन बदलें",
   "readingUpdated": "रीडिंग अपडेट हुई",
   "weightLabel": "वज़न",
   "weightValidation": "मान्य वज़न दर्ज करें (1–400 किग्रा)",

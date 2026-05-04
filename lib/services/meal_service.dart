@@ -60,6 +60,22 @@ class MealService {
     return MealLog.fromJson(body);
   }
 
+  /// Update an existing meal via PATCH /api/meals/{id}.
+  Future<MealLog> updateMeal(int mealId, MealLogCreate data, String token) async {
+    // profile_id is not updatable via PATCH /meals/{id}
+    final updateData = data.toJson()..remove('profile_id');
+
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.patch(
+        Uri.parse('$_baseUrl/$mealId'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode(updateData),
+      ),
+      successCodes: const [200],
+    );
+    return MealLog.fromJson(body);
+  }
+
   /// Get meals for a profile via GET /api/meals?profile_id=X&days=Y.
   Future<List<MealLog>> getMeals(
     int profileId,
