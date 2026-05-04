@@ -35,9 +35,15 @@ class _CameraColors {
 class FoodPhotoScreen extends StatefulWidget {
   final int profileId;
 
-  /// Pre-selected meal type, set when the user reaches this screen
-  /// from a specific dashboard slot tap (Breakfast / Lunch / Snack / Dinner).
+  /// Pre-selected meal type
   final String? mealType;
+
+  /// If provided, this screen (and subsequent result screens) will update
+  /// the existing meal instead of creating a new one.
+  final int? mealId;
+
+  /// Existing meal type for initialization if editing.
+  final String? existingMealType;
 
   /// Called when Gemini fails or times out, so the parent can navigate
   /// to Quick Select instead.
@@ -47,6 +53,8 @@ class FoodPhotoScreen extends StatefulWidget {
     super.key,
     required this.profileId,
     this.mealType,
+    this.mealId,
+    this.existingMealType,
     this.onFallbackToQuickSelect,
   });
 
@@ -218,6 +226,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
             profileId: widget.profileId,
             result: nutritionResult,
             mealType: widget.mealType ?? detectMealType(),
+            mealId: widget.mealId,
             onFallbackToQuickSelect: widget.onFallbackToQuickSelect,
           ),
         ),

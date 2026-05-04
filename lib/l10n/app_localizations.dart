@@ -1136,6 +1136,12 @@ abstract class AppLocalizations {
   /// **'Edit Reading'**
   String get editReading;
 
+  /// Tooltip for the edit button on a meal entry in the history timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Meal'**
+  String get editMeal;
+
   /// No description provided for @readingUpdated.
   ///
   /// In en, this message translates to:

@@ -566,6 +566,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editReading => 'Edit Reading';
 
   @override
+  String get editMeal => 'Edit Meal';
+
+  @override
   String get readingUpdated => 'Reading updated';
 
   @override

@@ -17,6 +17,8 @@ void showMealInputModal(
   required int profileId,
   required VoidCallback onMealSaved,
   String? mealType,
+  int? mealId,
+  String? existingMealType,
 }) {
   final l10n = AppLocalizations.of(context)!;
 
@@ -33,7 +35,7 @@ void showMealInputModal(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              l10n.logMeal,
+              mealId != null ? l10n.editMeal : l10n.logMeal,
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -66,6 +68,7 @@ void showMealInputModal(
                     builder: (_) => QuickSelectScreen(
                       profileId: profileId,
                       mealType: mealType,
+                      mealId: mealId,
                     ),
                   ),
                 );
@@ -94,6 +97,8 @@ void showMealInputModal(
                     builder: (_) => FoodPhotoScreen(
                       profileId: profileId,
                       mealType: mealType,
+                      mealId: mealId,
+                      existingMealType: existingMealType,
                       onFallbackToQuickSelect: () {
                         Navigator.pushReplacement(
                           context,
@@ -101,6 +106,7 @@ void showMealInputModal(
                             builder: (_) => QuickSelectScreen(
                               profileId: profileId,
                               mealType: mealType,
+                              mealId: mealId,
                             ),
                           ),
                         );

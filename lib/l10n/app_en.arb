@@ -269,6 +269,10 @@
   "deleteMealConfirm": "Are you sure you want to delete this meal?",
   "mealDeleted": "Meal deleted",
   "editReading": "Edit Reading",
+  "editMeal": "Edit Meal",
+  "@editMeal": {
+    "description": "Tooltip for the edit button on a meal entry in the history timeline."
+  },
   "readingUpdated": "Reading updated",
   "weightLabel": "Weight",
   "weightValidation": "Enter a valid weight (1–400 kg)",

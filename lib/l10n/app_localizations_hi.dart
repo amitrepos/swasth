@@ -563,6 +563,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get editReading => 'रीडिंग संपादित करें';
 
   @override
+  String get editMeal => 'भोजन बदलें';
+
+  @override
   String get readingUpdated => 'रीडिंग अपडेट हुई';
 
   @override

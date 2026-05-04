@@ -40,11 +40,20 @@ class MealResultScreen extends StatefulWidget {
   final FoodClassificationResult result;
   final VoidCallback? onFallbackToQuickSelect;
 
+  /// If provided, this screen will update the existing meal instead of
+  /// creating a new one.
+  final int? mealId;
+
+  /// Existing meal type to pre-select in the dropdown.
+  final String? existingMealType;
+
   const MealResultScreen({
     super.key,
     required this.profileId,
     required this.result,
     this.onFallbackToQuickSelect,
+    this.mealId,
+    this.existingMealType,
   });
 
   @override
@@ -58,7 +67,7 @@ class _MealResultScreenState extends State<MealResultScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedMealType = _detectMealType();
+    _selectedMealType = widget.existingMealType ?? _detectMealType();
   }
 
   /// Auto-detect meal type based on current time.
@@ -175,7 +184,11 @@ class _MealResultScreenState extends State<MealResultScreen> {
         timestamp: DateTime.now(),
       );
 
-      await MealService().saveMeal(mealLog, token);
+      if (widget.mealId != null) {
+        await MealService().updateMeal(widget.mealId!, mealLog, token);
+      } else {
+        await MealService().saveMeal(mealLog, token);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

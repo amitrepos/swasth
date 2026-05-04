@@ -235,6 +235,35 @@ async def delete_meal(
 
 
 # ---------------------------------------------------------------------------
+# PATCH /meals/{id} — update a meal log
+# ---------------------------------------------------------------------------
+
+@router.patch("/meals/{meal_id}", response_model=schemas.MealLogResponse)
+@limiter.limit("20/minute")
+async def update_meal(
+    request: Request,
+    meal_id: int,
+    meal_update: schemas.MealLogUpdate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Update an existing meal log. Requires editor/owner access."""
+    meal = db.query(models.MealLog).filter(models.MealLog.id == meal_id).first()
+    if not meal:
+        raise HTTPException(status_code=404, detail="Meal not found")
+
+    get_profile_editor_or_403(meal.profile_id, user, db)
+
+    update_data = meal_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(meal, key, value)
+
+    db.commit()
+    db.refresh(meal)
+    return schemas.MealLogResponse.model_validate(meal)
+
+
+# ---------------------------------------------------------------------------
 # POST /meals/parse-image — Gemini Vision food classification
 # ---------------------------------------------------------------------------
 
