@@ -833,12 +833,40 @@ def get_alerts(
         if not has_note:
             hours_ago = round((now - (r.created_at if r.created_at.tzinfo else r.created_at.replace(tzinfo=timezone.utc))).total_seconds() / 3600, 1)
             if hours_ago >= 24:
+                # Get patient name
+                profile = db.query(models.Profile).filter(models.Profile.id == r.profile_id).first()
+                patient_name = profile.name if profile else "Unknown"
+
+                # Get linked doctors
+                linked_docs = db.query(models.DoctorPatientLink, models.User, models.DoctorProfile).join(
+                    models.User, models.DoctorPatientLink.doctor_id == models.User.id
+                ).join(
+                    models.DoctorProfile, models.DoctorProfile.user_id == models.User.id
+                ).filter(
+                    models.DoctorPatientLink.profile_id == r.profile_id,
+                    models.DoctorPatientLink.status == "active",
+                ).all()
+
+                linked_doctors = []
+                for dpl, doc_user, doc_profile in linked_docs:
+                    last_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(
+                        models.DoctorAccessLog.doctor_id == doc_user.id,
+                        models.DoctorAccessLog.profile_id == r.profile_id,
+                    ).scalar()
+                    linked_doctors.append({
+                        "name": doc_user.full_name,
+                        "doctor_code": doc_profile.doctor_code,
+                        "last_access": last_access.isoformat() if last_access else None,
+                    })
+
                 alerts.append({
                     "type": "CRITICAL_READING_UNADDRESSED",
                     "severity": "HIGH",
                     "message": f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) unaddressed for {hours_ago:.0f}h",
                     "target_profile_id": r.profile_id,
                     "reading_id": r.id,
+                    "patient_name": patient_name,
+                    "linked_doctors": linked_doctors,
                     "created_at": r.created_at.isoformat(),
                     "hours_elapsed": hours_ago,
                 })
@@ -898,12 +926,37 @@ def get_alerts(
         ).first()
 
         days_inactive = (now - last_reading_aware).days
+
+        # Get linked doctors for this profile
+        linked_docs = db.query(models.DoctorPatientLink, models.User, models.DoctorProfile).join(
+            models.User, models.DoctorPatientLink.doctor_id == models.User.id
+        ).join(
+            models.DoctorProfile, models.DoctorProfile.user_id == models.User.id
+        ).filter(
+            models.DoctorPatientLink.profile_id == p.id,
+            models.DoctorPatientLink.status == "active",
+        ).all()
+
+        linked_doctors = []
+        for dpl, doc_user, doc_profile in linked_docs:
+            last_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(
+                models.DoctorAccessLog.doctor_id == doc_user.id,
+                models.DoctorAccessLog.profile_id == p.id,
+            ).scalar()
+            linked_doctors.append({
+                "name": doc_user.full_name,
+                "doctor_code": doc_profile.doctor_code,
+                "last_access": last_access.isoformat() if last_access else None,
+            })
+
         if had_critical and days_inactive >= 7:
             alerts.append({
                 "type": "PATIENT_INACTIVE_HIGH_RISK",
                 "severity": "MEDIUM",
                 "message": f"{p.name} (high-risk) inactive for {days_inactive} days",
                 "target_profile_id": p.id,
+                "patient_name": p.name,
+                "linked_doctors": linked_doctors,
                 "days_inactive": days_inactive,
             })
         elif days_inactive >= 14:
@@ -912,6 +965,8 @@ def get_alerts(
                 "severity": "LOW",
                 "message": f"{p.name} inactive for {days_inactive} days",
                 "target_profile_id": p.id,
+                "patient_name": p.name,
+                "linked_doctors": linked_doctors,
                 "days_inactive": days_inactive,
             })
 
@@ -972,6 +1027,136 @@ def get_audit_log(
         })
 
     return {"entries": result, "total": total, "page": page, "per_page": per_page}
+
+
+# ---------------------------------------------------------------------------
+# G4: Engagement metrics — user consistency + doctor activity
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/engagement")
+def get_engagement_metrics(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """User consistency (regular readers) and doctor activity (login + patient access)."""
+    now = datetime.now(timezone.utc)
+    thirty_days_ago = now - timedelta(days=30)
+    seven_days_ago = now - timedelta(days=7)
+
+    # ─── User Consistency ───
+    patients = db.query(models.User).filter(
+        models.User.role == models.UserRole.patient,
+    ).all()
+
+    user_consistency = []
+    for p in patients:
+        readings_7d = db.query(func.count(models.HealthReading.id)).filter(
+            models.HealthReading.logged_by == p.id,
+            models.HealthReading.created_at >= seven_days_ago,
+        ).scalar() or 0
+
+        readings_30d = db.query(func.count(models.HealthReading.id)).filter(
+            models.HealthReading.logged_by == p.id,
+            models.HealthReading.created_at >= thirty_days_ago,
+        ).scalar() or 0
+
+        last_reading = db.query(func.max(models.HealthReading.created_at)).filter(
+            models.HealthReading.logged_by == p.id,
+        ).scalar()
+
+        # Consistency score: readings in last 30 days / 30 days
+        consistency_score = min(readings_30d / 30.0, 1.0) if readings_30d > 0 else 0.0
+
+        # Tier classification
+        if consistency_score >= 0.5:
+            tier = "regular"
+        elif consistency_score >= 0.1:
+            tier = "sporadic"
+        else:
+            tier = "dormant"
+
+        user_consistency.append({
+            "user_id": p.id,
+            "full_name": p.full_name,
+            "email": p.email,
+            "readings_7d": readings_7d,
+            "readings_30d": readings_30d,
+            "last_reading_at": last_reading.isoformat() if last_reading else None,
+            "consistency_score": round(consistency_score, 2),
+            "tier": tier,
+        })
+
+    # Sort by readings_30d descending
+    user_consistency.sort(key=lambda x: x["readings_30d"], reverse=True)
+
+    # ─── Doctor Activity ───
+    doctors = db.query(models.User, models.DoctorProfile).join(
+        models.DoctorProfile, models.DoctorProfile.user_id == models.User.id
+    ).filter(
+        models.User.role == models.UserRole.doctor,
+        models.DoctorProfile.is_verified == True,
+    ).all()
+
+    doctor_activity = []
+    for doc_user, doc_profile in doctors:
+        patients_checked_7d = db.query(func.count(distinct(models.DoctorAccessLog.profile_id))).filter(
+            models.DoctorAccessLog.doctor_id == doc_user.id,
+            models.DoctorAccessLog.created_at >= seven_days_ago,
+        ).scalar() or 0
+
+        total_active_patients = db.query(func.count(distinct(models.DoctorPatientLink.profile_id))).filter(
+            models.DoctorPatientLink.doctor_id == doc_user.id,
+            models.DoctorPatientLink.status == "active",
+        ).scalar() or 0
+
+        access_events_7d = db.query(func.count(models.DoctorAccessLog.id)).filter(
+            models.DoctorAccessLog.doctor_id == doc_user.id,
+            models.DoctorAccessLog.created_at >= seven_days_ago,
+        ).scalar() or 0
+
+        last_patient_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(
+            models.DoctorAccessLog.doctor_id == doc_user.id,
+        ).scalar()
+
+        # Activity tier
+        if last_patient_access and last_patient_access >= seven_days_ago:
+            activity_tier = "active"
+        elif last_patient_access and last_patient_access >= (now - timedelta(days=30)):
+            activity_tier = "low"
+        else:
+            activity_tier = "dormant"
+
+        doctor_activity.append({
+            "user_id": doc_user.id,
+            "full_name": doc_user.full_name,
+            "doctor_code": doc_profile.doctor_code,
+            "specialty": doc_profile.specialty or "N/A",
+            "last_login": doc_user.last_login_at.isoformat() if doc_user.last_login_at else None,
+            "last_patient_access": last_patient_access.isoformat() if last_patient_access else None,
+            "patients_checked_7d": patients_checked_7d,
+            "total_active_patients": total_active_patients,
+            "access_events_7d": access_events_7d,
+            "activity_tier": activity_tier,
+        })
+
+    # Sort by last_patient_access descending (nulls last)
+    doctor_activity.sort(key=lambda x: (x["last_patient_access"] is None, x["last_patient_access"]), reverse=True)
+
+    # Summary counts
+    summary = {
+        "regular_users": sum(1 for u in user_consistency if u["tier"] == "regular"),
+        "sporadic_users": sum(1 for u in user_consistency if u["tier"] == "sporadic"),
+        "dormant_users": sum(1 for u in user_consistency if u["tier"] == "dormant"),
+        "active_doctors": sum(1 for d in doctor_activity if d["activity_tier"] == "active"),
+        "low_doctors": sum(1 for d in doctor_activity if d["activity_tier"] == "low"),
+        "dormant_doctors": sum(1 for d in doctor_activity if d["activity_tier"] == "dormant"),
+    }
+
+    return {
+        "user_consistency": user_consistency,
+        "doctor_activity": doctor_activity,
+        "summary": summary,
+    }
 
 
 # ---------------------------------------------------------------------------

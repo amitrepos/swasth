@@ -78,6 +78,8 @@
   .sev-INFO { background: #dbeafe; color: #1d4ed8; }
   .sev-LOW { background: #f1f5f9; color: #64748b; }
   .alert-msg { font-size: 13px; flex: 1; }
+  .alert-patient { display: block; font-weight: 700; color: #1e293b; margin-top: 4px; font-size: 13px; }
+  .alert-doctor { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 6px; font-size: 11px; margin-right: 4px; margin-top: 4px; }
 
   /* Doctor queue */
   .doctor-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
@@ -189,6 +191,19 @@
   .doc-checklist a { color: #0ea5e9; text-decoration: none; font-size: 12px; }
   .doc-checklist a:hover { text-decoration: underline; }
 
+  /* Engagement section */
+  .tier-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .tier-regular { background: #dcfce7; color: #166534; }
+  .tier-sporadic { background: #fef3c7; color: #92400e; }
+  .tier-dormant { background: #fee2e2; color: #991b1b; }
+  .activity-active { background: #dcfce7; color: #166534; }
+  .activity-low { background: #fef3c7; color: #92400e; }
+  .activity-dormant { background: #fee2e2; color: #991b1b; }
+  .engagement-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .engagement-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .engagement-table { display: none; }
+  .engagement-table.active { display: block; }
+
   @media (max-width: 768px) {
     .sidebar { width: 60px; }
     .sidebar-brand h2, .sidebar-brand small, .sidebar-nav a span, .sidebar-footer span { display: none; }
@@ -227,6 +242,7 @@
       <a onclick="showSection('users')"><span>Users</span></a>
       <a onclick="showSection('doctors')"><span>Doctors</span> <span class="badge-count" id="doctorBadge" style="display:none">0</span></a>
       <a onclick="showSection('alerts')"><span>Alerts</span> <span class="badge-count" id="alertBadge" style="display:none">0</span></a>
+      <a onclick="showSection('engagement')"><span>Engagement</span></a>
       <a onclick="showSection('consent')"><span>Consent</span></a>
       <a onclick="showSection('audit')"><span>Audit Log</span></a>
       <a href="/api/admin/ops" style="border-top:1px solid #1e293b;margin-top:8px;padding-top:12px"><span>⚡ Ops Monitor</span></a>
@@ -279,6 +295,32 @@
     <div class="section-page" id="sec-alerts">
       <h1 style="font-size:22px;margin-bottom:20px">Alerts</h1>
       <div id="alertsList"></div>
+    </div>
+
+    <!-- Engagement Section -->
+    <div class="section-page" id="sec-engagement">
+      <h1 style="font-size:22px;margin-bottom:20px">Engagement</h1>
+      <div class="engagement-kpis" id="engagementKpis"></div>
+      <div class="engagement-toggle">
+        <button class="btn btn-secondary" onclick="toggleEngagementView('users')" id="btnEngUsers">Users</button>
+        <button class="btn btn-secondary" onclick="toggleEngagementView('doctors')" id="btnEngDoctors">Doctors</button>
+      </div>
+      <div class="engagement-table active" id="usersTable" style="display:none">
+        <div class="section">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>7d Readings</th><th>30d Readings</th><th>Last Reading</th><th>Score</th><th>Tier</th></tr></thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="engagement-table active" id="doctorsTable" style="display:none">
+        <div class="section">
+          <table>
+            <thead><tr><th>Name</th><th>Code</th><th>Specialty</th><th>Last Login</th><th>Last Access</th><th>Patients/7d</th><th>Total Patients</th><th>Tier</th></tr></thead>
+            <tbody id="doctorsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- Consent Section -->
@@ -430,6 +472,7 @@ function showSection(name) {
   else if (name === 'users') loadUsers();
   else if (name === 'doctors') loadDoctors('false');
   else if (name === 'alerts') loadAlerts();
+  else if (name === 'engagement') loadEngagement();
   else if (name === 'consent') loadConsent();
   else if (name === 'audit') loadAuditLog();
 }
@@ -618,12 +661,19 @@ async function loadAlerts() {
     list.innerHTML = '<div class="empty-state">No alerts. Everything looks good!</div>';
     return;
   }
-  list.innerHTML = data.alerts.map(a => `
-    <div class="alert-item ${a.severity}">
-      <span class="alert-severity sev-${a.severity}">${a.severity}</span>
-      <span class="alert-msg">${esc(a.message)}</span>
-    </div>
-  `).join('');
+  list.innerHTML = data.alerts.map(a => {
+    const doctorBadges = a.linked_doctors && a.linked_doctors.length
+      ? a.linked_doctors.map(d => `<span class="alert-doctor">${esc(d.name)} (${esc(d.doctor_code)})</span>`).join('')
+      : '<span class="alert-doctor">No doctor assigned</span>';
+    return `
+      <div class="alert-item ${a.severity}">
+        <span class="alert-severity sev-${a.severity}">${a.severity}</span>
+        <span class="alert-msg">${esc(a.message)}</span>
+        ${a.patient_name ? `<span class="alert-patient">👤 ${esc(a.patient_name)}</span>` : ''}
+        <div style="margin-top:6px">${doctorBadges}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 async function loadAlertBadge() {
@@ -693,6 +743,76 @@ async function loadAuditLog() {
       <td style="font-size:12px;color:#64748b;max-width:300px;overflow:hidden;text-overflow:ellipsis">${e.details ? JSON.stringify(e.details).substring(0, 100) : '--'}</td>
     </tr>
   `).join('');
+}
+
+// ── Engagement Metrics ──────────────────────────────────────────────
+async function loadEngagement() {
+  const resp = await fetch(`${API}/api/admin/engagement`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+  const data = await resp.json();
+
+  // Render KPIs
+  const kpis = [
+    {label: 'Regular Users', value: data.summary.regular_users, color: 'green'},
+    {label: 'Sporadic Users', value: data.summary.sporadic_users, color: 'amber'},
+    {label: 'Active Doctors', value: data.summary.active_doctors, color: 'green'},
+    {label: 'Dormant Doctors', value: data.summary.dormant_doctors, color: 'red'},
+  ];
+  document.getElementById('engagementKpis').innerHTML = kpis.map(k => `<div class="card"><div class="label">${k.label}</div><div class="value ${k.color}">${k.value}</div></div>`).join('');
+
+  // Render users table
+  const usersBody = document.getElementById('usersTableBody');
+  usersBody.innerHTML = data.user_consistency.map(u => `
+    <tr>
+      <td><strong>${esc(u.full_name)}</strong></td>
+      <td>${esc(u.email)}</td>
+      <td>${u.readings_7d}</td>
+      <td>${u.readings_30d}</td>
+      <td>${u.last_reading_at ? new Date(u.last_reading_at).toLocaleDateString() : '--'}</td>
+      <td>${(u.consistency_score * 100).toFixed(0)}%</td>
+      <td><span class="tier-badge tier-${u.tier}">${u.tier}</span></td>
+    </tr>
+  `).join('');
+
+  // Render doctors table
+  const docsBody = document.getElementById('doctorsTableBody');
+  docsBody.innerHTML = data.doctor_activity.map(d => `
+    <tr>
+      <td><strong>${esc(d.full_name)}</strong></td>
+      <td>${esc(d.doctor_code)}</td>
+      <td>${esc(d.specialty)}</td>
+      <td>${d.last_login ? new Date(d.last_login).toLocaleDateString() : '--'}</td>
+      <td>${d.last_patient_access ? new Date(d.last_patient_access).toLocaleDateString() : '--'}</td>
+      <td>${d.patients_checked_7d}</td>
+      <td>${d.total_active_patients}</td>
+      <td><span class="tier-badge activity-${d.activity_tier}">${d.activity_tier}</span></td>
+    </tr>
+  `).join('');
+
+  // Show users table by default
+  toggleEngagementView('users');
+}
+
+function toggleEngagementView(view) {
+  const usersTable = document.getElementById('usersTable');
+  const doctorsTable = document.getElementById('doctorsTable');
+  const btnUsers = document.getElementById('btnEngUsers');
+  const btnDoctors = document.getElementById('btnEngDoctors');
+
+  if (view === 'users') {
+    usersTable.style.display = 'block';
+    doctorsTable.style.display = 'none';
+    btnUsers.style.background = '#0ea5e9';
+    btnUsers.style.color = 'white';
+    btnDoctors.style.background = '#f1f5f9';
+    btnDoctors.style.color = '#475569';
+  } else {
+    usersTable.style.display = 'none';
+    doctorsTable.style.display = 'block';
+    btnUsers.style.background = '#f1f5f9';
+    btnUsers.style.color = '#475569';
+    btnDoctors.style.background = '#0ea5e9';
+    btnDoctors.style.color = 'white';
+  }
 }
 
 // ── User Detail Modal ───────────────────────────────────────────────
