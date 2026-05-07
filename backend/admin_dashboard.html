@@ -67,7 +67,8 @@
   .badge-verified { background: #dcfce7; color: #166534; }
 
   /* Alert items */
-  .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: white; border-radius: 10px; border-left: 4px solid #94a3b8; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: white; border-radius: 10px; border-left: 4px solid #94a3b8; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); cursor: pointer; transition: all 0.15s; }
+  .alert-item:hover { background: #f8fafc; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   .alert-item.HIGH { border-left-color: #ef4444; }
   .alert-item.MEDIUM { border-left-color: #f59e0b; }
   .alert-item.INFO { border-left-color: #0ea5e9; }
@@ -665,11 +666,11 @@ async function loadAlerts() {
     const doctorBadges = a.linked_doctors && a.linked_doctors.length
       ? a.linked_doctors.map(d => `<span class="alert-doctor">${esc(d.name)} (${esc(d.doctor_code)})</span>`).join('')
       : '<span class="alert-doctor">No doctor assigned</span>';
+    const userIdAttr = a.logged_by_user_id ? `data-user-id="${a.logged_by_user_id}"` : '';
     return `
-      <div class="alert-item ${a.severity}">
+      <div class="alert-item ${a.severity}" ${userIdAttr} onclick="if(this.getAttribute('data-user-id')) openUserDetail(parseInt(this.getAttribute('data-user-id')))">
         <span class="alert-severity sev-${a.severity}">${a.severity}</span>
         <span class="alert-msg">${esc(a.message)}</span>
-        ${a.patient_name ? `<span class="alert-patient">👤 ${esc(a.patient_name)}</span>` : ''}
         <div style="margin-top:6px">${doctorBadges}</div>
       </div>
     `;

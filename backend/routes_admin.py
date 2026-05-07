@@ -872,6 +872,7 @@ def get_alerts(
                 "message": message,
                 "target_profile_id": r.profile_id,
                 "reading_id": r.id,
+                "logged_by_user_id": r.logged_by,
                 "patient_name": patient_name,
                 "linked_doctors": linked_doctors,
                 "created_at": r.created_at.isoformat(),
