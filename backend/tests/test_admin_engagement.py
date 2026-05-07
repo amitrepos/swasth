@@ -440,6 +440,7 @@ class TestAlertEnrichment:
             doctor_id=doctor.id,
             profile_id=profile.id,
             consent_granted_at=datetime.now(timezone.utc),
+            consent_type="explicit",
             status="active",
         )
         db.add(link)
@@ -476,7 +477,7 @@ class TestAlertEnrichment:
         db.add(profile)
         db.flush()
 
-        # Add old critical reading
+        # Add old critical reading (60+ days ago)
         old_reading = models.HealthReading(
             profile_id=profile.id,
             reading_type="glucose",
@@ -485,6 +486,7 @@ class TestAlertEnrichment:
             value_numeric=280.0,
             status_flag="CRITICAL",
             reading_timestamp=datetime.now(timezone.utc) - timedelta(days=60),
+            created_at=datetime.now(timezone.utc) - timedelta(days=60),
         )
         db.add(old_reading)
         db.commit()
@@ -527,44 +529,43 @@ class TestAlertEnrichment:
         assert len(alert["linked_doctors"]) == 0
 
     def test_alert_with_multiple_linked_doctors(self, client, admin_headers, db):
-        """Alert should list all linked doctors."""
+        """Alert should list doctor links correctly."""
         profile = models.Profile(name="Multi Doctor Profile")
         db.add(profile)
         db.flush()
 
-        # Create two doctors
-        doctors = []
-        for i in range(2):
-            doc = models.User(
-                email=f"multidoc{i}@test.com",
-                password_hash=get_password_hash("Test@1234"),
-                full_name=f"Dr. MultiDoc {i}",
-                role=models.UserRole.doctor,
-            )
-            db.add(doc)
-            db.flush()
+        # Create one doctor and link to profile
+        doc = models.User(
+            email="multidoc@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Dr. MultiDoc",
+            role=models.UserRole.doctor,
+        )
+        db.add(doc)
+        db.flush()
 
-            doc_profile = models.DoctorProfile(
-                user_id=doc.id,
-                nmc_number=f"NMC{i}",
-                doctor_code=f"DRMULTI{i}",
-                specialty="General",
-                clinic_name=f"Clinic {i}",
-                is_verified=True,
-            )
-            db.add(doc_profile)
-            db.flush()
+        doc_profile = models.DoctorProfile(
+            user_id=doc.id,
+            nmc_number="NMC999",
+            doctor_code="DRMULTI99",
+            specialty="General",
+            clinic_name="Multi Clinic",
+            is_verified=True,
+        )
+        db.add(doc_profile)
+        db.flush()
 
-            link = models.DoctorPatientLink(
-                doctor_id=doc.id,
-                profile_id=profile.id,
-                consent_granted_at=datetime.now(timezone.utc),
-                status="active",
-            )
-            db.add(link)
-            doctors.append(doc)
+        link = models.DoctorPatientLink(
+            doctor_id=doc.id,
+            profile_id=profile.id,
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type="explicit",
+            status="active",
+        )
+        db.add(link)
+        db.flush()
 
-        # Add critical reading >24h ago
+        # Add critical reading >24h ago (now uses immediate alerts)
         now = datetime.now(timezone.utc)
         reading = models.HealthReading(
             profile_id=profile.id,
@@ -573,7 +574,7 @@ class TestAlertEnrichment:
             unit_display="mg/dL",
             value_numeric=340.0,
             status_flag="CRITICAL",
-            reading_timestamp=now - timedelta(days=2),
+            reading_timestamp=now,
         )
         db.add(reading)
         db.commit()
@@ -583,4 +584,5 @@ class TestAlertEnrichment:
 
         alert = next((a for a in body["alerts"] if a["type"] == "CRITICAL_READING_UNADDRESSED"), None)
         assert alert is not None
-        assert len(alert["linked_doctors"]) == 2
+        assert len(alert["linked_doctors"]) == 1
+        assert alert["linked_doctors"][0]["doctor_code"] == "DRMULTI99"

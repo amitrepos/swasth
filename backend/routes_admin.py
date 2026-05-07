@@ -832,44 +832,43 @@ def get_alerts(
         ).first()
         if not has_note:
             hours_ago = round((now - (r.created_at if r.created_at.tzinfo else r.created_at.replace(tzinfo=timezone.utc))).total_seconds() / 3600, 1)
-            if hours_ago >= 24:
-                # Get patient name
-                profile = db.query(models.Profile).filter(models.Profile.id == r.profile_id).first()
-                patient_name = profile.name if profile else "Unknown"
+            # Get patient name
+            profile = db.query(models.Profile).filter(models.Profile.id == r.profile_id).first()
+            patient_name = profile.name if profile else "Unknown"
 
-                # Get linked doctors
-                linked_docs = db.query(models.DoctorPatientLink, models.User, models.DoctorProfile).join(
-                    models.User, models.DoctorPatientLink.doctor_id == models.User.id
-                ).join(
-                    models.DoctorProfile, models.DoctorProfile.user_id == models.User.id
-                ).filter(
-                    models.DoctorPatientLink.profile_id == r.profile_id,
-                    models.DoctorPatientLink.status == "active",
-                ).all()
+            # Get linked doctors
+            linked_docs = db.query(models.DoctorPatientLink, models.User, models.DoctorProfile).join(
+                models.User, models.DoctorPatientLink.doctor_id == models.User.id
+            ).join(
+                models.DoctorProfile, models.DoctorProfile.user_id == models.User.id
+            ).filter(
+                models.DoctorPatientLink.profile_id == r.profile_id,
+                models.DoctorPatientLink.status == "active",
+            ).all()
 
-                linked_doctors = []
-                for dpl, doc_user, doc_profile in linked_docs:
-                    last_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(
-                        models.DoctorAccessLog.doctor_id == doc_user.id,
-                        models.DoctorAccessLog.profile_id == r.profile_id,
-                    ).scalar()
-                    linked_doctors.append({
-                        "name": doc_user.full_name,
-                        "doctor_code": doc_profile.doctor_code,
-                        "last_access": last_access.isoformat() if last_access else None,
-                    })
-
-                alerts.append({
-                    "type": "CRITICAL_READING_UNADDRESSED",
-                    "severity": "HIGH",
-                    "message": f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) unaddressed for {hours_ago:.0f}h",
-                    "target_profile_id": r.profile_id,
-                    "reading_id": r.id,
-                    "patient_name": patient_name,
-                    "linked_doctors": linked_doctors,
-                    "created_at": r.created_at.isoformat(),
-                    "hours_elapsed": hours_ago,
+            linked_doctors = []
+            for dpl, doc_user, doc_profile in linked_docs:
+                last_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(
+                    models.DoctorAccessLog.doctor_id == doc_user.id,
+                    models.DoctorAccessLog.profile_id == r.profile_id,
+                ).scalar()
+                linked_doctors.append({
+                    "name": doc_user.full_name,
+                    "doctor_code": doc_profile.doctor_code,
+                    "last_access": last_access.isoformat() if last_access else None,
                 })
+
+            alerts.append({
+                "type": "CRITICAL_READING_UNADDRESSED",
+                "severity": "HIGH",
+                "message": f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) recorded",
+                "target_profile_id": r.profile_id,
+                "reading_id": r.id,
+                "patient_name": patient_name,
+                "linked_doctors": linked_doctors,
+                "created_at": r.created_at.isoformat(),
+                "hours_elapsed": hours_ago,
+            })
 
     # 2. Doctors pending verification > 48h
     pending_doctors = db.query(models.DoctorProfile, models.User).join(
@@ -1118,10 +1117,15 @@ def get_engagement_metrics(
             models.DoctorAccessLog.doctor_id == doc_user.id,
         ).scalar()
 
+        # Ensure timezone awareness for comparison
+        last_patient_access_aware = last_patient_access if last_patient_access and last_patient_access.tzinfo else (
+            last_patient_access.replace(tzinfo=timezone.utc) if last_patient_access else None
+        )
+
         # Activity tier
-        if last_patient_access and last_patient_access >= seven_days_ago:
+        if last_patient_access_aware and last_patient_access_aware >= seven_days_ago:
             activity_tier = "active"
-        elif last_patient_access and last_patient_access >= (now - timedelta(days=30)):
+        elif last_patient_access_aware and last_patient_access_aware >= (now - timedelta(days=30)):
             activity_tier = "low"
         else:
             activity_tier = "dormant"
