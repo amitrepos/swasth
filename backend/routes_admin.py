@@ -847,6 +847,7 @@ def get_alerts(
             ).all()
 
             linked_doctors = []
+            doctor_code = ""
             for dpl, doc_user, doc_profile in linked_docs:
                 last_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(
                     models.DoctorAccessLog.doctor_id == doc_user.id,
@@ -857,11 +858,20 @@ def get_alerts(
                     "doctor_code": doc_profile.doctor_code,
                     "last_access": last_access.isoformat() if last_access else None,
                 })
+                if not doctor_code:
+                    doctor_code = doc_profile.doctor_code
+
+            # Build message: reading + patient + doctor
+            msg_parts = [f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) recorded"]
+            msg_parts.append(patient_name)
+            if doctor_code:
+                msg_parts.append(f"({doctor_code})")
+            message = "\n".join(msg_parts)
 
             alerts.append({
                 "type": "CRITICAL_READING_UNADDRESSED",
                 "severity": "HIGH",
-                "message": f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) recorded",
+                "message": message,
                 "target_profile_id": r.profile_id,
                 "reading_id": r.id,
                 "patient_name": patient_name,
