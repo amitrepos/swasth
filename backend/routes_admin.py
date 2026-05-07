@@ -861,12 +861,10 @@ def get_alerts(
                 if not doctor_code:
                     doctor_code = doc_profile.doctor_code
 
-            # Build message: reading + patient + doctor
-            msg_parts = [f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) recorded"]
-            msg_parts.append(patient_name)
+            # Build message: reading + patient + doctor (single line)
+            message = f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) recorded {patient_name}"
             if doctor_code:
-                msg_parts.append(f"({doctor_code})")
-            message = "\n".join(msg_parts)
+                message += f" ({doctor_code})"
 
             alerts.append({
                 "type": "CRITICAL_READING_UNADDRESSED",
