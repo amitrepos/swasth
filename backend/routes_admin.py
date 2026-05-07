@@ -820,9 +820,9 @@ def get_alerts(
     now = datetime.now(timezone.utc)
     alerts = []
 
-    # 1. Critical readings unaddressed (no doctor note within 24h)
+    # 1. Critical readings unaddressed (CRITICAL + HIGH-STAGE-2 BP)
     critical_readings = db.query(models.HealthReading).filter(
-        models.HealthReading.status_flag == "CRITICAL",
+        (models.HealthReading.status_flag == "CRITICAL") | (models.HealthReading.status_flag == "HIGH - STAGE 2"),
         models.HealthReading.created_at >= now - timedelta(days=7),
     ).all()
     for r in critical_readings:
