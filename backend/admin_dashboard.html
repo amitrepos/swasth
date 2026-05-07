@@ -664,7 +664,11 @@ async function loadAlerts() {
   }
   list.innerHTML = data.alerts.map(a => {
     const doctorBadges = a.linked_doctors && a.linked_doctors.length
-      ? a.linked_doctors.map(d => `<span class="alert-doctor">${esc(d.name)} (${esc(d.doctor_code)})</span>`).join('')
+      ? a.linked_doctors.map(d => {
+          const statusIcon = d.status === 'responded' ? '✓' : d.status === 'viewed' ? '👁' : '⚠';
+          const statusTitle = d.status === 'responded' ? 'Doctor responded' : d.status === 'viewed' ? 'Doctor viewed but not responded' : 'Doctor hasn\'t accessed';
+          return `<span class="alert-doctor" title="${statusTitle}">${statusIcon} ${esc(d.name)} (${esc(d.doctor_code)})</span>`;
+        }).join('')
       : '<span class="alert-doctor">No doctor assigned</span>';
     const userIdAttr = a.logged_by_user_id ? `data-user-id="${a.logged_by_user_id}"` : '';
     return `

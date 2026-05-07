@@ -849,14 +849,32 @@ def get_alerts(
             linked_doctors = []
             doctor_code = ""
             for dpl, doc_user, doc_profile in linked_docs:
+                # Check if doctor has accessed profile
                 last_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(
                     models.DoctorAccessLog.doctor_id == doc_user.id,
                     models.DoctorAccessLog.profile_id == r.profile_id,
                 ).scalar()
+
+                # Check if doctor has written a note
+                has_responded = db.query(models.DoctorNote).filter(
+                    models.DoctorNote.doctor_id == doc_user.id,
+                    models.DoctorNote.profile_id == r.profile_id,
+                    models.DoctorNote.created_at >= r.created_at,
+                ).first() is not None
+
+                # Status: responded > viewed > not_accessed
+                if has_responded:
+                    status = "responded"
+                elif last_access:
+                    status = "viewed"
+                else:
+                    status = "not_accessed"
+
                 linked_doctors.append({
                     "name": doc_user.full_name,
                     "doctor_code": doc_profile.doctor_code,
                     "last_access": last_access.isoformat() if last_access else None,
+                    "status": status,
                 })
                 if not doctor_code:
                     doctor_code = doc_profile.doctor_code
