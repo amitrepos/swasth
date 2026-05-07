@@ -979,9 +979,12 @@ def get_alerts(
                 "days_inactive": days_inactive,
             })
 
-    # Sort by severity
+    # Sort by severity (HIGH first), then by latest reading within each severity
     severity_order = {"HIGH": 0, "MEDIUM": 1, "INFO": 2, "LOW": 3}
-    alerts.sort(key=lambda a: severity_order.get(a["severity"], 9))
+    alerts.sort(key=lambda a: (
+        severity_order.get(a["severity"], 9),
+        -(datetime.fromisoformat(a.get("created_at") or "2000-01-01")).timestamp()
+    ))
 
     return {
         "alerts": alerts,
