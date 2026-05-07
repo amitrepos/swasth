@@ -62,7 +62,7 @@ def _audit_log(
 @router.get("/admin", response_class=HTMLResponse)
 def admin_dashboard_page():
     """Serve the admin dashboard HTML page."""
-    with open(_DASHBOARD_HTML, "r") as f:
+    with open(_DASHBOARD_HTML, "r", encoding="utf-8") as f:
         return f.read()
 
 
@@ -1201,7 +1201,7 @@ def get_engagement_metrics(
 def get_ops_dashboard():
     """Serve the ops monitoring dashboard SPA. Auth enforced by JS (same pattern as /admin)."""
     try:
-        with open(_OPS_DASHBOARD_HTML, "r") as f:
+        with open(_OPS_DASHBOARD_HTML, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         raise HTTPException(status_code=503, detail="Ops dashboard not available.")
