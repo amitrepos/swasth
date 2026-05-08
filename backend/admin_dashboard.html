@@ -67,7 +67,8 @@
   .badge-verified { background: #dcfce7; color: #166534; }
 
   /* Alert items */
-  .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: white; border-radius: 10px; border-left: 4px solid #94a3b8; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: white; border-radius: 10px; border-left: 4px solid #94a3b8; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); cursor: pointer; transition: all 0.15s; }
+  .alert-item:hover { background: #f8fafc; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   .alert-item.HIGH { border-left-color: #ef4444; }
   .alert-item.MEDIUM { border-left-color: #f59e0b; }
   .alert-item.INFO { border-left-color: #0ea5e9; }
@@ -78,6 +79,8 @@
   .sev-INFO { background: #dbeafe; color: #1d4ed8; }
   .sev-LOW { background: #f1f5f9; color: #64748b; }
   .alert-msg { font-size: 13px; flex: 1; }
+  .alert-patient { display: block; font-weight: 700; color: #1e293b; margin-top: 4px; font-size: 13px; }
+  .alert-doctor { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 6px; font-size: 11px; margin-right: 4px; margin-top: 4px; }
 
   /* Doctor queue */
   .doctor-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
@@ -189,6 +192,7 @@
   .doc-checklist a { color: #0ea5e9; text-decoration: none; font-size: 12px; }
   .doc-checklist a:hover { text-decoration: underline; }
 
+
   @media (max-width: 768px) {
     .sidebar { width: 60px; }
     .sidebar-brand h2, .sidebar-brand small, .sidebar-nav a span, .sidebar-footer span { display: none; }
@@ -227,6 +231,7 @@
       <a onclick="showSection('users')"><span>Users</span></a>
       <a onclick="showSection('doctors')"><span>Doctors</span> <span class="badge-count" id="doctorBadge" style="display:none">0</span></a>
       <a onclick="showSection('alerts')"><span>Alerts</span> <span class="badge-count" id="alertBadge" style="display:none">0</span></a>
+      <a onclick="showSection('inactive')"><span>Inactive Users</span></a>
       <a onclick="showSection('consent')"><span>Consent</span></a>
       <a onclick="showSection('audit')"><span>Audit Log</span></a>
       <a href="/api/admin/ops" style="border-top:1px solid #1e293b;margin-top:8px;padding-top:12px"><span>⚡ Ops Monitor</span></a>
@@ -279,6 +284,17 @@
     <div class="section-page" id="sec-alerts">
       <h1 style="font-size:22px;margin-bottom:20px">Alerts</h1>
       <div id="alertsList"></div>
+    </div>
+
+    <!-- Inactive Users Section -->
+    <div class="section-page" id="sec-inactive">
+      <h1 style="font-size:22px;margin-bottom:20px">Inactive Users (No readings for 2+ days)</h1>
+      <div class="section">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Days Inactive</th><th>Last Glucose</th><th>Last BP</th></tr></thead>
+          <tbody id="inactiveTableBody"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Consent Section -->
@@ -348,9 +364,36 @@
 </div>
 
 <script>
-let TOKEN = '';
+let TOKEN = sessionStorage.getItem('admin_token') || '';
 let CURRENT_USER_ID = null;
 const API = window.location.origin;
+
+// Restore session on page load
+window.addEventListener('load', () => {
+  if (TOKEN) {
+    fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}})
+      .then(r => {
+        if (r.ok) {
+          document.getElementById('loginSection').style.display = 'none';
+          document.getElementById('appLayout').style.display = 'flex';
+          loadOverview();
+          loadAlertBadge();
+          loadDoctorBadge();
+        } else {
+          TOKEN = '';
+          sessionStorage.removeItem('admin_token');
+          document.getElementById('loginSection').style.display = 'flex';
+          document.getElementById('appLayout').style.display = 'none';
+        }
+      })
+      .catch(() => {
+        TOKEN = '';
+        sessionStorage.removeItem('admin_token');
+        document.getElementById('loginSection').style.display = 'flex';
+        document.getElementById('appLayout').style.display = 'none';
+      });
+  }
+});
 
 // ── Error display ───────────────────────────────────────────────────
 // Show a visible error banner inside any admin section if a fetch
@@ -400,6 +443,7 @@ async function login() {
     const data = await resp.json();
     if (!data.access_token) throw new Error('No token');
     TOKEN = data.access_token;
+    sessionStorage.setItem('admin_token', TOKEN);
     const test = await fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
     if (test.status === 403) throw new Error('Not admin');
     document.getElementById('loginSection').style.display = 'none';
@@ -415,6 +459,7 @@ async function login() {
 
 function logout() {
   TOKEN = '';
+  sessionStorage.removeItem('admin_token');
   document.getElementById('loginSection').style.display = 'flex';
   document.getElementById('appLayout').style.display = 'none';
 }
@@ -430,6 +475,7 @@ function showSection(name) {
   else if (name === 'users') loadUsers();
   else if (name === 'doctors') loadDoctors('false');
   else if (name === 'alerts') loadAlerts();
+  else if (name === 'inactive') loadInactiveUsers();
   else if (name === 'consent') loadConsent();
   else if (name === 'audit') loadAuditLog();
 }
@@ -618,12 +664,23 @@ async function loadAlerts() {
     list.innerHTML = '<div class="empty-state">No alerts. Everything looks good!</div>';
     return;
   }
-  list.innerHTML = data.alerts.map(a => `
-    <div class="alert-item ${a.severity}">
-      <span class="alert-severity sev-${a.severity}">${a.severity}</span>
-      <span class="alert-msg">${esc(a.message)}</span>
-    </div>
-  `).join('');
+  list.innerHTML = data.alerts.map(a => {
+    const doctorBadges = a.linked_doctors && a.linked_doctors.length
+      ? a.linked_doctors.map(d => {
+          const statusIcon = d.status === 'responded' ? '✓' : d.status === 'viewed' ? '👁' : '⚠';
+          const statusTitle = d.status === 'responded' ? 'Doctor responded' : d.status === 'viewed' ? 'Doctor viewed but not responded' : 'Doctor hasn\'t accessed';
+          return `<span class="alert-doctor" title="${statusTitle}">${statusIcon} ${esc(d.name)} (${esc(d.doctor_code)})</span>`;
+        }).join('')
+      : '<span class="alert-doctor">No doctor assigned</span>';
+    const userIdAttr = a.logged_by_user_id ? `data-user-id="${a.logged_by_user_id}"` : '';
+    return `
+      <div class="alert-item ${a.severity}" ${userIdAttr} onclick="if(this.getAttribute('data-user-id')) openUserDetail(parseInt(this.getAttribute('data-user-id')))">
+        <span class="alert-severity sev-${a.severity}">${a.severity}</span>
+        <span class="alert-msg">${esc(a.message)}</span>
+        <div style="margin-top:6px">${doctorBadges}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 async function loadAlertBadge() {
@@ -693,6 +750,34 @@ async function loadAuditLog() {
       <td style="font-size:12px;color:#64748b;max-width:300px;overflow:hidden;text-overflow:ellipsis">${e.details ? JSON.stringify(e.details).substring(0, 100) : '--'}</td>
     </tr>
   `).join('');
+}
+
+// ── Engagement Metrics ──────────────────────────────────────────────
+async function loadInactiveUsers() {
+  try {
+    const resp = await fetch(`${API}/api/admin/inactive-users`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+    if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
+    const data = await resp.json();
+
+    const tableBody = document.getElementById('inactiveTableBody');
+    if (!data.inactive_users.length) {
+      tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b">No inactive users. All users are recording readings regularly!</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = data.inactive_users.map(u => `
+      <tr onclick="openUserDetail(${u.user_id})" style="cursor:pointer">
+        <td><strong>${esc(u.full_name)}</strong></td>
+        <td>${esc(u.email)}</td>
+        <td>${esc(u.phone_number || '--')}</td>
+        <td><strong style="color:#ef4444">${esc(u.days_inactive_display)}</strong></td>
+        <td>${u.last_glucose ? `${u.last_glucose.value} mg/dL<br><small>${new Date(u.last_glucose.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+        <td>${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    showSectionError('sec-inactive', e);
+  }
 }
 
 // ── User Detail Modal ───────────────────────────────────────────────

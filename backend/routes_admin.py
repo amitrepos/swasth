@@ -62,7 +62,7 @@ def _audit_log(
 @router.get("/admin", response_class=HTMLResponse)
 def admin_dashboard_page():
     """Serve the admin dashboard HTML page."""
-    with open(_DASHBOARD_HTML, "r") as f:
+    with open(_DASHBOARD_HTML, "r", encoding="utf-8") as f:
         return f.read()
 
 
@@ -818,27 +818,124 @@ def get_alerts(
 ):
     """Computed alerts — critical readings, pending doctors, AI fallback, inactivity."""
     now = datetime.now(timezone.utc)
+    now_naive = now.replace(tzinfo=None)
     alerts = []
 
-    # 1. Critical readings unaddressed (no doctor note within 24h)
+    # 1. Critical readings unaddressed (CRITICAL + HIGH-STAGE-2 BP)
     critical_readings = db.query(models.HealthReading).filter(
-        models.HealthReading.status_flag == "CRITICAL",
-        models.HealthReading.created_at >= now - timedelta(days=7),
+        (models.HealthReading.status_flag == "CRITICAL") | (models.HealthReading.status_flag == "HIGH - STAGE 2"),
+        models.HealthReading.created_at >= now_naive - timedelta(days=7),
     ).all()
-    for r in critical_readings:
-        has_note = db.query(models.DoctorNote).filter(
-            models.DoctorNote.profile_id == r.profile_id,
-            models.DoctorNote.created_at >= r.created_at,
-        ).first()
-        if not has_note:
-            hours_ago = round((now - (r.created_at if r.created_at.tzinfo else r.created_at.replace(tzinfo=timezone.utc))).total_seconds() / 3600, 1)
-            if hours_ago >= 24:
+
+    if critical_readings:
+        reading_profile_ids = [r.profile_id for r in critical_readings]
+
+        # BATCH 1: Fetch all profiles (1 query with IN clause)
+        profiles_by_id = {p.id: p for p in db.query(models.Profile).filter(
+            models.Profile.id.in_(reading_profile_ids)
+        ).all()}
+
+        # BATCH 2: Fetch all doctor notes for these profiles (1 query)
+        doctor_notes = db.query(models.DoctorNote).filter(
+            models.DoctorNote.profile_id.in_(reading_profile_ids)
+        ).all()
+        notes_by_profile = {}
+        for note in doctor_notes:
+            if note.profile_id not in notes_by_profile:
+                notes_by_profile[note.profile_id] = []
+            notes_by_profile[note.profile_id].append(note)
+
+        # BATCH 3: Fetch all linked doctors for these profiles (1 query with JOIN)
+        linked_docs_rows = db.query(models.DoctorPatientLink, models.User, models.DoctorProfile).join(
+            models.User, models.DoctorPatientLink.doctor_id == models.User.id
+        ).join(
+            models.DoctorProfile, models.DoctorProfile.user_id == models.User.id
+        ).filter(
+            models.DoctorPatientLink.profile_id.in_(reading_profile_ids),
+            models.DoctorPatientLink.status == "active",
+        ).all()
+
+        linked_by_profile = {}
+        doctor_ids = set()
+        for dpl, doc_user, doc_profile in linked_docs_rows:
+            if dpl.profile_id not in linked_by_profile:
+                linked_by_profile[dpl.profile_id] = []
+            linked_by_profile[dpl.profile_id].append((dpl, doc_user, doc_profile))
+            doctor_ids.add(doc_user.id)
+
+        # BATCH 4: Fetch all access logs for all doctor-profile pairs (1 query with IN)
+        access_logs = db.query(
+            models.DoctorAccessLog.doctor_id,
+            models.DoctorAccessLog.profile_id,
+            func.max(models.DoctorAccessLog.created_at).label("last_access_at")
+        ).filter(
+            models.DoctorAccessLog.doctor_id.in_(doctor_ids),
+            models.DoctorAccessLog.profile_id.in_(reading_profile_ids)
+        ).group_by(models.DoctorAccessLog.doctor_id, models.DoctorAccessLog.profile_id).all()
+
+        access_by_pair = {(al.doctor_id, al.profile_id): al.last_access_at for al in access_logs}
+
+        # Helper to normalize datetime to tz-aware (prevents TypeError on mixed comparisons)
+        def _to_aware(dt):
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+        # Now loop through critical readings and build alerts (no more queries)
+        for r in critical_readings:
+            # Check if any doctor has addressed this reading (with tz normalization)
+            reading_notes = notes_by_profile.get(r.profile_id, [])
+            has_note = any(_to_aware(note.created_at) >= _to_aware(r.created_at) for note in reading_notes)
+
+            if not has_note:
+                # ALERT: Triggered immediately on critical reading detection (no 24h delay).
+                hours_ago = round((now - (r.created_at if r.created_at.tzinfo else r.created_at.replace(tzinfo=timezone.utc))).total_seconds() / 3600, 1)
+
+                # Get patient name from batch
+                profile = profiles_by_id.get(r.profile_id)
+                patient_name = profile.name if profile else "Unknown"
+
+                # Get linked doctors from batch
+                linked_docs = linked_by_profile.get(r.profile_id, [])
+
+                linked_doctors = []
+                doctor_code = ""
+                for dpl, doc_user, doc_profile in linked_docs:
+                    # Look up access log and notes from batch (no more queries!)
+                    last_access = access_by_pair.get((doc_user.id, r.profile_id))
+
+                    reading_notes_for_doc = [n for n in reading_notes if n.doctor_id == doc_user.id]
+                    has_responded = any(_to_aware(n.created_at) >= _to_aware(r.created_at) for n in reading_notes_for_doc)
+
+                    # Status: responded > viewed > not_accessed
+                    if has_responded:
+                        status = "responded"
+                    elif last_access:
+                        status = "viewed"
+                    else:
+                        status = "not_accessed"
+
+                    linked_doctors.append({
+                        "name": doc_user.full_name,
+                        "doctor_code": doc_profile.doctor_code,
+                        "last_access": last_access.isoformat() if last_access else None,
+                        "status": status,
+                    })
+                    if not doctor_code:
+                        doctor_code = doc_profile.doctor_code
+
+                # Build message: reading + patient + doctor (single line)
+                message = f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) recorded by {patient_name}"
+                if doctor_code:
+                    message += f" ({doctor_code})"
+
                 alerts.append({
                     "type": "CRITICAL_READING_UNADDRESSED",
                     "severity": "HIGH",
-                    "message": f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) unaddressed for {hours_ago:.0f}h",
+                    "message": message,
                     "target_profile_id": r.profile_id,
                     "reading_id": r.id,
+                    "logged_by_user_id": r.logged_by,
+                    "patient_name": patient_name,
+                    "linked_doctors": linked_doctors,
                     "created_at": r.created_at.isoformat(),
                     "hours_elapsed": hours_ago,
                 })
@@ -864,7 +961,7 @@ def get_alerts(
 
     # 3. AI fallback spike (> 20% in last 24h)
     recent_ai = db.query(models.AiInsightLog).filter(
-        models.AiInsightLog.created_at >= now - timedelta(hours=24),
+        models.AiInsightLog.created_at >= now_naive - timedelta(hours=24),
     ).all()
     if len(recent_ai) >= 5:
         fallback_count = sum(1 for a in recent_ai if a.fallback_reason)
@@ -877,47 +974,120 @@ def get_alerts(
                 "fallback_rate": round(fallback_rate, 1),
             })
 
-    # 4. Patient inactivity — high-risk patients inactive 7+ days
+    # 4. Patient inactivity — high-risk patients inactive 7+ days (BATCHED)
     seven_days_ago = now - timedelta(days=7)
-    all_profiles = db.query(models.Profile).all()
-    for p in all_profiles:
-        last_reading = db.query(func.max(models.HealthReading.created_at)).filter(
-            models.HealthReading.profile_id == p.id,
-        ).scalar()
-        if last_reading is None:
+
+    # BATCH 1: All profiles + their max reading timestamp (1 LEFT JOIN)
+    profiles_with_readings = db.query(
+        models.Profile,
+        func.max(models.HealthReading.created_at).label("last_reading_ts")
+    ).outerjoin(
+        models.HealthReading,
+        models.HealthReading.profile_id == models.Profile.id
+    ).group_by(models.Profile.id).all()
+
+    # Filter to inactive profiles
+    inactive_profiles = []
+    inactive_profile_ids = []
+    for p, last_ts in profiles_with_readings:
+        if last_ts is None:
             continue
-
-        last_reading_aware = last_reading if last_reading.tzinfo else last_reading.replace(tzinfo=timezone.utc)
-        if last_reading_aware >= seven_days_ago:
+        last_ts_aware = last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)
+        if last_ts_aware >= seven_days_ago:
             continue
+        inactive_profiles.append((p, last_ts_aware))
+        inactive_profile_ids.append(p.id)
 
-        # Check if high-risk (had critical readings recently)
-        had_critical = db.query(models.HealthReading).filter(
-            models.HealthReading.profile_id == p.id,
-            models.HealthReading.status_flag == "CRITICAL",
-        ).first()
+    if inactive_profile_ids:
+        # BATCH 2: Check which profiles had critical readings (1 query)
+        critical_profile_ids = set(
+            db.query(models.HealthReading.profile_id).filter(
+                models.HealthReading.profile_id.in_(inactive_profile_ids),
+                models.HealthReading.status_flag == "CRITICAL",
+            ).distinct().all()
+        )
+        critical_profile_ids = {cp[0] for cp in critical_profile_ids}
 
-        days_inactive = (now - last_reading_aware).days
-        if had_critical and days_inactive >= 7:
-            alerts.append({
-                "type": "PATIENT_INACTIVE_HIGH_RISK",
-                "severity": "MEDIUM",
-                "message": f"{p.name} (high-risk) inactive for {days_inactive} days",
-                "target_profile_id": p.id,
-                "days_inactive": days_inactive,
-            })
-        elif days_inactive >= 14:
-            alerts.append({
-                "type": "PATIENT_INACTIVE",
-                "severity": "LOW",
-                "message": f"{p.name} inactive for {days_inactive} days",
-                "target_profile_id": p.id,
-                "days_inactive": days_inactive,
-            })
+        # BATCH 3: Get all linked doctors for inactive profiles (1 query with JOIN)
+        linked_docs_rows = db.query(models.DoctorPatientLink, models.User, models.DoctorProfile).join(
+            models.User, models.DoctorPatientLink.doctor_id == models.User.id
+        ).join(
+            models.DoctorProfile, models.DoctorProfile.user_id == models.User.id
+        ).filter(
+            models.DoctorPatientLink.profile_id.in_(inactive_profile_ids),
+            models.DoctorPatientLink.status == "active",
+        ).all()
 
-    # Sort by severity
+        linked_by_profile = {}
+        doctor_ids = set()
+        for dpl, doc_user, doc_profile in linked_docs_rows:
+            if dpl.profile_id not in linked_by_profile:
+                linked_by_profile[dpl.profile_id] = []
+            linked_by_profile[dpl.profile_id].append((dpl, doc_user, doc_profile))
+            doctor_ids.add(doc_user.id)
+
+        # BATCH 4: Get all access logs for doctor-profile pairs (1 query with GROUP BY)
+        access_logs = db.query(
+            models.DoctorAccessLog.doctor_id,
+            models.DoctorAccessLog.profile_id,
+            func.max(models.DoctorAccessLog.created_at).label("last_access_at")
+        ).filter(
+            models.DoctorAccessLog.doctor_id.in_(doctor_ids),
+            models.DoctorAccessLog.profile_id.in_(inactive_profile_ids)
+        ).group_by(models.DoctorAccessLog.doctor_id, models.DoctorAccessLog.profile_id).all()
+
+        access_by_pair = {(al.doctor_id, al.profile_id): al.last_access_at for al in access_logs}
+
+        # Now loop through inactive profiles (no more queries)
+        for p, last_reading_aware in inactive_profiles:
+            days_inactive = (now - last_reading_aware).days
+            had_critical = p.id in critical_profile_ids
+
+            # Build linked_doctors list from batch
+            linked_docs = linked_by_profile.get(p.id, [])
+            linked_doctors = []
+            for dpl, doc_user, doc_profile in linked_docs:
+                last_access = access_by_pair.get((doc_user.id, p.id))
+                linked_doctors.append({
+                    "name": doc_user.full_name,
+                    "doctor_code": doc_profile.doctor_code,
+                    "last_access": last_access.isoformat() if last_access else None,
+                })
+
+            if had_critical and days_inactive >= 7:
+                alerts.append({
+                    "type": "PATIENT_INACTIVE_HIGH_RISK",
+                    "severity": "MEDIUM",
+                    "message": f"{p.name} (high-risk) inactive for {days_inactive} days",
+                    "target_profile_id": p.id,
+                    "patient_name": p.name,
+                    "linked_doctors": linked_doctors,
+                    "days_inactive": days_inactive,
+                })
+            elif days_inactive >= 14:
+                alerts.append({
+                    "type": "PATIENT_INACTIVE",
+                    "severity": "LOW",
+                    "message": f"{p.name} inactive for {days_inactive} days",
+                    "target_profile_id": p.id,
+                    "patient_name": p.name,
+                    "linked_doctors": linked_doctors,
+                    "days_inactive": days_inactive,
+                })
+
+    # Sort by severity (HIGH first), then by latest reading within each severity
     severity_order = {"HIGH": 0, "MEDIUM": 1, "INFO": 2, "LOW": 3}
-    alerts.sort(key=lambda a: severity_order.get(a["severity"], 9))
+
+    def _alert_ts(a):
+        # Ensure fallback is tz-aware to prevent TypeError on mixed tz-naive/tz-aware comparisons
+        raw = a.get("created_at") or "2000-01-01T00:00:00+00:00"
+        dt = datetime.fromisoformat(raw)
+        return -(dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).timestamp()
+
+    alerts.sort(key=lambda a: (
+        severity_order.get(a["severity"], 9),
+        _alert_ts(a)
+    ))
 
     return {
         "alerts": alerts,
@@ -975,6 +1145,132 @@ def get_audit_log(
 
 
 # ---------------------------------------------------------------------------
+# G4: Inactive users — users with no readings for 2+ days
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/inactive-users")
+def get_inactive_users(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Users with no readings recorded in last 2 days. BATCHED: 3 queries total, not 3-per-patient."""
+    from sqlalchemy import and_, or_
+
+    now = datetime.now(timezone.utc)
+    two_days_ago = now - timedelta(days=2)
+
+    # Query 1: Get all patients + their max reading timestamp (1 JOIN)
+    patients_with_last_ts = db.query(
+        models.User,
+        func.max(models.HealthReading.created_at).label("last_reading_ts")
+    ).outerjoin(
+        models.HealthReading,
+        models.HealthReading.logged_by == models.User.id
+    ).filter(
+        models.User.role == models.UserRole.patient,
+    ).group_by(models.User.id).all()
+
+    # Filter to inactive only; collect patient IDs for batch fetch
+    inactive_patient_data = {}
+    inactive_patient_ids = []
+    for patient, last_ts in patients_with_last_ts:
+        if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
+            continue  # Active user, skip
+        inactive_patient_ids.append(patient.id)
+        inactive_patient_data[patient.id] = {
+            "user_id": patient.id,
+            "full_name": patient.full_name,
+            "email": patient.email,
+            "phone_number": patient.phone_number,
+            "last_reading_ts": last_ts,
+        }
+
+    if not inactive_patient_ids:
+        return {"inactive_users": [], "total": 0}
+
+    # Query 2: Get last glucose + BP for ALL inactive patients (1 query with IN clause)
+    from sqlalchemy.orm import aliased
+
+    glucose_subq = (
+        db.query(
+            models.HealthReading.logged_by,
+            models.HealthReading.glucose_value,
+            models.HealthReading.created_at,
+            models.HealthReading.status_flag,
+            func.row_number().over(
+                partition_by=models.HealthReading.logged_by,
+                order_by=models.HealthReading.created_at.desc()
+            ).label("rn")
+        ).filter(
+            models.HealthReading.logged_by.in_(inactive_patient_ids),
+            models.HealthReading.reading_type == "glucose",
+        ).subquery()
+    )
+    last_glucose_rows = db.query(glucose_subq).filter(glucose_subq.c.rn == 1).all()
+    last_glucose_by_user = {row.logged_by: row for row in last_glucose_rows}
+
+    bp_subq = (
+        db.query(
+            models.HealthReading.logged_by,
+            models.HealthReading.systolic,
+            models.HealthReading.diastolic,
+            models.HealthReading.created_at,
+            models.HealthReading.status_flag,
+            func.row_number().over(
+                partition_by=models.HealthReading.logged_by,
+                order_by=models.HealthReading.created_at.desc()
+            ).label("rn")
+        ).filter(
+            models.HealthReading.logged_by.in_(inactive_patient_ids),
+            models.HealthReading.reading_type == "blood_pressure",
+        ).subquery()
+    )
+    last_bp_rows = db.query(bp_subq).filter(bp_subq.c.rn == 1).all()
+    last_bp_by_user = {row.logged_by: row for row in last_bp_rows}
+
+    # Build response (no more queries)
+    inactive = []
+    for user_id, data in inactive_patient_data.items():
+        last_ts = data["last_reading_ts"]
+        if last_ts:
+            days_inactive = (now - (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc))).days
+        else:
+            days_inactive = -1
+
+        last_glucose = last_glucose_by_user.get(user_id)
+        last_bp = last_bp_by_user.get(user_id)
+
+        inactive.append({
+            "user_id": user_id,
+            "full_name": data["full_name"],
+            "email": data["email"],
+            "phone_number": data["phone_number"],
+            "last_reading_at": last_ts.isoformat() if last_ts else None,
+            "days_inactive": days_inactive,
+            "days_inactive_display": "Never" if days_inactive == -1 else f"{days_inactive}+",
+            "last_glucose": {
+                "value": last_glucose.glucose_value,
+                "reading_at": last_glucose.created_at.isoformat(),
+                "status": last_glucose.status_flag,
+            } if last_glucose else None,
+            "last_bp": {
+                "systolic": last_bp.systolic,
+                "diastolic": last_bp.diastolic,
+                "reading_at": last_bp.created_at.isoformat(),
+                "status": last_bp.status_flag,
+            } if last_bp else None,
+        })
+
+    # Sort by days_inactive descending (most inactive first); -1 (never recorded) sorts to top
+    inactive.sort(key=lambda x: float('inf') if x["days_inactive"] == -1 else x["days_inactive"], reverse=True)
+
+    return {
+        "inactive_users": inactive,
+        "total": len(inactive),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Operational monitoring endpoints
 # ---------------------------------------------------------------------------
 
@@ -982,7 +1278,7 @@ def get_audit_log(
 def get_ops_dashboard():
     """Serve the ops monitoring dashboard SPA. Auth enforced by JS (same pattern as /admin)."""
     try:
-        with open(_OPS_DASHBOARD_HTML, "r") as f:
+        with open(_OPS_DASHBOARD_HTML, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         raise HTTPException(status_code=503, detail="Ops dashboard not available.")
