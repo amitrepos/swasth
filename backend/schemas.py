@@ -1064,3 +1064,13 @@ class TriagePatientCard(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AdminSendWhatsAppIndividual(BaseModel):
+    """Admin sends a WhatsApp reminder to one inactive user using pre-approved template."""
+    user_id: int
+
+
+class AdminSendWhatsAppBulk(BaseModel):
+    """Admin sends WhatsApp reminders to all inactive users using pre-approved template."""
+    pass  # No payload needed — uses predefined template from WHATSAPP_REMAINDER_CONTENT_SID

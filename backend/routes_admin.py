@@ -22,6 +22,8 @@ from utils.datetime_helpers import utc_isoformat
 from database import get_db
 from dependencies import get_current_user
 from doctor_utils import ensure_unique_doctor_code
+from twilio_service import whatsapp_service
+from config import settings
 
 router = APIRouter()
 
@@ -1267,6 +1269,216 @@ def get_inactive_users(
     return {
         "inactive_users": inactive,
         "total": len(inactive),
+    }
+
+
+# ---------------------------------------------------------------------------
+# WhatsApp messaging endpoints (for inactive user engagement)
+# ---------------------------------------------------------------------------
+
+@router.post("/admin/send-whatsapp-individual")
+@limiter.limit("30/hour")
+def send_whatsapp_individual(
+    request: Request,
+    body: schemas.AdminSendWhatsAppIndividual,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Send a WhatsApp reminder to a specific inactive user using Twilio template.
+
+    Uses pre-approved Twilio template with variables: [name, reading_type, days]
+
+    Returns: {"success": bool, "message_sid": str|null, "error": str|null}
+    """
+    user_id = body.user_id
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+
+    # Get target user
+    target = db.query(models.User).filter(models.User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Restrict to patients — reminders are only meaningful for them, and this
+    # prevents an admin from accidentally messaging another admin or a doctor.
+    if target.role != models.UserRole.patient:
+        raise HTTPException(status_code=400, detail="Target must be a patient")
+
+    if not target.phone_number:
+        raise HTTPException(status_code=400, detail="User has no phone number on file")
+
+    # Get Content SID from config
+    content_sid = settings.WHATSAPP_REMINDER_CONTENT_SID
+    if not content_sid or content_sid.startswith("HX_placeholder"):
+        raise HTTPException(status_code=500, detail="WhatsApp template not configured")
+
+    # Calculate days_inactive and get last reading type
+    now = datetime.now(timezone.utc)
+    two_days_ago = now - timedelta(days=2)
+
+    last_reading = db.query(
+        models.HealthReading.reading_type,
+        models.HealthReading.created_at
+    ).filter(
+        models.HealthReading.logged_by == user_id
+    ).order_by(models.HealthReading.created_at.desc()).first()
+
+    if last_reading:
+        last_ts = last_reading.created_at
+        last_ts_aware = last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)
+        if last_ts_aware >= two_days_ago:
+            raise HTTPException(status_code=400, detail="User is not inactive")
+        days_inactive = (now - last_ts_aware).days
+        reading_type = last_reading.reading_type or "reading"
+    else:
+        days_inactive = -1
+        reading_type = "reading"
+
+    days_display = str(days_inactive) if days_inactive >= 0 else "0"
+
+    # Send via WhatsApp template
+    success, msg_sid, error = whatsapp_service.send_whatsapp_template(
+        target.phone_number,
+        content_sid,
+        [target.full_name, reading_type, days_display]
+    )
+
+    if not success:
+        raise HTTPException(status_code=400, detail=error or "Failed to send WhatsApp message")
+
+    # Audit log this high-impact action (CERT-In 180-day requirement)
+    _audit_log(db, user, "SEND_WHATSAPP_INDIVIDUAL", target_user_id=user_id)
+
+    return {
+        "success": True,
+        "message_sid": msg_sid,
+        "error": None,
+    }
+
+
+@router.post("/admin/send-whatsapp-bulk")
+@limiter.limit("5/hour")
+def send_whatsapp_bulk(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Send WhatsApp reminder to all inactive users using Twilio template.
+
+    Uses pre-approved Twilio template with variables: [name, reading_type, days]
+
+    Returns: {
+        "total_inactive": int,
+        "successful": int,
+        "failed": int,
+        "results": [{"user_id": int, "full_name": str, "success": bool, "error": str|null}, ...]
+    }
+    """
+    # Get Content SID from config
+    content_sid = settings.WHATSAPP_REMINDER_CONTENT_SID
+    if not content_sid or content_sid.startswith("HX_placeholder"):
+        raise HTTPException(status_code=500, detail="WhatsApp template not configured")
+
+    now = datetime.now(timezone.utc)
+    two_days_ago = now - timedelta(days=2)
+
+    # Get all inactive patients with their last reading info
+    patients_with_readings = db.query(
+        models.User,
+        func.max(models.HealthReading.created_at).label("last_reading_ts")
+    ).outerjoin(
+        models.HealthReading,
+        models.HealthReading.logged_by == models.User.id
+    ).filter(
+        models.User.role == models.UserRole.patient,
+    ).group_by(models.User.id).all()
+
+    # Identify inactive patient IDs and collect them
+    inactive_patient_ids = []
+    patients_with_ts = {}
+    for patient, last_ts in patients_with_readings:
+        if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
+            continue  # Active user, skip
+        if not patient.phone_number:
+            continue  # Skip users without phone
+        inactive_patient_ids.append(patient.id)
+        patients_with_ts[patient.id] = (patient, last_ts)
+
+    # Batch fetch reading types for all inactive patients in one query
+    reading_type_map = {}
+    if inactive_patient_ids:
+        # Get the latest reading for each inactive patient
+        latest_readings = db.query(
+            models.HealthReading.logged_by,
+            models.HealthReading.reading_type,
+            func.row_number().over(
+                partition_by=models.HealthReading.logged_by,
+                order_by=models.HealthReading.created_at.desc()
+            ).label("rn")
+        ).filter(
+            models.HealthReading.logged_by.in_(inactive_patient_ids)
+        ).all()
+
+        for reading in latest_readings:
+            if reading.rn == 1:  # Get only the latest (first row per patient)
+                reading_type_map[reading.logged_by] = reading.reading_type
+
+    # Build final inactive_patients list with reading types
+    inactive_patients = []
+    for patient_id, (patient, last_ts) in patients_with_ts.items():
+        reading_type = reading_type_map.get(patient_id, "reading")
+        if last_ts:
+            days_inactive = (now - (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc))).days
+        else:
+            days_inactive = -1
+        inactive_patients.append((patient, reading_type, days_inactive))
+
+    # Send to each inactive patient
+    results = []
+    successful = 0
+    failed = 0
+
+    for patient, reading_type, days_inactive in inactive_patients:
+        days_display = str(days_inactive) if days_inactive >= 0 else "0"
+
+        success, msg_sid, error = whatsapp_service.send_whatsapp_template(
+            patient.phone_number,
+            content_sid,
+            [patient.full_name, reading_type, days_display]
+        )
+
+        if success:
+            successful += 1
+            results.append({
+                "user_id": patient.id,
+                "full_name": patient.full_name,
+                "success": True,
+                "message_sid": msg_sid,
+                "error": None,
+            })
+        else:
+            failed += 1
+            results.append({
+                "user_id": patient.id,
+                "full_name": patient.full_name,
+                "success": False,
+                "message_sid": None,
+                "error": error,
+            })
+
+    # Audit log bulk action with summary (CERT-In 180-day requirement)
+    _audit_log(db, user, "SEND_WHATSAPP_BULK", details={
+        "total_inactive": len(inactive_patients),
+        "successful": successful,
+        "failed": failed,
+    })
+
+    return {
+        "total_inactive": len(inactive_patients),
+        "successful": successful,
+        "failed": failed,
+        "results": results,
     }
 
 

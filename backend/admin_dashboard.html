@@ -192,6 +192,27 @@
   .doc-checklist a { color: #0ea5e9; text-decoration: none; font-size: 12px; }
   .doc-checklist a:hover { text-decoration: underline; }
 
+  /* WhatsApp messaging modal */
+  .whatsapp-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+  .whatsapp-overlay.active { display: flex; }
+  .whatsapp-box { background: white; border-radius: 16px; padding: 28px; width: 500px; max-width: 90vw; }
+  .whatsapp-box h3 { font-size: 16px; margin-bottom: 4px; }
+  .whatsapp-box .subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 16px; }
+  .whatsapp-box label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; margin-top: 12px; }
+  .whatsapp-box textarea { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; min-height: 100px; resize: vertical; }
+  .whatsapp-box .preview { background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 13px; color: #166534; display: none; }
+  .whatsapp-box .preview.show { display: block; }
+  .whatsapp-box .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .whatsapp-box .btn-cancel { background: #f1f5f9; color: #475569; padding: 8px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .whatsapp-box .btn-send { background: #22c55e; color: white; padding: 8px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .whatsapp-box .btn-send:hover { background: #16a34a; }
+  .whatsapp-box .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+  .whatsapp-hint { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+  /* Inactive users action buttons */
+  .action-btns { display: flex; gap: 6px; }
+  .btn-whatsapp { background: #10b981; color: white; padding: 4px 10px; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn-whatsapp:hover { background: #059669; }
 
   @media (max-width: 768px) {
     .sidebar { width: 60px; }
@@ -289,9 +310,12 @@
     <!-- Inactive Users Section -->
     <div class="section-page" id="sec-inactive">
       <h1 style="font-size:22px;margin-bottom:20px">Inactive Users (No readings for 2+ days)</h1>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-secondary" id="btnBulkWhatsApp" onclick="openBulkWhatsAppModal()" style="display:none">📱 Send Message to All</button>
+      </div>
       <div class="section">
         <table>
-          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Days Inactive</th><th>Last Glucose</th><th>Last BP</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Days Inactive</th><th>Last Glucose</th><th>Last BP</th><th>Actions</th></tr></thead>
           <tbody id="inactiveTableBody"></tbody>
         </table>
       </div>
@@ -337,6 +361,22 @@
     <div class="confirm-actions">
       <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
       <button class="btn-danger" id="confirmBtn" onclick="executeConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- WhatsApp Messaging Modal -->
+<div class="whatsapp-overlay" id="whatsappModal">
+  <div class="whatsapp-box">
+    <h3 id="whatsappTitle">Send WhatsApp Reminder</h3>
+    <div class="subtitle" id="whatsappSubtitle"></div>
+    <div id="whatsappPreview" class="preview show" style="display:block;margin:16px 0"></div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:16px 0;font-size:12px;color:#475569">
+      📱 A personalized reminder will be sent using the pre-approved template.
+    </div>
+    <div class="actions">
+      <button class="btn-cancel" onclick="closeWhatsAppModal()">Cancel</button>
+      <button class="btn-send" id="whatsappSendBtn" onclick="sendWhatsAppMessage()">Send Reminder</button>
     </div>
   </div>
 </div>
@@ -760,19 +800,29 @@ async function loadInactiveUsers() {
     const data = await resp.json();
 
     const tableBody = document.getElementById('inactiveTableBody');
+    const bulkBtn = document.getElementById('btnBulkWhatsApp');
+
     if (!data.inactive_users.length) {
-      tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b">No inactive users. All users are recording readings regularly!</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b">No inactive users. All users are recording readings regularly!</td></tr>';
+      bulkBtn.style.display = 'none';
       return;
     }
 
+    bulkBtn.style.display = 'block';
+
     tableBody.innerHTML = data.inactive_users.map(u => `
-      <tr onclick="openUserDetail(${u.user_id})" style="cursor:pointer">
-        <td><strong>${esc(u.full_name)}</strong></td>
-        <td>${esc(u.email)}</td>
-        <td>${esc(u.phone_number || '--')}</td>
-        <td><strong style="color:#ef4444">${esc(u.days_inactive_display)}</strong></td>
-        <td>${u.last_glucose ? `${u.last_glucose.value} mg/dL<br><small>${new Date(u.last_glucose.reading_at).toLocaleDateString()}</small>` : '--'}</td>
-        <td>${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+      <tr>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})"><strong>${esc(u.full_name)}</strong></td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})">${esc(u.email)}</td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})">${esc(u.phone_number || '--')}</td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})"><strong style="color:#ef4444">${esc(u.days_inactive_display)}</strong></td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})">${u.last_glucose ? `${u.last_glucose.value} mg/dL<br><small>${new Date(u.last_glucose.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})">${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+        <td>
+          <div class="action-btns">
+            <button class="btn-whatsapp" data-user-id="${u.user_id}" data-user-name="${esc(u.full_name)}" data-days-inactive="${u.days_inactive}" onclick="openWhatsAppModal(this)">Message</button>
+          </div>
+        </td>
       </tr>
     `).join('');
   } catch(e) {
@@ -808,6 +858,102 @@ async function openUserDetail(userId) {
 }
 
 function closeUserDetail() { document.getElementById('userDetailModal').classList.remove('active'); }
+
+// ── WhatsApp Messaging (Template-based) ────────────────────────────
+let WHATSAPP_MODE = 'individual';  // 'individual' or 'bulk'
+let WHATSAPP_USER_ID = null;
+let WHATSAPP_USER_NAME = null;
+let WHATSAPP_DAYS_INACTIVE = null;
+
+function openWhatsAppModal(btn) {
+  WHATSAPP_MODE = 'individual';
+  WHATSAPP_USER_ID = parseInt(btn.dataset.userId, 10);
+  WHATSAPP_USER_NAME = btn.dataset.userName;
+  WHATSAPP_DAYS_INACTIVE = parseInt(btn.dataset.daysInactive, 10);
+
+  document.getElementById('whatsappTitle').textContent = 'Send WhatsApp Reminder';
+  document.getElementById('whatsappSubtitle').textContent = `To: ${esc(WHATSAPP_USER_NAME)}`;
+
+  const daysDisplay = WHATSAPP_DAYS_INACTIVE === -1 ? 'Never recorded' : `${WHATSAPP_DAYS_INACTIVE}+ days`;
+  document.getElementById('whatsappPreview').innerHTML = `
+    <strong>📱 Reminder Details:</strong><br>
+    • Patient: ${esc(WHATSAPP_USER_NAME)}<br>
+    • Last Reading: ${daysDisplay}<br>
+    • Template: Pre-approved message will be sent
+  `;
+
+  document.getElementById('whatsappModal').classList.add('active');
+}
+
+function openBulkWhatsAppModal() {
+  WHATSAPP_MODE = 'bulk';
+  document.getElementById('whatsappTitle').textContent = 'Send WhatsApp to All Inactive Users';
+  document.getElementById('whatsappSubtitle').textContent = 'Reminders will be personalized for each inactive user';
+
+  document.getElementById('whatsappPreview').innerHTML = `
+    <strong>📱 Bulk Reminder:</strong><br>
+    • Target: All inactive users (no readings in 2+ days)<br>
+    • Template: Pre-approved message<br>
+    • Variables: Name, Last Reading Type, Days Inactive
+  `;
+
+  document.getElementById('whatsappModal').classList.add('active');
+}
+
+function closeWhatsAppModal() {
+  document.getElementById('whatsappModal').classList.remove('active');
+}
+
+async function sendWhatsAppMessage() {
+  const sendBtn = document.getElementById('whatsappSendBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Sending...';
+
+  try {
+    if (WHATSAPP_MODE === 'individual') {
+      const resp = await fetch(`${API}/api/admin/send-whatsapp-individual`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: WHATSAPP_USER_ID })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.detail || 'Failed to send');
+      }
+
+      alert('✓ Reminder sent successfully!');
+      closeWhatsAppModal();
+    } else {
+      const resp = await fetch(`${API}/api/admin/send-whatsapp-bulk`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.detail || 'Failed to send');
+      }
+
+      const data = await resp.json();
+      alert(`✓ Sent to ${data.successful} users${data.failed > 0 ? ` (${data.failed} failed)` : ''}!`);
+      closeWhatsAppModal();
+      loadInactiveUsers();  // Reload to refresh
+    }
+  } catch(e) {
+    alert('❌ Error: ' + e.message);
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send Reminder';
+  }
+}
 
 function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
