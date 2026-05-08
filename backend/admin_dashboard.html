@@ -307,15 +307,16 @@
       <div id="alertsList"></div>
     </div>
 
-    <!-- Inactive Users Section -->
+    <!-- Inactive Profiles Section -->
     <div class="section-page" id="sec-inactive">
-      <h1 style="font-size:22px;margin-bottom:20px">Inactive Users (No readings for 2+ days)</h1>
+      <h1 style="font-size:22px;margin-bottom:20px">Inactive Profiles (No readings for 2+ days)</h1>
+      <p style="color:#64748b;font-size:13px;margin-top:-12px;margin-bottom:16px">Each row is a profile. The "Owner" is the account holder who logs readings for that profile and will receive any WhatsApp reminder.</p>
       <div style="display:flex;gap:8px;margin-bottom:16px">
         <button class="btn btn-secondary" id="btnBulkWhatsApp" onclick="openBulkWhatsAppModal()" style="display:none">📱 Send Message to All</button>
       </div>
       <div class="section">
         <table>
-          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Days Inactive</th><th>Last Glucose</th><th>Last BP</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Profile</th><th>Owner</th><th>Owner Phone</th><th>Days Inactive</th><th>Last Glucose</th><th>Last BP</th><th>Actions</th></tr></thead>
           <tbody id="inactiveTableBody"></tbody>
         </table>
       </div>
@@ -803,7 +804,7 @@ async function loadInactiveUsers() {
     const bulkBtn = document.getElementById('btnBulkWhatsApp');
 
     if (!data.inactive_users.length) {
-      tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b">No inactive users. All users are recording readings regularly!</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b">No inactive profiles. All profiles have recent readings!</td></tr>';
       bulkBtn.style.display = 'none';
       return;
     }
@@ -812,15 +813,15 @@ async function loadInactiveUsers() {
 
     tableBody.innerHTML = data.inactive_users.map(u => `
       <tr>
-        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})"><strong>${esc(u.full_name)}</strong></td>
-        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})">${esc(u.email)}</td>
-        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})">${esc(u.phone_number || '--')}</td>
-        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})"><strong style="color:#ef4444">${esc(u.days_inactive_display)}</strong></td>
-        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})">${u.last_glucose ? `${u.last_glucose.value} mg/dL<br><small>${new Date(u.last_glucose.reading_at).toLocaleDateString()}</small>` : '--'}</td>
-        <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})">${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})"><strong>${esc(u.profile_name)}</strong></td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">${esc(u.owner_name)}<br><small style="color:#64748b">${esc(u.owner_email)}</small></td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">${esc(u.owner_phone || '--')}</td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})"><strong style="color:#ef4444">${esc(u.days_inactive_display)}</strong></td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">${u.last_glucose ? `${u.last_glucose.value} mg/dL<br><small>${new Date(u.last_glucose.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
         <td>
           <div class="action-btns">
-            <button class="btn-whatsapp" data-user-id="${u.user_id}" data-user-name="${esc(u.full_name)}" data-days-inactive="${u.days_inactive}" onclick="openWhatsAppModal(this)">Message</button>
+            <button class="btn-whatsapp" data-profile-id="${u.profile_id}" data-profile-name="${esc(u.profile_name)}" data-owner-name="${esc(u.owner_name)}" data-days-inactive="${u.days_inactive}" onclick="openWhatsAppModal(this)">Message</button>
           </div>
         </td>
       </tr>
@@ -859,25 +860,28 @@ async function openUserDetail(userId) {
 
 function closeUserDetail() { document.getElementById('userDetailModal').classList.remove('active'); }
 
-// ── WhatsApp Messaging (Template-based) ────────────────────────────
+// ── WhatsApp Messaging (Template-based, profile-centric) ───────────
 let WHATSAPP_MODE = 'individual';  // 'individual' or 'bulk'
-let WHATSAPP_USER_ID = null;
-let WHATSAPP_USER_NAME = null;
+let WHATSAPP_PROFILE_ID = null;
+let WHATSAPP_PROFILE_NAME = null;
+let WHATSAPP_OWNER_NAME = null;
 let WHATSAPP_DAYS_INACTIVE = null;
 
 function openWhatsAppModal(btn) {
   WHATSAPP_MODE = 'individual';
-  WHATSAPP_USER_ID = parseInt(btn.dataset.userId, 10);
-  WHATSAPP_USER_NAME = btn.dataset.userName;
+  WHATSAPP_PROFILE_ID = parseInt(btn.dataset.profileId, 10);
+  WHATSAPP_PROFILE_NAME = btn.dataset.profileName;
+  WHATSAPP_OWNER_NAME = btn.dataset.ownerName;
   WHATSAPP_DAYS_INACTIVE = parseInt(btn.dataset.daysInactive, 10);
 
   document.getElementById('whatsappTitle').textContent = 'Send WhatsApp Reminder';
-  document.getElementById('whatsappSubtitle').textContent = `To: ${esc(WHATSAPP_USER_NAME)}`;
+  document.getElementById('whatsappSubtitle').textContent = `For profile: ${esc(WHATSAPP_PROFILE_NAME)} — sending to owner ${esc(WHATSAPP_OWNER_NAME)}`;
 
   const daysDisplay = WHATSAPP_DAYS_INACTIVE === -1 ? 'Never recorded' : `${WHATSAPP_DAYS_INACTIVE}+ days`;
   document.getElementById('whatsappPreview').innerHTML = `
     <strong>📱 Reminder Details:</strong><br>
-    • Patient: ${esc(WHATSAPP_USER_NAME)}<br>
+    • Profile: ${esc(WHATSAPP_PROFILE_NAME)}<br>
+    • Recipient: ${esc(WHATSAPP_OWNER_NAME)} (account owner)<br>
     • Last Reading: ${daysDisplay}<br>
     • Template: Pre-approved message will be sent
   `;
@@ -887,14 +891,15 @@ function openWhatsAppModal(btn) {
 
 function openBulkWhatsAppModal() {
   WHATSAPP_MODE = 'bulk';
-  document.getElementById('whatsappTitle').textContent = 'Send WhatsApp to All Inactive Users';
-  document.getElementById('whatsappSubtitle').textContent = 'Reminders will be personalized for each inactive user';
+  document.getElementById('whatsappTitle').textContent = 'Send WhatsApp for All Inactive Profiles';
+  document.getElementById('whatsappSubtitle').textContent = 'One personalized reminder per dormant profile, sent to the owner';
 
   document.getElementById('whatsappPreview').innerHTML = `
     <strong>📱 Bulk Reminder:</strong><br>
-    • Target: All inactive users (no readings in 2+ days)<br>
+    • Target: All inactive profiles (no readings in 2+ days)<br>
+    • Recipient: Each profile's owner (account holder)<br>
     • Template: Pre-approved message<br>
-    • Variables: Name, Last Reading Type, Days Inactive
+    • Variables: Profile Name, Last Reading Type, Days Inactive
   `;
 
   document.getElementById('whatsappModal').classList.add('active');
@@ -917,7 +922,7 @@ async function sendWhatsAppMessage() {
           'Authorization': `Bearer ${TOKEN}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ user_id: WHATSAPP_USER_ID })
+        body: JSON.stringify({ profile_id: WHATSAPP_PROFILE_ID })
       });
 
       if (!resp.ok) {
@@ -943,7 +948,7 @@ async function sendWhatsAppMessage() {
       }
 
       const data = await resp.json();
-      alert(`✓ Sent to ${data.successful} users${data.failed > 0 ? ` (${data.failed} failed)` : ''}!`);
+      alert(`✓ Sent ${data.successful} reminder${data.successful === 1 ? '' : 's'}${data.failed > 0 ? ` (${data.failed} failed)` : ''}!`);
       closeWhatsAppModal();
       loadInactiveUsers();  // Reload to refresh
     }

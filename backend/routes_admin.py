@@ -1155,98 +1155,131 @@ def get_inactive_users(
     db: Session = Depends(get_db),
     user: models.User = Depends(_require_admin),
 ):
-    """Users with no readings recorded in last 2 days. BATCHED: 3 queries total, not 3-per-patient."""
-    from sqlalchemy import and_, or_
+    """Profiles with no readings in last 2 days, with the owner's contact info.
 
+    Profile-centric, NOT user-centric: a caregiver who logs daily for himself
+    but not for his mother's profile must surface here so we can nudge him
+    to log Mummy's reading. Previously aggregated by HealthReading.logged_by
+    (the account holder), which masked dormant family-member profiles.
+
+    Batched: 4 queries total (profiles+owners, last_ts, last glucose, last BP).
+    """
     now = datetime.now(timezone.utc)
     two_days_ago = now - timedelta(days=2)
 
-    # Query 1: Get all patients + their max reading timestamp (1 JOIN)
-    patients_with_last_ts = db.query(
-        models.User,
-        func.max(models.HealthReading.created_at).label("last_reading_ts")
-    ).outerjoin(
-        models.HealthReading,
-        models.HealthReading.logged_by == models.User.id
-    ).filter(
-        models.User.role == models.UserRole.patient,
-    ).group_by(models.User.id).all()
+    # Subquery: pick a deterministic single owner per profile (lowest user_id
+    # among rows with access_level='owner'). Avoids row-multiplication when a
+    # profile has multiple owners and keeps results stable across requests.
+    owner_subq = (
+        db.query(
+            models.ProfileAccess.profile_id.label("profile_id"),
+            func.min(models.ProfileAccess.user_id).label("owner_user_id"),
+        )
+        .filter(models.ProfileAccess.access_level == "owner")
+        .group_by(models.ProfileAccess.profile_id)
+        .subquery()
+    )
 
-    # Filter to inactive only; collect patient IDs for batch fetch
-    inactive_patient_data = {}
-    inactive_patient_ids = []
-    for patient, last_ts in patients_with_last_ts:
+    # Query 1: Profile + owner User + max(reading.created_at) for that profile.
+    # Filter to profiles owned by patient-role users only (skip doctor/admin
+    # personal profiles).
+    rows = (
+        db.query(
+            models.Profile,
+            models.User,
+            func.max(models.HealthReading.created_at).label("last_reading_ts"),
+        )
+        .join(owner_subq, owner_subq.c.profile_id == models.Profile.id)
+        .join(models.User, models.User.id == owner_subq.c.owner_user_id)
+        .outerjoin(
+            models.HealthReading,
+            models.HealthReading.profile_id == models.Profile.id,
+        )
+        .filter(models.User.role == models.UserRole.patient)
+        .group_by(models.Profile.id, models.User.id)
+        .all()
+    )
+
+    # Filter to inactive profiles only
+    inactive_data = {}
+    inactive_profile_ids = []
+    for profile, owner, last_ts in rows:
         if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
-            continue  # Active user, skip
-        inactive_patient_ids.append(patient.id)
-        inactive_patient_data[patient.id] = {
-            "user_id": patient.id,
-            "full_name": patient.full_name,
-            "email": patient.email,
-            "phone_number": patient.phone_number,
+            continue  # Active profile, skip
+        inactive_profile_ids.append(profile.id)
+        inactive_data[profile.id] = {
+            "profile": profile,
+            "owner": owner,
             "last_reading_ts": last_ts,
         }
 
-    if not inactive_patient_ids:
+    if not inactive_profile_ids:
         return {"inactive_users": [], "total": 0}
 
-    # Query 2: Get last glucose + BP for ALL inactive patients (1 query with IN clause)
-    from sqlalchemy.orm import aliased
-
+    # Query 2: last glucose per profile (1 query, partitioned)
     glucose_subq = (
         db.query(
-            models.HealthReading.logged_by,
+            models.HealthReading.profile_id,
             models.HealthReading.glucose_value,
             models.HealthReading.created_at,
             models.HealthReading.status_flag,
             func.row_number().over(
-                partition_by=models.HealthReading.logged_by,
-                order_by=models.HealthReading.created_at.desc()
-            ).label("rn")
-        ).filter(
-            models.HealthReading.logged_by.in_(inactive_patient_ids),
+                partition_by=models.HealthReading.profile_id,
+                order_by=models.HealthReading.created_at.desc(),
+            ).label("rn"),
+        )
+        .filter(
+            models.HealthReading.profile_id.in_(inactive_profile_ids),
             models.HealthReading.reading_type == "glucose",
-        ).subquery()
+        )
+        .subquery()
     )
     last_glucose_rows = db.query(glucose_subq).filter(glucose_subq.c.rn == 1).all()
-    last_glucose_by_user = {row.logged_by: row for row in last_glucose_rows}
+    last_glucose_by_profile = {row.profile_id: row for row in last_glucose_rows}
 
+    # Query 3: last BP per profile (1 query, partitioned)
     bp_subq = (
         db.query(
-            models.HealthReading.logged_by,
+            models.HealthReading.profile_id,
             models.HealthReading.systolic,
             models.HealthReading.diastolic,
             models.HealthReading.created_at,
             models.HealthReading.status_flag,
             func.row_number().over(
-                partition_by=models.HealthReading.logged_by,
-                order_by=models.HealthReading.created_at.desc()
-            ).label("rn")
-        ).filter(
-            models.HealthReading.logged_by.in_(inactive_patient_ids),
+                partition_by=models.HealthReading.profile_id,
+                order_by=models.HealthReading.created_at.desc(),
+            ).label("rn"),
+        )
+        .filter(
+            models.HealthReading.profile_id.in_(inactive_profile_ids),
             models.HealthReading.reading_type == "blood_pressure",
-        ).subquery()
+        )
+        .subquery()
     )
     last_bp_rows = db.query(bp_subq).filter(bp_subq.c.rn == 1).all()
-    last_bp_by_user = {row.logged_by: row for row in last_bp_rows}
+    last_bp_by_profile = {row.profile_id: row for row in last_bp_rows}
 
-    # Build response (no more queries)
+    # Build response
     inactive = []
-    for user_id, data in inactive_patient_data.items():
+    for profile_id, data in inactive_data.items():
+        profile = data["profile"]
+        owner = data["owner"]
         last_ts = data["last_reading_ts"]
         if last_ts:
             days_inactive = (now - (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc))).days
         else:
             days_inactive = -1
 
-        last_glucose = last_glucose_by_user.get(user_id)
-        last_bp = last_bp_by_user.get(user_id)
+        last_glucose = last_glucose_by_profile.get(profile_id)
+        last_bp = last_bp_by_profile.get(profile_id)
 
         inactive.append({
-            "user_id": user_id,
-            "full_name": data["full_name"],
-            "email": data["email"],
-            "phone_number": data["phone_number"],
+            "profile_id": profile_id,
+            "profile_name": profile.name,
+            "owner_user_id": owner.id,
+            "owner_name": owner.full_name,
+            "owner_email": owner.email,
+            "owner_phone": owner.phone_number,
             "last_reading_at": last_ts.isoformat() if last_ts else None,
             "days_inactive": days_inactive,
             "days_inactive_display": "Never" if days_inactive == -1 else f"{days_inactive}+",
@@ -1273,8 +1306,70 @@ def get_inactive_users(
 
 
 # ---------------------------------------------------------------------------
-# WhatsApp messaging endpoints (for inactive user engagement)
+# WhatsApp messaging endpoints (for inactive profile engagement)
 # ---------------------------------------------------------------------------
+
+def _query_inactive_profiles(db: Session, two_days_ago: datetime):
+    """Return list of (profile, owner_user, last_ts, reading_type) for inactive
+    profiles. Profile-centric so caregivers get pinged about a dormant family
+    member even when they themselves log daily.
+    """
+    owner_subq = (
+        db.query(
+            models.ProfileAccess.profile_id.label("profile_id"),
+            func.min(models.ProfileAccess.user_id).label("owner_user_id"),
+        )
+        .filter(models.ProfileAccess.access_level == "owner")
+        .group_by(models.ProfileAccess.profile_id)
+        .subquery()
+    )
+
+    rows = (
+        db.query(
+            models.Profile,
+            models.User,
+            func.max(models.HealthReading.created_at).label("last_reading_ts"),
+        )
+        .join(owner_subq, owner_subq.c.profile_id == models.Profile.id)
+        .join(models.User, models.User.id == owner_subq.c.owner_user_id)
+        .outerjoin(
+            models.HealthReading,
+            models.HealthReading.profile_id == models.Profile.id,
+        )
+        .filter(models.User.role == models.UserRole.patient)
+        .group_by(models.Profile.id, models.User.id)
+        .all()
+    )
+
+    inactive = []
+    inactive_profile_ids = []
+    raw = {}
+    for profile, owner, last_ts in rows:
+        if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
+            continue
+        inactive_profile_ids.append(profile.id)
+        raw[profile.id] = (profile, owner, last_ts)
+
+    if not inactive_profile_ids:
+        return []
+
+    # Last reading_type per inactive profile (single batched query)
+    type_rows = db.query(
+        models.HealthReading.profile_id,
+        models.HealthReading.reading_type,
+        func.row_number().over(
+            partition_by=models.HealthReading.profile_id,
+            order_by=models.HealthReading.created_at.desc(),
+        ).label("rn"),
+    ).filter(
+        models.HealthReading.profile_id.in_(inactive_profile_ids)
+    ).all()
+    reading_type_by_profile = {r.profile_id: r.reading_type for r in type_rows if r.rn == 1}
+
+    for pid, (profile, owner, last_ts) in raw.items():
+        inactive.append((profile, owner, last_ts, reading_type_by_profile.get(pid, "reading")))
+    return inactive
+
 
 @router.post("/admin/send-whatsapp-individual")
 @limiter.limit("30/hour")
@@ -1284,51 +1379,68 @@ def send_whatsapp_individual(
     db: Session = Depends(get_db),
     user: models.User = Depends(_require_admin),
 ):
-    """Send a WhatsApp reminder to a specific inactive user using Twilio template.
+    """Send a WhatsApp reminder for an inactive PROFILE to its owner.
 
-    Uses pre-approved Twilio template with variables: [name, reading_type, days]
+    Targets profile_id (not user_id): the owner of the dormant profile is the
+    recipient, the dormant profile's name fills the template's name slot. This
+    means a caregiver who logs daily for himself but neglects 'Mummy' will get
+    a 'log Mummy's reading' nudge.
 
+    Template variables: [profile_name, reading_type, days]
     Returns: {"success": bool, "message_sid": str|null, "error": str|null}
     """
-    user_id = body.user_id
+    profile_id = body.profile_id
+    if not profile_id:
+        raise HTTPException(status_code=400, detail="profile_id required")
 
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id required")
+    profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
 
-    # Get target user
-    target = db.query(models.User).filter(models.User.id == user_id).first()
-    if not target:
-        raise HTTPException(status_code=404, detail="User not found")
+    # Find owner (lowest user_id among access_level='owner' rows for stability)
+    owner_access = (
+        db.query(models.ProfileAccess)
+        .filter(
+            models.ProfileAccess.profile_id == profile_id,
+            models.ProfileAccess.access_level == "owner",
+        )
+        .order_by(models.ProfileAccess.user_id.asc())
+        .first()
+    )
+    if not owner_access:
+        raise HTTPException(status_code=400, detail="Profile has no owner")
 
-    # Restrict to patients — reminders are only meaningful for them, and this
-    # prevents an admin from accidentally messaging another admin or a doctor.
-    if target.role != models.UserRole.patient:
-        raise HTTPException(status_code=400, detail="Target must be a patient")
+    owner = db.query(models.User).filter(models.User.id == owner_access.user_id).first()
+    if not owner:
+        raise HTTPException(status_code=400, detail="Owner user not found")
 
-    if not target.phone_number:
-        raise HTTPException(status_code=400, detail="User has no phone number on file")
+    # Owner role must be patient — don't message admins/doctors
+    if owner.role != models.UserRole.patient:
+        raise HTTPException(status_code=400, detail="Owner must be a patient")
 
-    # Get Content SID from config
+    if not owner.phone_number:
+        raise HTTPException(status_code=400, detail="Owner has no phone number on file")
+
     content_sid = settings.WHATSAPP_REMINDER_CONTENT_SID
     if not content_sid or content_sid.startswith("HX_placeholder"):
         raise HTTPException(status_code=500, detail="WhatsApp template not configured")
 
-    # Calculate days_inactive and get last reading type
+    # Profile-level inactivity check
     now = datetime.now(timezone.utc)
     two_days_ago = now - timedelta(days=2)
 
     last_reading = db.query(
         models.HealthReading.reading_type,
-        models.HealthReading.created_at
+        models.HealthReading.created_at,
     ).filter(
-        models.HealthReading.logged_by == user_id
+        models.HealthReading.profile_id == profile_id
     ).order_by(models.HealthReading.created_at.desc()).first()
 
     if last_reading:
         last_ts = last_reading.created_at
         last_ts_aware = last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)
         if last_ts_aware >= two_days_ago:
-            raise HTTPException(status_code=400, detail="User is not inactive")
+            raise HTTPException(status_code=400, detail="Profile is not inactive")
         days_inactive = (now - last_ts_aware).days
         reading_type = last_reading.reading_type or "reading"
     else:
@@ -1337,18 +1449,20 @@ def send_whatsapp_individual(
 
     days_display = str(days_inactive) if days_inactive >= 0 else "0"
 
-    # Send via WhatsApp template
     success, msg_sid, error = whatsapp_service.send_whatsapp_template(
-        target.phone_number,
+        owner.phone_number,
         content_sid,
-        [target.full_name, reading_type, days_display]
+        [profile.name, reading_type, days_display],
     )
 
     if not success:
         raise HTTPException(status_code=400, detail=error or "Failed to send WhatsApp message")
 
-    # Audit log this high-impact action (CERT-In 180-day requirement)
-    _audit_log(db, user, "SEND_WHATSAPP_INDIVIDUAL", target_user_id=user_id)
+    _audit_log(
+        db, user, "SEND_WHATSAPP_INDIVIDUAL",
+        target_user_id=owner.id,
+        target_profile_id=profile_id,
+    )
 
     return {
         "success": True,
@@ -1364,18 +1478,14 @@ def send_whatsapp_bulk(
     db: Session = Depends(get_db),
     user: models.User = Depends(_require_admin),
 ):
-    """Send WhatsApp reminder to all inactive users using Twilio template.
+    """Send WhatsApp reminders to owners of all inactive profiles.
 
-    Uses pre-approved Twilio template with variables: [name, reading_type, days]
+    Each dormant profile triggers one message to its owner. A caregiver who
+    owns three profiles all dormant will receive three messages (one per
+    dormant profile, naming each).
 
-    Returns: {
-        "total_inactive": int,
-        "successful": int,
-        "failed": int,
-        "results": [{"user_id": int, "full_name": str, "success": bool, "error": str|null}, ...]
-    }
+    Template variables: [profile_name, reading_type, days]
     """
-    # Get Content SID from config
     content_sid = settings.WHATSAPP_REMINDER_CONTENT_SID
     if not content_sid or content_sid.startswith("HX_placeholder"):
         raise HTTPException(status_code=500, detail="WhatsApp template not configured")
@@ -1383,76 +1493,40 @@ def send_whatsapp_bulk(
     now = datetime.now(timezone.utc)
     two_days_ago = now - timedelta(days=2)
 
-    # Get all inactive patients with their last reading info
-    patients_with_readings = db.query(
-        models.User,
-        func.max(models.HealthReading.created_at).label("last_reading_ts")
-    ).outerjoin(
-        models.HealthReading,
-        models.HealthReading.logged_by == models.User.id
-    ).filter(
-        models.User.role == models.UserRole.patient,
-    ).group_by(models.User.id).all()
+    inactive = _query_inactive_profiles(db, two_days_ago)
 
-    # Identify inactive patient IDs and collect them
-    inactive_patient_ids = []
-    patients_with_ts = {}
-    for patient, last_ts in patients_with_readings:
-        if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
-            continue  # Active user, skip
-        if not patient.phone_number:
-            continue  # Skip users without phone
-        inactive_patient_ids.append(patient.id)
-        patients_with_ts[patient.id] = (patient, last_ts)
+    # Filter to those whose owner has a phone number
+    sendable = [
+        (profile, owner, last_ts, reading_type)
+        for (profile, owner, last_ts, reading_type) in inactive
+        if owner.phone_number
+    ]
 
-    # Batch fetch reading types for all inactive patients in one query
-    reading_type_map = {}
-    if inactive_patient_ids:
-        # Get the latest reading for each inactive patient
-        latest_readings = db.query(
-            models.HealthReading.logged_by,
-            models.HealthReading.reading_type,
-            func.row_number().over(
-                partition_by=models.HealthReading.logged_by,
-                order_by=models.HealthReading.created_at.desc()
-            ).label("rn")
-        ).filter(
-            models.HealthReading.logged_by.in_(inactive_patient_ids)
-        ).all()
-
-        for reading in latest_readings:
-            if reading.rn == 1:  # Get only the latest (first row per patient)
-                reading_type_map[reading.logged_by] = reading.reading_type
-
-    # Build final inactive_patients list with reading types
-    inactive_patients = []
-    for patient_id, (patient, last_ts) in patients_with_ts.items():
-        reading_type = reading_type_map.get(patient_id, "reading")
-        if last_ts:
-            days_inactive = (now - (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc))).days
-        else:
-            days_inactive = -1
-        inactive_patients.append((patient, reading_type, days_inactive))
-
-    # Send to each inactive patient
     results = []
     successful = 0
     failed = 0
 
-    for patient, reading_type, days_inactive in inactive_patients:
+    for profile, owner, last_ts, reading_type in sendable:
+        if last_ts:
+            last_ts_aware = last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)
+            days_inactive = (now - last_ts_aware).days
+        else:
+            days_inactive = -1
         days_display = str(days_inactive) if days_inactive >= 0 else "0"
 
         success, msg_sid, error = whatsapp_service.send_whatsapp_template(
-            patient.phone_number,
+            owner.phone_number,
             content_sid,
-            [patient.full_name, reading_type, days_display]
+            [profile.name, reading_type, days_display],
         )
 
         if success:
             successful += 1
             results.append({
-                "user_id": patient.id,
-                "full_name": patient.full_name,
+                "profile_id": profile.id,
+                "profile_name": profile.name,
+                "owner_user_id": owner.id,
+                "owner_name": owner.full_name,
                 "success": True,
                 "message_sid": msg_sid,
                 "error": None,
@@ -1460,22 +1534,23 @@ def send_whatsapp_bulk(
         else:
             failed += 1
             results.append({
-                "user_id": patient.id,
-                "full_name": patient.full_name,
+                "profile_id": profile.id,
+                "profile_name": profile.name,
+                "owner_user_id": owner.id,
+                "owner_name": owner.full_name,
                 "success": False,
                 "message_sid": None,
                 "error": error,
             })
 
-    # Audit log bulk action with summary (CERT-In 180-day requirement)
     _audit_log(db, user, "SEND_WHATSAPP_BULK", details={
-        "total_inactive": len(inactive_patients),
+        "total_inactive": len(sendable),
         "successful": successful,
         "failed": failed,
     })
 
     return {
-        "total_inactive": len(inactive_patients),
+        "total_inactive": len(sendable),
         "successful": successful,
         "failed": failed,
         "results": results,
