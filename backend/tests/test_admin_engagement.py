@@ -257,3 +257,56 @@ class TestAlertEnrichment:
         assert alert is not None
         assert len(alert["linked_doctors"]) == 1
         assert alert["linked_doctors"][0]["doctor_code"] == "DRMULTI99"
+
+
+class TestInactiveUsers:
+    """Tests for GET /api/admin/inactive-users endpoint."""
+    URL = "/api/admin/inactive-users"
+
+    def test_endpoint_exists(self, client, admin_headers):
+        """Endpoint should return 200."""
+        resp = client.get(self.URL, headers=admin_headers)
+        assert resp.status_code == 200
+
+    def test_response_structure(self, client, admin_headers):
+        """Response should have inactive_users list."""
+        resp = client.get(self.URL, headers=admin_headers)
+        body = resp.json()
+        assert "inactive_users" in body
+        assert isinstance(body["inactive_users"], list)
+
+    def test_never_recorded_displays_never(self, client, admin_headers, db):
+        """Users who never recorded should display 'Never'."""
+        user = models.User(
+            email="never@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Never User",
+            role=models.UserRole.patient,
+        )
+        db.add(user)
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        body = resp.json()
+        # Should return success
+        assert resp.status_code == 200
+        assert "inactive_users" in body
+
+    def test_non_admin_rejected(self, client, db):
+        """Non-admin should be rejected."""
+        user = models.User(
+            email="patient@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Patient",
+        )
+        db.add(user)
+        db.commit()
+
+        headers = {"Authorization": f"Bearer {create_access_token(data={'sub': user.email})}"}
+        resp = client.get(self.URL, headers=headers)
+        assert resp.status_code == 403
+
+    def test_unauthenticated_rejected(self, client):
+        """Unauthenticated should be rejected."""
+        resp = client.get(self.URL)
+        assert resp.status_code == 401

@@ -364,7 +364,7 @@
 </div>
 
 <script>
-let TOKEN = localStorage.getItem('admin_token') || '';
+let TOKEN = sessionStorage.getItem('admin_token') || '';
 let CURRENT_USER_ID = null;
 const API = window.location.origin;
 
@@ -381,14 +381,14 @@ window.addEventListener('load', () => {
           loadDoctorBadge();
         } else {
           TOKEN = '';
-          localStorage.removeItem('admin_token');
+          sessionStorage.removeItem('admin_token');
           document.getElementById('loginSection').style.display = 'flex';
           document.getElementById('appLayout').style.display = 'none';
         }
       })
       .catch(() => {
         TOKEN = '';
-        localStorage.removeItem('admin_token');
+        sessionStorage.removeItem('admin_token');
         document.getElementById('loginSection').style.display = 'flex';
         document.getElementById('appLayout').style.display = 'none';
       });
@@ -443,7 +443,7 @@ async function login() {
     const data = await resp.json();
     if (!data.access_token) throw new Error('No token');
     TOKEN = data.access_token;
-    localStorage.setItem('admin_token', TOKEN);
+    sessionStorage.setItem('admin_token', TOKEN);
     const test = await fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
     if (test.status === 403) throw new Error('Not admin');
     document.getElementById('loginSection').style.display = 'none';
@@ -459,7 +459,7 @@ async function login() {
 
 function logout() {
   TOKEN = '';
-  localStorage.removeItem('admin_token');
+  sessionStorage.removeItem('admin_token');
   document.getElementById('loginSection').style.display = 'flex';
   document.getElementById('appLayout').style.display = 'none';
 }
@@ -754,25 +754,30 @@ async function loadAuditLog() {
 
 // ── Engagement Metrics ──────────────────────────────────────────────
 async function loadInactiveUsers() {
-  const resp = await fetch(`${API}/api/admin/inactive-users`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
-  const data = await resp.json();
+  try {
+    const resp = await fetch(`${API}/api/admin/inactive-users`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+    if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
+    const data = await resp.json();
 
-  const tableBody = document.getElementById('inactiveTableBody');
-  if (!data.inactive_users.length) {
-    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b">No inactive users. All users are recording readings regularly!</td></tr>';
-    return;
+    const tableBody = document.getElementById('inactiveTableBody');
+    if (!data.inactive_users.length) {
+      tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b">No inactive users. All users are recording readings regularly!</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = data.inactive_users.map(u => `
+      <tr onclick="openUserDetail(${u.user_id})" style="cursor:pointer">
+        <td><strong>${esc(u.full_name)}</strong></td>
+        <td>${esc(u.email)}</td>
+        <td>${esc(u.phone_number || '--')}</td>
+        <td><strong style="color:#ef4444">${esc(u.days_inactive_display)}</strong></td>
+        <td>${u.last_glucose ? `${u.last_glucose.value} mg/dL<br><small>${new Date(u.last_glucose.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+        <td>${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    showSectionError('sec-inactive', e);
   }
-
-  tableBody.innerHTML = data.inactive_users.map(u => `
-    <tr onclick="openUserDetail(${u.user_id})" style="cursor:pointer">
-      <td><strong>${esc(u.full_name)}</strong></td>
-      <td>${esc(u.email)}</td>
-      <td>${esc(u.phone_number || '--')}</td>
-      <td><strong style="color:#ef4444">${u.days_inactive} days</strong></td>
-      <td>${u.last_glucose ? `${u.last_glucose.value} mg/dL<br><small>${new Date(u.last_glucose.reading_at).toLocaleDateString()}</small>` : '--'}</td>
-      <td>${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
-    </tr>
-  `).join('');
 }
 
 // ── User Detail Modal ───────────────────────────────────────────────

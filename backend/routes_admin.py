@@ -831,6 +831,8 @@ def get_alerts(
             models.DoctorNote.created_at >= r.created_at,
         ).first()
         if not has_note:
+            # ALERT: Triggered immediately on critical reading detection (no 24h delay).
+            # If this becomes too noisy, add: if hours_ago < 0.5: continue  # Skip < 30min
             hours_ago = round((now - (r.created_at if r.created_at.tzinfo else r.created_at.replace(tzinfo=timezone.utc))).total_seconds() / 3600, 1)
             # Get patient name
             profile = db.query(models.Profile).filter(models.Profile.id == r.profile_id).first()
@@ -880,7 +882,7 @@ def get_alerts(
                     doctor_code = doc_profile.doctor_code
 
             # Build message: reading + patient + doctor (single line)
-            message = f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) recorded {patient_name}"
+            message = f"Critical {r.reading_type} reading ({r.value_numeric} {r.unit_display}) recorded by {patient_name}"
             if doctor_code:
                 message += f" ({doctor_code})"
 
@@ -1101,7 +1103,7 @@ def get_inactive_users(
         if last_reading:
             days_inactive = (now - (last_reading if last_reading.tzinfo else last_reading.replace(tzinfo=timezone.utc))).days
         else:
-            days_inactive = "0+"  # Never recorded any reading
+            days_inactive = -1  # Sentinel: never recorded any reading
 
         inactive.append({
             "user_id": p.id,
@@ -1110,6 +1112,7 @@ def get_inactive_users(
             "phone_number": p.phone_number,
             "last_reading_at": last_reading.isoformat() if last_reading else None,
             "days_inactive": days_inactive,
+            "days_inactive_display": "Never" if days_inactive == -1 else f"{days_inactive}+",
             "last_glucose": {
                 "value": last_glucose.glucose_value,
                 "reading_at": last_glucose.created_at.isoformat(),
@@ -1123,8 +1126,8 @@ def get_inactive_users(
             } if last_bp else None,
         })
 
-    # Sort by days_inactive descending (most inactive first)
-    inactive.sort(key=lambda x: x["days_inactive"] if x["days_inactive"] else 0, reverse=True)
+    # Sort by days_inactive descending (most inactive first); -1 (never recorded) sorts to top
+    inactive.sort(key=lambda x: float('inf') if x["days_inactive"] == -1 else x["days_inactive"], reverse=True)
 
     return {
         "inactive_users": inactive,
