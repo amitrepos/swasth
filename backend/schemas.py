@@ -1067,11 +1067,10 @@ class TriagePatientCard(BaseModel):
 
 
 class AdminSendWhatsAppIndividual(BaseModel):
-    """Admin sends a personalized WhatsApp to one inactive user."""
+    """Admin sends a WhatsApp reminder to one inactive user using pre-approved template."""
     user_id: int
-    message: str
 
 
 class AdminSendWhatsAppBulk(BaseModel):
-    """Admin sends WhatsApp to all inactive users."""
-    message: str
+    """Admin sends WhatsApp reminders to all inactive users using pre-approved template."""
+    pass  # No payload needed — uses predefined template from WHATSAPP_REMAINDER_CONTENT_SID

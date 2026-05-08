@@ -77,8 +77,8 @@ class TestWhatsAppIndividual:
 
     def test_endpoint_exists(self, client, admin_headers):
         """Endpoint should exist and require auth."""
-        resp = client.post(self.URL, headers=admin_headers, json={"user_id": 999, "message": "Test"})
-        assert resp.status_code in [200, 400, 404]  # Not 401/403
+        resp = client.post(self.URL, headers=admin_headers, json={"user_id": 999})
+        assert resp.status_code in [200, 400, 404, 500]  # Not 401/403
 
     def test_non_admin_rejected(self, client, db):
         """Non-admin cannot send WhatsApp."""
@@ -91,58 +91,70 @@ class TestWhatsAppIndividual:
         db.commit()
 
         headers = {"Authorization": f"Bearer {create_access_token(data={'sub': user.email})}"}
-        resp = client.post(self.URL, headers=headers, json={"user_id": 1, "message": "Test"})
+        resp = client.post(self.URL, headers=headers, json={"user_id": 1})
         assert resp.status_code == 403
 
     def test_unauthenticated_rejected(self, client):
         """Unauthenticated request rejected."""
-        resp = client.post(self.URL, json={"user_id": 1, "message": "Test"})
+        resp = client.post(self.URL, json={"user_id": 1})
         assert resp.status_code == 401
 
-    @patch("twilio_service.whatsapp_service.send_whatsapp")
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_send_to_inactive_patient(self, mock_send, client, admin_headers, inactive_patients, db):
-        """Should successfully send WhatsApp to an inactive patient."""
+        """Should successfully send WhatsApp template to an inactive patient."""
         mock_send.return_value = (True, "SM_test_sid", None)
 
         patient = inactive_patients[0]
-        message = "Hi {name}, please log your readings in Swasth app."
 
         resp = client.post(
             self.URL,
             headers=admin_headers,
-            json={"user_id": patient["user"].id, "message": message}
+            json={"user_id": patient["user"].id}
         )
 
         assert resp.status_code == 200
         body = resp.json()
         assert body["success"] is True
         assert body["message_sid"] == "SM_test_sid"
-        assert "Patient 0" in body["sent_message"]  # Name should be substituted
 
-    @patch("twilio_service.whatsapp_service.send_whatsapp")
-    def test_message_substitution(self, mock_send, client, admin_headers, inactive_patients):
-        """Message should substitute {name} and {days}."""
+        # Verify template was called with correct variables
+        call_args = mock_send.call_args
+        assert patient["user"].phone_number in call_args[0][0]  # phone
+        variables = call_args[0][2]  # variables list
+        assert "Patient 0" in variables  # name
+        assert "glucose" in variables  # reading_type
+        assert "5" in variables  # days
+
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
+    def test_template_variables(self, mock_send, client, admin_headers, inactive_patients):
+        """Template should be called with [name, reading_type, days]."""
         mock_send.return_value = (True, "SM_test_sid", None)
 
         patient = inactive_patients[0]
-        message = "Hi {name}, it's been {days} days. Please check the app."
 
         resp = client.post(
             self.URL,
             headers=admin_headers,
-            json={"user_id": patient["user"].id, "message": message}
+            json={"user_id": patient["user"].id}
         )
 
         assert resp.status_code == 200
+
         call_args = mock_send.call_args
-        sent_body = call_args[0][1]  # Second arg to send_whatsapp
+        phone = call_args[0][0]
+        content_sid = call_args[0][1]
+        variables = call_args[0][2]
 
-        # Should contain substituted name
-        assert "Patient 0" in sent_body
-        # Should contain "5+" days (5+ days inactive)
-        assert "5+" in sent_body or "5 days" in sent_body
+        # Verify structure
+        assert phone == patient["user"].phone_number
+        assert content_sid is not None
+        assert isinstance(variables, list)
+        assert len(variables) == 3
+        assert variables[0] == patient["user"].full_name
+        assert variables[1] in ["glucose", "blood_pressure"]  # reading_type
+        assert variables[2] == "5"  # days
 
-    @patch("twilio_service.whatsapp_service.send_whatsapp")
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_send_failure_handling(self, mock_send, client, admin_headers, inactive_patients):
         """Should handle WhatsApp send failures gracefully."""
         mock_send.return_value = (False, None, "Twilio error: invalid number")
@@ -151,7 +163,7 @@ class TestWhatsAppIndividual:
         resp = client.post(
             self.URL,
             headers=admin_headers,
-            json={"user_id": patient["user"].id, "message": "Test message"}
+            json={"user_id": patient["user"].id}
         )
 
         assert resp.status_code == 400
@@ -164,7 +176,7 @@ class TestWhatsAppIndividual:
         resp = client.post(
             self.URL,
             headers=admin_headers,
-            json={"user_id": 99999, "message": "Test"}
+            json={"user_id": 99999}
         )
         assert resp.status_code == 404
 
@@ -175,8 +187,8 @@ class TestWhatsAppBulk:
 
     def test_endpoint_exists(self, client, admin_headers):
         """Endpoint should exist and require auth."""
-        resp = client.post(self.URL, headers=admin_headers, json={"message": "Test"})
-        assert resp.status_code in [200, 400]  # Not 401/403
+        resp = client.post(self.URL, headers=admin_headers, json={})
+        assert resp.status_code in [200, 400, 500]  # Not 401/403
 
     def test_non_admin_rejected(self, client, db):
         """Non-admin cannot send bulk WhatsApp."""
@@ -189,25 +201,23 @@ class TestWhatsAppBulk:
         db.commit()
 
         headers = {"Authorization": f"Bearer {create_access_token(data={'sub': user.email})}"}
-        resp = client.post(self.URL, headers=headers, json={"message": "Test"})
+        resp = client.post(self.URL, headers=headers, json={})
         assert resp.status_code == 403
 
     def test_unauthenticated_rejected(self, client):
         """Unauthenticated request rejected."""
-        resp = client.post(self.URL, json={"message": "Test"})
+        resp = client.post(self.URL, json={})
         assert resp.status_code == 401
 
-    @patch("twilio_service.whatsapp_service.send_whatsapp")
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_bulk_send_to_all_inactive(self, mock_send, client, admin_headers, inactive_patients):
-        """Should send message to all inactive patients."""
+        """Should send template to all inactive patients."""
         mock_send.return_value = (True, "SM_test_sid", None)
-
-        message = "Hi {name}, please log your readings. You've been inactive for {days} days."
 
         resp = client.post(
             self.URL,
             headers=admin_headers,
-            json={"message": message}
+            json={}
         )
 
         assert resp.status_code == 200
@@ -216,8 +226,9 @@ class TestWhatsAppBulk:
         assert body["successful"] == 3
         assert body["failed"] == 0
         assert len(body["results"]) == 3
+        assert mock_send.call_count == 3
 
-    @patch("twilio_service.whatsapp_service.send_whatsapp")
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_bulk_partial_failure(self, mock_send, client, admin_headers, inactive_patients):
         """Should track partial failures in bulk send."""
         # First succeeds, second fails, third succeeds
@@ -227,12 +238,10 @@ class TestWhatsAppBulk:
             (True, "SM_sid3", None),
         ]
 
-        message = "Hi {name}, please log your readings."
-
         resp = client.post(
             self.URL,
             headers=admin_headers,
-            json={"message": message}
+            json={}
         )
 
         assert resp.status_code == 200
@@ -242,7 +251,7 @@ class TestWhatsAppBulk:
         assert body["failed"] == 1
         assert any(r["success"] is False for r in body["results"])
 
-    @patch("twilio_service.whatsapp_service.send_whatsapp")
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_no_inactive_users(self, mock_send, client, admin_headers, db):
         """Should return empty list if no inactive users."""
         # Create active patient (recorded today)
@@ -279,7 +288,7 @@ class TestWhatsAppBulk:
         resp = client.post(
             self.URL,
             headers=admin_headers,
-            json={"message": "Test message"}
+            json={}
         )
 
         assert resp.status_code == 200
