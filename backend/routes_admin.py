@@ -874,11 +874,15 @@ def get_alerts(
 
         access_by_pair = {(al.doctor_id, al.profile_id): al.last_access_at for al in access_logs}
 
+        # Helper to normalize datetime to tz-aware (prevents TypeError on mixed comparisons)
+        def _to_aware(dt):
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
         # Now loop through critical readings and build alerts (no more queries)
         for r in critical_readings:
-            # Check if any doctor has addressed this reading
+            # Check if any doctor has addressed this reading (with tz normalization)
             reading_notes = notes_by_profile.get(r.profile_id, [])
-            has_note = any(note.created_at >= r.created_at for note in reading_notes)
+            has_note = any(_to_aware(note.created_at) >= _to_aware(r.created_at) for note in reading_notes)
 
             if not has_note:
                 # ALERT: Triggered immediately on critical reading detection (no 24h delay).
@@ -898,7 +902,7 @@ def get_alerts(
                     last_access = access_by_pair.get((doc_user.id, r.profile_id))
 
                     reading_notes_for_doc = [n for n in reading_notes if n.doctor_id == doc_user.id]
-                    has_responded = any(n.created_at >= r.created_at for n in reading_notes_for_doc)
+                    has_responded = any(_to_aware(n.created_at) >= _to_aware(r.created_at) for n in reading_notes_for_doc)
 
                     # Status: responded > viewed > not_accessed
                     if has_responded:
@@ -1072,9 +1076,16 @@ def get_alerts(
 
     # Sort by severity (HIGH first), then by latest reading within each severity
     severity_order = {"HIGH": 0, "MEDIUM": 1, "INFO": 2, "LOW": 3}
+
+    def _alert_ts(a):
+        # Ensure fallback is tz-aware to prevent TypeError on mixed tz-naive/tz-aware comparisons
+        raw = a.get("created_at") or "2000-01-01T00:00:00+00:00"
+        dt = datetime.fromisoformat(raw)
+        return -(dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).timestamp()
+
     alerts.sort(key=lambda a: (
         severity_order.get(a["severity"], 9),
-        -(datetime.fromisoformat(a.get("created_at") or "2000-01-01")).timestamp()
+        _alert_ts(a)
     ))
 
     return {
