@@ -1340,6 +1340,9 @@ def send_whatsapp_individual(
     if not success:
         raise HTTPException(status_code=400, detail=error or "Failed to send WhatsApp message")
 
+    # Audit log this high-impact action (CERT-In 180-day requirement)
+    _audit_log(db, user, "SEND_WHATSAPP_INDIVIDUAL", target_user_id=user_id)
+
     return {
         "success": True,
         "message_sid": msg_sid,
@@ -1454,6 +1457,13 @@ def send_whatsapp_bulk(
                 "message_sid": None,
                 "error": error,
             })
+
+    # Audit log bulk action with summary (CERT-In 180-day requirement)
+    _audit_log(db, user, "SEND_WHATSAPP_BULK", details={
+        "total_inactive": len(inactive_patients),
+        "successful": successful,
+        "failed": failed,
+    })
 
     return {
         "total_inactive": len(inactive_patients),
