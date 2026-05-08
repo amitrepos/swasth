@@ -33,7 +33,7 @@ def admin_headers(admin_user):
 @pytest.fixture(autouse=True)
 def mock_whatsapp_content_sid():
     """Mock the Content SID for all tests."""
-    with patch.object(settings, 'WHATSAPP_REMAINDER_CONTENT_SID', 'HXfb6674c084fa42cded754ed2179b54ad'):
+    with patch.object(settings, 'WHATSAPP_REMINDER_CONTENT_SID', 'HXfb6674c084fa42cded754ed2179b54ad'):
         yield
 
 

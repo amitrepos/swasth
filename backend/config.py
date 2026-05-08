@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     TWILIO_SMS_NUMBER: Optional[str] = None  # e.g. "+14155238886" — SMS disabled until set
     TWILIO_SERVICE_SID: Optional[str] = None  # Twilio Verify Service SID
     TWILIO_REPORT_CONTENT_SID: Optional[str] = None  # Approved WhatsApp template SID for weekly report delivery
-    WHATSAPP_REMAINDER_CONTENT_SID: Optional[str] = None  # Approved WhatsApp template SID for inactive user reminders
+    WHATSAPP_REMINDER_CONTENT_SID: Optional[str] = None  # Approved WhatsApp template SID for inactive user reminders
 
     # Critical Alert Dispatch (D7)
     CRITICAL_ALERT_DEDUPE_MINUTES: int = 30  # Suppress repeat alerts to same profile within window

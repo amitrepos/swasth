@@ -820,7 +820,7 @@ async function loadInactiveUsers() {
         <td style="cursor:pointer" onclick="openUserDetail(${u.user_id})">${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
         <td>
           <div class="action-btns">
-            <button class="btn-whatsapp" onclick="openWhatsAppModal(${u.user_id}, '${esc(u.full_name)}', ${u.days_inactive})">Message</button>
+            <button class="btn-whatsapp" data-user-id="${u.user_id}" data-user-name="${esc(u.full_name)}" data-days-inactive="${u.days_inactive}" onclick="openWhatsAppModal(this)">Message</button>
           </div>
         </td>
       </tr>
@@ -865,19 +865,19 @@ let WHATSAPP_USER_ID = null;
 let WHATSAPP_USER_NAME = null;
 let WHATSAPP_DAYS_INACTIVE = null;
 
-function openWhatsAppModal(userId, userName, daysInactive) {
+function openWhatsAppModal(btn) {
   WHATSAPP_MODE = 'individual';
-  WHATSAPP_USER_ID = userId;
-  WHATSAPP_USER_NAME = userName;
-  WHATSAPP_DAYS_INACTIVE = daysInactive;
+  WHATSAPP_USER_ID = parseInt(btn.dataset.userId, 10);
+  WHATSAPP_USER_NAME = btn.dataset.userName;
+  WHATSAPP_DAYS_INACTIVE = parseInt(btn.dataset.daysInactive, 10);
 
   document.getElementById('whatsappTitle').textContent = 'Send WhatsApp Reminder';
-  document.getElementById('whatsappSubtitle').textContent = `To: ${userName}`;
+  document.getElementById('whatsappSubtitle').textContent = `To: ${esc(WHATSAPP_USER_NAME)}`;
 
-  const daysDisplay = daysInactive === -1 ? 'Never recorded' : `${daysInactive}+ days`;
+  const daysDisplay = WHATSAPP_DAYS_INACTIVE === -1 ? 'Never recorded' : `${WHATSAPP_DAYS_INACTIVE}+ days`;
   document.getElementById('whatsappPreview').innerHTML = `
     <strong>📱 Reminder Details:</strong><br>
-    • Patient: ${esc(userName)}<br>
+    • Patient: ${esc(WHATSAPP_USER_NAME)}<br>
     • Last Reading: ${daysDisplay}<br>
     • Template: Pre-approved message will be sent
   `;

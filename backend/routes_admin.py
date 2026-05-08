@@ -1302,7 +1302,7 @@ def send_whatsapp_individual(
         raise HTTPException(status_code=400, detail="User has no phone number on file")
 
     # Get Content SID from config
-    content_sid = settings.WHATSAPP_REMAINDER_CONTENT_SID
+    content_sid = settings.WHATSAPP_REMINDER_CONTENT_SID
     if not content_sid or content_sid.startswith("HX_placeholder"):
         raise HTTPException(status_code=500, detail="WhatsApp template not configured")
 
@@ -1364,7 +1364,7 @@ def send_whatsapp_bulk(
     }
     """
     # Get Content SID from config
-    content_sid = settings.WHATSAPP_REMAINDER_CONTENT_SID
+    content_sid = settings.WHATSAPP_REMINDER_CONTENT_SID
     if not content_sid or content_sid.startswith("HX_placeholder"):
         raise HTTPException(status_code=500, detail="WhatsApp template not configured")
 
@@ -1382,25 +1382,44 @@ def send_whatsapp_bulk(
         models.User.role == models.UserRole.patient,
     ).group_by(models.User.id).all()
 
-    # Filter to inactive only and get their last reading type
-    inactive_patients = []
+    # Identify inactive patient IDs and collect them
+    inactive_patient_ids = []
+    patients_with_ts = {}
     for patient, last_ts in patients_with_readings:
         if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
             continue  # Active user, skip
         if not patient.phone_number:
             continue  # Skip users without phone
+        inactive_patient_ids.append(patient.id)
+        patients_with_ts[patient.id] = (patient, last_ts)
 
-        # Get last reading type
-        last_reading = db.query(models.HealthReading.reading_type).filter(
-            models.HealthReading.logged_by == patient.id
-        ).order_by(models.HealthReading.created_at.desc()).first()
-        reading_type = last_reading.reading_type if last_reading else "reading"
+    # Batch fetch reading types for all inactive patients in one query
+    reading_type_map = {}
+    if inactive_patient_ids:
+        # Get the latest reading for each inactive patient
+        latest_readings = db.query(
+            models.HealthReading.logged_by,
+            models.HealthReading.reading_type,
+            func.row_number().over(
+                partition_by=models.HealthReading.logged_by,
+                order_by=models.HealthReading.created_at.desc()
+            ).label("rn")
+        ).filter(
+            models.HealthReading.logged_by.in_(inactive_patient_ids)
+        ).all()
 
+        for reading in latest_readings:
+            if reading.rn == 1:  # Get only the latest (first row per patient)
+                reading_type_map[reading.logged_by] = reading.reading_type
+
+    # Build final inactive_patients list with reading types
+    inactive_patients = []
+    for patient_id, (patient, last_ts) in patients_with_ts.items():
+        reading_type = reading_type_map.get(patient_id, "reading")
         if last_ts:
             days_inactive = (now - (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc))).days
         else:
             days_inactive = -1
-
         inactive_patients.append((patient, reading_type, days_inactive))
 
     # Send to each inactive patient
@@ -1422,7 +1441,6 @@ def send_whatsapp_bulk(
             results.append({
                 "user_id": patient.id,
                 "full_name": patient.full_name,
-                "phone_number": patient.phone_number,
                 "success": True,
                 "message_sid": msg_sid,
                 "error": None,
@@ -1432,7 +1450,6 @@ def send_whatsapp_bulk(
             results.append({
                 "user_id": patient.id,
                 "full_name": patient.full_name,
-                "phone_number": patient.phone_number,
                 "success": False,
                 "message_sid": None,
                 "error": error,
