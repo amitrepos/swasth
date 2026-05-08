@@ -1067,8 +1067,13 @@ class TriagePatientCard(BaseModel):
 
 
 class AdminSendWhatsAppIndividual(BaseModel):
-    """Admin sends a WhatsApp reminder to one inactive user using pre-approved template."""
-    user_id: int
+    """Admin sends a WhatsApp reminder for one inactive profile using pre-approved template.
+
+    Targets profile_id (not user_id) so caregivers get nudged when a family-member
+    profile they own (e.g., 'Mummy') is dormant — even if the caregiver themselves
+    is logging actively.
+    """
+    profile_id: int
 
 
 class AdminSendWhatsAppBulk(BaseModel):
