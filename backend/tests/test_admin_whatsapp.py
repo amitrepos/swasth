@@ -4,9 +4,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, PropertyMock
 import models
 from auth import get_password_hash, create_access_token
+from config import settings
 
 
 @pytest.fixture()
@@ -27,6 +28,13 @@ def admin_user(db):
 @pytest.fixture()
 def admin_headers(admin_user):
     return {"Authorization": f"Bearer {create_access_token(data={'sub': admin_user.email})}"}
+
+
+@pytest.fixture(autouse=True)
+def mock_whatsapp_content_sid():
+    """Mock the Content SID for all tests."""
+    with patch.object(settings, 'WHATSAPP_REMAINDER_CONTENT_SID', 'HXfb6674c084fa42cded754ed2179b54ad'):
+        yield
 
 
 @pytest.fixture()
