@@ -22,6 +22,7 @@ from utils.datetime_helpers import utc_isoformat
 from database import get_db
 from dependencies import get_current_user
 from doctor_utils import ensure_unique_doctor_code
+from twilio_service import whatsapp_service
 
 router = APIRouter()
 
@@ -1267,6 +1268,162 @@ def get_inactive_users(
     return {
         "inactive_users": inactive,
         "total": len(inactive),
+    }
+
+
+# ---------------------------------------------------------------------------
+# WhatsApp messaging endpoints (for inactive user engagement)
+# ---------------------------------------------------------------------------
+
+@router.post("/admin/send-whatsapp-individual")
+def send_whatsapp_individual(
+    body: schemas.AdminSendWhatsAppIndividual,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Send a personalized WhatsApp message to a specific inactive user.
+
+    Message supports substitution: {name}, {days}
+
+    Returns: {"success": bool, "message_sid": str|null, "sent_message": str, "error": str|null}
+    """
+    user_id = body.user_id
+    message_template = body.message
+
+    if not user_id or not message_template:
+        raise HTTPException(status_code=400, detail="user_id and message required")
+
+    # Get target user
+    target = db.query(models.User).filter(models.User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not target.phone_number:
+        raise HTTPException(status_code=400, detail="User has no phone number on file")
+
+    # Calculate days_inactive
+    now = datetime.now(timezone.utc)
+    two_days_ago = now - timedelta(days=2)
+
+    last_reading = db.query(func.max(models.HealthReading.created_at)).filter(
+        models.HealthReading.logged_by == user_id
+    ).scalar()
+
+    if last_reading:
+        last_ts_aware = last_reading if last_reading.tzinfo else last_reading.replace(tzinfo=timezone.utc)
+        if last_ts_aware >= two_days_ago:
+            raise HTTPException(status_code=400, detail="User is not inactive")
+        days_inactive = (now - last_ts_aware).days
+    else:
+        days_inactive = -1
+
+    # Substitute variables in message
+    days_display = "Never" if days_inactive == -1 else f"{days_inactive}+"
+    final_message = message_template.replace("{name}", target.full_name).replace("{days}", days_display)
+
+    # Send via WhatsApp
+    success, msg_sid, error = whatsapp_service.send_whatsapp(target.phone_number, final_message)
+
+    if not success:
+        raise HTTPException(status_code=400, detail=error or "Failed to send WhatsApp message")
+
+    return {
+        "success": True,
+        "message_sid": msg_sid,
+        "sent_message": final_message,
+        "error": None,
+    }
+
+
+@router.post("/admin/send-whatsapp-bulk")
+def send_whatsapp_bulk(
+    body: schemas.AdminSendWhatsAppBulk,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Send WhatsApp message to all inactive users.
+
+    Message supports substitution: {name}, {days}
+
+    Returns: {
+        "total_inactive": int,
+        "successful": int,
+        "failed": int,
+        "results": [{"user_id": int, "full_name": str, "success": bool, "error": str|null}, ...]
+    }
+    """
+    message_template = body.message
+
+    if not message_template:
+        raise HTTPException(status_code=400, detail="message required")
+
+    now = datetime.now(timezone.utc)
+    two_days_ago = now - timedelta(days=2)
+    now_naive = now.replace(tzinfo=None)
+
+    # Get all inactive patients (same logic as GET /admin/inactive-users)
+    patients_with_last_ts = db.query(
+        models.User,
+        func.max(models.HealthReading.created_at).label("last_reading_ts")
+    ).outerjoin(
+        models.HealthReading,
+        models.HealthReading.logged_by == models.User.id
+    ).filter(
+        models.User.role == models.UserRole.patient,
+    ).group_by(models.User.id).all()
+
+    # Filter to inactive only
+    inactive_patients = []
+    for patient, last_ts in patients_with_last_ts:
+        if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
+            continue  # Active user, skip
+        if not patient.phone_number:
+            continue  # Skip users without phone
+
+        if last_ts:
+            days_inactive = (now - (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc))).days
+        else:
+            days_inactive = -1
+
+        inactive_patients.append((patient, days_inactive))
+
+    # Send to each inactive patient
+    results = []
+    successful = 0
+    failed = 0
+
+    for patient, days_inactive in inactive_patients:
+        days_display = "Never" if days_inactive == -1 else f"{days_inactive}+"
+        final_message = message_template.replace("{name}", patient.full_name).replace("{days}", days_display)
+
+        success, msg_sid, error = whatsapp_service.send_whatsapp(patient.phone_number, final_message)
+
+        if success:
+            successful += 1
+            results.append({
+                "user_id": patient.id,
+                "full_name": patient.full_name,
+                "phone_number": patient.phone_number,
+                "success": True,
+                "message_sid": msg_sid,
+                "error": None,
+            })
+        else:
+            failed += 1
+            results.append({
+                "user_id": patient.id,
+                "full_name": patient.full_name,
+                "phone_number": patient.phone_number,
+                "success": False,
+                "message_sid": None,
+                "error": error,
+            })
+
+    return {
+        "total_inactive": len(inactive_patients),
+        "successful": successful,
+        "failed": failed,
+        "results": results,
     }
 
 

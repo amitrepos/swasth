@@ -1064,3 +1064,14 @@ class TriagePatientCard(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AdminSendWhatsAppIndividual(BaseModel):
+    """Admin sends a personalized WhatsApp to one inactive user."""
+    user_id: int
+    message: str
+
+
+class AdminSendWhatsAppBulk(BaseModel):
+    """Admin sends WhatsApp to all inactive users."""
+    message: str
