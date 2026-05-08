@@ -922,18 +922,18 @@ def get_alerts(
                 if doctor_code:
                     message += f" ({doctor_code})"
 
-            alerts.append({
-                "type": "CRITICAL_READING_UNADDRESSED",
-                "severity": "HIGH",
-                "message": message,
-                "target_profile_id": r.profile_id,
-                "reading_id": r.id,
-                "logged_by_user_id": r.logged_by,
-                "patient_name": patient_name,
-                "linked_doctors": linked_doctors,
-                "created_at": r.created_at.isoformat(),
-                "hours_elapsed": hours_ago,
-            })
+                alerts.append({
+                    "type": "CRITICAL_READING_UNADDRESSED",
+                    "severity": "HIGH",
+                    "message": message,
+                    "target_profile_id": r.profile_id,
+                    "reading_id": r.id,
+                    "logged_by_user_id": r.logged_by,
+                    "patient_name": patient_name,
+                    "linked_doctors": linked_doctors,
+                    "created_at": r.created_at.isoformat(),
+                    "hours_elapsed": hours_ago,
+                })
 
     # 2. Doctors pending verification > 48h
     pending_doctors = db.query(models.DoctorProfile, models.User).join(
@@ -969,70 +969,106 @@ def get_alerts(
                 "fallback_rate": round(fallback_rate, 1),
             })
 
-    # 4. Patient inactivity — high-risk patients inactive 7+ days
+    # 4. Patient inactivity — high-risk patients inactive 7+ days (BATCHED)
     seven_days_ago = now - timedelta(days=7)
-    all_profiles = db.query(models.Profile).all()
-    for p in all_profiles:
-        last_reading = db.query(func.max(models.HealthReading.created_at)).filter(
-            models.HealthReading.profile_id == p.id,
-        ).scalar()
-        if last_reading is None:
+
+    # BATCH 1: All profiles + their max reading timestamp (1 LEFT JOIN)
+    profiles_with_readings = db.query(
+        models.Profile,
+        func.max(models.HealthReading.created_at).label("last_reading_ts")
+    ).outerjoin(
+        models.HealthReading,
+        models.HealthReading.profile_id == models.Profile.id
+    ).group_by(models.Profile.id).all()
+
+    # Filter to inactive profiles
+    inactive_profiles = []
+    inactive_profile_ids = []
+    for p, last_ts in profiles_with_readings:
+        if last_ts is None:
             continue
-
-        last_reading_aware = last_reading if last_reading.tzinfo else last_reading.replace(tzinfo=timezone.utc)
-        if last_reading_aware >= seven_days_ago:
+        last_ts_aware = last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)
+        if last_ts_aware >= seven_days_ago:
             continue
+        inactive_profiles.append((p, last_ts_aware))
+        inactive_profile_ids.append(p.id)
 
-        # Check if high-risk (had critical readings recently)
-        had_critical = db.query(models.HealthReading).filter(
-            models.HealthReading.profile_id == p.id,
-            models.HealthReading.status_flag == "CRITICAL",
-        ).first()
+    if inactive_profile_ids:
+        # BATCH 2: Check which profiles had critical readings (1 query)
+        critical_profile_ids = set(
+            db.query(models.HealthReading.profile_id).filter(
+                models.HealthReading.profile_id.in_(inactive_profile_ids),
+                models.HealthReading.status_flag == "CRITICAL",
+            ).distinct().all()
+        )
+        critical_profile_ids = {cp[0] for cp in critical_profile_ids}
 
-        days_inactive = (now - last_reading_aware).days
-
-        # Get linked doctors for this profile
-        linked_docs = db.query(models.DoctorPatientLink, models.User, models.DoctorProfile).join(
+        # BATCH 3: Get all linked doctors for inactive profiles (1 query with JOIN)
+        linked_docs_rows = db.query(models.DoctorPatientLink, models.User, models.DoctorProfile).join(
             models.User, models.DoctorPatientLink.doctor_id == models.User.id
         ).join(
             models.DoctorProfile, models.DoctorProfile.user_id == models.User.id
         ).filter(
-            models.DoctorPatientLink.profile_id == p.id,
+            models.DoctorPatientLink.profile_id.in_(inactive_profile_ids),
             models.DoctorPatientLink.status == "active",
         ).all()
 
-        linked_doctors = []
-        for dpl, doc_user, doc_profile in linked_docs:
-            last_access = db.query(func.max(models.DoctorAccessLog.created_at)).filter(
-                models.DoctorAccessLog.doctor_id == doc_user.id,
-                models.DoctorAccessLog.profile_id == p.id,
-            ).scalar()
-            linked_doctors.append({
-                "name": doc_user.full_name,
-                "doctor_code": doc_profile.doctor_code,
-                "last_access": last_access.isoformat() if last_access else None,
-            })
+        linked_by_profile = {}
+        doctor_ids = set()
+        for dpl, doc_user, doc_profile in linked_docs_rows:
+            if dpl.profile_id not in linked_by_profile:
+                linked_by_profile[dpl.profile_id] = []
+            linked_by_profile[dpl.profile_id].append((dpl, doc_user, doc_profile))
+            doctor_ids.add(doc_user.id)
 
-        if had_critical and days_inactive >= 7:
-            alerts.append({
-                "type": "PATIENT_INACTIVE_HIGH_RISK",
-                "severity": "MEDIUM",
-                "message": f"{p.name} (high-risk) inactive for {days_inactive} days",
-                "target_profile_id": p.id,
-                "patient_name": p.name,
-                "linked_doctors": linked_doctors,
-                "days_inactive": days_inactive,
-            })
-        elif days_inactive >= 14:
-            alerts.append({
-                "type": "PATIENT_INACTIVE",
-                "severity": "LOW",
-                "message": f"{p.name} inactive for {days_inactive} days",
-                "target_profile_id": p.id,
-                "patient_name": p.name,
-                "linked_doctors": linked_doctors,
-                "days_inactive": days_inactive,
-            })
+        # BATCH 4: Get all access logs for doctor-profile pairs (1 query with GROUP BY)
+        access_logs = db.query(
+            models.DoctorAccessLog.doctor_id,
+            models.DoctorAccessLog.profile_id,
+            func.max(models.DoctorAccessLog.created_at).label("last_access_at")
+        ).filter(
+            models.DoctorAccessLog.doctor_id.in_(doctor_ids),
+            models.DoctorAccessLog.profile_id.in_(inactive_profile_ids)
+        ).group_by(models.DoctorAccessLog.doctor_id, models.DoctorAccessLog.profile_id).all()
+
+        access_by_pair = {(al.doctor_id, al.profile_id): al.last_access_at for al in access_logs}
+
+        # Now loop through inactive profiles (no more queries)
+        for p, last_reading_aware in inactive_profiles:
+            days_inactive = (now - last_reading_aware).days
+            had_critical = p.id in critical_profile_ids
+
+            # Build linked_doctors list from batch
+            linked_docs = linked_by_profile.get(p.id, [])
+            linked_doctors = []
+            for dpl, doc_user, doc_profile in linked_docs:
+                last_access = access_by_pair.get((doc_user.id, p.id))
+                linked_doctors.append({
+                    "name": doc_user.full_name,
+                    "doctor_code": doc_profile.doctor_code,
+                    "last_access": last_access.isoformat() if last_access else None,
+                })
+
+            if had_critical and days_inactive >= 7:
+                alerts.append({
+                    "type": "PATIENT_INACTIVE_HIGH_RISK",
+                    "severity": "MEDIUM",
+                    "message": f"{p.name} (high-risk) inactive for {days_inactive} days",
+                    "target_profile_id": p.id,
+                    "patient_name": p.name,
+                    "linked_doctors": linked_doctors,
+                    "days_inactive": days_inactive,
+                })
+            elif days_inactive >= 14:
+                alerts.append({
+                    "type": "PATIENT_INACTIVE",
+                    "severity": "LOW",
+                    "message": f"{p.name} inactive for {days_inactive} days",
+                    "target_profile_id": p.id,
+                    "patient_name": p.name,
+                    "linked_doctors": linked_doctors,
+                    "days_inactive": days_inactive,
+                })
 
     # Sort by severity (HIGH first), then by latest reading within each severity
     severity_order = {"HIGH": 0, "MEDIUM": 1, "INFO": 2, "LOW": 3}
