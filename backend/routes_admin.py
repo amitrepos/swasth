@@ -818,12 +818,13 @@ def get_alerts(
 ):
     """Computed alerts — critical readings, pending doctors, AI fallback, inactivity."""
     now = datetime.now(timezone.utc)
+    now_naive = now.replace(tzinfo=None)
     alerts = []
 
     # 1. Critical readings unaddressed (CRITICAL + HIGH-STAGE-2 BP)
     critical_readings = db.query(models.HealthReading).filter(
         (models.HealthReading.status_flag == "CRITICAL") | (models.HealthReading.status_flag == "HIGH - STAGE 2"),
-        models.HealthReading.created_at >= now - timedelta(days=7),
+        models.HealthReading.created_at >= now_naive - timedelta(days=7),
     ).all()
 
     if critical_readings:
@@ -960,7 +961,7 @@ def get_alerts(
 
     # 3. AI fallback spike (> 20% in last 24h)
     recent_ai = db.query(models.AiInsightLog).filter(
-        models.AiInsightLog.created_at >= now - timedelta(hours=24),
+        models.AiInsightLog.created_at >= now_naive - timedelta(hours=24),
     ).all()
     if len(recent_ai) >= 5:
         fallback_count = sum(1 for a in recent_ai if a.fallback_reason)
