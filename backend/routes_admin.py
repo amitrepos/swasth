@@ -1277,7 +1277,9 @@ def get_inactive_users(
 # ---------------------------------------------------------------------------
 
 @router.post("/admin/send-whatsapp-individual")
+@limiter.limit("30/hour")
 def send_whatsapp_individual(
+    request: Request,
     body: schemas.AdminSendWhatsAppIndividual,
     db: Session = Depends(get_db),
     user: models.User = Depends(_require_admin),
@@ -1297,6 +1299,11 @@ def send_whatsapp_individual(
     target = db.query(models.User).filter(models.User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Restrict to patients — reminders are only meaningful for them, and this
+    # prevents an admin from accidentally messaging another admin or a doctor.
+    if target.role != models.UserRole.patient:
+        raise HTTPException(status_code=400, detail="Target must be a patient")
 
     if not target.phone_number:
         raise HTTPException(status_code=400, detail="User has no phone number on file")
@@ -1351,7 +1358,9 @@ def send_whatsapp_individual(
 
 
 @router.post("/admin/send-whatsapp-bulk")
+@limiter.limit("5/hour")
 def send_whatsapp_bulk(
+    request: Request,
     db: Session = Depends(get_db),
     user: models.User = Depends(_require_admin),
 ):
