@@ -1463,6 +1463,7 @@ def send_whatsapp_individual(
         target_user_id=owner.id,
         target_profile_id=profile_id,
     )
+    db.commit()  # _audit_log only flushes — must commit to persist (CERT-In)
 
     return {
         "success": True,
@@ -1548,6 +1549,7 @@ def send_whatsapp_bulk(
         "successful": successful,
         "failed": failed,
     })
+    db.commit()  # _audit_log only flushes — must commit to persist (CERT-In)
 
     return {
         "total_inactive": len(sendable),

@@ -236,6 +236,26 @@ class TestWhatsAppIndividual:
         assert resp.status_code == 400
         assert "Twilio error" in resp.json()["detail"]
 
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
+    def test_audit_log_persisted(self, mock_send, client, admin_headers, inactive_profiles, db, admin_user):
+        """Regression: _audit_log only flushes; endpoint must db.commit() so the
+        audit row survives the request (CERT-In 180-day requirement)."""
+        mock_send.return_value = (True, "SM_test_sid", None)
+        item = inactive_profiles[0]
+        resp = client.post(
+            self.URL, headers=admin_headers,
+            json={"profile_id": item["profile"].id},
+        )
+        assert resp.status_code == 200
+
+        entry = db.query(models.AdminAuditLog).filter(
+            models.AdminAuditLog.action_type == "SEND_WHATSAPP_INDIVIDUAL",
+            models.AdminAuditLog.target_profile_id == item["profile"].id,
+        ).first()
+        assert entry is not None, "audit row missing — db.commit() was skipped"
+        assert entry.target_user_id == item["user"].id
+        assert entry.admin_user_id == admin_user.id
+
 
 class TestWhatsAppBulk:
     URL = "/api/admin/send-whatsapp-bulk"
@@ -315,6 +335,19 @@ class TestWhatsAppBulk:
         body = resp.json()
         # Active profile must NOT appear in results
         assert all(r["profile_id"] != p.id for r in body["results"])
+
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
+    def test_bulk_audit_log_persisted(self, mock_send, client, admin_headers, inactive_profiles, db, admin_user):
+        """Regression: bulk endpoint must db.commit() the SEND_WHATSAPP_BULK audit row."""
+        mock_send.return_value = (True, "SM_test_sid", None)
+        resp = client.post(self.URL, headers=admin_headers, json={})
+        assert resp.status_code == 200
+
+        entry = db.query(models.AdminAuditLog).filter(
+            models.AdminAuditLog.action_type == "SEND_WHATSAPP_BULK",
+            models.AdminAuditLog.admin_user_id == admin_user.id,
+        ).order_by(models.AdminAuditLog.id.desc()).first()
+        assert entry is not None, "bulk audit row missing — db.commit() was skipped"
 
     @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_bulk_caregiver_dormant_family_profile(self, mock_send, client, admin_headers, db):
