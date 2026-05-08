@@ -192,18 +192,6 @@
   .doc-checklist a { color: #0ea5e9; text-decoration: none; font-size: 12px; }
   .doc-checklist a:hover { text-decoration: underline; }
 
-  /* Engagement section */
-  .tier-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
-  .tier-regular { background: #dcfce7; color: #166534; }
-  .tier-sporadic { background: #fef3c7; color: #92400e; }
-  .tier-dormant { background: #fee2e2; color: #991b1b; }
-  .activity-active { background: #dcfce7; color: #166534; }
-  .activity-low { background: #fef3c7; color: #92400e; }
-  .activity-dormant { background: #fee2e2; color: #991b1b; }
-  .engagement-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
-  .engagement-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
-  .engagement-table { display: none; }
-  .engagement-table.active { display: block; }
 
   @media (max-width: 768px) {
     .sidebar { width: 60px; }
@@ -243,7 +231,7 @@
       <a onclick="showSection('users')"><span>Users</span></a>
       <a onclick="showSection('doctors')"><span>Doctors</span> <span class="badge-count" id="doctorBadge" style="display:none">0</span></a>
       <a onclick="showSection('alerts')"><span>Alerts</span> <span class="badge-count" id="alertBadge" style="display:none">0</span></a>
-      <a onclick="showSection('engagement')"><span>Engagement</span></a>
+      <a onclick="showSection('inactive')"><span>Inactive Users</span></a>
       <a onclick="showSection('consent')"><span>Consent</span></a>
       <a onclick="showSection('audit')"><span>Audit Log</span></a>
       <a href="/api/admin/ops" style="border-top:1px solid #1e293b;margin-top:8px;padding-top:12px"><span>⚡ Ops Monitor</span></a>
@@ -298,29 +286,14 @@
       <div id="alertsList"></div>
     </div>
 
-    <!-- Engagement Section -->
-    <div class="section-page" id="sec-engagement">
-      <h1 style="font-size:22px;margin-bottom:20px">Engagement</h1>
-      <div class="engagement-kpis" id="engagementKpis"></div>
-      <div class="engagement-toggle">
-        <button class="btn btn-secondary" onclick="toggleEngagementView('users')" id="btnEngUsers">Users</button>
-        <button class="btn btn-secondary" onclick="toggleEngagementView('doctors')" id="btnEngDoctors">Doctors</button>
-      </div>
-      <div class="engagement-table active" id="usersTable" style="display:none">
-        <div class="section">
-          <table>
-            <thead><tr><th>Name</th><th>Email</th><th>7d Readings</th><th>30d Readings</th><th>Last Reading</th><th>Score</th><th>Tier</th></tr></thead>
-            <tbody id="usersTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="engagement-table active" id="doctorsTable" style="display:none">
-        <div class="section">
-          <table>
-            <thead><tr><th>Name</th><th>Code</th><th>Specialty</th><th>Last Login</th><th>Last Access</th><th>Patients/7d</th><th>Total Patients</th><th>Tier</th></tr></thead>
-            <tbody id="doctorsTableBody"></tbody>
-          </table>
-        </div>
+    <!-- Inactive Users Section -->
+    <div class="section-page" id="sec-inactive">
+      <h1 style="font-size:22px;margin-bottom:20px">Inactive Users (No readings for 2+ days)</h1>
+      <div class="section">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Days Inactive</th><th>Last Glucose</th><th>Last BP</th></tr></thead>
+          <tbody id="inactiveTableBody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -391,9 +364,36 @@
 </div>
 
 <script>
-let TOKEN = '';
+let TOKEN = localStorage.getItem('admin_token') || '';
 let CURRENT_USER_ID = null;
 const API = window.location.origin;
+
+// Restore session on page load
+window.addEventListener('load', () => {
+  if (TOKEN) {
+    fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}})
+      .then(r => {
+        if (r.ok) {
+          document.getElementById('loginSection').style.display = 'none';
+          document.getElementById('appLayout').style.display = 'flex';
+          loadOverview();
+          loadAlertBadge();
+          loadDoctorBadge();
+        } else {
+          TOKEN = '';
+          localStorage.removeItem('admin_token');
+          document.getElementById('loginSection').style.display = 'flex';
+          document.getElementById('appLayout').style.display = 'none';
+        }
+      })
+      .catch(() => {
+        TOKEN = '';
+        localStorage.removeItem('admin_token');
+        document.getElementById('loginSection').style.display = 'flex';
+        document.getElementById('appLayout').style.display = 'none';
+      });
+  }
+});
 
 // ── Error display ───────────────────────────────────────────────────
 // Show a visible error banner inside any admin section if a fetch
@@ -443,6 +443,7 @@ async function login() {
     const data = await resp.json();
     if (!data.access_token) throw new Error('No token');
     TOKEN = data.access_token;
+    localStorage.setItem('admin_token', TOKEN);
     const test = await fetch(`${API}/api/admin/metrics`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
     if (test.status === 403) throw new Error('Not admin');
     document.getElementById('loginSection').style.display = 'none';
@@ -458,6 +459,7 @@ async function login() {
 
 function logout() {
   TOKEN = '';
+  localStorage.removeItem('admin_token');
   document.getElementById('loginSection').style.display = 'flex';
   document.getElementById('appLayout').style.display = 'none';
 }
@@ -473,7 +475,7 @@ function showSection(name) {
   else if (name === 'users') loadUsers();
   else if (name === 'doctors') loadDoctors('false');
   else if (name === 'alerts') loadAlerts();
-  else if (name === 'engagement') loadEngagement();
+  else if (name === 'inactive') loadInactiveUsers();
   else if (name === 'consent') loadConsent();
   else if (name === 'audit') loadAuditLog();
 }
@@ -751,73 +753,26 @@ async function loadAuditLog() {
 }
 
 // ── Engagement Metrics ──────────────────────────────────────────────
-async function loadEngagement() {
-  const resp = await fetch(`${API}/api/admin/engagement`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
+async function loadInactiveUsers() {
+  const resp = await fetch(`${API}/api/admin/inactive-users`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
   const data = await resp.json();
 
-  // Render KPIs
-  const kpis = [
-    {label: 'Regular Users', value: data.summary.regular_users, color: 'green'},
-    {label: 'Sporadic Users', value: data.summary.sporadic_users, color: 'amber'},
-    {label: 'Active Doctors', value: data.summary.active_doctors, color: 'green'},
-    {label: 'Dormant Doctors', value: data.summary.dormant_doctors, color: 'red'},
-  ];
-  document.getElementById('engagementKpis').innerHTML = kpis.map(k => `<div class="card"><div class="label">${k.label}</div><div class="value ${k.color}">${k.value}</div></div>`).join('');
+  const tableBody = document.getElementById('inactiveTableBody');
+  if (!data.inactive_users.length) {
+    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b">No inactive users. All users are recording readings regularly!</td></tr>';
+    return;
+  }
 
-  // Render users table
-  const usersBody = document.getElementById('usersTableBody');
-  usersBody.innerHTML = data.user_consistency.map(u => `
-    <tr>
+  tableBody.innerHTML = data.inactive_users.map(u => `
+    <tr onclick="openUserDetail(${u.user_id})" style="cursor:pointer">
       <td><strong>${esc(u.full_name)}</strong></td>
       <td>${esc(u.email)}</td>
-      <td>${u.readings_7d}</td>
-      <td>${u.readings_30d}</td>
-      <td>${u.last_reading_at ? new Date(u.last_reading_at).toLocaleDateString() : '--'}</td>
-      <td>${(u.consistency_score * 100).toFixed(0)}%</td>
-      <td><span class="tier-badge tier-${u.tier}">${u.tier}</span></td>
+      <td>${esc(u.phone_number || '--')}</td>
+      <td><strong style="color:#ef4444">${u.days_inactive} days</strong></td>
+      <td>${u.last_glucose ? `${u.last_glucose.value} mg/dL<br><small>${new Date(u.last_glucose.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+      <td>${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
     </tr>
   `).join('');
-
-  // Render doctors table
-  const docsBody = document.getElementById('doctorsTableBody');
-  docsBody.innerHTML = data.doctor_activity.map(d => `
-    <tr>
-      <td><strong>${esc(d.full_name)}</strong></td>
-      <td>${esc(d.doctor_code)}</td>
-      <td>${esc(d.specialty)}</td>
-      <td>${d.last_login ? new Date(d.last_login).toLocaleDateString() : '--'}</td>
-      <td>${d.last_patient_access ? new Date(d.last_patient_access).toLocaleDateString() : '--'}</td>
-      <td>${d.patients_checked_7d}</td>
-      <td>${d.total_active_patients}</td>
-      <td><span class="tier-badge activity-${d.activity_tier}">${d.activity_tier}</span></td>
-    </tr>
-  `).join('');
-
-  // Show users table by default
-  toggleEngagementView('users');
-}
-
-function toggleEngagementView(view) {
-  const usersTable = document.getElementById('usersTable');
-  const doctorsTable = document.getElementById('doctorsTable');
-  const btnUsers = document.getElementById('btnEngUsers');
-  const btnDoctors = document.getElementById('btnEngDoctors');
-
-  if (view === 'users') {
-    usersTable.style.display = 'block';
-    doctorsTable.style.display = 'none';
-    btnUsers.style.background = '#0ea5e9';
-    btnUsers.style.color = 'white';
-    btnDoctors.style.background = '#f1f5f9';
-    btnDoctors.style.color = '#475569';
-  } else {
-    usersTable.style.display = 'none';
-    doctorsTable.style.display = 'block';
-    btnUsers.style.background = '#f1f5f9';
-    btnUsers.style.color = '#475569';
-    btnDoctors.style.background = '#0ea5e9';
-    btnDoctors.style.color = 'white';
-  }
 }
 
 // ── User Detail Modal ───────────────────────────────────────────────
