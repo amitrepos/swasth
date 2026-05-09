@@ -1,5 +1,5 @@
 import re
-from pydantic import BaseModel, EmailStr, validator, Field, field_validator
+from pydantic import BaseModel, EmailStr, validator, Field, field_validator, model_validator
 from typing import Optional, List, Literal
 from datetime import date, datetime, timedelta, timezone
 
@@ -536,6 +536,30 @@ class HealthReadingCreate(BaseModel):
         if v.tzinfo is None:
             return v.replace(tzinfo=timezone.utc)
         return v.astimezone(timezone.utc)
+
+    @model_validator(mode='after')
+    def _require_values_for_type(self):
+        """Reject phantom rows: BP without systolic/diastolic, glucose without
+        glucose_value, etc. Without this guard the admin dashboard ends up
+        showing 'null/null mmHg' rows that were saved with all values None.
+        """
+        rt = self.reading_type
+        if rt == "blood_pressure":
+            if self.systolic is None or self.diastolic is None:
+                raise ValueError("blood_pressure reading requires systolic and diastolic")
+        elif rt == "glucose":
+            if self.glucose_value is None:
+                raise ValueError("glucose reading requires glucose_value")
+        elif rt == "weight":
+            if self.weight_value is None:
+                raise ValueError("weight reading requires weight_value")
+        elif rt == "spo2":
+            if self.spo2_value is None:
+                raise ValueError("spo2 reading requires spo2_value")
+        elif rt == "steps":
+            if self.steps_count is None:
+                raise ValueError("steps reading requires steps_count")
+        return self
 
 
 class HealthReadingUpdate(BaseModel):
