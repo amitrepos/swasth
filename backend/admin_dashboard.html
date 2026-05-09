@@ -1063,7 +1063,10 @@ function renderProfilesTab(profiles) {
 function renderReadingsTab(readings) {
   if (!readings.length) { document.getElementById('tabReadings').innerHTML = '<div class="empty-state">No readings.</div>'; return; }
   const rows = readings.map(r => {
-    let value = r.reading_type === 'glucose' ? `${r.glucose_value} mg/dL` : `${r.systolic}/${r.diastolic} mmHg`;
+    const fmt = v => (v === null || v === undefined ? '--' : v);
+    let value = r.reading_type === 'glucose'
+      ? `${fmt(r.glucose_value)} mg/dL`
+      : `${fmt(r.systolic)}/${fmt(r.diastolic)} mmHg`;
     const cls = r.status_flag ? 'status-' + r.status_flag.replace(/ .*/,'') : '';
     return `<tr><td>${r.reading_timestamp?new Date(r.reading_timestamp).toLocaleString():'--'}</td><td>${r.reading_type==='glucose'?'Glucose':'BP'}</td><td>${value}</td><td>${r.status_flag?`<span class="status-badge ${cls}">${esc(r.status_flag)}</span>`:'--'}</td></tr>`;
   }).join('');

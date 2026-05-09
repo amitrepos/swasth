@@ -24,6 +24,25 @@ from dependencies import get_current_user
 from doctor_utils import ensure_unique_doctor_code
 from twilio_service import whatsapp_service
 from config import settings
+from encryption_service import decrypt_float
+
+
+def _coalesce_reading_value(plaintext, enc_token):
+    """Read a reading's numeric field with decrypt fallback.
+
+    Some legacy/inbound paths populated only the AES-encrypted column
+    (systolic_enc / diastolic_enc / glucose_value_enc) while leaving the
+    plaintext NULL, so the admin dashboard rendered "null/null". Use the
+    plaintext when present, otherwise decrypt.
+    """
+    if plaintext is not None:
+        return plaintext
+    if enc_token:
+        try:
+            return decrypt_float(enc_token)
+        except Exception:
+            return None
+    return None
 
 router = APIRouter()
 
@@ -381,11 +400,11 @@ def get_user_detail(
             "id": r.id,
             "profile_name": profile_name_map.get(r.profile_id, "Unknown"),
             "reading_type": r.reading_type,
-            "glucose_value": r.glucose_value,
+            "glucose_value": _coalesce_reading_value(r.glucose_value, r.glucose_value_enc),
             "sample_type": r.sample_type,
-            "systolic": r.systolic,
-            "diastolic": r.diastolic,
-            "pulse_rate": r.pulse_rate,
+            "systolic": _coalesce_reading_value(r.systolic, r.systolic_enc),
+            "diastolic": _coalesce_reading_value(r.diastolic, r.diastolic_enc),
+            "pulse_rate": _coalesce_reading_value(r.pulse_rate, r.pulse_rate_enc),
             "value_numeric": r.value_numeric,
             "unit_display": r.unit_display,
             "status_flag": r.status_flag,
@@ -1216,11 +1235,14 @@ def get_inactive_users(
     if not inactive_profile_ids:
         return {"inactive_users": [], "total": 0}
 
-    # Query 2: last glucose per profile (1 query, partitioned)
+    # Query 2: last glucose per profile (1 query, partitioned).
+    # Pull both plaintext and _enc so we can fall back to decryption when the
+    # plaintext column is null (some legacy/inbound rows have only _enc).
     glucose_subq = (
         db.query(
             models.HealthReading.profile_id,
             models.HealthReading.glucose_value,
+            models.HealthReading.glucose_value_enc,
             models.HealthReading.created_at,
             models.HealthReading.status_flag,
             func.row_number().over(
@@ -1243,6 +1265,8 @@ def get_inactive_users(
             models.HealthReading.profile_id,
             models.HealthReading.systolic,
             models.HealthReading.diastolic,
+            models.HealthReading.systolic_enc,
+            models.HealthReading.diastolic_enc,
             models.HealthReading.created_at,
             models.HealthReading.status_flag,
             func.row_number().over(
@@ -1284,13 +1308,13 @@ def get_inactive_users(
             "days_inactive": days_inactive,
             "days_inactive_display": "Never" if days_inactive == -1 else f"{days_inactive}+",
             "last_glucose": {
-                "value": last_glucose.glucose_value,
+                "value": _coalesce_reading_value(last_glucose.glucose_value, last_glucose.glucose_value_enc),
                 "reading_at": last_glucose.created_at.isoformat(),
                 "status": last_glucose.status_flag,
             } if last_glucose else None,
             "last_bp": {
-                "systolic": last_bp.systolic,
-                "diastolic": last_bp.diastolic,
+                "systolic": _coalesce_reading_value(last_bp.systolic, last_bp.systolic_enc),
+                "diastolic": _coalesce_reading_value(last_bp.diastolic, last_bp.diastolic_enc),
                 "reading_at": last_bp.created_at.isoformat(),
                 "status": last_bp.status_flag,
             } if last_bp else None,
