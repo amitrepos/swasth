@@ -1062,10 +1062,28 @@ function renderProfilesTab(profiles) {
 
 function renderReadingsTab(readings) {
   if (!readings.length) { document.getElementById('tabReadings').innerHTML = '<div class="empty-state">No readings.</div>'; return; }
+  const TYPE_LABEL = { glucose: 'Glucose', blood_pressure: 'BP', weight: 'Weight', steps: 'Steps', spo2: 'SpO2' };
+  const fmtValue = (r) => {
+    switch (r.reading_type) {
+      case 'glucose':
+        return r.glucose_value != null ? `${r.glucose_value} mg/dL` : '--';
+      case 'blood_pressure':
+        return (r.systolic != null && r.diastolic != null) ? `${r.systolic}/${r.diastolic} mmHg` : '--';
+      case 'weight':
+        return r.value_numeric != null ? `${r.value_numeric} ${r.unit_display || 'kg'}` : '--';
+      case 'steps':
+        return r.value_numeric != null ? `${r.value_numeric} steps` : '--';
+      case 'spo2':
+        return r.value_numeric != null ? `${r.value_numeric}%` : '--';
+      default:
+        return r.value_numeric != null ? `${r.value_numeric}${r.unit_display ? ' ' + r.unit_display : ''}` : '--';
+    }
+  };
   const rows = readings.map(r => {
-    let value = r.reading_type === 'glucose' ? `${r.glucose_value} mg/dL` : `${r.systolic}/${r.diastolic} mmHg`;
+    const value = fmtValue(r);
+    const label = TYPE_LABEL[r.reading_type] || (r.reading_type ? esc(r.reading_type) : '--');
     const cls = r.status_flag ? 'status-' + r.status_flag.replace(/ .*/,'') : '';
-    return `<tr><td>${r.reading_timestamp?new Date(r.reading_timestamp).toLocaleString():'--'}</td><td>${r.reading_type==='glucose'?'Glucose':'BP'}</td><td>${value}</td><td>${r.status_flag?`<span class="status-badge ${cls}">${esc(r.status_flag)}</span>`:'--'}</td></tr>`;
+    return `<tr><td>${r.reading_timestamp?new Date(r.reading_timestamp).toLocaleString():'--'}</td><td>${label}</td><td>${value}</td><td>${r.status_flag?`<span class="status-badge ${cls}">${esc(r.status_flag)}</span>`:'--'}</td></tr>`;
   }).join('');
   document.getElementById('tabReadings').innerHTML = `<table><thead><tr><th>Time</th><th>Type</th><th>Value</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
