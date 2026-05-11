@@ -1150,26 +1150,86 @@ def get_audit_log(
 # G4: Inactive users — users with no readings for 2+ days
 # ---------------------------------------------------------------------------
 
-@router.get("/admin/inactive-users")
-def get_inactive_users(
-    db: Session = Depends(get_db),
-    user: models.User = Depends(_require_admin),
-):
-    """Profiles with no readings in last 2 days, with the owner's contact info.
+def _to_aware(ts):
+    """Return tz-aware UTC datetime, or None if input is None."""
+    if ts is None:
+        return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
 
-    Profile-centric, NOT user-centric: a caregiver who logs daily for himself
-    but not for his mother's profile must surface here so we can nudge him
-    to log Mummy's reading. Previously aggregated by HealthReading.logged_by
-    (the account holder), which masked dormant family-member profiles.
 
-    Batched: 4 queries total (profiles+owners, last_ts, last glucose, last BP).
+def _compute_profile_dormancy(profile, last_glucose_row, last_bp_row, now, two_days_ago):
+    """Decide whether a profile needs a reading reminder based on glucose + BP.
+
+    A profile is dormant when EITHER glucose OR blood pressure has not been
+    logged in the last 2 days. Returns a dict with the missing-type info, or
+    None if the profile is NOT dormant (both types logged within 2 days, or
+    the profile is too fresh and has zero readings at all).
+
+    days_since_log = lower-bound on missing duration (min of per-type days).
+    Saying 'missed for X days' where X = min is always true: every named type
+    has been missing for *at least* X days.
+    """
+    g_ts = _to_aware(last_glucose_row.created_at) if last_glucose_row else None
+    b_ts = _to_aware(last_bp_row.created_at) if last_bp_row else None
+    created_aware = _to_aware(profile.created_at)
+
+    glucose_missing = g_ts is None or g_ts < two_days_ago
+    bp_missing = b_ts is None or b_ts < two_days_ago
+
+    if not (glucose_missing or bp_missing):
+        return None
+
+    # Grace period: brand-new profile with literally zero readings of either
+    # type. Don't spam fresh signups on day 1. (If one type was logged we
+    # ignore the grace period — the user is already engaged.)
+    if g_ts is None and b_ts is None:
+        if created_aware is None or created_aware >= two_days_ago:
+            return None
+
+    parts_display = []
+    parts_template = []
+    day_options = []
+    if glucose_missing:
+        parts_display.append("Glucose")
+        parts_template.append("glucose")
+        ref = g_ts or created_aware
+        if ref:
+            day_options.append((now - ref).days)
+    if bp_missing:
+        parts_display.append("BP")
+        parts_template.append("blood pressure")
+        ref = b_ts or created_aware
+        if ref:
+            day_options.append((now - ref).days)
+
+    # Lower bound on missing duration: every named type has been missing for
+    # at least this many days. min() chosen over max() because it's the only
+    # claim we can make with certainty for every type in `missing_types`.
+    days_since_log = min(day_options) if day_options else 0
+    if days_since_log < 0:
+        days_since_log = 0
+
+    return {
+        "glucose_missing": glucose_missing,
+        "bp_missing": bp_missing,
+        "missing_types_template": " and ".join(parts_template),
+        "missing_types_display": " + ".join(parts_display),
+        "days_since_log": days_since_log,
+    }
+
+
+def _query_dormant_profiles(db: Session):
+    """All patient-owned profiles that need a reading reminder.
+
+    Returns: list of dicts with profile, owner, last_glucose, last_bp, plus
+    the dormancy fields from `_compute_profile_dormancy`. Used by both the
+    GET /admin/inactive-users tab and the bulk WhatsApp endpoint to keep
+    surfacing logic in one place.
     """
     now = datetime.now(timezone.utc)
     two_days_ago = now - timedelta(days=2)
 
-    # Subquery: pick a deterministic single owner per profile (lowest user_id
-    # among rows with access_level='owner'). Avoids row-multiplication when a
-    # profile has multiple owners and keeps results stable across requests.
+    # Single owner per profile (deterministic — lowest user_id wins)
     owner_subq = (
         db.query(
             models.ProfileAccess.profile_id.label("profile_id"),
@@ -1180,77 +1240,20 @@ def get_inactive_users(
         .subquery()
     )
 
-    # Query 1: Profile + owner User + max(reading.created_at) for that profile.
-    # Filter to profiles owned by patient-role users only (skip doctor/admin
-    # personal profiles).
-    rows = (
-        db.query(
-            models.Profile,
-            models.User,
-            func.max(models.HealthReading.created_at).label("last_reading_ts"),
-        )
+    profile_rows = (
+        db.query(models.Profile, models.User)
         .join(owner_subq, owner_subq.c.profile_id == models.Profile.id)
         .join(models.User, models.User.id == owner_subq.c.owner_user_id)
-        .outerjoin(
-            models.HealthReading,
-            models.HealthReading.profile_id == models.Profile.id,
-        )
         .filter(models.User.role == models.UserRole.patient)
-        .group_by(models.Profile.id, models.User.id)
         .all()
     )
 
-    # Filter to inactive profiles only.
-    # Grace period: profiles that have *never* recorded but whose account is
-    # less than 2 days old are excluded — a brand-new signup shouldn't be
-    # spammed with "you're inactive" reminders on day 1.
-    inactive_data = {}
-    inactive_profile_ids = []
-    for profile, owner, last_ts in rows:
-        if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
-            continue  # Active profile, skip
-        if last_ts is None:
-            created = profile.created_at
-            if created is None:
-                continue  # No created_at — defensive, treat as too-new
-            created_aware = created if created.tzinfo else created.replace(tzinfo=timezone.utc)
-            if created_aware >= two_days_ago:
-                continue  # Newly-signed-up profile, give a grace period
-        inactive_profile_ids.append(profile.id)
-        inactive_data[profile.id] = {
-            "profile": profile,
-            "owner": owner,
-            "last_reading_ts": last_ts,
-        }
+    if not profile_rows:
+        return [], now, two_days_ago
 
-    if not inactive_profile_ids:
-        return {"inactive_users": [], "total": 0}
+    profile_ids = [p.id for p, _ in profile_rows]
 
-    # Last WhatsApp reminder sent per profile (covers both individual and
-    # per-item bulk audit rows so the dashboard shows accurate "last sent"
-    # regardless of which endpoint dispatched the message).
-    last_sent_rows = (
-        db.query(
-            models.AdminAuditLog.target_profile_id,
-            func.max(models.AdminAuditLog.created_at).label("last_sent_at"),
-            func.count(models.AdminAuditLog.id).label("send_count"),
-        )
-        .filter(
-            models.AdminAuditLog.target_profile_id.in_(inactive_profile_ids),
-            models.AdminAuditLog.action_type.in_(
-                ("SEND_WHATSAPP_INDIVIDUAL", "SEND_WHATSAPP_BULK_ITEM")
-            ),
-            models.AdminAuditLog.outcome == "SUCCESS",
-        )
-        .group_by(models.AdminAuditLog.target_profile_id)
-        .all()
-    )
-    last_sent_by_profile = {
-        row.target_profile_id: (row.last_sent_at, row.send_count)
-        for row in last_sent_rows
-    }
-
-    # Query 2: last glucose per profile (1 query, partitioned)
+    # Last glucose row per profile (1 partitioned subquery)
     glucose_subq = (
         db.query(
             models.HealthReading.profile_id,
@@ -1263,15 +1266,17 @@ def get_inactive_users(
             ).label("rn"),
         )
         .filter(
-            models.HealthReading.profile_id.in_(inactive_profile_ids),
+            models.HealthReading.profile_id.in_(profile_ids),
             models.HealthReading.reading_type == "glucose",
         )
         .subquery()
     )
-    last_glucose_rows = db.query(glucose_subq).filter(glucose_subq.c.rn == 1).all()
-    last_glucose_by_profile = {row.profile_id: row for row in last_glucose_rows}
+    last_glucose_by_profile = {
+        r.profile_id: r
+        for r in db.query(glucose_subq).filter(glucose_subq.c.rn == 1).all()
+    }
 
-    # Query 3: last BP per profile (1 query, partitioned)
+    # Last BP row per profile (1 partitioned subquery)
     bp_subq = (
         db.query(
             models.HealthReading.profile_id,
@@ -1285,128 +1290,130 @@ def get_inactive_users(
             ).label("rn"),
         )
         .filter(
-            models.HealthReading.profile_id.in_(inactive_profile_ids),
+            models.HealthReading.profile_id.in_(profile_ids),
             models.HealthReading.reading_type == "blood_pressure",
         )
         .subquery()
     )
-    last_bp_rows = db.query(bp_subq).filter(bp_subq.c.rn == 1).all()
-    last_bp_by_profile = {row.profile_id: row for row in last_bp_rows}
+    last_bp_by_profile = {
+        r.profile_id: r
+        for r in db.query(bp_subq).filter(bp_subq.c.rn == 1).all()
+    }
 
-    # Build response
-    inactive = []
-    for profile_id, data in inactive_data.items():
-        profile = data["profile"]
-        owner = data["owner"]
-        last_ts = data["last_reading_ts"]
-        if last_ts:
-            days_inactive = (now - (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc))).days
-        else:
-            days_inactive = -1
+    dormant = []
+    for profile, owner in profile_rows:
+        g = last_glucose_by_profile.get(profile.id)
+        b = last_bp_by_profile.get(profile.id)
+        info = _compute_profile_dormancy(profile, g, b, now, two_days_ago)
+        if info is None:
+            continue
+        dormant.append({
+            "profile": profile,
+            "owner": owner,
+            "last_glucose": g,
+            "last_bp": b,
+            **info,
+        })
 
-        last_glucose = last_glucose_by_profile.get(profile_id)
-        last_bp = last_bp_by_profile.get(profile_id)
-        last_sent_at, send_count = last_sent_by_profile.get(profile_id, (None, 0))
+    return dormant, now, two_days_ago
 
-        inactive.append({
-            "profile_id": profile_id,
+
+@router.get("/admin/inactive-users")
+def get_inactive_users(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(_require_admin),
+):
+    """Profiles that need a reading reminder — glucose OR BP missing >2 days.
+
+    Per-reading-type tracking (not aggregate): a patient who logs BP daily but
+    never glucose will surface here for the missing glucose reminder. Surface
+    + grace-period logic lives in `_compute_profile_dormancy` so it stays
+    consistent with the bulk-send path.
+    """
+    dormant, _now, _two = _query_dormant_profiles(db)
+
+    if not dormant:
+        return {"inactive_users": [], "total": 0}
+
+    profile_ids = [d["profile"].id for d in dormant]
+
+    # Last WhatsApp reminder sent per profile — both individual sends and
+    # per-recipient bulk-item audit rows count, so the dashboard reflects any
+    # admin send path.
+    last_sent_rows = (
+        db.query(
+            models.AdminAuditLog.target_profile_id,
+            func.max(models.AdminAuditLog.created_at).label("last_sent_at"),
+            func.count(models.AdminAuditLog.id).label("send_count"),
+        )
+        .filter(
+            models.AdminAuditLog.target_profile_id.in_(profile_ids),
+            models.AdminAuditLog.action_type.in_(
+                ("SEND_WHATSAPP_INDIVIDUAL", "SEND_WHATSAPP_BULK_ITEM")
+            ),
+            models.AdminAuditLog.outcome == "SUCCESS",
+        )
+        .group_by(models.AdminAuditLog.target_profile_id)
+        .all()
+    )
+    last_sent_by_profile = {
+        row.target_profile_id: (row.last_sent_at, row.send_count)
+        for row in last_sent_rows
+    }
+
+    result = []
+    for d in dormant:
+        profile = d["profile"]
+        owner = d["owner"]
+        g = d["last_glucose"]
+        b = d["last_bp"]
+        last_sent_at, send_count = last_sent_by_profile.get(profile.id, (None, 0))
+
+        result.append({
+            "profile_id": profile.id,
             "profile_name": profile.name,
             "owner_user_id": owner.id,
             "owner_name": owner.full_name,
             "owner_email": owner.email,
             "owner_phone": owner.phone_number,
-            "last_reading_at": last_ts.isoformat() if last_ts else None,
-            "days_inactive": days_inactive,
-            "days_inactive_display": "Never" if days_inactive == -1 else f"{days_inactive}+",
+            "glucose_missing": d["glucose_missing"],
+            "bp_missing": d["bp_missing"],
+            "missing_types": d["missing_types_template"],
+            "missing_types_display": d["missing_types_display"],
+            "days_since_log": d["days_since_log"],
             "last_message_sent_at": last_sent_at.isoformat() if last_sent_at else None,
             "message_count": send_count,
             "last_glucose": {
-                "value": last_glucose.glucose_value,
-                "reading_at": last_glucose.created_at.isoformat(),
-                "status": last_glucose.status_flag,
-            } if last_glucose else None,
+                "value": g.glucose_value,
+                "reading_at": g.created_at.isoformat(),
+                "status": g.status_flag,
+            } if g else None,
             "last_bp": {
-                "systolic": last_bp.systolic,
-                "diastolic": last_bp.diastolic,
-                "reading_at": last_bp.created_at.isoformat(),
-                "status": last_bp.status_flag,
-            } if last_bp else None,
+                "systolic": b.systolic,
+                "diastolic": b.diastolic,
+                "reading_at": b.created_at.isoformat(),
+                "status": b.status_flag,
+            } if b else None,
         })
 
-    # Sort by days_inactive descending (most inactive first); -1 (never recorded) sorts to top
-    inactive.sort(key=lambda x: float('inf') if x["days_inactive"] == -1 else x["days_inactive"], reverse=True)
+    # Sort: profiles missing both glucose AND BP first (more urgent), then by
+    # longer dormancy. Within each tier, never-messaged profiles ahead of
+    # already-messaged ones isn't enforced — that's a UI concern.
+    def _sort_key(r):
+        both = r["glucose_missing"] and r["bp_missing"]
+        return (-int(both), -r["days_since_log"])
+
+    result.sort(key=_sort_key)
 
     return {
-        "inactive_users": inactive,
-        "total": len(inactive),
+        "inactive_users": result,
+        "total": len(result),
     }
 
 
 # ---------------------------------------------------------------------------
-# WhatsApp messaging endpoints (for inactive profile engagement)
+# WhatsApp messaging endpoints — per-reading-type reading reminders
 # ---------------------------------------------------------------------------
-
-def _query_inactive_profiles(db: Session, two_days_ago: datetime):
-    """Return list of (profile, owner_user, last_ts, reading_type) for inactive
-    profiles. Profile-centric so caregivers get pinged about a dormant family
-    member even when they themselves log daily.
-    """
-    owner_subq = (
-        db.query(
-            models.ProfileAccess.profile_id.label("profile_id"),
-            func.min(models.ProfileAccess.user_id).label("owner_user_id"),
-        )
-        .filter(models.ProfileAccess.access_level == "owner")
-        .group_by(models.ProfileAccess.profile_id)
-        .subquery()
-    )
-
-    rows = (
-        db.query(
-            models.Profile,
-            models.User,
-            func.max(models.HealthReading.created_at).label("last_reading_ts"),
-        )
-        .join(owner_subq, owner_subq.c.profile_id == models.Profile.id)
-        .join(models.User, models.User.id == owner_subq.c.owner_user_id)
-        .outerjoin(
-            models.HealthReading,
-            models.HealthReading.profile_id == models.Profile.id,
-        )
-        .filter(models.User.role == models.UserRole.patient)
-        .group_by(models.Profile.id, models.User.id)
-        .all()
-    )
-
-    inactive = []
-    inactive_profile_ids = []
-    raw = {}
-    for profile, owner, last_ts in rows:
-        if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
-            continue
-        inactive_profile_ids.append(profile.id)
-        raw[profile.id] = (profile, owner, last_ts)
-
-    if not inactive_profile_ids:
-        return []
-
-    # Last reading_type per inactive profile (single batched query)
-    type_rows = db.query(
-        models.HealthReading.profile_id,
-        models.HealthReading.reading_type,
-        func.row_number().over(
-            partition_by=models.HealthReading.profile_id,
-            order_by=models.HealthReading.created_at.desc(),
-        ).label("rn"),
-    ).filter(
-        models.HealthReading.profile_id.in_(inactive_profile_ids)
-    ).all()
-    reading_type_by_profile = {r.profile_id: r.reading_type for r in type_rows if r.rn == 1}
-
-    for pid, (profile, owner, last_ts) in raw.items():
-        inactive.append((profile, owner, last_ts, reading_type_by_profile.get(pid, "reading")))
-    return inactive
-
 
 @router.post("/admin/send-whatsapp-individual")
 @limiter.limit("30/hour")
@@ -1416,14 +1423,14 @@ def send_whatsapp_individual(
     db: Session = Depends(get_db),
     user: models.User = Depends(_require_admin),
 ):
-    """Send a WhatsApp reminder for an inactive PROFILE to its owner.
+    """Send a reading-reminder WhatsApp for one profile to its owner.
 
-    Targets profile_id (not user_id): the owner of the dormant profile is the
-    recipient, the dormant profile's name fills the template's name slot. This
-    means a caregiver who logs daily for himself but neglects 'Mummy' will get
-    a 'log Mummy's reading' nudge.
+    A profile qualifies when EITHER glucose or BP has not been logged in the
+    last 2 days. The template's `missing_types` slot is filled accordingly
+    ('glucose', 'blood pressure', or 'glucose and blood pressure'), and the
+    recipient is always the profile owner.
 
-    Template variables: [profile_name, reading_type, days]
+    Template variables: [profile_name, missing_types, days_since_log]
     Returns: {"success": bool, "message_sid": str|null, "error": str|null}
     """
     profile_id = body.profile_id
@@ -1451,7 +1458,6 @@ def send_whatsapp_individual(
     if not owner:
         raise HTTPException(status_code=400, detail="Owner user not found")
 
-    # Owner role must be patient — don't message admins/doctors
     if owner.role != models.UserRole.patient:
         raise HTTPException(status_code=400, detail="Owner must be a patient")
 
@@ -1462,34 +1468,32 @@ def send_whatsapp_individual(
     if not content_sid or content_sid.startswith("HX_placeholder"):
         raise HTTPException(status_code=500, detail="WhatsApp template not configured")
 
-    # Profile-level inactivity check
     now = datetime.now(timezone.utc)
     two_days_ago = now - timedelta(days=2)
 
-    last_reading = db.query(
-        models.HealthReading.reading_type,
-        models.HealthReading.created_at,
-    ).filter(
-        models.HealthReading.profile_id == profile_id
+    # Pull the latest glucose and BP rows for this profile and run the same
+    # dormancy logic used by the inactive-tab listing — keeps both code paths
+    # in lockstep.
+    last_glucose = db.query(models.HealthReading).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == "glucose",
+    ).order_by(models.HealthReading.created_at.desc()).first()
+    last_bp = db.query(models.HealthReading).filter(
+        models.HealthReading.profile_id == profile_id,
+        models.HealthReading.reading_type == "blood_pressure",
     ).order_by(models.HealthReading.created_at.desc()).first()
 
-    if last_reading:
-        last_ts = last_reading.created_at
-        last_ts_aware = last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)
-        if last_ts_aware >= two_days_ago:
-            raise HTTPException(status_code=400, detail="Profile is not inactive")
-        days_inactive = (now - last_ts_aware).days
-        reading_type = last_reading.reading_type or "reading"
-    else:
-        days_inactive = -1
-        reading_type = "reading"
-
-    days_display = str(days_inactive) if days_inactive >= 0 else "0"
+    info = _compute_profile_dormancy(profile, last_glucose, last_bp, now, two_days_ago)
+    if info is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Profile is not due for a reminder (glucose and BP both logged within 2 days, or profile is in the new-signup grace period)",
+        )
 
     success, msg_sid, error = whatsapp_service.send_whatsapp_template(
         owner.phone_number,
         content_sid,
-        [profile.name, reading_type, days_display],
+        [profile.name, info["missing_types_template"], str(info["days_since_log"])],
     )
 
     if not success:
@@ -1499,6 +1503,10 @@ def send_whatsapp_individual(
         db, user, "SEND_WHATSAPP_INDIVIDUAL",
         target_user_id=owner.id,
         target_profile_id=profile_id,
+        details={
+            "missing_types": info["missing_types_template"],
+            "days_since_log": info["days_since_log"],
+        },
     )
     db.commit()  # _audit_log only flushes — must commit to persist (CERT-In)
 
@@ -1516,83 +1524,71 @@ def send_whatsapp_bulk(
     db: Session = Depends(get_db),
     user: models.User = Depends(_require_admin),
 ):
-    """Send WhatsApp reminders to owners of all inactive profiles.
+    """Send reading reminders to owners of every profile flagged dormant.
 
-    Each dormant profile triggers one message to its owner. A caregiver who
-    owns three profiles all dormant will receive three messages (one per
-    dormant profile, naming each).
+    Iterates `_query_dormant_profiles` — same surface logic as the admin
+    'Reading Reminders' tab. One message per profile, addressed to the owner,
+    with `missing_types` filled in. Skips profiles whose owner has no phone.
 
-    Template variables: [profile_name, reading_type, days]
+    Template variables: [profile_name, missing_types, days_since_log]
     """
     content_sid = settings.WHATSAPP_REMINDER_CONTENT_SID
     if not content_sid or content_sid.startswith("HX_placeholder"):
         raise HTTPException(status_code=500, detail="WhatsApp template not configured")
 
-    now = datetime.now(timezone.utc)
-    two_days_ago = now - timedelta(days=2)
+    dormant, _now, _two = _query_dormant_profiles(db)
 
-    inactive = _query_inactive_profiles(db, two_days_ago)
-
-    # Filter to those whose owner has a phone number
-    sendable = [
-        (profile, owner, last_ts, reading_type)
-        for (profile, owner, last_ts, reading_type) in inactive
-        if owner.phone_number
-    ]
+    sendable = [d for d in dormant if d["owner"].phone_number]
 
     results = []
     successful = 0
     failed = 0
 
-    for profile, owner, last_ts, reading_type in sendable:
-        if last_ts:
-            last_ts_aware = last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)
-            days_inactive = (now - last_ts_aware).days
-        else:
-            days_inactive = -1
-        days_display = str(days_inactive) if days_inactive >= 0 else "0"
+    for d in sendable:
+        profile = d["profile"]
+        owner = d["owner"]
+        missing_types_template = d["missing_types_template"]
+        missing_types_display = d["missing_types_display"]
+        days_since_log = d["days_since_log"]
 
         success, msg_sid, error = whatsapp_service.send_whatsapp_template(
             owner.phone_number,
             content_sid,
-            [profile.name, reading_type, days_display],
+            [profile.name, missing_types_template, str(days_since_log)],
         )
 
+        common = {
+            "profile_id": profile.id,
+            "profile_name": profile.name,
+            "owner_user_id": owner.id,
+            "owner_name": owner.full_name,
+            "missing_types": missing_types_template,
+            "missing_types_display": missing_types_display,
+        }
         if success:
             successful += 1
-            results.append({
-                "profile_id": profile.id,
-                "profile_name": profile.name,
-                "owner_user_id": owner.id,
-                "owner_name": owner.full_name,
-                "success": True,
-                "message_sid": msg_sid,
-                "error": None,
-            })
-            # Per-profile audit row so the inactive-tab "last message sent"
-            # column reflects bulk sends, not just individual sends.
+            results.append({**common, "success": True, "message_sid": msg_sid, "error": None})
             _audit_log(
                 db, user, "SEND_WHATSAPP_BULK_ITEM",
                 target_user_id=owner.id,
                 target_profile_id=profile.id,
-                details={"message_sid": msg_sid},
+                details={
+                    "message_sid": msg_sid,
+                    "missing_types": missing_types_template,
+                    "days_since_log": days_since_log,
+                },
             )
         else:
             failed += 1
-            results.append({
-                "profile_id": profile.id,
-                "profile_name": profile.name,
-                "owner_user_id": owner.id,
-                "owner_name": owner.full_name,
-                "success": False,
-                "message_sid": None,
-                "error": error,
-            })
+            results.append({**common, "success": False, "message_sid": None, "error": error})
             _audit_log(
                 db, user, "SEND_WHATSAPP_BULK_ITEM",
                 target_user_id=owner.id,
                 target_profile_id=profile.id,
-                details={"error": error},
+                details={
+                    "error": error,
+                    "missing_types": missing_types_template,
+                },
                 outcome="FAILURE",
             )
 
