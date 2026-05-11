@@ -350,6 +350,27 @@ class TestWhatsAppBulk:
         assert entry is not None, "bulk audit row missing — db.commit() was skipped"
 
     @patch("twilio_service.whatsapp_service.send_whatsapp_template")
+    def test_bulk_writes_per_profile_audit_rows(self, mock_send, client, admin_headers, inactive_profiles, db):
+        """Each bulk recipient must get its own SEND_WHATSAPP_BULK_ITEM audit row.
+
+        Drives the 'Last Message Sent' column on the admin inactive-users tab:
+        without per-profile rows, the column wouldn't reflect bulk sends.
+        """
+        mock_send.return_value = (True, "SM_test_sid", None)
+        resp = client.post(self.URL, headers=admin_headers, json={})
+        assert resp.status_code == 200
+
+        for item in inactive_profiles:
+            row = db.query(models.AdminAuditLog).filter(
+                models.AdminAuditLog.action_type == "SEND_WHATSAPP_BULK_ITEM",
+                models.AdminAuditLog.target_profile_id == item["profile"].id,
+                models.AdminAuditLog.outcome == "SUCCESS",
+            ).first()
+            assert row is not None, (
+                f"per-profile audit row missing for profile {item['profile'].id}"
+            )
+
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_bulk_caregiver_dormant_family_profile(self, mock_send, client, admin_headers, db):
         """Caregiver case: user logs daily for self, has dormant Mummy profile.
 

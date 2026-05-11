@@ -1200,12 +1200,22 @@ def get_inactive_users(
         .all()
     )
 
-    # Filter to inactive profiles only
+    # Filter to inactive profiles only.
+    # Grace period: profiles that have *never* recorded but whose account is
+    # less than 2 days old are excluded — a brand-new signup shouldn't be
+    # spammed with "you're inactive" reminders on day 1.
     inactive_data = {}
     inactive_profile_ids = []
     for profile, owner, last_ts in rows:
         if last_ts and (last_ts if last_ts.tzinfo else last_ts.replace(tzinfo=timezone.utc)) >= two_days_ago:
             continue  # Active profile, skip
+        if last_ts is None:
+            created = profile.created_at
+            if created is None:
+                continue  # No created_at — defensive, treat as too-new
+            created_aware = created if created.tzinfo else created.replace(tzinfo=timezone.utc)
+            if created_aware >= two_days_ago:
+                continue  # Newly-signed-up profile, give a grace period
         inactive_profile_ids.append(profile.id)
         inactive_data[profile.id] = {
             "profile": profile,
@@ -1215,6 +1225,30 @@ def get_inactive_users(
 
     if not inactive_profile_ids:
         return {"inactive_users": [], "total": 0}
+
+    # Last WhatsApp reminder sent per profile (covers both individual and
+    # per-item bulk audit rows so the dashboard shows accurate "last sent"
+    # regardless of which endpoint dispatched the message).
+    last_sent_rows = (
+        db.query(
+            models.AdminAuditLog.target_profile_id,
+            func.max(models.AdminAuditLog.created_at).label("last_sent_at"),
+            func.count(models.AdminAuditLog.id).label("send_count"),
+        )
+        .filter(
+            models.AdminAuditLog.target_profile_id.in_(inactive_profile_ids),
+            models.AdminAuditLog.action_type.in_(
+                ("SEND_WHATSAPP_INDIVIDUAL", "SEND_WHATSAPP_BULK_ITEM")
+            ),
+            models.AdminAuditLog.outcome == "SUCCESS",
+        )
+        .group_by(models.AdminAuditLog.target_profile_id)
+        .all()
+    )
+    last_sent_by_profile = {
+        row.target_profile_id: (row.last_sent_at, row.send_count)
+        for row in last_sent_rows
+    }
 
     # Query 2: last glucose per profile (1 query, partitioned)
     glucose_subq = (
@@ -1272,6 +1306,7 @@ def get_inactive_users(
 
         last_glucose = last_glucose_by_profile.get(profile_id)
         last_bp = last_bp_by_profile.get(profile_id)
+        last_sent_at, send_count = last_sent_by_profile.get(profile_id, (None, 0))
 
         inactive.append({
             "profile_id": profile_id,
@@ -1283,6 +1318,8 @@ def get_inactive_users(
             "last_reading_at": last_ts.isoformat() if last_ts else None,
             "days_inactive": days_inactive,
             "days_inactive_display": "Never" if days_inactive == -1 else f"{days_inactive}+",
+            "last_message_sent_at": last_sent_at.isoformat() if last_sent_at else None,
+            "message_count": send_count,
             "last_glucose": {
                 "value": last_glucose.glucose_value,
                 "reading_at": last_glucose.created_at.isoformat(),
@@ -1532,6 +1569,14 @@ def send_whatsapp_bulk(
                 "message_sid": msg_sid,
                 "error": None,
             })
+            # Per-profile audit row so the inactive-tab "last message sent"
+            # column reflects bulk sends, not just individual sends.
+            _audit_log(
+                db, user, "SEND_WHATSAPP_BULK_ITEM",
+                target_user_id=owner.id,
+                target_profile_id=profile.id,
+                details={"message_sid": msg_sid},
+            )
         else:
             failed += 1
             results.append({
@@ -1543,6 +1588,13 @@ def send_whatsapp_bulk(
                 "message_sid": None,
                 "error": error,
             })
+            _audit_log(
+                db, user, "SEND_WHATSAPP_BULK_ITEM",
+                target_user_id=owner.id,
+                target_profile_id=profile.id,
+                details={"error": error},
+                outcome="FAILURE",
+            )
 
     _audit_log(db, user, "SEND_WHATSAPP_BULK", details={
         "total_inactive": len(sendable),

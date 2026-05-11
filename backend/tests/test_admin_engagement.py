@@ -310,3 +310,111 @@ class TestInactiveUsers:
         """Unauthenticated should be rejected."""
         resp = client.get(self.URL)
         assert resp.status_code == 401
+
+    def test_new_account_grace_period(self, client, admin_headers, db):
+        """Newly signed-up profile (no readings, created <2 days ago) must NOT
+        appear in inactive-users — a fresh user shouldn't be spammed on day 1.
+        """
+        now = datetime.now(timezone.utc)
+        user = models.User(
+            email="newbie@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Newbie",
+            phone_number="9990001234",
+            role=models.UserRole.patient,
+        )
+        db.add(user)
+        db.flush()
+
+        profile = models.Profile(name="Newbie Self")
+        profile.created_at = now - timedelta(hours=6)  # fresh signup
+        db.add(profile)
+        db.flush()
+
+        db.add(models.ProfileAccess(
+            user_id=user.id, profile_id=profile.id, access_level="owner"
+        ))
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert all(u["profile_id"] != profile.id for u in body["inactive_users"]), (
+            "fresh signup must not appear in inactive list"
+        )
+
+    def test_old_no_reading_profile_appears(self, client, admin_headers, db):
+        """Profile that's old AND has no readings must still appear."""
+        now = datetime.now(timezone.utc)
+        user = models.User(
+            email="old_no_reading@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Old User",
+            phone_number="9990005678",
+            role=models.UserRole.patient,
+        )
+        db.add(user)
+        db.flush()
+
+        profile = models.Profile(name="Old Self")
+        profile.created_at = now - timedelta(days=10)
+        db.add(profile)
+        db.flush()
+
+        db.add(models.ProfileAccess(
+            user_id=user.id, profile_id=profile.id, access_level="owner"
+        ))
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        body = resp.json()
+        found = [u for u in body["inactive_users"] if u["profile_id"] == profile.id]
+        assert len(found) == 1
+        assert found[0]["days_inactive"] == -1
+        assert found[0]["last_message_sent_at"] is None
+        assert found[0]["message_count"] == 0
+
+    def test_last_message_sent_reflects_audit(self, client, admin_headers, db, admin_user):
+        """last_message_sent_at + message_count populate from AdminAuditLog."""
+        now = datetime.now(timezone.utc)
+        user = models.User(
+            email="messaged@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Messaged User",
+            phone_number="9990009999",
+            role=models.UserRole.patient,
+        )
+        db.add(user)
+        db.flush()
+
+        profile = models.Profile(name="Messaged Self")
+        profile.created_at = now - timedelta(days=10)
+        db.add(profile)
+        db.flush()
+
+        db.add(models.ProfileAccess(
+            user_id=user.id, profile_id=profile.id, access_level="owner"
+        ))
+        # Two prior reminders: one bulk-item, one individual
+        db.add(models.AdminAuditLog(
+            admin_user_id=admin_user.id,
+            action_type="SEND_WHATSAPP_BULK_ITEM",
+            target_user_id=user.id,
+            target_profile_id=profile.id,
+            outcome="SUCCESS",
+        ))
+        db.add(models.AdminAuditLog(
+            admin_user_id=admin_user.id,
+            action_type="SEND_WHATSAPP_INDIVIDUAL",
+            target_user_id=user.id,
+            target_profile_id=profile.id,
+            outcome="SUCCESS",
+        ))
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        body = resp.json()
+        found = [u for u in body["inactive_users"] if u["profile_id"] == profile.id]
+        assert len(found) == 1
+        assert found[0]["last_message_sent_at"] is not None
+        assert found[0]["message_count"] == 2

@@ -316,7 +316,7 @@
       </div>
       <div class="section">
         <table>
-          <thead><tr><th>Profile</th><th>Owner</th><th>Owner Phone</th><th>Days Inactive</th><th>Last Glucose</th><th>Last BP</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Profile</th><th>Owner</th><th>Owner Phone</th><th>Days Inactive</th><th>Last Glucose</th><th>Last BP</th><th>Last Message Sent</th><th>Actions</th></tr></thead>
           <tbody id="inactiveTableBody"></tbody>
         </table>
       </div>
@@ -794,6 +794,19 @@ async function loadAuditLog() {
 }
 
 // ── Engagement Metrics ──────────────────────────────────────────────
+function renderLastSent(iso, count) {
+  if (!iso) return '<span style="color:#64748b">Not sent</span>';
+  const sentAt = new Date(iso);
+  const mins = Math.max(0, Math.round((Date.now() - sentAt.getTime()) / 60000));
+  let rel;
+  if (mins < 1) rel = 'just now';
+  else if (mins < 60) rel = `${mins}m ago`;
+  else if (mins < 60 * 24) rel = `${Math.round(mins / 60)}h ago`;
+  else rel = `${Math.round(mins / (60 * 24))}d ago`;
+  const badge = count > 1 ? `<small style="color:#64748b">&times;${count}</small>` : '';
+  return `<span style="color:#10b981" title="${esc(sentAt.toLocaleString())}">${rel}</span> ${badge}`;
+}
+
 async function loadInactiveUsers() {
   try {
     const resp = await fetch(`${API}/api/admin/inactive-users`, {headers: {'Authorization': `Bearer ${TOKEN}`}});
@@ -804,7 +817,7 @@ async function loadInactiveUsers() {
     const bulkBtn = document.getElementById('btnBulkWhatsApp');
 
     if (!data.inactive_users.length) {
-      tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b">No inactive profiles. All profiles have recent readings!</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#64748b">No inactive profiles. All profiles have recent readings!</td></tr>';
       bulkBtn.style.display = 'none';
       return;
     }
@@ -819,6 +832,7 @@ async function loadInactiveUsers() {
         <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})"><strong style="color:#ef4444">${esc(u.days_inactive_display)}</strong></td>
         <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">${u.last_glucose ? `${u.last_glucose.value} mg/dL<br><small>${new Date(u.last_glucose.reading_at).toLocaleDateString()}</small>` : '--'}</td>
         <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">${u.last_bp ? `${u.last_bp.systolic}/${u.last_bp.diastolic} mmHg<br><small>${new Date(u.last_bp.reading_at).toLocaleDateString()}</small>` : '--'}</td>
+        <td>${renderLastSent(u.last_message_sent_at)}</td>
         <td>
           <div class="action-btns">
             <button class="btn-whatsapp" data-profile-id="${u.profile_id}" data-profile-name="${esc(u.profile_name)}" data-owner-name="${esc(u.owner_name)}" data-days-inactive="${u.days_inactive}" onclick="openWhatsAppModal(this)">Message</button>
