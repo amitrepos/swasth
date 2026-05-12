@@ -52,7 +52,10 @@ class Settings(BaseSettings):
     # Chat quota — configurable rate limiting
     CHAT_QUOTA_LIMIT: int = 5              # max questions per period
     CHAT_QUOTA_PERIOD: str = "daily"       # "daily", "weekly", "monthly"
-    CHAT_SUMMARY_INTERVAL: int = 5         # summarize conversation every N messages
+    # ge=1 so a misconfigured env var (CHAT_SUMMARY_INTERVAL=0) can't
+    # divide-by-zero on `total_msgs % CHAT_SUMMARY_INTERVAL` in routes_chat.py.
+    # Pydantic rejects the value at startup instead of crashing every chat.
+    CHAT_SUMMARY_INTERVAL: int = Field(default=3, ge=1)
 
     # Encryption — 64-char hex string = 32 bytes for AES-256-GCM
     # Generate with: python -c "import secrets; print(secrets.token_hex(32))"

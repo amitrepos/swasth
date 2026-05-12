@@ -7,6 +7,7 @@ from unittest.mock import patch, MagicMock
 from datetime import datetime, date, timedelta
 from tests.conftest import TEST_USER_EMAIL
 import models
+from config import settings
 
 
 def _get_profile_id(db, user_id):
@@ -35,19 +36,68 @@ class TestChatContextSummarization:
 
     @patch("ai_service.generate_health_insight", return_value="Patient summary.")
     def test_context_profile_created_after_interval(self, mock_ai, client, test_user, auth_headers, db):
-        """After CHAT_SUMMARY_INTERVAL messages, context profile should be created."""
+        """After CHAT_SUMMARY_INTERVAL messages, the context profile row must
+        be written. Asserts the DB row directly so silent write failures can't
+        slip past."""
         pid = _get_profile_id(db, test_user.id)
+        interval = settings.CHAT_SUMMARY_INTERVAL
 
-        # Add messages just below threshold (default 5)
-        _add_chat_messages(db, pid, test_user.id, count=4)
+        # Pre-seed N-1 messages so the next POST is the Nth → trigger fires
+        _add_chat_messages(db, pid, test_user.id, count=interval - 1)
 
-        # This 5th message should trigger summarization
         with patch("routes_chat.ai_service.generate_health_insight", return_value="Summary text."):
             resp = client.post("/api/chat/messages", json={
                 "profile_id": pid,
                 "message": "Trigger summary",
             }, headers=auth_headers)
         assert resp.status_code == 200
+
+        ctx = db.query(models.ChatContextProfile).filter(
+            models.ChatContextProfile.profile_id == pid,
+        ).first()
+        assert ctx is not None, "ChatContextProfile row missing — AI memory not written"
+        assert ctx.summary == "Summary text."
+        assert ctx.message_count >= interval
+
+    def test_chat_summary_interval_rejects_zero(self):
+        """Pydantic must reject CHAT_SUMMARY_INTERVAL=0 — otherwise the
+        trigger condition `total_msgs % settings.CHAT_SUMMARY_INTERVAL`
+        divides by zero on every chat. ge=1 guard regression."""
+        from pydantic import ValidationError
+        from config import Settings
+
+        with pytest.raises(ValidationError):
+            Settings(CHAT_SUMMARY_INTERVAL=0)
+        with pytest.raises(ValidationError):
+            Settings(CHAT_SUMMARY_INTERVAL=-1)
+        # Sanity: positive values still accepted
+        Settings(CHAT_SUMMARY_INTERVAL=1)
+        Settings(CHAT_SUMMARY_INTERVAL=10)
+
+    @patch("ai_service.generate_health_insight", return_value="AI response.")
+    def test_context_profile_logs_when_summary_fails(self, mock_ai, client, test_user, auth_headers, db, caplog):
+        """If the summary update raises, the trigger site must log via
+        logger.exception — must NOT swallow silently. The chat itself
+        still succeeds because summary generation is a non-critical
+        side-effect."""
+        import logging
+        pid = _get_profile_id(db, test_user.id)
+        _add_chat_messages(db, pid, test_user.id, count=settings.CHAT_SUMMARY_INTERVAL - 1)
+
+        with caplog.at_level(logging.ERROR, logger="routes_chat"):
+            with patch("routes_chat._update_context_profile",
+                       side_effect=RuntimeError("simulated summary outage")):
+                resp = client.post("/api/chat/messages", json={
+                    "profile_id": pid,
+                    "message": "Trigger summary",
+                }, headers=auth_headers)
+        assert resp.status_code == 200, (
+            "chat must still succeed even when summary fails (non-critical side-effect)"
+        )
+        assert any("ai_memory" in r.message and "_update_context_profile failed" in r.message
+                   for r in caplog.records), (
+            "expected logger.exception when summary update raises"
+        )
 
     @patch("ai_service.generate_health_insight", return_value="AI response here.")
     def test_chat_with_health_data_context(self, mock_ai, client, test_user, auth_headers, db):

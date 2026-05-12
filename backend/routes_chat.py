@@ -1,6 +1,7 @@
 """AI Chat endpoints with rate limiting and conversation memory."""
 
 import base64
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -16,6 +17,7 @@ from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
@@ -354,7 +356,12 @@ The patient has uploaded a medical image/report. Please analyze what you see and
         try:
             _update_context_profile(profile_id, db)
         except Exception:
-            pass  # Non-critical — don't fail the chat response
+            # Non-critical for the chat response — log so a silent regression
+            # of the AI-memory feature shows up in prod logs.
+            logger.exception(
+                "ai_memory: _update_context_profile failed profile_id=%s",
+                profile_id,
+            )
 
     # Updated quota
     new_quota = _get_quota_info(profile_id, db)
