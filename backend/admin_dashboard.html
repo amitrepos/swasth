@@ -316,7 +316,7 @@
       </div>
       <div class="section">
         <table>
-          <thead><tr><th>Profile</th><th>Owner</th><th>Owner Phone</th><th>Missing Readings</th><th>Last Glucose</th><th>Last BP</th><th>Last Reminder</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Profile</th><th>Owner</th><th>Recipient Phone</th><th>Missing Readings</th><th>Last Glucose</th><th>Last BP</th><th>Last Reminder</th><th>Actions</th></tr></thead>
           <tbody id="inactiveTableBody"></tbody>
         </table>
       </div>
@@ -828,7 +828,11 @@ async function loadInactiveUsers() {
       <tr>
         <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})"><strong>${esc(u.profile_name)}</strong></td>
         <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">${esc(u.owner_name)}<br><small style="color:#64748b">${esc(u.owner_email)}</small></td>
-        <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">${esc(u.owner_phone || '--')}</td>
+        <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">${
+          u.using_profile_phone
+            ? `${esc(u.recipient_phone)}<br><small style="color:#10b981">profile</small>`
+            : (u.recipient_phone ? `${esc(u.recipient_phone)}<br><small style="color:#64748b">owner</small>` : '<span style="color:#ef4444">none</span>')
+        }</td>
         <td style="cursor:pointer" onclick="openUserDetail(${u.owner_user_id})">
           <strong style="color:#ef4444">${esc(u.missing_types_display)}</strong>
           <br><small style="color:#64748b">${u.days_since_log}d</small>
@@ -844,6 +848,8 @@ async function loadInactiveUsers() {
               data-owner-name="${esc(u.owner_name)}"
               data-missing-display="${esc(u.missing_types_display)}"
               data-days-since-log="${u.days_since_log}"
+              data-recipient-phone="${esc(u.recipient_phone || '')}"
+              data-using-profile-phone="${u.using_profile_phone ? '1' : '0'}"
               onclick="openWhatsAppModal(this)">Remind</button>
           </div>
         </td>
@@ -898,14 +904,19 @@ function openWhatsAppModal(btn) {
   WHATSAPP_OWNER_NAME = btn.dataset.ownerName;
   WHATSAPP_MISSING_DISPLAY = btn.dataset.missingDisplay || '';
   WHATSAPP_DAYS_SINCE_LOG = parseInt(btn.dataset.daysSinceLog, 10);
+  const recipientPhone = btn.dataset.recipientPhone || '';
+  const usingProfilePhone = btn.dataset.usingProfilePhone === '1';
+  const recipientLabel = usingProfilePhone
+    ? `${esc(WHATSAPP_PROFILE_NAME)}'s own phone (${esc(recipientPhone)})`
+    : `${esc(WHATSAPP_OWNER_NAME)} — account owner (${esc(recipientPhone)})`;
 
   document.getElementById('whatsappTitle').textContent = 'Send Reading Reminder';
-  document.getElementById('whatsappSubtitle').textContent = `For profile: ${esc(WHATSAPP_PROFILE_NAME)} — sending to owner ${esc(WHATSAPP_OWNER_NAME)}`;
+  document.getElementById('whatsappSubtitle').textContent = `For profile: ${esc(WHATSAPP_PROFILE_NAME)}`;
 
   document.getElementById('whatsappPreview').innerHTML = `
     <strong>📱 Reminder Details:</strong><br>
     • Profile: ${esc(WHATSAPP_PROFILE_NAME)}<br>
-    • Recipient: ${esc(WHATSAPP_OWNER_NAME)} (account owner)<br>
+    • Recipient: ${recipientLabel}<br>
     • Missing: <strong style="color:#ef4444">${esc(WHATSAPP_MISSING_DISPLAY)}</strong> (${WHATSAPP_DAYS_SINCE_LOG}+ days)<br>
     • Template: Pre-approved WhatsApp template will be sent
   `;
