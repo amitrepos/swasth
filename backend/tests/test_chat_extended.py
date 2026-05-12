@@ -35,7 +35,10 @@ class TestChatContextSummarization:
 
     @patch("ai_service.generate_health_insight", return_value="Patient summary.")
     def test_context_profile_created_after_interval(self, mock_ai, client, test_user, auth_headers, db):
-        """After CHAT_SUMMARY_INTERVAL messages, context profile should be created."""
+        """After CHAT_SUMMARY_INTERVAL messages, context profile should be created.
+        Strengthened to assert the DB row actually exists — previously only
+        checked HTTP 200 which masked silent write failures (the very bug we're
+        investigating with the new logging)."""
         pid = _get_profile_id(db, test_user.id)
 
         # Add messages just below threshold (default 5)
@@ -48,6 +51,57 @@ class TestChatContextSummarization:
                 "message": "Trigger summary",
             }, headers=auth_headers)
         assert resp.status_code == 200
+
+        ctx = db.query(models.ChatContextProfile).filter(
+            models.ChatContextProfile.profile_id == pid,
+        ).first()
+        assert ctx is not None, "ChatContextProfile row missing — AI memory not written"
+        assert ctx.summary == "Summary text."
+        assert ctx.message_count >= 5
+
+    def test_context_profile_logs_when_ai_returns_empty(self, client, test_user, auth_headers, db, caplog):
+        """If the AI helper returns empty, we must log a warning (otherwise the
+        admin tab stays mysteriously empty in prod). Regression on the silent
+        skip path inside _update_context_profile."""
+        import logging
+        pid = _get_profile_id(db, test_user.id)
+        _add_chat_messages(db, pid, test_user.id, count=4)
+
+        with caplog.at_level(logging.WARNING, logger="routes_chat"):
+            with patch("routes_chat.ai_service.generate_health_insight", return_value=""):
+                resp = client.post("/api/chat/messages", json={
+                    "profile_id": pid,
+                    "message": "Trigger summary",
+                }, headers=auth_headers)
+        assert resp.status_code == 200
+        assert any("ai_memory" in r.message and "empty" in r.message.lower() for r in caplog.records), (
+            "expected ai_memory warning log when AI returns empty"
+        )
+
+    @patch("ai_service.generate_health_insight", return_value="AI response.")
+    def test_context_profile_logs_when_summary_fails(self, mock_ai, client, test_user, auth_headers, db, caplog):
+        """If the summary update raises, the trigger site must log via
+        logger.exception — must NOT swallow silently. The chat itself
+        still succeeds because summary generation is a non-critical
+        side-effect."""
+        import logging
+        pid = _get_profile_id(db, test_user.id)
+        _add_chat_messages(db, pid, test_user.id, count=4)
+
+        with caplog.at_level(logging.ERROR, logger="routes_chat"):
+            with patch("routes_chat._update_context_profile",
+                       side_effect=RuntimeError("simulated summary outage")):
+                resp = client.post("/api/chat/messages", json={
+                    "profile_id": pid,
+                    "message": "Trigger summary",
+                }, headers=auth_headers)
+        assert resp.status_code == 200, (
+            "chat must still succeed even when summary fails (non-critical side-effect)"
+        )
+        assert any("ai_memory" in r.message and "_update_context_profile failed" in r.message
+                   for r in caplog.records), (
+            "expected logger.exception when summary update raises"
+        )
 
     @patch("ai_service.generate_health_insight", return_value="AI response here.")
     def test_chat_with_health_data_context(self, mock_ai, client, test_user, auth_headers, db):

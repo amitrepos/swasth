@@ -1,6 +1,7 @@
 """AI Chat endpoints with rate limiting and conversation memory."""
 
 import base64
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -16,6 +17,7 @@ from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
 from config import settings
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 _enabled = os.environ.get("TESTING", "").lower() != "true"
 limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
@@ -148,7 +150,14 @@ def _build_health_summary(profile_id: int, db: Session) -> str:
 # ---------------------------------------------------------------------------
 
 def _update_context_profile(profile_id: int, db: Session):
-    """Regenerate the rolling conversation summary for a profile."""
+    """Regenerate the rolling conversation summary for a profile.
+
+    Instrumented at every early-return so we can tell from logs whether the
+    AI memory table stays empty because the trigger never fires, the AI
+    helper returns nothing, or a DB error gets swallowed.
+    """
+    logger.info("ai_memory: enter profile_id=%s", profile_id)
+
     # Fetch recent messages (last 20 for summary context)
     recent_msgs = (
         db.query(models.ChatMessage)
@@ -158,6 +167,7 @@ def _update_context_profile(profile_id: int, db: Session):
         .all()
     )
     if not recent_msgs:
+        logger.warning("ai_memory: no recent messages for profile_id=%s — skip", profile_id)
         return
 
     # Get existing context
@@ -184,13 +194,26 @@ Recent conversations:
 
 Write a single cohesive summary. Keep only the most important and actionable information."""
 
-    new_summary = ai_service.generate_health_insight(
-        summary_prompt, profile_id, db,
-        prompt_summary="chat context summary generation",
+    logger.info(
+        "ai_memory: calling AI helper profile_id=%s msg_window=%d existing_chars=%d",
+        profile_id, len(recent_msgs), len(existing_summary),
     )
 
+    try:
+        new_summary = ai_service.generate_health_insight(
+            summary_prompt, profile_id, db,
+            prompt_summary="chat context summary generation",
+        )
+    except Exception:
+        logger.exception("ai_memory: AI helper raised for profile_id=%s", profile_id)
+        raise
+
     if not new_summary:
-        return  # AI unavailable — skip this cycle
+        logger.warning(
+            "ai_memory: AI helper returned empty for profile_id=%s — skip cycle",
+            profile_id,
+        )
+        return
 
     total_count = db.query(func.count(models.ChatMessage.id)).filter(
         models.ChatMessage.profile_id == profile_id,
@@ -199,6 +222,7 @@ Write a single cohesive summary. Keep only the most important and actionable inf
     if ctx:
         ctx.summary = new_summary
         ctx.message_count = total_count
+        action = "updated"
     else:
         ctx = models.ChatContextProfile(
             profile_id=profile_id,
@@ -206,7 +230,12 @@ Write a single cohesive summary. Keep only the most important and actionable inf
             message_count=total_count,
         )
         db.add(ctx)
+        action = "created"
     db.commit()
+    logger.info(
+        "ai_memory: %s row profile_id=%s message_count=%d summary_chars=%d",
+        action, profile_id, total_count, len(new_summary),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -351,10 +380,19 @@ The patient has uploaded a medical image/report. Please analyze what you see and
     ).scalar() or 0
 
     if total_msgs > 0 and total_msgs % settings.CHAT_SUMMARY_INTERVAL == 0:
+        logger.info(
+            "ai_memory: trigger fired profile_id=%s total_msgs=%d interval=%d",
+            profile_id, total_msgs, settings.CHAT_SUMMARY_INTERVAL,
+        )
         try:
             _update_context_profile(profile_id, db)
         except Exception:
-            pass  # Non-critical — don't fail the chat response
+            # Non-critical for the chat response, but DO log so we can see
+            # in prod logs why the AI memory table stays empty.
+            logger.exception(
+                "ai_memory: _update_context_profile failed profile_id=%s",
+                profile_id,
+            )
 
     # Updated quota
     new_quota = _get_quota_info(profile_id, db)
