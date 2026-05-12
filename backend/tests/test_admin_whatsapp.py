@@ -244,6 +244,84 @@ class TestWhatsAppIndividual:
         assert "not due" in resp.json()["detail"].lower()
 
     @patch("twilio_service.whatsapp_service.send_whatsapp_template")
+    def test_routes_to_profile_phone_when_set(self, mock_send, client, admin_headers, db):
+        """If the dormant profile has its own phone_number, the reminder must
+        be sent there — not to the account owner. Caregiver scenario where
+        Mummy has her own WhatsApp number."""
+        mock_send.return_value = (True, "SM_test_sid", None)
+        now = datetime.now(timezone.utc)
+
+        owner = models.User(
+            email="owner_with_mummy@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Owner",
+            phone_number="9990001111",  # owner's phone
+            role=models.UserRole.patient,
+        )
+        db.add(owner)
+        db.flush()
+
+        mummy = models.Profile(name="Mummy")
+        mummy.created_at = now - timedelta(days=30)
+        mummy.phone_number = "9990008888"  # mummy's OWN phone
+        db.add(mummy)
+        db.flush()
+        _make_owner_link(db, owner, mummy)
+        # Both reading types missing
+        _make_reading(db, owner, mummy, now - timedelta(days=5), reading_type="glucose")
+        db.commit()
+
+        resp = client.post(
+            self.URL, headers=admin_headers,
+            json={"profile_id": mummy.id},
+        )
+        assert resp.status_code == 200
+        # Must go to Mummy's phone, NOT the owner's
+        assert mock_send.call_args[0][0] == "9990008888"
+
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
+    def test_falls_back_to_owner_phone_when_profile_phone_missing(self, mock_send, client, admin_headers, inactive_profiles):
+        """When the profile has no phone, fall back to owner.phone_number.
+        Fixture profiles don't set a profile phone — owner's phone is used."""
+        mock_send.return_value = (True, "SM_test_sid", None)
+        item = inactive_profiles[0]
+        resp = client.post(
+            self.URL, headers=admin_headers,
+            json={"profile_id": item["profile"].id},
+        )
+        assert resp.status_code == 200
+        assert mock_send.call_args[0][0] == item["user"].phone_number
+
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
+    def test_rejects_when_neither_phone_available(self, mock_send, client, admin_headers, db):
+        """Owner has no phone AND profile has no phone → reject with 400."""
+        mock_send.return_value = (True, "SM", None)
+        now = datetime.now(timezone.utc)
+
+        phoneless = models.User(
+            email="phoneless@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="No Phone",
+            phone_number=None,
+            role=models.UserRole.patient,
+        )
+        db.add(phoneless)
+        db.flush()
+
+        profile = models.Profile(name="No Phone Profile")
+        profile.created_at = now - timedelta(days=30)
+        db.add(profile)
+        db.flush()
+        _make_owner_link(db, phoneless, profile)
+        _make_reading(db, phoneless, profile, now - timedelta(days=5))
+        db.commit()
+
+        resp = client.post(self.URL, headers=admin_headers, json={"profile_id": profile.id})
+        assert resp.status_code == 400
+        assert "phone" in resp.json()["detail"].lower()
+        mock_send.assert_not_called()
+
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_send_failure_handling(self, mock_send, client, admin_headers, inactive_profiles):
         mock_send.return_value = (False, None, "Twilio error: invalid number")
         item = inactive_profiles[0]
@@ -356,6 +434,38 @@ class TestWhatsAppBulk:
         body = resp.json()
         # Active profile must NOT appear in results
         assert all(r["profile_id"] != p.id for r in body["results"])
+
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
+    def test_bulk_routes_to_profile_phone_when_set(self, mock_send, client, admin_headers, db):
+        """Bulk send must also honour profile.phone_number per recipient."""
+        mock_send.return_value = (True, "SM", None)
+        now = datetime.now(timezone.utc)
+
+        owner = models.User(
+            email="bulk_routes@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Bulk Owner",
+            phone_number="9990007000",
+            role=models.UserRole.patient,
+        )
+        db.add(owner)
+        db.flush()
+        mummy = models.Profile(name="Bulk Mummy")
+        mummy.created_at = now - timedelta(days=30)
+        mummy.phone_number = "9990007111"  # own phone
+        db.add(mummy)
+        db.flush()
+        _make_owner_link(db, owner, mummy)
+        _make_reading(db, owner, mummy, now - timedelta(days=5), reading_type="glucose")
+        db.commit()
+
+        resp = client.post(self.URL, headers=admin_headers, json={})
+        assert resp.status_code == 200
+
+        # Find the call that targeted Mummy's profile — its phone arg must be
+        # Mummy's own number, not the owner's.
+        target_calls = [c for c in mock_send.call_args_list if c[0][0] == "9990007111"]
+        assert len(target_calls) >= 1, "bulk must use profile's own phone when set"
 
     @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_bulk_audit_log_persisted(self, mock_send, client, admin_headers, inactive_profiles, db, admin_user):
