@@ -434,20 +434,19 @@ class TestInactiveUsers:
         assert found[0]["missing_types_display"] == "Glucose"
         assert found[0]["days_since_log"] == 10
 
-    def test_admin_owner_excluded(self, client, admin_headers, db):
-        """Admin accounts (is_admin=True, even with role=patient) must NOT
-        appear in the reminders list — they shouldn't be WhatsApp-pinged.
-        The legacy admin fixture sets is_admin=True but leaves role at the
-        default 'patient', so the role filter alone would let them through.
+    def test_admin_owner_included(self, client, admin_headers, db):
+        """Admin accounts (is_admin=True with role=patient) DO appear in the
+        reminders list. Admins typically own test profiles and need them
+        visible for end-to-end checks. Doctors are the only role excluded.
         """
         now = datetime.now(timezone.utc)
         admin = models.User(
-            email="legacy_admin@test.com",
+            email="legacy_admin_owner@test.com",
             password_hash=get_password_hash("Test@1234"),
             full_name="Legacy Admin",
             phone_number="9990001111",
             is_admin=True,
-            # role defaults to UserRole.patient — the failure mode being tested
+            # role defaults to UserRole.patient — surfaces in reminders
         )
         db.add(admin)
         db.flush()
@@ -463,8 +462,8 @@ class TestInactiveUsers:
 
         resp = client.get(self.URL, headers=admin_headers)
         body = resp.json()
-        assert all(u["profile_id"] != profile.id for u in body["inactive_users"]), (
-            "admin-owned profile must not surface in reminders"
+        assert any(u["profile_id"] == profile.id for u in body["inactive_users"]), (
+            "admin-owned dormant profile should surface (only doctors are excluded)"
         )
 
     def test_doctor_owner_excluded(self, client, admin_headers, db):

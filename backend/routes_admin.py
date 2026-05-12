@@ -1244,14 +1244,10 @@ def _query_dormant_profiles(db: Session):
         db.query(models.Profile, models.User)
         .join(owner_subq, owner_subq.c.profile_id == models.Profile.id)
         .join(models.User, models.User.id == owner_subq.c.owner_user_id)
-        # role=patient AND not is_admin: catches legacy admin accounts that
-        # were flagged with is_admin=True while role stayed at the default
-        # "patient". Otherwise admins surface in the reading-reminders tab
-        # and risk being WhatsApp-pinged like end users.
-        .filter(
-            models.User.role == models.UserRole.patient,
-            models.User.is_admin.is_(False),
-        )
+        # Only role=patient owners. Doctors are excluded (role=doctor).
+        # Admins are intentionally INCLUDED — they often run their own test
+        # patient profiles and want those surfaced for end-to-end checks.
+        .filter(models.User.role == models.UserRole.patient)
         .all()
     )
 
@@ -1465,8 +1461,9 @@ def send_whatsapp_individual(
     if not owner:
         raise HTTPException(status_code=400, detail="Owner user not found")
 
-    if owner.role != models.UserRole.patient or owner.is_admin:
-        raise HTTPException(status_code=400, detail="Owner must be a patient (not admin or doctor)")
+    # Doctors are not eligible; admins (is_admin=True with role=patient) are.
+    if owner.role != models.UserRole.patient:
+        raise HTTPException(status_code=400, detail="Owner must be a patient")
 
     if not owner.phone_number:
         raise HTTPException(status_code=400, detail="Owner has no phone number on file")
