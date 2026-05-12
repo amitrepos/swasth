@@ -434,6 +434,63 @@ class TestInactiveUsers:
         assert found[0]["missing_types_display"] == "Glucose"
         assert found[0]["days_since_log"] == 10
 
+    def test_admin_owner_included(self, client, admin_headers, db):
+        """Admin accounts (is_admin=True with role=patient) DO appear in the
+        reminders list. Admins typically own test profiles and need them
+        visible for end-to-end checks. Doctors are the only role excluded.
+        """
+        now = datetime.now(timezone.utc)
+        admin = models.User(
+            email="legacy_admin_owner@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Legacy Admin",
+            phone_number="9990001111",
+            is_admin=True,
+            # role defaults to UserRole.patient — surfaces in reminders
+        )
+        db.add(admin)
+        db.flush()
+
+        profile = models.Profile(name="Admin Self")
+        profile.created_at = now - timedelta(days=30)
+        db.add(profile)
+        db.flush()
+        db.add(models.ProfileAccess(
+            user_id=admin.id, profile_id=profile.id, access_level="owner"
+        ))
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        body = resp.json()
+        assert any(u["profile_id"] == profile.id for u in body["inactive_users"]), (
+            "admin-owned dormant profile should surface (only doctors are excluded)"
+        )
+
+    def test_doctor_owner_excluded(self, client, admin_headers, db):
+        """role=doctor owners are also excluded."""
+        now = datetime.now(timezone.utc)
+        doc = models.User(
+            email="dr_test@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Dr Test",
+            phone_number="9990002222",
+            role=models.UserRole.doctor,
+        )
+        db.add(doc)
+        db.flush()
+        profile = models.Profile(name="Doctor Self")
+        profile.created_at = now - timedelta(days=30)
+        db.add(profile)
+        db.flush()
+        db.add(models.ProfileAccess(
+            user_id=doc.id, profile_id=profile.id, access_level="owner"
+        ))
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        body = resp.json()
+        assert all(u["profile_id"] != profile.id for u in body["inactive_users"])
+
     def test_last_message_sent_reflects_audit(self, client, admin_headers, db, admin_user):
         """last_message_sent_at + message_count populate from AdminAuditLog."""
         now = datetime.now(timezone.utc)

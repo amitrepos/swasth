@@ -1157,6 +1157,25 @@ def _to_aware(ts):
     return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
 
 
+def _resolve_reminder_recipient(profile, owner):
+    """Return (phone, used_profile_phone) for a reading reminder.
+
+    Each profile can carry its own encrypted phone (Profile.phone_number_enc)
+    for cases where the family member has a WhatsApp number that's different
+    from the account holder's. We prefer that — it puts the reminder directly
+    in the dormant person's hands. Falls back to the account owner's phone
+    when the profile has none on file. Returns (None, False) when neither
+    has a phone — caller must short-circuit.
+    """
+    profile_phone = (profile.phone_number or "").strip() if profile else ""
+    if profile_phone:
+        return profile_phone, True
+    owner_phone = (owner.phone_number or "").strip() if owner else ""
+    if owner_phone:
+        return owner_phone, False
+    return None, False
+
+
 def _compute_profile_dormancy(profile, last_glucose_row, last_bp_row, now, two_days_ago):
     """Decide whether a profile needs a reading reminder based on glucose + BP.
 
@@ -1244,6 +1263,9 @@ def _query_dormant_profiles(db: Session):
         db.query(models.Profile, models.User)
         .join(owner_subq, owner_subq.c.profile_id == models.Profile.id)
         .join(models.User, models.User.id == owner_subq.c.owner_user_id)
+        # Only role=patient owners. Doctors are excluded (role=doctor).
+        # Admins are intentionally INCLUDED — they often run their own test
+        # patient profiles and want those surfaced for end-to-end checks.
         .filter(models.User.role == models.UserRole.patient)
         .all()
     )
@@ -1368,6 +1390,7 @@ def get_inactive_users(
         g = d["last_glucose"]
         b = d["last_bp"]
         last_sent_at, send_count = last_sent_by_profile.get(profile.id, (None, 0))
+        recipient_phone, used_profile_phone = _resolve_reminder_recipient(profile, owner)
 
         result.append({
             "profile_id": profile.id,
@@ -1376,6 +1399,12 @@ def get_inactive_users(
             "owner_name": owner.full_name,
             "owner_email": owner.email,
             "owner_phone": owner.phone_number,
+            # Where the WhatsApp will actually land — profile phone if the
+            # profile has one on file, else the owner. Frontend uses this to
+            # show the admin who'll be messaged.
+            "profile_phone": profile.phone_number,
+            "recipient_phone": recipient_phone,
+            "using_profile_phone": used_profile_phone,
             "glucose_missing": d["glucose_missing"],
             "bp_missing": d["bp_missing"],
             "missing_types": d["missing_types_template"],
@@ -1458,11 +1487,16 @@ def send_whatsapp_individual(
     if not owner:
         raise HTTPException(status_code=400, detail="Owner user not found")
 
+    # Doctors are not eligible; admins (is_admin=True with role=patient) are.
     if owner.role != models.UserRole.patient:
         raise HTTPException(status_code=400, detail="Owner must be a patient")
 
-    if not owner.phone_number:
-        raise HTTPException(status_code=400, detail="Owner has no phone number on file")
+    recipient_phone, used_profile_phone = _resolve_reminder_recipient(profile, owner)
+    if not recipient_phone:
+        raise HTTPException(
+            status_code=400,
+            detail="No phone number available — neither the profile nor the owner has a phone on file",
+        )
 
     content_sid = settings.WHATSAPP_REMINDER_CONTENT_SID
     if not content_sid or content_sid.startswith("HX_placeholder"):
@@ -1491,7 +1525,7 @@ def send_whatsapp_individual(
         )
 
     success, msg_sid, error = whatsapp_service.send_whatsapp_template(
-        owner.phone_number,
+        recipient_phone,
         content_sid,
         [profile.name, info["missing_types_template"], str(info["days_since_log"])],
     )
@@ -1506,6 +1540,7 @@ def send_whatsapp_individual(
         details={
             "missing_types": info["missing_types_template"],
             "days_since_log": info["days_since_log"],
+            "used_profile_phone": used_profile_phone,
         },
     )
     db.commit()  # _audit_log only flushes — must commit to persist (CERT-In)
@@ -1538,13 +1573,22 @@ def send_whatsapp_bulk(
 
     dormant, _now, _two = _query_dormant_profiles(db)
 
-    sendable = [d for d in dormant if d["owner"].phone_number]
+    # Resolve recipient once per profile; skip profiles where neither the
+    # profile nor the owner has a phone number — those are unsendable.
+    sendable = []
+    for d in dormant:
+        recipient_phone, used_profile_phone = _resolve_reminder_recipient(
+            d["profile"], d["owner"]
+        )
+        if not recipient_phone:
+            continue
+        sendable.append((d, recipient_phone, used_profile_phone))
 
     results = []
     successful = 0
     failed = 0
 
-    for d in sendable:
+    for d, recipient_phone, used_profile_phone in sendable:
         profile = d["profile"]
         owner = d["owner"]
         missing_types_template = d["missing_types_template"]
@@ -1552,7 +1596,7 @@ def send_whatsapp_bulk(
         days_since_log = d["days_since_log"]
 
         success, msg_sid, error = whatsapp_service.send_whatsapp_template(
-            owner.phone_number,
+            recipient_phone,
             content_sid,
             [profile.name, missing_types_template, str(days_since_log)],
         )
@@ -1564,6 +1608,7 @@ def send_whatsapp_bulk(
             "owner_name": owner.full_name,
             "missing_types": missing_types_template,
             "missing_types_display": missing_types_display,
+            "using_profile_phone": used_profile_phone,
         }
         if success:
             successful += 1
@@ -1576,6 +1621,7 @@ def send_whatsapp_bulk(
                     "message_sid": msg_sid,
                     "missing_types": missing_types_template,
                     "days_since_log": days_since_log,
+                    "used_profile_phone": used_profile_phone,
                 },
             )
         else:
@@ -1588,6 +1634,7 @@ def send_whatsapp_bulk(
                 details={
                     "error": error,
                     "missing_types": missing_types_template,
+                    "used_profile_phone": used_profile_phone,
                 },
                 outcome="FAILURE",
             )
