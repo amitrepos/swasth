@@ -81,6 +81,11 @@ def inactive_profiles(db):
         db.flush()
 
         profile = models.Profile(name=f"Profile {i}")
+        # Anchor profile.created_at to the stale-reading timestamp so per-type
+        # dormancy days math is internally consistent (otherwise a fresh
+        # profile.created_at + old reading produces nonsensical 0-day numbers
+        # for the never-logged BP type).
+        profile.created_at = old_ts
         db.add(profile)
         db.flush()
 
@@ -143,12 +148,13 @@ class TestWhatsAppIndividual:
         assert body["message_sid"] == "SM_test_sid"
 
         # Verify recipient is OWNER's phone, not profile phone, and template's
-        # name slot is the PROFILE name.
+        # name slot is the PROFILE name. Fixture has glucose 5d ago + no BP,
+        # so both reading types are missing — template should say so.
         call_args = mock_send.call_args
         assert call_args[0][0] == item["user"].phone_number
         variables = call_args[0][2]
-        assert variables[0] == item["profile"].name      # profile, not owner
-        assert variables[1] in ("glucose", "blood_pressure")
+        assert variables[0] == item["profile"].name
+        assert variables[1] == "glucose and blood pressure"
         assert variables[2] == "5"
 
     @patch("twilio_service.whatsapp_service.send_whatsapp_template")
@@ -175,17 +181,22 @@ class TestWhatsAppIndividual:
         db.flush()
 
         self_profile = models.Profile(name="Self")
+        # Self profile must have BOTH glucose and BP logged recently to be
+        # 'active' under the new per-type rule.
+        self_profile.created_at = now - timedelta(days=30)
         mummy_profile = models.Profile(name="Mummy")
+        mummy_profile.created_at = now - timedelta(days=30)
         db.add_all([self_profile, mummy_profile])
         db.flush()
 
         _make_owner_link(db, rajesh, self_profile)
         _make_owner_link(db, rajesh, mummy_profile)
 
-        # Self: recent reading (active)
-        _make_reading(db, rajesh, self_profile, now)
-        # Mummy: 7-day-old reading (dormant)
-        _make_reading(db, rajesh, mummy_profile, now - timedelta(days=7))
+        # Self: both glucose AND BP logged today (active on both fronts)
+        _make_reading(db, rajesh, self_profile, now, reading_type="glucose")
+        _make_reading(db, rajesh, self_profile, now, reading_type="blood_pressure")
+        # Mummy: glucose 7d ago, BP never. Both missing.
+        _make_reading(db, rajesh, mummy_profile, now - timedelta(days=7), reading_type="glucose")
         db.commit()
 
         resp = client.post(
@@ -196,12 +207,16 @@ class TestWhatsAppIndividual:
         call_args = mock_send.call_args
         # Recipient is Rajesh
         assert call_args[0][0] == rajesh.phone_number
+        variables = call_args[0][2]
         # Template names the dormant profile (Mummy), not Rajesh
-        assert call_args[0][2][0] == "Mummy"
+        assert variables[0] == "Mummy"
+        # Both glucose (7d) and BP (never) are missing — template covers both
+        assert variables[1] == "glucose and blood pressure"
 
     @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_active_profile_rejected(self, mock_send, client, admin_headers, db):
-        """If the targeted profile is not actually inactive, reject."""
+        """A profile with BOTH glucose AND BP logged within 2 days has nothing
+        to remind about — endpoint must refuse to spam."""
         mock_send.return_value = (True, "SM", None)
         now = datetime.now(timezone.utc)
 
@@ -215,15 +230,18 @@ class TestWhatsAppIndividual:
         db.add(u)
         db.flush()
         p = models.Profile(name="Active P")
+        p.created_at = now - timedelta(days=30)
         db.add(p)
         db.flush()
         _make_owner_link(db, u, p)
-        _make_reading(db, u, p, now)
+        # Both reading types active today — neither is missing
+        _make_reading(db, u, p, now, reading_type="glucose")
+        _make_reading(db, u, p, now, reading_type="blood_pressure")
         db.commit()
 
         resp = client.post(self.URL, headers=admin_headers, json={"profile_id": p.id})
         assert resp.status_code == 400
-        assert "not inactive" in resp.json()["detail"].lower()
+        assert "not due" in resp.json()["detail"].lower()
 
     @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_send_failure_handling(self, mock_send, client, admin_headers, inactive_profiles):
@@ -324,10 +342,13 @@ class TestWhatsAppBulk:
         db.add(u)
         db.flush()
         p = models.Profile(name="Active Profile")
+        p.created_at = now - timedelta(days=30)
         db.add(p)
         db.flush()
         _make_owner_link(db, u, p)
-        _make_reading(db, u, p, now)
+        # Both reading types recent — profile is not due for any reminder
+        _make_reading(db, u, p, now, reading_type="glucose")
+        _make_reading(db, u, p, now, reading_type="blood_pressure")
         db.commit()
 
         resp = client.post(self.URL, headers=admin_headers, json={})
@@ -350,6 +371,27 @@ class TestWhatsAppBulk:
         assert entry is not None, "bulk audit row missing — db.commit() was skipped"
 
     @patch("twilio_service.whatsapp_service.send_whatsapp_template")
+    def test_bulk_writes_per_profile_audit_rows(self, mock_send, client, admin_headers, inactive_profiles, db):
+        """Each bulk recipient must get its own SEND_WHATSAPP_BULK_ITEM audit row.
+
+        Drives the 'Last Message Sent' column on the admin inactive-users tab:
+        without per-profile rows, the column wouldn't reflect bulk sends.
+        """
+        mock_send.return_value = (True, "SM_test_sid", None)
+        resp = client.post(self.URL, headers=admin_headers, json={})
+        assert resp.status_code == 200
+
+        for item in inactive_profiles:
+            row = db.query(models.AdminAuditLog).filter(
+                models.AdminAuditLog.action_type == "SEND_WHATSAPP_BULK_ITEM",
+                models.AdminAuditLog.target_profile_id == item["profile"].id,
+                models.AdminAuditLog.outcome == "SUCCESS",
+            ).first()
+            assert row is not None, (
+                f"per-profile audit row missing for profile {item['profile'].id}"
+            )
+
+    @patch("twilio_service.whatsapp_service.send_whatsapp_template")
     def test_bulk_caregiver_dormant_family_profile(self, mock_send, client, admin_headers, db):
         """Caregiver case: user logs daily for self, has dormant Mummy profile.
 
@@ -370,14 +412,19 @@ class TestWhatsAppBulk:
         db.flush()
 
         self_p = models.Profile(name="Rajesh-Self")
+        self_p.created_at = now - timedelta(days=30)
         mummy_p = models.Profile(name="Mummy")
+        mummy_p.created_at = now - timedelta(days=30)
         db.add_all([self_p, mummy_p])
         db.flush()
         _make_owner_link(db, rajesh, self_p)
         _make_owner_link(db, rajesh, mummy_p)
 
-        _make_reading(db, rajesh, self_p, now)                      # active
-        _make_reading(db, rajesh, mummy_p, now - timedelta(days=8)) # dormant
+        # Self: both glucose and BP today (fully active across both types)
+        _make_reading(db, rajesh, self_p, now, reading_type="glucose")
+        _make_reading(db, rajesh, self_p, now, reading_type="blood_pressure")
+        # Mummy: glucose 8d ago, no BP — both types missing
+        _make_reading(db, rajesh, mummy_p, now - timedelta(days=8), reading_type="glucose")
         db.commit()
 
         resp = client.post(self.URL, headers=admin_headers, json={})
@@ -386,5 +433,6 @@ class TestWhatsAppBulk:
         mummy_results = [r for r in body["results"] if r["profile_id"] == mummy_p.id]
         assert len(mummy_results) == 1, "Mummy profile must appear in bulk results"
         assert mummy_results[0]["owner_user_id"] == rajesh.id
-        # Self profile is active — must NOT appear
+        assert mummy_results[0]["missing_types"] == "glucose and blood pressure"
+        # Self profile is active on both fronts — must NOT appear
         assert all(r["profile_id"] != self_p.id for r in body["results"])

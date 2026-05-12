@@ -310,3 +310,171 @@ class TestInactiveUsers:
         """Unauthenticated should be rejected."""
         resp = client.get(self.URL)
         assert resp.status_code == 401
+
+    def test_new_account_grace_period(self, client, admin_headers, db):
+        """Newly signed-up profile (no readings, created <2 days ago) must NOT
+        appear in inactive-users — a fresh user shouldn't be spammed on day 1.
+        """
+        now = datetime.now(timezone.utc)
+        user = models.User(
+            email="newbie@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Newbie",
+            phone_number="9990001234",
+            role=models.UserRole.patient,
+        )
+        db.add(user)
+        db.flush()
+
+        profile = models.Profile(name="Newbie Self")
+        profile.created_at = now - timedelta(hours=6)  # fresh signup
+        db.add(profile)
+        db.flush()
+
+        db.add(models.ProfileAccess(
+            user_id=user.id, profile_id=profile.id, access_level="owner"
+        ))
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert all(u["profile_id"] != profile.id for u in body["inactive_users"]), (
+            "fresh signup must not appear in inactive list"
+        )
+
+    def test_old_no_reading_profile_appears(self, client, admin_headers, db):
+        """Profile that's old AND has no readings must still appear."""
+        now = datetime.now(timezone.utc)
+        user = models.User(
+            email="old_no_reading@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Old User",
+            phone_number="9990005678",
+            role=models.UserRole.patient,
+        )
+        db.add(user)
+        db.flush()
+
+        profile = models.Profile(name="Old Self")
+        profile.created_at = now - timedelta(days=10)
+        db.add(profile)
+        db.flush()
+
+        db.add(models.ProfileAccess(
+            user_id=user.id, profile_id=profile.id, access_level="owner"
+        ))
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        body = resp.json()
+        found = [u for u in body["inactive_users"] if u["profile_id"] == profile.id]
+        assert len(found) == 1
+        # Per-type tracking: with no readings at all, both glucose and BP are
+        # missing → template phrase covers both.
+        assert found[0]["glucose_missing"] is True
+        assert found[0]["bp_missing"] is True
+        assert found[0]["missing_types"] == "glucose and blood pressure"
+        assert found[0]["missing_types_display"] == "Glucose + BP"
+        assert found[0]["days_since_log"] == 10  # since profile.created_at
+        assert found[0]["last_message_sent_at"] is None
+        assert found[0]["message_count"] == 0
+
+    def test_only_one_type_missing_surfaces_correctly(self, client, admin_headers, db):
+        """If only glucose is missing (BP logged today), profile should still
+        surface and missing_types should be just 'glucose'.
+
+        This is the core fix for the old aggregate logic: previously any
+        reading in the last 2 days masked the profile, even if a critical
+        reading type (glucose) had been silent for weeks.
+        """
+        now = datetime.now(timezone.utc)
+        user = models.User(
+            email="bp_only@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="BP-Only Logger",
+            phone_number="9990007777",
+            role=models.UserRole.patient,
+        )
+        db.add(user)
+        db.flush()
+
+        profile = models.Profile(name="BP Only")
+        profile.created_at = now - timedelta(days=30)
+        db.add(profile)
+        db.flush()
+
+        db.add(models.ProfileAccess(
+            user_id=user.id, profile_id=profile.id, access_level="owner"
+        ))
+
+        # Glucose 10 days ago (stale), BP logged today (active)
+        db.add(models.HealthReading(
+            profile_id=profile.id, logged_by=user.id, reading_type="glucose",
+            glucose_value=110.0, unit_display="mg/dL", value_numeric=110.0,
+            status_flag="NORMAL",
+            reading_timestamp=now - timedelta(days=10),
+            created_at=now - timedelta(days=10),
+        ))
+        db.add(models.HealthReading(
+            profile_id=profile.id, logged_by=user.id, reading_type="blood_pressure",
+            systolic=120, diastolic=80, unit_display="mmHg", value_numeric=120,
+            status_flag="NORMAL",
+            reading_timestamp=now, created_at=now,
+        ))
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        body = resp.json()
+        found = [u for u in body["inactive_users"] if u["profile_id"] == profile.id]
+        assert len(found) == 1
+        assert found[0]["glucose_missing"] is True
+        assert found[0]["bp_missing"] is False
+        assert found[0]["missing_types"] == "glucose"
+        assert found[0]["missing_types_display"] == "Glucose"
+        assert found[0]["days_since_log"] == 10
+
+    def test_last_message_sent_reflects_audit(self, client, admin_headers, db, admin_user):
+        """last_message_sent_at + message_count populate from AdminAuditLog."""
+        now = datetime.now(timezone.utc)
+        user = models.User(
+            email="messaged@test.com",
+            password_hash=get_password_hash("Test@1234"),
+            full_name="Messaged User",
+            phone_number="9990009999",
+            role=models.UserRole.patient,
+        )
+        db.add(user)
+        db.flush()
+
+        profile = models.Profile(name="Messaged Self")
+        profile.created_at = now - timedelta(days=10)
+        db.add(profile)
+        db.flush()
+
+        db.add(models.ProfileAccess(
+            user_id=user.id, profile_id=profile.id, access_level="owner"
+        ))
+        # Two prior reminders: one bulk-item, one individual
+        db.add(models.AdminAuditLog(
+            admin_user_id=admin_user.id,
+            action_type="SEND_WHATSAPP_BULK_ITEM",
+            target_user_id=user.id,
+            target_profile_id=profile.id,
+            outcome="SUCCESS",
+        ))
+        db.add(models.AdminAuditLog(
+            admin_user_id=admin_user.id,
+            action_type="SEND_WHATSAPP_INDIVIDUAL",
+            target_user_id=user.id,
+            target_profile_id=profile.id,
+            outcome="SUCCESS",
+        ))
+        db.commit()
+
+        resp = client.get(self.URL, headers=admin_headers)
+        body = resp.json()
+        found = [u for u in body["inactive_users"] if u["profile_id"] == profile.id]
+        assert len(found) == 1
+        assert found[0]["last_message_sent_at"] is not None
+        assert found[0]["message_count"] == 2
