@@ -820,5 +820,17 @@
   "splashSigningIn": "साइन इन हो रहा है...",
   "@splashSigningIn": {
     "description": "स्प्लैश स्क्रीन पर ऑटोमैटिक साइन-इन करते समय संदेश"
+  },
+  "contactUsTitle": "संपर्क करें",
+  "@contactUsTitle": {
+    "description": "वेब होम पेज पर संपर्क सेक्शन का शीर्षक"
+  },
+  "contactUsSubtitle": "24/7 सहायता उपलब्ध — आपके सवालों के लिए हम यहाँ हैं।",
+  "@contactUsSubtitle": {
+    "description": "वेब पर संपर्क सेक्शन का उपशीर्षक"
+  },
+  "contactUsWhatsApp": "व्हाट्सऐप",
+  "@contactUsWhatsApp": {
+    "description": "व्हाट्सऐप बटन का लेबल"
   }
 }

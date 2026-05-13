@@ -2,6 +2,7 @@
 // Related: lib/widgets/glass_card.dart, lib/theme/app_theme.dart, backend/routes_health.py
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'unified_login_screen.dart';
@@ -37,6 +38,7 @@ import '../widgets/home/meal_summary_card.dart';
 import '../widgets/home/device_status_card.dart';
 import '../widgets/home/activity_feed_card.dart';
 import '../widgets/home/care_circle_card.dart';
+import '../widgets/home/contact_support_card.dart';
 import '../config/feature_flags.dart';
 import '../utils/health_helpers.dart' as helpers;
 import '../services/reminder_service.dart';
@@ -753,6 +755,15 @@ class HomeScreenState extends State<HomeScreen>
                           ),
                           const SizedBox(height: 16),
 
+                          // Web-only "Contact Us" — Help & Support 24/7.
+                          // kIsWeb-gated so Android/iOS UI is unaffected.
+                          if (kIsWeb) ...[
+                            const ContactSupportCard(
+                              key: Key('dashboard_contact_support'),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
                           KeyedSubtree(
                             key: const Key('dashboard_footer'),
                             child: _buildFooter(l10n),
@@ -1003,6 +1014,13 @@ class HomeScreenState extends State<HomeScreen>
             onLinkDoctorTap: _openLinkDoctorScreen,
           ),
         const SizedBox(height: 16),
+
+        if (kIsWeb) ...[
+          const ContactSupportCard(
+            key: Key('dashboard_caregiver_contact_support'),
+          ),
+          const SizedBox(height: 16),
+        ],
 
         KeyedSubtree(
           key: const Key('dashboard_caregiver_footer'),

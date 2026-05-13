@@ -16,6 +16,7 @@ import models
 import routes_whatsapp
 import routes
 import routes_health
+import routes_public
 import routes_profiles
 import routes_chat
 import routes_admin
@@ -226,6 +227,10 @@ app.include_router(routes_doctor.router, prefix="/api/doctor", tags=["Doctor Por
 
 # Include WhatsApp inbound webhook (no auth — Twilio HMAC validated internally)
 app.include_router(routes_whatsapp.router, prefix="/api", tags=["WhatsApp Inbound"])
+
+# Public unauthenticated endpoints (support contacts, etc.) — review every
+# addition for PII / abuse risk before merging.
+app.include_router(routes_public.router, prefix="/api", tags=["Public"])
 
 
 if __name__ == "__main__":

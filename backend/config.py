@@ -118,6 +118,14 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_BYTES: int = 10_485_760  # 10 MB max for food photos
     ALLOWED_IMAGE_MIME_TYPES: List[str] = Field(default_factory=lambda: ["image/jpeg", "image/png", "image/webp"])
 
+    # Public support contacts — exposed via GET /api/public/support
+    # Surfaced on the web "Contact Us" footer so unauthenticated visitors
+    # can reach Help & Support 24/7. WhatsApp is opt-in (no fallback
+    # number); email has a safe default so the section is never empty.
+    SUPPORT_EMAIL: str = "support@swasth.health"
+    SUPPORT_WHATSAPP_NUMBER: Optional[str] = None  # E.164 digits only, e.g. "919876543210"
+    SUPPORT_PHONE_NUMBER: Optional[str] = None     # tel: link, with or without '+', e.g. "+919876543210"
+
     class Config:
         env_file = ".env"
         extra = "ignore"  # Prevent prod deploy failures when a new env var is added on the server

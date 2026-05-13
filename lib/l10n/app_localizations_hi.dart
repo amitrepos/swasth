@@ -2100,4 +2100,14 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get splashSigningIn => 'साइन इन हो रहा है...';
+
+  @override
+  String get contactUsTitle => 'संपर्क करें';
+
+  @override
+  String get contactUsSubtitle =>
+      '24/7 सहायता उपलब्ध — आपके सवालों के लिए हम यहाँ हैं।';
+
+  @override
+  String get contactUsWhatsApp => 'व्हाट्सऐप';
 }

@@ -3943,6 +3943,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signing in...'**
   String get splashSigningIn;
+
+  /// Section heading on the web home page Contact Us footer
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Us'**
+  String get contactUsTitle;
+
+  /// Subtitle under Contact Us on the web — reassures users that support is always available
+  ///
+  /// In en, this message translates to:
+  /// **'Help & Support 24/7 — we\'re here to address your queries.'**
+  String get contactUsSubtitle;
+
+  /// Label on the WhatsApp button in the web Contact Us section
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get contactUsWhatsApp;
 }
 
 class _AppLocalizationsDelegate
