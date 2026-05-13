@@ -19,12 +19,19 @@ class ContactSupportCard extends StatefulWidget {
 }
 
 class _ContactSupportCardState extends State<ContactSupportCard> {
-  late final Future<SupportContacts> _future;
+  Future<SupportContacts>? _future;
 
   @override
   void initState() {
     super.initState();
-    _future = SupportService().fetchContacts();
+    // Only fetch on web. The parent (home_screen) already kIsWeb-gates
+    // the widget, but if this card is ever instantiated outside that
+    // gate (tests, future screens) we must not waste a network call —
+    // and we must not leak to the backend the fact that a non-web
+    // build briefly mounted the widget.
+    if (kIsWeb) {
+      _future = SupportService().fetchContacts();
+    }
   }
 
   Future<void> _openEmail(String email) async {
@@ -75,6 +82,10 @@ class _ContactSupportCardState extends State<ContactSupportCard> {
     if (!kIsWeb) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context)!;
+
+    // _future is only set when kIsWeb (see initState). The early return
+    // above means this is always non-null here, but guard anyway.
+    if (_future == null) return const SizedBox.shrink();
 
     return FutureBuilder<SupportContacts>(
       future: _future,

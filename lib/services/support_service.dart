@@ -26,10 +26,21 @@ class SupportService {
   /// dashboard. The widget treats errors as "hide the section."
   static const Duration _timeout = Duration(seconds: 8);
 
+  /// Headers for the public support endpoint.
+  ///
+  /// Explicitly does NOT include an Authorization header — this route is
+  /// unauthenticated and we do not want to leak a JWT (or its expiry/
+  /// claims via timing) to a public surface. Using `ApiClient.headers()`
+  /// here would attach the bearer token if one was passed in, so we
+  /// hardcode the minimum required headers instead.
+  static const Map<String, String> _publicHeaders = {
+    'Content-Type': 'application/json',
+  };
+
   Future<SupportContacts> fetchContacts() async {
     final url = Uri.parse('${AppConfig.serverHost}/api/public/support');
     final data = await ApiClient.sendJsonObject(
-      () => ApiClient.httpClient.get(url, headers: ApiClient.headers()),
+      () => ApiClient.httpClient.get(url, headers: _publicHeaders),
       timeout: _timeout,
     );
     final email = (data['email'] as String?) ?? 'support@swasth.health';

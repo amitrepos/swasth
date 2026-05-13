@@ -4,15 +4,26 @@ Kept in its own router so it's obvious which routes do NOT require a token.
 Anything added here is visible to anyone on the public internet — review for
 PII / abuse vectors before adding new endpoints.
 """
-from fastapi import APIRouter
+import os
+
+from fastapi import APIRouter, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from config import settings
 
 router = APIRouter()
 
+# Per-IP rate limiter — these endpoints are unauthenticated, so without
+# a limit a single client could scrape config or exhaust DB/connection
+# pools cheaply. Disabled under TESTING=true (same pattern as routes.py).
+_enabled = os.environ.get("TESTING", "").lower() != "true"
+limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
+
 
 @router.get("/public/support")
-def get_support_contacts():
+@limiter.limit("30/minute")
+def get_support_contacts(request: Request):
     """Return Help & Support contacts for the web Contact Us footer.
 
     Both fields are operational metadata (not PHI). The endpoint is
@@ -22,6 +33,11 @@ def get_support_contacts():
     - email: always present; falls back to "support@swasth.health".
     - whatsapp_number: digits-only E.164 (no '+', no spaces). `null` if
       not configured — the client hides the WhatsApp button in that case.
+    - phone_number: tel:-ready (with or without '+'). `null` if unset.
+
+    Rate-limited to 30 req/min/IP. Honest visitors hit it once per
+    page load; the cap covers retries on flaky networks while
+    preventing trivial scraping.
     """
     return {
         "email": settings.SUPPORT_EMAIL,
