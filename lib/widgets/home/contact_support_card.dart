@@ -33,10 +33,16 @@ class _ContactSupportCardState extends State<ContactSupportCard> {
     // it works for everyone with a Google account (the majority of our
     // India web visitors) and falls back to a normal compose page for
     // logged-out users.
-    const subject = 'Help %26 Support - Swasth';
-    final url =
-        'https://mail.google.com/mail/?view=cm&fs=1&to=$email&su=$subject';
-    final uri = Uri.parse(url);
+    //
+    // Use Uri.https(...queryParameters) so the email + subject are
+    // properly percent-encoded. Hand-rolled string interpolation
+    // corrupted "+", "&", and spaces (e.g. support+team@... → broken to=).
+    final uri = Uri.https('mail.google.com', '/mail/', {
+      'view': 'cm',
+      'fs': '1',
+      'to': email,
+      'su': 'Help & Support - Swasth',
+    });
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
