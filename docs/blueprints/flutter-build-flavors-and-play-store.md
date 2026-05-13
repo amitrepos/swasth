@@ -96,8 +96,8 @@ Also update `AndroidManifest.xml`: `android:label="@string/app_name"` (replaces 
 ```dart
 // lib/config/flavor.dart
 enum Flavor {
-  staging(serverHost: 'https://65.109.226.36:8443', label: 'Swasth Staging'),
-  production(serverHost: 'https://65.109.226.36:8444', label: 'Swasth');
+  staging(serverHost: 'https://api.swasth.health', label: 'Swasth Staging'),
+  production(serverHost: 'https://api.swasth.health', label: 'Swasth');
   const Flavor({required this.serverHost, required this.label});
   final String serverHost;
   final String label;

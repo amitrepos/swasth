@@ -282,7 +282,7 @@ alembic check   # "No new upgrade operations detected"
 
 | Env | Host | Trigger | Approval |
 |---|---|---|---|
-| **Staging** | `65.109.226.36:8443` | auto on push to `master` | none |
+| **Staging** | `api.swasth.health` | auto on push to `master` | none |
 | **Production** | TBD | manual via `prod.yml` | required |
 
 ### 6.2 What a deploy actually does
@@ -301,22 +301,22 @@ alembic check   # "No new upgrade operations detected"
 git checkout master && git pull origin master
 
 # Flutter web
-flutter build web --release --dart-define=SERVER_HOST=https://65.109.226.36:8443
-scp -i ~/.ssh/new-server-key -r build/web/* root@65.109.226.36:/var/www/swasth/web/
+flutter build web --release --dart-define=SERVER_HOST=https://api.swasth.health
+scp -i ~/.ssh/swasth-prod-key.pem -r build/web/* ec2-user@13.127.215.113:/var/www/swasth/web/
 
 # Backend (if changed)
-scp -i ~/.ssh/new-server-key backend/<changed_file>.py root@65.109.226.36:/var/www/swasth/backend/
+scp -i ~/.ssh/swasth-prod-key.pem backend/<changed_file>.py ec2-user@13.127.215.113:/var/www/swasth/backend/
 
 # Migrations (before restart — idempotent)
-ssh -i ~/.ssh/new-server-key root@65.109.226.36 \
+ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 \
   "cd /var/www/swasth/backend && alembic upgrade head"
 
 # Restart
-ssh -i ~/.ssh/new-server-key root@65.109.226.36 \
+ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 \
   "kill \$(lsof -ti :8007); sleep 2; cd /var/www/swasth/backend && nohup python3 -B main.py > /var/log/swasth-backend.log 2>&1 &"
 
 # Verify
-curl -k https://65.109.226.36:8443/api/docs
+curl -k https://api.swasth.health/api/docs
 ```
 
 ### 6.4 Rollback

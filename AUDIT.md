@@ -336,7 +336,7 @@ Started with CI/CD setup, ended with 357 tests at 89% coverage and app deployed 
   - Still intermittent — needs deeper investigation next session
 
 ### Infrastructure
-- Server: 65.109.226.36, DEV on 8007/8010, PROD on 8009/8011
+- Server: 13.127.215.113, DEV on 8007/8010, PROD on 8009/8011
 - 4 Gemini API keys with rotation
 - DeepSeek for text AI, Gemini for vision
 - Admin dashboard at /api/admin
@@ -2343,7 +2343,7 @@ revisions enforced by a pre-commit hook + CI gate.
 
 ### One-time prod cutover (manual, must run BEFORE first deploy of this PR)
 ```
-ssh root@65.109.226.36
+ssh ec2-user@13.127.215.113
 cd /var/www/swasth/backend
 pip install 'alembic>=1.13.0'
 alembic stamp 0001
@@ -2608,7 +2608,7 @@ break. Also swept orphan branches and recovered a real bug from one.
   2. Added `extra = "ignore"` to `class Config` — next time ops adds
      an env var before the code PR lands, deploy won't crash.
      Tradeoff: silent typo risk, acceptable for pre-pilot
-- **Post-merge verified**: `curl https://65.109.226.36:8443/health` →
+- **Post-merge verified**: `curl https://api.swasth.health/health` →
   `HTTP 200 {"status":"healthy"}` in 686 ms
 
 ### Branch cleanup
@@ -2720,3 +2720,4 @@ break. Also swept orphan branches and recovered a real bug from one.
   - 15:52:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test_e2e_live/tests/helpers/flutter.js
   - 15:53:05 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/test_e2e_live/tests/helpers/auth.js
   - 15:56:51 modified: /Users/amitkumarmishra/.claude/plans/sleepy-crunching-petal.md
+  - 06:34:37 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/lib/bootstrap.dart

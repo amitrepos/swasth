@@ -235,7 +235,7 @@ Yeh share NAHI hoga:
 
 ### 7.1 Server Migration (CRITICAL)
 
-**Current:** Hetzner, Germany (65.109.226.36)
+**Current:** AWS, Germany (13.127.215.113)
 **Required:** Indian data center
 
 | Option | Provider | Location | Est. Cost/Month | Migration Effort |

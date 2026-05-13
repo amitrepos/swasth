@@ -1,4 +1,4 @@
-# Blueprint: AWS Mumbai Migration (Hetzner → AWS ap-south-1)
+# Blueprint: AWS Mumbai Migration (AWS → AWS ap-south-1)
 
 **Task:** TASK_TRACKER_PENDING.md → L1
 **Why:** Self-signed cert + non-Indian server blocks Play Store production review and DPDPA data-residency posture.
@@ -9,7 +9,7 @@
 ---
 
 ## Objective
-Move the Swasth backend (FastAPI + PostgreSQL) from Hetzner (`65.109.226.36:8443/8444`, self-signed) to AWS Mumbai (`ap-south-1`) on a real domain (`api.swasth.health`) with a Let's Encrypt cert, RDS-managed Postgres, automated backups, and a static Elastic IP — so the Flutter APK can drop `_PilotHttpOverrides` and pass Play Store review.
+Move the Swasth backend (FastAPI + PostgreSQL) from AWS (`api.swasth.health/8444`, self-signed) to AWS Mumbai (`ap-south-1`) on a real domain (`api.swasth.health`) with a Let's Encrypt cert, RDS-managed Postgres, automated backups, and a static Elastic IP — so the Flutter APK can drop `_PilotHttpOverrides` and pass Play Store review.
 
 ## Cost Strategy (decided 2026-04-27)
 - **POC:** Use existing AWS account (check free-tier eligibility). EC2 t3.micro + Postgres on same box (no RDS). Target: ~$0–10/mo.
@@ -28,7 +28,7 @@ Move the Swasth backend (FastAPI + PostgreSQL) from Hetzner (`65.109.226.36:8443
 - IAM admin user with MFA created (do NOT use root for daily ops).
 - AWS CLI configured locally: `aws configure --profile swasth`.
 - Domain `swasth.health` is in Route53 OR DNS provider supports A-record edits.
-- Hetzner Postgres password and `backend/.env` are in a password manager.
+- AWS Postgres password and `backend/.env` are in a password manager.
 - Read [Drift Prevention Protocol] in CLAUDE.md — every state change verified before next.
 
 ---
@@ -83,31 +83,31 @@ Move the Swasth backend (FastAPI + PostgreSQL) from Hetzner (`65.109.226.36:8443
 **Risk:** SSH locked to wrong IP. Mitigation: re-check `swasth-ec2-sg` rule after a coffee break before closing the session.
 
 ### Step 4: DNS cutover prep (NOT live yet)
-**Context brief:** Add the new A record at low TTL so we can flip fast on cutover day. Keep Hetzner running.
+**Context brief:** Add the new A record at low TTL so we can flip fast on cutover day. Keep AWS running.
 **Files:** `docs/aws/infra-notes.md` (record DNS provider, current TTLs, new TTLs).
 **Changes:**
 - At DNS provider: lower TTL on `swasth.health`, `www.swasth.health`, `api.swasth.health` (if exists) to 300 s. Wait 24 h for old TTL to expire.
-- Create `api.swasth.health` A record pointing to **Hetzner IP for now** (so it resolves to the existing prod backend; Flutter does not use it yet).
+- Create `api.swasth.health` A record pointing to **AWS IP for now** (so it resolves to the existing prod backend; Flutter does not use it yet).
 - Document in notes: "On cutover, change A record to <Elastic IP>."
-**Tests:** `dig +short api.swasth.health` returns Hetzner IP; `dig api.swasth.health | grep TTL` shows 300.
+**Tests:** `dig +short api.swasth.health` returns AWS IP; `dig api.swasth.health | grep TTL` shows 300.
 **Done when:** A record exists, TTL is 300, 24 h has elapsed.
 **Blocks:** Step 9.
 **Risk:** Skipping the 24 h soak means a long DNS propagation tail on cutover. Mitigation: do this step first calendar-day, well before cutover.
 
 ### Step 5: Dump + restore Postgres (dry run first)
-**Context brief:** Dry run today, real run on cutover day. The dry run validates the dump/restore command + RDS schema; the real run replays it after Hetzner is read-only.
+**Context brief:** Dry run today, real run on cutover day. The dry run validates the dump/restore command + RDS schema; the real run replays it after AWS is read-only.
 **Files:** `docs/aws/migrate-db.sh` (new — idempotent dump/restore wrapper, no secrets, reads from env).
 **Changes:**
 - Script does:
-  1. `pg_dump -h <hetzner> -U swasth -d swasth_db -Fc -f /tmp/swasth.dump`
+  1. `pg_dump -h <aws> -U swasth -d swasth_db -Fc -f /tmp/swasth.dump`
   2. `scp /tmp/swasth.dump ubuntu@<elastic-ip>:/tmp/`
   3. `ssh ubuntu@<elastic-ip> "pg_restore -h <rds-endpoint> -U swasth_admin -d swasth_prod --clean --if-exists /tmp/swasth.dump"`
-  4. Row-count diff: for each table, compare `SELECT count(*)` between Hetzner and RDS.
-- Run it ONCE in dry-run mode (with current Hetzner data) to validate; THEN drop the test data from RDS and re-run on cutover day.
+  4. Row-count diff: for each table, compare `SELECT count(*)` between AWS and RDS.
+- Run it ONCE in dry-run mode (with current AWS data) to validate; THEN drop the test data from RDS and re-run on cutover day.
 **Tests:** Row-count diff script outputs zero discrepancies; `psql` on RDS shows expected tables (users, profiles, health_readings, meals, …).
 **Done when:** Dry-run completes, RDS has a working schema + data copy, then is `TRUNCATE`'d in prep for the real cutover.
 **Blocks:** Step 7.
-**Risk:** Encryption keys differ between Hetzner and AWS — encrypted columns become unreadable. Mitigation: copy `ENCRYPTION_KEY` and `PII_ENCRYPTION_KEY` verbatim from Hetzner `.env` to AWS Secrets Manager in Step 6. Verify by reading one decrypted health reading on RDS through the new backend.
+**Risk:** Encryption keys differ between AWS and AWS — encrypted columns become unreadable. Mitigation: copy `ENCRYPTION_KEY` and `PII_ENCRYPTION_KEY` verbatim from AWS `.env` to AWS Secrets Manager in Step 6. Verify by reading one decrypted health reading on RDS through the new backend.
 
 ### Step 6: Stand up backend service on EC2 (still pointed at staging)
 **Context brief:** Get FastAPI running as a `systemd` service on EC2, behind nginx, talking to RDS. No DNS cutover yet — test via Elastic IP directly.
@@ -115,7 +115,7 @@ Move the Swasth backend (FastAPI + PostgreSQL) from Hetzner (`65.109.226.36:8443
 - `docs/aws/setup-backend.sh` (new — clones repo, creates venv, installs `requirements.txt`, copies `.env`, runs `alembic upgrade head`).
 - `docs/aws/swasth-backend.service` (new — systemd unit).
 - `docs/aws/nginx-swasth.conf` (new — nginx server block, port 443 reverse-proxies to `127.0.0.1:8000`, port 80 redirects to 443).
-- AWS Secrets Manager entry `swasth/backend-env` holding the production `.env` (DATABASE_URL pointing at RDS, encryption keys identical to Hetzner, all API keys).
+- AWS Secrets Manager entry `swasth/backend-env` holding the production `.env` (DATABASE_URL pointing at RDS, encryption keys identical to AWS, all API keys).
 **Changes:**
 - `setup-backend.sh` pulls `.env` from Secrets Manager via `aws secretsmanager get-secret-value` (uses the EC2 IAM role).
 - `systemd` runs uvicorn as user `swasth`, restart on failure, journal logs.
@@ -125,19 +125,19 @@ Move the Swasth backend (FastAPI + PostgreSQL) from Hetzner (`65.109.226.36:8443
 **Blocks:** Step 7.
 **Risk:** `alembic upgrade head` on an empty DB drifts from the dumped schema. Mitigation: skip alembic for the dumped DB; re-baseline with `alembic stamp head` after restore.
 
-### Step 7: Cutover — Hetzner → RDS data freeze + replay
-**Context brief:** The single high-stakes step. Take Hetzner read-only, do a final dump, restore to RDS (clean), verify row counts, then never write to Hetzner again. ~30 min of write downtime.
+### Step 7: Cutover — AWS → RDS data freeze + replay
+**Context brief:** The single high-stakes step. Take AWS read-only, do a final dump, restore to RDS (clean), verify row counts, then never write to AWS again. ~30 min of write downtime.
 **Files:** none in repo — runbook lives in `docs/aws/cutover-runbook.md` (written in Step 11).
 **Changes:**
 - Announce 30-min planned maintenance to the (small) pilot user list.
-- On Hetzner: stop the FastAPI service (`pm2 stop` or `kill $(lsof -ti :8007)`). Backend now down — writes blocked.
+- On AWS: stop the FastAPI service (`pm2 stop` or `kill $(lsof -ti :8007)`). Backend now down — writes blocked.
 - Run `migrate-db.sh` (Step 5) for real. Verify row counts.
-- Snapshot Hetzner Postgres data dir for safety: `tar czf /root/hetzner-pg-final.tgz /var/lib/postgresql/15/main`.
-- Do NOT restart Hetzner backend afterward.
-**Tests:** Row-count diff = zero. Spot-check: pick 3 users, fetch their last health reading via the EC2 backend, confirm decrypted values match what Hetzner would have shown.
-**Done when:** RDS holds the canonical data; Hetzner is stopped and untouched.
+- Snapshot AWS Postgres data dir for safety: `tar czf /root/aws-pg-final.tgz /var/lib/postgresql/15/main`.
+- Do NOT restart AWS backend afterward.
+**Tests:** Row-count diff = zero. Spot-check: pick 3 users, fetch their last health reading via the EC2 backend, confirm decrypted values match what AWS would have shown.
+**Done when:** RDS holds the canonical data; AWS is stopped and untouched.
 **Blocks:** Steps 8, 9.
-**Risk:** Encrypted column unreadable on AWS → silent data loss surfaces days later. Mitigation: the spot-check above is non-negotiable. If it fails, abort cutover, restart Hetzner, debug.
+**Risk:** Encrypted column unreadable on AWS → silent data loss surfaces days later. Mitigation: the spot-check above is non-negotiable. If it fails, abort cutover, restart AWS, debug.
 
 ### Step 8: Issue Let's Encrypt cert
 **Context brief:** Real cert for `api.swasth.health` so the Flutter APK can use the system trust store and drop the bad-cert override.
@@ -153,7 +153,7 @@ Move the Swasth backend (FastAPI + PostgreSQL) from Hetzner (`65.109.226.36:8443
 **Risk:** Rate-limit lockout (LE: 5 fails/hour/domain). Mitigation: do `--dry-run` first, then real issue.
 
 ### Step 9: Flutter — drop pilot HTTP overrides + point at api.swasth.health
-**Context brief:** The Flutter app currently bypasses cert validation and hardcodes `65.109.226.36:8444`. Replace both with the new domain and standard validation. Coordinated with Step 8 (cert must exist first).
+**Context brief:** The Flutter app currently bypasses cert validation and hardcodes `api.swasth.health`. Replace both with the new domain and standard validation. Coordinated with Step 8 (cert must exist first).
 **Files:**
 - `lib/bootstrap.dart` — remove `_PilotHttpOverrides` class and the `HttpOverrides.global = …` assignment (lines ~28–54).
 - `lib/config/flavor.dart` — `staging.serverHost` and `production.serverHost` both → `https://api.swasth.health`.
@@ -169,10 +169,10 @@ Move the Swasth backend (FastAPI + PostgreSQL) from Hetzner (`65.109.226.36:8443
 - Manual on real Android device with debug APK: same flow.
 **Done when:** No `HttpOverrides` reference remains; APK built without `--dart-define` for SERVER_HOST hits production AWS.
 **Blocks:** Steps 10, 11.
-**Risk:** Old APKs in users' hands still hit Hetzner IP. Mitigation: leave Hetzner box running but DB-disconnected for 7 days, log inbound requests to identify stragglers, push them to update.
+**Risk:** Old APKs in users' hands still hit AWS IP. Mitigation: leave AWS box running but DB-disconnected for 7 days, log inbound requests to identify stragglers, push them to update.
 
 ### Step 10: Smoke + soak (24 h)
-**Context brief:** Don't decommission Hetzner until AWS proves itself. Run a 24 h observation window with real pilot traffic.
+**Context brief:** Don't decommission AWS until AWS proves itself. Run a 24 h observation window with real pilot traffic.
 **Files:** `docs/aws/cutover-runbook.md` (append soak checklist).
 **Changes:**
 - Enable CloudWatch on EC2 (CPU, memory, disk) and RDS (CPU, IOPS, connections, free storage).
@@ -188,25 +188,25 @@ Move the Swasth backend (FastAPI + PostgreSQL) from Hetzner (`65.109.226.36:8443
 **Context brief:** Capture the actual commands run + actual values used so the next migration (or DR exercise) is one document away. Living doc.
 **Files:** `docs/aws/cutover-runbook.md` (new).
 **Changes:** Headed sections: "Pre-cutover checks," "Freeze writes," "Final dump," "Restore to RDS," "Verify row counts," "Spot-check decryption," "Cert + DNS," "Flutter rebuild," "Soak procedure," "Rollback procedure (if anything fails)."
-- Rollback procedure: re-point DNS to Hetzner IP, restart Hetzner backend, accept whatever was written to RDS as lost (or merge later).
+- Rollback procedure: re-point DNS to AWS IP, restart AWS backend, accept whatever was written to RDS as lost (or merge later).
 **Tests:** A fresh Claude session can execute the runbook cold and reach the same end state.
 **Done when:** Doc reviewed by Amit; rollback procedure includes specific commands, not platitudes.
 **Blocks:** Step 12.
 **Risk:** Runbook drifts from reality. Mitigation: write it WHILE doing Steps 5–10, not afterward.
 
-### Step 12: Decommission Hetzner + rebuild release APK
-**Context brief:** Wait at least 7 days post-cutover so any stragglers on old APKs surface in Hetzner logs. Then archive and shut down.
+### Step 12: Decommission AWS + rebuild release APK
+**Context brief:** Wait at least 7 days post-cutover so any stragglers on old APKs surface in AWS logs. Then archive and shut down.
 **Files:**
 - `android/` — bump `versionCode` and `versionName`.
 - `WORKING-CONTEXT.md`, `AUDIT.md`, `TASK_TRACKER_PENDING.md` (mark L1 complete, move to `TASK_TRACKER_COMPLETED.md`).
 **Changes:**
-- After 7-day soak: `tar czf hetzner-final-snapshot.tgz /var/www/swasth /var/lib/postgresql/15/main /etc/nginx`. `scp` to S3 Mumbai (`swasth-archive` bucket, lifecycle rule: Glacier after 30 days, delete after 1 year).
-- Cancel Hetzner subscription.
+- After 7-day soak: `tar czf aws-final-snapshot.tgz /var/www/swasth /var/lib/postgresql/15/main /etc/nginx`. `scp` to S3 Mumbai (`swasth-archive` bucket, lifecycle rule: Glacier after 30 days, delete after 1 year).
+- Cancel AWS subscription.
 - Bump APK version, rebuild release APK with `--release` (no `--dart-define=SERVER_HOST`), upload to Play Console internal track, then production.
-- Update CLAUDE.md "Server Deployment" section: replace all `65.109.226.36` references with `api.swasth.health` + AWS commands.
+- Update CLAUDE.md "Server Deployment" section: replace all `13.127.215.113` references with `api.swasth.health` + AWS commands.
 **Tests:** Play Console internal track APK installs, talks to AWS, completes full flow on a clean device.
-**Done when:** Hetzner cancelled, new APK live, all docs updated, L1 archived.
-**Risk:** Premature Hetzner shutdown traps users on old APKs. Mitigation: 7-day soak is the floor, not the ceiling — extend if logs show non-trivial old-APK traffic.
+**Done when:** AWS cancelled, new APK live, all docs updated, L1 archived.
+**Risk:** Premature AWS shutdown traps users on old APKs. Mitigation: 7-day soak is the floor, not the ceiling — extend if logs show non-trivial old-APK traffic.
 
 ---
 
@@ -228,10 +228,10 @@ Step 1 ─┬─ Step 2 ─┐
 |---|---|---|---|
 | Encryption keys mis-copied → encrypted health data unreadable | M | CRITICAL (silent data loss) | Step 7 spot-check is non-negotiable; abort cutover if it fails |
 | RDS publicly exposed | L | HIGH (PHI breach) | Explicit `--no-publicly-accessible`, verify with public `nc` test |
-| DNS still pointing at Hetzner long after cutover | M | MEDIUM (some users see stale data) | Lower TTL 24 h before (Step 4) |
+| DNS still pointing at AWS long after cutover | M | MEDIUM (some users see stale data) | Lower TTL 24 h before (Step 4) |
 | LE rate-limit lockout | L | MEDIUM (delays cutover by an hour) | `certbot --dry-run` first |
-| Old APKs hardcoded to Hetzner IP keep writing to a frozen DB | H | MEDIUM (those writes are lost) | 7-day soak with Hetzner backend running but DB-disconnected; force-update prompt in app |
-| Premature Hetzner shutdown | M | MEDIUM (user lockout) | 7-day soak + log review before Step 12 |
+| Old APKs hardcoded to AWS IP keep writing to a frozen DB | H | MEDIUM (those writes are lost) | 7-day soak with AWS backend running but DB-disconnected; force-update prompt in app |
+| Premature AWS shutdown | M | MEDIUM (user lockout) | 7-day soak + log review before Step 12 |
 | `alembic upgrade head` clobbers restored schema | L | HIGH | `alembic stamp head` after restore, never `upgrade head` |
 | AWS bill surprise | L | LOW | Billing alarm at $50/mo on day 1 of Step 1 |
 
@@ -242,23 +242,23 @@ Step 1 ─┬─ Step 2 ─┐
 - 7-day RDS backups: included
 - Data transfer out (~5 GB/mo at pilot scale): ~$0.50
 - Route53 (if used): $0.50/mo per hosted zone
-- **Total: ~$33/mo**, vs Hetzner currently ~€5/mo. Justified for DPDPA residency + Play Store production posture.
+- **Total: ~$33/mo**, vs AWS currently ~€5/mo. Justified for DPDPA residency + Play Store production posture.
 
 ## Reversibility
-Until Step 12 happens, every step is reversible by re-pointing DNS back to Hetzner and restarting the Hetzner backend. The point of no return is Step 12 (Hetzner decommission). The 7-day soak between Step 10 and Step 12 is the safety margin.
+Until Step 12 happens, every step is reversible by re-pointing DNS back to AWS and restarting the AWS backend. The point of no return is Step 12 (AWS decommission). The 7-day soak between Step 10 and Step 12 is the safety margin.
 
 ## Acceptance criteria (whole blueprint)
 - [ ] `curl https://api.swasth.health/health` returns 200 with a valid LE cert (not bad-cert).
 - [ ] APK built without `_PilotHttpOverrides` and without `--dart-define=SERVER_HOST` works end-to-end on a clean Android device.
-- [ ] Row counts on RDS match Hetzner's final dump exactly.
-- [ ] Three encrypted health readings written on Hetzner are decrypted correctly when fetched from AWS.
+- [ ] Row counts on RDS match AWS's final dump exactly.
+- [ ] Three encrypted health readings written on AWS are decrypted correctly when fetched from AWS.
 - [ ] CloudWatch alarms exist and have fired at least one test alert (manually triggered) to confirm SNS works.
 - [ ] `docs/aws/cutover-runbook.md` is committed and a fresh session could execute it cold.
 - [ ] L1 moved from `TASK_TRACKER_PENDING.md` → `TASK_TRACKER_COMPLETED.md`.
-- [ ] CLAUDE.md "Server Deployment" section updated to reference AWS, not Hetzner.
+- [ ] CLAUDE.md "Server Deployment" section updated to reference AWS, not AWS.
 
 ## Open questions for Amit (resolve before Step 1)
 1. Is `swasth.health` already in Route53, or at another DNS provider? Affects Step 4.
-2. Are pilot users using a release APK with hardcoded `65.109.226.36`, or always over web? Affects Step 12 soak length.
+2. Are pilot users using a release APK with hardcoded `13.127.215.113`, or always over web? Affects Step 12 soak length.
 3. Do we want CloudWatch logs streamed for the backend, or is `journalctl` enough for pilot? (Cost: ~$2/mo for logs.)
 4. Should we set up an automated nightly `pg_dump` to S3 in addition to RDS automated backups? (Belt-and-braces; ~$0.10/mo.)

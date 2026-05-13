@@ -34,19 +34,19 @@ gh api "/repos/amitrepos/swasth/actions/environments/dev/secrets" --jq '.secrets
 #    `alembic upgrade head`. The migration TRUNCATEs everything.
 
 # d) SSH in and run the seed script
-ssh -i ~/.ssh/new-server-key root@65.109.226.36 <<'EOF'
+ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 <<'EOF'
 cd /var/www/swasth/backend
 source venv/bin/activate
 python seeds/pii_seed.py
 EOF
 
 # e) Observable verification — DO NOT stop at exit-code-0.
-ssh -i ~/.ssh/new-server-key root@65.109.226.36 \
+ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 \
   'psql $DATABASE_URL -c "SELECT COUNT(*) FROM users; SELECT email_enc FROM users LIMIT 1;"'
 # Expect: COUNT ≥ 3, email_enc is a base64 blob, not plaintext.
 
 # f) Smoke-test login via the live API
-curl -k -X POST https://65.109.226.36:8443/api/auth/login \
+curl -k -X POST https://api.swasth.health/api/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"amitkumarmishra@gmail.com","password":"Test@1234"}' | jq .access_token
 # Expect: a JWT. 401 means the seed or the login hash path is broken.
@@ -63,7 +63,7 @@ gh secret set PII_ENCRYPTION_KEY --env production --body "$(python -c 'import se
 
 # b) CI deploy runs alembic upgrade on swasth_prod → TRUNCATE + schema change
 # c) SSH + seed
-ssh -i ~/.ssh/new-server-key root@65.109.226.36 \
+ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 \
   'cd /var/www/swasth/backend && source venv/bin/activate && python seeds/pii_seed.py'
 
 # d) Observable verification + smoke test on :8444

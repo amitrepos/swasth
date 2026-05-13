@@ -56,7 +56,7 @@ A family member installs the app, creates profiles for themselves and relatives,
 
 ```
 ┌────────────────────────────────────────────┐
-│  Bare-metal VPS (Hetzner, 65.109.226.36)   │
+│  Bare-metal VPS (AWS, 13.127.215.113)   │
 │                                            │
 │   Nginx (443) ─┬─► /api/*   → Uvicorn :8007│
 │                ├─► /admin/* → Uvicorn :8007│
@@ -79,7 +79,7 @@ A family member installs the app, creates profiles for themselves and relatives,
 | Env | Host | Branch | Purpose |
 |---|---|---|---|
 | **local dev** | developer machine | any | Running backend + Flutter on localhost |
-| **staging** | 65.109.226.36:8443 | `master` (auto-deploy) | Pre-prod, real data acceptable for test users |
+| **staging** | api.swasth.health | `master` (auto-deploy) | Pre-prod, real data acceptable for test users |
 | **production** | TBD (same server, different port or dedicated host) | `master` (manual approval) | Real users; full audit logging |
 
 Deployment is triggered by `.github/workflows/prod.yml` (manual) and `.github/workflows/dev.yml` (auto-on-push). Migrations run **before** the backend restart, ordered so the new code never sees the old schema.

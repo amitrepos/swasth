@@ -4,7 +4,7 @@
 **IAM User:** `amitrepos`
 **Region:** `ap-south-1` (Mumbai)
 **Created:** 2026-04-27
-**Purpose:** Production migration from Hetzner (`65.109.226.36`) → AWS Mumbai for Play Store release + DPDPA compliance.
+**Purpose:** Production migration from AWS (`13.127.215.113`) → AWS Mumbai for Play Store release + DPDPA compliance.
 
 > This file is the source of truth for all Swasth-owned AWS objects.
 > Update it every time a new object is created or deleted.
@@ -84,7 +84,7 @@ ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113
 | Bucket | Purpose | Status |
 |---|---|---|
 | `swasth-ocr-images` | Future OCR photo uploads | **NOT CREATED YET** |
-| `swasth-archive` | Hetzner final snapshot backup | **NOT CREATED YET** |
+| `swasth-archive` | AWS final snapshot backup | **NOT CREATED YET** |
 
 ---
 
@@ -93,7 +93,7 @@ ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113
 | Domain | Record | Points to | Purpose |
 |---|---|---|---|
 | `api.swasth.health` | A | `13.127.215.113` | Backend API endpoint (to be created on DNS cutover) |
-| `swasth.health` | A | `65.109.226.36` | Interest form (Hetzner — unchanged for now) |
+| `swasth.health` | A | `13.127.215.113` | Interest form (AWS — unchanged for now) |
 
 > DNS cutover: change `api.swasth.health` A record to `13.127.215.113` on cutover day.
 
@@ -115,7 +115,7 @@ ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113
 
 ## TODO: Non-Swasth Audit (do separately)
 
-A global search of this AWS account may reveal objects from other projects (Predixarena, ProductIQ, etc. — seen in Hetzner PM2 list) that are costing money.
+A global search of this AWS account may reveal objects from other projects (Predixarena, ProductIQ, etc. — seen in AWS PM2 list) that are costing money.
 
 **Planned action (separate session):**
 - `aws ec2 describe-instances --region ap-south-1` — list all EC2

@@ -57,19 +57,19 @@ every one BEFORE running the cutover. If any fails, STOP and investigate.
 
 ```bash
 # Expect: empty (alembic not yet adopted on this DB).
-ssh root@65.109.226.36 \
+ssh ec2-user@13.127.215.113 \
   'psql -d swasth_db -tAc "SELECT to_regclass('"'"'alembic_version'"'"')"'
 # Expect: 0 (weight columns do not exist yet — they are what 0002 adds).
-ssh root@65.109.226.36 \
+ssh ec2-user@13.127.215.113 \
   "psql -d swasth_db -tAc \"SELECT COUNT(*) FROM information_schema.columns WHERE table_name='health_readings' AND column_name LIKE 'weight%'\""
 # Expect: 'Asia/Kolkata' — matches the pre-migration default 0002 reverts to.
-ssh root@65.109.226.36 \
+ssh ec2-user@13.127.215.113 \
   "psql -d swasth_db -tAc \"SELECT column_default FROM information_schema.columns WHERE table_name='users' AND column_name='timezone'\""
 # Expect: 'editor' — matches the pre-migration default 0002 reverts to.
-ssh root@65.109.226.36 \
+ssh ec2-user@13.127.215.113 \
   "psql -d swasth_db -tAc \"SELECT column_default FROM information_schema.columns WHERE table_name='profile_invites' AND column_name='access_level'\""
 # Expect: 'active' — matches the pre-migration default 0002 reverts to.
-ssh root@65.109.226.36 \
+ssh ec2-user@13.127.215.113 \
   "psql -d swasth_db -tAc \"SELECT column_default FROM information_schema.columns WHERE table_name='doctor_patient_links' AND column_name='status'\""
 ```
 
@@ -79,7 +79,7 @@ doesn't match prod anymore. Do NOT run the cutover — investigate first.
 ### Cutover
 
 ```bash
-ssh root@65.109.226.36
+ssh ec2-user@13.127.215.113
 cd /var/www/swasth/backend
 pip install 'alembic>=1.13.0'
 alembic stamp 0001    # mark prod as already at the empty baseline

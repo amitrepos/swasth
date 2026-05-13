@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# Swasth Server Setup — Run this ONCE on 65.109.226.36
+# Swasth Server Setup — Run this ONCE on 13.127.215.113
 # =============================================================================
 # Usage: ssh into server, then run:
 #   bash setup-server.sh
@@ -57,7 +57,7 @@ SERVER_HOST=0.0.0.0
 SERVER_PORT=8007
 SECRET_KEY=CHANGE_ME_DEV_SECRET_KEY
 REQUIRE_HTTPS=False
-CORS_ORIGINS=["http://65.109.226.36","http://65.109.226.36:8007","http://localhost:3000"]
+CORS_ORIGINS=["https://api.swasth.health","https://api.swasth.health","http://localhost:3000"]
 
 # AI API Keys (fill in your real keys)
 GEMINI_API_KEY=
@@ -79,7 +79,7 @@ SERVER_HOST=0.0.0.0
 SERVER_PORT=8008
 SECRET_KEY=CHANGE_ME_PROD_SECRET_KEY
 REQUIRE_HTTPS=False
-CORS_ORIGINS=["http://65.109.226.36","http://65.109.226.36:8008"]
+CORS_ORIGINS=["https://api.swasth.health","https://api.swasth.health:8008"]
 
 # AI API Keys (fill in your real keys)
 GEMINI_API_KEY=
@@ -128,9 +128,9 @@ sudo nginx -t && sudo systemctl reload nginx
 echo ""
 echo "=== Setup Complete ==="
 echo ""
-echo "DEV:  http://65.109.226.36:8007  (API)"
-echo "      http://65.109.226.36        (Web — via Nginx)"
-echo "PROD: http://65.109.226.36:8008  (API)"
+echo "DEV:  https://api.swasth.health  (API)"
+echo "      https://api.swasth.health        (Web — via Nginx)"
+echo "PROD: https://api.swasth.health:8008  (API)"
 echo ""
 echo "PM2 status: pm2 status"
 echo "PM2 logs:   pm2 logs swasth-dev"

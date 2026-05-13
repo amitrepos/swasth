@@ -46,12 +46,12 @@ D7 critical alerts shipped and verified at dispatch level. Email delivery blocke
 - **Offline mode** (A9) — ~40% built, needs proper local DB
 
 ## Server Deployment
-- **Frontend:** `https://65.109.226.36:8443` (Nginx + Flutter web)
-- **Backend:** `http://65.109.226.36:8007` (uvicorn)
-- **SSH:** `ssh -i ~/.ssh/new-server-key root@65.109.226.36`
+- **Frontend:** `https://api.swasth.health` (Nginx + Flutter web)
+- **Backend:** `https://api.swasth.health` (uvicorn)
+- **SSH:** `ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113`
 - **CI/CD:** GitHub Actions — DEV auto-deploys on master push, PROD via manual trigger
 - **Deploy key:** `~/.ssh/swasth-deploy` (RSA 4096, added to GitHub secret `SSH_PRIVATE_KEY` via `gh secret set`)
-- **D7 requires server-side env vars:** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER`, `BREVO_SMTP_LOGIN`, `BREVO_SMTP_PASSWORD` — verify these are loaded on Hetzner before relying on the feature in production
+- **D7 requires server-side env vars:** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER`, `BREVO_SMTP_LOGIN`, `BREVO_SMTP_PASSWORD` — verify these are loaded on AWS before relying on the feature in production
 - **D7 requires a new migration on server:** `critical_alert_logs` table. `Base.metadata.create_all` will create it on next restart, or run manually: `python3 -c "from database import Base, engine; import models; Base.metadata.create_all(bind=engine)"`
 - **Local DB schema drift:** 8 columns had to be ALTER-added on local Postgres to match the ORM models (users.role/timezone, profiles.weight, health_readings.spo2_*/steps_*/seq). Team members with fresh DBs are fine; team members with older local DBs may need the same ALTERs.
 
@@ -81,7 +81,7 @@ D7 critical alerts shipped and verified at dispatch level. Email delivery blocke
 ## Next Session — Priority Order
 1. **Unblock Brevo email delivery** — verify sender address or domain in Brevo dashboard, update `BREVO_SENDER_EMAIL` in `.env` (local + server), re-run `test_critical_alerts.py` to confirm Gmail inbox delivery
 2. **Fix local Flutter SDK** — so pre-push hook stops blocking pushes
-3. **Deploy D7 to Hetzner** — scp the new files (`alert_service.py`, `sms_service.py`, updated `models.py`/`routes_health.py`/`email_service.py`/`twilio_service.py`/`config.py`), run `Base.metadata.create_all`, restart backend, verify `TWILIO_*` + `BREVO_*` env vars loaded, smoke-test with real reading
+3. **Deploy D7 to AWS** — scp the new files (`alert_service.py`, `sms_service.py`, updated `models.py`/`routes_health.py`/`email_service.py`/`twilio_service.py`/`config.py`), run `Base.metadata.create_all`, restart backend, verify `TWILIO_*` + `BREVO_*` env vars loaded, smoke-test with real reading
 4. **Lawyer review** of section 11 questions before pilot launch
 5. **A9 — Offline mode** improvements (deferred from this session)
 6. **WhatsApp Business production number** — graduate from Twilio sandbox to verified business number for pilot
