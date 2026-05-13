@@ -1139,5 +1139,17 @@
   "splashSigningIn": "Signing in...",
   "@splashSigningIn": {
     "description": "Loading message when performing automatic sign-in on splash screen"
+  },
+  "contactUsTitle": "Contact Us",
+  "@contactUsTitle": {
+    "description": "Section heading on the web home page Contact Us footer"
+  },
+  "contactUsSubtitle": "Help & Support 24/7 — we're here to address your queries.",
+  "@contactUsSubtitle": {
+    "description": "Subtitle under Contact Us on the web — reassures users that support is always available"
+  },
+  "contactUsWhatsApp": "WhatsApp",
+  "@contactUsWhatsApp": {
+    "description": "Label on the WhatsApp button in the web Contact Us section"
   }
 }

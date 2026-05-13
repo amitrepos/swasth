@@ -2098,4 +2098,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get splashSigningIn => 'Signing in...';
+
+  @override
+  String get contactUsTitle => 'Contact Us';
+
+  @override
+  String get contactUsSubtitle =>
+      'Help & Support 24/7 — we\'re here to address your queries.';
+
+  @override
+  String get contactUsWhatsApp => 'WhatsApp';
 }
