@@ -112,7 +112,7 @@ lib/config/flavor.dart:
 
 lib/config/environment.dart:
   String get apiHost => switch (Flavor.current) {
-    Flavor.staging    => 'https://65.109.226.36:8443',
+    Flavor.staging    => 'https://api.swasth.health',
     Flavor.production => 'https://swasth.app',
   };
 ```
@@ -416,8 +416,8 @@ Full testing methodology in [08 — Testing & Deployment](08-TESTING-AND-DEPLOYM
 ```bash
 git checkout master && git pull
 flutter build web --release --target lib/main_staging.dart \
-  --dart-define=SERVER_HOST=https://65.109.226.36:8443
-scp -i ~/.ssh/new-server-key -r build/web/* root@65.109.226.36:/var/www/swasth/web/
+  --dart-define=SERVER_HOST=https://api.swasth.health
+scp -i ~/.ssh/swasth-prod-key.pem -r build/web/* ec2-user@13.127.215.113:/var/www/swasth/web/
 ```
 
 **Android (Play Store):**

@@ -14,7 +14,7 @@ Legend: 🔴 POC Blocker | 🟡 POC Nice-to-Have | 🔵 Post-Pilot | ⚪ Future/
 | TLS | Replace self-signed cert | Blocks Android APK for real users. Needs real domain + Let's Encrypt. See "Reference Notes → TLS cert" below. |
 | SEC1 | Rotate Postgres `swasth_admin` password | HIGH. Prod `.env` on EC2 13.127.215.113 still uses placeholder `swasth_temp_change_me`. Steps: `ALTER USER swasth_admin WITH PASSWORD '<strong>'`, update prod `.env` + GH Actions `STAGING_DATABASE_URL`, restart backend, smoke-test. Discovered 2026-04-29 during teammate DB onboarding. |
 | SEC2 | Restrict SSH ingress on `swasth-ec2-sg` | HIGH (not P0). SG `sg-0383cfbd2ca13f4f7` (ap-south-1) allows 22/tcp from `0.0.0.0/0` because GH Actions deploys from dynamic IPs. Mitigations: managed prefix list (Lambda), migrate to SSM, or CI-temporary-allow pattern. Discovered 2026-04-29. |
-| L1 | AWS Mumbai migration | CRITICAL. Blocks Play Store production. Do AFTER current bug fixes. Architecture: (1) EC2 t3.small — FastAPI + Nginx + Flutter web build. (2) RDS t3.micro PostgreSQL — all patient data, encrypted at rest, automated backups, HIPAA-eligible. (3) S3 bucket Mumbai — OCR images (future). (4) AWS Elastic IP — permanent static IP, free when attached to running instance. Steps: provision EC2+RDS in ap-south-1, scp backend files, pg_dump Hetzner → restore RDS, point api.swasth.health DNS to Elastic IP, run certbot, remove _PilotHttpOverrides from main.dart, rebuild APK. |
+| L1 | AWS Mumbai migration | CRITICAL. Blocks Play Store production. Do AFTER current bug fixes. Architecture: (1) EC2 t3.small — FastAPI + Nginx + Flutter web build. (2) RDS t3.micro PostgreSQL — all patient data, encrypted at rest, automated backups, HIPAA-eligible. (3) S3 bucket Mumbai — OCR images (future). (4) AWS Elastic IP — permanent static IP, free when attached to running instance. Steps: provision EC2+RDS in ap-south-1, scp backend files, pg_dump AWS → restore RDS, point api.swasth.health DNS to Elastic IP, run certbot, remove _PilotHttpOverrides from main.dart, rebuild APK. |
 | L2 | Doctor Platform Use Agreement | CRITICAL. Lawyer must draft. Liability, clinical responsibility, NMC compliance. Blocks doctor onboarding. |
 | L3 | Professional Indemnity Insurance | CRITICAL. Rs 25-50L coverage. ~Rs 15-25K/yr. Blocks doctor onboarding. |
 | L4 | NMC disclaimers in UI | CRITICAL. "Clinical observation, not prescription" on AI notes. "Yeh salah hai, nuskha nahi" in Hindi. ~2 hour fix. |
@@ -160,9 +160,9 @@ Legend: 🔴 POC Blocker | 🟡 POC Nice-to-Have | 🔵 Post-Pilot | ⚪ Future/
 
 ### TLS cert (linked to 🔴 TLS row above)
 
-Backend at `65.109.226.36:8443` currently uses a self-signed certificate. Browsers let users click past the warning, but `dart:io` on Android/iOS hard-rejects with `CERTIFICATE_VERIFY_FAILED: self signed certificate`, breaking every API call from native mobile builds.
+Backend at `api.swasth.health` currently uses a self-signed certificate. Browsers let users click past the warning, but `dart:io` on Android/iOS hard-rejects with `CERTIFICATE_VERIFY_FAILED: self signed certificate`, breaking every API call from native mobile builds.
 
-**Temporary workaround (2026-04-11):** `lib/main.dart` installs a `_PilotHttpOverrides` class that trusts self-signed certs **only** for host `65.109.226.36` (other hosts still use normal TLS trust chain, web builds unaffected via `kIsWeb` guard). This unblocks the APK for pilot device testing.
+**Temporary workaround (2026-04-11):** `lib/main.dart` installs a `_PilotHttpOverrides` class that trusts self-signed certs **only** for host `13.127.215.113` (other hosts still use normal TLS trust chain, web builds unaffected via `kIsWeb` guard). This unblocks the APK for pilot device testing.
 
 **Must remove before public release:**
 1. Point a real domain at the backend (or the server's IP if Let's Encrypt allows — it doesn't; needs a domain).

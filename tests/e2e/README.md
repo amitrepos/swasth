@@ -8,7 +8,7 @@ This directory contains a single Playwright smoke test that runs against the liv
 tests/e2e/
 ├── smoke.spec.ts          ← the only test (passes in ~3.5s)
 ├── helpers.ts             ← bootFlutter() — handles Flutter web's accessibility quirk
-├── playwright.config.ts   ← targets https://65.109.226.36:8443, ignoreHTTPSErrors
+├── playwright.config.ts   ← targets https://api.swasth.health, ignoreHTTPSErrors
 ├── package.json           ← npm scripts
 └── README.md              ← you are here
 ```
@@ -99,12 +99,12 @@ You can also install the VS Code extension "Playwright Test for VS Code" (Micros
 | `playwright: command not found` after `npm install` | You're not in `tests/e2e/` | `cd tests/e2e` first |
 | `Browser executable doesn't exist` | Skipped `npx playwright install chromium` | Run that command |
 | `net::ERR_CERT_AUTHORITY_INVALID` | The dev server has a self-signed cert; config already handles this | If you still see it, check `playwright.config.ts` has `ignoreHTTPSErrors: true` |
-| Test fails with "expect locator visible" | The dev server is actually broken — this is the canary doing its job | Check `https://65.109.226.36:8443` in your real browser; if it's down or shows an error, fix the deploy |
+| Test fails with "expect locator visible" | The dev server is actually broken — this is the canary doing its job | Check `https://api.swasth.health` in your real browser; if it's down or shows an error, fix the deploy |
 | HTML report doesn't open automatically | Common in headless terminals | Run `npm run report` manually |
 
 ### Run against a different server
 
-The default target is `https://65.109.226.36:8443`. To point at production, localhost, or a staging URL, set `BASE_URL`:
+The default target is `https://api.swasth.health`. To point at production, localhost, or a staging URL, set `BASE_URL`:
 
 ```bash
 # Against localhost (e.g. flutter run -d web-server --web-port 8080)
@@ -116,7 +116,7 @@ BASE_URL=https://swasth.example.com npm test
 
 ## What the smoke test checks
 
-1. The dev server at `https://65.109.226.36:8443` responds.
+1. The dev server at `https://api.swasth.health` responds.
 2. Chromium can load the Flutter web bundle (no network errors, no missing assets).
 3. The login screen renders with email + password fields and a sign-in button visible in the accessibility tree.
 4. A full-page screenshot is saved to `screenshots/smoke-login.png` as visual evidence.
@@ -158,8 +158,8 @@ There are three paths, in increasing order of effort:
 
 ```bash
 flutter build web --web-renderer html --release \
-  --dart-define=SERVER_HOST=https://65.109.226.36:8443
-scp -i ~/.ssh/new-server-key -r build/web/* root@65.109.226.36:/var/www/swasth/web/
+  --dart-define=SERVER_HOST=https://api.swasth.health
+scp -i ~/.ssh/swasth-prod-key.pem -r build/web/* ec2-user@13.127.215.113:/var/www/swasth/web/
 ```
 
 The HTML renderer outputs real `<div>`, `<input>`, `<button>` elements instead of canvas. Playwright's standard interaction methods work perfectly. Trade-off: slightly slower scroll/animation, slightly different fonts (especially Hindi).

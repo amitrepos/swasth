@@ -416,7 +416,7 @@ All readings taken offline are stored in encrypted local storage (Hive database)
 | BLE | FlutterBluePlus (glucose UUID 1808, BP UUID 1810, Omron proprietary) |
 | Localization | Flutter gen-l10n (ARB format) |
 | Offline storage | Hive (encrypted local database) |
-| Hosting | Hetzner Cloud (India region) |
+| Hosting | AWS Cloud (India region) |
 | Auth | Email + password + JWT + OTP |
 
 **Q39: How do you ensure the AI doesn't hallucinate or give dangerous advice?**

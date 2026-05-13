@@ -439,16 +439,16 @@ After running an expert and getting a PASS verdict, write the marker:
 - Deploy commands (run in order):
   ```bash
   git checkout master && git pull origin master
-  flutter build web --release --dart-define=SERVER_HOST=https://65.109.226.36:8443
-  scp -i ~/.ssh/new-server-key -r build/web/* root@65.109.226.36:/var/www/swasth/web/
+  flutter build web --release --dart-define=SERVER_HOST=https://api.swasth.health
+  scp -i ~/.ssh/swasth-prod-key.pem -r build/web/* ec2-user@13.127.215.113:/var/www/swasth/web/
   ```
 - If backend files changed, also deploy and restart:
   ```bash
-  scp -i ~/.ssh/new-server-key backend/<changed_file>.py root@65.109.226.36:/var/www/swasth/backend/
+  scp -i ~/.ssh/swasth-prod-key.pem backend/<changed_file>.py ec2-user@13.127.215.113:/var/www/swasth/backend/
   # If migrations/ has new revisions, apply BEFORE restart so the new code
   # never sees the old schema. alembic upgrade head is idempotent.
-  ssh -i ~/.ssh/new-server-key root@65.109.226.36 "cd /var/www/swasth/backend && alembic upgrade head"
-  ssh -i ~/.ssh/new-server-key root@65.109.226.36 "kill \$(lsof -ti :8007); sleep 2; cd /var/www/swasth/backend && nohup python3 -B main.py > /var/log/swasth-backend.log 2>&1 &"
+  ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 "cd /var/www/swasth/backend && alembic upgrade head"
+  ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 "kill \$(lsof -ti :8007); sleep 2; cd /var/www/swasth/backend && nohup python3 -B main.py > /var/log/swasth-backend.log 2>&1 &"
   ```
 
 ### Pre-PR Checklist (run ALL before pushing)

@@ -177,7 +177,7 @@ else
   echo -e "${RED}${BOLD}⚠️  $FAIL check(s) failed — investigate above${NC}"
   echo ""
   echo "Common causes:"
-  echo "  - Login failure: user not in AWS DB (run data migration from Hetzner)"
+  echo "  - Login failure: user not in AWS DB (run data migration from AWS)"
   echo "  - No profiles: create a profile via app.swasth.health first"
   echo "  - CORS error: check backend CORS_ORIGINS list in config.py"
 fi

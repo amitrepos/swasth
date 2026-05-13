@@ -14,19 +14,18 @@ import 'providers/language_provider.dart';
 import 'services/reminder_service.dart';
 import 'services/storage_service.dart';
 
-/// Trusts the pilot backend's self-signed TLS cert on mobile builds ONLY.
+/// OBSOLETE — kept as a no-op safety net only.
 ///
-/// Both staging (:8443) and production (:8444) run on 65.109.226.36 with a
-/// self-signed certificate. Browsers let users click past the warning, but
-/// `dart:io`'s HttpClient hard-rejects it with
-/// `CERTIFICATE_VERIFY_FAILED: self signed certificate`, breaking every API
-/// call from the Android/iOS app.
-///
-/// This override is **scoped to that single host** — every other host still
-/// goes through the normal TLS trust chain. Before public GA the server must
-/// get a real cert (Let's Encrypt + domain) and this class must be deleted.
+/// Originally trusted the pilot backend's self-signed TLS cert on mobile
+/// builds. Production now runs on AWS behind `api.swasth.health` with a real
+/// Let's Encrypt cert (NUO-6, 2026-04-27), so the bypass is a dead code path
+/// in the normal request flow — every request goes to `api.swasth.health` and
+/// is validated against the system trust chain. The class is retained as a
+/// scoped escape hatch for the legacy bare-IP host during cutover only and
+/// should be deleted once any remaining `13.127.215.113`-direct callers are
+/// gone.
 class _PilotHttpOverrides extends HttpOverrides {
-  static const _pilotHost = '65.109.226.36';
+  static const _pilotHost = '13.127.215.113';
 
   @override
   HttpClient createHttpClient(SecurityContext? context) {
@@ -94,7 +93,7 @@ Future<void> _init(Flavor flavor) async {
   if (!kIsWeb) {
     await ReminderService().initialize();
   }
-  
+
   final langCode = await StorageService().getLanguage() ?? 'en';
 
   runApp(

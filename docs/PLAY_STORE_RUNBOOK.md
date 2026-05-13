@@ -94,14 +94,14 @@ Play Store requires a publicly-accessible privacy policy URL before you can subm
 
 ```bash
 # From repo root on your local machine
-scp -i ~/.ssh/new-server-key docs/legal/privacy.html \
-    root@65.109.226.36:/var/www/swasth/web/privacy.html
+scp -i ~/.ssh/swasth-prod-key.pem docs/legal/privacy.html \
+    ec2-user@13.127.215.113:/var/www/swasth/web/privacy.html
 
 # Verify
-curl -kI https://65.109.226.36:8443/privacy.html  # should return 200
+curl -kI https://api.swasth.health/privacy.html  # should return 200
 ```
 
-Use URL: `https://65.109.226.36:8443/privacy.html` for the Play Console field until `swasth.health` DNS is configured. Update to `https://swasth.health/privacy` later — Play Console lets you edit this field without re-review.
+Use URL: `https://api.swasth.health/privacy.html` for the Play Console field until `swasth.health` DNS is configured. Update to `https://swasth.health/privacy` later — Play Console lets you edit this field without re-review.
 
 ---
 

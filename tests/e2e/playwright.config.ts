@@ -36,7 +36,7 @@ export default defineConfig({
     timeout: 10_000,
   },
   use: {
-    baseURL: process.env.BASE_URL ?? 'https://65.109.226.36:8443',
+    baseURL: process.env.BASE_URL ?? 'https://api.swasth.health',
     // Self-signed cert on the dev server — accept it.
     ignoreHTTPSErrors: true,
     // Retain trace + screenshot + video on failure for debugging.

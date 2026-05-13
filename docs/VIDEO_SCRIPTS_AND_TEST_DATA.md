@@ -175,7 +175,7 @@ Technical: 16:9 cinematic aspect ratio, photorealistic, no text overlays, no wat
 
 **App screen state (must be true on dev before recording):**
 
-- URL: `https://65.109.226.36:8443/` logged in as `ramesh.demo@swasth.app`
+- URL: `https://api.swasth.health/` logged in as `ramesh.demo@swasth.app`
 - Active profile: Ramesh's own "मेरा स्वास्थ्य" (My Health)
 - Language: Hindi (toggle in Profile → Settings)
 - Home screen visible items (in order top to bottom):
@@ -814,9 +814,9 @@ Scope sketch: Market size (India chronic disease, ~100M diabetics, 200M hyperten
    Expected: 1 row, profile_id=47, active_links_total=1, linked_doctor_code=DRRAJDM, readings_total≈85, meals_total≈34.
    If the row is missing, re-run the seed:
    ```bash
-   scp -i ~/.ssh/new-server-key backend/seed_video_demo_patient.py \
-       root@65.109.226.36:/var/www/swasth/backend/
-   ssh -i ~/.ssh/new-server-key root@65.109.226.36 \
+   scp -i ~/.ssh/swasth-prod-key.pem backend/seed_video_demo_patient.py \
+       ec2-user@13.127.215.113:/var/www/swasth/backend/
+   ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 \
        "cd /var/www/swasth/backend && SWASTH_ALLOW_SEED=1 ./venv/bin/python seed_video_demo_patient.py"
    ```
 2. **Log in to dev web as Ramesh** (`ramesh.demo@swasth.app` / `Demo@1234`), switch UI to Hindi in Profile → Settings, and confirm the Home screen matches Beat 2 expectations (vitals, Care Circle, linked doctor, AI insight all visible).
@@ -862,18 +862,18 @@ Scope sketch: Market size (India chronic disease, ~100M diabetics, 200M hyperten
 
 ```bash
 # Check seed state
-ssh -i ~/.ssh/new-server-key root@65.109.226.36 \
+ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 \
   "export PGPASSWORD='sw@sth_d6'; /usr/pgsql-16/bin/psql -U swasth_user -h localhost -d swasth_db \
    -c \"SELECT count(*) FROM v_patient_overview WHERE email LIKE '%.demo@swasth.app';\""
 
 # Re-upload and re-run seed (idempotent)
-scp -i ~/.ssh/new-server-key backend/seed_video_demo_patient.py \
-    root@65.109.226.36:/var/www/swasth/backend/
-ssh -i ~/.ssh/new-server-key root@65.109.226.36 \
+scp -i ~/.ssh/swasth-prod-key.pem backend/seed_video_demo_patient.py \
+    ec2-user@13.127.215.113:/var/www/swasth/backend/
+ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113 \
     "cd /var/www/swasth/backend && SWASTH_ALLOW_SEED=1 ./venv/bin/python seed_video_demo_patient.py"
 
 # Log into dev web
-open https://65.109.226.36:8443/
+open https://api.swasth.health/
 # email: ramesh.demo@swasth.app  (or priya/arjun/dr.rajesh.demo)
 # password: Demo@1234
 ```

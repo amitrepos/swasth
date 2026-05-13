@@ -1,6 +1,6 @@
 # 06 — API Reference
 
-**Base URL (staging):** `https://65.109.226.36:8443`
+**Base URL (staging):** `https://api.swasth.health`
 **Base URL (local):** `http://localhost:8007`
 **Auth:** `Authorization: Bearer <JWT>` on every protected route.
 **Interactive docs:** `GET /docs` (Swagger UI), `GET /redoc` (ReDoc). These are always in sync with the code — prefer them as source of truth.
