@@ -9,11 +9,19 @@ async function hydrate(page) {
   await page.waitForTimeout(2000);
 }
 
-// Activate Flutter's a11y semantics overlay so flt-semantics nodes appear in DOM
+// Activate Flutter's a11y semantics overlay so flt-semantics nodes appear in DOM.
+// Note: Flutter renders flt-semantics-placeholder offscreen (negative coords),
+// so Playwright's default click retries forever with "element is outside of the
+// viewport". We must either dispatch the click via JS or use force+position.
 async function enableSemantics(page) {
-  const btn = await page.$('flt-semantics-placeholder');
-  if (btn) {
-    await btn.click();
+  const placeholder = await page.$('flt-semantics-placeholder');
+  if (placeholder) {
+    // Dispatch a native click bypassing actionability checks — the placeholder
+    // is intentionally rendered offscreen by Flutter's a11y machinery.
+    await page.evaluate(() => {
+      const el = document.querySelector('flt-semantics-placeholder');
+      if (el) el.click();
+    });
     await page.waitForTimeout(1500);
   }
 }
