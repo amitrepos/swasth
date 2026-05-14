@@ -38,7 +38,7 @@ test.describe('D1 — Doctor login', () => {
 // ---------------------------------------------------------------------------
 test.describe('D2 — Doctor registration (API)', () => {
   test('D2.1 — Unauthenticated registration attempt returns 401 or 422', async ({ request }) => {
-    const res = await request.post(`${API}/api/doctors/register`, {
+    const res = await request.post(`${API}/api/doctor/register`, {
       data: {
         registration_number: 'MCI-TEST-99999',
         specialization: 'General Medicine',
@@ -57,7 +57,7 @@ test.describe('D2 — Doctor registration (API)', () => {
     });
     if (loginRes.status() !== 200) test.skip();
     const { access_token } = await loginRes.json();
-    const res = await request.post(`${API}/api/doctors/register`, {
+    const res = await request.post(`${API}/api/doctor/register`, {
       headers: { Authorization: `Bearer ${access_token}` },
       data: {
         registration_number: 'MCI-TEST-E2E-001',
@@ -76,7 +76,7 @@ test.describe('D2 — Doctor registration (API)', () => {
     });
     if (loginRes.status() !== 200) test.skip();
     const { access_token } = await loginRes.json();
-    const res = await request.get(`${API}/api/doctors/profile`, {
+    const res = await request.get(`${API}/api/doctor/me`, {
       headers: { Authorization: `Bearer ${access_token}` },
     });
     expect([200, 404]).toContain(res.status()); // 404 = not registered yet
@@ -92,7 +92,7 @@ test.describe('D2 — Doctor registration (API)', () => {
     });
     if (loginRes.status() !== 200) test.skip();
     const { access_token } = await loginRes.json();
-    const res = await request.get(`${API}/api/doctors/profile`, {
+    const res = await request.get(`${API}/api/doctor/me`, {
       headers: { Authorization: `Bearer ${access_token}` },
     });
     if (res.status() !== 200) test.skip();
@@ -117,7 +117,7 @@ test.describe('D3 — Triage board (API)', () => {
 
   test('D3.1 — Triage board endpoint returns array', async ({ request }) => {
     if (!doctorToken) test.skip();
-    const res = await request.get(`${API}/api/doctors/triage`, {
+    const res = await request.get(`${API}/api/doctor/patients`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     expect([200, 404]).toContain(res.status());
@@ -129,7 +129,7 @@ test.describe('D3 — Triage board (API)', () => {
 
   test('D3.2 — Triage entries have expected fields', async ({ request }) => {
     if (!doctorToken) test.skip();
-    const res = await request.get(`${API}/api/doctors/triage`, {
+    const res = await request.get(`${API}/api/doctor/patients`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     if (res.status() !== 200) test.skip();
@@ -143,7 +143,7 @@ test.describe('D3 — Triage board (API)', () => {
   test('D3.3 — Patient not linked to this doctor returns 403 on triage', async ({ request }) => {
     if (!doctorToken) test.skip();
     // Try to access triage for an unlinked profile
-    const res = await request.get(`${API}/api/doctors/patients/99999/readings`, {
+    const res = await request.get(`${API}/api/doctor/patients/99999/readings`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     expect([403, 404]).toContain(res.status());
@@ -171,7 +171,7 @@ test.describe('D4 — Patient linking (API)', () => {
 
     // Get doctor code
     if (doctorToken) {
-      const profileRes = await request.get(`${API}/api/doctors/profile`, {
+      const profileRes = await request.get(`${API}/api/doctor/me`, {
         headers: { Authorization: `Bearer ${doctorToken}` },
       });
       if (profileRes.status() === 200) {
@@ -183,7 +183,7 @@ test.describe('D4 — Patient linking (API)', () => {
 
   test('D4.1 — Doctor code lookup returns doctor info', async ({ request }) => {
     if (!patientToken || !doctorCode) test.skip();
-    const res = await request.get(`${API}/api/doctors/lookup/${doctorCode}`, {
+    const res = await request.get(`${API}/api/doctor/lookup/${doctorCode}`, {
       headers: { Authorization: `Bearer ${patientToken}` },
     });
     expect([200, 404]).toContain(res.status());
@@ -195,7 +195,7 @@ test.describe('D4 — Patient linking (API)', () => {
 
   test('D4.2 — Invalid doctor code returns 404', async ({ request }) => {
     if (!patientToken) test.skip();
-    const res = await request.get(`${API}/api/doctors/lookup/XXXXXX`, {
+    const res = await request.get(`${API}/api/doctor/lookup/XXXXXX`, {
       headers: { Authorization: `Bearer ${patientToken}` },
     });
     expect([404, 400]).toContain(res.status());
@@ -209,19 +209,17 @@ test.describe('D4 — Patient linking (API)', () => {
     if (profilesRes.status() !== 200) test.skip();
     const profiles = await profilesRes.json();
     if (!profiles.length) test.skip();
-    const res = await request.post(`${API}/api/doctors/link`, {
+    const res = await request.post(`${API}/api/doctor/link/${profiles[0].id}`, {
       headers: { Authorization: `Bearer ${patientToken}` },
-      data: {
-        doctor_code: doctorCode,
-        profile_id: profiles[0].id,
-      },
+      data: { doctor_code: doctorCode, consent_type: 'in_person_exam' },
     });
-    expect([200, 201, 400, 409]).toContain(res.status()); // 409 = already linked
+    // 403 = doctor not verified yet, 409 = already linked
+    expect([200, 201, 400, 403, 409]).toContain(res.status());
   });
 
   test('D4.4 — Doctor can see pending link requests', async ({ request }) => {
     if (!doctorToken) test.skip();
-    const res = await request.get(`${API}/api/doctors/link-requests/pending`, {
+    const res = await request.get(`${API}/api/doctor/patients/pending`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     expect([200, 404]).toContain(res.status());
@@ -233,14 +231,14 @@ test.describe('D4 — Patient linking (API)', () => {
 
   test('D4.5 — Doctor can accept a patient link request', async ({ request }) => {
     if (!doctorToken) test.skip();
-    const pendingRes = await request.get(`${API}/api/doctors/link-requests/pending`, {
+    const pendingRes = await request.get(`${API}/api/doctor/patients/pending`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     if (pendingRes.status() !== 200) test.skip();
     const pending = await pendingRes.json();
     if (!pending.length) test.skip(); // No pending requests
-    const linkId = pending[0].id;
-    const res = await request.post(`${API}/api/doctors/link-requests/${linkId}/accept`, {
+    const linkId = pending[0].profile_id || pending[0].id;
+    const res = await request.post(`${API}/api/doctor/patients/${linkId}/accept`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     expect([200, 201, 400]).toContain(res.status());
@@ -249,14 +247,14 @@ test.describe('D4 — Patient linking (API)', () => {
   test('D4.6 — Doctor can view linked patient readings after accept', async ({ request }) => {
     if (!doctorToken) test.skip();
     // Get linked patients
-    const linkedRes = await request.get(`${API}/api/doctors/patients`, {
+    const linkedRes = await request.get(`${API}/api/doctor/patients`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     if (linkedRes.status() !== 200) test.skip();
     const patients = await linkedRes.json();
     if (!patients.length) test.skip();
     const profileId = patients[0].profile_id || patients[0].id;
-    const res = await request.get(`${API}/api/doctors/patients/${profileId}/readings`, {
+    const res = await request.get(`${API}/api/doctor/patients/${profileId}/readings`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     expect([200, 404]).toContain(res.status());
@@ -317,7 +315,7 @@ test.describe('D6 — Doctor data isolation', () => {
 
   test('D6.1 — Doctor cannot access unlinked patient profile', async ({ request }) => {
     if (!doctorToken) test.skip();
-    const res = await request.get(`${API}/api/doctors/patients/99999/profile`, {
+    const res = await request.get(`${API}/api/doctor/patients/99999/profile`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     expect([403, 404]).toContain(res.status());
@@ -325,7 +323,7 @@ test.describe('D6 — Doctor data isolation', () => {
 
   test('D6.2 — Doctor cannot revoke a link they do not own', async ({ request }) => {
     if (!doctorToken) test.skip();
-    const res = await request.delete(`${API}/api/doctors/link/99999`, {
+    const res = await request.delete(`${API}/api/doctor/link/99999`, {
       headers: { Authorization: `Bearer ${doctorToken}` },
     });
     expect([403, 404]).toContain(res.status());
@@ -337,7 +335,7 @@ test.describe('D6 — Doctor data isolation', () => {
     });
     if (loginRes.status() !== 200) test.skip();
     const patientToken = (await loginRes.json()).access_token;
-    const res = await request.get(`${API}/api/doctors/triage`, {
+    const res = await request.get(`${API}/api/doctor/patients`, {
       headers: { Authorization: `Bearer ${patientToken}` },
     });
     expect([403, 404]).toContain(res.status());

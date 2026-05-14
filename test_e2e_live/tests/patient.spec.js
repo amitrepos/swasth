@@ -517,7 +517,7 @@ test.describe('P10 — Doctor linking', () => {
     });
     if (loginRes.status() !== 200) test.skip();
     const { access_token } = await loginRes.json();
-    const res = await request.get(`${API}/api/doctors/directory`, {
+    const res = await request.get(`${API}/api/doctor/directory`, {
       headers: { Authorization: `Bearer ${access_token}` },
     });
     expect([200, 404]).toContain(res.status()); // 404 = no doctors yet, still OK
