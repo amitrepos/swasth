@@ -212,20 +212,22 @@ def generate_vision_insight(
     prompt_summary: Optional[str] = None,
     mime_type: str = "image/jpeg",
 ) -> Optional[str]:
-    """Analyze image with Gemini Vision first, fallback to Groq Vision.
-    
-    Vision chain: Gemini (with key rotation) → Groq → None
-    
+    """Analyze image or PDF with Gemini Vision first, fallback to Groq Vision (images only).
+
+    Vision chain: Gemini (with key rotation) → Groq (images only) → None
+    Gemini 2.5 Flash natively handles multi-page PDFs via mime_type="application/pdf".
+    Groq Vision is image-only, so PDFs skip the Groq fallback.
+
     NOTE: Returns RAW response (not cleaned) for nutrition analysis.
     The caller (routes_meals.py) handles JSON parsing and formatting.
     """
+    is_pdf = mime_type == "application/pdf"
 
-    # 1. Try Gemini Vision first (with key rotation)
+    # 1. Try Gemini Vision first (handles both images and PDFs)
     keys = _get_gemini_keys()
     if keys:
         result = _try_gemini_vision(prompt, image_bytes, mime_type)
         if result["text"]:
-            # Return RAW text for nutrition analysis (caller will parse JSON)
             _log(db, profile_id, "gemini-2.5-flash-vision", prompt_summary,
                  result["text"], None, result["tokens"], result["ms"])
             return result["text"]
@@ -233,11 +235,12 @@ def generate_vision_insight(
     else:
         gemini_error = "No Gemini API keys configured"
 
-    # 2. Fallback to Groq Vision
-    if settings.GROQ_API_KEY:
+    # 2. Fallback to Groq Vision — IMAGES ONLY (Groq does not support PDF input)
+    if is_pdf:
+        groq_error = "Groq Vision does not support PDF input — skipped"
+    elif settings.GROQ_API_KEY:
         result = _try_groq_vision(prompt, image_bytes, mime_type)
         if result["text"]:
-            # Return RAW text for nutrition analysis (caller will parse JSON)
             _log(db, profile_id, "groq-llama-vision", prompt_summary,
                  result["text"], f"gemini failed: {gemini_error}",
                  result["tokens"], result["ms"])

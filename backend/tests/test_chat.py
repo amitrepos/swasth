@@ -65,6 +65,97 @@ class TestChatSend:
         assert resp.status_code in (401, 403)
 
 
+class TestChatFileUpload:
+    """POST /api/chat/messages with image_base64 + image_mime — 5MB cap, PDF support."""
+
+    @patch("routes_chat.ai_service")
+    def test_pdf_upload_routes_to_vision(self, mock_ai, client, test_user, auth_headers, db):
+        import base64
+        mock_ai.generate_vision_insight.return_value = "PDF says BP is high."
+        pid = _get_profile_id(db, test_user.id)
+
+        tiny_pdf = base64.b64encode(b"%PDF-1.4 stub").decode()
+        resp = client.post("/api/chat/messages", json={
+            "profile_id": pid,
+            "message": "Analyze my report",
+            "image_base64": tiny_pdf,
+            "image_mime": "application/pdf",
+        }, headers=auth_headers)
+
+        assert resp.status_code == 200
+        mock_ai.generate_vision_insight.assert_called_once()
+        kwargs = mock_ai.generate_vision_insight.call_args.kwargs
+        assert kwargs.get("mime_type") == "application/pdf"
+
+    @patch("routes_chat.ai_service")
+    def test_image_upload_uses_jpeg_mime(self, mock_ai, client, test_user, auth_headers, db):
+        import base64
+        mock_ai.generate_vision_insight.return_value = "Looks like a BP machine."
+        pid = _get_profile_id(db, test_user.id)
+
+        tiny_img = base64.b64encode(b"\xff\xd8\xff stub").decode()
+        resp = client.post("/api/chat/messages", json={
+            "profile_id": pid,
+            "message": "What is this?",
+            "image_base64": tiny_img,
+            "image_mime": "image/jpeg",
+        }, headers=auth_headers)
+
+        assert resp.status_code == 200
+        kwargs = mock_ai.generate_vision_insight.call_args.kwargs
+        assert kwargs.get("mime_type") == "image/jpeg"
+
+    def test_oversize_file_rejected_with_413(self, client, test_user, auth_headers, db):
+        import base64
+        pid = _get_profile_id(db, test_user.id)
+        # 5 MB + 1 byte raw → fails the cap
+        oversize = base64.b64encode(b"\x00" * (5 * 1024 * 1024 + 1)).decode()
+        resp = client.post("/api/chat/messages", json={
+            "profile_id": pid,
+            "message": "Big file",
+            "image_base64": oversize,
+            "image_mime": "image/jpeg",
+        }, headers=auth_headers)
+        assert resp.status_code == 413
+        assert "5 MB" in resp.json()["detail"]
+
+    def test_boundary_exactly_5mb_accepted(self, client, test_user, auth_headers, db):
+        import base64
+        pid = _get_profile_id(db, test_user.id)
+        # Exactly 5 MB raw → must pass size gate (AI may still no-op in tests)
+        at_limit = base64.b64encode(b"\x00" * (5 * 1024 * 1024)).decode()
+        with patch("routes_chat.ai_service") as mock_ai:
+            mock_ai.generate_vision_insight.return_value = "ok"
+            resp = client.post("/api/chat/messages", json={
+                "profile_id": pid,
+                "message": "Edge case",
+                "image_base64": at_limit,
+                "image_mime": "image/jpeg",
+            }, headers=auth_headers)
+        assert resp.status_code == 200
+
+    def test_unsupported_mime_rejected_with_415(self, client, test_user, auth_headers, db):
+        import base64
+        pid = _get_profile_id(db, test_user.id)
+        payload = base64.b64encode(b"docx stub").decode()
+        resp = client.post("/api/chat/messages", json={
+            "profile_id": pid,
+            "message": "Try a docx",
+            "image_base64": payload,
+            "image_mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        }, headers=auth_headers)
+        assert resp.status_code == 415
+
+    def test_invalid_base64_rejected(self, client, test_user, auth_headers, db):
+        pid = _get_profile_id(db, test_user.id)
+        resp = client.post("/api/chat/messages", json={
+            "profile_id": pid,
+            "message": "Bad payload",
+            "image_base64": "!!!not-valid-base64!!!",
+            "image_mime": "image/png",
+        }, headers=auth_headers)
+        assert resp.status_code == 400
+
 
 class TestChatMessages:
     """GET /api/chat/messages — chat history."""

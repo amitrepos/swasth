@@ -1348,6 +1348,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Daily question limit reached. Resets at midnight.';
 
   @override
+  String get chatFileTooLarge => 'File too large. Maximum size is 5 MB.';
+
+  @override
+  String get chatUnsupportedFile =>
+      'Unsupported file type. Please upload an image (JPG, PNG, WEBP) or PDF.';
+
+  @override
+  String get chatAnalyzingPdf => 'Analyzing uploaded document...';
+
+  @override
   String get offlineBanner => 'You are offline. Some features may be limited.';
 
   @override

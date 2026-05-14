@@ -2570,6 +2570,24 @@ abstract class AppLocalizations {
   /// **'Daily question limit reached. Resets at midnight.'**
   String get chatQuotaExceeded;
 
+  /// No description provided for @chatFileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'File too large. Maximum size is 5 MB.'**
+  String get chatFileTooLarge;
+
+  /// No description provided for @chatUnsupportedFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported file type. Please upload an image (JPG, PNG, WEBP) or PDF.'**
+  String get chatUnsupportedFile;
+
+  /// No description provided for @chatAnalyzingPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing uploaded document...'**
+  String get chatAnalyzingPdf;
+
   /// No description provided for @offlineBanner.
   ///
   /// In en, this message translates to:
