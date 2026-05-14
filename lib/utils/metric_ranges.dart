@@ -61,39 +61,55 @@ class MetricInfoSpec {
 //                              SOURCES (auditable)
 // ===========================================================================
 
+/// Source citations for the metric info sheets.
+///
+/// **URL policy:** point to stable institution landing pages, NOT deep PDF
+/// paths. Deep PDF URLs rotate every few months and result in 404s in front
+/// of users. The institution name + topic is enough for a curious user to
+/// navigate to the current document from the landing page.
+///
+/// All URLs are verified live by `test/utils/metric_sources_live_links_test.dart`
+/// (network-tagged, opt-in via `flutter test --tags live`).
 class MetricSources {
-  static const ihci = SourceRef(
-    label: 'IHCI',
-    url: 'https://www.ihci.in/standard-treatment-workflow.html',
-  );
+  static const ihci = SourceRef(label: 'IHCI', url: 'https://www.ihci.in/');
   static const icmrHtn = SourceRef(
     label: 'ICMR',
-    url:
-        'https://main.icmr.nic.in/sites/default/files/guidelines/Hypertension.pdf',
+    url: 'https://www.icmr.gov.in/',
   );
-  static const rssdi = SourceRef(
-    label: 'RSSDI',
-    url:
-        'https://rssdi.in/new/pdf/rssdi-iaba-clinical-practice-recommendations-2022.pdf',
-  );
+  static const rssdi = SourceRef(label: 'RSSDI', url: 'https://www.rssdi.in/');
   static const icmrDm = SourceRef(
     label: 'ICMR',
-    url:
-        'https://main.icmr.nic.in/sites/default/files/guidelines/ICMR_GuidelinesType2diabetes2018_0.pdf',
+    url: 'https://www.icmr.gov.in/',
   );
+  // JAPI permalink — academic-journal slugs are usually stable but the
+  // `u264a4a4` segment could rotate if JAPI ever migrates. The daily
+  // live-link-check workflow will catch breakage within 12 hours; if it
+  // ever fails, replace with `https://www.japi.org/` (landing page).
+  // Last verified: 2026-05-14.
   static const icmrBmi = SourceRef(
-    label: 'ICMR Consensus',
+    label: 'JAPI / ICMR Consensus',
     url:
         'https://www.japi.org/u264a4a4/consensus-statement-for-diagnosis-of-obesity-abdominal-obesity-and-the-metabolic-syndrome-for-asian-indians',
   );
   static const who = SourceRef(
-    label: 'WHO',
-    url: 'https://www.who.int/publications/i/item/9789240015128',
+    label: 'WHO India',
+    url: 'https://www.who.int/india',
   );
   static const icmrNin = SourceRef(
     label: 'ICMR-NIN',
-    url: 'https://www.nin.res.in/RecentEvent_Aug7/DGI-07-05-2024fin.pdf',
+    url: 'https://www.nin.res.in/',
   );
+
+  /// Single list used by tests and any future audit tooling.
+  static const all = <SourceRef>[
+    ihci,
+    icmrHtn,
+    rssdi,
+    icmrDm,
+    icmrBmi,
+    who,
+    icmrNin,
+  ];
 }
 
 const String _kDisclaimer =

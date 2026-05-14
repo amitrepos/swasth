@@ -1,0 +1,69 @@
+name: Live Link Check (MetricSources)
+
+# Hits every source URL in MetricSources.all to confirm it still responds
+# 2xx/3xx. Tagged `live` so it never runs as part of PR CI (would flake on
+# transient network failures) — only on a daily cron and on demand.
+#
+# Failure here = a user is one tap away from a 404. Fix within 24 hours.
+
+on:
+  schedule:
+    - cron: '17 5 * * *'   # 05:17 UTC daily (~10:47 IST)
+    - cron: '17 17 * * *'  # 17:17 UTC daily (~22:47 IST) — 12h max exposure
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Run live-link tests
+        run: flutter test --tags live test/utils/metric_sources_live_links_test.dart
+      - name: Open P0 issue if any link is dead
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const today = new Date().toISOString().slice(0, 10);
+            // Avoid duplicate issues if the link is dead for multiple days.
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'live-link-check'
+            });
+            if (existing.data.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: existing.data[0].number,
+                body: `Still failing on ${today}. Run: ${runUrl}`
+              });
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title: `[live-link-check] A MetricSources URL is dead (${today})`,
+              body: [
+                'A source-citation URL used by the dashboard metric info sheets ',
+                'is no longer reachable. End users tapping the chip will land on ',
+                'a 404 page, which breaks the trust signal of the citation.',
+                '',
+                `Failed CI run: ${runUrl}`,
+                '',
+                '**Action:** open a hotfix PR replacing the dead URL in ',
+                '`lib/utils/metric_ranges.dart` (`MetricSources`) with a stable ',
+                'institution landing page. Do NOT pin a new deep PDF — they rot.'
+              ].join('\n'),
+              labels: ['bug', 'P0-user-facing', 'live-link-check']
+            });

@@ -1,0 +1,14 @@
+# Test runner config.
+#
+# Tags below are skipped by default (PR CI, local `flutter test`). To run
+# them on demand: `flutter test --tags <name>`. The scheduled
+# `live-link-check` workflow opts in via `--tags live`.
+
+# Declare the `live` tag so test files can opt-in via `@Tags(['live'])`.
+# CI workflows skip these by passing `--exclude-tags=live` on the default
+# pipeline; the live-link-check cron opts in via `--tags live`. See
+# test/utils/metric_sources_live_links_test.dart.
+
+tags:
+  live: null
+
