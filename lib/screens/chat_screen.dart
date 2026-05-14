@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
@@ -63,6 +63,11 @@ class ChatScreenState extends State<ChatScreen> {
 
   /// Called by ShellScreen when switching to the Chat tab.
   void refreshVitals() => _loadVitals();
+
+  /// Test hook — inject a pre-picked file without going through FilePicker.
+  @visibleForTesting
+  void injectFileForTesting(PlatformFile file) =>
+      setState(() => _selectedImage = file);
 
   /// Called by ShellScreen to send a message without rebuilding the widget.
   /// Queues the message if _loadMessages hasn't completed yet to avoid
@@ -215,7 +220,7 @@ class ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Selected: ${file.name}'),
+            content: Text(l10n.chatFileSelected(file.name)),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -321,14 +326,12 @@ class ChatScreenState extends State<ChatScreen> {
                 : null);
 
         if (bytes != null) {
-          // Send file as base64 with mime type
           final base64Str = base64Encode(bytes);
           final isPdf = imageFile.extension?.toLowerCase() == 'pdf';
-          final msg = text.isNotEmpty
-              ? text
-              : (isPdf
-                    ? 'Please analyze this document'
-                    : 'Please analyze this image');
+          // l10n captured at method start (before any await) — safe to use here
+          final analyzeMsg =
+              isPdf ? l10n.chatAnalyzeDocument : l10n.chatAnalyzeImage;
+          final msg = text.isNotEmpty ? text : analyzeMsg;
           response = await _chatService.sendImageMessage(
             token,
             widget.profileId,
@@ -598,6 +601,7 @@ class ChatScreenState extends State<ChatScreen> {
                     children: [
                       // Attachment button
                       GestureDetector(
+                        key: const Key('chat_attach_button'),
                         onTap: _remainingQuota > 0 && !_isSending
                             ? _pickImage
                             : null,

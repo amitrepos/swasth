@@ -473,6 +473,14 @@
   "chatFileTooLarge": "फ़ाइल बहुत बड़ी है। अधिकतम आकार 5 MB है।",
   "chatUnsupportedFile": "यह फ़ाइल प्रकार समर्थित नहीं है। कृपया छवि (JPG, PNG, WEBP) या PDF अपलोड करें।",
   "chatAnalyzingPdf": "अपलोड किए गए दस्तावेज़ का विश्लेषण किया जा रहा है...",
+  "chatAnalyzeDocument": "कृपया इस दस्तावेज़ का विश्लेषण करें",
+  "chatAnalyzeImage": "कृपया इस छवि का विश्लेषण करें",
+  "chatFileSelected": "चुना गया: {name}",
+  "@chatFileSelected": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "offlineBanner": "आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।",
   "loggedInOffline": "ऑफ़लाइन लॉगिन हुआ",
   "readingSavedOffline": "रीडिंग ऑफ़लाइन सहेजी गई। कनेक्ट होने पर सिंक होगी।",

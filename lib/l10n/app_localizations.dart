@@ -2588,6 +2588,24 @@ abstract class AppLocalizations {
   /// **'Analyzing uploaded document...'**
   String get chatAnalyzingPdf;
 
+  /// No description provided for @chatAnalyzeDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Please analyze this document'**
+  String get chatAnalyzeDocument;
+
+  /// No description provided for @chatAnalyzeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please analyze this image'**
+  String get chatAnalyzeImage;
+
+  /// No description provided for @chatFileSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {name}'**
+  String chatFileSelected(String name);
+
   /// No description provided for @offlineBanner.
   ///
   /// In en, this message translates to:

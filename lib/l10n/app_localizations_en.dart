@@ -1358,6 +1358,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatAnalyzingPdf => 'Analyzing uploaded document...';
 
   @override
+  String get chatAnalyzeDocument => 'Please analyze this document';
+
+  @override
+  String get chatAnalyzeImage => 'Please analyze this image';
+
+  @override
+  String chatFileSelected(String name) {
+    return 'Selected: $name';
+  }
+
+  @override
   String get offlineBanner => 'You are offline. Some features may be limited.';
 
   @override

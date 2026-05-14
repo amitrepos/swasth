@@ -605,6 +605,14 @@
   "chatFileTooLarge": "File too large. Maximum size is 5 MB.",
   "chatUnsupportedFile": "Unsupported file type. Please upload an image (JPG, PNG, WEBP) or PDF.",
   "chatAnalyzingPdf": "Analyzing uploaded document...",
+  "chatAnalyzeDocument": "Please analyze this document",
+  "chatAnalyzeImage": "Please analyze this image",
+  "chatFileSelected": "Selected: {name}",
+  "@chatFileSelected": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "offlineBanner": "You are offline. Some features may be limited.",
   "backOnline": "Back online! Syncing your data...",
   "loggedInOffline": "Logged in offline",

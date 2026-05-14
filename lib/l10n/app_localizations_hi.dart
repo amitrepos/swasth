@@ -1359,6 +1359,17 @@ class AppLocalizationsHi extends AppLocalizations {
       'अपलोड किए गए दस्तावेज़ का विश्लेषण किया जा रहा है...';
 
   @override
+  String get chatAnalyzeDocument => 'कृपया इस दस्तावेज़ का विश्लेषण करें';
+
+  @override
+  String get chatAnalyzeImage => 'कृपया इस छवि का विश्लेषण करें';
+
+  @override
+  String chatFileSelected(String name) {
+    return 'चुना गया: $name';
+  }
+
+  @override
   String get offlineBanner => 'आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।';
 
   @override
