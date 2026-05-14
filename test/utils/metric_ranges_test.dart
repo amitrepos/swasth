@@ -355,20 +355,235 @@ void main() {
     );
 
     test('every source URL parses as a valid https Uri', () {
-      const sources = <SourceRef>[
-        MetricSources.ihci,
-        MetricSources.icmrHtn,
-        MetricSources.rssdi,
-        MetricSources.icmrDm,
-        MetricSources.icmrBmi,
-        MetricSources.who,
-        MetricSources.icmrNin,
-      ];
-      for (final s in sources) {
+      for (final s in MetricSources.all) {
         final uri = Uri.tryParse(s.url);
         expect(uri, isNotNull, reason: '${s.label}: ${s.url} did not parse');
         expect(uri!.scheme, 'https', reason: '${s.label}: must be https');
         expect(uri.host, isNotEmpty, reason: '${s.label}: empty host');
+      }
+    });
+
+    test('classifyBp senior 60-79 full boundary sweep', () {
+      // Senior bands:
+      //  Fit    <130/<80
+      //  Caution 130-139 / 80-84  (dia <85)
+      //  At Risk 140-149 / 85-89  (dia ≥85 OR sys ≥140)
+      //  Urgent  ≥150 / ≥90
+      const s = BpRangeSet.senior;
+      expect(
+        classifyBp(sys: 129, dia: 79, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyBp(sys: 130, dia: 79, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyBp(sys: 139, dia: 84, set: s).category,
+        MetricCategory.caution,
+      );
+      // dia ≥85 promotes to At Risk even if sys still in caution band.
+      expect(
+        classifyBp(sys: 135, dia: 85, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyBp(sys: 140, dia: 85, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyBp(sys: 149, dia: 89, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyBp(sys: 150, dia: 89, set: s).category,
+        MetricCategory.urgent,
+      );
+      expect(
+        classifyBp(sys: 145, dia: 90, set: s).category,
+        MetricCategory.urgent,
+      );
+    });
+
+    test('classifyBp frail elderly 80+ full boundary sweep', () {
+      const s = BpRangeSet.frailElderly;
+      expect(
+        classifyBp(sys: 139, dia: 84, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyBp(sys: 140, dia: 84, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyBp(sys: 149, dia: 89, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyBp(sys: 150, dia: 90, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyBp(sys: 159, dia: 94, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyBp(sys: 160, dia: 94, set: s).category,
+        MetricCategory.urgent,
+      );
+      expect(
+        classifyBp(sys: 145, dia: 95, set: s).category,
+        MetricCategory.urgent,
+      );
+    });
+
+    test('classifyGlucose diabeticAdult full boundary sweep', () {
+      const s = GlucoseRangeSet.diabeticAdult;
+      expect(classifyGlucose(mgdl: 69, set: s).category, MetricCategory.urgent);
+      expect(
+        classifyGlucose(mgdl: 70, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 130, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 131, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 160, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 161, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 249, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 250, set: s).category,
+        MetricCategory.urgent,
+      );
+    });
+
+    test('classifyGlucose diabeticElderly boundary sweep (relaxed)', () {
+      const s = GlucoseRangeSet.diabeticElderly;
+      expect(classifyGlucose(mgdl: 79, set: s).category, MetricCategory.urgent);
+      expect(
+        classifyGlucose(mgdl: 80, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 150, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 151, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 180, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 181, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 249, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 250, set: s).category,
+        MetricCategory.urgent,
+      );
+    });
+
+    test('classifyBmi senior 65+ full boundary sweep (protective)', () {
+      const s = BmiRangeSet.senior;
+      expect(classifyBmi(bmi: 18.4, set: s).category, MetricCategory.urgent);
+      expect(classifyBmi(bmi: 18.5, set: s).category, MetricCategory.atRisk);
+      expect(classifyBmi(bmi: 19.9, set: s).category, MetricCategory.atRisk);
+      expect(classifyBmi(bmi: 20, set: s).category, MetricCategory.caution);
+      expect(classifyBmi(bmi: 21.9, set: s).category, MetricCategory.caution);
+      expect(classifyBmi(bmi: 22, set: s).category, MetricCategory.fitFine);
+      expect(classifyBmi(bmi: 27, set: s).category, MetricCategory.fitFine);
+      expect(classifyBmi(bmi: 27.1, set: s).category, MetricCategory.caution);
+      expect(classifyBmi(bmi: 29.9, set: s).category, MetricCategory.caution);
+      expect(classifyBmi(bmi: 30, set: s).category, MetricCategory.atRisk);
+      expect(classifyBmi(bmi: 34.9, set: s).category, MetricCategory.atRisk);
+      expect(classifyBmi(bmi: 35, set: s).category, MetricCategory.urgent);
+    });
+
+    test('buildStepsSpec — cardiac patient: lowest band wording softened', () {
+      final spec = buildStepsSpec(
+        count: 100,
+        age: 50,
+        conditions: const ['Heart Disease'],
+      );
+      expect(spec.levels.length, 4);
+      expect(spec.levels[3].label.toLowerCase(), contains('low movement'));
+      expect(
+        spec.levels[3].desc.toLowerCase(),
+        contains('rest if your doctor'),
+      );
+      // rangeSetLabel should mention adjustment.
+      expect(spec.rangeSetLabel.toLowerCase(), contains('cardiac'));
+    });
+
+    test(
+      'buildStepsSpec — goal=0 edge: still returns fit (no divide-by-zero)',
+      () {
+        expect(
+          classifySteps(count: 0, goal: 0).category,
+          MetricCategory.fitFine,
+        );
+      },
+    );
+
+    test('buildBpSpec senior label + diabeticOrCkd label distinct', () {
+      final senior = buildBpSpec(
+        sys: 130,
+        dia: 80,
+        age: 65,
+        conditions: const [],
+      );
+      final diabetic = buildBpSpec(
+        sys: 130,
+        dia: 80,
+        age: 65,
+        conditions: const ['Diabetes T2'],
+      );
+      // Diabetes wins over age — both ≥60 but conditions force diabetic set.
+      expect(senior.rangeSetLabel.toLowerCase(), contains('senior'));
+      expect(diabetic.rangeSetLabel.toLowerCase(), contains('diabet'));
+      expect(senior.rangeSetLabel, isNot(diabetic.rangeSetLabel));
+    });
+
+    test('buildGlucoseSpec — non-diabetic returns nonDiabetic set label', () {
+      final spec = buildGlucoseSpec(mgdl: 95, age: 30, conditions: const []);
+      expect(spec.rangeSetLabel.toLowerCase(), contains('non-diabetic'));
+      expect(spec.footnote, isNotNull);
+    });
+
+    test('every source URL is a stable landing page (no deep PDF paths)', () {
+      // Policy: deep PDF paths (e.g. `/sites/default/files/.../guidelines.pdf`)
+      // rotate every few months on Indian gov sites and embarrass us with
+      // 404s. JAPI is an exception — academic-journal permalinks are stable.
+      for (final s in MetricSources.all) {
+        final uri = Uri.parse(s.url);
+        final isPdf = uri.path.toLowerCase().endsWith('.pdf');
+        expect(
+          isPdf,
+          isFalse,
+          reason:
+              '${s.label} points to a deep PDF (${s.url}). Use the '
+              'institution landing page instead — PDFs move.',
+        );
       }
     });
   });
