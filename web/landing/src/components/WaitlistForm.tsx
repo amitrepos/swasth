@@ -243,6 +243,17 @@ const WaitlistForm = () => {
                 >
                   {isSubmitting ? "Processing..." : <>Confirm Interest <Send className="w-5 h-5" /></>}
                 </button>
+
+                <p className="text-center text-xs text-slate-400 font-medium pt-2">
+                  Questions? Reach us at{" "}
+                  <a href="mailto:support@swasth.health" className="text-primary hover:underline font-semibold">
+                    support@swasth.health
+                  </a>{" "}
+                  or{" "}
+                  <a href="tel:+919742897375" className="text-primary hover:underline font-semibold">
+                    +91 97428 97375
+                  </a>
+                </p>
               </form>
             </div>
           </div>
