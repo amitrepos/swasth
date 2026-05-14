@@ -53,17 +53,24 @@ def upgrade():
     )
 
     # Enforce the enum at the DB level so future inserts can't drift.
-    op.create_check_constraint(
-        'ck_health_readings_meal_context',
-        'health_readings',
-        f"meal_context IS NULL OR meal_context IN {_ALLOWED!r}",
+    # Use raw SQL with an explicit constraint name so downgrade can find it
+    # by the same name on every backend (Alembic's create_check_constraint
+    # auto-names quirks have bitten the round-trip test before).
+    allowed_csv = ', '.join(f"'{v}'" for v in _ALLOWED)
+    op.execute(
+        f'ALTER TABLE health_readings '
+        f'ADD CONSTRAINT ck_health_readings_meal_context '
+        f'CHECK (meal_context IS NULL OR meal_context IN ({allowed_csv}))'
     )
 
 
 def downgrade():
-    op.drop_constraint(
-        'ck_health_readings_meal_context',
-        'health_readings',
-        type_='check',
+    # Drop CHECK constraint conditionally — Postgres autonames CHECK
+    # constraints when no name is supplied; some prior round-trip runs
+    # may have left a differently-named (or absent) constraint behind.
+    # IF EXISTS makes the downgrade idempotent.
+    op.execute(
+        'ALTER TABLE health_readings '
+        'DROP CONSTRAINT IF EXISTS ck_health_readings_meal_context'
     )
     op.drop_column('health_readings', 'meal_context')
