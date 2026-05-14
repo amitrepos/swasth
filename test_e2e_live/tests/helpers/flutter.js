@@ -10,20 +10,57 @@ async function hydrate(page) {
 }
 
 // Activate Flutter's a11y semantics overlay so flt-semantics nodes appear in DOM.
-// Note: Flutter renders flt-semantics-placeholder offscreen (negative coords),
-// so Playwright's default click retries forever with "element is outside of the
-// viewport". We must either dispatch the click via JS or use force+position.
+//
+// Flutter renders flt-semantics-placeholder offscreen (negative coords) so
+// screen readers can find it without it being visible. Two consequences:
+//   1. Playwright's default click() rejects it as "outside of the viewport".
+//   2. A bare HTMLElement.click() only fires a synthetic `click` event, but
+//      Flutter's a11y enabler listens for a full pointer sequence
+//      (pointerdown → pointerup → click) before it flips the semantics flag.
+//
+// Strategy: temporarily reposition the placeholder into the viewport, fire a
+// real Playwright click (full pointer sequence), then dispatch synthetic
+// pointer events as a belt-and-braces fallback. Wait long enough for Flutter
+// to rebuild the semantics tree before returning.
 async function enableSemantics(page) {
   const placeholder = await page.$('flt-semantics-placeholder');
-  if (placeholder) {
-    // Dispatch a native click bypassing actionability checks — the placeholder
-    // is intentionally rendered offscreen by Flutter's a11y machinery.
-    await page.evaluate(() => {
-      const el = document.querySelector('flt-semantics-placeholder');
-      if (el) el.click();
-    });
-    await page.waitForTimeout(1500);
+  if (!placeholder) return;
+
+  // Step 1 — pull the placeholder into the viewport (it's normally offscreen).
+  await page.evaluate(() => {
+    const el = document.querySelector('flt-semantics-placeholder');
+    if (!el) return;
+    el.style.position = 'fixed';
+    el.style.left = '10px';
+    el.style.top = '10px';
+    el.style.width = '40px';
+    el.style.height = '40px';
+    el.style.zIndex = '999999';
+    el.style.opacity = '0.01'; // not invisible, just unobtrusive
+  });
+
+  // Step 2 — real Playwright click (full pointer sequence). force:true bypasses
+  // actionability checks even though we already made it visible.
+  try {
+    await page.click('flt-semantics-placeholder', { force: true, timeout: 3000 });
+  } catch (e) {
+    // Best effort — fall through to the JS dispatch below.
   }
+
+  // Step 3 — synthetic pointer sequence as a backup for builds where the
+  // placeholder lives inside a shadow root or stops handling real clicks.
+  await page.evaluate(() => {
+    const el = document.querySelector('flt-semantics-placeholder');
+    if (!el) return;
+    const opts = { bubbles: true, cancelable: true, view: window };
+    try { el.dispatchEvent(new PointerEvent('pointerdown', opts)); } catch (_) {}
+    try { el.dispatchEvent(new PointerEvent('pointerup', opts)); } catch (_) {}
+    try { el.dispatchEvent(new MouseEvent('click', opts)); } catch (_) {}
+    el.click();
+  });
+
+  // Flutter rebuilds the semantics tree on the next frame; give it room.
+  await page.waitForTimeout(2500);
 }
 
 // Return all aria-labels currently in the semantics tree
