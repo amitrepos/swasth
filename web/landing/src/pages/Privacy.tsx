@@ -43,7 +43,7 @@ const Privacy = () => {
               <h2 className="text-xl font-semibold font-heading text-foreground mt-8 mb-3">Data Deletion</h2>
               <p>
                 You can request deletion of your data at any time by emailing us at{" "}
-                <a href="mailto:hello@swasth.health" className="text-primary underline">hello@swasth.health</a>.
+                <a href="mailto:support@swasth.health" className="text-primary underline">support@swasth.health</a>.
                 We will remove your information within 7 business days.
               </p>
             </section>
@@ -59,7 +59,7 @@ const Privacy = () => {
               <h2 className="text-xl font-semibold font-heading text-foreground mt-8 mb-3">Contact</h2>
               <p>
                 Questions about this policy? Reach us at{" "}
-                <a href="mailto:hello@swasth.health" className="text-primary underline">hello@swasth.health</a>.
+                <a href="mailto:support@swasth.health" className="text-primary underline">support@swasth.health</a> or call us at <a href="tel:+919742897375" className="text-primary underline">+91 97428 97375</a>.
               </p>
             </section>
           </div>
