@@ -30,8 +30,9 @@ class ChatService {
     String token,
     int profileId,
     String message,
-    String imageBase64,
-  ) {
+    String imageBase64, {
+    String mimeType = 'image/jpeg',
+  }) {
     return ApiClient.sendJsonObject(
       () => ApiClient.httpClient.post(
         Uri.parse('$baseUrl/chat/send'),
@@ -40,6 +41,7 @@ class ChatService {
           'profile_id': profileId,
           'message': message,
           'image_base64': imageBase64,
+          'image_mime': mimeType,
         }),
       ),
       timeout: _kVisionTimeout,

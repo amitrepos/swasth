@@ -141,10 +141,28 @@ class ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  static const int _kMaxFileBytes = 5 * 1024 * 1024; // 5 MB
+  static const List<String> _kImageExts = [
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'bmp',
+  ];
+  static const List<String> _kAllowedExts = [
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'bmp',
+    'pdf',
+  ];
+
   Future<void> _pickImage() async {
     try {
-      // Pick image from gallery
-      await _pickFile(FileType.image);
+      await _pickFile();
     } catch (e) {
       if (mounted) {
         await ErrorMapper.showSnack(context, e);
@@ -152,24 +170,55 @@ class ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _pickFile(FileType type) async {
+  Future<void> _pickFile() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final result = await FilePicker.platform.pickFiles(
-        type: type,
+        type: FileType.custom,
+        allowedExtensions: _kAllowedExts,
         withData: true,
       );
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        setState(() => _selectedImage = file);
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.first;
 
+      // Validate extension (defense-in-depth — file_picker is inconsistent on web)
+      final ext = file.extension?.toLowerCase();
+      if (ext == null || !_kAllowedExts.contains(ext)) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Image selected: ${file.name}'),
-              duration: const Duration(seconds: 2),
+              content: Text(l10n.chatUnsupportedFile),
+              duration: const Duration(seconds: 3),
+              backgroundColor: AppColors.statusCritical,
             ),
           );
         }
+        return;
+      }
+
+      // Validate size (raw bytes)
+      if (file.size > _kMaxFileBytes) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.chatFileTooLarge),
+              duration: const Duration(seconds: 3),
+              backgroundColor: AppColors.statusCritical,
+            ),
+          );
+        }
+        return;
+      }
+
+      setState(() => _selectedImage = file);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Selected: ${file.name}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -182,11 +231,36 @@ class ChatScreenState extends State<ChatScreen> {
   bool _shouldShowImagePreview() {
     if (_selectedImage == null || _selectedImage!.bytes == null) return false;
     final extension = _selectedImage!.extension?.toLowerCase();
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(extension);
+    return _kImageExts.contains(extension);
+  }
+
+  bool _isPdfSelected() {
+    return _selectedImage?.extension?.toLowerCase() == 'pdf';
+  }
+
+  String _mimeTypeFor(PlatformFile file) {
+    final ext = file.extension?.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'bmp':
+        return 'image/bmp';
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return 'image/jpeg';
+    }
   }
 
   /// Get the appropriate icon for the selected file
   IconData _getFileIcon() {
+    if (_isPdfSelected()) return Icons.picture_as_pdf;
     return Icons.image;
   }
 
@@ -207,21 +281,17 @@ class ChatScreenState extends State<ChatScreen> {
     if (imageDescription == null) _inputController.clear();
 
     // Build display text
+    final l10n = AppLocalizations.of(context)!;
     String displayText = text;
     if (imageFile != null && text.isEmpty) {
-      // Check if it's an image or other file
       final extension = imageFile.extension?.toLowerCase();
-      final isImage = [
-        'jpg',
-        'jpeg',
-        'png',
-        'gif',
-        'webp',
-        'bmp',
-      ].contains(extension);
+      final isImage = _kImageExts.contains(extension);
+      final isPdf = extension == 'pdf';
 
       if (isImage) {
         displayText = 'Analyzing uploaded image...';
+      } else if (isPdf) {
+        displayText = l10n.chatAnalyzingPdf;
       } else {
         displayText = 'Shared file: ${imageFile.name}';
       }
@@ -251,14 +321,20 @@ class ChatScreenState extends State<ChatScreen> {
                 : null);
 
         if (bytes != null) {
-          // Send image as base64
+          // Send file as base64 with mime type
           final base64Str = base64Encode(bytes);
-          final msg = text.isNotEmpty ? text : 'Please analyze this image';
+          final isPdf = imageFile.extension?.toLowerCase() == 'pdf';
+          final msg = text.isNotEmpty
+              ? text
+              : (isPdf
+                    ? 'Please analyze this document'
+                    : 'Please analyze this image');
           response = await _chatService.sendImageMessage(
             token,
             widget.profileId,
             msg,
             base64Str,
+            mimeType: _mimeTypeFor(imageFile),
           );
         } else {
           response = await _chatService.sendMessage(

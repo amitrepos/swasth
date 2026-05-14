@@ -1348,6 +1348,17 @@ class AppLocalizationsHi extends AppLocalizations {
       'दैनिक प्रश्न सीमा पूरी हो गई। मध्यरात्रि में रीसेट होगी।';
 
   @override
+  String get chatFileTooLarge => 'फ़ाइल बहुत बड़ी है। अधिकतम आकार 5 MB है।';
+
+  @override
+  String get chatUnsupportedFile =>
+      'यह फ़ाइल प्रकार समर्थित नहीं है। कृपया छवि (JPG, PNG, WEBP) या PDF अपलोड करें।';
+
+  @override
+  String get chatAnalyzingPdf =>
+      'अपलोड किए गए दस्तावेज़ का विश्लेषण किया जा रहा है...';
+
+  @override
   String get offlineBanner => 'आप ऑफ़लाइन हैं। कुछ सुविधाएँ सीमित हो सकती हैं।';
 
   @override

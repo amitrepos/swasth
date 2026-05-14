@@ -289,9 +289,16 @@ Rules:
 - Keep responses to 2-4 sentences.
 - Speak directly to the patient."""
 
-    # --- Check for image attachment ---
+    # --- Check for image/PDF attachment ---
     image_b64 = data.get("image_base64")
+    image_mime = (data.get("image_mime") or "image/jpeg").lower()
     display_message = message
+
+    MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 MB raw
+    ALLOWED_MIMES = {
+        "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp",
+        "application/pdf",
+    }
 
     # --- Call AI (with or without image) ---
     import time
@@ -299,11 +306,28 @@ Rules:
     ai_response = None
 
     if image_b64:
-        # Use vision pipeline: Gemini Vision → DeepSeek text fallback → None
-        image_bytes = base64.b64decode(image_b64)
+        if image_mime not in ALLOWED_MIMES:
+            raise HTTPException(
+                status_code=415,
+                detail="Unsupported file type. Use JPG, PNG, WEBP, GIF, BMP, or PDF.",
+            )
+        try:
+            image_bytes = base64.b64decode(image_b64, validate=True)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid base64 payload.")
+
+        if len(image_bytes) > MAX_FILE_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail="File too large. Maximum size is 5 MB.",
+            )
+
+        is_pdf = image_mime == "application/pdf"
+        artifact = "document" if is_pdf else "medical image/report"
         vision_prompt = f"""{prompt}
 
-The patient has uploaded a medical image/report. Please analyze what you see and provide helpful insights.
+The patient has uploaded a {artifact}. Please analyze what you see and provide helpful insights.
+- If it's a multi-page document, read all pages and summarize key findings across the whole document.
 - If it's a medical report, summarize key findings.
 - If it's an X-ray or scan, describe what you observe (with caveats that you're AI, not a radiologist).
 - If it's a prescription, list the medications and their purposes.
@@ -311,7 +335,8 @@ The patient has uploaded a medical image/report. Please analyze what you see and
 
         ai_response = ai_service.generate_vision_insight(
             vision_prompt, image_bytes, profile_id, db,
-            prompt_summary=f"chat-image: {display_message[:80]}",
+            prompt_summary=f"chat-{('pdf' if is_pdf else 'image')}: {display_message[:80]}",
+            mime_type=image_mime,
         )
 
     if not ai_response:
