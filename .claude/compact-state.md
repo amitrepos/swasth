@@ -59,3 +59,15 @@ Last commit: 40fd0d4 docs: save session state + audit log before compact
  backend/.coverage           | Bin 53248 -> 0 bytes
  4 files changed, 13 insertions(+), 7 deletions(-)
 ---
+## 2026-05-14 07:51 — Response cap violation
+Last reply was 3 words (cap=100), bullets=no, offer=no.
+NEXT REPLY: acknowledge in 1 line ('Trimming to the 100-word bullet format.'), then re-answer short.
+---
+## 2026-05-14 07:57 — Response cap violation
+Last reply was 2 words (cap=100), bullets=no, offer=no.
+NEXT REPLY: acknowledge in 1 line ('Trimming to the 100-word bullet format.'), then re-answer short.
+---
+## 2026-05-14 08:01 — Response cap violation
+Last reply was 2 words (cap=100), bullets=no, offer=no.
+NEXT REPLY: acknowledge in 1 line ('Trimming to the 100-word bullet format.'), then re-answer short.
+---

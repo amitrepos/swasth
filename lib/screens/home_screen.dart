@@ -121,13 +121,15 @@ class HomeScreenState extends State<HomeScreen>
       await _pedometerService.initialize();
       // Sync steps to backend after initialization
       await _pedometerService.syncStepsToBackend();
-      
+
       // Initialize background step counting service
       await _backgroundStepService.initialize();
       debugPrint('HomeScreen: Background step counting enabled');
-      
+
       // Set up periodic sync every 5 minutes (foreground)
-      _stepsSyncTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+      _stepsSyncTimer = Timer.periodic(const Duration(minutes: 5), (
+        timer,
+      ) async {
         debugPrint('HomeScreen: Periodic steps sync (foreground)');
         await _pedometerService.syncStepsToBackend();
       });
@@ -290,7 +292,10 @@ class HomeScreenState extends State<HomeScreen>
 
       // Load care circle members
       try {
-        final members = await _profileService.getProfileAccess(token, profileId);
+        final members = await _profileService.getProfileAccess(
+          token,
+          profileId,
+        );
         if (mounted) setState(() => _careCircleMembers = members);
       } catch (e) {
         if (e is UnauthorizedException) rethrow;
@@ -341,7 +346,9 @@ class HomeScreenState extends State<HomeScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.doctorContactNotAvailable),
+            content: Text(
+              AppLocalizations.of(context)!.doctorContactNotAvailable,
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -361,8 +368,9 @@ class HomeScreenState extends State<HomeScreen>
         .where((d) => d['status'] == 'active')
         .toList();
     if (activeDoctors.isNotEmpty) {
-      final phone = activeDoctors.first['whatsapp_number'] as String?
-          ?? activeDoctors.first['phone_number'] as String?;
+      final phone =
+          activeDoctors.first['whatsapp_number'] as String? ??
+          activeDoctors.first['phone_number'] as String?;
       if (phone != null && phone.isNotEmpty) {
         _callDoctor(phone);
       } else {
@@ -672,6 +680,11 @@ class HomeScreenState extends State<HomeScreen>
                                 ?.toDouble(),
                             weightKg: (data?['profile_weight'] as num?)
                                 ?.toDouble(),
+                            age:
+                                _activeProfile?.age ??
+                                (data?['profile_age'] as num?)?.toInt(),
+                            medicalConditions:
+                                _activeProfile?.medicalConditions,
                           ),
                           const SizedBox(height: 16),
 
