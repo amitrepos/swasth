@@ -228,6 +228,7 @@
   "fasting": "Fasting",
   "beforeMeal": "Before Meal",
   "afterMeal": "After Meal",
+  "mealContextRandom": "Random / Not sure",
   "readingTime": "Reading Time",
   "saveReading": "Save Reading",
   "readingSavedSuccess": "Reading saved successfully",

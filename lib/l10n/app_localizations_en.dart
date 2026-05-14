@@ -455,6 +455,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get afterMeal => 'After Meal';
 
   @override
+  String get mealContextRandom => 'Random / Not sure';
+
+  @override
   String get readingTime => 'Reading Time';
 
   @override

@@ -458,6 +458,7 @@ class HealthScoreResponse(BaseModel):
     # Most recent readings ever (not just today) for Individual Metrics grid
     last_glucose_value: Optional[float] = None
     last_glucose_status: Optional[str] = None
+    last_glucose_meal_context: Optional[str] = None  # fasting | post_meal | ...
     last_bp_systolic: Optional[float] = None
     last_bp_diastolic: Optional[float] = None
     last_bp_status: Optional[str] = None
@@ -530,6 +531,19 @@ class HealthReadingCreate(BaseModel):
     reading_timestamp: datetime
     seq: Optional[int] = None                # Device sequence number for BLE deduplication
 
+    # Glucose-only: meal context (None for non-glucose readings).
+    meal_context: Optional[str] = None
+
+    @field_validator('meal_context', mode='after')
+    @classmethod
+    def _validate_meal_context(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        allowed = {'fasting', 'before_meal', 'post_meal', 'random', 'unknown'}
+        if v not in allowed:
+            raise ValueError(f'meal_context must be one of {sorted(allowed)}')
+        return v
+
     @field_validator('reading_timestamp', mode='after')
     @classmethod
     def _normalize_ts(cls, v: datetime) -> datetime:
@@ -563,7 +577,18 @@ class HealthReadingUpdate(BaseModel):
     # Cap notes length to prevent oversized payloads from exhausting DB
     # storage. 2000 chars is generous for clinical context.
     notes: Optional[str] = Field(None, max_length=2000)
+    meal_context: Optional[str] = None
     reading_timestamp: Optional[datetime] = None
+
+    @field_validator('meal_context', mode='after')
+    @classmethod
+    def _validate_meal_context(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        allowed = {'fasting', 'before_meal', 'post_meal', 'random', 'unknown'}
+        if v not in allowed:
+            raise ValueError(f'meal_context must be one of {sorted(allowed)}')
+        return v
 
     @field_validator('reading_timestamp', mode='after')
     @classmethod
@@ -616,6 +641,7 @@ class HealthReadingResponse(BaseModel):
     unit_display: str
     status_flag: Optional[str]
     notes: Optional[str]
+    meal_context: Optional[str] = None
     reading_timestamp: datetime
     seq: Optional[int] = None
     created_at: datetime

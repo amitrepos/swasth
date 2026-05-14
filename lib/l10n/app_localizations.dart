@@ -932,6 +932,12 @@ abstract class AppLocalizations {
   /// **'After Meal'**
   String get afterMeal;
 
+  /// No description provided for @mealContextRandom.
+  ///
+  /// In en, this message translates to:
+  /// **'Random / Not sure'**
+  String get mealContextRandom;
+
   /// No description provided for @readingTime.
   ///
   /// In en, this message translates to:

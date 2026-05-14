@@ -49,6 +49,9 @@ class MetricsGrid extends StatelessWidget {
     final lastBpStatus = data?['last_bp_status'] as String?;
     final lastGlucose = (data?['last_glucose_value'] as num?)?.toDouble();
     final lastGlucoseStatus = data?['last_glucose_status'] as String?;
+    final lastGlucoseMealContext = glucoseMealContextFromString(
+      data?['last_glucose_meal_context'] as String?,
+    );
     final ageContextBp = data?['age_context_bp'] as String?;
     final ageContextGlucose = data?['age_context_glucose'] as String?;
 
@@ -78,8 +81,23 @@ class MetricsGrid extends StatelessWidget {
     final bpValue = lastBpSys != null && lastBpDia != null
         ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'
         : '—';
+    String shortGlucoseContext(GlucoseMealContext c) {
+      switch (c) {
+        case GlucoseMealContext.fasting:
+          return ' · Fast';
+        case GlucoseMealContext.beforeMeal:
+          return ' · Pre';
+        case GlucoseMealContext.postMeal:
+          return ' · Post';
+        case GlucoseMealContext.random:
+          return ' · Random';
+        case GlucoseMealContext.unknown:
+          return '';
+      }
+    }
+
     final lastGlucoseValue = lastGlucose != null
-        ? '${lastGlucose.toStringAsFixed(0)} mg'
+        ? '${lastGlucose.toStringAsFixed(0)} mg${shortGlucoseContext(lastGlucoseMealContext)}'
         : '—';
 
     // Weight & SpO2
@@ -141,6 +159,7 @@ class MetricsGrid extends StatelessWidget {
                     mgdl: lastGlucose,
                     age: effectiveAge,
                     conditions: effectiveConditions,
+                    mealContext: lastGlucoseMealContext,
                   ),
                 ),
                 onAddTap: canEdit

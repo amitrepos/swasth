@@ -87,3 +87,15 @@ NEXT REPLY: acknowledge in 1 line ('Trimming to the 100-word bullet format.'), t
 Last reply was 4 words (cap=100), bullets=no, offer=yes.
 NEXT REPLY: acknowledge in 1 line ('Trimming to the 100-word bullet format.'), then re-answer short.
 ---
+## 2026-05-14 12:08 — Response cap violation
+Last reply was 4 words (cap=100), bullets=no, offer=yes.
+NEXT REPLY: acknowledge in 1 line ('Trimming to the 100-word bullet format.'), then re-answer short.
+---
+## 2026-05-14 12:13 — Response cap violation
+Last reply was 4 words (cap=100), bullets=no, offer=yes.
+NEXT REPLY: acknowledge in 1 line ('Trimming to the 100-word bullet format.'), then re-answer short.
+---
+## 2026-05-14 12:15 — Response cap violation
+Last reply was 4 words (cap=100), bullets=no, offer=yes.
+NEXT REPLY: acknowledge in 1 line ('Trimming to the 100-word bullet format.'), then re-answer short.
+---
