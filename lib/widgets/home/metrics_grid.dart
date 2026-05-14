@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/health_helpers.dart' as helpers;
+import '../../utils/metric_ranges.dart';
 import '../glass_card.dart';
+import 'metric_info_sheet.dart';
 
 class MetricsGrid extends StatelessWidget {
   final Map<String, dynamic>? data;
@@ -20,6 +22,10 @@ class MetricsGrid extends StatelessWidget {
   final double? heightCm;
   final double? weightKg;
 
+  /// Profile context for personalising the metric-info reference ranges.
+  final int? age;
+  final List<String>? medicalConditions;
+
   const MetricsGrid({
     super.key,
     required this.data,
@@ -30,6 +36,8 @@ class MetricsGrid extends StatelessWidget {
     this.bmiCategory,
     this.heightCm,
     this.weightKg,
+    this.age,
+    this.medicalConditions,
   });
 
   @override
@@ -43,22 +51,29 @@ class MetricsGrid extends StatelessWidget {
     final lastGlucoseStatus = data?['last_glucose_status'] as String?;
     final ageContextBp = data?['age_context_bp'] as String?;
     final ageContextGlucose = data?['age_context_glucose'] as String?;
-    
+
     // Fallback values from data if not explicitly provided
     final effectiveBmi = bmi ?? (data?['bmi'] as num?)?.toDouble();
-    final effectiveBmiCategory = bmiCategory ?? data?['bmi_category'] as String?;
-    final effectiveHeight = heightCm ?? (data?['profile_height'] as num?)?.toDouble();
-    final effectiveWeight = weightKg ?? (data?['last_weight_value'] as num?)?.toDouble() ?? (data?['profile_weight'] as num?)?.toDouble();
+    final effectiveBmiCategory =
+        bmiCategory ?? data?['bmi_category'] as String?;
+    final effectiveHeight =
+        heightCm ?? (data?['profile_height'] as num?)?.toDouble();
+    final effectiveWeight =
+        weightKg ??
+        (data?['last_weight_value'] as num?)?.toDouble() ??
+        (data?['profile_weight'] as num?)?.toDouble();
 
     // Steps data
     // For new users or days without step data, default to 0 instead of null
     final todaySteps = (data?['today_steps_count'] as num?)?.toInt() ?? 0;
     final stepsGoal = (data?['today_steps_goal'] as num?)?.toInt() ?? 7500;
 
-    // DEBUG: Print steps data to console
-    debugPrint('MetricsGrid - Steps Data: todaySteps=$todaySteps, stepsGoal=$stepsGoal');
-    debugPrint('MetricsGrid - Raw today_steps_count from API: ${data?['today_steps_count']}');
-    debugPrint('MetricsGrid - Full data keys: ${data?.keys.toList()}');
+    // Personalisation inputs for metric-info sheets.
+    final effectiveAge = age ?? (data?['profile_age'] as num?)?.toInt();
+    final effectiveConditions =
+        medicalConditions ??
+        (data?['medical_conditions'] as List?)?.cast<String>() ??
+        const <String>[];
 
     final bpValue = lastBpSys != null && lastBpDia != null
         ? '${lastBpSys.toStringAsFixed(0)}/${lastBpDia.toStringAsFixed(0)}'
@@ -95,6 +110,16 @@ class MetricsGrid extends StatelessWidget {
                 label: l10n.lastBP,
                 value: bpValue,
                 valueColor: helpers.statusTextColor(lastBpStatus),
+                infoIconKey: const Key('bp_info_button'),
+                onInfoTap: () => showMetricInfoSheet(
+                  context,
+                  buildBpSpec(
+                    sys: lastBpSys,
+                    dia: lastBpDia,
+                    age: effectiveAge,
+                    conditions: effectiveConditions,
+                  ),
+                ),
                 onAddTap: canEdit
                     ? () => onAddReading(
                         deviceType: 'blood_pressure',
@@ -109,6 +134,15 @@ class MetricsGrid extends StatelessWidget {
                 label: l10n.lastSugar,
                 value: lastGlucoseValue,
                 valueColor: helpers.statusTextColor(lastGlucoseStatus),
+                infoIconKey: const Key('sugar_info_button'),
+                onInfoTap: () => showMetricInfoSheet(
+                  context,
+                  buildGlucoseSpec(
+                    mgdl: lastGlucose,
+                    age: effectiveAge,
+                    conditions: effectiveConditions,
+                  ),
+                ),
                 onAddTap: canEdit
                     ? () => onAddReading(
                         deviceType: 'glucose',
@@ -130,11 +164,15 @@ class MetricsGrid extends StatelessWidget {
                 heightCm: effectiveHeight,
                 weightKg: effectiveWeight,
                 weightDisplay: weightValue,
+                onInfoTap: () => showMetricInfoSheet(
+                  context,
+                  buildBmiSpec(bmi: effectiveBmi, age: effectiveAge),
+                ),
                 onAddWeight: canEdit
                     ? () => onAddReading(
-                          deviceType: 'weight',
-                          btDeviceType: 'Weight',
-                        )
+                        deviceType: 'weight',
+                        btDeviceType: 'Weight',
+                      )
                     : null,
               ),
             ),
@@ -145,6 +183,14 @@ class MetricsGrid extends StatelessWidget {
                 count: todaySteps,
                 goal: stepsGoal,
                 subtitle: l10n.viaPhone,
+                onInfoTap: () => showMetricInfoSheet(
+                  context,
+                  buildStepsSpec(
+                    count: todaySteps,
+                    age: effectiveAge,
+                    conditions: effectiveConditions,
+                  ),
+                ),
               ),
             ),
           ],
@@ -189,12 +235,16 @@ class _MetricTile extends StatelessWidget {
   final String value;
   final Color valueColor;
   final VoidCallback? onAddTap;
+  final VoidCallback? onInfoTap;
+  final Key? infoIconKey;
 
   const _MetricTile({
     required this.label,
     required this.value,
     required this.valueColor,
     this.onAddTap,
+    this.onInfoTap,
+    this.infoIconKey,
   });
 
   @override
@@ -207,14 +257,23 @@ class _MetricTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
-              letterSpacing: 1,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              if (onInfoTap != null)
+                _InfoIconButton(iconKey: infoIconKey, onTap: onInfoTap!),
+            ],
           ),
           const SizedBox(height: 6),
           Row(
@@ -261,12 +320,14 @@ class _StepsTile extends StatelessWidget {
   final int? count;
   final int goal;
   final String? subtitle;
+  final VoidCallback? onInfoTap;
 
   const _StepsTile({
     required this.label,
     required this.count,
     required this.goal,
     this.subtitle,
+    this.onInfoTap,
   });
 
   @override
@@ -286,14 +347,26 @@ class _StepsTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
-              letterSpacing: 1,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              if (onInfoTap != null)
+                _InfoIconButton(
+                  iconKey: const Key('steps_info_button'),
+                  onTap: onInfoTap!,
+                ),
+            ],
           ),
           if (subtitle != null)
             Text(
@@ -332,10 +405,7 @@ class _StepsTile extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             '$pct% of ${_formatSteps(goal)}',
-            style: const TextStyle(
-              fontSize: 8,
-              color: AppColors.textSecondary,
-            ),
+            style: const TextStyle(fontSize: 8, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -358,6 +428,7 @@ class _BmiTile extends StatelessWidget {
   final double? weightKg;
   final String weightDisplay;
   final VoidCallback? onAddWeight;
+  final VoidCallback? onInfoTap;
 
   const _BmiTile({
     this.bmi,
@@ -366,6 +437,7 @@ class _BmiTile extends StatelessWidget {
     this.weightKg,
     required this.weightDisplay,
     this.onAddWeight,
+    this.onInfoTap,
   });
 
   Color _bmiColor() {
@@ -414,14 +486,26 @@ class _BmiTile extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'BMI',
-                    style: const TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
-                      letterSpacing: 1,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'BMI',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      if (onInfoTap != null) ...[
+                        const SizedBox(width: 6),
+                        _InfoIconButton(
+                          iconKey: const Key('bmi_info_button'),
+                          onTap: onInfoTap!,
+                        ),
+                      ],
+                    ],
                   ),
                   if (displayCategory.isNotEmpty)
                     Text(
@@ -512,6 +596,57 @@ class _BmiTile extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Small "?" button used on every Vitals tile to reveal the metric info sheet.
+/// Styled to mirror the wellness-score "?" — circular tinted background so it
+/// is visible at arm's length and easy to tap (24×24 hit area).
+class _InfoIconButton extends StatelessWidget {
+  final VoidCallback onTap;
+  final Key? iconKey;
+
+  const _InfoIconButton({required this.onTap, this.iconKey});
+
+  static const double _visibleSize = 24;
+
+  @override
+  Widget build(BuildContext context) {
+    // 44×44 hit area (WCAG 2.5.5), with a smaller visible circle inside it
+    // so the tile is not visually crowded.
+    return Semantics(
+      button: true,
+      label: 'Learn about this measurement',
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: GestureDetector(
+          key: iconKey,
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Center(
+            child: Container(
+              width: _visibleSize,
+              height: _visibleSize,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.40),
+                  width: 1.2,
+                ),
+              ),
+              child: const Icon(
+                Icons.help_outline,
+                size: 16,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
