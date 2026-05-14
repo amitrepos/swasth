@@ -570,6 +570,224 @@ void main() {
       expect(spec.footnote, isNotNull);
     });
 
+    test(
+      'pickGlucoseRangeSet — post-meal context routes to post-meal sets',
+      () {
+        // Non-diabetic.
+        expect(
+          pickGlucoseRangeSet(
+            age: 40,
+            conditions: const [],
+            mealContext: GlucoseMealContext.postMeal,
+          ),
+          GlucoseRangeSet.nonDiabeticPostMeal,
+        );
+        // Diabetic adult.
+        expect(
+          pickGlucoseRangeSet(
+            age: 50,
+            conditions: const ['Diabetes T2'],
+            mealContext: GlucoseMealContext.postMeal,
+          ),
+          GlucoseRangeSet.diabeticAdultPostMeal,
+        );
+        // Diabetic elderly.
+        expect(
+          pickGlucoseRangeSet(
+            age: 70,
+            conditions: const ['Diabetes T2'],
+            mealContext: GlucoseMealContext.postMeal,
+          ),
+          GlucoseRangeSet.diabeticElderlyPostMeal,
+        );
+      },
+    );
+
+    test('pickGlucoseRangeSet — fasting + unknown both use pre-meal sets', () {
+      for (final c in [
+        GlucoseMealContext.fasting,
+        GlucoseMealContext.beforeMeal,
+        GlucoseMealContext.unknown,
+        GlucoseMealContext.random,
+      ]) {
+        expect(
+          pickGlucoseRangeSet(age: 40, conditions: const [], mealContext: c),
+          GlucoseRangeSet.nonDiabetic,
+          reason: 'context $c should map to nonDiabetic',
+        );
+      }
+    });
+
+    test('classifyGlucose nonDiabeticPostMeal boundaries', () {
+      const s = GlucoseRangeSet.nonDiabeticPostMeal;
+      expect(classifyGlucose(mgdl: 69, set: s).category, MetricCategory.urgent);
+      expect(
+        classifyGlucose(mgdl: 70, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 139, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 140, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 179, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 180, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 199, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 200, set: s).category,
+        MetricCategory.urgent,
+      );
+    });
+
+    test('classifyGlucose diabeticAdultPostMeal boundaries', () {
+      const s = GlucoseRangeSet.diabeticAdultPostMeal;
+      expect(classifyGlucose(mgdl: 69, set: s).category, MetricCategory.urgent);
+      expect(
+        classifyGlucose(mgdl: 70, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 179, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 180, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 220, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 221, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 249, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 250, set: s).category,
+        MetricCategory.urgent,
+      );
+    });
+
+    test('classifyGlucose diabeticElderlyPostMeal boundaries (relaxed)', () {
+      const s = GlucoseRangeSet.diabeticElderlyPostMeal;
+      expect(classifyGlucose(mgdl: 79, set: s).category, MetricCategory.urgent);
+      expect(
+        classifyGlucose(mgdl: 80, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 199, set: s).category,
+        MetricCategory.fitFine,
+      );
+      expect(
+        classifyGlucose(mgdl: 200, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 229, set: s).category,
+        MetricCategory.caution,
+      );
+      expect(
+        classifyGlucose(mgdl: 230, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 249, set: s).category,
+        MetricCategory.atRisk,
+      );
+      expect(
+        classifyGlucose(mgdl: 250, set: s).category,
+        MetricCategory.urgent,
+      );
+    });
+
+    test('buildGlucoseSpec — consolidated message disambiguates context', () {
+      // 145 fasting non-diabetic → At Risk (in diabetes range)
+      final fasting = buildGlucoseSpec(
+        mgdl: 145,
+        age: 40,
+        conditions: const [],
+        mealContext: GlucoseMealContext.fasting,
+      );
+      expect(fasting.currentLevel?.category, MetricCategory.atRisk);
+      expect(fasting.consolidatedMessage, contains('Fasting'));
+      expect(fasting.consolidatedMessage, contains('At Risk'));
+
+      // 145 post-meal non-diabetic → Caution (NOT in diabetes range)
+      final postMeal = buildGlucoseSpec(
+        mgdl: 145,
+        age: 40,
+        conditions: const [],
+        mealContext: GlucoseMealContext.postMeal,
+      );
+      expect(postMeal.currentLevel?.category, MetricCategory.caution);
+      expect(postMeal.consolidatedMessage, contains('Post-meal'));
+      expect(postMeal.consolidatedMessage, contains('Caution'));
+    });
+
+    test('buildGlucoseSpec — unknown context surfaces ambiguous CTA', () {
+      final spec = buildGlucoseSpec(
+        mgdl: 145,
+        age: 40,
+        conditions: const [],
+        mealContext: GlucoseMealContext.unknown,
+      );
+      expect(spec.ambiguousCta, isNotNull);
+      expect(spec.ambiguousCta!.toLowerCase(), contains('tag this reading'));
+    });
+
+    test('buildGlucoseSpec — diabetic 145 fasting vs post-meal flip', () {
+      // 145 fasting for diabetic <65 → Caution (above <130 target).
+      final fasting = buildGlucoseSpec(
+        mgdl: 145,
+        age: 50,
+        conditions: const ['Diabetes T2'],
+        mealContext: GlucoseMealContext.fasting,
+      );
+      expect(fasting.currentLevel?.category, MetricCategory.caution);
+      // 145 post-meal for diabetic <65 → Fit & Fine (within <180 target).
+      final postMeal = buildGlucoseSpec(
+        mgdl: 145,
+        age: 50,
+        conditions: const ['Diabetes T2'],
+        mealContext: GlucoseMealContext.postMeal,
+      );
+      expect(postMeal.currentLevel?.category, MetricCategory.fitFine);
+    });
+
+    test('glucoseMealContextFromString — round-trip', () {
+      expect(
+        glucoseMealContextFromString('fasting'),
+        GlucoseMealContext.fasting,
+      );
+      expect(
+        glucoseMealContextFromString('post_meal'),
+        GlucoseMealContext.postMeal,
+      );
+      expect(glucoseMealContextFromString('random'), GlucoseMealContext.random);
+      expect(glucoseMealContextFromString(null), GlucoseMealContext.unknown);
+      expect(
+        glucoseMealContextFromString('garbage'),
+        GlucoseMealContext.unknown,
+      );
+    });
+
     test('every source URL is a stable landing page (no deep PDF paths)', () {
       // Policy: deep PDF paths (e.g. `/sites/default/files/.../guidelines.pdf`)
       // rotate every few months on Indian gov sites and embarrass us with

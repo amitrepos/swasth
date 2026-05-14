@@ -45,6 +45,16 @@ class MetricInfoSpec {
   final List<SourceRef> sources;
   final String disclaimer;
 
+  /// Optional one-sentence sentence customised for the (value, context,
+  /// profile) tuple. Used by glucose to disambiguate fasting vs post-meal
+  /// (e.g. "Post-meal 145 mg/dL — Caution. Higher than ideal but not in
+  /// the diabetes range.").
+  final String? consolidatedMessage;
+
+  /// Optional inline CTA shown when classification is ambiguous (e.g. for
+  /// glucose readings with `meal_context = 'unknown'`).
+  final String? ambiguousCta;
+
   const MetricInfoSpec({
     required this.title,
     required this.currentValue,
@@ -54,6 +64,8 @@ class MetricInfoSpec {
     this.footnote,
     required this.sources,
     required this.disclaimer,
+    this.consolidatedMessage,
+    this.ambiguousCta,
   });
 }
 
@@ -370,26 +382,73 @@ MetricInfoSpec buildBpSpec({
 //                              FASTING GLUCOSE
 // ===========================================================================
 
-enum GlucoseRangeSet { nonDiabetic, diabeticAdult, diabeticElderly }
+/// Meal context for glucose readings. Maps 1:1 to the backend
+/// `health_readings.meal_context` column added in migration 0010.
+enum GlucoseMealContext { fasting, beforeMeal, postMeal, random, unknown }
+
+GlucoseMealContext glucoseMealContextFromString(String? raw) {
+  switch (raw) {
+    case 'fasting':
+      return GlucoseMealContext.fasting;
+    case 'before_meal':
+      return GlucoseMealContext.beforeMeal;
+    case 'post_meal':
+      return GlucoseMealContext.postMeal;
+    case 'random':
+      return GlucoseMealContext.random;
+    default:
+      return GlucoseMealContext.unknown;
+  }
+}
+
+enum GlucoseRangeSet {
+  nonDiabetic, // fasting / before-meal / unknown for non-diabetics
+  nonDiabeticPostMeal,
+  diabeticAdult, // pre-meal target for diabetics <65
+  diabeticAdultPostMeal,
+  diabeticElderly, // pre-meal target for diabetics 65+
+  diabeticElderlyPostMeal,
+}
 
 GlucoseRangeSet pickGlucoseRangeSet({
   required int? age,
   required List<String> conditions,
+  GlucoseMealContext mealContext = GlucoseMealContext.unknown,
 }) {
   final diabetic = _hasDiabetes(conditions);
-  if (!diabetic) return GlucoseRangeSet.nonDiabetic;
-  if (age != null && age >= 65) return GlucoseRangeSet.diabeticElderly;
-  return GlucoseRangeSet.diabeticAdult;
+  // Treat 'random' the same as the pre-meal target — clinical advice is to
+  // err conservative; sheet will footnote that random sugar interpretation
+  // is approximate.
+  final isPostMeal = mealContext == GlucoseMealContext.postMeal;
+  if (!diabetic) {
+    return isPostMeal
+        ? GlucoseRangeSet.nonDiabeticPostMeal
+        : GlucoseRangeSet.nonDiabetic;
+  }
+  if (age != null && age >= 65) {
+    return isPostMeal
+        ? GlucoseRangeSet.diabeticElderlyPostMeal
+        : GlucoseRangeSet.diabeticElderly;
+  }
+  return isPostMeal
+      ? GlucoseRangeSet.diabeticAdultPostMeal
+      : GlucoseRangeSet.diabeticAdult;
 }
 
 String _glucoseSetLabel(GlucoseRangeSet s) {
   switch (s) {
     case GlucoseRangeSet.nonDiabetic:
       return 'Targets for: Non-diabetic adult (fasting)';
+    case GlucoseRangeSet.nonDiabeticPostMeal:
+      return 'Targets for: Non-diabetic adult (post-meal, 2 hours after eating)';
     case GlucoseRangeSet.diabeticAdult:
       return 'Targets adjusted for: Diabetes (under 65, pre-meal)';
+    case GlucoseRangeSet.diabeticAdultPostMeal:
+      return 'Targets adjusted for: Diabetes (under 65, post-meal)';
     case GlucoseRangeSet.diabeticElderly:
-      return 'Targets adjusted for: Diabetes (65+, relaxed)';
+      return 'Targets adjusted for: Diabetes (65+, pre-meal relaxed)';
+    case GlucoseRangeSet.diabeticElderlyPostMeal:
+      return 'Targets adjusted for: Diabetes (65+, post-meal relaxed)';
   }
 }
 
@@ -502,6 +561,114 @@ List<MetricLevel> _glucoseLevels(GlucoseRangeSet s) {
           color: AppColors.statusCritical,
         ),
       ];
+    case GlucoseRangeSet.nonDiabeticPostMeal:
+      return const [
+        MetricLevel(
+          category: MetricCategory.fitFine,
+          emoji: '🟢',
+          label: 'Fit & Fine',
+          range: '<140 mg/dL',
+          desc: 'Healthy 2-hour post-meal reading.',
+          color: AppColors.statusNormal,
+        ),
+        MetricLevel(
+          category: MetricCategory.caution,
+          emoji: '🟡',
+          label: 'Caution',
+          range: '140–179 mg/dL',
+          desc: 'Higher than ideal but not in the diabetes range. Watch carbs.',
+          color: AppColors.amber,
+        ),
+        MetricLevel(
+          category: MetricCategory.atRisk,
+          emoji: '🟠',
+          label: 'At Risk — in diabetes range',
+          range: '180–199 mg/dL',
+          desc:
+              'Post-meal sugar in the diabetes range — needs confirmation by your doctor.',
+          color: AppColors.statusElevated,
+        ),
+        MetricLevel(
+          category: MetricCategory.urgent,
+          emoji: '🚨',
+          label: 'Urgent',
+          range: '≥200 mg/dL or <70 mg/dL',
+          desc:
+              'Very high (post-meal) or very low. Contact your doctor today; if symptomatic, emergency.',
+          color: AppColors.statusCritical,
+        ),
+      ];
+    case GlucoseRangeSet.diabeticAdultPostMeal:
+      return const [
+        MetricLevel(
+          category: MetricCategory.fitFine,
+          emoji: '🟢',
+          label: 'Fit & Fine',
+          range: '<180 mg/dL (post-meal)',
+          desc: 'Within your post-meal target. Keep it up.',
+          color: AppColors.statusNormal,
+        ),
+        MetricLevel(
+          category: MetricCategory.caution,
+          emoji: '🟡',
+          label: 'Caution',
+          range: '180–220 mg/dL',
+          desc: 'Above your post-meal target — review meals and timing.',
+          color: AppColors.amber,
+        ),
+        MetricLevel(
+          category: MetricCategory.atRisk,
+          emoji: '🟠',
+          label: 'At Risk',
+          range: '221–249 mg/dL',
+          desc: 'Persistently high after meals. Talk to your doctor.',
+          color: AppColors.statusElevated,
+        ),
+        MetricLevel(
+          category: MetricCategory.urgent,
+          emoji: '🚨',
+          label: 'Urgent',
+          range: '≥250 mg/dL or <70 mg/dL',
+          desc: 'Call your doctor today. If symptomatic, emergency.',
+          color: AppColors.statusCritical,
+        ),
+      ];
+    case GlucoseRangeSet.diabeticElderlyPostMeal:
+      return const [
+        MetricLevel(
+          category: MetricCategory.fitFine,
+          emoji: '🟢',
+          label: 'Fit & Fine',
+          range: '<200 mg/dL (post-meal, relaxed)',
+          desc:
+              'Within your relaxed post-meal target — avoids hypoglycemia risk.',
+          color: AppColors.statusNormal,
+        ),
+        MetricLevel(
+          category: MetricCategory.caution,
+          emoji: '🟡',
+          label: 'Caution',
+          range: '200–229 mg/dL',
+          desc: 'Slightly high. Review meals and timing.',
+          color: AppColors.amber,
+        ),
+        MetricLevel(
+          category: MetricCategory.atRisk,
+          emoji: '🟠',
+          label: 'At Risk',
+          range: '230–249 mg/dL',
+          desc: 'Talk to your doctor about medication review.',
+          color: AppColors.statusElevated,
+        ),
+        MetricLevel(
+          category: MetricCategory.urgent,
+          emoji: '🚨',
+          label: 'Urgent',
+          range: '≥250 mg/dL or <80 mg/dL',
+          desc: 'Call your doctor today. If symptomatic, emergency.',
+          color: AppColors.statusCritical,
+        ),
+      ];
   }
 }
 
@@ -516,16 +683,114 @@ MetricLevel classifyGlucose({
       if (mgdl <= 99) return levels[0];
       if (mgdl <= 125) return levels[1];
       return levels[2];
+    case GlucoseRangeSet.nonDiabeticPostMeal:
+      // Non-diabetic post-meal target = <140; clinical diabetes threshold
+      // for 2h post-meal = ≥200; ≥200 with prior glucose is Urgent.
+      if (mgdl < 70 || mgdl >= 200) return levels[3];
+      if (mgdl < 140) return levels[0];
+      if (mgdl < 180) return levels[1];
+      return levels[2];
     case GlucoseRangeSet.diabeticAdult:
       if (mgdl < 70 || mgdl >= 250) return levels[3];
       if (mgdl <= 130) return levels[0];
       if (mgdl <= 160) return levels[1];
+      return levels[2];
+    case GlucoseRangeSet.diabeticAdultPostMeal:
+      // Post-meal target for diabetics <65 = <180.
+      if (mgdl < 70 || mgdl >= 250) return levels[3];
+      if (mgdl < 180) return levels[0];
+      if (mgdl <= 220) return levels[1];
       return levels[2];
     case GlucoseRangeSet.diabeticElderly:
       if (mgdl < 80 || mgdl >= 250) return levels[3];
       if (mgdl <= 150) return levels[0];
       if (mgdl <= 180) return levels[1];
       return levels[2];
+    case GlucoseRangeSet.diabeticElderlyPostMeal:
+      // Relaxed post-meal target for diabetics 65+ = <200.
+      if (mgdl < 80 || mgdl >= 250) return levels[3];
+      if (mgdl < 200) return levels[0];
+      if (mgdl <= 229) return levels[1];
+      return levels[2];
+  }
+}
+
+/// Human-readable prefix for the consolidated message. "Post-meal 145 mg/dL"
+/// reads better than "After Meal 145 mg/dL".
+String _contextPrefix(GlucoseMealContext c) {
+  switch (c) {
+    case GlucoseMealContext.fasting:
+      return 'Fasting';
+    case GlucoseMealContext.beforeMeal:
+      return 'Pre-meal';
+    case GlucoseMealContext.postMeal:
+      return 'Post-meal';
+    case GlucoseMealContext.random:
+      return 'Random';
+    case GlucoseMealContext.unknown:
+      return '';
+  }
+}
+
+/// One-sentence interpretation per (level, context, profile). Mirrors the
+/// matrix in the NUO-127 plan; reviewed by Dr. Rajesh.
+String _glucoseConsolidatedMessage({
+  required double mgdl,
+  required GlucoseMealContext context,
+  required GlucoseRangeSet set,
+  required MetricLevel level,
+}) {
+  final prefix = _contextPrefix(context);
+  final value = '${mgdl.toStringAsFixed(0)} mg/dL';
+  final head = prefix.isEmpty ? value : '$prefix $value';
+  switch (level.category) {
+    case MetricCategory.fitFine:
+      switch (set) {
+        case GlucoseRangeSet.nonDiabetic:
+          return '$head — Fit & Fine. Healthy fasting sugar.';
+        case GlucoseRangeSet.nonDiabeticPostMeal:
+          return '$head — Fit & Fine. Healthy 2-hour reading.';
+        case GlucoseRangeSet.diabeticAdult:
+        case GlucoseRangeSet.diabeticElderly:
+          return '$head — Fit & Fine. Within your pre-meal target.';
+        case GlucoseRangeSet.diabeticAdultPostMeal:
+        case GlucoseRangeSet.diabeticElderlyPostMeal:
+          return '$head — Fit & Fine. Within your post-meal target.';
+      }
+    case MetricCategory.caution:
+      switch (set) {
+        case GlucoseRangeSet.nonDiabetic:
+          return '$head — Caution. Higher than ideal — early warning for prediabetes.';
+        case GlucoseRangeSet.nonDiabeticPostMeal:
+          return '$head — Caution. Higher than ideal but not in the diabetes range. Watch carbs.';
+        case GlucoseRangeSet.diabeticAdult:
+        case GlucoseRangeSet.diabeticElderly:
+          return '$head — Caution. Above your pre-meal target.';
+        case GlucoseRangeSet.diabeticAdultPostMeal:
+        case GlucoseRangeSet.diabeticElderlyPostMeal:
+          return '$head — Caution. Above your post-meal target.';
+      }
+    case MetricCategory.atRisk:
+      switch (set) {
+        case GlucoseRangeSet.nonDiabetic:
+        case GlucoseRangeSet.nonDiabeticPostMeal:
+          return '$head — At Risk. In the diabetes range; please confirm with your doctor.';
+        case GlucoseRangeSet.diabeticAdult:
+        case GlucoseRangeSet.diabeticElderly:
+        case GlucoseRangeSet.diabeticAdultPostMeal:
+        case GlucoseRangeSet.diabeticElderlyPostMeal:
+          return '$head — At Risk. Persistently high — talk to your doctor about a dose review.';
+      }
+    case MetricCategory.urgent:
+      if (mgdl < 70) {
+        return '$head — Urgent (low). Eat or drink something sugary now, then call your doctor.';
+      }
+      if (mgdl < 80 &&
+          (set == GlucoseRangeSet.diabeticElderly ||
+              set == GlucoseRangeSet.diabeticElderlyPostMeal)) {
+        return '$head — Urgent (low for your relaxed target). Eat or drink something sugary, then call your doctor.';
+      }
+      return '$head — Urgent (high). Call your doctor today. If you feel unwell, go to emergency.';
   }
 }
 
@@ -533,27 +798,57 @@ MetricInfoSpec buildGlucoseSpec({
   required double? mgdl,
   required int? age,
   required List<String> conditions,
+  GlucoseMealContext mealContext = GlucoseMealContext.unknown,
 }) {
-  final set = pickGlucoseRangeSet(age: age, conditions: conditions);
+  final set = pickGlucoseRangeSet(
+    age: age,
+    conditions: conditions,
+    mealContext: mealContext,
+  );
   final levels = _glucoseLevels(set);
   MetricLevel? current;
   String? value;
+  String? consolidated;
+  String? ambiguousCta;
   if (mgdl != null) {
     current = classifyGlucose(mgdl: mgdl, set: set);
-    value = '${mgdl.toStringAsFixed(0)} mg/dL';
+    final prefix = _contextPrefix(mealContext);
+    value = prefix.isEmpty
+        ? '${mgdl.toStringAsFixed(0)} mg/dL'
+        : '$prefix · ${mgdl.toStringAsFixed(0)} mg/dL';
+    consolidated = _glucoseConsolidatedMessage(
+      mgdl: mgdl,
+      context: mealContext,
+      set: set,
+      level: current,
+    );
   }
+  if (mealContext == GlucoseMealContext.unknown && mgdl != null) {
+    ambiguousCta =
+        'Tag this reading as fasting or post-meal to see your status.';
+  }
+  // Footnote now states which set is in use rather than the old generic
+  // "assume fasting" line.
+  final isPostMeal =
+      set == GlucoseRangeSet.nonDiabeticPostMeal ||
+      set == GlucoseRangeSet.diabeticAdultPostMeal ||
+      set == GlucoseRangeSet.diabeticElderlyPostMeal;
+  final footnote = isPostMeal
+      ? 'Showing post-meal ranges. Fasting targets are different — see fasting reading next time. '
+            'HbA1c target: <7% (general) or <8% (elderly/frail).'
+      : 'Showing fasting / pre-meal ranges (more than 8 hours since last meal). '
+            'Post-meal targets are different. HbA1c target: <7% (general) or <8% (elderly/frail).';
   return MetricInfoSpec(
     title: 'Blood Sugar',
     currentValue: value,
     currentLevel: current,
     levels: levels,
     rangeSetLabel: _glucoseSetLabel(set),
-    footnote:
-        'These ranges assume FASTING (more than 8 hours since your last meal). '
-        'Post-meal targets are different — ask your doctor. '
-        'HbA1c target: <7% (general) or <8% (elderly/frail).',
+    footnote: footnote,
     sources: const [MetricSources.rssdi, MetricSources.icmrDm],
     disclaimer: _kDisclaimer,
+    consolidatedMessage: consolidated,
+    ambiguousCta: ambiguousCta,
   );
 }
 

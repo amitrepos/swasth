@@ -93,9 +93,47 @@ class MetricInfoSheet extends StatelessWidget {
               _CurrentReadingCard(
                 value: spec.currentValue!,
                 level: spec.currentLevel!,
+                consolidatedMessage: spec.consolidatedMessage,
               )
             else
               _NoReadingCard(),
+            if (spec.ambiguousCta != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                key: const Key('metric_info_ambiguous_cta'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.30),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.label_outline,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        spec.ambiguousCta!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.primary,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -159,7 +197,12 @@ class MetricInfoSheet extends StatelessWidget {
 class _CurrentReadingCard extends StatelessWidget {
   final String value;
   final MetricLevel level;
-  const _CurrentReadingCard({required this.value, required this.level});
+  final String? consolidatedMessage;
+  const _CurrentReadingCard({
+    required this.value,
+    required this.level,
+    this.consolidatedMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -203,6 +246,18 @@ class _CurrentReadingCard extends StatelessWidget {
                     color: level.color,
                   ),
                 ),
+                if (consolidatedMessage != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    consolidatedMessage!,
+                    key: const Key('metric_info_consolidated_message'),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textPrimary,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

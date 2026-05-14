@@ -172,6 +172,7 @@
   "fasting": "खाली पेट",
   "beforeMeal": "खाने से पहले",
   "afterMeal": "खाने के बाद",
+  "mealContextRandom": "पता नहीं / Random",
   "readingTime": "रीडिंग का समय",
   "saveReading": "रीडिंग सेव करें",
   "readingSavedSuccess": "रीडिंग सफलतापूर्वक सेव हुई",

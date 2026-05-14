@@ -45,6 +45,11 @@ class HealthReading {
   final String unitDisplay;
   final String? statusFlag;
   final String? notes;
+
+  /// Glucose only — 'fasting' | 'before_meal' | 'post_meal' | 'random' |
+  /// 'unknown'. Drives the dashboard info-sheet range selection so a
+  /// post-meal reading isn't classified against fasting thresholds.
+  final String? mealContext;
   final DateTime readingTimestamp;
   final int? seq; // Device sequence number for BLE deduplication
   final DateTime createdAt;
@@ -72,6 +77,7 @@ class HealthReading {
     required this.unitDisplay,
     this.statusFlag,
     this.notes,
+    this.mealContext,
     required this.readingTimestamp,
     this.seq,
     required this.createdAt,
@@ -105,6 +111,7 @@ class HealthReading {
       unitDisplay: json['unit_display'] ?? '',
       statusFlag: json['status_flag'],
       notes: json['notes'],
+      mealContext: json['meal_context'] as String?,
       readingTimestamp: DateTimeUtils.parseUtc(json['reading_timestamp']),
       seq: json['seq'],
       createdAt: json['created_at'] != null
@@ -136,6 +143,7 @@ class HealthReading {
       'unit_display': unitDisplay,
       'status_flag': statusFlag,
       'notes': notes,
+      if (mealContext != null) 'meal_context': mealContext,
       'reading_timestamp': readingTimestamp.toUtc().toIso8601String(),
       'seq': seq,
     };
@@ -360,7 +368,7 @@ class HealthReadingService {
         ),
       );
       final insight = (data['insight'] as String?) ?? '';
-      
+
       return insight;
     } on UnauthorizedException {
       rethrow;
@@ -408,7 +416,9 @@ class HealthReadingService {
     );
     final request = http.MultipartRequest('POST', uri)
       ..headers.addAll(ApiClient.headers(token: token))
-      ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: fileName));
+      ..files.add(
+        http.MultipartFile.fromBytes('file', imageBytes, filename: fileName),
+      );
 
     http.Response response;
     try {

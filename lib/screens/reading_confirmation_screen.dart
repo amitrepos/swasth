@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/error_mapper.dart';
@@ -60,7 +61,12 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
   final _stepsController = TextEditingController();
   final _weightController = TextEditingController();
 
-  String? _mealContext; // 'fasting', 'before_meal', 'after_meal'
+  // 'fasting' | 'before_meal' | 'post_meal' | 'random'. Synced with backend
+  // `meal_context` column (see migration 0010). Persists last choice via
+  // SharedPreferences so frequent users (e.g. daily fasting readers) don't
+  // re-pick every time.
+  String? _mealContext;
+  static const String _kMealContextPrefKey = 'glucose_last_meal_context';
   DateTime _readingTime = DateTime.now();
   bool _isSaving = false;
   bool _isEditing = false;
@@ -77,6 +83,27 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
   void initState() {
     super.initState();
     _prefillFromOcr();
+    if (isGlucose) {
+      _loadLastMealContext();
+    }
+  }
+
+  /// Remembers the user's last-picked meal context (e.g. daily fasting
+  /// readers don't have to re-tap every morning). Defaults to null if no
+  /// prior choice or stored value is invalid.
+  Future<void> _loadLastMealContext() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_kMealContextPrefKey);
+    const allowed = {'fasting', 'before_meal', 'post_meal', 'random'};
+    if (saved != null && allowed.contains(saved) && mounted) {
+      setState(() => _mealContext = saved);
+    }
+  }
+
+  Future<void> _persistLastMealContext(String? value) async {
+    if (value == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kMealContextPrefKey, value);
   }
 
   void _prefillFromOcr() {
@@ -97,8 +124,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
         _systolicController.text = r.systolic!.toStringAsFixed(0);
       if (r.diastolic != null)
         _diastolicController.text = r.diastolic!.toStringAsFixed(0);
-      if (r.pulse != null)
-        _pulseController.text = r.pulse!.toStringAsFixed(0);
+      if (r.pulse != null) _pulseController.text = r.pulse!.toStringAsFixed(0);
     }
   }
 
@@ -195,6 +221,9 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
 
       if (isGlucose) {
         final value = double.parse(_glucoseController.text.trim());
+        // mealContext is the typed channel (migration 0010); keep `notes`
+        // free for genuine clinical notes.
+        await _persistLastMealContext(_mealContext);
         reading = HealthReading(
           id: 0,
           profileId: widget.profileId,
@@ -204,7 +233,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
           valueNumeric: value,
           unitDisplay: 'mg/dL',
           statusFlag: _glucoseStatus(value),
-          notes: _mealContext,
+          mealContext: _mealContext ?? 'unknown',
           readingTimestamp: _readingTime.toUtc(),
           createdAt: DateTime.now().toUtc(),
         );
@@ -273,7 +302,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
       try {
         // Debug: Print the reading data being sent
         debugPrint('Saving reading: ${reading.toJson()}');
-        
+
         saveResult = await _readingService.saveReading(reading, token);
         debugPrint('Save result: $saveResult');
       } catch (e) {
@@ -346,12 +375,12 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     } catch (e, stackTrace) {
       debugPrint('ERROR in _save: $e');
       debugPrint('Stack trace: $stackTrace');
-      
+
       if (mounted) {
         // Show more detailed error for debugging
         final errorMsg = e.toString();
         debugPrint('Error message: $errorMsg');
-        
+
         if (errorMsg.contains('422') || errorMsg.contains('validation')) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -366,7 +395,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
               backgroundColor: Colors.red,
             ),
           );
-        } else if (errorMsg.contains('SocketException') || errorMsg.contains('Timeout')) {
+        } else if (errorMsg.contains('SocketException') ||
+            errorMsg.contains('Timeout')) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Network error. Please check your connection.'),
@@ -569,7 +599,8 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
                 children: [
                   _mealChip(l10n.fasting, 'fasting'),
                   _mealChip(l10n.beforeMeal, 'before_meal'),
-                  _mealChip(l10n.afterMeal, 'after_meal'),
+                  _mealChip(l10n.afterMeal, 'post_meal'),
+                  _mealChip(l10n.mealContextRandom, 'random'),
                 ],
               ),
             ],

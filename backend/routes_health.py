@@ -165,6 +165,7 @@ def save_reading(
         unit_display=reading.unit_display,
         status_flag=reading.status_flag,
         notes=reading.notes,
+        meal_context=reading.meal_context if reading.reading_type == 'glucose' else None,
         reading_timestamp=reading.reading_timestamp,
         seq=reading.seq,
     )
@@ -653,6 +654,9 @@ def get_health_score(
         prev_avg_systolic_90d=float(prev_avg_systolic_90d) if prev_avg_systolic_90d is not None else None,
         last_glucose_value=last_glucose.glucose_value if last_glucose else None,
         last_glucose_status=last_glucose.status_flag if last_glucose else None,
+        last_glucose_meal_context=(
+            last_glucose.meal_context if last_glucose else None
+        ),
         last_bp_systolic=last_bp.systolic if last_bp else None,
         last_bp_diastolic=last_bp.diastolic if last_bp else None,
         last_bp_status=last_bp.status_flag if last_bp else None,
@@ -1299,6 +1303,9 @@ def update_reading(
             db_reading.unit_display = data["glucose_unit"]
         if "sample_type" in data:
             db_reading.sample_type = data["sample_type"]
+        if "meal_context" in data:
+            # Schema validation has already restricted to the enum.
+            db_reading.meal_context = data["meal_context"]
 
     elif rtype == "blood_pressure":
         sys_v = data.get("systolic", db_reading.systolic) if "systolic" in data else db_reading.systolic

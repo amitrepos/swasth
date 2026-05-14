@@ -434,6 +434,12 @@ class HealthReading(Base):
     status_flag = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
 
+    # Glucose: meal context — 'fasting' / 'before_meal' / 'post_meal' /
+    # 'random' / 'unknown'. Used by the dashboard info sheet to pick the
+    # right reference range (fasting <100 vs post-meal <140 for non-diabetics).
+    # Enforced via CHECK constraint in migration 0010.
+    meal_context = Column(String(20), nullable=True)
+
     # AES-256-GCM encrypted copies of sensitive health values (SPDI compliance)
     glucose_value_enc = Column(Text, nullable=True)
     systolic_enc = Column(Text, nullable=True)

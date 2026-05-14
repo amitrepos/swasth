@@ -455,6 +455,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get afterMeal => 'खाने के बाद';
 
   @override
+  String get mealContextRandom => 'पता नहीं / Random';
+
+  @override
   String get readingTime => 'रीडिंग का समय';
 
   @override
