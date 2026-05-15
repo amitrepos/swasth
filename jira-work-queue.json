@@ -1,19 +1,4 @@
 {
   "schema_version": 1,
-  "entries": [
-    {
-      "ticket_key": "NUO-132",
-      "agent": "agent:matt",
-      "priority_name": "Medium",
-      "priority_rank": 3,
-      "queued_at": "2026-05-15T14:12:32Z",
-      "state": "queued",
-      "attempt_count": 2,
-      "retry_after": "2026-05-15T14:12:32Z",
-      "priya_hash": "6e9ac6dd8546e6a3967fc99d12d1a7c6d6e759d43e3193261b14b431886503ff",
-      "pushed_branch_name": "feat/nuo-132-1778854211",
-      "started_at": "2026-05-15T14:10:11Z",
-      "worker_run_id": "25922342797"
-    }
-  ]
+  "entries": []
 }
