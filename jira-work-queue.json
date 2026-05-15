@@ -1,4 +1,16 @@
 {
   "schema_version": 1,
-  "entries": []
+  "entries": [
+    {
+      "ticket_key": "NUO-132",
+      "agent": "agent:matt",
+      "priority_name": "Medium",
+      "priority_rank": 3,
+      "queued_at": "2026-05-15T13:56:28Z",
+      "state": "queued",
+      "attempt_count": 0,
+      "retry_after": "2026-05-15T13:56:28Z",
+      "priya_hash": "8ecd02941d733099a0bae6c19513d04412153bec9f119ace2ca68933da641d44"
+    }
+  ]
 }
