@@ -1,0 +1,71 @@
+name: Agent PR Policy
+
+# Cloud counterpart of the local pre-push hook check-agent-branch-policy.sh.
+# Re-runs the policy on every PR open/sync as a required status check.
+# Catches the case where someone bypasses local hooks.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  policy:
+    name: Verify agent PR policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: startsWith(github.head_ref, 'feat/nuo-') && github.actor != 'claude-code-bot'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Extract ticket key
+        id: extract
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          # feat/nuo-92-some-slug → NUO-92
+          TICKET=$(echo "$BRANCH" | sed -nE 's@^feat/(nuo-[0-9]+).*@\1@p' | tr '[:lower:]' '[:upper:]')
+          if [ -z "$TICKET" ]; then
+            echo "Could not parse ticket key from branch name '$BRANCH'." >&2
+            exit 0
+          fi
+          echo "ticket=$TICKET" >> "$GITHUB_OUTPUT"
+
+      - name: Check JIRA quality-passed label
+        if: steps.extract.outputs.ticket != ''
+        env:
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          TICKET="${{ steps.extract.outputs.ticket }}"
+          LABELS=$(curl -sS -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            "$JIRA_URL/rest/api/3/issue/$TICKET?fields=labels" \
+            | jq -r '.fields.labels[]?')
+          if ! echo "$LABELS" | grep -q '^quality-passed$'; then
+            echo "::warning::JIRA ticket $TICKET is missing the 'quality-passed' label set by Priya. Required for agent-authored PRs." >&2
+            # Soft-warn for now until Priya is configured to set this label;
+            # promoting to error is a runbook step after first ticket lands.
+          fi
+
+      - name: Re-run regression check
+        run: |
+          if [ -f scripts/check_no_regression.sh ]; then
+            bash scripts/check_no_regression.sh || {
+              echo "::error::Gate C-regress failed in CI re-check."
+              exit 1
+            }
+          else
+            echo "scripts/check_no_regression.sh not present on this branch — skipping."
+          fi

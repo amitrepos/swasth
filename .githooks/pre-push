@@ -29,6 +29,14 @@ echo "════════════════════════�
 echo "  Pre-push checks"
 echo "══════════════════════════════════════════════════"
 
+# ── Agent-branch marker policy ────────────────────────────────────────
+# For agent-authored branches (feat/nuo-*), require qa-pass and
+# regression-pass markers AND a `quality-passed` JIRA label before push.
+if [ -x "$REPO_ROOT/.claude/scripts/check-agent-branch-policy.sh" ]; then
+  bash "$REPO_ROOT/.claude/scripts/check-agent-branch-policy.sh" push
+fi
+
+
 # ── Gate: branch hygiene ──────────────────────────────────────────────
 # Read stdin per githooks(5): <local ref> <local sha> <remote ref> <remote sha>
 # Collect the local branch names actually being pushed (skip deletes

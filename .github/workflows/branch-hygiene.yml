@@ -74,7 +74,8 @@ jobs:
           for s in \
             .claude/scripts/check-required-reviewers.sh \
             .claude/scripts/write-review-marker.sh \
-            .claude/scripts/orphan-scan.sh; do
+            .claude/scripts/orphan-scan.sh \
+            .claude/scripts/check-agent-branch-policy.sh; do
             if [ ! -x "$s" ]; then
               echo "::error::$s missing or not executable — the domain expert review chain will not function."
               exit 1
