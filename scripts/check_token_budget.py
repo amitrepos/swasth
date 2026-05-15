@@ -185,6 +185,28 @@ def main() -> int:
     rem_in = int(rem["input_remaining"] or 0)
     rem_out = int(rem["output_remaining"] or 0)
 
+    # OAuth-token responses to /v1/messages don't include the rate-limit
+    # headers, so .get(..., 0) returns 0 even when quota is healthy. Treat
+    # the all-zeros-not-429 case as "headers absent" and proceed.
+    if rem.get("via") != "429" and rem_in == 0 and rem_out == 0:
+        write_step_summary([
+            "## Gate B0 — token budget probe",
+            "- **WARNING:** Anthropic response omitted rate-limit headers "
+            "(common with OAuth tokens). Falling through to `proceed`.",
+            "- For real quota guarding, set `ANTHROPIC_API_KEY` so the probe "
+            "uses x-api-key auth which returns the headers.",
+        ])
+        write_github_output(
+            "proceed",
+            reason="headers_absent",
+            remaining_in=0,
+            remaining_out=0,
+            estimate_in=est_in,
+            estimate_out=est_out,
+        )
+        print("check_token_budget: decision=proceed (headers absent)")
+        return 0
+
     if rem_in >= need_in and rem_out >= need_out:
         decision = "proceed"
         retry_after = ""
