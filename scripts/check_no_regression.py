@@ -45,16 +45,32 @@ def changed_files() -> list[str]:
 
 
 def parse_affected_surfaces(ticket_md: Path) -> list[str]:
-    """Extract Affected Surfaces lines from the ticket brief Priya guarantees."""
+    """Extract Affected Surfaces lines from the ticket brief Priya guarantees.
+
+    Accepts either of the two conventions the brief renderer uses:
+    - Markdown heading: `## Affected Surfaces\n...`
+    - Bold marker:      `**Affected surfaces.**` followed by inline content
+                        on the same line and/or the following paragraph.
+    """
     if not ticket_md.exists():
         return []
     content = ticket_md.read_text()
-    # Look for a "Affected Surfaces" header (any heading level).
+    section: str | None = None
+    # 1. Heading form.
     m = re.search(r"(?i)#+\s*Affected Surfaces\s*\n(.+?)(?:\n#+ |\Z)", content, re.DOTALL)
-    if not m:
+    if m:
+        section = m.group(1)
+    else:
+        # 2. Bold form: capture from `**Affected surfaces` marker through the
+        #    next `**<other-field>**` marker or end of document.
+        m = re.search(
+            r"(?is)\*\*Affected\s+Surfaces[^*]*\*\*(.+?)(?=\n\s*\*\*[A-Z]|\n##\s|\Z)",
+            content,
+        )
+        if m:
+            section = m.group(1)
+    if not section:
         return []
-    section = m.group(1)
-    # Pull bullet-listed file/path tokens (anything inside backticks).
     surfaces = re.findall(r"`([^`]+)`", section)
     return [s.strip() for s in surfaces if s.strip()]
 
