@@ -20,8 +20,24 @@ if [[ ! -f "$TICKET_FILE" ]]; then
   exit 2
 fi
 
-# Strip ISO8601 timestamps to immunise the hash against the JIRA API's
-# timestamp formatting changes when comments are present.
-sed -E 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.+-]+/<TS>/g' "$TICKET_FILE" \
-  | shasum -a 256 \
-  | awk '{print $1}'
+# Hash only the immutable ticket spec — the description body. We
+# deliberately exclude everything the automation itself can mutate:
+#   - Status (transitioned by drift / Needs Human / In Review)
+#   - Labels (added/removed by drift handler)
+#   - Comments (added by automation on every step)
+#   - ISO8601 timestamps (drift, label adds, etc.)
+# Otherwise the worker's recomputed hash would diverge from Priya's the
+# moment the automation posts ANY comment between enqueue and pop.
+python3 -c '
+import re, sys
+text = open(sys.argv[1]).read()
+# Drop the "## Comments" section entirely (and anything after).
+text = re.split(r"\n##\s+Comments\b", text, maxsplit=1)[0]
+# Drop volatile header fields.
+text = re.sub(r"^-\s+\*\*(?:Status|Labels|Priority)\*\*:.*$", "", text, flags=re.MULTILINE)
+# Strip ISO8601 timestamps that might still be embedded.
+text = re.sub(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.+-]+", "<TS>", text)
+# Collapse blank-line runs.
+text = re.sub(r"\n{3,}", "\n\n", text)
+print(text.strip(), end="")
+' "$TICKET_FILE" | shasum -a 256 | awk '{print $1}'
