@@ -42,15 +42,42 @@ ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 PROBE_MODEL = "claude-haiku-4-5-20251001"  # cheapest available
 
 
-def probe_remaining() -> dict[str, int | str | None]:
+def _build_auth_headers() -> dict[str, str] | None:
+    """Pick auth based on which credential is present.
+
+    Preference order:
+      1. ANTHROPIC_API_KEY (`sk-ant-api-...`) — direct Messages API access.
+      2. CLAUDE_CODE_OAUTH_TOKEN (`sk-ant-oat-...`) — OAuth bearer; same
+         endpoint accepts it for Claude Code usage. Used when the workflow
+         only has the existing OAuth secret and no dedicated API key.
+
+    Returns None if no credential is configured.
+    """
     api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise RuntimeError("ANTHROPIC_API_KEY not set")
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    }
+    if api_key:
+        return {
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+    oauth = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
+    if oauth:
+        return {
+            "Authorization": f"Bearer {oauth}",
+            "anthropic-version": "2023-06-01",
+            "anthropic-beta": "oauth-2025-04-20",
+            "content-type": "application/json",
+        }
+    return None
+
+
+def probe_remaining() -> dict[str, int | str | None]:
+    headers = _build_auth_headers()
+    if headers is None:
+        raise RuntimeError(
+            "Neither ANTHROPIC_API_KEY nor CLAUDE_CODE_OAUTH_TOKEN is set; "
+            "Gate B0 has no way to read remaining quota."
+        )
     payload = {
         "model": PROBE_MODEL,
         "max_tokens": 1,
