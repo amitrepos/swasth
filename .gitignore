@@ -1,4 +1,5 @@
 # Miscellaneous
+.agent-tmp/
 *.class
 *.log
 *.pyc
