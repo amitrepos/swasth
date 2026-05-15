@@ -33,8 +33,10 @@ import re, sys
 text = open(sys.argv[1]).read()
 # Drop the "## Comments" section entirely (and anything after).
 text = re.split(r"\n##\s+Comments\b", text, maxsplit=1)[0]
-# Drop volatile header fields.
-text = re.sub(r"^-\s+\*\*(?:Status|Labels|Priority)\*\*:.*$", "", text, flags=re.MULTILINE)
+# Drop volatile header fields. Brief format is `- **Field:** value`
+# (colon INSIDE the markdown bold), not `- **Field**:` (outside).
+text = re.sub(r"^-\s+\*\*(?:Status|Labels|Priority|Issue Type|Parent / Epic):\*\*.*$",
+              "", text, flags=re.MULTILINE)
 # Strip ISO8601 timestamps that might still be embedded.
 text = re.sub(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.+-]+", "<TS>", text)
 # Collapse blank-line runs.
