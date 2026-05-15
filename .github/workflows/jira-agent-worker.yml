@@ -228,7 +228,7 @@ jobs:
             *)                         echo "skill_lines=/matt" >> "$GITHUB_OUTPUT" ;;
           esac
 
-      - name: Pre-implement — transition to in_flight
+      - name: Pre-implement — create branch + transition to in_flight
         if: steps.budget.outputs.decision == 'proceed'
         env:
           TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
@@ -242,6 +242,11 @@ jobs:
           BRANCH_NAME="feat/$(echo "$TICKET_KEY" | tr '[:upper:]' '[:lower:]')-$(date +%s)"
           echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
           export BRANCH_NAME
+          # Worker creates the branch — Matt just commits on the current
+          # branch. Eliminates branch-name mismatch (round-14 smoke saw
+          # Matt invent his own slug and the push step couldn't find it).
+          git fetch origin master --quiet
+          git checkout -b "$BRANCH_NAME" origin/master
           NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           export STARTED_AT="$NOW"
           bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
@@ -285,8 +290,9 @@ jobs:
 
             1. Read `CLAUDE.md`, `RULES.md`, `WORKING-CONTEXT.md`.
             2. Read `.agent-tmp/ticket.md` for the spec.
-            3. Create the branch: `git scb $BRANCH_NAME` (alias creates from
-               fresh `origin/master`; env var `BRANCH_NAME` is preset).
+            3. The worker has ALREADY created and checked out the agent
+               branch `$BRANCH_NAME` for you. **Do NOT** run `git scb` or
+               `git checkout -b` — just work on the current branch.
             4. Implement the task end-to-end with TDD (RED → GREEN → REFACTOR).
                - Follow existing code conventions (AppColors, AppLocalizations,
                  ApiClient, `Depends(get_current_user)` — per RULES.md).
