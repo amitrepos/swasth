@@ -513,7 +513,10 @@ jobs:
           echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
           bash scripts/jira_comment.sh "$TICKET_KEY" \
             "Draft PR opened: $PR_URL"
-          bash scripts/jira_transition.sh "$TICKET_KEY" "In Review"
+          # Transition is non-fatal: PR has already been opened above, so a
+          # missing JIRA status (e.g. project renamed "In Review" → "In Progress")
+          # shouldn't fail the whole worker run after the deliverable exists.
+          bash scripts/jira_transition.sh "$TICKET_KEY" "In Progress" || echo "::warning::jira_transition non-fatal failure"
 
       - name: Mark queue entry done + append budget log
         if: steps.qa.outputs.qa_verdict == 'PASS'
