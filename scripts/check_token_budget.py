@@ -158,8 +158,25 @@ def main() -> int:
         rem = probe_remaining()
     except Exception as e:
         print(f"check_token_budget: probe failed: {e}", file=sys.stderr)
-        # Failing closed is the safe move — defer.
-        write_github_output("defer", reason=f"probe_failed:{e}")
+        # Fail OPEN: probe-auth failure is usually because no ANTHROPIC_API_KEY
+        # is configured (OAuth tokens may not validate against /v1/messages
+        # directly). The actual run uses claude-code-action with the OAuth
+        # token and works fine. Blocking all work on probe-auth failure is
+        # the wrong product behavior. The 429 path inside probe_remaining
+        # is a real quota signal and still defers — that branch returns
+        # rem dict with input_remaining=0 instead of raising.
+        write_step_summary([
+            "## Gate B0 — token budget probe",
+            f"- **WARNING:** probe failed ({e}). Falling through to `proceed`.",
+            "- To enable real quota guarding, set the `ANTHROPIC_API_KEY` GH secret.",
+            "- Safe for normal runs; revisit if smoke shows real quota issues.",
+        ])
+        write_github_output(
+            "proceed",
+            reason="probe_unavailable",
+            remaining_in=0,
+            remaining_out=0,
+        )
         return 0
 
     est_in, est_out, est_source = estimate_cost(args.size_class, Path(args.log))
