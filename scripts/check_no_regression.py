@@ -10,7 +10,7 @@ Steps (all run with `timeout 10m` from check_no_regression.sh):
 
 Inputs:
     .claude/test-baseline.json on master  (committed)
-    /tmp/ticket.md                         (Affected Surfaces section)
+    .agent-tmp/ticket.md                   (Affected Surfaces section)
     git diff --name-only origin/master...HEAD
     /tmp/unit-summary.json, /tmp/integration-summary.json, /tmp/flow-summary.json
         (written by the shell wrapper)
@@ -82,10 +82,15 @@ def is_in_scope(path: str, surfaces: list[str]) -> bool:
 
 
 def churn_check(report: list[str]) -> bool:
-    surfaces = parse_affected_surfaces(Path("/tmp/ticket.md"))
+    # Accept either path so we work whether worker wrote to .agent-tmp/ (new)
+    # or /tmp/ (legacy callsite).
+    ticket_path = Path(".agent-tmp/ticket.md")
+    if not ticket_path.exists():
+        ticket_path = Path("/tmp/ticket.md")
+    surfaces = parse_affected_surfaces(ticket_path)
     changed = changed_files()
     if not surfaces:
-        report.append("## Churn check\n\n**FAIL** — no `Affected Surfaces` block in `/tmp/ticket.md`. Priya should have guaranteed this in Gate A.")
+        report.append("## Churn check\n\n**FAIL** — no `Affected Surfaces` block in ticket brief. Priya should have guaranteed this in Gate A.")
         return False
     outside = [p for p in changed if not is_in_scope(p, surfaces)]
     if len(outside) > MAX_OUTSIDE_SCOPE:
