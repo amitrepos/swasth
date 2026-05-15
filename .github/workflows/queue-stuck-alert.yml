@@ -1,0 +1,75 @@
+name: Queue stuck alert
+
+# Fires every 2 hours. If the head of automation-state/jira-work-queue.json
+# is in state=queued with queued_at older than 6 hours, post a JIRA comment
+# and open a GH issue with label `automation-stuck`.
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Check queue head age
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.actor != 'claude-code-bot'
+    env:
+      JIRA_URL: ${{ secrets.JIRA_URL }}
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: master
+
+      - name: Fetch queue
+        id: fetch
+        run: |
+          if ! git ls-remote --exit-code --heads origin automation-state >/dev/null 2>&1; then
+            echo "no automation-state branch — nothing to check."
+            echo "stale=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch origin automation-state --depth=1
+          git show origin/automation-state:jira-work-queue.json > /tmp/queue.json
+          NOW_SEC=$(date -u +%s)
+          STALE=$(python3 - <<PY
+          import json, datetime
+          q = json.loads(open('/tmp/queue.json').read())
+          stale = []
+          now = datetime.datetime.utcnow()
+          for e in q.get('entries', []):
+              if e.get('state') != 'queued':
+                  continue
+              try:
+                  qa = datetime.datetime.strptime(e['queued_at'], "%Y-%m-%dT%H:%M:%SZ")
+              except Exception:
+                  continue
+              if (now - qa).total_seconds() > 6 * 3600:
+                  stale.append(e['ticket_key'])
+          print(",".join(stale))
+          PY
+          )
+          echo "stale=$STALE" >> "$GITHUB_OUTPUT"
+
+      - name: Alert on stale entries
+        if: steps.fetch.outputs.stale != ''
+        run: |
+          IFS=',' read -ra KEYS <<< "${{ steps.fetch.outputs.stale }}"
+          for k in "${KEYS[@]}"; do
+            bash scripts/jira_comment.sh "$k" \
+              "⚠️ Stuck in the agent queue for >6h. Investigate the worker workflow runs."
+          done
+          gh issue create \
+            --title "automation-stuck: ${{ steps.fetch.outputs.stale }}" \
+            --body "Queue head has been queued >6h without a worker pop. Investigate jira-agent-worker.yml." \
+            --label "automation-stuck"

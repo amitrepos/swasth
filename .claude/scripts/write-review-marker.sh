@@ -34,9 +34,12 @@ EXPERT="$1"
 
 case "$EXPERT" in
   sunita|aditya|doctor|daniel|phi|legal|security|priya|meera) ;;
+  # JIRA agent automation markers (Matt audit C1–C5):
+  priya-quality|coverage-pass|regression-pass|qa-pass|budget-checked) ;;
   *)
     echo "Unknown expert: $EXPERT" >&2
-    echo "Valid experts: sunita, aditya, doctor, daniel, phi, legal, security, priya, meera" >&2
+    echo "Valid experts: sunita, aditya, doctor, daniel, phi, legal, security, priya, meera," >&2
+    echo "  priya-quality, coverage-pass, regression-pass, qa-pass, budget-checked" >&2
     exit 2
     ;;
 esac

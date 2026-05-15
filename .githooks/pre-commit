@@ -79,5 +79,13 @@ fi
 # ── Gate 2: Migration required ────────────────────────────────────────
 bash "$REPO_ROOT/.claude/scripts/check-migration-required.sh"
 
+# ── Gate 2.5: Agent-branch marker policy ──────────────────────────────
+# For branches authored by the JIRA agent automation (feat/nuo-*),
+# require Priya-quality, coverage-pass, and regression-pass markers
+# before any commit lands. See .claude/scripts/check-agent-branch-policy.sh.
+if [ -x "$REPO_ROOT/.claude/scripts/check-agent-branch-policy.sh" ]; then
+  bash "$REPO_ROOT/.claude/scripts/check-agent-branch-policy.sh" commit
+fi
+
 # ── Gate 3: Domain expert review chain ────────────────────────────────
 exec bash "$REPO_ROOT/.claude/scripts/check-required-reviewers.sh"

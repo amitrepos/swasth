@@ -1,0 +1,114 @@
+name: Update test baseline
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'backend/**'
+      - 'test/**'
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - 'backend/requirements.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-test-baseline
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.actor != 'claude-code-bot' && !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install deps
+        run: |
+          if [ -f backend/requirements.txt ]; then
+            python -m pip install --upgrade pip
+            python -m pip install -r backend/requirements.txt pytest-json-report
+          fi
+          if [ -f pubspec.yaml ]; then flutter pub get; fi
+
+      - name: Run unit tests (baseline capture)
+        run: |
+          cd backend
+          TESTING=true python -m pytest tests/ -m "not integration" \
+            --json-report --json-report-file=/tmp/unit-pytest-report.json -q || true
+        continue-on-error: true
+
+      - name: Run flow tests (baseline capture)
+        run: |
+          flutter test test/flows/ --timeout 30s --machine \
+            > /tmp/flow-raw.json 2>/dev/null || true
+        continue-on-error: true
+
+      - name: Compute baseline JSON
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+
+          def load(p, default=None):
+              try:
+                  return json.loads(Path(p).read_text())
+              except Exception:
+                  return default
+
+          unit = load('/tmp/unit-pytest-report.json', {}).get('summary', {})
+          flow_events = []
+          if Path('/tmp/flow-raw.json').exists():
+              for line in Path('/tmp/flow-raw.json').read_text().splitlines():
+                  try:
+                      flow_events.append(json.loads(line))
+                  except Exception:
+                      pass
+          flow_pass = sum(1 for e in flow_events if e.get('type')=='testDone' and e.get('result')=='success')
+          flow_fail = sum(1 for e in flow_events if e.get('type')=='testDone' and e.get('result')=='error')
+          flow_files = len(list(Path('test/flows').rglob('*_test.dart'))) if Path('test/flows').exists() else 0
+
+          sha = subprocess.check_output(['git','rev-parse','HEAD']).decode().strip()
+          baseline = {
+              'schema_version': 1,
+              'commit_sha': sha,
+              'updated_at': subprocess.check_output(['date','-u','+%Y-%m-%dT%H:%M:%SZ']).decode().strip(),
+              'unit_passing': unit.get('passed', 0),
+              'unit_skipped': unit.get('skipped', 0),
+              'integration_passing': 0,
+              'integration_skipped': 0,
+              'flow_passing': flow_pass,
+              'flow_failing': flow_fail,
+              'flow_files': flow_files,
+              'registered_markers': [],
+              'registered_tags': []
+          }
+          Path('.claude/test-baseline.json').write_text(json.dumps(baseline, indent=2) + "\n")
+          print('Baseline written:', baseline)
+          PY
+
+      - name: Commit baseline update if changed
+        run: |
+          git config user.name "swasth-automation-bot"
+          git config user.email "bot@swasth.health"
+          if git diff --quiet -- .claude/test-baseline.json; then
+            echo "Baseline unchanged."
+            exit 0
+          fi
+          git add .claude/test-baseline.json
+          git commit -m "chore(test-baseline): refresh after $(git rev-parse --short HEAD~1) [skip ci]"
+          git push origin master
