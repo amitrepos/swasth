@@ -263,6 +263,10 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           show_full_output: 'true'
+          # Worker is triggered by the producer via `gh workflow run`, so the
+          # actor is github-actions (bot). Whitelist bots so claude-code-action
+          # doesn't refuse the run.
+          allowed_bots: '*'
           # Matt persona inlined here. The slash-command path
           # `~/.claude/commands/matt.md` is not loaded by claude-code-action
           # for project skills — keep the canonical Matt at that local path,
@@ -357,6 +361,10 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           show_full_output: 'true'
+          # Worker is triggered by the producer via `gh workflow run`, so the
+          # actor is github-actions (bot). Whitelist bots so claude-code-action
+          # doesn't refuse the run.
+          allowed_bots: '*'
           # Rubric inlined here for the same reason as Priya Gate A —
           # claude-code-action does not auto-load project skills as
           # slash commands. Canonical rubric still lives in
