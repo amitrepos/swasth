@@ -136,9 +136,10 @@ jobs:
                  numbered question list as a JIRA comment, transition to
                  `Needs Info`, then drop the agent label via
                  `scripts/jira_remove_label.sh "${{ env.TICKET_KEY }}" "${{ env.AGENT_LABEL }}"`.
-            4. Compute `PRIYA_HASH = sha256(.agent-tmp/ticket.md)`:
-               `shasum -a 256 .agent-tmp/ticket.md | awk '{print $1}'`
-               Write it on a line: `PRIYA_HASH: <hash>`.
+            4. Compute `PRIYA_HASH` using the canonical helper (the worker
+               recomputes it the same way at pop time for drift detection):
+               `bash scripts/compute_ticket_hash.sh .agent-tmp/ticket.md`
+               Write the result on a line: `PRIYA_HASH: <hash>`.
             5. End your response with EXACTLY one of these literal lines (the
                workflow parses this mechanically — no trailing punctuation):
                `VERDICT: PASS`
@@ -156,7 +157,7 @@ jobs:
             --model claude-sonnet-4-6
             --max-turns 40
             --permission-mode acceptEdits
-            --allowedTools "Read,Grep,Glob,Write,Bash(scripts/jira_comment.sh:*),Bash(scripts/jira_transition.sh:*),Bash(scripts/jira_remove_label.sh:*),Bash(shasum:*),Bash(sha256sum:*),Bash(awk:*),Bash(cat:*),Bash(mkdir:*),Bash(touch:*)"
+            --allowedTools "Read,Grep,Glob,Write,Bash(scripts/jira_comment.sh:*),Bash(scripts/jira_transition.sh:*),Bash(scripts/jira_remove_label.sh:*),Bash(scripts/compute_ticket_hash.sh:*),Bash(shasum:*),Bash(sha256sum:*),Bash(awk:*),Bash(sed:*),Bash(cat:*),Bash(mkdir:*),Bash(touch:*)"
 
       - name: Verify Priya evidence
         id: evidence

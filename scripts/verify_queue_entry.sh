@@ -24,9 +24,8 @@ TICKET_PATH="/tmp/verify_ticket.md"
 JIRA_FETCH="$SCRIPT_DIR/jira_fetch_ticket.py"
 python3 "$JIRA_FETCH" "$TICKET" --out "$TICKET_PATH" >/dev/null
 
-# Strip volatile lines (timestamps) before hashing so re-renders are stable.
-NORMALIZED=$(sed -E 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.+-]+/<TS>/g' "$TICKET_PATH")
-CURRENT_HASH=$(printf '%s' "$NORMALIZED" | shasum -a 256 | awk '{print $1}')
+# Use the SAME helper Priya invokes at enqueue time so the hashes match.
+CURRENT_HASH=$(bash "$SCRIPT_DIR/compute_ticket_hash.sh" "$TICKET_PATH")
 
 if [[ "$CURRENT_HASH" != "$EXPECTED_HASH" ]]; then
   echo "verify_queue_entry: DRIFT detected for $TICKET" >&2
