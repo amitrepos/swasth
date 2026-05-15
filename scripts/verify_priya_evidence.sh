@@ -22,6 +22,22 @@ REQUIRED_CHECKS=7
 FAILED=0
 FOUND=0
 
+# Whitespace-tolerant matcher: collapses runs of whitespace (spaces, tabs,
+# newlines) to a single space in both the quote AND the ticket body before
+# comparing. Catches legitimate well-formed tickets where Priya concatenates
+# bullets that appear on separate lines in the source, while still failing
+# fabricated quotes whose tokens never appear in the body at all.
+_normalise() {
+  python3 -c '
+import re,sys
+text = sys.stdin.read()
+# Collapse all whitespace runs to a single space; strip.
+print(re.sub(r"\s+", " ", text).strip())
+'
+}
+
+NORMALISED_BODY=$(_normalise < "$TICKET_MD")
+
 while IFS= read -r line; do
   if [[ ! "$line" =~ ^Check[[:space:]]+[0-9]+ ]]; then
     continue
@@ -34,7 +50,8 @@ while IFS= read -r line; do
     FAILED=$((FAILED + 1))
     continue
   fi
-  if ! grep -qF -- "$quote" "$TICKET_MD"; then
+  NORM_QUOTE=$(printf '%s' "$quote" | _normalise)
+  if ! printf '%s' "$NORMALISED_BODY" | grep -qF -- "$NORM_QUOTE"; then
     echo "verify_priya_evidence: quote not found in ticket body: '$quote'" >&2
     FAILED=$((FAILED + 1))
   fi
