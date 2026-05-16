@@ -14,20 +14,6 @@
       "pushed_branch_name": "feat/nuo-14-1778909826",
       "started_at": "2026-05-16T05:37:06Z",
       "worker_run_id": "25954017851"
-    },
-    {
-      "ticket_key": "NUO-12",
-      "agent": "agent:matt",
-      "priority_name": "Highest",
-      "priority_rank": 5,
-      "queued_at": "2026-05-16T07:42:00Z",
-      "state": "queued",
-      "attempt_count": 0,
-      "retry_after": "2026-05-16T07:42:00Z",
-      "priya_hash": "545cebbe8b04b09be4eb9540fb9284791d3a2ff3450a382b38bedb0d13bb4bd6",
-      "pushed_branch_name": "feat/nuo-12-1778917074",
-      "started_at": "2026-05-16T07:37:54Z",
-      "worker_run_id": "25956298443"
     }
   ]
 }
