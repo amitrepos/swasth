@@ -1,0 +1,64 @@
+name: JIRA Agent — PR closed → update JIRA
+
+# Fires when a PR authored by the JIRA agent automation is closed.
+# Extracts the ticket key from the branch name (`feat/<key>-...`), then:
+#   - merged    → label `agent-status:merged`, transition JIRA → `Done`
+#   - closed    → label `agent-status:closed-without-merge`, leave status
+#
+# Non-agent PRs (branch name doesn't match `^feat/[a-z]+-[0-9]+-`) are skipped.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  notify_jira:
+    name: Update JIRA on PR close
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: startsWith(github.event.pull_request.head.ref, 'feat/')
+    env:
+      JIRA_URL: ${{ secrets.JIRA_URL }}
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      BRANCH: ${{ github.event.pull_request.head.ref }}
+      MERGED: ${{ github.event.pull_request.merged }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: master
+
+      - name: Extract ticket key from branch
+        id: extract
+        run: |
+          # feat/nuo-92-some-slug → NUO-92
+          TICKET=$(echo "$BRANCH" | sed -nE 's@^feat/([a-z]+)-([0-9]+).*@\U\1-\2@p')
+          if [ -z "$TICKET" ]; then
+            echo "Branch '$BRANCH' did not parse to a JIRA ticket key; skipping."
+            echo "ticket=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ticket=$TICKET" >> "$GITHUB_OUTPUT"
+
+      - name: Update JIRA — merged path
+        if: steps.extract.outputs.ticket != '' && env.MERGED == 'true'
+        run: |
+          TICKET="${{ steps.extract.outputs.ticket }}"
+          bash scripts/jira_comment.sh "$TICKET" \
+            "PR merged: ${{ github.event.pull_request.html_url }}"
+          bash scripts/jira_set_status_label.sh "$TICKET" merged || true
+          bash scripts/jira_transition.sh "$TICKET" "Done" || echo "::warning::jira_transition non-fatal failure"
+
+      - name: Update JIRA — closed-without-merge path
+        if: steps.extract.outputs.ticket != '' && env.MERGED != 'true'
+        run: |
+          TICKET="${{ steps.extract.outputs.ticket }}"
+          bash scripts/jira_comment.sh "$TICKET" \
+            "PR closed without merge: ${{ github.event.pull_request.html_url }}"
+          bash scripts/jira_set_status_label.sh "$TICKET" closed-without-merge || true
