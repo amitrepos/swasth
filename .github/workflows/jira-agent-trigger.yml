@@ -142,15 +142,28 @@ jobs:
                Use **verbatim** quotes; the workflow grep-validates them later.
             3. Decide PASS / REWRITTEN / NEEDS_INFO:
                - **PASS**: all 7 checks satisfied. Continue to step 4.
-               - **REWRITTEN**: gaps exist but you can fill them confidently from
-                 project context (CLAUDE.md, RULES.md, MOTHERBOOK.md). Post the
-                 rewritten body as a JIRA comment via
-                 `scripts/jira_comment.sh "${{ env.TICKET_KEY }}" @<file>` and
-                 transition to `Spec Ready` via `scripts/jira_transition.sh`.
-                 Re-do the 7 evidence lines against your rewritten body.
-               - **NEEDS_INFO**: you cannot defend a PASS or a REWRITE. Post a
-                 numbered question list as a JIRA comment, transition to
-                 `Needs Info`, then drop the agent label via
+               - **REWRITTEN**: gaps exist but you can fill them confidently
+                 from project context (CLAUDE.md, RULES.md, MOTHERBOOK.md,
+                 docs/LEGAL_COMPLIANCE_*.md, codebase grep). You **MUST** post
+                 the rewritten body to JIRA before declaring REWRITTEN — this
+                 is non-negotiable. The downstream worker re-fetches the ticket
+                 from JIRA, so without your posted rewrite the original
+                 under-spec'd body is what gets used, and Gate C-regress will
+                 fail at the churn check. Steps:
+                   a. Write the rewritten body to `.agent-tmp/rewrite.md` using
+                      your Write tool. Include all 7 rubric sections (User
+                      story, Acceptance criteria, Scope, Affected Surfaces with
+                      file paths in backticks, Data shape, Edge cases, plus
+                      explicit "no ambiguous language" note).
+                   b. Run `bash scripts/jira_comment.sh "${{ env.TICKET_KEY }}" @.agent-tmp/rewrite.md`.
+                      Do NOT skip this — you have direct authority; no
+                      operator approval needed.
+                   c. Run `bash scripts/jira_transition.sh "${{ env.TICKET_KEY }}" "Spec Ready"` (non-fatal if status doesn't exist).
+                   d. Re-do the 7 evidence lines against your rewritten body.
+                   e. Then proceed to step 4 with VERDICT: REWRITTEN.
+               - **NEEDS_INFO**: you cannot defend a PASS or a REWRITE. Post
+                 numbered questions, transition to `Needs Info`, drop the
+                 agent label via
                  `scripts/jira_remove_label.sh "${{ env.TICKET_KEY }}" "${{ env.AGENT_LABEL }}"`.
             4. Compute `PRIYA_HASH` using the canonical helper (the worker
                recomputes it the same way at pop time for drift detection):
