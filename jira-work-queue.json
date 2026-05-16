@@ -28,6 +28,17 @@
       "pushed_branch_name": "feat/nuo-132-1778916752",
       "started_at": "2026-05-16T07:32:32Z",
       "worker_run_id": "25956126695"
+    },
+    {
+      "ticket_key": "NUO-12",
+      "agent": "agent:matt",
+      "priority_name": "Highest",
+      "priority_rank": 5,
+      "queued_at": "2026-05-16T07:34:26Z",
+      "state": "queued",
+      "attempt_count": 0,
+      "retry_after": "2026-05-16T07:34:26Z",
+      "priya_hash": "fce332e8ade2b148175d01d8fe3f68560794b4a0849344ccd3124a80ff559818"
     }
   ]
 }
