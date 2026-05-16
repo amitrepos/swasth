@@ -294,13 +294,24 @@ jobs:
                branch `$BRANCH_NAME` for you. **Do NOT** run `git scb` or
                `git checkout -b` — just work on the current branch.
             4. Implement the task end-to-end with TDD (RED → GREEN → REFACTOR).
+               - **CRITICAL: do NOT stop at RED.** If your test reveals that
+                 the production code is missing the behavior under test,
+                 you MUST also implement the production-code change so the
+                 test passes GREEN. Leaving committed failing tests is a
+                 regression — Gate C-regress will reject the run. Even if
+                 the ticket says "audit" / "verify", treat it as
+                 "audit-and-fix" unless the ticket explicitly says "do not
+                 implement, report only".
                - Follow existing code conventions (AppColors, AppLocalizations,
                  ApiClient, `Depends(get_current_user)` — per RULES.md).
                - Add localization strings to both ARB files if you touch UI.
                - No `print()` in backend; no hardcoded colors / strings.
-            5. After implementing, run `scripts/check_coverage.sh`. If it
-               returns non-zero, read `/tmp/coverage-report.md` and write
-               more tests. Max 3 iterations.
+            5. Run the full test suite locally:
+                 `cd backend && TESTING=true python -m pytest tests/ -m "not integration" -q`
+               If any test fails (your new ones or existing ones), keep
+               iterating on the production code until every test you can
+               run locally is green. Then run `scripts/check_coverage.sh`
+               to confirm tier targets. Max 3 implement/test cycles.
             6. `git commit` your changes (hooks will run — let them). Use a
                conventional commit message.
             7. **DO NOT** push. **DO NOT** call `gh pr create`. Your run ends
