@@ -43,21 +43,37 @@ jobs:
       JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
       TICKET_KEY: ${{ github.event.client_payload.ticket_key || inputs.ticket_key }}
-      AGENT_LABEL: ${{ github.event.client_payload.agent || inputs.agent }}
+      # JIRA Automation sends a comma-joined `labels` string in client_payload
+      # (e.g. "agent:matt, automation-smoke-test, swasth"). manual workflow_dispatch
+      # still passes `agent` directly. Take whichever is present.
+      RAW_AGENT_INPUT: ${{ github.event.client_payload.agent || inputs.agent }}
+      RAW_LABELS: ${{ github.event.client_payload.labels }}
       TRIGGERED_BY: ${{ github.event.client_payload.triggered_by || github.actor }}
 
     steps:
-      - name: Validate inputs
+      - name: Resolve agent label
         run: |
-          if [ -z "${TICKET_KEY}" ] || [ -z "${AGENT_LABEL}" ]; then
-            echo "Missing ticket_key or agent label." >&2
+          # Priority 1: explicit `agent` field (manual workflow_dispatch path).
+          # Priority 2: extract first `agent:*` token from comma-joined labels
+          #             string sent by JIRA Automation.
+          # Priority 3: default to agent:matt.
+          AGENT_LABEL=""
+          if [ -n "${RAW_AGENT_INPUT}" ] && [ "${RAW_AGENT_INPUT}" != "null" ]; then
+            AGENT_LABEL="${RAW_AGENT_INPUT}"
+          elif [ -n "${RAW_LABELS}" ]; then
+            AGENT_LABEL=$(echo "${RAW_LABELS}" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -m1 '^agent:' || true)
+          fi
+          if [ -z "${TICKET_KEY}" ]; then
+            echo "Missing ticket_key." >&2
             exit 1
           fi
           case "${AGENT_LABEL}" in
             agent:matt|agent:engineer|agent:daniel|agent:aditya|agent:sunita|agent:doctor) ;;
-            *) echo "Unknown agent label '${AGENT_LABEL}', defaulting to agent:matt" >&2
-               echo "AGENT_LABEL=agent:matt" >> "$GITHUB_ENV" ;;
+            *) echo "Unknown or empty agent label '${AGENT_LABEL}', defaulting to agent:matt" >&2
+               AGENT_LABEL="agent:matt" ;;
           esac
+          echo "AGENT_LABEL=${AGENT_LABEL}" >> "$GITHUB_ENV"
+          echo "Resolved agent label: ${AGENT_LABEL}"
 
       - name: Checkout master
         uses: actions/checkout@v4
