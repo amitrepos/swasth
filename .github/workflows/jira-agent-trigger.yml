@@ -206,6 +206,17 @@ jobs:
           echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
           echo "priya_hash=$PRIYA_HASH" >> "$GITHUB_OUTPUT"
 
+      - name: Post Priya rewrite to JIRA (REWRITTEN path)
+        if: ${{ steps.evidence.outputs.verdict == 'REWRITTEN' && hashFiles('.agent-tmp/rewrite.md') != '' }}
+        run: |
+          # claude-code-action's sandbox blocks Priya from running our helper
+          # scripts directly. The workflow itself has full credentials, so
+          # we post the rewrite she wrote to disk. This guarantees the
+          # downstream worker re-fetches a ticket that HAS the Affected
+          # Surfaces / acceptance criteria sections Priya generated.
+          bash scripts/jira_comment.sh "$TICKET_KEY" @.agent-tmp/rewrite.md
+          bash scripts/jira_transition.sh "$TICKET_KEY" "Spec Ready" || echo "::warning::Spec Ready status not available (non-fatal)"
+
       - name: Fetch ticket priority
         if: ${{ steps.evidence.outputs.verdict == 'PASS' || steps.evidence.outputs.verdict == 'REWRITTEN' }}
         id: priority
