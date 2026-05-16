@@ -34,11 +34,11 @@
       "agent": "agent:matt",
       "priority_name": "Medium",
       "priority_rank": 3,
-      "queued_at": "2026-05-16T07:24:27Z",
+      "queued_at": "2026-05-16T07:25:33Z",
       "state": "queued",
       "attempt_count": 0,
-      "retry_after": "2026-05-16T07:24:27Z",
-      "priya_hash": "UNAVAILABLE"
+      "retry_after": "2026-05-16T07:25:33Z",
+      "priya_hash": "a075012792e71eb4bb626b69b0ca24cd1d7d6c654fe768b5e0ca04b6b7f49d0a"
     }
   ]
 }
