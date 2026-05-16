@@ -470,8 +470,8 @@ jobs:
           git add -A
           bash .claude/scripts/write-review-marker.sh qa-pass || true
 
-      - name: Handle QA NEEDS_HUMAN
-        if: steps.qa.outputs.qa_verdict == 'NEEDS_HUMAN'
+      - name: Handle QA NEEDS_HUMAN / MUST_FIX
+        if: steps.qa.outputs.qa_verdict == 'NEEDS_HUMAN' || steps.qa.outputs.qa_verdict == 'MUST_FIX'
         env:
           TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
         run: |
