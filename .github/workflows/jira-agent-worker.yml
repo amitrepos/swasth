@@ -154,6 +154,7 @@ jobs:
           TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
         run: |
           echo "::warning::Drift detected for $TICKET_KEY (worker hash != Priya hash). Proceeding anyway during smoke phase. Re-enable fail-closed once producer stores brief in queue entry." >&2
+          bash scripts/jira_set_status_label.sh "$TICKET_KEY" drift-warning || true
           # Intentionally NOT dequeuing nor relabeling — we want the pipeline
           # to proceed past drift while we iterate on producer-stores-brief.
 
@@ -212,6 +213,7 @@ jobs:
           bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
             'if [ "$CURRENT" = "/dev/null" ] || [ ! -s "$CURRENT" ]; then echo "{\"entries\":[]}" > "$NEXT"; else jq --arg t "$TICKET_KEY" --arg r "$RETRY_SANITIZED" ".entries |= map(if .ticket_key == \$t then .retry_after = \$r | .attempt_count = ((.attempt_count // 0) + 1) else . end)" "$CURRENT" > "$NEXT"; fi' \
             "queue: defer $TICKET_KEY until $RETRY_SANITIZED"
+          bash scripts/jira_set_status_label.sh "$TICKET_KEY" deferred || true
 
       - name: Compute persona prompt
         if: steps.budget.outputs.decision == 'proceed'
@@ -252,6 +254,7 @@ jobs:
           bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
             'if [ "$CURRENT" = "/dev/null" ] || [ ! -s "$CURRENT" ]; then echo "{\"entries\":[]}" > "$NEXT"; else jq --arg t "$TICKET_KEY" --arg b "$BRANCH_NAME" --arg s "$STARTED_AT" --arg w "$WORKER_RUN_ID" ".entries |= map(if .ticket_key == \$t then .state = \"in_flight\" | .pushed_branch_name = \$b | .started_at = \$s | .worker_run_id = \$w else . end)" "$CURRENT" > "$NEXT"; fi' \
             "queue: mark $TICKET_KEY in_flight on $BRANCH_NAME"
+          bash scripts/jira_set_status_label.sh "$TICKET_KEY" in-flight || true
 
       - name: Matt implements (with optional persona lens)
         if: steps.budget.outputs.decision == 'proceed'
@@ -358,7 +361,8 @@ jobs:
             bash scripts/jira_comment.sh "$TICKET_KEY" \
               "Gate C-regress aborted with exit code $REGRESS_EXIT (no report)."
           fi
-          bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human"
+          bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human" || true
+          bash scripts/jira_set_status_label.sh "$TICKET_KEY" needs-human-regression || true
           bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
             'if [ "$CURRENT" = "/dev/null" ] || [ ! -s "$CURRENT" ]; then echo "{\"entries\":[]}" > "$NEXT"; else jq --arg t "$TICKET_KEY" ".entries |= map(select(.ticket_key != \$t))" "$CURRENT" > "$NEXT"; fi' \
             "queue: dequeue $TICKET_KEY (regression)"
@@ -462,7 +466,8 @@ jobs:
           TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
         run: |
           bash scripts/jira_comment.sh "$TICKET_KEY" "@.agent-tmp/qa-output.md"
-          bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human"
+          bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human" || true
+          bash scripts/jira_set_status_label.sh "$TICKET_KEY" needs-human-qa || true
           bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
             'if [ "$CURRENT" = "/dev/null" ] || [ ! -s "$CURRENT" ]; then echo "{\"entries\":[]}" > "$NEXT"; else jq --arg t "$TICKET_KEY" ".entries |= map(select(.ticket_key != \$t))" "$CURRENT" > "$NEXT"; fi' \
             "queue: dequeue $TICKET_KEY (QA needs human)"
@@ -528,6 +533,7 @@ jobs:
           # missing JIRA status (e.g. project renamed "In Review" → "In Progress")
           # shouldn't fail the whole worker run after the deliverable exists.
           bash scripts/jira_transition.sh "$TICKET_KEY" "In Progress" || echo "::warning::jira_transition non-fatal failure"
+          bash scripts/jira_set_status_label.sh "$TICKET_KEY" pr-opened || true
 
       - name: Mark queue entry done + append budget log
         if: steps.qa.outputs.qa_verdict == 'PASS'

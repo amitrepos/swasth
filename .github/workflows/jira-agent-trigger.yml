@@ -216,6 +216,14 @@ jobs:
             "${{ steps.priority.outputs.priority }}" \
             "${{ steps.evidence.outputs.priya_hash }}"
 
+      - name: Mark agent-status:enqueued
+        if: ${{ steps.evidence.outputs.verdict == 'PASS' || steps.evidence.outputs.verdict == 'REWRITTEN' }}
+        run: bash scripts/jira_set_status_label.sh "$TICKET_KEY" enqueued || true
+
+      - name: Mark agent-status:needs-info
+        if: ${{ steps.evidence.outputs.verdict == 'NEEDS_INFO' }}
+        run: bash scripts/jira_set_status_label.sh "$TICKET_KEY" needs-info || true
+
       - name: Kick worker
         if: ${{ steps.evidence.outputs.verdict == 'PASS' || steps.evidence.outputs.verdict == 'REWRITTEN' }}
         env:
