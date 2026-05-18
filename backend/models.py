@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index, Enum, JSON
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from database import Base
 from encryption_service import (
@@ -560,7 +561,7 @@ class MealLog(Base):
     glucose_impact = Column(String, nullable=False)    # HIGH, MODERATE, LOW, VERY_HIGH
 
     # Health tips from Gemini (stored as JSON: {"en": "...", "hi": "...", "kn": "...", "ta": "...", "te": "..."})
-    tips_json = Column(JSON, nullable=True)
+    tips_json = Column(JSON().with_variant(JSONB, "postgresql"), nullable=True)
 
     # Meal context
     meal_type = Column(String, nullable=False)         # BREAKFAST, LUNCH, DINNER, SNACK
