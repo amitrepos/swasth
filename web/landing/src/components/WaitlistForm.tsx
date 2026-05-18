@@ -78,10 +78,10 @@ const WaitlistForm = () => {
                 <CheckCircle2 className="w-12 h-12 text-primary" />
               </div>
               <h2 className="text-3xl font-bold font-heading text-foreground mb-4 tracking-tight">
-                You're authenticated!
+                You're on the list!
               </h2>
               <p className="text-muted-foreground leading-relaxed font-medium">
-                We'll notify you the moment Swasth becomes available for early access. Keep an eye on your inbox!
+                Estimated launch: end of May 2026. We'll set up Maa's app together on a free video call when access opens.
               </p>
             </div>
           </div>
@@ -116,20 +116,13 @@ const WaitlistForm = () => {
                     <span className="text-white/80">Registration</span>
                   </h2>
                   <p className="text-white/70 text-lg font-medium leading-relaxed max-w-sm">
-                    Reserve your spot for the Swasth launch. It takes less than 30 seconds to join our global community.
+                    Reserve your spot for the Swasth launch. Takes less than 30 seconds. We'll set up Maa's app together on a video call — so she's comfortable from day one.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-4 pt-4">
-                  <div className="flex -space-x-3">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="w-10 h-10 rounded-full border-2 border-primary bg-secondary/50 flex items-center justify-center text-[10px] font-bold text-primary">
-                        NRI
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs font-bold text-white/60 tracking-wide uppercase">
-                    500+ Families Joined
+                  <p className="text-xs font-bold text-white/70 tracking-wide uppercase">
+                    Early access opens end of May 2026
                   </p>
                 </div>
               </div>
@@ -241,7 +234,7 @@ const WaitlistForm = () => {
                   disabled={isSubmitting}
                   className="w-full py-5 bg-primary text-white font-black rounded-xl text-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 uppercase tracking-widest mt-6"
                 >
-                  {isSubmitting ? "Processing..." : <>Confirm Interest <Send className="w-5 h-5" /></>}
+                  {isSubmitting ? "Saving..." : <>Save my spot <Send className="w-5 h-5" /></>}
                 </button>
 
                 <p className="text-center text-xs text-slate-400 font-medium pt-2">

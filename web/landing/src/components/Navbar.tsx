@@ -42,7 +42,13 @@ const Navbar = () => {
             Swasth<span className="text-primary">.</span>
           </span>
         </a>
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6">
+          <a
+            href="/story"
+            className="text-sm font-black text-accent hover:text-accent/80 transition-colors hidden sm:block"
+          >
+            Story
+          </a>
           <a
             href={onHome ? "#features" : "/#features"}
             onClick={handleFeatures}
@@ -54,7 +60,7 @@ const Navbar = () => {
             onClick={handleEarlyAccess}
             className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl text-sm shadow-[0_10px_20px_-5px_rgba(14,165,233,0.3)] hover:scale-[1.02] transition-all"
           >
-            Get Early Access
+            Get early access
           </button>
         </div>
       </div>

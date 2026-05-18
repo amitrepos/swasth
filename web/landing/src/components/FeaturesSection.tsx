@@ -24,7 +24,8 @@ const features = [
   {
     icon: LineChart,
     title: "Weekly Health Reports",
-    description: "Receive a comprehensive weekly summary of health trends and progress directly in your inbox.",
+    description: "Comprehensive weekly summary of health trends. Verified by a real nurse who visits Maa every 1–2 weeks — vitals checked in person, not just AI-read.",
+    nurseVerified: true,
   },
   {
     icon: FileText,
@@ -51,9 +52,14 @@ const FeaturesSection = () => {
           {features.map((feature, i) => (
             <div
               key={feature.title}
-              className="group relative backdrop-blur-md bg-white/40 border border-white/60 rounded-[1.5rem] p-8 shadow-[0_8px_32px_rgba(14,165,233,0.05)] hover:shadow-[0_16px_48px_rgba(14,165,233,0.12)] transition-all duration-500 hover:-translate-y-2 animate-fade-up"
+              className={`group relative backdrop-blur-md bg-white/40 border rounded-[1.5rem] p-8 shadow-[0_8px_32px_rgba(14,165,233,0.05)] hover:shadow-[0_16px_48px_rgba(14,165,233,0.12)] transition-all duration-500 hover:-translate-y-2 animate-fade-up ${feature.nurseVerified ? 'border-accent/40' : 'border-white/60'}`}
               style={{ animationDelay: `${i * 0.1}s` }}
             >
+              {feature.nurseVerified && (
+                <span className="absolute -top-3 right-4 bg-accent text-white text-[10px] font-black tracking-[0.12em] uppercase px-3 py-1.5 rounded-full shadow-[0_6px_16px_rgba(245,158,11,0.4)]">
+                  + Nurse-verified
+                </span>
+              )}
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:scale-110 transition-all duration-300">
                 <feature.icon className="w-7 h-7 text-primary group-hover:text-white transition-colors" />
               </div>

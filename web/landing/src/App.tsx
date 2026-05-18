@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import Privacy from "./pages/Privacy.tsx";
 import Survey from "./pages/Survey.tsx";
+import Story from "./pages/Story.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/survey" element={<Survey />} />
+          <Route path="/story" element={<Story />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
