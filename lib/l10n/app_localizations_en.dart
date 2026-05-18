@@ -223,6 +223,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTitle => 'Swasth Health App';
 
   @override
+  String get navHome => 'HOME';
+
+  @override
+  String get navHistory => 'HISTORY';
+
+  @override
+  String get navStreaks => 'STREAKS';
+
+  @override
+  String get navInsights => 'INSIGHTS';
+
+  @override
+  String get navChat => 'CHAT';
+
+  @override
   String viewingProfile(String name) {
     return 'Viewing: $name\'s Health';
   }
@@ -278,6 +293,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get armband => 'Armband';
 
   @override
+  String get devicePhone => 'Phone';
+
+  @override
+  String get deviceBpMonitor => 'BP Monitor';
+
+  @override
   String get quickActions => 'Quick Actions';
 
   @override
@@ -326,6 +347,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get avgLabel => 'Avg';
+
+  @override
+  String avgDaysFormat(int count) {
+    return '$count day avg';
+  }
+
+  @override
+  String get vitalBp => 'BP';
+
+  @override
+  String get vitalSugar => 'Sugar';
+
+  @override
+  String get vitalSpo2 => 'SpO2';
+
+  @override
+  String get vitalSteps => 'Steps';
 
   @override
   String get minLabel => 'Min';
@@ -785,6 +823,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageHindi => 'हिंदी';
+
+  @override
+  String get languageKannada => 'ಕನ್ನಡ';
+
+  @override
+  String get languageTelugu => 'తెలుగు';
+
+  @override
+  String get languageTamil => 'தமிழ்';
 
   @override
   String get myDoctorTitle => 'My Doctor';
@@ -2121,4 +2168,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contactUsWhatsApp => 'WhatsApp';
+
+  @override
+  String get quickActionReminder => 'Reminder';
+
+  @override
+  String get quickActionSummary => 'Summary';
+
+  @override
+  String get reminderChangeTime =>
+      'Change reminder time (or cancel to disable)';
+
+  @override
+  String get reminderSetTime => 'Set daily reminder time';
+
+  @override
+  String reminderSetFor(String time) {
+    return 'Reminder set for $time daily';
+  }
+
+  @override
+  String get reminderDisabled => 'Reminder disabled';
+
+  @override
+  String get actionCall => 'Call';
+
+  @override
+  String get actionWhatsApp => 'WhatsApp';
+
+  @override
+  String get actionEmail => 'Send Email';
+
+  @override
+  String get metricBmi => 'BMI';
+
+  @override
+  String get contextFastingShort => 'Fast';
+
+  @override
+  String get contextBeforeMealShort => 'Pre';
+
+  @override
+  String get contextPostMealShort => 'Post';
+
+  @override
+  String get contextRandomShort => 'Random';
+
+  @override
+  String bmiTipGain(String amount) {
+    return 'Gain $amount kg';
+  }
+
+  @override
+  String bmiTipLose(String amount) {
+    return 'Lose $amount kg';
+  }
+
+  @override
+  String get noSummaryAvailable => 'No summary available';
 }

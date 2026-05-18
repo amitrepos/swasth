@@ -7,6 +7,9 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
 import 'app_localizations_hi.dart';
+import 'app_localizations_kn.dart';
+import 'app_localizations_ta.dart';
+import 'app_localizations_te.dart';
 
 // ignore_for_file: type=lint
 
@@ -96,6 +99,9 @@ abstract class AppLocalizations {
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('hi'),
+    Locale('kn'),
+    Locale('ta'),
+    Locale('te'),
   ];
 
   /// No description provided for @appTitle.
@@ -512,6 +518,36 @@ abstract class AppLocalizations {
   /// **'Swasth Health App'**
   String get homeTitle;
 
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'HOME'**
+  String get navHome;
+
+  /// No description provided for @navHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'HISTORY'**
+  String get navHistory;
+
+  /// No description provided for @navStreaks.
+  ///
+  /// In en, this message translates to:
+  /// **'STREAKS'**
+  String get navStreaks;
+
+  /// No description provided for @navInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'INSIGHTS'**
+  String get navInsights;
+
+  /// No description provided for @navChat.
+  ///
+  /// In en, this message translates to:
+  /// **'CHAT'**
+  String get navChat;
+
   /// No description provided for @viewingProfile.
   ///
   /// In en, this message translates to:
@@ -614,6 +650,18 @@ abstract class AppLocalizations {
   /// **'Armband'**
   String get armband;
 
+  /// No description provided for @devicePhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get devicePhone;
+
+  /// No description provided for @deviceBpMonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'BP Monitor'**
+  String get deviceBpMonitor;
+
   /// No description provided for @quickActions.
   ///
   /// In en, this message translates to:
@@ -709,6 +757,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Avg'**
   String get avgLabel;
+
+  /// No description provided for @avgDaysFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} day avg'**
+  String avgDaysFormat(int count);
+
+  /// No description provided for @vitalBp.
+  ///
+  /// In en, this message translates to:
+  /// **'BP'**
+  String get vitalBp;
+
+  /// No description provided for @vitalSugar.
+  ///
+  /// In en, this message translates to:
+  /// **'Sugar'**
+  String get vitalSugar;
+
+  /// No description provided for @vitalSpo2.
+  ///
+  /// In en, this message translates to:
+  /// **'SpO2'**
+  String get vitalSpo2;
+
+  /// No description provided for @vitalSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get vitalSteps;
 
   /// No description provided for @minLabel.
   ///
@@ -1543,6 +1621,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'हिंदी'**
   String get languageHindi;
+
+  /// No description provided for @languageKannada.
+  ///
+  /// In en, this message translates to:
+  /// **'ಕನ್ನಡ'**
+  String get languageKannada;
+
+  /// No description provided for @languageTelugu.
+  ///
+  /// In en, this message translates to:
+  /// **'తెలుగు'**
+  String get languageTelugu;
+
+  /// No description provided for @languageTamil.
+  ///
+  /// In en, this message translates to:
+  /// **'தமிழ்'**
+  String get languageTamil;
 
   /// No description provided for @myDoctorTitle.
   ///
@@ -3985,6 +4081,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'WhatsApp'**
   String get contactUsWhatsApp;
+
+  /// No description provided for @quickActionReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get quickActionReminder;
+
+  /// No description provided for @quickActionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get quickActionSummary;
+
+  /// No description provided for @reminderChangeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Change reminder time (or cancel to disable)'**
+  String get reminderChangeTime;
+
+  /// No description provided for @reminderSetTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Set daily reminder time'**
+  String get reminderSetTime;
+
+  /// No description provided for @reminderSetFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder set for {time} daily'**
+  String reminderSetFor(String time);
+
+  /// No description provided for @reminderDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder disabled'**
+  String get reminderDisabled;
+
+  /// No description provided for @actionCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get actionCall;
+
+  /// No description provided for @actionWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get actionWhatsApp;
+
+  /// No description provided for @actionEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Email'**
+  String get actionEmail;
+
+  /// No description provided for @metricBmi.
+  ///
+  /// In en, this message translates to:
+  /// **'BMI'**
+  String get metricBmi;
+
+  /// No description provided for @contextFastingShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get contextFastingShort;
+
+  /// No description provided for @contextBeforeMealShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre'**
+  String get contextBeforeMealShort;
+
+  /// No description provided for @contextPostMealShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get contextPostMealShort;
+
+  /// No description provided for @contextRandomShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Random'**
+  String get contextRandomShort;
+
+  /// No description provided for @bmiTipGain.
+  ///
+  /// In en, this message translates to:
+  /// **'Gain {amount} kg'**
+  String bmiTipGain(String amount);
+
+  /// No description provided for @bmiTipLose.
+  ///
+  /// In en, this message translates to:
+  /// **'Lose {amount} kg'**
+  String bmiTipLose(String amount);
+
+  /// No description provided for @noSummaryAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No summary available'**
+  String get noSummaryAvailable;
 }
 
 class _AppLocalizationsDelegate
@@ -3998,7 +4196,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'hi'].contains(locale.languageCode);
+      <String>['en', 'hi', 'kn', 'ta', 'te'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -4011,6 +4209,12 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEn();
     case 'hi':
       return AppLocalizationsHi();
+    case 'kn':
+      return AppLocalizationsKn();
+    case 'ta':
+      return AppLocalizationsTa();
+    case 'te':
+      return AppLocalizationsTe();
   }
 
   throw FlutterError(

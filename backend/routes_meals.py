@@ -49,8 +49,13 @@ Respond ONLY in this exact JSON format, nothing else:
 {
   "category": "HIGH_CARB",
   "glucose_impact": "HIGH",
-  "tip_en": "A short walk after meals may help keep sugar levels stable.",
-  "tip_hi": "खाने के बाद थोड़ी सैर करना शुगर को स्थिर रखने में मदद कर सकता है।",
+  "tips": {
+    "en": "A short walk after meals may help keep sugar levels stable.",
+    "hi": "खाने के बाद थोड़ी सैर करना शुगर को स्थिर रखने में मदद कर सकता है।",
+    "kn": "ಊಟದ ನಂತರ ಸ್ವಲ್ಪ ದೂರ ನಡೆಯುವುದು ಸಕ್ಕರೆ ಮಟ್ಟವನ್ನು ಸ್ಥಿರವಾಗಿಡಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ।",
+    "ta": "உணவுக்குப் பிறகு சிறிது தூரம் நடப்பது சர்க்கரை அளவை சீராக வைக்க உதவும்.",
+    "te": "భోజనం తర్వాత కాసేపు నడవడం వల్ల చక్కెర స్థాయిలు స్థిరంగా ఉంటాయి."
+  },
   "confidence": 0.9
 }"""
 
@@ -97,7 +102,14 @@ Respond ONLY in this exact JSON format, nothing else:
   "is_gluten_free": true_or_false,
   "is_high_protein": true_or_false,
   "meal_score": calculated_score_1_to_10,
-  "meal_score_reason": "brief reason for the score"
+  "meal_score_reason": "brief reason for the score",
+  "tips": {
+    "en": "A short wellness tip based on this meal (suggestive language only).",
+    "hi": "Hindi translation of the tip.",
+    "kn": "Kannada translation of the tip.",
+    "ta": "Tamil translation of the tip.",
+    "te": "Telugu translation of the tip."
+  }
 }"""
 
 
@@ -121,8 +133,7 @@ async def create_meal(
         logged_by=user.id,
         category=meal_data.category,
         glucose_impact=meal_data.glucose_impact,
-        tip_en=meal_data.tip_en,
-        tip_hi=meal_data.tip_hi,
+        tips_json=meal_data.tips_json,
         meal_type=meal_data.meal_type,
         input_method=meal_data.input_method,
         confidence=meal_data.confidence,
@@ -341,8 +352,7 @@ async def parse_food_image(
         return {
             "category": category,
             "glucose_impact": glucose_impact,
-            "tip_en": parsed.get("tip_en", ""),
-            "tip_hi": parsed.get("tip_hi", ""),
+            "tips_json": parsed.get("tips", {}),
             "confidence": round(float(confidence), 2),
         }
 
@@ -524,9 +534,10 @@ async def analyze_nutrition(
         if meal_score is not None:
             response["meal_score"] = meal_score
         if "meal_score_reason" in parsed:
-            # Trim verbose responses to prevent payload bloat
             reason = str(parsed["meal_score_reason"])[:200]
             response["meal_score_reason"] = reason
+        if "tips" in parsed and isinstance(parsed["tips"], dict):
+            response["tips"] = {k: str(v) for k, v in parsed["tips"].items() if isinstance(k, str)}
 
         return response
 

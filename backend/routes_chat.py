@@ -227,6 +227,7 @@ def send_chat_message(
     """Send a chat message and get an AI response."""
     profile_id = data.get("profile_id")
     message = data.get("message", "").strip()
+    language = data.get("language", "en")
 
     if not profile_id or not message:
         raise HTTPException(status_code=400, detail="profile_id and message are required")

@@ -559,9 +559,8 @@ class MealLog(Base):
     category = Column(String, nullable=False)          # HIGH_CARB, MODERATE_CARB, LOW_CARB, HIGH_PROTEIN, SWEETS
     glucose_impact = Column(String, nullable=False)    # HIGH, MODERATE, LOW, VERY_HIGH
 
-    # Health tip from Gemini
-    tip_en = Column(Text, nullable=True)
-    tip_hi = Column(Text, nullable=True)
+    # Health tips from Gemini (stored as JSON: {"en": "...", "hi": "...", "kn": "...", "ta": "...", "te": "..."})
+    tips_json = Column(JSON, nullable=True)
 
     # Meal context
     meal_type = Column(String, nullable=False)         # BREAKFAST, LUNCH, DINNER, SNACK

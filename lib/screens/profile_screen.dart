@@ -482,7 +482,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildLanguageToggle(AppLocalizations l10n) {
-    final isEnglish = ref.watch(languageProvider).languageCode == 'en';
+    final currentLang = ref.watch(languageProvider).languageCode;
     return GlassCard(
       margin: const EdgeInsets.only(bottom: 8),
       borderRadius: 16,
@@ -506,18 +506,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
                 children: [
                   _langChip(
                     l10n.languageEnglish,
-                    isEnglish,
+                    currentLang == 'en',
                     () => ref.read(languageProvider.notifier).setLanguage('en'),
                   ),
                   _langChip(
                     l10n.languageHindi,
-                    !isEnglish,
+                    currentLang == 'hi',
                     () => ref.read(languageProvider.notifier).setLanguage('hi'),
+                  ),
+                  _langChip(
+                    l10n.languageKannada,
+                    currentLang == 'kn',
+                    () => ref.read(languageProvider.notifier).setLanguage('kn'),
+                  ),
+                  _langChip(
+                    l10n.languageTelugu,
+                    currentLang == 'te',
+                    () => ref.read(languageProvider.notifier).setLanguage('te'),
+                  ),
+                  _langChip(
+                    l10n.languageTamil,
+                    currentLang == 'ta',
+                    () => ref.read(languageProvider.notifier).setLanguage('ta'),
                   ),
                 ],
               ),
@@ -677,9 +694,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        decoration: const InputDecoration(
-                          labelText: 'Weight',
-                          prefixIcon: Icon(Icons.monitor_weight_outlined),
+                        decoration: InputDecoration(
+                          labelText: l10n.weightLabel,
+                          prefixIcon: const Icon(Icons.monitor_weight_outlined),
                           suffixText: 'kg',
                         ),
                       ),
@@ -813,7 +830,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 _buildInfoCard(
                   icon: Icons.monitor_weight,
-                  label: 'Weight',
+                  label: l10n.weightLabel,
                   value: _profile?.weight != null
                       ? '${_profile!.weight} kg'
                       : '?',

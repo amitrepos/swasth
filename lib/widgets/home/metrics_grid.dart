@@ -84,13 +84,13 @@ class MetricsGrid extends StatelessWidget {
     String shortGlucoseContext(GlucoseMealContext c) {
       switch (c) {
         case GlucoseMealContext.fasting:
-          return ' · Fast';
+          return ' · ${l10n.contextFastingShort}';
         case GlucoseMealContext.beforeMeal:
-          return ' · Pre';
+          return ' · ${l10n.contextBeforeMealShort}';
         case GlucoseMealContext.postMeal:
-          return ' · Post';
+          return ' · ${l10n.contextPostMealShort}';
         case GlucoseMealContext.random:
-          return ' · Random';
+          return ' · ${l10n.contextRandomShort}';
         case GlucoseMealContext.unknown:
           return '';
       }
@@ -467,7 +467,7 @@ class _BmiTile extends StatelessWidget {
     return AppColors.statusCritical;
   }
 
-  String? _tip() {
+  String? _tip(AppLocalizations l10n) {
     if (bmi == null || heightCm == null || weightKg == null || heightCm! <= 0) {
       return null;
     }
@@ -475,20 +475,21 @@ class _BmiTile extends StatelessWidget {
     final hm2 = hm * hm;
     if (bmi! < 18.5) {
       final targetKg = (18.5 * hm2) - weightKg!;
-      return 'Gain ${targetKg.toStringAsFixed(1)} kg';
+      return l10n.bmiTipGain(targetKg.toStringAsFixed(1));
     } else if (bmi! >= 25) {
       final targetKg = weightKg! - (24.9 * hm2);
-      return 'Lose ${targetKg.toStringAsFixed(1)} kg';
+      return l10n.bmiTipLose(targetKg.toStringAsFixed(1));
     }
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final color = _bmiColor();
     final displayValue = bmi != null ? bmi!.toStringAsFixed(1) : '—';
     final displayCategory = category ?? '';
-    final tip = _tip();
+    final tip = _tip(l10n);
 
     return GlassCard(
       borderRadius: 24,
@@ -509,7 +510,7 @@ class _BmiTile extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'BMI',
+                        AppLocalizations.of(context)!.metricBmi.toUpperCase(),
                         style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
@@ -560,7 +561,7 @@ class _BmiTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'WEIGHT',
+                    AppLocalizations.of(context)!.weightLabel.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,

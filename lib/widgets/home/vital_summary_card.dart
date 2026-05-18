@@ -27,12 +27,10 @@ class VitalSummaryCard extends StatelessWidget {
     final spo2Days = (data?['spo2_data_days'] as num?)?.toInt() ?? 0;
     final stepsDays = (data?['steps_data_days'] as num?)?.toInt() ?? 0;
 
-    final bpAvgLabel = bpDays > 0 ? '$bpDays-day' : l10n.ninetyDayAvg;
-    final glucoseAvgLabel = glucoseDays > 0
-        ? '$glucoseDays-day'
-        : l10n.ninetyDayAvg;
-    final spo2AvgLabel = spo2Days > 0 ? '$spo2Days-day' : 'Avg';
-    final stepsAvgLabel = stepsDays > 0 ? '$stepsDays-day' : 'Avg';
+    final bpAvgLabel = bpDays > 0 ? l10n.avgDaysFormat(bpDays) : l10n.ninetyDayAvg;
+    final glucoseAvgLabel = glucoseDays > 0 ? l10n.avgDaysFormat(glucoseDays) : l10n.ninetyDayAvg;
+    final spo2AvgLabel = spo2Days > 0 ? l10n.avgDaysFormat(spo2Days) : l10n.avgLabel;
+    final stepsAvgLabel = stepsDays > 0 ? l10n.avgDaysFormat(stepsDays) : l10n.avgLabel;
 
     final bpLabel = avgSys != null && avgDia != null
         ? '${avgSys.toStringAsFixed(0)}/${avgDia.toStringAsFixed(0)}'
@@ -65,13 +63,14 @@ class VitalSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _VitalTile(
-                  label: 'BP',
+                  label: l10n.vitalBp,
                   subLabel: bpAvgLabel,
                   value: bpLabel,
                   trendLabel: helpers.trendLabel(
                     avgSys,
                     prevAvgSys,
                     lowerIsBetter: true,
+                    stableLabel: l10n.trendStable,
                   ),
                   trendColor: helpers.trendColor(
                     avgSys,
@@ -83,13 +82,14 @@ class VitalSummaryCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: _VitalTile(
-                  label: 'SUGAR',
+                  label: l10n.vitalSugar,
                   subLabel: glucoseAvgLabel,
                   value: glucoseLabel,
                   trendLabel: helpers.trendLabel(
                     avgGlucose,
                     prevAvgGlucose,
                     lowerIsBetter: true,
+                    stableLabel: l10n.trendStable,
                   ),
                   trendColor: helpers.trendColor(
                     avgGlucose,
@@ -101,7 +101,7 @@ class VitalSummaryCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: _VitalTile(
-                  label: 'SpO2',
+                  label: l10n.vitalSpo2,
                   subLabel: spo2AvgLabel,
                   value: spo2Label,
                   trendLabel: l10n.trendStable,
@@ -111,7 +111,7 @@ class VitalSummaryCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: _VitalTile(
-                  label: 'STEPS',
+                  label: l10n.vitalSteps,
                   subLabel: stepsAvgLabel,
                   value: stepsLabel,
                   trendLabel: l10n.trendStable,

@@ -399,8 +399,11 @@ class BrevoEmailService:
         patient_name: str,
         alert_text_en: str,
         alert_text_hi: str,
+        alert_text_kn: str,
+        alert_text_te: str = "",
+        alert_text_ta: str = "",
     ) -> bool:
-        """Send a bilingual (EN + HI) critical health alert to a family member.
+        """Send a multilingual critical health alert to a family member.
 
         Returns True on success, False on any failure (SMTP down, auth error,
         not configured, rejected recipient). Callers log the failure and try
@@ -433,6 +436,7 @@ class BrevoEmailService:
         <div class="alert">
             <div class="lang"><strong>English:</strong><br>{alert_text_en}</div>
             <div class="lang"><strong>हिन्दी:</strong><br>{alert_text_hi}</div>
+            <div class="lang"><strong>ಕನ್ನಡ:</strong><br>{alert_text_kn}</div>
         </div>
         <p>Please check on {patient_name} immediately and contact their doctor if needed.</p>
         <p class="footer">

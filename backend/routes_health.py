@@ -291,6 +291,7 @@ def get_readings(
 @router.get("/readings/health-score", response_model=schemas.HealthScoreResponse)
 def get_health_score(
     profile_id: int,
+    language: str = Query(default="en"),
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
@@ -397,36 +398,89 @@ def get_health_score(
         critical_type = next(
             (r.reading_type.replace('_', ' ') for r in today_readings if r.status_flag == 'CRITICAL'), 'reading'
         )
-        insight = f"⚠️ Your {critical_type} is critical. Please consult a doctor."
+        if language == "hi":
+            insight = f"⚠️ आपकी {critical_type} गंभीर है। कृपया डॉक्टर से मिलें।"
+        elif language == "kn":
+            insight = f"⚠️ ನಿಮ್ಮ {critical_type} ಗಂಭೀರವಾಗಿದೆ. ದಯವಿಟ್ಟು ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
+        elif language == "te":
+            insight = f"⚠️ మీ {critical_type} తీవ్రంగా ఉంది. దయచేసి వైద్యుడిని సంప్రదించండి."
+        elif language == "ta":
+            insight = f"⚠️ உங்கள் {critical_type} கடுமையாக உள்ளது. தயவுசெய்து மருத்துவரை அணுகுங்கள்."
+        else:
+            insight = f"⚠️ Your {critical_type} is critical. Please consult a doctor."
     elif not today_readings:
         if total_reading_count == 0:
-            insight = "Log your first reading to start tracking your health."
+            if language == "hi": insight = "अपनी पहली रीडिंग दर्ज करके अपने स्वास्थ्य पर नज़र रखना शुरू करें।"
+            elif language == "kn": insight = "ನಿಮ್ಮ ಆರೋಗ್ಯವನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಲು ನಿಮ್ಮ ಮೊದಲ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ."
+            elif language == "te": insight = "మీ ఆరోగ్యాన్ని ట్రాక్ చేయడానికి మీ మొదటి రీడింగ్ నమోదు చేయండి."
+            elif language == "ta": insight = "உங்கள் உடல்நலனை கண்காணிக்க முதல் அளவீட்டை பதிவு செய்யுங்கள்."
+            else: insight = "Log your first reading to start tracking your health."
         elif streak > 0:
-            insight = f"Log a reading today to keep your {streak}-day streak alive!"
+            if language == "hi": insight = f"अपनी {streak} दिनों की स्ट्रीक को बनाए रखने के लिए आज एक रीडिंग दर्ज करें!"
+            elif language == "kn": insight = f"ನಿಮ್ಮ {streak}-ದಿನಗಳ ಸತತ ದಾಖಲೆಯನ್ನು ಉಳಿಸಿಕೊಳ್ಳಲು ಇಂದು ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ!"
+            elif language == "te": insight = f"మీ {streak}-రోజుల స్ట్రీక్ కొనసాగించడానికి నేడు రీడింగ్ నమోదు చేయండి!"
+            elif language == "ta": insight = f"உங்கள் {streak}-நாள் தொடரை தொடர இன்று அளவீடு பதிவு செய்யுங்கள்!"
+            else: insight = f"Log a reading today to keep your {streak}-day streak alive!"
         else:
-            insight = f"Welcome back! You have {total_reading_count} readings on file. Log today's reading to restart your streak."
+            if language == "hi": insight = f"वापसी पर स्वागत है! आपके पास {total_reading_count} रीडिंग हैं। अपनी स्ट्रीक फिर से शुरू करने के लिए आज की रीडिंग दर्ज करें।"
+            elif language == "kn": insight = f"ಮರಳಿ ಸ್ವಾಗತ! ನಿಮ್ಮ ಬಳಿ {total_reading_count} ರೀಡಿಂಗ್‌ಗಳಿವೆ. ನಿಮ್ಮ ಸತತ ದಾಖಲೆಯನ್ನು ಮತ್ತೆ ಪ್ರಾರಂಭಿಸಲು ಇಂದಿನ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ."
+            elif language == "te": insight = f"తిరిగి స్వాగతం! మీకు {total_reading_count} రీడింగులు ఉన్నాయి. మీ స్ట్రీక్ పునఃప్రారంభించడానికి నేటి రీడింగ్ నమోదు చేయండి."
+            elif language == "ta": insight = f"மீண்டும் வரவேற்கிறோம்! உங்களிடம் {total_reading_count} அளவீடுகள் உள்ளன. உங்கள் தொடரை மீண்டும் தொடங்க இன்றைய அளவீடு பதிவு செய்யுங்கள்."
+            else: insight = f"Welcome back! You have {total_reading_count} readings on file. Log today's reading to restart your streak."
     elif streak >= 7:
-        insight = f"🔥 {streak}-day streak — you're building a great habit!"
+        if language == "hi": insight = f"🔥 {streak} दिनों की स्ट्रीक — आप एक बेहतरीन आदत बना रहे हैं!"
+        elif language == "kn": insight = f"🔥 {streak}-ದಿನಗಳ ಸತತ ದಾಖಲೆ — ನೀವು ಉತ್ತಮ ಅಭ್ಯಾಸವನ್ನು ಬೆಳೆಸಿಕೊಳ್ಳುತ್ತಿದ್ದೀರಿ!"
+        elif language == "te": insight = f"🔥 {streak}-రోజుల స్ట్రీక్ — మీరు గొప్ప అలవాటు పెంచుకుంటున్నారు!"
+        elif language == "ta": insight = f"🔥 {streak}-நாள் தொடர் — நீங்கள் சிறந்த பழக்கத்தை உருவாக்கிக்கொள்கிறீர்கள்!"
+        else: insight = f"🔥 {streak}-day streak — you're building a great habit!"
     elif 'HIGH - STAGE 2' in today_statuses_set:
         stage2 = next((r for r in today_readings if r.status_flag == 'HIGH - STAGE 2'), None)
         if stage2 and stage2.reading_type == 'blood_pressure' and stage2.systolic:
-            insight = f"⚠️ BP {stage2.systolic:.0f}/{stage2.diastolic:.0f} is dangerously high. Have you taken your medication? Please see a doctor today."
+            if language == "hi": insight = f"⚠️ आपका बीपी {stage2.systolic:.0f}/{stage2.diastolic:.0f} बहुत अधिक है। क्या आपने दवा ली है? कृपया आज ही डॉक्टर से मिलें।"
+            elif language == "kn": insight = f"⚠️ ನಿಮ್ಮ ರಕ್ತದೊತ್ತಡ {stage2.systolic:.0f}/{stage2.diastolic:.0f} ಅಪಾಯಕಾರಿಯಾಗಿ ಹೆಚ್ಚಾಗಿದೆ. ನೀವು ಔಷಧಿ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಾ? ದಯವಿಟ್ಟು ಇಂದೇ ವೈದ್ಯರನ್ನು ಭೇಟಿ ಮಾಡಿ."
+            elif language == "te": insight = f"⚠️ మీ BP {stage2.systolic:.0f}/{stage2.diastolic:.0f} ప్రమాదకరంగా ఎక్కువగా ఉంది. మీరు మందు తీసుకున్నారా? దయచేసి నేడే వైద్యుడిని కలవండి."
+            elif language == "ta": insight = f"⚠️ உங்கள் BP {stage2.systolic:.0f}/{stage2.diastolic:.0f} ஆபத்தான அளவில் அதிகமாக உள்ளது. மருந்து எடுத்தீர்களா? தயவுசெய்து இன்றே மருத்துவரை சந்தியுங்கள்."
+            else: insight = f"⚠️ BP {stage2.systolic:.0f}/{stage2.diastolic:.0f} is dangerously high. Have you taken your medication? Please see a doctor today."
         else:
-            insight = "⚠️ A reading is in Stage 2 range. Please check your medication and consult your doctor."
+            if language == "hi": insight = "⚠️ एक रीडिंग स्टेज 2 के स्तर पर है। कृपया अपनी दवा की जाँच करें और डॉक्टर से सलाह लें।"
+            elif language == "kn": insight = "⚠️ ಒಂದು ರೀಡಿಂಗ್ ಹಂತ 2 ರಲ್ಲಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಔಷಧಿಗಳನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
+            elif language == "te": insight = "⚠️ ఒక రీడింగ్ స్టేజ్ 2 స్థాయిలో ఉంది. మీ మందులను తనిఖీ చేయండి మరియు వైద్యుడిని సంప్రదించండి."
+            elif language == "ta": insight = "⚠️ ஒரு அளவீடு நிலை 2 அளவில் உள்ளது. மருந்துகளை சரிபார்த்து மருத்துவரை அணுகுங்கள்."
+            else: insight = "⚠️ A reading is in Stage 2 range. Please check your medication and consult your doctor."
     elif any('HIGH' in (s or '') for s in today_statuses_set):
         high_type = next(
             (r.reading_type.replace('_', ' ') for r in today_readings if 'HIGH' in (r.status_flag or '')), 'reading'
         )
-        insight = f"Your {high_type} is a bit elevated. A 10-min walk and staying hydrated often helps."
+        if language == "hi": insight = f"आपकी {high_type} थोड़ी अधिक है। 10 मिनट की सैर और पानी पीते रहने से अक्सर मदद मिलती है।"
+        elif language == "kn": insight = f"ನಿಮ್ಮ {high_type} ಸ್ವಲ್ಪ ಹೆಚ್ಚಾಗಿದೆ. 10 ನಿಮಿಷಗಳ ನಡಿಗೆ ಮತ್ತು ಸಾಕಷ್ಟು ನೀರು ಕುಡಿಯುವುದು ಹೆಚ್ಚಾಗಿ ಸಹಾಯ ಮಾಡುತ್ತದೆ."
+        elif language == "te": insight = f"మీ {high_type} కొద్దిగా ఎక్కువగా ఉంది. 10 నిమిషాల నడక మరియు తగినంత నీరు తాగడం తరచుగా సహాయపడుతుంది."
+        elif language == "ta": insight = f"உங்கள் {high_type} சற்று அதிகமாக உள்ளது. 10 நிமிட நடை மற்றும் போதுமான தண்ணீர் குடிப்பது பெரும்பாலும் உதவும்."
+        else: insight = f"Your {high_type} is a bit elevated. A 10-min walk and staying hydrated often helps."
     elif streak >= 3:
-        insight = f"Great work! {streak} days of consistent monitoring. Keep it up!"
+        if language == "hi": insight = f"बहुत बढ़िया! {streak} दिनों से लगातार नज़र रख रहे हैं। इसे जारी रखें!"
+        elif language == "kn": insight = f"ಅದ್ಭುತ ಕೆಲಸ! {streak} ದಿನಗಳ ನಿರಂತರ ಮೇಲ್ವಿಚಾರಣೆ. ಹೀಗೆಯೇ ಮುಂದುವರಿಸಿ!"
+        elif language == "te": insight = f"చాలా బాగుంది! {streak} రోజుల నిరంతర పర్యవేక్షణ. ఇలాగే కొనసాగించండి!"
+        elif language == "ta": insight = f"சிறப்பான வேலை! {streak} நாட்கள் தொடர்ந்து கண்காணிப்பு. தொடர்ந்து வாருங்கள்!"
+        else: insight = f"Great work! {streak} days of consistent monitoring. Keep it up!"
     elif today_statuses_set and all(s == 'NORMAL' for s in today_statuses_set):
-        insight = "All readings look healthy today. You're doing great!"
+        if language == "hi": insight = "आज सभी रीडिंग सामान्य लग रही हैं। बहुत बढ़िया!"
+        elif language == "kn": insight = "ಇಂದು ಎಲ್ಲಾ ರೀಡಿಂಗ್‌ಗಳು ಆರೋಗ್ಯಕರವಾಗಿವೆ. ನೀವು ಉತ್ತಮವಾಗಿ ಮಾಡುತ್ತಿದ್ದೀರಿ!"
+        elif language == "te": insight = "నేడు అన్ని రీడింగులు ఆరోగ్యకరంగా ఉన్నాయి. మీరు చాలా బాగా చేస్తున్నారు!"
+        elif language == "ta": insight = "இன்று அனைத்து அளவீடுகளும் ஆரோக்கியமாக உள்ளன. நீங்கள் சிறப்பாக செய்கிறீர்கள்!"
+        else: insight = "All readings look healthy today. You're doing great!"
     else:
         if total_reading_count > 1:
-            insight = "Readings logged. Keep tracking daily for better insights!"
+            if language == "hi": insight = "रीडिंग दर्ज की गई। बेहतर सुझावों के लिए रोज़ाना ट्रैक करें!"
+            elif language == "kn": insight = "ರೀಡಿಂಗ್ ದಾಖಲಿಸಲಾಗಿದೆ. ಉತ್ತಮ ಒಳನೋಟಗಳಿಗಾಗಿ ಪ್ರತಿದಿನ ಟ್ರ್ಯಾಕ್ ಮಾಡುವುದನ್ನು ಮುಂದುವರಿಸಿ!"
+            elif language == "te": insight = "రీడింగులు నమోదు అయ్యాయి. మెరుగైన అంతర్దృష్టుల కోసం ప్రతిరోజూ ట్రాక్ చేస్తూ ఉండండి!"
+            elif language == "ta": insight = "அளவீடுகள் பதிவு செய்யப்பட்டன. சிறந்த நுண்ணறிவுகளுக்காக தினமும் கண்காணியுங்கள்!"
+            else: insight = "Readings logged. Keep tracking daily for better insights!"
         else:
-            insight = "First reading logged! Keep going — daily tracking unlocks better insights."
+            if language == "hi": insight = "पहली रीडिंग दर्ज की गई! इसे जारी रखें — रोज़ाना ट्रैक करने से बेहतर सुझाव मिलते हैं।"
+            elif language == "kn": insight = "ಮೊದಲ ರೀಡಿಂಗ್ ದಾಖಲಿಸಲಾಗಿದೆ! ಮುಂದುವರಿಸಿ — ಪ್ರತಿದಿನದ ಟ್ರ್ಯಾಕಿಂಗ್ ಉತ್ತಮ ಒಳನೋಟಗಳನ್ನು ನೀಡುತ್ತದೆ."
+            elif language == "te": insight = "మొదటి రీడింగ్ నమోదు అయింది! కొనసాగించండి — రోజువారీ ట్రాకింగ్ మెరుగైన అంతర్దృష్టులు ఇస్తుంది."
+            elif language == "ta": insight = "முதல் அளவீடு பதிவு செய்யப்பட்டது! தொடர்ந்து வாருங்கள் — தினசரி கண்காணிப்பு சிறந்த நுண்ணறிவுகளை வழங்கும்."
+            else: insight = "First reading logged! Keep going — daily tracking unlocks better insights."
 
     last_logged = recent[0].reading_timestamp if recent else None
 
@@ -569,13 +623,21 @@ def get_health_score(
         height_m = p_height / 100.0
         bmi = round(p_weight / (height_m * height_m), 1)
         if bmi < 18.5:
-            bmi_category = "Underweight"
+            if language == "hi": bmi_category = "कम वजन (Underweight)"
+            elif language == "kn": bmi_category = "ಕಡಿಮೆ ತೂಕ (Underweight)"
+            else: bmi_category = "Underweight"
         elif bmi < 25:
-            bmi_category = "Normal"
+            if language == "hi": bmi_category = "सामान्य (Normal)"
+            elif language == "kn": bmi_category = "ಸಾಮಾನ್ಯ (Normal)"
+            else: bmi_category = "Normal"
         elif bmi < 30:
-            bmi_category = "Overweight"
+            if language == "hi": bmi_category = "अधिक वजन (Overweight)"
+            elif language == "kn": bmi_category = "ಹೆಚ್ಚು ತೂಕ (Overweight)"
+            else: bmi_category = "Overweight"
         else:
-            bmi_category = "Obese"
+            if language == "hi": bmi_category = "मोटापा (Obese)"
+            elif language == "kn": bmi_category = "ಬೊಜ್ಜು (Obese)"
+            else: bmi_category = "Obese"
 
     # --- SpO2 data ---
     last_spo2 = (
@@ -690,6 +752,7 @@ def get_health_score(
 @router.get("/readings/ai-insight")
 def get_ai_insight(
     profile_id: int,
+    language: str = Query(default="en"),
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
@@ -712,26 +775,37 @@ def get_ai_insight(
         total_count = db.query(func.count(models.HealthReading.id)).filter(
             models.HealthReading.profile_id == profile_id,
         ).scalar() or 0
-        insight = _rule_based_insight(recent, db, total_count=total_count)
+        insight = _rule_based_insight(recent, db, total_count=total_count, language=language)
         return {"insight": insight, "ai_consent_required": True}
 
-    # ── Smart cache: only call LLM when new readings exist ────────────
-    latest_insight = (
-        db.query(models.AiInsightLog)
-        .filter(
-            models.AiInsightLog.profile_id == profile_id,
-            models.AiInsightLog.model_used != "failed",
-            # 'invalidated' is set when a reading is edited or deleted —
-            # forces a fresh AI evaluation so the dashboard reflects the
-            # corrected values.
-            models.AiInsightLog.model_used != "invalidated",
-            # Exclude nutrition analysis logs (prompt_summary contains 'nutrition')
-            (models.AiInsightLog.prompt_summary.is_(None)) |
-            (models.AiInsightLog.prompt_summary.notlike('%nutrition%')),
+    # ── Smart cache: per-language — only call LLM when new readings exist ──
+    # Non-English entries are tagged __lang:XX__ in prompt_summary so each
+    # language has its own cache slot and English never reads a foreign entry.
+    _lang_tag = f"__lang:{language}__" if language != "en" else None
+
+    def _base_insight_query():
+        q = (
+            db.query(models.AiInsightLog)
+            .filter(
+                models.AiInsightLog.profile_id == profile_id,
+                models.AiInsightLog.model_used != "failed",
+                models.AiInsightLog.model_used != "invalidated",
+                (models.AiInsightLog.prompt_summary.is_(None)) |
+                (models.AiInsightLog.prompt_summary.notlike('%nutrition%')),
+            )
         )
-        .order_by(models.AiInsightLog.created_at.desc())
-        .first()
-    )
+        if language == "en":
+            # English cache: exclude entries tagged for other languages
+            q = q.filter(
+                (models.AiInsightLog.prompt_summary.is_(None)) |
+                (models.AiInsightLog.prompt_summary.notlike('%__lang:%')),
+            )
+        else:
+            # Non-English: only match entries for this exact language
+            q = q.filter(models.AiInsightLog.prompt_summary.like(f'{_lang_tag}%'))
+        return q
+
+    latest_insight = _base_insight_query().order_by(models.AiInsightLog.created_at.desc()).first()
     latest_reading = (
         db.query(models.HealthReading)
         .filter(models.HealthReading.profile_id == profile_id)
@@ -740,7 +814,7 @@ def get_ai_insight(
     )
 
     if latest_insight and latest_reading:
-        # Compare: if no new readings since last insight, return cached
+        # Use cached response if no new readings since it was generated
         insight_time = ensure_utc(latest_insight.created_at)
         reading_time = ensure_utc(latest_reading.reading_timestamp)
         if insight_time and reading_time and reading_time <= insight_time:
@@ -768,7 +842,7 @@ def get_ai_insight(
     total_count = db.query(func.count(models.HealthReading.id)).filter(
         models.HealthReading.profile_id == profile_id,
     ).scalar() or 0
-    fallback = _rule_based_insight(recent, db, total_count=total_count)
+    fallback = _rule_based_insight(recent, db, total_count=total_count, language=language)
 
     if not glucose_vals and not bp_readings and not weight_vals:
         return {"insight": fallback}
@@ -856,14 +930,27 @@ def get_ai_insight(
 
     age_desc = f"{age} years" if age else "unknown age"
 
+    lang_instruction = ""
+    if language == "hi":
+        lang_instruction = "IMPORTANT: Please write the response ONLY in Hindi (हिन्दी)."
+    elif language == "kn":
+        lang_instruction = "IMPORTANT: Please write the response ONLY in Kannada (ಕನ್ನಡ)."
+    elif language == "te":
+        lang_instruction = "IMPORTANT: Please write the response ONLY in Telugu (తెలుగు)."
+    elif language == "ta":
+        lang_instruction = "IMPORTANT: Please write the response ONLY in Tamil (தமிழ்)."
+
     prompt = f"""Patient: {age_desc}, {gender}. {conditions}. {medications}. {glucose_summary} {bp_summary} {weight_summary} {food_summary}{trend_note}
 
 Write exactly 2-3 short sentences: one about their status, one actionable tip. Under 50 words total. No greetings, no raw data numbers, no bullet points.
 IMPORTANT: Even if glucose and BP are normal, if BMI is high (>= 25) or weight is trending up, prioritize weight management advice.
-Use suggestive language only ("may help", "consider")."""
+Use suggestive language only ("may help", "consider").
+{lang_instruction}"""
 
     import ai_service
-    prompt_summary = f"{glucose_summary} {bp_summary} {weight_summary} {food_summary}{trend_note}".strip() or None
+    _raw_summary = f"{glucose_summary} {bp_summary} {weight_summary} {food_summary}{trend_note}".strip() or None
+    # Tag non-English summaries so each language has its own cache slot in AiInsightLog
+    prompt_summary = f"{_lang_tag} {_raw_summary}" if _lang_tag else _raw_summary
     insight = ai_service.generate_health_insight(prompt, profile_id, db, prompt_summary)
 
     if insight:
@@ -971,6 +1058,7 @@ def get_trend_summary(
     profile_id: int,
     period: int = Query(default=7, ge=7, le=90),
     format: str = Query(default="json", pattern="^(json|text)$"),
+    language: str = Query(default="en"),
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
@@ -987,29 +1075,41 @@ def get_trend_summary(
 
     today = date.today()
 
-    # ── Cache check ──────────────────────────────────────────────────
-    cached = db.query(models.TrendSummaryCache).filter(
-        models.TrendSummaryCache.profile_id == profile_id,
-        models.TrendSummaryCache.period_days == period,
-        models.TrendSummaryCache.cache_date == today,
-    ).first()
-    if cached:
-        return {"summary": cached.summary_text, "period": period, "cached": True}
+    # ── Cache check (English only — non-English always rebuilds with translated strings) ──
+    if language == "en":
+        cached = db.query(models.TrendSummaryCache).filter(
+            models.TrendSummaryCache.profile_id == profile_id,
+            models.TrendSummaryCache.period_days == period,
+            models.TrendSummaryCache.cache_date == today,
+        ).first()
+        if cached:
+            return {"summary": cached.summary_text, "period": period, "cached": True}
 
     # ── 1. Fetch dashboard AI insight (single source of truth) ───────
-    latest_insight = (
+    # Use the same language-tag filter as get_ai_insight so the base insight
+    # matches the requested language (English never reads a Telugu/Hindi entry).
+    _ts_lang_tag = f"__lang:{language}__" if language != "en" else None
+    _base_q = (
         db.query(models.AiInsightLog)
         .filter(
             models.AiInsightLog.profile_id == profile_id,
             models.AiInsightLog.model_used != "failed",
-            # 'invalidated' is set when a reading is edited or deleted —
-            # forces a fresh AI evaluation so the dashboard reflects the
-            # corrected values.
             models.AiInsightLog.model_used != "invalidated",
-            # Exclude nutrition analysis logs (prompt_summary contains 'nutrition')
             (models.AiInsightLog.prompt_summary.is_(None)) |
             (models.AiInsightLog.prompt_summary.notlike('%nutrition%')),
         )
+    )
+    if language == "en":
+        _base_q = _base_q.filter(
+            (models.AiInsightLog.prompt_summary.is_(None)) |
+            (models.AiInsightLog.prompt_summary.notlike('%__lang:%')),
+        )
+    else:
+        _base_q = _base_q.filter(
+            models.AiInsightLog.prompt_summary.like(f'{_ts_lang_tag}%')
+        )
+    latest_insight = (
+        _base_q
         .order_by(models.AiInsightLog.id.desc())
         .first()
     )
@@ -1034,8 +1134,73 @@ def get_trend_summary(
         .all()
     )
 
+    # ── Multilingual stat strings ──────────────────────────────────────────
+    _S = {
+        "en": {
+            "no_readings": f"No readings recorded in the last {period} days. Start logging to see trend insights.",
+            "glucose_avg": "Glucose: avg", "readings": "readings", "normal": "normal", "trend": "trend",
+            "improving": "improving ↓", "rising": "rising ↑", "stable": "stable →",
+            "bp_avg": "BP: avg", "elevated": "elevated",
+            "weight_avg": "Weight: avg", "weight_trend": "trend",
+            "decreasing": "decreasing ↓", "increasing": "increasing ↑",
+            "diet": "Diet", "meals_logged": "meals logged", "heavy_sweet": "heavy/sweet",
+            "vs_prev": f"vs previous {period}d: glucose", "up": "up", "down": "down",
+            "period_label": f"{period}-day", "details": "details", "summary_lbl": "summary",
+            "keep_tracking": f"You have {{count}} readings in the last {period} days. Keep tracking for better insights!",
+        },
+        "hi": {
+            "no_readings": f"पिछले {period} दिनों में कोई रीडिंग दर्ज नहीं हुई। ट्रेंड देखने के लिए लॉग करना शुरू करें।",
+            "glucose_avg": "ग्लूकोज़: औसत", "readings": "रीडिंग", "normal": "सामान्य", "trend": "ट्रेंड",
+            "improving": "सुधर रहा ↓", "rising": "बढ़ रहा ↑", "stable": "स्थिर →",
+            "bp_avg": "बीपी: औसत", "elevated": "उच्च",
+            "weight_avg": "वजन: औसत", "weight_trend": "ट्रेंड",
+            "decreasing": "घट रहा ↓", "increasing": "बढ़ रहा ↑",
+            "diet": "आहार", "meals_logged": "भोजन लॉग किए", "heavy_sweet": "भारी/मीठे",
+            "vs_prev": f"पिछले {period} दिनों से तुलना: ग्लूकोज़", "up": "बढ़ा", "down": "घटा",
+            "period_label": f"{period} दिन", "details": "विवरण", "summary_lbl": "सारांश",
+            "keep_tracking": f"पिछले {period} दिनों में {{count}} रीडिंग हैं। बेहतर जानकारी के लिए ट्रैकिंग जारी रखें!",
+        },
+        "kn": {
+            "no_readings": f"ಕಳೆದ {period} ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ರೀಡಿಂಗ್ ದಾಖಲಿಸಲಾಗಿಲ್ಲ. ಟ್ರೆಂಡ್ ನೋಡಲು ಲಾಗ್ ಮಾಡಲು ಪ್ರಾರಂಭಿಸಿ.",
+            "glucose_avg": "ಗ್ಲೂಕೋಸ್: ಸರಾಸರಿ", "readings": "ರೀಡಿಂಗ್", "normal": "ಸಾಮಾನ್ಯ", "trend": "ಟ್ರೆಂಡ್",
+            "improving": "ಸುಧಾರಿಸುತ್ತಿದೆ ↓", "rising": "ಏರುತ್ತಿದೆ ↑", "stable": "ಸ್ಥಿರ →",
+            "bp_avg": "ಬಿಪಿ: ಸರಾಸರಿ", "elevated": "ಎತ್ತರ",
+            "weight_avg": "ತೂಕ: ಸರಾಸರಿ", "weight_trend": "ಟ್ರೆಂಡ್",
+            "decreasing": "ಕಡಿಮೆ ↓", "increasing": "ಹೆಚ್ಚಾಗುತ್ತಿದೆ ↑",
+            "diet": "ಆಹಾರ", "meals_logged": "ಊಟ ಲಾಗ್", "heavy_sweet": "ಭಾರ/ಸಿಹಿ",
+            "vs_prev": f"ಹಿಂದಿನ {period} ದಿನಕ್ಕೆ ಹೋಲಿಸಿ: ಗ್ಲೂಕೋಸ್", "up": "ಹೆಚ್ಚು", "down": "ಕಡಿಮೆ",
+            "period_label": f"{period} ದಿನ", "details": "ವಿವರ", "summary_lbl": "ಸಾರಾಂಶ",
+            "keep_tracking": f"ಕಳೆದ {period} ದಿನಗಳಲ್ಲಿ {{count}} ರೀಡಿಂಗ್ ಇದೆ. ಉತ್ತಮ ಒಳನೋಟಕ್ಕಾಗಿ ಟ್ರ್ಯಾಕಿಂಗ್ ಮುಂದುವರಿಸಿ!",
+        },
+        "te": {
+            "no_readings": f"గత {period} రోజుల్లో ఎలాంటి రీడింగ్‌లు నమోదు కాలేదు. ట్రెండ్ చూడటానికి లాగ్ చేయడం ప్రారంభించండి.",
+            "glucose_avg": "గ్లూకోజ్: సగటు", "readings": "రీడింగ్‌లు", "normal": "సాధారణ", "trend": "ట్రెండ్",
+            "improving": "మెరుగవుతోంది ↓", "rising": "పెరుగుతోంది ↑", "stable": "స్థిరంగా →",
+            "bp_avg": "బీపీ: సగటు", "elevated": "పెరిగింది",
+            "weight_avg": "బరువు: సగటు", "weight_trend": "ట్రెండ్",
+            "decreasing": "తగ్గుతోంది ↓", "increasing": "పెరుగుతోంది ↑",
+            "diet": "ఆహారం", "meals_logged": "భోజనాలు నమోదు", "heavy_sweet": "భారీ/తీపి",
+            "vs_prev": f"ముందటి {period} రోజులతో పోల్చితే: గ్లూకోజ్", "up": "పెరిగింది", "down": "తగ్గింది",
+            "period_label": f"{period} రోజులు", "details": "వివరాలు", "summary_lbl": "సారాంశం",
+            "keep_tracking": f"గత {period} రోజుల్లో {{count}} రీడింగ్‌లు ఉన్నాయి. మెరుగైన అంతర్దృష్టి కోసం ట్రాకింగ్ కొనసాగించండి!",
+        },
+        "ta": {
+            "no_readings": f"கடந்த {period} நாட்களில் எந்த அளவீடும் பதிவு செய்யப்படவில்லை. போக்கை காண பதிவு செய்யத் தொடங்குங்கள்.",
+            "glucose_avg": "குளுக்கோஸ்: சராசரி", "readings": "அளவீடுகள்", "normal": "சாதாரண", "trend": "போக்கு",
+            "improving": "மேம்படுகிறது ↓", "rising": "உயர்கிறது ↑", "stable": "நிலையானது →",
+            "bp_avg": "இரத்த அழுத்தம்: சராசரி", "elevated": "உயர்ந்தது",
+            "weight_avg": "எடை: சராசரி", "weight_trend": "போக்கு",
+            "decreasing": "குறைகிறது ↓", "increasing": "அதிகரிக்கிறது ↑",
+            "diet": "உணவு", "meals_logged": "உணவுகள் பதிவு", "heavy_sweet": "கனமான/இனிப்பான",
+            "vs_prev": f"கடந்த {period} நாட்களுடன் ஒப்பிட்டால்: குளுக்கோஸ்", "up": "அதிகம்", "down": "குறைவு",
+            "period_label": f"{period} நாட்கள்", "details": "விவரங்கள்", "summary_lbl": "சுருக்கம்",
+            "keep_tracking": f"கடந்த {period} நாட்களில் {{count}} அளவீடுகள் உள்ளன. சிறந்த நுண்ணறிவுக்கு கண்காணிப்பை தொடருங்கள்!",
+        },
+    }
+    s = _S.get(language, _S["en"])
+
     if not readings and not base_insight:
-        return {"summary": f"No readings recorded in the last {period} days. Start logging to see trend insights.", "period": period, "cached": False}
+        return {"summary": s["no_readings"], "period": period, "cached": False}
 
     # Glucose stats
     glucose_vals = [r.glucose_value for r in readings if r.reading_type == "glucose" and r.glucose_value]
@@ -1046,27 +1211,27 @@ def get_trend_summary(
         first_half = sum(glucose_vals[:mid]) / max(mid, 1)
         second_half = sum(glucose_vals[mid:]) / max(len(glucose_vals) - mid, 1)
         if second_half < first_half * 0.95:
-            trend = "improving ↓"
+            trend = s["improving"]
         elif second_half > first_half * 1.05:
-            trend = "rising ↑"
+            trend = s["rising"]
         else:
-            trend = "stable →"
+            trend = s["stable"]
         normal_pct = sum(1 for v in glucose_vals if 70 <= v <= 130) * 100 // len(glucose_vals)
         data_parts.append(
-            f"Glucose: avg {avg_g:.0f} mg/dL ({len(glucose_vals)} readings), "
-            f"range {min(glucose_vals):.0f}–{max(glucose_vals):.0f}, "
-            f"{normal_pct}% normal, trend {trend}"
+            f"{s['glucose_avg']} {avg_g:.0f} mg/dL ({len(glucose_vals)} {s['readings']}), "
+            f"{min(glucose_vals):.0f}–{max(glucose_vals):.0f}, "
+            f"{normal_pct}% {s['normal']}, {s['trend']} {trend}"
         )
 
     # BP stats
     bp_readings = [(r.systolic, r.diastolic) for r in readings if r.reading_type == "blood_pressure" and r.systolic and r.diastolic]
     if bp_readings:
-        avg_sys = sum(s for s, _ in bp_readings) / len(bp_readings)
-        avg_dia = sum(d for _, d in bp_readings) / len(bp_readings)
-        elevated = sum(1 for s, d in bp_readings if s >= 130 or d >= 80)
+        avg_sys = sum(sys for sys, _ in bp_readings) / len(bp_readings)
+        avg_dia = sum(dia for _, dia in bp_readings) / len(bp_readings)
+        elevated = sum(1 for sys, dia in bp_readings if sys >= 130 or dia >= 80)
         data_parts.append(
-            f"BP: avg {avg_sys:.0f}/{avg_dia:.0f} mmHg ({len(bp_readings)} readings), "
-            f"{elevated} elevated"
+            f"{s['bp_avg']} {avg_sys:.0f}/{avg_dia:.0f} mmHg ({len(bp_readings)} {s['readings']}), "
+            f"{elevated} {s['elevated']}"
         )
 
     # Weight stats
@@ -1077,15 +1242,15 @@ def get_trend_summary(
         first_half = sum(weight_vals[:mid]) / max(mid, 1)
         second_half = sum(weight_vals[mid:]) / max(len(weight_vals) - mid, 1)
         if second_half < first_half - 0.5:
-            trend = "decreasing ↓"
+            trend = s["decreasing"]
         elif second_half > first_half + 0.5:
-            trend = "increasing ↑"
+            trend = s["increasing"]
         else:
-            trend = "stable →"
+            trend = s["stable"]
         data_parts.append(
-            f"Weight: avg {avg_w:.1f} kg ({len(weight_vals)} readings), "
-            f"range {min(weight_vals):.1f}\u2013{max(weight_vals):.1f}, "
-            f"trend {trend}"
+            f"{s['weight_avg']} {avg_w:.1f} kg ({len(weight_vals)} {s['readings']}), "
+            f"{min(weight_vals):.1f}–{max(weight_vals):.1f}, "
+            f"{s['weight_trend']} {trend}"
         )
 
     # Meal stats for the period
@@ -1102,8 +1267,8 @@ def get_trend_summary(
         cat_counts = Counter(m.category for m in period_meals)
         heavy = cat_counts.get("HIGH_CARB", 0) + cat_counts.get("SWEETS", 0)
         data_parts.append(
-            f"Diet: {len(period_meals)} meals logged, "
-            f"{heavy} heavy/sweet"
+            f"{s['diet']}: {len(period_meals)} {s['meals_logged']}, "
+            f"{heavy} {s['heavy_sweet']}"
         )
 
     # Previous period comparison
@@ -1123,35 +1288,36 @@ def get_trend_summary(
         curr_avg = sum(glucose_vals) / len(glucose_vals)
         diff = curr_avg - prev_avg
         if abs(diff) > 5:
-            direction = "up" if diff > 0 else "down"
-            comparison = f"vs previous {period}d: glucose {direction} {abs(diff):.0f} mg/dL"
+            direction = s["up"] if diff > 0 else s["down"]
+            comparison = f"{s['vs_prev']} {direction} {abs(diff):.0f} mg/dL"
 
-    # ── 3. Assemble layered summary ──────────────────────────────────
-    period_label = f"{period}-day"
+    # ── 3. Assemble layered summary ────────────────────────────────────────
+    period_label = s["period_label"]
     data_line = ". ".join(data_parts)
     if comparison:
         data_line += f". {comparison}"
 
     if base_insight:
-        summary = f"{base_insight}\n\n{period_label} details: {data_line}." if data_line else base_insight
+        summary = f"{base_insight}\n\n{period_label} {s['details']}: {data_line}." if data_line else base_insight
     elif data_line:
-        summary = f"{period_label} summary: {data_line}."
+        summary = f"{period_label} {s['summary_lbl']}: {data_line}."
     else:
-        summary = f"You have {len(readings)} readings in the last {period} days. Keep tracking for better insights!"
+        summary = s["keep_tracking"].format(count=len(readings))
 
-    # ── Cache ────────────────────────────────────────────────────────
-    try:
-        cache_entry = models.TrendSummaryCache(
-            profile_id=profile_id,
-            period_days=period,
-            cache_date=today,
-            summary_text=summary,
-            model_used="layered",
-        )
-        db.add(cache_entry)
-        db.commit()
-    except Exception:
-        db.rollback()
+    # ── Cache (English only — non-English always gets fresh data) ────────────────────
+    if language == "en":
+        try:
+            cache_entry = models.TrendSummaryCache(
+                profile_id=profile_id,
+                period_days=period,
+                cache_date=today,
+                summary_text=summary,
+                model_used="layered",
+            )
+            db.add(cache_entry)
+            db.commit()
+        except Exception:
+            db.rollback()
 
     # Log trend summary for debugging
     logger.info(f"\n{'='*80}\n🟣 BACKEND {period}-DAY TREND SUMMARY:\n{'='*80}\n{summary}\n{'='*80}\n")
@@ -1630,19 +1796,33 @@ async def parse_image_with_gemini(
         )
 
 
-def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
+def _rule_based_insight(recent: list, db: Session, total_count: int = 0, language: str = "en") -> str:
     """Simple rule-based fallback used when Gemini is unavailable."""
     if not recent:
         if total_count > 0:
+            if language == "hi": return f"वापसी पर स्वागत है! आपके पास {total_count} रीडिंग हैं। नए सुझाव पाने के लिए आज की रीडिंग दर्ज करें।"
+            if language == "kn": return f"ಮರಳಿ ಸ್ವಾಗತ! ನಿಮ್ಮ ಬಳಿ {total_count} ರೀಡಿಂಗ್‌ಗಳಿವೆ. ಹೊಸ ಒಳನೋಟಗಳನ್ನು ಪಡೆಯಲು ಇಂದಿನ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ."
             return f"Welcome back! You have {total_count} readings on file. Log today's reading to get fresh insights."
+        
+        if language == "hi": return "अपनी पहली रीडिंग दर्ज करके अपने स्वास्थ्य पर नज़र रखना शुरू करें।"
+        if language == "kn": return "ನಿಮ್ಮ ಆರೋಗ್ಯವನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಲು ನಿಮ್ಮ ಮೊದಲ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ."
         return "Log your first reading to start tracking your health."
+    
     statuses = {r.status_flag for r in recent if r.status_flag}
     if "CRITICAL" in statuses:
+        if language == "hi": return "⚠️ एक हालिया रीडिंग गंभीर थी। कृपया तुरंत डॉक्टर से मिलें।"
+        if language == "kn": return "⚠️ ಇತ್ತೀಚಿನ ಒಂದು ರೀಡಿಂಗ್ ಗಂಭೀರವಾಗಿತ್ತು. ದಯವಿಟ್ಟು ತಕ್ಷಣ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
         return "⚠️ A recent reading was critical. Please seek medical attention immediately."
+    
     if "HIGH - STAGE 2" in statuses:
         stage2 = next((r for r in reversed(recent) if r.status_flag == "HIGH - STAGE 2"), None)
         if stage2 and stage2.reading_type == "blood_pressure" and stage2.systolic:
+            if language == "hi": return f"⚠️ आपका बीपी ({stage2.systolic:.0f}/{stage2.diastolic:.0f}) बहुत अधिक है। क्या आपने दवा ली है? कृपया आज ही डॉक्टर से मिलें।"
+            if language == "kn": return f"⚠️ ನಿಮ್ಮ ರಕ್ತದೊತ್ತಡ ({stage2.systolic:.0f}/{stage2.diastolic:.0f}) ಅಪಾಯಕಾರಿಯಾಗಿ ಹೆಚ್ಚಾಗಿದೆ. ನೀವು ಔಷಧಿ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಾ? ದಯವಿಟ್ಟು ಇಂದೇ ವೈದ್ಯರನ್ನು ಭೇಟಿ ಮಾಡಿ."
             return f"⚠️ Your BP ({stage2.systolic:.0f}/{stage2.diastolic:.0f}) is dangerously high. Have you taken your medication? Please see a doctor today."
+        
+        if language == "hi": return "⚠️ एक रीडिंग स्टेज 2 के स्तर पर है। क्या आपने दवा ली है? कृपया डॉक्टर से सलाह लें।"
+        if language == "kn": return "⚠️ ಒಂದು ರೀಡಿಂಗ್ ಹಂತ 2 ರಲ್ಲಿದೆ. ನೀವು ಔಷಧಿ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಾ? ದಯವಿಟ್ಟು ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
         return "⚠️ A reading is in Stage 2 range. Have you taken your medication? Please consult your doctor."
 
     # Weight specific tips (check this BEFORE general NORMAL status)
@@ -1653,19 +1833,32 @@ def _rule_based_insight(recent: list, db: Session, total_count: int = 0) -> str:
         if profile and profile.height:
             bmi = latest_w / ((profile.height / 100) ** 2)
             if bmi >= 25:
-                # Still check if other things are high, but if everything else is normal, tell them about BMI
-                msg = f"Your BMI is {bmi:.1f} (Overweight). Try reducing carbs and aim for daily activity."
                 if any("HIGH" in (s or "") for s in statuses):
+                    if language == "hi": return f"कुछ रीडिंग अधिक हैं, और आपका BMI {bmi:.1f} है। आहार और व्यायाम पर ध्यान दें।"
+                    if language == "kn": return f"ಕೆಲವು ರೀಡಿಂಗ್‌ಗಳು ಹೆಚ್ಚಾಗಿವೆ, ಮತ್ತು ನಿಮ್ಮ BMI {bmi:.1f} ಆಗಿದೆ. ಆಹಾರ ಮತ್ತು ವ್ಯಾಯಾಮದ ಬಗ್ಗೆ ಗಮನಹರಿಸಿ."
                     return f"Some readings are elevated, and your BMI is {bmi:.1f}. Focus on diet and movement."
-                return msg
+                
+                if language == "hi": return f"आपका BMI {bmi:.1f} (अधिक वजन) है। कार्ब्स कम करें और रोज़ व्यायाम करें।"
+                if language == "kn": return f"ನಿಮ್ಮ BMI {bmi:.1f} (ಹೆಚ್ಚು ತೂಕ) ಆಗಿದೆ. ಕಾರ್ಬ್ಸ್ ಕಡಿಮೆ ಮಾಡಿ ಮತ್ತು ದೈನಂದಿನ ವ್ಯಾಯಾಮವನ್ನು ಗುರಿಯಾಗಿಸಿ."
+                return f"Your BMI is {bmi:.1f} (Overweight). Try reducing carbs and aim for daily activity."
+            
             if bmi < 18.5:
+                if language == "hi": return f"आपका BMI {bmi:.1f} (कम वजन) है। सुनिश्चित करें कि आप पर्याप्त पोषण ले रहे हैं।"
+                if language == "kn": return f"ನಿಮ್ಮ BMI {bmi:.1f} (ಕಡಿಮೆ ತೂಕ) ಆಗಿದೆ. ಸಾಕಷ್ಟು ಪೌಷ್ಟಿಕಾಂಶ ಸಿಗುತ್ತಿದೆ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ."
                 return f"Your BMI is {bmi:.1f} (Underweight). Ensure you are getting enough nutrition."
 
     if any("HIGH" in (s or "") for s in statuses):
+        if language == "hi": return "इस सप्ताह कुछ रीडिंग अधिक थीं। पानी पीते रहें और सक्रिय रहें।"
+        if language == "kn": return "ಈ ವಾರ ಕೆಲವು ರೀಡಿಂಗ್‌ಗಳು ಹೆಚ್ಚಾಗಿದ್ದವು. ನೀರು ಕುಡಿಯಿರಿ ಮತ್ತು ಸಕ್ರಿಯರಾಗಿರಿ."
         return "Some readings were elevated this week. Stay hydrated and keep active."
 
     if statuses and all(s == "NORMAL" for s in statuses):
+        if language == "hi": return "सभी हालिया रीडिंग सामान्य लग रही हैं। बहुत बढ़िया!"
+        if language == "kn": return "ಎಲ್ಲಾ ಇತ್ತೀಚಿನ ರೀಡಿಂಗ್‌ಗಳು ಆರೋಗ್ಯಕರವಾಗಿವೆ. ಹೀಗೆಯೇ ಮುಂದುವರಿಸಿ!"
         return "All recent readings look healthy. Keep up the great work!"
+    
+    if language == "hi": return "रीडिंग दर्ज की गई। बेहतर सुझावों के लिए रोज़ाना ट्रैक करें।"
+    if language == "kn": return "ರೀಡಿಂಗ್ ದಾಖಲಿಸಲಾಗಿದೆ. ಉತ್ತಮ ಒಳನೋಟಗಳಿಗಾಗಿ ಪ್ರತಿದಿನ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ."
     return "Readings logged. Keep tracking daily for better health insights."
 
 
