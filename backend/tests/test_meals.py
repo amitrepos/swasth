@@ -196,7 +196,7 @@ class TestMealLogSchemas:
         resp = FoodClassificationResponse(
             category="HIGH_CARB",
             glucose_impact="HIGH",
-            tips={"en": "Walk after eating.", "hi": "खाने के बाद टहलें।"},
+            tips_json={"en": "Walk after eating.", "hi": "खाने के बाद टहलें।"},
             confidence=0.85,
         )
         assert resp.category == "HIGH_CARB"

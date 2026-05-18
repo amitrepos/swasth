@@ -1833,33 +1833,112 @@ async def parse_image_with_gemini(
 
 
 def _rule_based_insight(recent: list, db: Session, total_count: int = 0, language: str = "en") -> str:
-    """Simple rule-based fallback used when Gemini is unavailable."""
+    """Simple rule-based fallback used when Gemini is unavailable.
+
+    Health-safety critical: every branch must return in the caller's
+    language. Telugu/Tamil patients receiving a CRITICAL alert in
+    English is a known regression mode — every key in `_T` must cover
+    all 5 supported languages.
+    """
+    language = language if language in _SUPPORTED_LANGS else "en"
+
+    _T = {
+        "welcome_back": {
+            "en": "Welcome back! You have {n} readings on file. Log today's reading to get fresh insights.",
+            "hi": "वापसी पर स्वागत है! आपके पास {n} रीडिंग हैं। नए सुझाव पाने के लिए आज की रीडिंग दर्ज करें।",
+            "kn": "ಮರಳಿ ಸ್ವಾಗತ! ನಿಮ್ಮ ಬಳಿ {n} ರೀಡಿಂಗ್‌ಗಳಿವೆ. ಹೊಸ ಒಳನೋಟಗಳನ್ನು ಪಡೆಯಲು ಇಂದಿನ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ.",
+            "te": "తిరిగి స్వాగతం! మీకు {n} రీడింగ్‌లు ఉన్నాయి. తాజా అంతర్దృష్టుల కోసం నేటి రీడింగ్‌ను నమోదు చేయండి.",
+            "ta": "மீண்டும் வரவேற்கிறோம்! உங்களிடம் {n} அளவீடுகள் உள்ளன. புதிய பார்வைகளுக்கு இன்றைய அளவீட்டைப் பதிவு செய்யுங்கள்.",
+        },
+        "log_first": {
+            "en": "Log your first reading to start tracking your health.",
+            "hi": "अपनी पहली रीडिंग दर्ज करके अपने स्वास्थ्य पर नज़र रखना शुरू करें।",
+            "kn": "ನಿಮ್ಮ ಆರೋಗ್ಯವನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಲು ನಿಮ್ಮ ಮೊದಲ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ.",
+            "te": "మీ ఆరోగ్యాన్ని ట్రాక్ చేయడం ప్రారంభించడానికి మీ మొదటి రీడింగ్‌ను నమోదు చేయండి.",
+            "ta": "உங்கள் உடல்நலத்தைக் கண்காணிக்க உங்கள் முதல் அளவீட்டைப் பதிவு செய்யுங்கள்.",
+        },
+        "critical": {
+            "en": "⚠️ A recent reading was critical. Please seek medical attention immediately.",
+            "hi": "⚠️ एक हालिया रीडिंग गंभीर थी। कृपया तुरंत डॉक्टर से मिलें।",
+            "kn": "⚠️ ಇತ್ತೀಚಿನ ಒಂದು ರೀಡಿಂಗ್ ಗಂಭೀರವಾಗಿತ್ತು. ದಯವಿಟ್ಟು ತಕ್ಷಣ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+            "te": "⚠️ ఇటీవలి రీడింగ్ ప్రమాదకరంగా ఉంది. దయచేసి వెంటనే వైద్య సహాయం పొందండి.",
+            "ta": "⚠️ சமீபத்திய அளவீடு ஆபத்தானது. உடனடியாக மருத்துவ உதவியை நாடுங்கள்.",
+        },
+        "stage2_bp": {
+            "en": "⚠️ Your BP ({sys:.0f}/{dia:.0f}) is dangerously high. Have you taken your medication? Please see a doctor today.",
+            "hi": "⚠️ आपका बीपी ({sys:.0f}/{dia:.0f}) बहुत अधिक है। क्या आपने दवा ली है? कृपया आज ही डॉक्टर से मिलें।",
+            "kn": "⚠️ ನಿಮ್ಮ ರಕ್ತದೊತ್ತಡ ({sys:.0f}/{dia:.0f}) ಅಪಾಯಕಾರಿಯಾಗಿ ಹೆಚ್ಚಾಗಿದೆ. ನೀವು ಔಷಧಿ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಾ? ದಯವಿಟ್ಟು ಇಂದೇ ವೈದ್ಯರನ್ನು ಭೇಟಿ ಮಾಡಿ.",
+            "te": "⚠️ మీ రక్తపోటు ({sys:.0f}/{dia:.0f}) ప్రమాదకరంగా ఎక్కువగా ఉంది. మీరు మందులు తీసుకున్నారా? దయచేసి ఈరోజే వైద్యుడిని కలవండి.",
+            "ta": "⚠️ உங்கள் இரத்த அழுத்தம் ({sys:.0f}/{dia:.0f}) ஆபத்தான அளவில் உள்ளது. மருந்து உட்கொண்டீர்களா? இன்றே மருத்துவரைச் சந்திக்கவும்.",
+        },
+        "stage2_generic": {
+            "en": "⚠️ A reading is in Stage 2 range. Have you taken your medication? Please consult your doctor.",
+            "hi": "⚠️ एक रीडिंग स्टेज 2 के स्तर पर है। क्या आपने दवा ली है? कृपया डॉक्टर से सलाह लें।",
+            "kn": "⚠️ ಒಂದು ರೀಡಿಂಗ್ ಹಂತ 2 ರಲ್ಲಿದೆ. ನೀವು ಔಷಧಿ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಾ? ದಯವಿಟ್ಟು ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+            "te": "⚠️ ఒక రీడింగ్ స్టేజ్ 2 పరిధిలో ఉంది. మీరు మందులు తీసుకున్నారా? దయచేసి మీ వైద్యుడిని సంప్రదించండి.",
+            "ta": "⚠️ ஒரு அளவீடு நிலை 2 வரம்பில் உள்ளது. மருந்து உட்கொண்டீர்களா? உங்கள் மருத்துவரை அணுகவும்.",
+        },
+        "bmi_high_with_elev": {
+            "en": "Some readings are elevated, and your BMI is {bmi:.1f}. Focus on diet and movement.",
+            "hi": "कुछ रीडिंग अधिक हैं, और आपका BMI {bmi:.1f} है। आहार और व्यायाम पर ध्यान दें।",
+            "kn": "ಕೆಲವು ರೀಡಿಂಗ್‌ಗಳು ಹೆಚ್ಚಾಗಿವೆ, ಮತ್ತು ನಿಮ್ಮ BMI {bmi:.1f} ಆಗಿದೆ. ಆಹಾರ ಮತ್ತು ವ್ಯಾಯಾಮದ ಬಗ್ಗೆ ಗಮನಹರಿಸಿ.",
+            "te": "కొన్ని రీడింగ్‌లు ఎక్కువగా ఉన్నాయి, మరియు మీ BMI {bmi:.1f}. ఆహారం మరియు వ్యాయామంపై దృష్టి పెట్టండి.",
+            "ta": "சில அளவீடுகள் அதிகமாக உள்ளன, உங்கள் BMI {bmi:.1f}. உணவு மற்றும் உடற்பயிற்சியில் கவனம் செலுத்துங்கள்.",
+        },
+        "bmi_overweight": {
+            "en": "Your BMI is {bmi:.1f} (Overweight). Try reducing carbs and aim for daily activity.",
+            "hi": "आपका BMI {bmi:.1f} (अधिक वजन) है। कार्ब्स कम करें और रोज़ व्यायाम करें।",
+            "kn": "ನಿಮ್ಮ BMI {bmi:.1f} (ಹೆಚ್ಚು ತೂಕ) ಆಗಿದೆ. ಕಾರ್ಬ್ಸ್ ಕಡಿಮೆ ಮಾಡಿ ಮತ್ತು ದೈನಂದಿನ ವ್ಯಾಯಾಮವನ್ನು ಗುರಿಯಾಗಿಸಿ.",
+            "te": "మీ BMI {bmi:.1f} (అధిక బరువు). కార్బ్‌లను తగ్గించి, రోజువారీ వ్యాయామాన్ని లక్ష్యంగా చేసుకోండి.",
+            "ta": "உங்கள் BMI {bmi:.1f} (அதிக எடை). கார்போஹைட்ரேட்டைக் குறைத்து, தினசரி உடற்பயிற்சியில் ஈடுபடுங்கள்.",
+        },
+        "bmi_underweight": {
+            "en": "Your BMI is {bmi:.1f} (Underweight). Ensure you are getting enough nutrition.",
+            "hi": "आपका BMI {bmi:.1f} (कम वजन) है। सुनिश्चित करें कि आप पर्याप्त पोषण ले रहे हैं।",
+            "kn": "ನಿಮ್ಮ BMI {bmi:.1f} (ಕಡಿಮೆ ತೂಕ) ಆಗಿದೆ. ಸಾಕಷ್ಟು ಪೌಷ್ಟಿಕಾಂಶ ಸಿಗುತ್ತಿದೆ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
+            "te": "మీ BMI {bmi:.1f} (తక్కువ బరువు). మీరు తగినంత పోషణ పొందుతున్నారని నిర్ధారించుకోండి.",
+            "ta": "உங்கள் BMI {bmi:.1f} (எடை குறைவு). போதுமான ஊட்டச்சத்து கிடைப்பதை உறுதிசெய்யுங்கள்.",
+        },
+        "high_general": {
+            "en": "Some readings were elevated this week. Stay hydrated and keep active.",
+            "hi": "इस सप्ताह कुछ रीडिंग अधिक थीं। पानी पीते रहें और सक्रिय रहें।",
+            "kn": "ಈ ವಾರ ಕೆಲವು ರೀಡಿಂಗ್‌ಗಳು ಹೆಚ್ಚಾಗಿದ್ದವು. ನೀರು ಕುಡಿಯಿರಿ ಮತ್ತು ಸಕ್ರಿಯರಾಗಿರಿ.",
+            "te": "ఈ వారం కొన్ని రీడింగ్‌లు ఎక్కువగా ఉన్నాయి. తగినంత నీరు తాగండి మరియు చురుకుగా ఉండండి.",
+            "ta": "இந்த வாரம் சில அளவீடுகள் அதிகமாக இருந்தன. நீர்ச்சத்துடன் சுறுசுறுப்பாக இருங்கள்.",
+        },
+        "all_normal": {
+            "en": "All recent readings look healthy. Keep up the great work!",
+            "hi": "सभी हालिया रीडिंग सामान्य लग रही हैं। बहुत बढ़िया!",
+            "kn": "ಎಲ್ಲಾ ಇತ್ತೀಚಿನ ರೀಡಿಂಗ್‌ಗಳು ಆರೋಗ್ಯಕರವಾಗಿವೆ. ಹೀಗೆಯೇ ಮುಂದುವರಿಸಿ!",
+            "te": "ఇటీవలి అన్ని రీడింగ్‌లు ఆరోగ్యకరంగా కనిపిస్తున్నాయి. మంచి పనిని కొనసాగించండి!",
+            "ta": "சமீபத்திய அனைத்து அளவீடுகளும் ஆரோக்கியமாக உள்ளன. சிறப்பான வேலையைத் தொடருங்கள்!",
+        },
+        "default": {
+            "en": "Readings logged. Keep tracking daily for better health insights.",
+            "hi": "रीडिंग दर्ज की गई। बेहतर सुझावों के लिए रोज़ाना ट्रैक करें।",
+            "kn": "ರೀಡಿಂಗ್ ದಾಖಲಿಸಲಾಗಿದೆ. ಉತ್ತಮ ಒಳನೋಟಗಳಿಗಾಗಿ ಪ್ರತಿದಿನ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ.",
+            "te": "రీడింగ్‌లు నమోదు చేయబడ్డాయి. మెరుగైన అంతర్దృష్టుల కోసం ప్రతిరోజూ ట్రాక్ చేయండి.",
+            "ta": "அளவீடுகள் பதிவு செய்யப்பட்டன. சிறந்த உடல்நல பார்வைகளுக்கு தினமும் கண்காணியுங்கள்.",
+        },
+    }
+
+    def t(key: str, **kwargs) -> str:
+        return _T[key][language].format(**kwargs)
+
     if not recent:
         if total_count > 0:
-            if language == "hi": return f"वापसी पर स्वागत है! आपके पास {total_count} रीडिंग हैं। नए सुझाव पाने के लिए आज की रीडिंग दर्ज करें।"
-            if language == "kn": return f"ಮರಳಿ ಸ್ವಾಗತ! ನಿಮ್ಮ ಬಳಿ {total_count} ರೀಡಿಂಗ್‌ಗಳಿವೆ. ಹೊಸ ಒಳನೋಟಗಳನ್ನು ಪಡೆಯಲು ಇಂದಿನ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ."
-            return f"Welcome back! You have {total_count} readings on file. Log today's reading to get fresh insights."
-        
-        if language == "hi": return "अपनी पहली रीडिंग दर्ज करके अपने स्वास्थ्य पर नज़र रखना शुरू करें।"
-        if language == "kn": return "ನಿಮ್ಮ ಆರೋಗ್ಯವನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಲು ನಿಮ್ಮ ಮೊದಲ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ."
-        return "Log your first reading to start tracking your health."
-    
+            return t("welcome_back", n=total_count)
+        return t("log_first")
+
     statuses = {r.status_flag for r in recent if r.status_flag}
     if "CRITICAL" in statuses:
-        if language == "hi": return "⚠️ एक हालिया रीडिंग गंभीर थी। कृपया तुरंत डॉक्टर से मिलें।"
-        if language == "kn": return "⚠️ ಇತ್ತೀಚಿನ ಒಂದು ರೀಡಿಂಗ್ ಗಂಭೀರವಾಗಿತ್ತು. ದಯವಿಟ್ಟು ತಕ್ಷಣ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
-        return "⚠️ A recent reading was critical. Please seek medical attention immediately."
-    
+        return t("critical")
+
     if "HIGH - STAGE 2" in statuses:
         stage2 = next((r for r in reversed(recent) if r.status_flag == "HIGH - STAGE 2"), None)
         if stage2 and stage2.reading_type == "blood_pressure" and stage2.systolic:
-            if language == "hi": return f"⚠️ आपका बीपी ({stage2.systolic:.0f}/{stage2.diastolic:.0f}) बहुत अधिक है। क्या आपने दवा ली है? कृपया आज ही डॉक्टर से मिलें।"
-            if language == "kn": return f"⚠️ ನಿಮ್ಮ ರಕ್ತದೊತ್ತಡ ({stage2.systolic:.0f}/{stage2.diastolic:.0f}) ಅಪಾಯಕಾರಿಯಾಗಿ ಹೆಚ್ಚಾಗಿದೆ. ನೀವು ಔಷಧಿ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಾ? ದಯವಿಟ್ಟು ಇಂದೇ ವೈದ್ಯರನ್ನು ಭೇಟಿ ಮಾಡಿ."
-            return f"⚠️ Your BP ({stage2.systolic:.0f}/{stage2.diastolic:.0f}) is dangerously high. Have you taken your medication? Please see a doctor today."
-        
-        if language == "hi": return "⚠️ एक रीडिंग स्टेज 2 के स्तर पर है। क्या आपने दवा ली है? कृपया डॉक्टर से सलाह लें।"
-        if language == "kn": return "⚠️ ಒಂದು ರೀಡಿಂಗ್ ಹಂತ 2 ರಲ್ಲಿದೆ. ನೀವು ಔಷಧಿ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಾ? ದಯವಿಟ್ಟು ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
-        return "⚠️ A reading is in Stage 2 range. Have you taken your medication? Please consult your doctor."
+            return t("stage2_bp", sys=stage2.systolic, dia=stage2.diastolic)
+        return t("stage2_generic")
 
     # Weight specific tips (check this BEFORE general NORMAL status)
     weight_readings = [r for r in recent if r.reading_type == "weight" and r.weight_value]
@@ -1870,32 +1949,18 @@ def _rule_based_insight(recent: list, db: Session, total_count: int = 0, languag
             bmi = latest_w / ((profile.height / 100) ** 2)
             if bmi >= 25:
                 if any("HIGH" in (s or "") for s in statuses):
-                    if language == "hi": return f"कुछ रीडिंग अधिक हैं, और आपका BMI {bmi:.1f} है। आहार और व्यायाम पर ध्यान दें।"
-                    if language == "kn": return f"ಕೆಲವು ರೀಡಿಂಗ್‌ಗಳು ಹೆಚ್ಚಾಗಿವೆ, ಮತ್ತು ನಿಮ್ಮ BMI {bmi:.1f} ಆಗಿದೆ. ಆಹಾರ ಮತ್ತು ವ್ಯಾಯಾಮದ ಬಗ್ಗೆ ಗಮನಹರಿಸಿ."
-                    return f"Some readings are elevated, and your BMI is {bmi:.1f}. Focus on diet and movement."
-                
-                if language == "hi": return f"आपका BMI {bmi:.1f} (अधिक वजन) है। कार्ब्स कम करें और रोज़ व्यायाम करें।"
-                if language == "kn": return f"ನಿಮ್ಮ BMI {bmi:.1f} (ಹೆಚ್ಚು ತೂಕ) ಆಗಿದೆ. ಕಾರ್ಬ್ಸ್ ಕಡಿಮೆ ಮಾಡಿ ಮತ್ತು ದೈನಂದಿನ ವ್ಯಾಯಾಮವನ್ನು ಗುರಿಯಾಗಿಸಿ."
-                return f"Your BMI is {bmi:.1f} (Overweight). Try reducing carbs and aim for daily activity."
-            
+                    return t("bmi_high_with_elev", bmi=bmi)
+                return t("bmi_overweight", bmi=bmi)
             if bmi < 18.5:
-                if language == "hi": return f"आपका BMI {bmi:.1f} (कम वजन) है। सुनिश्चित करें कि आप पर्याप्त पोषण ले रहे हैं।"
-                if language == "kn": return f"ನಿಮ್ಮ BMI {bmi:.1f} (ಕಡಿಮೆ ತೂಕ) ಆಗಿದೆ. ಸಾಕಷ್ಟು ಪೌಷ್ಟಿಕಾಂಶ ಸಿಗುತ್ತಿದೆ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ."
-                return f"Your BMI is {bmi:.1f} (Underweight). Ensure you are getting enough nutrition."
+                return t("bmi_underweight", bmi=bmi)
 
     if any("HIGH" in (s or "") for s in statuses):
-        if language == "hi": return "इस सप्ताह कुछ रीडिंग अधिक थीं। पानी पीते रहें और सक्रिय रहें।"
-        if language == "kn": return "ಈ ವಾರ ಕೆಲವು ರೀಡಿಂಗ್‌ಗಳು ಹೆಚ್ಚಾಗಿದ್ದವು. ನೀರು ಕುಡಿಯಿರಿ ಮತ್ತು ಸಕ್ರಿಯರಾಗಿರಿ."
-        return "Some readings were elevated this week. Stay hydrated and keep active."
+        return t("high_general")
 
     if statuses and all(s == "NORMAL" for s in statuses):
-        if language == "hi": return "सभी हालिया रीडिंग सामान्य लग रही हैं। बहुत बढ़िया!"
-        if language == "kn": return "ಎಲ್ಲಾ ಇತ್ತೀಚಿನ ರೀಡಿಂಗ್‌ಗಳು ಆರೋಗ್ಯಕರವಾಗಿವೆ. ಹೀಗೆಯೇ ಮುಂದುವರಿಸಿ!"
-        return "All recent readings look healthy. Keep up the great work!"
-    
-    if language == "hi": return "रीडिंग दर्ज की गई। बेहतर सुझावों के लिए रोज़ाना ट्रैक करें।"
-    if language == "kn": return "ರೀಡಿಂಗ್ ದಾಖಲಿಸಲಾಗಿದೆ. ಉತ್ತಮ ಒಳನೋಟಗಳಿಗಾಗಿ ಪ್ರತಿದಿನ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ."
-    return "Readings logged. Keep tracking daily for better health insights."
+        return t("all_normal")
+
+    return t("default")
 
 
 # ---------------------------------------------------------------------------

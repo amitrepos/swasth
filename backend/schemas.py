@@ -812,10 +812,16 @@ class MealLogResponse(BaseModel):
 
 
 class FoodClassificationResponse(BaseModel):
-    """Response from Gemini Vision food classification."""
+    """Response from Gemini Vision food classification.
+
+    Field name MUST match the wire format used by `parse_food_image`
+    (key = `tips_json`). Flutter's FoodClassificationResult.fromJson
+    reads `json['tips_json']`; using `tips` here would silently mask
+    that mismatch from anyone who adds a `response_model=` annotation.
+    """
     category: str
     glucose_impact: str
-    tips: Optional[dict[str, str]] = None
+    tips_json: Optional[dict[str, str]] = None
     confidence: float
 
 
