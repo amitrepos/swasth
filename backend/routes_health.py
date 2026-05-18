@@ -33,6 +33,16 @@ from utils.datetime_helpers import ensure_utc
 router = APIRouter()
 
 _VALID_READING_TYPES = {'glucose', 'blood_pressure', 'spo2', 'steps', 'weight'}
+_SUPPORTED_LANGS = {'en', 'hi', 'kn', 'te', 'ta'}
+
+
+def _normalize_language(language: str) -> str:
+    """Coerce caller-supplied language to a supported code, defaulting to English.
+
+    Prevents typos / future-language requests from silently masking
+    translation bugs — invalid input → 'en' rather than passing through.
+    """
+    return language if language in _SUPPORTED_LANGS else 'en'
 
 
 def _refresh_doctor_triage_for_profile(db: Session, profile_id: int) -> None:
@@ -297,6 +307,7 @@ def get_health_score(
 ):
     """Compute a 0–100 health score, streak, and insight for the home screen dashboard."""
     get_profile_access_or_403(profile_id, user, db)
+    language = _normalize_language(language)
 
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
     profile_age = profile.age if profile else None
@@ -622,22 +633,45 @@ def get_health_score(
     if p_height and p_weight and p_height > 0:
         height_m = p_height / 100.0
         bmi = round(p_weight / (height_m * height_m), 1)
+        _BMI = {
+            "underweight": {
+                "en": "Underweight",
+                "hi": "कम वजन (Underweight)",
+                "kn": "ಕಡಿಮೆ ತೂಕ (Underweight)",
+                "te": "తక్కువ బరువు (Underweight)",
+                "ta": "எடை குறைவு (Underweight)",
+            },
+            "normal": {
+                "en": "Normal",
+                "hi": "सामान्य (Normal)",
+                "kn": "ಸಾಮಾನ್ಯ (Normal)",
+                "te": "సాధారణం (Normal)",
+                "ta": "சாதாரண (Normal)",
+            },
+            "overweight": {
+                "en": "Overweight",
+                "hi": "अधिक वजन (Overweight)",
+                "kn": "ಹೆಚ್ಚು ತೂಕ (Overweight)",
+                "te": "అధిక బరువు (Overweight)",
+                "ta": "அதிக எடை (Overweight)",
+            },
+            "obese": {
+                "en": "Obese",
+                "hi": "मोटापा (Obese)",
+                "kn": "ಬೊಜ್ಜು (Obese)",
+                "te": "ఊబకాయం (Obese)",
+                "ta": "உடல் பருமன் (Obese)",
+            },
+        }
         if bmi < 18.5:
-            if language == "hi": bmi_category = "कम वजन (Underweight)"
-            elif language == "kn": bmi_category = "ಕಡಿಮೆ ತೂಕ (Underweight)"
-            else: bmi_category = "Underweight"
+            bucket = "underweight"
         elif bmi < 25:
-            if language == "hi": bmi_category = "सामान्य (Normal)"
-            elif language == "kn": bmi_category = "ಸಾಮಾನ್ಯ (Normal)"
-            else: bmi_category = "Normal"
+            bucket = "normal"
         elif bmi < 30:
-            if language == "hi": bmi_category = "अधिक वजन (Overweight)"
-            elif language == "kn": bmi_category = "ಹೆಚ್ಚು ತೂಕ (Overweight)"
-            else: bmi_category = "Overweight"
+            bucket = "overweight"
         else:
-            if language == "hi": bmi_category = "मोटापा (Obese)"
-            elif language == "kn": bmi_category = "ಬೊಜ್ಜು (Obese)"
-            else: bmi_category = "Obese"
+            bucket = "obese"
+        bmi_category = _BMI[bucket].get(language, _BMI[bucket]["en"])
 
     # --- SpO2 data ---
     last_spo2 = (
@@ -759,6 +793,7 @@ def get_ai_insight(
     """Return a personalised 1-2 sentence AI health recommendation via Gemini 1.5 Flash.
     Falls back to rule-based insight on any error — never returns 500."""
     get_profile_access_or_403(profile_id, user, db)
+    language = _normalize_language(language)
 
     # ── AI consent gate — return rule-based fallback if user hasn't consented ──
     if not user.ai_consent:
@@ -1068,6 +1103,7 @@ def get_trend_summary(
     When format=text, returns a shareable weekly summary with emoji formatting.
     """
     get_profile_access_or_403(profile_id, user, db)
+    language = _normalize_language(language)
 
     # If text format requested, return shareable summary
     if format == "text":

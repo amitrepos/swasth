@@ -417,6 +417,14 @@ class BrevoEmailService:
             msg['To'] = recipient_email
             msg['Subject'] = f"🚨 Health Alert — {patient_name} needs attention"
 
+            te_block = (
+                f'<div class="lang"><strong>తెలుగు:</strong><br>{alert_text_te}</div>'
+                if alert_text_te else ""
+            )
+            ta_block = (
+                f'<div class="lang"><strong>தமிழ்:</strong><br>{alert_text_ta}</div>'
+                if alert_text_ta else ""
+            )
             body = f"""
 <!DOCTYPE html>
 <html>
@@ -437,6 +445,8 @@ class BrevoEmailService:
             <div class="lang"><strong>English:</strong><br>{alert_text_en}</div>
             <div class="lang"><strong>हिन्दी:</strong><br>{alert_text_hi}</div>
             <div class="lang"><strong>ಕನ್ನಡ:</strong><br>{alert_text_kn}</div>
+            {te_block}
+            {ta_block}
         </div>
         <p>Please check on {patient_name} immediately and contact their doctor if needed.</p>
         <p class="footer">

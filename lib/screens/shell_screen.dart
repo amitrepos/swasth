@@ -31,11 +31,7 @@ class ShellScreen extends StatefulWidget {
     final state = _ShellScreenState._instance;
     if (state == null) return;
     if (index == 4 && chatMessage != null) {
-      state.setState(() => state._currentIndex = index);
-      // Send message directly into the existing Chat state — no full rebuild needed
-      Future.microtask(
-        () => state._chatKey.currentState?.sendInitialMessage(chatMessage),
-      );
+      state._switchToChat(chatMessage);
     } else {
       state._onTap(index);
     }
@@ -328,6 +324,13 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
           ),
         ),
       ),
+    );
+  }
+
+  void _switchToChat(String chatMessage) {
+    setState(() => _currentIndex = 4);
+    Future.microtask(
+      () => _chatKey.currentState?.sendInitialMessage(chatMessage),
     );
   }
 
