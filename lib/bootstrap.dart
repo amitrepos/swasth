@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'config/app_config.dart';
@@ -95,6 +96,11 @@ Future<void> _init(Flavor flavor) async {
   }
 
   final langCode = await StorageService().getLanguage() ?? 'en';
+  await initializeDateFormatting('en', null);
+  await initializeDateFormatting('hi', null);
+  await initializeDateFormatting('kn', null);
+  await initializeDateFormatting('ta', null);
+  await initializeDateFormatting('te', null);
 
   runApp(
     ProviderScope(

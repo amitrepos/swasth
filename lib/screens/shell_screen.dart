@@ -31,11 +31,7 @@ class ShellScreen extends StatefulWidget {
     final state = _ShellScreenState._instance;
     if (state == null) return;
     if (index == 4 && chatMessage != null) {
-      state.setState(() => state._currentIndex = index);
-      // Send message directly into the existing Chat state — no full rebuild needed
-      Future.microtask(
-        () => state._chatKey.currentState?.sendInitialMessage(chatMessage),
-      );
+      state._switchToChat(chatMessage);
     } else {
       state._onTap(index);
     }
@@ -270,6 +266,7 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildBottomNav() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -288,7 +285,7 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
                 index: 0,
                 current: _currentIndex,
                 emoji: '🏠',
-                label: 'HOME',
+                label: l10n.navHome,
                 onTap: _onTap,
               ),
               _NavItem(
@@ -296,7 +293,7 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
                 index: 1,
                 current: _currentIndex,
                 emoji: '📊',
-                label: 'HISTORY',
+                label: l10n.navHistory,
                 onTap: _onTap,
               ),
               _NavItem(
@@ -304,7 +301,7 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
                 index: 2,
                 current: _currentIndex,
                 emoji: '🔥',
-                label: 'STREAKS',
+                label: l10n.navStreaks,
                 onTap: _onTap,
               ),
               _NavItem(
@@ -312,7 +309,7 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
                 index: 3,
                 current: _currentIndex,
                 emoji: '📈',
-                label: 'INSIGHTS',
+                label: l10n.navInsights,
                 onTap: _onTap,
               ),
               _NavItem(
@@ -320,13 +317,20 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
                 index: 4,
                 current: _currentIndex,
                 emoji: '💬',
-                label: 'CHAT',
+                label: l10n.navChat,
                 onTap: _onTap,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _switchToChat(String chatMessage) {
+    setState(() => _currentIndex = 4);
+    Future.microtask(
+      () => _chatKey.currentState?.sendInitialMessage(chatMessage),
     );
   }
 

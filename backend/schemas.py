@@ -690,6 +690,7 @@ class NutritionAnalysisResult(BaseModel):
     is_high_protein: Optional[bool] = None
     meal_score: Optional[int] = Field(None, ge=1, le=10)
     meal_score_reason: Optional[str] = Field(None, max_length=200)
+    tips: Optional[dict[str, str]] = None
 
 
 class MealLogCreate(BaseModel):
@@ -699,8 +700,7 @@ class MealLogCreate(BaseModel):
     meal_type: str
     input_method: str
     timestamp: datetime
-    tip_en: Optional[str] = None
-    tip_hi: Optional[str] = None
+    tips_json: Optional[dict[str, str]] = None
     confidence: Optional[float] = None
     user_confirmed: bool = True
     user_corrected_category: Optional[str] = None
@@ -748,8 +748,7 @@ class MealLogUpdate(BaseModel):
     glucose_impact: Optional[str] = None
     meal_type: Optional[str] = None
     timestamp: Optional[datetime] = None
-    tip_en: Optional[str] = None
-    tip_hi: Optional[str] = None
+    tips_json: Optional[dict[str, str]] = None
     user_confirmed: Optional[bool] = None
     user_corrected_category: Optional[str] = None
     # Nutrition fields
@@ -791,8 +790,7 @@ class MealLogResponse(BaseModel):
     logged_by: Optional[int] = None
     category: str
     glucose_impact: str
-    tip_en: Optional[str] = None
-    tip_hi: Optional[str] = None
+    tips_json: Optional[dict[str, str]] = None
     meal_type: str
     photo_path: Optional[str] = None
     input_method: str
@@ -814,11 +812,16 @@ class MealLogResponse(BaseModel):
 
 
 class FoodClassificationResponse(BaseModel):
-    """Response from Gemini Vision food classification."""
+    """Response from Gemini Vision food classification.
+
+    Field name MUST match the wire format used by `parse_food_image`
+    (key = `tips_json`). Flutter's FoodClassificationResult.fromJson
+    reads `json['tips_json']`; using `tips` here would silently mask
+    that mismatch from anyone who adds a `response_model=` annotation.
+    """
     category: str
     glucose_impact: str
-    tip_en: str
-    tip_hi: str
+    tips_json: Optional[dict[str, str]] = None
     confidence: float
 
 

@@ -1,0 +1,1240 @@
+{
+  "@@locale": "te",
+  "appTitle": "స్వస్థ్ హెల్త్ యాప్",
+  "appName": "స్వస్థ్",
+  "loading": "లోడ్ అవుతోంది...",
+  "save": "సేవ్ చేయి",
+  "cancel": "రద్దు చేయి",
+  "delete": "తొలగించు",
+  "edit": "సవరించు",
+  "connect": "కనెక్ట్ చేయి",
+  "refresh": "రిఫ్రెష్ చేయి",
+  "logout": "లాగ్ అవుట్",
+  "profile": "ప్రొఫైల్",
+  "error": "లోపం",
+  "errNetwork": "ఇంటర్నెట్ కనెక్షన్ లేదు. దయచేసి మీ కనెక్షన్‌ని తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.",
+  "homeTitle": "స్వస్థ్ హెల్త్ యాప్",
+  "navHome": "హోమ్",
+  "navHistory": "చరిత్ర",
+  "navStreaks": "స్ట్రీక్స్",
+  "navInsights": "వివరాలు",
+  "navChat": "చాట్",
+  "quickActionReminder": "రిమైండర్",
+  "quickActionSummary": "సారాంశం",
+  "reminderChangeTime": "రిమైండర్ సమయాన్ని మార్చండి (లేదా నిలిపివేయడానికి రద్దు చేయండి)",
+  "reminderSetTime": "రోజువారీ రిమైండర్ సమయాన్ని సెట్ చేయండి",
+  "reminderSetFor": "రిమైండర్ ప్రతిరోజూ {time} గంటలకు సెట్ చేయబడింది",
+  "reminderDisabled": "రిమైండర్ నిలిపివేయబడింది",
+  "actionCall": "కాల్ చేయండి",
+  "actionWhatsApp": "వాట్సాప్",
+  "actionEmail": "ఈమెయిల్ పంపండి",
+  "metricBmi": "బిఎమ్‌ఐ",
+  "weightLabel": "బరువు",
+  "bmiTipGain": "{amount} కిలోలు పెరగండి",
+  "bmiTipLose": "{amount} కిలోలు తగ్గండి",
+  "contextFastingShort": "ఉపవాసం",
+  "contextBeforeMealShort": "భోజనానికి ముందు",
+  "contextPostMealShort": "భోజనం తర్వాత",
+  "contextRandomShort": "రాండమ్",
+  "noSummaryAvailable": "సారాంశం అందుబాటులో లేదు",
+  "foodCategoryHighCarb": "ఎక్కువ కార్బ్స్",
+  "foodCategoryModerateCarb": "మితమైన కార్బ్స్",
+  "foodCategoryLowCarb": "తక్కువ కార్బ్స్",
+  "foodCategoryHighProtein": "ఎక్కువ ప్రోటీన్",
+  "foodCategorySweets": "స్వీట్లు",
+  "foodResultTitle": "ఆహార విశ్లేషణ",
+  "foodMealTypeLabel": "ఆహార రకం",
+  "foodNotCorrectChange": "సరైనది కాదా? మార్చండి",
+  "foodDisclaimer": "AI అంచనాలు మారవచ్చు. ఒక గైడ్ లాగా ఉపయోగించండి.",
+  "foodPhotoSaved": "ఆహార లాగ్ సేవ్ చేయబడింది",
+  "foodPhotoSaveFailed": "సేవ్ చేయడం విఫలమైంది. మళ్లీ ప్రయత్నించండి.",
+  "mealTypeBreakfast": "అల్పాహారం",
+  "mealTypeLunch": "మధ్యాహ్న భోజనం",
+  "mealTypeSnack": "స్నాక్",
+  "mealTypeDinner": "రాత్రి భోజనం",
+  "switchProfile": "ప్రొఫైల్ మార్చండి",
+  "retry": "మళ్ళీ ప్రయత్నించండి",
+  "accept": "అంగీకరించు",
+  "reject": "తిరస్కరించు",
+  "invite": "ఆహ్వానించు",
+  "revoke": "రద్దు చేయి",
+  "@errNetwork": {
+    "description": "Shown when a network call fails due to no connectivity, DNS failure, timeout, or TLS handshake error. Plain-language so Sunita (55yo Ranchi patient) can understand."
+  },
+  "errSessionExpired": "మీ సెషన్ ముగిసింది. దయచేసి మళ్లీ లాగిన్ చేయండి.",
+  "@errSessionExpired": {
+    "description": "Shown on HTTP 401 before auto-logout. User is about to be sent back to the login screen."
+  },
+  "errServer": "మా సర్వర్‌లో సమస్య ఉంది. దయచేసి కాసేపటి తర్వాత మళ్లీ ప్రయత్నించండి.",
+  "@errServer": {
+    "description": "Shown on HTTP 5xx or when the server returns a malformed body we can't parse. Never expose the raw error."
+  },
+  "errGeneric": "ఏదో తప్పు జరిగింది. మళ్లీ ప్రయత్నించండి.",
+  "@errGeneric": {
+    "description": "Fallback for any unexpected exception that doesn't fit a known category."
+  },
+  "aiInsightEmptyState": "ఉత్తమ ఆరోగ్య అంతర్దృష్టుల కోసం రోజువారీ రీడింగ్‌లు నమోదు చేయండి.",
+  "@aiInsightEmptyState": {
+    "description": "Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly."
+  },
+  "loginTitle": "లాగిన్",
+  "emailLabel": "ఈమెయిల్",
+  "passwordLabel": "పాస్‌వర్డ్",
+  "rememberMe": "నన్ను గుర్తుంచుకో",
+  "forgotPassword": "పాస్‌వర్డ్ మర్చిపోయారా?",
+  "loginButton": "లాగిన్",
+  "noAccount": "ఖాతా లేదా?",
+  "loginDoctorRegisterLink": "డాక్టర్ నా? ఇక్కడ నమోదు చేసుకోండి",
+  "register": "నమోదు చేయండి",
+  "loginSuccessful": "లాగిన్ విజయవంతమైంది!",
+  "emailValidationEmpty": "దయచేసి మీ ఈమెయిల్‌ను నమోదు చేయండి",
+  "emailValidationInvalid": "దయచేసి సరైన ఈమెయిల్ నమోదు చేయండి",
+  "emailAlreadyRegistered": "ఈ ఈమెయిల్ ఇప్పటికే నమోదు చేయబడింది. దయచేసి లాగిన్ చేయండి లేదా వేరే ఈమెయిల్ ఉపయోగించండి.",
+  "passwordValidationEmpty": "దయచేసి మీ పాస్‌వర్డ్‌ను నమోదు చేయండి",
+  "registerTitle": "నమోదు",
+  "accountDetailsSection": "ఖాతా వివరాలు",
+  "healthProfileSection": "ప్రాథమిక ఆరోగ్య ప్రొఫైల్",
+  "fullNameLabel": "పూర్తి పేరు",
+  "phoneLabel": "ఫోన్ నంబర్",
+  "phoneValidationEmpty": "దయచేసి మీ ఫోన్ నంబర్ నమోదు చేయండి",
+  "phoneValidationDigits": "ఫోన్ నంబర్‌లో అంకెలు మాత్రమే ఉండాలి",
+  "phoneValidationLength": "ఫోన్ నంబర్ 10-15 అంకెలు ఉండాలి",
+  "confirmPasswordLabel": "పాస్‌వర్డ్‌ను నిర్ధారించండి",
+  "profileNameLabel": "ప్రొఫైల్ పేరు",
+  "relationshipLabel": "రోగితో సంబంధం",
+  "ageLabel": "వయస్సు",
+  "genderLabel": "లింగం",
+  "heightLabel": "ఎత్తు (సెం.మీ)",
+  "bloodGroupLabel": "రక్త వర్గం",
+  "medicationsLabel": "ప్రస్తుత మందులు (ఐచ్ఛికం)",
+  "medicalConditionsSection": "వైద్య పరిస్థితులు",
+  "passwordRequirementsTitle": "పాస్‌వర్డ్ అవసరాలు:",
+  "passwordReqLength": "కనీసం 8 అక్షరాలు",
+  "passwordReqUppercase": "ఒక పెద్ద అక్షరం",
+  "passwordReqLowercase": "ఒక చిన్న అక్షరం",
+  "passwordReqNumber": "ఒక సంఖ్య",
+  "passwordReqSpecial": "ఒక ప్రత్యేక గుర్తు",
+  "alreadyHaveAccount": "ఇప్పటికే ఖాతా ఉందా?",
+  "registerSuccessful": "నమోదు విజయవంతం! దయచేసి లాగిన్ చేయండి.",
+  "specifyOtherCondition": "దయచేసి ఇతర పరిస్థితి పేర్కొనండి",
+  "selectProfileTitle": "ప్రొఫైల్‌ను ఎంచుకోండి",
+  "myProfilesSection": "నా ప్రొఫైల్‌లు",
+  "sharedWithMeSection": "నాతో పంచుకున్నవి",
+  "noSharedProfiles": "ఇంకా పంచుకున్న ప్రొఫైల్‌లు లేవు.",
+  "addProfile": "ప్రొఫైల్ జోడించండి",
+  "pendingInvitesBanner": "మీకు {count} పెండింగ్ ఆహ్వానాలు ఉన్నాయి",
+  "@pendingInvitesBanner": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewingProfile": "చూస్తున్నారు: {name} ఆరోగ్యం",
+  "@viewingProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareProfile": "ప్రొఫైల్ పంచుకోండి",
+  "welcomeTitle": "స్వస్థ్‌కు స్వాగతం!",
+  "welcomeSubtitle": "మీ ఆరోగ్య పర్యవేక్షణ తోడు",
+  "selectDevice": "పరికరాన్ని ఎంచుకోండి",
+  "recordNewMetrics": "కొత్త కొలతలను నమోదు చేయండి",
+  "flagFitFine": "బాగుంది",
+  "flagCaution": "జాగ్రత్త",
+  "flagAtRisk": "ప్రమాదం",
+  "flagUrgent": "అత్యవసరం",
+  "weeklyWinnersTitle": "ఈ వారం టాప్",
+  "weeklyWinnersSoon": "త్వరలో వస్తుంది",
+  "pointsLabel": "{pts} పాయింట్లు",
+  "@pointsLabel": {
+    "placeholders": {
+      "pts": {
+        "type": "int"
+      }
+    }
+  },
+  "glucometer": "గ్లూకోమీటర్",
+  "bpMeter": "బీపీ మీటర్",
+  "armband": "ఆర్మ్‌బ్యాండ్",
+  "devicePhone": "ఫోన్",
+  "deviceBpMonitor": "బీపీ మానిటర్",
+  "quickActions": "త్వరిత చర్యలు",
+  "connectNewDevice": "కొత్త పరికరాన్ని కనెక్ట్ చేయండి",
+  "connectNewDeviceSubtitle": "బ్లూటూత్ పరికరాలను స్కాన్ చేసి జత చేయండి",
+  "viewHistory": "చరిత్రను చూడండి",
+  "viewHistorySubtitle": "మీ గత రీడింగ్‌లు చూడండి",
+  "selectProfileFirst": "దయచేసి ముందు ఒక ప్రొఫైల్ ఎంచుకోండి",
+  "logReading": "{device} రీడింగ్ నమోదు చేయండి",
+  "@logReading": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "howToLog": "ఈ రీడింగ్‌ను ఎలా నమోదు చేయాలనుకుంటున్నారు?",
+  "healthTrends": "ఆరోగ్య ధోరణులు",
+  "sevenDays": "7 రోజులు",
+  "thirtyDays": "30 రోజులు",
+  "ninetyDays": "90 రోజులు",
+  "oneYear": "1 సంవత్సరం",
+  "glucoseTrend": "గ్లూకోజ్ ధోరణి",
+  "bpTrend": "రక్తపోటు ధోరణి",
+  "avgLabel": "సగటు",
+  "avgDaysFormat": "{count} రోజుల సగటు",
+  "@avgDaysFormat": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "vitalBp": "బీపీ",
+  "vitalSugar": "చక్కెర",
+  "vitalSpo2": "ఆక్సి%",
+  "vitalSteps": "అడుగులు",
+  "minLabel": "కనిష్ట",
+  "maxLabel": "గరిష్ట",
+  "normalPct": "సాధారణం",
+  "noChartData": "ఈ కాలంలో రీడింగ్‌లు లేవు",
+  "noReadingsInWindowGlucose": "గత {days} రోజులలో గ్లూకోజ్ రీడింగ్‌లు లేవు.",
+  "@noReadingsInWindowGlucose": {
+    "description": "Empty state for glucose chart when there are no glucose readings in the selected window.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "noReadingsInWindowBp": "గత {days} రోజులలో రక్తపోటు రీడింగ్‌లు లేవు.",
+  "@noReadingsInWindowBp": {
+    "description": "Empty state for BP chart when there are no BP readings in the selected window.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "noReadingsInWindowWeight": "గత {days} రోజులలో బరువు రీడింగ్‌లు లేవు.",
+  "@noReadingsInWindowWeight": {
+    "description": "Empty state for weight chart when there are no weight readings in the selected window.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "logFromHomeHint": "ఇక్కడ చూడటానికి హోమ్ స్క్రీన్ నుండి రీడింగ్ నమోదు చేయండి.",
+  "tapToViewTrends": "ధోరణులు చూడటానికి నొక్కండి →",
+  "viewTrends": "ధోరణులు చూడండి",
+  "viewTrendsSubtitle": "7 మరియు 30-రోజుల గ్లూకోజ్ & BP చార్టులు",
+  "healthScore": "ఆరోగ్య స్కోర్",
+  "dayStreak": "{n}-రోజుల స్ట్రీక్",
+  "@dayStreak": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "lastLogged": "చివరిగా నమోదు చేసింది: {time}",
+  "@lastLogged": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "noReadingsYetScore": "మీ స్కోర్ చూడటానికి మొదటి రీడింగ్ నమోదు చేయండి",
+  "todayGlucose": "గ్లూకోజ్",
+  "todayBP": "BP",
+  "scanWithCamera": "కెమెరాతో స్కాన్ చేయండి",
+  "connectViaBluetooth": "బ్లూటూత్ ద్వారా కనెక్ట్ చేయండి",
+  "enterManually": "మాన్యువల్‌గా నమోదు చేయండి",
+  "scanTitle": "{device} స్కాన్ చేయండి",
+  "@scanTitle": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "placeDeviceInBox": "{device} స్క్రీన్‌ను బాక్స్ లోపల ఉంచండి",
+  "@placeDeviceInBox": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "toggleFlash": "ఫ్లాష్ ఆన్/ఆఫ్ చేయండి",
+  "photoBlurryTitle": "ఫోటో చాలా మసకగా ఉంది",
+  "photoBlurryMessage": "డిస్‌ప్లే చదవలేకపోయాం. దయచేసి మళ్లీ ఫోటో తీయండి:\n\n• కెమెరా స్థిరంగా ఉంచండి\n• పరికర స్క్రీన్ గైడ్ బాక్స్‌లో మధ్యలో ఉంచండి\n• మంచి వెలుతురు లేదా ఫ్లాష్ వాడండి",
+  "tryAgain": "మళ్లీ ప్రయత్నించండి",
+  "readingImage": "చిత్రం చదవడం...",
+  "glucoseReadingTitle": "గ్లూకోజ్ రీడింగ్",
+  "bpReadingTitle": "BP రీడింగ్",
+  "glucoseValueLabel": "గ్లూకోజ్ విలువ",
+  "systolicLabel": "సిస్టోలిక్",
+  "diastolicLabel": "డయాస్టోలిక్",
+  "pulseLabel": "పల్స్ (ఐచ్ఛికం)",
+  "mealContextSection": "భోజన సందర్భం",
+  "fasting": "ఉపవాసం",
+  "beforeMeal": "భోజనానికి ముందు",
+  "afterMeal": "భోజనం తర్వాత",
+  "mealContextRandom": "రాండమ్ / తెలియదు",
+  "readingTime": "రీడింగ్ సమయం",
+  "saveReading": "రీడింగ్ సేవ్ చేయండి",
+  "readingSavedSuccess": "రీడింగ్ విజయవంతంగా సేవ్ అయింది",
+  "ocrSuccessPrefix": "మేము చదివాం:",
+  "ocrEditButton": "సవరించు",
+  "ocrConfirmHint": "ఇది సరైనదా? సేవ్ చేయడానికి ముందు పైన సవరించవచ్చు.",
+  "ocrFailedMessage": "ఫోటో నుండి విలువ చదవలేకపోయాం. దయచేసి దిగువన మాన్యువల్‌గా నమోదు చేయండి.",
+  "manualEntryHint": "మీ పరికరంలో చూపిన విలువను నమోదు చేయండి.",
+  "glucoseValidation": "సరైన గ్లూకోజ్ విలువ నమోదు చేయండి (20–600 mg/dL)",
+  "systolicValidation": "సరైన సిస్టోలిక్ విలువ నమోదు చేయండి (60–250 mmHg)",
+  "diastolicValidation": "సరైన డయాస్టోలిక్ విలువ నమోదు చేయండి (40–150 mmHg)",
+  "saveFailed": "సేవ్ విఫలమైంది: {error}",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "historyTitle": "రీడింగ్ చరిత్ర",
+  "filterByType": "రకం ద్వారా ఫిల్టర్ చేయండి",
+  "allReadings": "అన్ని రీడింగ్‌లు",
+  "glucoseOnly": "గ్లూకోజ్ మాత్రమే",
+  "bpOnly": "BP మాత్రమే",
+  "mealsOnly": "భోజనాలు మాత్రమే",
+  "noMealsYet": "ఇంకా భోజనాలు నమోదు చేయలేదు",
+  "mealCarbLoadLow": "తక్కువ కార్బ్ భోజనం",
+  "mealCarbLoadModerate": "మితమైన కార్బ్ భోజనం",
+  "mealCarbLoadHigh": "ఎక్కువ కార్బ్ భోజనం",
+  "mealCarbLoadVeryHigh": "చక్కెర భోజనం",
+  "mealLabelDisclaimer": "ఆహార లేబుల్‌లు సాధారణ కార్బోహైడ్రేట్ కంటెంట్‌ను వివరిస్తాయి, మీ శరీరం యొక్క ప్రతిస్పందన కాదు.",
+  "caregiverLogMealsHint": "భోజనాలు నమోదు చేయడానికి, పైన రోగి వీక్షణ టోగుల్ ఉపయోగించండి.",
+  "noReadingsYet": "ఇంకా రీడింగ్‌లు లేవు",
+  "noReadingsSubtitle": "మీ రీడింగ్ చరిత్ర చూడటానికి పరికరాన్ని కనెక్ట్ చేసి కొలత తీసుకోండి",
+  "deleteReading": "రీడింగ్ తొలగించండి",
+  "deleteReadingConfirm": "ఈ రీడింగ్ తొలగించాలని నిర్ధారిస్తున్నారా?",
+  "readingDeleted": "రీడింగ్ తొలగించబడింది",
+  "deleteMeal": "భోజనం తొలగించండి",
+  "deleteMealConfirm": "ఈ భోజనం తొలగించాలని నిర్ధారిస్తున్నారా?",
+  "mealDeleted": "భోజనం తొలగించబడింది",
+  "editReading": "రీడింగ్ సవరించండి",
+  "editMeal": "భోజనం సవరించండి",
+  "@editMeal": {
+    "description": "Tooltip for the edit button on a meal entry in the history timeline."
+  },
+  "readingUpdated": "రీడింగ్ నవీకరించబడింది",
+  "weightValidation": "సరైన బరువు నమోదు చేయండి (1–400 kg)",
+  "pulseValidation": "సరైన పల్స్ నమోదు చేయండి (30–220 bpm)",
+  "notes": "గమనికలు (ఐచ్ఛికం)",
+  "statusNormal": "సాధారణం",
+  "statusElevated": "పెరిగింది",
+  "statusHighStage1": "అధికం - దశ 1",
+  "statusHighStage2": "అధికం - దశ 2",
+  "statusLow": "తక్కువ",
+  "statusCritical": "విమర్శనాత్మకం",
+  "profileDetailsTitle": "ప్రొఫైల్ వివరాలు",
+  "manageAccess": "యాక్సెస్ నిర్వహించండి",
+  "yourProfile": "మీ ప్రొఫైల్",
+  "sharedBySomeone": "ఎవరైనా పంచుకున్నారు",
+  "healthInfoSection": "ఆరోగ్య సమాచారం",
+  "ageField": "వయస్సు",
+  "ageYears": "{age} సంవత్సరాలు",
+  "@ageYears": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "genderField": "లింగం",
+  "bloodGroupField": "రక్త వర్గం",
+  "heightField": "ఎత్తు",
+  "heightCm": "{height} సెం.మీ",
+  "@heightCm": {
+    "placeholders": {
+      "height": {
+        "type": "String"
+      }
+    }
+  },
+  "medicalConditionsField": "పరిస్థితులు",
+  "accountSettingsSection": "ఖాతా సెట్టింగ్‌లు",
+  "shareWithDoctorSection": "డాక్టర్‌తో పంచుకోండి",
+  "myDoctorsSection": "నా డాక్టర్లు",
+  "primaryPhysicianSubheading": "ప్రాథమిక వైద్యుడు",
+  "sharingHealthDataWithSubheading": "ఆరోగ్య డేటా పంచుకుంటున్నారు",
+  "sharingHealthDataWithEmpty": "మీరు ఇంకా ఏ డాక్టర్‌తో ఆరోగ్య డేటా పంచుకోవడం లేదు.",
+  "linkAnotherDoctor": "మరొక డాక్టర్‌ను లింక్ చేయండి",
+  "linkedDoctorsTileTitle": "యాక్సెస్ ఉన్న డాక్టర్లు",
+  "linkedDoctorsTileSubtitle": "మీ రీడింగ్‌లు చూడగలిగే వారిని చూడండి",
+  "linkedDoctorsTitle": "యాక్సెస్ ఉన్న డాక్టర్లు",
+  "linkedDoctorsEmpty": "ప్రస్తుతం ఈ ప్రొఫైల్‌కు ఏ డాక్టర్ లింక్ కాలేదు.",
+  "linkedDoctorsEmptyHint": "మీ రీడింగ్‌లు పంచుకోవడానికి మీ ప్రొఫైల్‌లో 'డాక్టర్‌ను లింక్ చేయండి' నొక్కండి.",
+  "linkedDoctorsError": "లింక్ అయిన డాక్టర్లను లోడ్ చేయలేకపోయాం.",
+  "linkedDoctorsLinkedSince": "{date} నుండి లింక్ చేయబడింది",
+  "@linkedDoctorsLinkedSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "linkedDoctorsRevoke": "పంచుకోవడం ఆపండి",
+  "linkedDoctorsWaitingForDoctor": "డాక్టర్ కోసం వేచి ఉంది",
+  "linkedDoctorsCancelRequest": "అభ్యర్థన రద్దు చేయండి",
+  "linkedDoctorsRevokeDialogTitle": "{name}తో పంచుకోవడం ఆపాలా?",
+  "@linkedDoctorsRevokeDialogTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkedDoctorsRevokeDialogBody": "ఈ డాక్టర్ మీ గత లేదా భవిష్యత్ రీడింగ్‌లు చూడలేరు. మీరు ఎప్పుడైనా మళ్లీ లింక్ చేయవచ్చు.",
+  "linkedDoctorsRevokeConfirm": "పంచుకోవడం ఆపండి",
+  "linkedDoctorsRevokeSuccess": "{name} ఇకపై మీ రీడింగ్‌లు చూడలేరు.",
+  "@linkedDoctorsRevokeSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkedDoctorsRevokeReasonLabel": "కారణం: {reason}",
+  "@linkedDoctorsRevokeReasonLabel": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "adminMenuTooltip": "అడ్మిన్",
+  "adminMenuDashboard": "డాష్‌బోర్డ్ తెరవండి",
+  "adminMenuCreateUser": "వినియోగదారుని సృష్టించండి",
+  "linkedEmail": "లింక్ చేయబడిన ఈమెయిల్",
+  "changePassword": "ఖాతా పాస్‌వర్డ్ మార్చండి",
+  "privacyPolicy": "గోప్యతా విధానం",
+  "deleteAccount": "నా ఖాతాను తొలగించండి",
+  "deleteAccountConfirmMessage": "ఇది మీ ఖాతా, అన్ని ఆరోగ్య రీడింగ్‌లు, ప్రొఫైల్‌లు మరియు AI అంతర్దృష్టులను శాశ్వతంగా తొలగిస్తుంది. ఈ చర్యను రద్దు చేయలేరు.",
+  "deleteAccountConfirm": "శాశ్వతంగా తొలగించండి",
+  "changePasswordTitle": "పాస్‌వర్డ్ మార్చండి",
+  "currentPasswordLabel": "ప్రస్తుత పాస్‌వర్డ్",
+  "newPasswordLabel": "కొత్త పాస్‌వర్డ్",
+  "confirmNewPasswordLabel": "కొత్త పాస్‌వర్డ్‌ను నిర్ధారించండి",
+  "passwordMinChars": "కనీసం 6 అక్షరాలు",
+  "passwordChanged": "పాస్‌వర్డ్ మార్చబడింది!",
+  "enterCurrentPassword": "ప్రస్తుత పాస్‌వర్డ్ నమోదు చేయండి",
+  "passwordTooShort": "కనీసం 6 అక్షరాలు",
+  "passwordsDoNotMatch": "పాస్‌వర్డ్‌లు సరిపోలడం లేదు",
+  "appLanguageSection": "యాప్ భాష",
+  "languageEnglish": "English",
+  "languageHindi": "हिंदी",
+  "languageKannada": "ಕನ್ನಡ",
+  "languageTelugu": "తెలుగు",
+  "languageTamil": "தமிழ்",
+  "myDoctorTitle": "నా డాక్టర్",
+  "contactOnWhatsApp": "వాట్సాప్‌లో సంప్రదించండి",
+  "doctorDetailsSection": "డాక్టర్ వివరాలు",
+  "doctorNameField": "డాక్టర్ పేరు",
+  "doctorSpecialtyField": "ప్రత్యేకత",
+  "doctorWhatsappField": "వాట్సాప్ నంబర్",
+  "noDoctorLinked": "ఇంకా డాక్టర్ లింక్ కాలేదు.",
+  "linkADoctorCta": "డాక్టర్‌ను లింక్ చేయండి",
+  "doctorPendingAcceptBadge": "డాక్టర్ కోసం వేచి ఉంది",
+  "doctorDeclinedBadge": "అభ్యర్థన తిరస్కరించబడింది",
+  "doctorDeclineReason": "కారణం: {reason}",
+  "@doctorDeclineReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "addDoctor": "డాక్టర్ జోడించండి",
+  "editDoctor": "డాక్టర్ వివరాలు సవరించండి",
+  "editDoctorTitle": "డాక్టర్ వివరాలు",
+  "doctorWhatsappHint": "ఉదా. +917001234567",
+  "addHealthProfileTitle": "ఆరోగ్య ప్రొఫైల్ జోడించండి",
+  "createProfileSubtitle": "మీరు శ్రద్ధ వహించే వారి కోసం ప్రొఫైల్ సృష్టించండి (ఉదా. తల్లిదండ్రులు, పిల్లవాడు)",
+  "profileNameHint": "ఉదా. నాన్న, అమ్మ",
+  "createProfile": "ప్రొఫైల్ సృష్టించండి",
+  "manageAccessTitle": "యాక్సెస్ నిర్వహించండి",
+  "inviteSomeoneTitle": "ఈ ప్రొఫైల్ చూడటానికి ఎవరినైనా ఆహ్వానించండి",
+  "enterEmailHint": "ఈమెయిల్ చిరునామా నమోదు చేయండి",
+  "notSharedYet": "ఇంకా ఎవరితో పంచుకోలేదు.",
+  "inviteSentSuccess": "ఆహ్వానం విజయవంతంగా పంపబడింది",
+  "revokeAccessTitle": "యాక్సెస్ రద్దు చేయాలా?",
+  "revokeAccessConfirm": "ఈ ప్రొఫైల్‌ను {name}తో పంచుకోవడం ఆపాలని నిర్ధారిస్తున్నారా?",
+  "@revokeAccessConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pendingInvitesTitle": "పెండింగ్ ఆహ్వానాలు",
+  "noPendingInvites": "పెండింగ్ ఆహ్వానాలు లేవు.",
+  "wantsToShare": "\"{profileName}\" పంచుకోవాలనుకుంటున్నారు",
+  "@wantsToShare": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "expiresInDays": "{days} రోజులలో గడువు ముగుస్తుంది ({date})",
+  "@expiresInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "acceptedInvite": "{profileName} ఆహ్వానం అంగీకరించారు",
+  "@acceptedInvite": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "rejectedInvite": "{profileName} ఆహ్వానం తిరస్కరించారు",
+  "@rejectedInvite": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "scanDevicesTitle": "స్వస్థ్ — పరికరాలు స్కాన్ చేయండి",
+  "pressScanToFind": "మీ పరికరాన్ని కనుగొనడానికి స్కాన్ నొక్కండి",
+  "scanButton": "స్కాన్",
+  "scanningButton": "స్కాన్ అవుతోంది...",
+  "noDevicesFound": "ఇంకా పరికరాలు కనుగొనబడలేదు",
+  "lookingForDevices": "పరికరాల కోసం వెతుకుతోంది...",
+  "noDevicesFoundAfterScan": "పరికరాలు కనుగొనబడలేదు. పరికరం ఆన్ చేయబడిందని నిర్ధారించుకోండి.",
+  "connectButton": "కనెக్ట్ చేయండి",
+  "forgotPasswordTitle": "పాస్‌వర్డ్ మర్చిపోయారా",
+  "forgotPasswordHeadline": "పాస్‌వర్డ్ మర్చిపోయారా?",
+  "forgotPasswordSubtitle": "మీ ఈమెయిల్ చిరునామాను నమోదు చేయండి, మేము పాస్‌వర్డ్ రీసెట్ చేయడానికి OTP పంపుతాము.",
+  "sendOtp": "OTP పంపండి",
+  "otpSentSuccess": "OTP విజయవంతంగా పంపబడింది! మీ ఈమెయిల్ చూడండి.",
+  "otpSentToPhoneSuccess": "OTP విజయవంతంగా పంపబడింది! మీ సందేశాలను చూడండి.",
+  "rememberPassword": "పాస్‌వర్డ్ గుర్తుందా?",
+  "verifyOtpTitle": "OTP ధృవీకరించండి",
+  "enterOtpHeadline": "OTP నమోదు చేయండి",
+  "otpSentToEmail": "మేము {email}\nకు 6-అంకెల OTP పంపాము",
+  "@otpSentToEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "otpLabel": "OTP",
+  "verifyOtp": "OTP ధృవీకరించండి",
+  "otpVerifiedSuccess": "OTP విజయవంతంగా ధృవీకరించబడింది!",
+  "didNotReceiveOtp": "OTP అందలేదా?",
+  "resendIn": "{seconds} సెకన్లలో మళ్లీ పంపు",
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resendOtp": "OTP మళ్లీ పంపండి",
+  "otpResent": "OTP మళ్లీ పంపబడింది! మీ ఈమెయిల్ చూడండి.",
+  "wantToGoBack": "వెనక్కి వెళ్ళాలనుకుంటున్నారా?",
+  "resetPasswordTitle": "పాస్‌వర్డ్ రీసెట్ చేయండి",
+  "createNewPasswordHeadline": "కొత్త పాస్‌వర్డ్ సృష్టించండి",
+  "createNewPasswordSubtitle": "మీ కొత్త పాస్‌వర్డ్ పాత పాస్‌వర్డ్‌కు భిన్నంగా ఉండాలి.",
+  "resetPasswordButton": "పాస్‌వర్డ్ రీసెట్ చేయండి",
+  "passwordResetSuccess": "పాస్‌వర్డ్ విజయవంతంగా రీసెట్ చేయబడింది!",
+  "wellnessScoreSection": "వెల్నెస్ స్కోర్",
+  "vitalSummarySection": "వైటల్ సారాంశం",
+  "ninetyDayAvg": "90 రోజుల సగటు",
+  "aiInsightSection": "AI ఆరోగ్య అంతర్దృష్టి",
+  "primaryPhysicianSection": "ప్రాథమిక వైద్యుడు",
+  "individualMetricsSection": "వ్యక్తిగత కొలతలు",
+  "vitalsSection": "వైటల్స్",
+  "trendsSection": "ధోరణులు",
+  "lastSpO2": "చివరి SpO2",
+  "lastSteps": "ఈరోజు అడుగులు",
+  "spO2Unit": "%",
+  "viaArmband": "ఆర్మ్‌బ్యాండ్ ద్వారా",
+  "viaPhone": "ఫోన్ / ఆర్మ్‌బ్యాండ్ ద్వారా",
+  "pairDevice": "పరికరాన్ని జత చేయండి",
+  "connectedDevices": "కనెక్ట్ అయిన పరికరాలు",
+  "readMore": "మరింత చదవండి",
+  "mealSlotBreakfast": "అల్పాహారం",
+  "mealSlotLunch": "మధ్యాహ్న భోజనం",
+  "mealSlotSnack": "స్నాక్",
+  "mealSlotDinner": "రాత్రి భోజనం",
+  "mealSlotLogged": "నమోదు చేయబడింది",
+  "mealSlotTapToLog": "నమోదు చేయడానికి నొక్కండి",
+  "footerDisclaimer": "వైద్య రోగ నిర్ధారణ కాదు. క్లినికల్ సలహా కోసం మీ డాక్టర్‌ను సంప్రదించండి. అన్ని AI అంతర్దృష్టులు సమాచార ప్రయోజనాల కోసం మాత్రమే.",
+  "goodMorning": "శుభోదయం,",
+  "goodAfternoon": "శుభ మధ్యాహ్నం,",
+  "goodEvening": "శుభ సాయంత్రం,",
+  "hello": "హలో,",
+  "trendStable": "స్థిరంగా ఉంది",
+  "optimumRange": "సరైన పరిధి",
+  "physicianConnected": "కనెక్ట్ అయింది",
+  "physicianNotLinked": "లింక్ కాలేదు",
+  "activeSync": "యాక్టివ్ సింక్",
+  "notConnected": "కనెక్ట్ కాలేదు",
+  "lastBP": "చివరి BP",
+  "lastSugar": "చివరి షుగర్",
+  "liveSteps": "లైవ్ అడుగులు",
+  "relationshipFather": "తండ్రి",
+  "relationshipMother": "తల్లి",
+  "relationshipSpouse": "భార్య/భర్త",
+  "relationshipSon": "కొడుకు",
+  "relationshipDaughter": "కూతురు",
+  "relationshipBrother": "అన్న/తమ్ముడు",
+  "relationshipSister": "అక్క/చెల్లి",
+  "relationshipUncle": "మామ",
+  "relationshipAunt": "అత్త",
+  "relationshipFriend": "స్నేహితుడు",
+  "relationshipOther": "ఇతర",
+  "consentTitle": "గోప్యత & సమ్మతి",
+  "consentSubject": "ఆరోగ్య డేటా ప్రాసెసింగ్‌కు సమ్మతి",
+  "consentIntro": "Swasth ఉపయోగించడం ద్వారా, నేను దిగువ అంగీకరిస్తున్నాను:",
+  "consentDataCollectionTitle": "డేటా సేకరణ",
+  "consentDataCollection": "నా రక్తంలో గ్లూకోజ్, రక్తపోటు మరియు ఆహార ఫోటోలను Swasth నిల్వ చేయడానికి అనుమతిస్తున్నాను.",
+  "consentFamilySharingTitle": "కుటుంబ భాగస్వామ్యం",
+  "consentFamilySharing": "నేను నా ప్రొఫైల్‌ను పంచుకుంటే, నా నియుక్త కుటుంబ సభ్యులు నా ఆరోగ్య స్కోర్‌లు చూడగలరు మరియు హెచ్చరికలు అందుకుంటారు.",
+  "consentPurposeTitle": "ప్రయోజనం",
+  "consentPurpose": "నా ఆరోగ్య అంతర్దృష్టులు అందించడానికి మరియు నా డాక్టర్‌తో చికిత్స కోసం పంచుకోవడానికి నా డేటా ఉపయోగించబడుతుంది.",
+  "consentRightsTitle": "నా హక్కులు",
+  "consentRights": "నేను ఎప్పుడైనా యాప్ సెట్టింగ్‌ల ద్వారా నా సమ్మతిని ఉపసంహరించుకోవచ్చు లేదా నా డేటాను తొలగించమని అడగవచ్చు.",
+  "consentAiTitle": "AI-ఆధారిత అంతర్దృష్టులు",
+  "consentAiBody": "Swasth వ్యక్తిగతీకరించిన ఆరోగ్య అంతర్దృష్టులు రూపొందించడానికి థర్డ్-పార్టీ AI సేవలు (Google Gemini మరియు DeepSeek) ఉపయోగిస్తుంది. నా ఆరోగ్య డేటా సారాంశం ఈ సేవలకు పంపవచ్చు. నేను ఎప్పుడైనా నిలిపివేయవచ్చు.\n\nAll AI-generated content is a health observation only — not medical advice. Always consult your doctor before making any changes to medication or treatment.",
+  "consentAccept": "నేను అంగీకరిస్తున్నాను",
+  "consentDecline": "నేను తిరస్కరిస్తున్నాను",
+  "consentDeclineTitle": "సమ్మతిని తిరస్కరించాలా?",
+  "consentDeclineMessage": "గోప్యతా నోటీసును అంగీకరించకుండా మీరు Swasth ఉపయోగించలేరు. మీ నమోదు పూర్తి కాదు.",
+  "consentDeclineConfirm": "వెనక్కి వెళ్ళండి",
+  "consentScrollToAccept": "పూర్తి నోటీసు చదవడానికి క్రిందికి స్క్రోల్ చేయండి",
+  "ppDataCollectionTitle": "మేము సేకరించే డేటా",
+  "ppDataCollection": "Swasth సేకరిస్తుంది: రక్తంలో గ్లూకోజ్ రీడింగ్‌లు, రక్తపోటు రీడింగ్‌లు, పల్స్ రేట్, భోజన గమనికలు, ప్రొఫైల్ సమాచారం (పేరు, వయస్సు, లింగం, వైద్య పరిస్థితులు, మందులు), మరియు స్వయంచాలక రీడింగ్ క్యాప్చర్ కోసం వైద్య పరికరాల ఫోటోలు.",
+  "ppPurposeTitle": "సేకరణ ప్రయోజనం",
+  "ppPurpose": "మీ ఆరోగ్య డేటా ఉపయోగించబడుతుంది: ధోరణులు మరియు ఆరోగ్య స్కోర్‌లు చూపించడానికి, వ్యక్తిగతీకరించిన ఆరోగ్య అంతర్దృష్టులు రూపొందించడానికి, మీ కుటుంబ సభ్యులతో పంచుకోవడానికి, మరియు చికిత్స కోసం మీ డాక్టర్‌కు సమాచారం అందించడానికి.",
+  "ppAiTitle": "AI ప్రాసెసింగ్",
+  "ppAi": "Swasth ఆరోగ్య అంతర్దృష్టులు రూపొందించడానికి Google Gemini మరియు DeepSeek AI సేవలు ఉపయోగిస్తుంది. మీ డేటా సారాంశం (సగటులు మరియు పరిధులు) ఈ సేవలకు పంపబడుతుంది. మీరు ఎప్పుడైనా నిలిపివేయవచ్చు.",
+  "ppSharingTitle": "డేటా భాగస్వామ్యం",
+  "ppSharing": "మీ డేటా ఈ వారితో మాత్రమే పంచుకోబడుతుంది: మీరు స్పష్టంగా ఆహ్వానించిన కుటుంబ సభ్యులు, AI సేవలు (మీరు సమ్మతించినట్లైతే), మరియు మీ డాక్టర్ (మీరు పంచుకోవాలని ఎంచుకుంటే). మేము మీ డేటాను ఎప్పుడూ అమ్మం.",
+  "ppSecurityTitle": "భద్రతా చర్యలు",
+  "ppSecurity": "మేము మీ డేటాను రక్షిస్తాము: AES-256 ఎన్క్రిప్షన్, bcrypt పాస్‌వర్డ్ హ్యాషింగ్, JWT ప్రమాణీకరణ, TLS/HTTPS, మరియు మీ పరికరంలో ఎన్క్రిప్టెడ్ స్థానిక నిల్వ.",
+  "ppRetentionTitle": "డేటా నిలుపుదల",
+  "ppRetention": "మీ ఖాతా సక్రియంగా ఉన్నంత వరకు మీ డేటా నిల్వ చేయబడుతుంది. మీరు ఎప్పుడైనా తొలగింపు కోసం అభ్యర్థించవచ్చు.",
+  "ppRightsTitle": "మీ హక్కులు",
+  "ppRights": "భారత డేటా రక్షణ చట్టం (DPDP చట్టం 2023) కింద, మీకు హక్కులు ఉన్నాయి: మీ డేటాను యాక్సెస్ చేయడం, లోపాలు సరిదిద్దడం, సమ్మతిని ఉపసంహరించుకోవడం, తొలగింపు అభ్యర్థించడం, మరియు ఫిర్యాదు దాఖలు చేయడం.",
+  "ppDoctorSharingTitle": "డాక్టర్ డేటా భాగస్వామ్యం",
+  "ppDoctorSharing": "మీరు డాక్టర్‌ను లింక్ చేస్తే, మీ ఆరోగ్య రీడింగ్‌లు, ధోరణులు మరియు ప్రొఫైల్ సమాచారం ఆ డాక్టర్‌కు కనిపిస్తుంది. మీరు ఎప్పుడైనా ఈ భాగస్వామ్యాన్ని రద్దు చేయవచ్చు.",
+  "ppWhatsAppTitle": "వాట్సాప్ నోటిఫికేషన్‌లు",
+  "ppWhatsApp": "Swasth ఆరోగ్య హెచ్చరికలు మరియు వారపు సారాంశాలు పంపడానికి Twilio WhatsApp Business API ఉపయోగిస్తుంది. మీరు సెట్టింగ్‌ల ద్వారా నిలిపివేయవచ్చు.",
+  "ppLiabilityTitle": "బాధ్యత పరిమితి",
+  "ppLiability": "Swasth ఒక ఆరోగ్య పర్యవేక్షణ సాధనం, వైద్య పరికరం కాదు. యాప్ రోగ నిర్ధారణ, చికిత్స లేదా ప్రిస్క్రిప్షన్ అందించదు. అత్యవసర పరిస్థితిలో 112కి కాల్ చేయండి.",
+  "ppContactTitle": "సంప్రదించండి",
+  "ppContact": "గోప్యత సంబంధిత ప్రశ్నలకు: support@swasth.app. మేము 30 రోజులలో స్పందిస్తాము.",
+  "tosTitle": "సేవా నిబంధనలు",
+  "tosAcceptanceTitle": "నిబంధనల అంగీకారం",
+  "tosAcceptance": "Swasth ఉపయోగించడం ద్వారా, మీరు ఈ సేవా నిబంధనలకు అంగీకరిస్తున్నారు.",
+  "tosServiceTitle": "సేవా వివరణ",
+  "tosService": "Swasth రక్తంలో గ్లూకోజ్, రక్తపోటు మరియు సంబంధిత ఆరోగ్య కొలతలు ట్రాక్ చేయడంలో సహాయపడే వ్యక్తిగత ఆరోగ్య పర్యవేక్షణ యాప్. ఇది క్లినికల్ సేవ లేదా నియంత్రిత వైద్య పరికరం కాదు.",
+  "tosAiTitle": "AI అంతర్దృష్టుల నిరాకరణ",
+  "tosAi": "Swasthలో AI-రూపొందించిన కంటెంట్ సమాచారం మాత్రమే. ఇది వృత్తిపరమైన వైద్య సలహాకు ప్రత్యామ్నాయం కాదు. యాప్ అంతర్దృష్టుల ఆధారంగా మందులు లేదా చికిత్స మార్చవద్దు.",
+  "tosDoctorTitle": "డాక్టర్ డేటా భాగస్వామ్యం",
+  "tosDoctor": "మీరు డాక్టర్‌ను లింక్ చేసినప్పుడు, మీ ఆరోగ్య డేటాను పంచుకోవడానికి అంగీకరిస్తున్నారు. మీరు ఎప్పుడైనా డాక్టర్ యాక్సెస్‌ను రద్దు చేయవచ్చు.",
+  "tosLiabilityTitle": "బాధ్యత పరిమితి",
+  "tosLiability": "భారత చట్టం అనుమతించిన గరిష్ట మేరకు, Swasth ఏ ఆరోగ్య ఫలితాలకు లేదా నష్టాలకు బాధ్యత వహించదు.",
+  "tosTerminationTitle": "ఖాతా ముగింపు",
+  "tosTermination": "మీరు ఎప్పుడైనా యాప్ సెట్టింగ్‌ల నుండి మీ ఖాతాను తొలగించవచ్చు. అన్ని డేటా 30 రోజులలో శాశ్వతంగా తొలగించబడుతుంది.",
+  "tosGoverningTitle": "పాలక చట్టం",
+  "tosGoverning": "ఈ నిబంధనలు భారత చట్టాల ద్వారా నియంత్రించబడతాయి. వివాదాలు న్యూ ఢిల్లీ కోర్టుల పరిధిలో ఉంటాయి. చివరిగా నవీకరించబడింది: మే 2026.",
+  "chatTitle": "Swasth AI",
+  "chatSubtitle": "ఆన్‌లైన్ & విశ్లేషిస్తోంది",
+  "chatPlaceholder": "మీ ఆరోగ్యం గురించి అడగండి...",
+  "chatEmptyState": "మీ ఆరోగ్య రీడింగ్‌లు, మందులు, ఆహారం లేదా జీవనశైలి గురించి ఏదైనా అడగండి. నా దగ్గర మీ ఆరోగ్య డేటా మరియు గత సంభాషణలు ఉన్నాయి.",
+  "chatQuotaRemaining": "ఈరోజు మిగిలిన ప్రశ్నలు",
+  "chatQuotaExceeded": "రోజువారీ ప్రశ్న పరిమితి చేరుకుంది. అర్ధరాత్రి రీసెట్ అవుతుంది.",
+  "chatFileTooLarge": "ఫైల్ చాలా పెద్దది. గరిష్ట పరిమాణం 5 MB.",
+  "chatUnsupportedFile": "మద్దతు లేని ఫైల్ రకం. దయచేసి చిత్రం (JPG, PNG, WEBP) లేదా PDF అప్‌లోడ్ చేయండి.",
+  "chatAnalyzingPdf": "అప్‌లోడ్ చేసిన పత్రాన్ని విశ్లేషిస్తోంది...",
+  "offlineBanner": "మీరు ఆఫ్‌లైన్‌లో ఉన్నారు. కొన్ని ఫీచర్లు పరిమితం.",
+  "backOnline": "మళ్లీ ఆన్‌లైన్! మీ డేటాను సింక్ చేస్తోంది...",
+  "loggedInOffline": "ఆఫ్‌లైన్‌లో లాగిన్ అయ్యారు",
+  "readingSavedOffline": "రీడింగ్ ఆఫ్‌లైన్‌లో సేవ్ అయింది. కనెక్ట్ అయినప్పుడు సింక్ అవుతుంది.",
+  "syncComplete": "{count} రీడింగ్‌లు సింక్ అయ్యాయి",
+  "@syncComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineLoginExpired": "లాగిన్ చేయడానికి ఇంటర్నెట్‌కు కనెక్ట్ అవ్వండి",
+  "heartStatusHealthy": "ఆరోగ్యంగా ఉంది",
+  "heartStatusCaution": "జాగ్రత్త",
+  "heartStatusUrgent": "అత్యవసరం",
+  "heartFaceHealthy": "బాగుంది",
+  "heartFaceCaution": "శ్రద్ధ వహించండి",
+  "heartFaceUrgent": "ప్రమాదం",
+  "heartCallDoctor": "ఇప్పుడే మీ డాక్టర్‌కు కాల్ చేయండి",
+  "doctorContactNotAvailable": "డాక్టర్ కాంటాక్ట్ అందుబాటులో లేదు. దయచేసి ముందు డాక్టర్‌ను లింక్ చేయండి.",
+  "quickSelectTitle": "భోజనం నమోదు చేయండి",
+  "mealHighCarb": "భారీ — అన్నం / రొట్టె",
+  "mealLowCarb": "తేలికైన — కూర / పప్పు",
+  "mealSweets": "స్వీట్లు / తియ్యటివి",
+  "mealHighProtein": "ప్రోటీన్ — గుడ్డు / పనీర్",
+  "mealModerateCarb": "మిశ్రమం / సమతుల్యం",
+  "mealMoreOptions": "మరిన్ని ఎంపికలు",
+  "mealLessOptions": "తక్కువ ఎంపికలు",
+  "mealSavedSuccess": "భోజనం నమోదు చేయబడింది!",
+  "mealSavedOffline": "భోజనం ఆఫ్‌లైన్‌లో సేవ్ అయింది. కనెక్ట్ అయినప్పుడు సింక్ అవుతుంది.",
+  "@mealSavedOffline": {
+    "description": "Shown when a meal is saved while device is offline, queued for later sync."
+  },
+  "sectionMeals": "ఇటీవలి భోజనాలు",
+  "@sectionMeals": {
+    "description": "Section header for recent meals in doctor patient detail screen"
+  },
+  "noMealsLast7Days": "గత 7 రోజులలో భోజనాలు నమోదు చేయలేదు",
+  "@noMealsLast7Days": {
+    "description": "Empty state when no meals found in last 7 days"
+  },
+  "showAllMeals": "అన్ని {count} భోజనాలు చూడండి",
+  "@showAllMeals": {
+    "description": "Button to show all meals",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mealDisclaimer": "సాధారణ ఆరోగ్యానికి, వైద్య సలహా కాదు",
+  "foodPhotoTitle": "ఆహార ఫోటో తీయండి",
+  "foodPhotoHint": "మీ ఆహారంపై కెమెరా పెట్టండి",
+  "foodPhotoGallery": "గ్యాలరీ నుండి ఎంచుకోండి",
+  "foodPhotoAnalyzing": "మీ ఆహారాన్ని విశ్లేషిస్తోంది...",
+  "foodPhotoFailed": "ఆహారాన్ని వర్గీకరించలేకపోయాం. దయచేసి మాన్యువల్‌గా ఎంచుకోండి.",
+  "cameraNotFound": "ఈ పరికరంలో కెమెరా కనుగొనబడలేదు.",
+  "@cameraNotFound": {
+    "description": "Error message when device has no camera available"
+  },
+  "cameraError": "కెమెరా ప్రారంభించడం విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.",
+  "@cameraError": {
+    "description": "Generic camera error message - never leak raw exception details to user"
+  },
+  "mealsTileLabel": "భోజనాలు",
+  "mealsTodayCount": "{count} ఈరోజు",
+  "@mealsTodayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todaysMeals": "ఈరోజు భోజనాలు",
+  "noMealsToday": "ఈరోజు భోజనాలు నమోదు చేయలేదు",
+  "tapToLogMeal": "నమోదు చేయడానికి నొక్కండి",
+  "logMeal": "భోజనం నమోదు చేయండి",
+  "logMealSubtitle": "ఎలా నమోదు చేయాలనుకుంటున్నారు?",
+  "quickSelectOption": "త్వరిత ఎంపిక",
+  "scanFoodPhotoOption": "ఆహార ఫోటో స్కాన్ చేయండి",
+  "photoAiHint": "ఫోటో AI ద్వారా కార్బ్ స్థాయిని స్వయంచాలకంగా గుర్తిస్తుంది",
+  "wellnessHubTitle": "{relationship} వెల్నెస్ హబ్",
+  "@wellnessHubTitle": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "wellnessHubSubtitle": "{name} | {location}",
+  "@wellnessHubSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "caregiverStatusGreat": "{relationship} బాగున్నారు",
+  "@caregiverStatusGreat": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "caregiverStatusCaution": "{relationship} జాగ్రత్తగా ఉండాలి",
+  "@caregiverStatusCaution": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "caregiverStatusUrgent": "{relationship}ను వెంటనే గమనించాలి",
+  "@caregiverStatusUrgent": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "activityFeedTitle": "కార్యాచరణ ఫీడ్",
+  "careCircleTitle": "కేర్ సర్కిల్",
+  "priorityCall": "ప్రాధాన్య కాల్",
+  "noRecentActivity": "ఇటీవలి కార్యాచరణ లేదు",
+  "wellnessRingTitle": "వెల్నెస్ రింగ్",
+  "takeReadings": "రీడింగ్‌లు తీసుకోండి",
+  "backToWellnessHub": "వెల్నెస్ హబ్‌కు తిరిగి",
+  "glucometerPrerequisites": "గ్లూకోమీటర్ – అవసరమైనవి:",
+  "@glucometerPrerequisites": {
+    "description": "Title for glucometer prerequisites section"
+  },
+  "tapDeviceToConnect": "కనెక్ట్ చేయడానికి పైన పరికర చిహ్నాన్ని నొక్కండి",
+  "@tapDeviceToConnect": {
+    "description": "Status message when no device is connected"
+  },
+  "tapToConnectDevice": "పరికరాన్ని కనెక్ట్ చేయడానికి నొక్కండి",
+  "@tapToConnectDevice": {
+    "description": "Instruction to tap and connect device"
+  },
+  "alreadyConnectedMessage": "{deviceType} ఇప్పటికే కనెక్ట్ అయింది. మరొక {deviceType} కోసం స్కాన్ చేయాలా?",
+  "@alreadyConnectedMessage": {
+    "description": "Message when device is already connected",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scanForDeviceMessage": "{deviceType} కోసం స్కాన్ చేయాలా?",
+  "@scanForDeviceMessage": {
+    "description": "Confirmation message to scan for device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "bpTransferHint": "\n\nముందు పరికరంలో BT నొక్కండి (నెమ్మది LED = ట్రాన్స్‌ఫర్ మోడ్).",
+  "@bpTransferHint": {
+    "description": "Hint for BP device transfer mode"
+  },
+  "connectDeviceType": "{deviceType} కనెక్ট్ చేయండి",
+  "@connectDeviceType": {
+    "description": "Button to connect device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scan": "స్కాన్",
+  "@scan": {
+    "description": "Button to start scanning"
+  },
+  "bpHistory": "BP చరిత్ర",
+  "@bpHistory": {
+    "description": "Title for BP history section"
+  },
+  "recordsCount": "{count} రికార్డులు",
+  "@recordsCount": {
+    "description": "Count of records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allRecords": "అన్ని రికార్డులు",
+  "@allRecords": {
+    "description": "Title for all records section"
+  },
+  "viewAllHistory": "మొత్తం చరిత్ర చూడండి",
+  "@viewAllHistory": {
+    "description": "Tooltip for history button"
+  },
+  "deviceDisconnected": "పరికరం డిస్‌కనెక్ట్ అయింది",
+  "@deviceDisconnected": {
+    "description": "Message shown when device is disconnected"
+  },
+  "unknownDevice": "తెలియని పరికరం",
+  "@unknownDevice": {
+    "description": "Default name for unnamed BLE devices"
+  },
+  "signalStrength": "సిగ్నల్: {rssi} dBm",
+  "@signalStrength": {
+    "description": "BLE device signal strength",
+    "placeholders": {
+      "rssi": {
+        "type": "int"
+      }
+    }
+  },
+  "rescan": "మళ్లీ స్కాన్ చేయండి",
+  "@rescan": {
+    "description": "Button to rescan for devices"
+  },
+  "linkDoctorTitle": "డాక్టర్‌ను లింక్ చేయండి",
+  "linkDoctorHeadline": "మీ ఆరోగ్య రీడింగ్‌లు డాక్టర్‌తో పంచుకోండి",
+  "linkDoctorCodeLabel": "డాక్టర్ కోడ్",
+  "linkDoctorCodeHint": "ఉదా. DRRAJ52",
+  "linkDoctorCodeEmpty": "దయచేసి డాక్టర్ కోడ్ నమోదు చేయండి",
+  "linkDoctorCodeInvalid": "డాక్టర్ కోడ్ చాలా చిన్నది",
+  "linkDoctorLookupButton": "డాక్టర్‌ను కనుగొనండి",
+  "linkDoctorLookupFailed": "డాక్టర్ కనుగొనబడలేదు. కోడ్ తనిఖీ చేయండి.",
+  "linkDoctorCodeHelper": "మీ కోడ్ కోసం డాక్టర్‌ను అడగండి (DR తో మొదలవుతుంది)",
+  "linkDoctorPickerTitle": "మీ డాక్టర్‌ను ఎంచుకోండి",
+  "linkDoctorPickerSubtitle": "మీ రీడింగ్‌లు పంచుకోవాలనుకున్న డాక్టర్‌ను నొక్కండి.",
+  "linkDoctorAlreadyLinked": "ఈ డాక్టర్ ఇప్పటికే ఈ ప్రొఫైల్ చూడగలరు.",
+  "linkDoctorAlreadyLinkedBadge": "ఇప్పటికే పంచుకుంటున్నారు",
+  "linkDoctorPreviouslyDeclinedBadge": "ముందు తిరస్కరించారు - మళ్లీ అభ్యర్థించవచ్చు",
+  "linkDoctorOr": "లేదా",
+  "linkDoctorEnterNewCode": "కొత్త డాక్టర్ కోడ్ నమోదు చేయండి",
+  "linkDoctorConsentTitle": "ఈ డాక్టర్‌ను ఎలా కలిశారు?",
+  "linkDoctorConsentInPerson": "క్లినిక్‌లో వ్యక్తిగత సందర్శన",
+  "linkDoctorConsentInPersonHelp": "నేను ఈ డాక్టర్‌ను క్లినిక్‌లో సందర్శించాను.",
+  "linkDoctorConsentVideo": "వీడియో లేదా ఫోన్ సంప్రదింపు",
+  "linkDoctorConsentVideoHelp": "నేను ఈ డాక్టర్‌తో వీడియో లేదా ఫోన్‌లో మాట్లాడాను.",
+  "linkDoctorNotVerified": "ధృవీకరణ పెండింగ్‌లో ఉంది",
+  "linkDoctorNotVerifiedHelp": "ఈ డాక్టర్ నమోదు చేసారు కానీ Swasth వారి NMC నంబర్‌ను ఇంకా తనిఖీ చేస్తోంది. ధృవీకరణ పూర్తయిన తర్వాత లింక్ చేయవచ్చు.",
+  "linkDoctorVerified": "ధృవీకరించిన డాక్టర్",
+  "linkDoctorConfirm": "నా రీడింగ్‌లు పంచుకోండి",
+  "linkDoctorConfirmDialogTitle": "మీ రీడింగ్‌లు పంచుకోవాలా?",
+  "linkDoctorConfirmDialogBody": "Dr. {name} మీ గత మరియు భవిష్యత్ ఆరోగ్య రీడింగ్‌లు చూడగలరు. మీరు ఎప్పుడైనా మీ ప్రొఫైల్ నుండి పంచుకోవడం ఆపవచ్చు.",
+  "@linkDoctorConfirmDialogBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkDoctorConfirmDialogShare": "అవును, పంచుకోండి",
+  "linkDoctorNmcDisclaimer": "రీడింగ్‌లను పంచుకోవడం డాక్టర్-రోగి సంబంధాన్ని సృష్టించదు. మీ డాక్టర్ ఏదైనా చికిత్సను విడిగా నిర్ధారించాలి. అత్యవసర పరిస్థితిలో, 108కి కాల్ చేయండి.",
+  "linkDoctorRequestSent": "{name}కు అభ్యర్థన పంపబడింది. డాక్టర్ అంగీకరించిన తర్వాత మీకు యాక్సెస్ లభిస్తుంది.",
+  "@linkDoctorRequestSent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkDoctorSuccess": "మీరు ఇప్పుడు {name}కు లింక్ అయ్యారు.",
+  "@linkDoctorSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkDoctorRevokeHint": "మీరు ఎప్పుడైనా మీ ప్రొఫైల్ నుండి పంచుకోవడం ఆపవచ్చు.",
+  "linkDoctorNoProfile": "దయచేసి ముందు ఒక ప్రొఫైల్ ఎంచుకోండి",
+  "linkDoctorSessionExpired": "మీ సెషన్ గడువు ముగిసింది. దయచేసి లాగ్ అవుట్ చేసి మళ్లీ లాగిన్ చేయండి.",
+  "linkDoctorNetworkError": "ఇంటర్నెట్ కనెక్షన్ లేదు. దయచేసి మళ్లీ ప్రయత్నించండి.",
+  "doctorRegisterTitle": "డాక్టర్ సైన్ అప్",
+  "doctorRegisterHeadline": "డాక్టర్‌గా నమోదు చేసుకోండి",
+  "doctorRegisterSubheadline": "మీరు రోగులను చూడటానికి ముందు మీ NMC నంబర్ Swasth బృందం ద్వారా ధృవీకరించబడుతుంది.",
+  "doctorFullNameLabel": "పూర్తి పేరు",
+  "doctorNmcLabel": "NMC నమోదు నంబర్",
+  "doctorNmcHint": "మెడికల్ కౌన్సిల్ నంబర్",
+  "doctorNmcEmpty": "దయచేసి మీ NMC నంబర్ నమోదు చేయండి",
+  "doctorSpecialtyLabel": "ప్రత్యేకత",
+  "doctorClinicLabel": "క్లినిక్ లేదా ఆసుపత్రి పేరు",
+  "doctorRegisterSubmit": "డాక్టర్ ఖాతా సృష్టించండి",
+  "doctorRegisterSuccess": "ఖాతా సృష్టించబడింది. Swasth నిర్వాహకుడు త్వరలో మీ NMC నంబర్‌ను ధృవీకరిస్తారు.",
+  "doctorSpecialtyGeneral": "జనరల్ ఫిజిషియన్",
+  "doctorSpecialtyEndocrinologist": "ఎండోక్రినాలజిస్ట్",
+  "doctorSpecialtyCardiologist": "కార్డియాలజిస్ట్",
+  "doctorSpecialtyDiabetologist": "డయాబెటాలజిస్ట్",
+  "doctorSpecialtyInternal": "ఇంటర్నల్ మెడిసిన్",
+  "doctorSpecialtyFamily": "ఫ్యామిలీ మెడిసిన్",
+  "doctorSpecialtyGynaecology": "గైనకాలజీ",
+  "doctorSpecialtyPaediatrics": "పీడియాట్రిక్స్",
+  "doctorSpecialtyGeneralSurgery": "జనరల్ సర్జరీ",
+  "doctorSpecialtyOther": "ఇతర",
+  "adminCreateUserTitle": "వినియోగదారుని సృష్టించండి",
+  "adminCreateUserHeadline": "రోగి ఖాతాను సృష్టించండి",
+  "adminCreateUserRoleLabel": "ఖాతా రకం",
+  "adminCreateUserRolePatient": "రోగి",
+  "adminCreateUserRoleDoctor": "డాక్టర్ (త్వరలో)",
+  "adminCreateUserDoctorComingSoon": "డాక్టర్ ఖాతాలు ప్రస్తుతానికి డాక్టర్ స్వీయ-సైన్అప్ ద్వారా సృష్టించాలి.",
+  "adminCreateUserTempPasswordHelp": "ఈ పాస్‌వర్డ్‌ను వినియోగదారుతో సురక్షితంగా పంచుకోండి. వారు ప్రొఫైల్ స్క్రీన్ నుండి దీనిని మార్చవచ్చు.",
+  "adminCreateUserSubmit": "ఖాతా సృష్టించండి",
+  "adminCreateUserSuccess": "{email} కోసం ఖాతా సృష్టించబడింది",
+  "@adminCreateUserSuccess": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "adminCreateUserNmcRequired": "డాక్టర్ ఖాతాలకు NMC నంబర్ అవసరం",
+  "emailVerificationTitle": "మీ ఈమెయిల్‌ను ధృవీకరించండి",
+  "emailVerificationSubtitle": "మేము {email}కు 6-అంకెల కోడ్ పంపాము. మీ ఈమెయిల్ చిరునామాను ధృవీకరించడానికి దానిని క్రింద నమోదు చేయండి.",
+  "@emailVerificationSubtitle": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "verifyEmailButton": "ఈమెయిల్ ధృవీకరించండి",
+  "skipForNow": "ఇప్పటికి దాటవేయండి",
+  "emailNotVerifiedBanner": "దయచేసి మీ ఈమెయిల్ చిరునామాను ధృవీకరించండి",
+  "emailVerifiedSuccess": "ఈమెయిల్ విజయవంతంగా ధృవీకరించబడింది!",
+  "verifyEmailDialogTitle": "మీ ఈమెయిల్‌ను ధృవీకరించండి",
+  "verifyEmailDialogMessage": "ఖాతా భద్రత కోసం మీ ఈమెయిల్‌ను ధృవీకరించండి. మీరు దీనిని తర్వాత కూడా చేయవచ్చు.",
+  "verifyNow": "ఇప్పుడే ధృవీకరించండి",
+  "verifyLater": "తర్వాత",
+  "emailVerificationOtpSent": "మీ ఈమెయిల్‌కు ధృవీకరణ కోడ్ పంపబడింది",
+  "emailVerificationFailed": "ధృవీకరణ కోడ్ పంపడంలో విఫలమైంది",
+  "otpValidationEmpty": "దయచేసి కోడ్ నమోదు చేయండి",
+  "otpValidationLength": "కోడ్ 6 అంకెలు ఉండాలి",
+  "otpValidationDigitsOnly": "కోడ్‌లో అంకెలు మాత్రమే ఉండాలి",
+  "loginModeEmail": "ఈమెయిల్",
+  "loginModePhone": "ఫోన్",
+  "emailOrPhoneLabel": "ఈమెయిల్ లేదా ఫోన్ నంబర్",
+  "phoneNumberLabel": "ఫోన్ నంబర్",
+  "phoneNumberHint": "ఉదా. 9876543210",
+  "phoneValidationInvalid": "దయచేసి సరైన ఫోన్ నంబర్ నమోదు చేయండి (10-15 అంకెలు)",
+  "continueButton": "కొనసాగించండి",
+  "phoneLoginNoAccountTitle": "ఖాతా కనుగొనబడలేదు",
+  "phoneLoginNoAccountMessage": "ఈ ఫోన్ నంబర్‌తో ఖాతా కనుగొనబడలేదు. కొత్త ఖాతా సృష్టించాలనుకుంటున్నారా?",
+  "createAccount": "ఖాతా సృష్టించండి",
+  "verifyPhoneOTP": "ఫోన్ OTP ధృవీకరించండి",
+  "otpSentToPhone": "{phone}కు OTP పంపబడింది",
+  "@otpSentToPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "nameValidationEmpty": "దయచేసి మీ పేరు నమోదు చేయండి",
+  "nameValidationTooShort": "పేరు కనీసం 2 అక్షరాలు ఉండాలి",
+  "verifyOTP": "OTP ధృవీకరించండి",
+  "didntReceiveOTP": "కోడ్ అందలేదా?",
+  "resendOTP": "OTP మళ్లీ పంపండి",
+  "accountCreatedSuccess": "ఖాతా విజయవంతంగా సృష్టించబడింది! దయచేసి మీ ప్రొఫైల్‌ను పూర్తి చేయండి.",
+  "nutritionAnalysisTitle": "పోషకాహార విశ్లేషణ",
+  "@nutritionAnalysisTitle": {
+    "description": "Title for the detailed nutrition analysis screen showing macros, micros, and diet flags"
+  },
+  "carbLevel": "కార్బ్ స్థాయి",
+  "@carbLevel": {
+    "description": "Label for carbohydrate level badge (low/medium/high) in nutrition analysis"
+  },
+  "sugarLevel": "చక్కెర",
+  "@sugarLevel": {
+    "description": "Label for sugar level badge (low/medium/high) in nutrition analysis"
+  },
+  "totalNutrition": "మొత్తం పోషకాలు",
+  "@totalNutrition": {
+    "description": "Section header for total macronutrients summary"
+  },
+  "detectedFoods": "గుర్తించిన ఆహారాలు",
+  "@detectedFoods": {
+    "description": "Section header for list of individual food items detected in the photo"
+  },
+  "noFoodsDetected": "నిర్దిష్ట ఆహారాలు గుర్తించబడలేదు. ద్రవ భోజనాలు లేదా అస్పష్ట చిత్రాలతో ఇది జరగవచ్చు.",
+  "@noFoodsDetected": {
+    "description": "Empty state message when AI returns empty foods array"
+  },
+  "micronutrients": "సూక్ష్మపోషకాలు",
+  "@micronutrients": {
+    "description": "Section header for micronutrients (iron, calcium, vitamin C)"
+  },
+  "dietFlags": "ఆహార సమాచారం",
+  "@dietFlags": {
+    "description": "Section header for diet type flags (vegan, vegetarian, gluten-free, high protein)"
+  },
+  "saveMeal": "భోజన లాగ్ సేవ్ చేయండి",
+  "@saveMeal": {
+    "description": "Button text to save the analyzed meal to the meal log"
+  },
+  "mealHealthScore": "భోజన ఆరోగ్య స్కోర్",
+  "@mealHealthScore": {
+    "description": "Label for the meal health score (1-10) shown in the score card"
+  },
+  "calories": "కేలరీలు",
+  "@calories": {
+    "description": "Label for calories in the macronutrients grid"
+  },
+  "carbs": "కార్బ్స్",
+  "@carbs": {
+    "description": "Label for carbohydrates (grams) in the macronutrients grid"
+  },
+  "protein": "ప్రోటీన్",
+  "@protein": {
+    "description": "Label for protein (grams) in the macronutrients grid"
+  },
+  "fat": "కొవ్వు",
+  "@fat": {
+    "description": "Label for fat (grams) in the macronutrients grid"
+  },
+  "vegan": "వేగన్",
+  "@vegan": {
+    "description": "Diet flag label indicating the meal is vegan"
+  },
+  "vegetarian": "శాకాహారి",
+  "@vegetarian": {
+    "description": "Diet flag label indicating the meal is vegetarian"
+  },
+  "glutenFree": "గ్లూటెన్ రహితం",
+  "@glutenFree": {
+    "description": "Diet flag label indicating the meal is gluten-free"
+  },
+  "highProtein": "అధిక ప్రోటీన్",
+  "@highProtein": {
+    "description": "Diet flag label indicating the meal is high in protein"
+  },
+  "analysisTypeTitle": "విశ్లేషణ రకం ఎంచుకోండి",
+  "@analysisTypeTitle": {
+    "description": "Title for the screen where user chooses between quick classification or detailed nutrition analysis"
+  },
+  "quickClassification": "త్వరిత వర్గీకరణ",
+  "@quickClassification": {
+    "description": "Button text for fast carb level detection option"
+  },
+  "quickClassificationDesc": "కార్బ్ స్థాయి + ఆరోగ్య చిట్కా (వేగంగా)",
+  "@quickClassificationDesc": {
+    "description": "Description text for quick classification option"
+  },
+  "detailedNutrition": "వివరమైన పోషకాహారం",
+  "@detailedNutrition": {
+    "description": "Button text for full nutrition analysis option with macros and micros"
+  },
+  "detailedNutritionDesc": "పూర్తి మాక్రోలు, మైక్రోలు & ఆహార జెండాలు",
+  "@detailedNutritionDesc": {
+    "description": "Description text for detailed nutrition analysis option"
+  },
+  "nutritionAnalyzing": "పోషకాహార వివరాలు విశ్లేషిస్తోంది...",
+  "@nutritionAnalyzing": {
+    "description": "Loading message shown while AI analyzes the food photo for nutrition details"
+  },
+  "iron": "ఇనుము",
+  "@iron": {
+    "description": "Label for iron micronutrient in mg"
+  },
+  "calcium": "కాల్షియం",
+  "@calcium": {
+    "description": "Label for calcium micronutrient in mg"
+  },
+  "vitaminC": "విటమిన్ C",
+  "@vitaminC": {
+    "description": "Label for vitamin C micronutrient in mg"
+  },
+  "kcalUnit": "kcal",
+  "@kcalUnit": {
+    "description": "Unit abbreviation for kilocalories"
+  },
+  "gramsUnit": "గ్రా",
+  "@gramsUnit": {
+    "description": "Unit abbreviation for grams"
+  },
+  "carbsUnit": "కార్బ్స్",
+  "@carbsUnit": {
+    "description": "Short label for carbohydrates in mini macro badges"
+  },
+  "proteinUnit": "ప్రోటీన్",
+  "@proteinUnit": {
+    "description": "Short label for protein in mini macro badges"
+  },
+  "fatUnit": "కొవ్వు",
+  "@fatUnit": {
+    "description": "Short label for fat in mini macro badges"
+  },
+  "useQuickSelect": "బదులుగా త్వరిత ఎంపిక ఉపయోగించండి",
+  "@useQuickSelect": {
+    "description": "Button text to fallback to manual meal selection if photo analysis fails"
+  },
+  "nmcDisclaimer": "ఇది సమాచారం, ప్రిస్క్రిప్షన్ కాదు. ఏవైనా మార్పులు చేయడానికి ముందు మీ డాక్టర్‌ను సంప్రదించండి.",
+  "@nmcDisclaimer": {
+    "description": "NMC-required disclaimer shown on all AI-generated health insights"
+  },
+  "splashAppName": "స్వస్థ్",
+  "@splashAppName": {
+    "description": "App name displayed on splash screen"
+  },
+  "splashTagline": "మీ ఆరోగ్య తోడు",
+  "@splashTagline": {
+    "description": "Tagline displayed on splash screen below app name"
+  },
+  "splashInitializing": "ప్రారంభమవుతోంది...",
+  "@splashInitializing": {
+    "description": "Loading message shown during app initialization on splash screen"
+  },
+  "splashCheckingConnection": "కనెక్షన్ తనిఖీ చేస్తోంది...",
+  "@splashCheckingConnection": {
+    "description": "Loading message when checking network connectivity on splash screen"
+  },
+  "splashWorkingOffline": "ఆఫ్‌లైన్‌లో పని చేస్తోంది...",
+  "@splashWorkingOffline": {
+    "description": "Loading message when app is operating in offline mode on splash screen"
+  },
+  "splashLoadingProfile": "మీ ప్రొఫైల్ లోడ్ అవుతోంది...",
+  "@splashLoadingProfile": {
+    "description": "Loading message when fetching user profile data on splash screen"
+  },
+  "splashCheckingCredentials": "సేవ్ చేసిన వివరాలు తనిఖీ చేస్తోంది...",
+  "@splashCheckingCredentials": {
+    "description": "Loading message when checking for saved login credentials on splash screen"
+  },
+  "splashSigningIn": "సైన్ ఇన్ అవుతోంది...",
+  "@splashSigningIn": {
+    "description": "Loading message when performing automatic sign-in on splash screen"
+  },
+  "contactUsTitle": "మమ్మల్ని సంప్రదించండి",
+  "@contactUsTitle": {
+    "description": "Section heading on the web home page Contact Us footer"
+  },
+  "contactUsSubtitle": "సహాయం & మద్దతు 24/7 — మీ ప్రశ్నలకు సమాధానమిచ్చేందుకు మేము ఇక్కడ ఉన్నాము.",
+  "@contactUsSubtitle": {
+    "description": "Subtitle under Contact Us on the web — reassures users that support is always available"
+  },
+  "contactUsWhatsApp": "వాట్సాప్",
+  "@contactUsWhatsApp": {
+    "description": "Label on the WhatsApp button in the web Contact Us section"
+  },
+  "@reminderSetFor": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@bmiTipGain": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@bmiTipLose": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "healthScoreTitle": "ఆరోగ్య స్కోరు",
+  "saveSuccessful": "విజయవంతంగా సేవ్ చేయబడింది",
+  "deleteSuccessful": "విజయవంతంగా తొలగించబడింది"
+}

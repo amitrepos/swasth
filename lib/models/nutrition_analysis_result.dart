@@ -63,6 +63,7 @@ class NutritionAnalysisResult {
   final bool? isHighProtein;
   final int? mealScore;
   final String? mealScoreReason;
+  final Map<String, dynamic>? tips;
 
   NutritionAnalysisResult({
     required this.foods,
@@ -82,6 +83,7 @@ class NutritionAnalysisResult {
     this.isHighProtein,
     this.mealScore,
     this.mealScoreReason,
+    this.tips,
   });
 
   factory NutritionAnalysisResult.fromJson(Map<String, dynamic> json) {
@@ -106,6 +108,7 @@ class NutritionAnalysisResult {
       isHighProtein: json['is_high_protein'] as bool?,
       mealScore: json['meal_score'] as int?,
       mealScoreReason: json['meal_score_reason'] as String?,
+      tips: json['tips'] as Map<String, dynamic>?,
     );
   }
 }

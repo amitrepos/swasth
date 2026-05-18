@@ -35,10 +35,10 @@ Color statusTextColor(String? status) {
 
 /// Builds a human-readable trend label like "↑ 5%" from two values.
 String trendLabel(double? current, double? previous,
-    {bool lowerIsBetter = true}) {
-  if (current == null || previous == null || previous == 0) return 'Stable';
+    {bool lowerIsBetter = true, String stableLabel = 'Stable'}) {
+  if (current == null || previous == null || previous == 0) return stableLabel;
   final pct = ((current - previous) / previous * 100).abs();
-  if (pct < 2) return 'Stable';
+  if (pct < 2) return stableLabel;
   final increasing = current > previous;
   final arrow = increasing ? '↑' : '↓';
   return '$arrow ${pct.toStringAsFixed(0)}%';

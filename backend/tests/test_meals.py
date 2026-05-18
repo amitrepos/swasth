@@ -25,8 +25,7 @@ class TestMealLogModel:
             logged_by=test_user.id,
             category="HIGH_CARB",
             glucose_impact="HIGH",
-            tip_en="High carb meal. Walk 15 minutes after eating.",
-            tip_hi="ज़्यादा कार्ब वाला खाना। खाने के बाद 15 मिनट टहलें।",
+            tips_json={"en": "High carb meal. Walk 15 minutes after eating.", "hi": "ज़्यादा कार्ब वाला खाना। खाने के बाद 15 मिनट टहलें।"},
             meal_type="DINNER",
             input_method="PHOTO_GEMINI",
             confidence=0.92,
@@ -64,7 +63,7 @@ class TestMealLogModel:
         assert meal.id is not None
         assert meal.photo_path is None
         assert meal.confidence is None
-        assert meal.tip_en is None
+        assert meal.tips_json is None
 
     def test_meal_log_user_correction(self, db, test_user):
         """User correction stores both original and corrected category."""
@@ -133,8 +132,7 @@ class TestMealLogSchemas:
             meal_type="DINNER",
             input_method="PHOTO_GEMINI",
             confidence=0.9,
-            tip_en="Walk after eating.",
-            tip_hi="खाने के बाद टहलें।",
+            tips_json={"en": "Walk after eating.", "hi": "खाने के बाद टहलें।"},
             timestamp=datetime.now(timezone.utc),
         )
         assert meal.category == "HIGH_CARB"
@@ -190,7 +188,7 @@ class TestMealLogSchemas:
             timestamp=datetime.now(timezone.utc),
         )
         assert meal.confidence is None
-        assert meal.tip_en is None
+        assert meal.tips_json is None
 
     def test_food_classification_response(self):
         from schemas import FoodClassificationResponse
@@ -198,8 +196,7 @@ class TestMealLogSchemas:
         resp = FoodClassificationResponse(
             category="HIGH_CARB",
             glucose_impact="HIGH",
-            tip_en="Walk after eating.",
-            tip_hi="खाने के बाद टहलें।",
+            tips_json={"en": "Walk after eating.", "hi": "खाने के बाद टहलें।"},
             confidence=0.85,
         )
         assert resp.category == "HIGH_CARB"

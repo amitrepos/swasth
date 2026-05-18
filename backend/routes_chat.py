@@ -227,6 +227,17 @@ def send_chat_message(
     """Send a chat message and get an AI response."""
     profile_id = data.get("profile_id")
     message = data.get("message", "").strip()
+    _SUPPORTED_LANGS = {"en", "hi", "kn", "te", "ta"}
+    language = data.get("language", "en")
+    if language not in _SUPPORTED_LANGS:
+        language = "en"
+    _LANG_NAMES = {
+        "en": "English",
+        "hi": "Hindi (Devanagari script)",
+        "kn": "Kannada (Kannada script)",
+        "te": "Telugu (Telugu script)",
+        "ta": "Tamil (Tamil script)",
+    }
 
     if not profile_id or not message:
         raise HTTPException(status_code=400, detail="profile_id and message are required")
@@ -287,7 +298,8 @@ Rules:
 - If the question is about a critical reading, be urgent and recommend seeing a doctor.
 - If you don't know something, say so honestly.
 - Keep responses to 2-4 sentences.
-- Speak directly to the patient."""
+- Speak directly to the patient.
+- Respond ONLY in {_LANG_NAMES[language]}. Do not mix languages."""
 
     # --- Check for image/PDF attachment ---
     image_b64 = data.get("image_base64")

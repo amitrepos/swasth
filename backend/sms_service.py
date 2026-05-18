@@ -98,20 +98,22 @@ class TwilioSmsService:
         to_number: str,
         patient_name: str,
         alert_text_en: str,
-        alert_text_hi: str,
+        alert_text_hi: str = "",
+        alert_text_kn: str = "",
+        alert_text_te: str = "",
+        alert_text_ta: str = "",
     ) -> bool:
-        """Send a bilingual critical health alert via SMS.
+        """Send a multilingual critical health alert via SMS.
 
-        SMS is length-constrained (160 chars per segment), so we prioritize
-        English first with a short Hindi suffix. If SMS is disabled (no
-        sender number in env), returns False — caller logs as "skipped".
+        SMS is length-constrained (160 chars per segment), so we send
+        English with a short regional suffix when available.
         """
         if not self.is_enabled:
             return False
-        body = (
-            f"Swasth Alert: {alert_text_en} "
-            f"({patient_name}). {alert_text_hi[:60]}..."
-        )
+        regional = alert_text_hi or alert_text_kn or alert_text_te or alert_text_ta
+        body = f"Swasth Alert: {alert_text_en} ({patient_name})"
+        if regional:
+            body += f" | {regional[:60]}"
         return self.send_sms(to_number, body)
 
 

@@ -247,7 +247,7 @@ class _MemberChip extends StatelessWidget {
             if (hasPhone) ...[
               ListTile(
                 leading: const Icon(Icons.phone, color: AppColors.primary),
-                title: const Text('Call'),
+                title: Text(AppLocalizations.of(ctx)!.actionCall),
                 subtitle: Text(phone),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -257,7 +257,7 @@ class _MemberChip extends StatelessWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.chat, color: AppColors.statusNormal),
-                title: const Text('WhatsApp'),
+                title: Text(AppLocalizations.of(ctx)!.actionWhatsApp),
                 onTap: () {
                   Navigator.pop(ctx);
                   final cleaned = phone.replaceAll(RegExp(r'[\s\-()]'), '');
@@ -277,7 +277,7 @@ class _MemberChip extends StatelessWidget {
                   Icons.email_outlined,
                   color: AppColors.primary,
                 ),
-                title: const Text('Send Email'),
+                title: Text(AppLocalizations.of(ctx)!.actionEmail),
                 onTap: () {
                   Navigator.pop(ctx);
                   launchUrl(Uri.parse('mailto:$email'));

@@ -1224,8 +1224,7 @@ def get_patient_meals(
             "meal_score": m.meal_score,
             # Photo path excluded for doctor privacy
             "photo_path": None,
-            "tip_en": m.tip_en,
-            "tip_hi": m.tip_hi,
+            "tips": m.tips_json,
         }
         for m in meals
     ]

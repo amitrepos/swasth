@@ -79,6 +79,7 @@ class HomeScreenState extends State<HomeScreen>
   int _streak = 0;
   int _pts = 0;
   bool _insightSaved = false;
+  String? _lastLangCode;
 
   // Caregiver dashboard state
   List<HealthReading> _activityReadings = [];
@@ -142,6 +143,11 @@ class HomeScreenState extends State<HomeScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+    final langCode = Localizations.localeOf(context).languageCode;
+    if (_lastLangCode != null && _lastLangCode != langCode && _activeProfileId != null) {
+      _refreshHealthScore(_activeProfileId!);
+    }
+    _lastLangCode = langCode;
   }
 
   @override
@@ -181,10 +187,11 @@ class HomeScreenState extends State<HomeScreen>
   void _refreshHealthScore(int profileId) async {
     final token = await _storageService.getToken();
     if (token == null || !mounted) return;
-    final future = _readingService.getHealthScore(token, profileId);
+    final langCode = Localizations.localeOf(context).languageCode;
+    final future = _readingService.getHealthScore(token, profileId, langCode);
     setState(() {
       _healthScoreFuture = future;
-      _aiInsightFuture = _readingService.getAiInsight(token, profileId);
+      _aiInsightFuture = _readingService.getAiInsight(token, profileId, langCode);
     });
     try {
       final data = await future;
@@ -1066,9 +1073,9 @@ class HomeScreenState extends State<HomeScreen>
                     color: AppColors.primary,
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Reminder',
-                    style: TextStyle(
+                  Text(
+                    l10n.quickActionReminder,
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -1091,9 +1098,9 @@ class HomeScreenState extends State<HomeScreen>
                 children: [
                   Icon(Icons.share, size: 18, color: AppColors.success),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Summary',
-                    style: TextStyle(
+                  Text(
+                    l10n.quickActionSummary,
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -1147,19 +1154,20 @@ class HomeScreenState extends State<HomeScreen>
     final minute = await reminder.getMinute();
 
     if (!mounted) return;
+    final l10n = AppLocalizations.of(ctx)!;
     final time = await showTimePicker(
       context: ctx,
       initialTime: TimeOfDay(hour: hour, minute: minute),
       helpText: enabled
-          ? 'Change reminder time (or cancel to disable)'
-          : 'Set daily reminder time',
+          ? l10n.reminderChangeTime
+          : l10n.reminderSetTime,
     );
 
     if (time != null) {
       await reminder.enableReminder(time.hour, time.minute);
       if (mounted) {
         ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(content: Text('Reminder set for ${time.format(ctx)} daily')),
+          SnackBar(content: Text(l10n.reminderSetFor(time.format(ctx)))),
         );
       }
     } else if (enabled) {
@@ -1167,7 +1175,7 @@ class HomeScreenState extends State<HomeScreen>
       if (mounted) {
         ScaffoldMessenger.of(
           ctx,
-        ).showSnackBar(const SnackBar(content: Text('Reminder disabled')));
+        ).showSnackBar(SnackBar(content: Text(l10n.reminderDisabled)));
       }
     }
   }
@@ -1176,12 +1184,13 @@ class HomeScreenState extends State<HomeScreen>
     if (_activeProfileId == null) return;
     final token = await _storageService.getToken();
     if (token == null) return;
+    final l10n = AppLocalizations.of(context)!;
 
     final data = await _readingService.getWeeklySummary(
       token,
       _activeProfileId!,
     );
-    final text = data['summary_text'] as String? ?? 'No summary available';
+    final text = data['summary_text'] as String? ?? l10n.noSummaryAvailable;
 
     Share.share(text);
   }
