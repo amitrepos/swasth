@@ -24,26 +24,27 @@ const HeroSection = () => {
               Keep your parents <span className="text-accent">healthy</span> - from anywhere.
             </h1>
             <p className="text-lg md:text-xl text-white/90 max-w-xl leading-relaxed font-body">
-              AI-powered health monitoring that connects families across borders. Track vitals, weight, and steps effortlessly. Parents can even log readings via WhatsApp photos.
+              AI-powered health monitoring that connects families across borders. Track vitals, weight, and steps effortlessly. Parents can even log readings via WhatsApp photos.{" "}
+              <strong className="text-accent">Plus a real nurse visits every 1–2 weeks — so you're never relying on AI alone.</strong>
             </p>
             <div className="flex flex-col sm:flex-row gap-5 pt-4">
+              <a
+                href="/story"
+                className="px-10 py-4 bg-accent text-white font-bold rounded-2xl text-lg shadow-[0_8px_30px_rgb(245,158,11,0.3)] hover:shadow-[0_8px_30px_rgb(245,158,11,0.5)] hover:scale-[1.03] transition-all duration-300 text-center"
+              >
+                No more "sab theek hai" →
+              </a>
               <button
                 onClick={scrollToForm}
-                className="px-10 py-4 bg-accent text-white font-bold rounded-2xl text-lg shadow-[0_8px_30px_rgb(245,158,11,0.3)] hover:shadow-[0_8px_30px_rgb(245,158,11,0.5)] hover:scale-[1.03] transition-all duration-300"
-              >
-                Get Early Access
-              </button>
-              <a
-                href="#features"
                 className="px-10 py-4 bg-white/15 text-white font-semibold rounded-2xl text-lg backdrop-blur-md border border-white/20 hover:bg-white/25 transition-all duration-300 text-center"
               >
-                Features
-              </a>
+                Get early access
+              </button>
             </div>
             <div className="flex items-center gap-2 pt-2 animate-pulse-soft">
               <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               <p className="text-sm font-medium text-white/70">
-                Join 500+ families on the waitlist
+                Free to join · Early access opens end of May 2026 · We email you first
               </p>
             </div>
           </div>

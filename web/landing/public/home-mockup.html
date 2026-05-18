@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Swasth — Home (Proposed Mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#0ea5e9;
+    --primary-700:#0369a1;
+    --accent:#f59e0b;
+    --accent-2:#fbbf24;
+    --bg:#f5f9fc;
+    --card:#ffffff;
+    --ink:#0f172a;
+    --ink-2:#334155;
+    --muted:#64748b;
+    --line:#e2e8f0;
+    --hero-from:#0c4a6e;
+    --hero-to:#0ea5e9;
+    --good:#10b981;
+    --warn:#f59e0b;
+    --bad:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,h4{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-0.02em;line-height:1.1;margin:0}
+  p{margin:0}
+  a{color:inherit;text-decoration:none}
+  .container{max-width:1200px;margin:0 auto;padding:0 24px}
+
+  /* NAV */
+  .nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:blur(14px);border-bottom:1px solid rgba(14,165,233,.08)}
+  .nav-row{display:flex;align-items:center;justify-content:space-between;height:72px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:22px;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+  .brand img{width:36px;height:36px;object-fit:contain}
+  .brand .dot{color:var(--primary)}
+  .nav-links{display:flex;align-items:center;gap:28px}
+  .nav-link{font-weight:700;font-size:14px;color:var(--muted)}
+  .nav-link:hover{color:var(--primary)}
+  .nav-cta{padding:11px 20px;border-radius:12px;background:var(--primary);color:#fff;font-weight:800;font-size:14px;box-shadow:0 10px 20px -5px rgba(14,165,233,.4)}
+  .nav-cta:hover{transform:translateY(-1px)}
+
+  /* HERO (KEPT) */
+  .hero{background:linear-gradient(135deg,var(--hero-from) 0%,#0c70a4 50%,var(--hero-to) 100%);color:#fff;padding:90px 0 110px;position:relative;overflow:hidden;min-height:88vh;display:flex;align-items:center}
+  .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(80px);opacity:.18;pointer-events:none}
+  .hero::before{width:480px;height:480px;background:#fff;top:-10%;right:-8%}
+  .hero::after{width:520px;height:520px;background:#fbbf24;bottom:-15%;left:-10%}
+  .hero-grid{display:grid;grid-template-columns:2fr 1fr;gap:60px;align-items:center;position:relative;z-index:1;width:100%}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;background:rgba(251,191,36,.18);border:1px solid rgba(251,191,36,.45);font-weight:800;font-size:13px;letter-spacing:.02em;backdrop-filter:blur(10px)}
+  .hero h1{font-size:72px;font-weight:900;margin-top:28px;color:#fff;line-height:1.05}
+  .hero h1 em{font-style:normal;color:var(--accent-2)}
+  .hero p.sub{font-size:19px;color:rgba(255,255,255,.88);margin-top:26px;max-width:560px;line-height:1.55}
+  .cta-row{display:flex;gap:14px;margin-top:36px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;font-weight:800;border-radius:14px;padding:16px 26px;font-size:16px;transition:all .2s ease;font-family:inherit}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 12px 28px rgba(245,158,11,.4)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(245,158,11,.5)}
+  .btn-ghost{background:rgba(255,255,255,.15);color:#fff;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.25)}
+  .btn-ghost:hover{background:rgba(255,255,255,.25)}
+  .btn-secondary{background:var(--primary);color:#fff;box-shadow:0 12px 28px rgba(14,165,233,.4)}
+  .cta-meta{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:13px;color:rgba(255,255,255,.7);font-weight:600}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 0 0 rgba(251,191,36,.7);animation:pulse 2s infinite;display:inline-block}
+  @keyframes pulse{70%{box-shadow:0 0 0 10px rgba(251,191,36,0)}100%{box-shadow:0 0 0 0 rgba(251,191,36,0)}}
+  .phone-mock{width:100%;max-width:300px;margin:0 auto;background:#fff;border-radius:36px;padding:14px;border:4px solid rgba(255,255,255,.15);box-shadow:0 40px 80px -20px rgba(0,0,0,.55);aspect-ratio:9/19;display:flex;flex-direction:column;color:var(--ink)}
+
+  /* === DASHBOARD MOCKUP (ported from src/components/DashboardMockup.css) === */
+  .phone-frame{width:100%;max-width:300px;background:#fff;border-radius:32px;padding:14px;border:4px solid rgba(255,255,255,.15);box-shadow:0 40px 80px -20px rgba(0,0,0,.55);aspect-ratio:9/19}
+  .swasth-mockup-wrap{width:100%;height:100%;background:#eef4f7;border-radius:24px;padding:16px 12px 10px;font-family:'Inter',sans-serif;text-align:left;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column}
+  .mockup-content{flex:1;overflow-y:auto;padding-right:4px;scrollbar-width:none}
+  .mockup-content::-webkit-scrollbar{display:none}
+  .swasth-mockup-wrap .top-bar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px}
+  .swasth-mockup-wrap .brand-sm{font-size:10px;color:#888;letter-spacing:1px;font-weight:600}
+  .swasth-mockup-wrap .top-icons{display:flex;gap:8px;align-items:center}
+  .swasth-mockup-wrap .top-icons span{font-size:14px;cursor:pointer}
+  .swasth-mockup-wrap .avatar{width:22px;height:22px;border-radius:50%;background:#2e7d32;color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .swasth-mockup-wrap .greeting{font-size:15px;font-weight:700;color:#1a1a1a;margin:0}
+  .swasth-mockup-wrap .user-name{font-size:11px;color:#2e7d32;font-weight:500}
+  .swasth-mockup-wrap .badges{display:flex;gap:0;margin:10px 0 10px;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #e0e0e0}
+  .swasth-mockup-wrap .badge{flex:1;text-align:center;padding:6px 2px;font-size:9px;font-weight:600;color:#444;border-right:1px solid #e8e8e8;display:flex;align-items:center;justify-content:center;gap:3px}
+  .swasth-mockup-wrap .badge:last-child{border-right:none}
+  .swasth-mockup-wrap .health-card{background:#fff;border-radius:16px;padding:12px 12px 10px;text-align:center;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .swasth-mockup-wrap .doing-great{color:#2e7d32;font-size:12px;font-weight:600;margin-bottom:8px}
+  .swasth-mockup-wrap .heart-container{position:relative;display:inline-block;width:100px;height:90px;margin-bottom:6px}
+  .swasth-mockup-wrap .heart-svg{width:100px;height:90px;animation:heartbeat 1.2s ease-in-out infinite;transform-origin:center;filter:drop-shadow(0 3px 12px rgba(46,125,50,.3))}
+  @keyframes heartbeat{0%{transform:scale(1)}14%{transform:scale(1.1)}28%{transform:scale(1)}42%{transform:scale(1.06)}56%{transform:scale(1)}100%{transform:scale(1)}}
+  .swasth-mockup-wrap .heart-score{position:absolute;top:50%;left:50%;transform:translate(-50%,-48%);font-size:24px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.15);pointer-events:none;animation:score-pulse 1.2s ease-in-out infinite}
+  @keyframes score-pulse{0%{transform:translate(-50%,-48%) scale(1)}14%{transform:translate(-50%,-48%) scale(1.08)}28%{transform:translate(-50%,-48%) scale(1)}42%{transform:translate(-50%,-48%) scale(1.04)}56%{transform:translate(-50%,-48%) scale(1)}100%{transform:translate(-50%,-48%) scale(1)}}
+  .swasth-mockup-wrap .pulse-ring{position:absolute;top:50%;left:50%;width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;background:rgba(46,125,50,.15);animation:ring-pulse 1.2s ease-out infinite;pointer-events:none}
+  .swasth-mockup-wrap .pulse-ring-2{animation-delay:.15s;background:rgba(46,125,50,.08)}
+  @keyframes ring-pulse{0%{transform:scale(.85);opacity:0}14%{transform:scale(1.2);opacity:1}40%{transform:scale(1.4);opacity:0}100%{transform:scale(1.4);opacity:0}}
+  .swasth-mockup-wrap .dm-all-well{display:flex;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:500;color:#444;margin:4px 0 8px}
+  .swasth-mockup-wrap .smiley{font-size:14px}
+  .swasth-mockup-wrap .progress-bar-bg{background:#e8f5e9;border-radius:6px;height:6px;overflow:hidden;margin-bottom:8px}
+  .swasth-mockup-wrap .progress-bar-fill{height:100%;background:linear-gradient(90deg,#43a047,#2e7d32);border-radius:6px;width:82%;animation:bar-anim 2s ease-in-out infinite alternate}
+  @keyframes bar-anim{from{width:78%}to{width:86%}}
+  .swasth-mockup-wrap .health-msg{font-size:10px;color:#555;line-height:1.4}
+  .swasth-mockup-wrap .section-title{font-size:10px;font-weight:700;color:#888;letter-spacing:1px;margin:0 0 8px}
+  .swasth-mockup-wrap .vitals-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .swasth-mockup-wrap .vital-card{background:#fff;border-radius:12px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .swasth-mockup-wrap .vital-label{font-size:9px;color:#999;font-weight:600;letter-spacing:.5px;margin-bottom:2px}
+  .swasth-mockup-wrap .vital-value{font-size:15px;font-weight:700;color:#2e7d32}
+  .swasth-mockup-wrap .vital-value.orange{color:#e65100}
+  .swasth-mockup-wrap .vital-footer{font-size:9px;color:#aaa;margin-top:1px}
+  .swasth-mockup-wrap .vital-row{display:flex;align-items:flex-start;justify-content:space-between}
+  .swasth-mockup-wrap .add-btn{width:22px;height:22px;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;cursor:pointer;line-height:1;font-weight:300;flex-shrink:0}
+  .swasth-mockup-wrap .bmi-label{font-size:9px;color:#e65100;font-weight:600}
+  .swasth-mockup-wrap .bottom-nav{display:flex;justify-content:space-around;align-items:flex-end;margin-top:12px;background:#fff;padding:10px 4px 8px;border-radius:12px;box-shadow:0 -2px 10px rgba(0,0,0,.03)}
+  .swasth-mockup-wrap .nav-item{display:flex;flex-direction:column;align-items:center;flex:1;cursor:pointer;opacity:.4;transition:all .2s}
+  .swasth-mockup-wrap .nav-item.active{opacity:1;color:#2e7d32}
+  .swasth-mockup-wrap .nav-icon{font-size:16px;margin-bottom:2px}
+  .swasth-mockup-wrap .nav-label{font-size:7px;font-weight:700;letter-spacing:.5px}
+  .swasth-mockup-wrap .streak-nav{width:28px;height:28px;background:#fff3e0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:-2px;box-shadow:0 2px 6px rgba(255,152,0,.2)}
+  .phone-mock .header{padding:14px 14px 10px;font-size:12px;color:var(--muted);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .phone-mock h4{font-size:18px;margin-top:2px}
+  .phone-mock .heart{width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#10b981,#34d399);margin:18px auto 6px;display:grid;place-items:center;color:#fff;font-weight:900;font-size:40px;font-family:'Plus Jakarta Sans',sans-serif}
+  .phone-mock .all-well{text-align:center;color:var(--good);font-weight:800;font-size:13px;margin-bottom:8px}
+  .phone-mock .vitals{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px;flex:1}
+  .vital{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:11px}
+  .vital .label{color:var(--muted);font-weight:800;font-size:9px;text-transform:uppercase;letter-spacing:.1em}
+  .vital .val{font-size:18px;font-weight:900;margin-top:2px;color:var(--ink)}
+
+  /* SECTIONS */
+  .section{padding:90px 0}
+  .section-light{background:linear-gradient(180deg,#f5f9fc,#eaf4fb)}
+  .section-white{background:#fff}
+  .sec-eyebrow{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:var(--primary);background:rgba(14,165,233,.1);padding:8px 16px;border-radius:999px;border:1px solid rgba(14,165,233,.2)}
+  .sec-title{font-size:44px;font-weight:900;margin-top:20px;color:var(--ink)}
+  .sec-title .accent{color:var(--primary);font-style:italic}
+  .sec-sub{color:var(--muted);font-size:18px;margin-top:18px;max-width:680px;margin-left:auto;margin-right:auto;line-height:1.6;font-weight:500}
+  .sec-head{text-align:center;max-width:780px;margin:0 auto 60px}
+
+  /* THREE WATCHERS */
+  .watchers-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .watcher{background:#fff;border-radius:24px;padding:36px;border:1px solid var(--line);transition:all .3s}
+  .watcher:hover{transform:translateY(-6px);box-shadow:0 30px 60px -25px rgba(14,165,233,.25);border-color:rgba(14,165,233,.3)}
+  .watcher .icon{font-size:42px;width:72px;height:72px;border-radius:18px;background:rgba(14,165,233,.08);display:grid;place-items:center;margin-bottom:22px}
+  .watcher h3{font-size:22px;font-weight:800;color:var(--ink);margin-bottom:10px}
+  .watcher p{color:var(--muted);font-size:15px;line-height:1.6;font-weight:500}
+  .watchers-tag{text-align:center;margin-top:40px;padding:24px 30px;background:rgba(14,165,233,.05);border:1px solid rgba(14,165,233,.15);border-radius:20px;font-weight:700;color:var(--ink);font-size:17px}
+  .watchers-tag b{color:var(--primary)}
+
+  /* FEATURES (EXISTING 6-CARD) */
+  .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .feature{background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.7);border-radius:24px;padding:32px;transition:all .3s;box-shadow:0 8px 32px rgba(14,165,233,.05)}
+  .feature:hover{transform:translateY(-6px);box-shadow:0 16px 48px rgba(14,165,233,.12)}
+  .feature .icon{width:52px;height:52px;border-radius:14px;background:rgba(14,165,233,.1);display:grid;place-items:center;color:var(--primary);font-size:22px;margin-bottom:20px;transition:all .3s}
+  .feature:hover .icon{background:var(--primary);color:#fff;transform:scale(1.1)}
+  .feature h3{font-size:19px;font-weight:800;color:var(--ink);margin-bottom:10px}
+  .feature p{color:var(--muted);font-size:14px;line-height:1.6;font-weight:500}
+
+  /* APP DEMO (EXISTING) */
+  .demo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;max-width:1100px;margin:0 auto}
+  .demo-card{text-align:center}
+  .demo-card .phone{position:relative;width:100%;max-width:240px;margin:0 auto;aspect-ratio:9/19;border-radius:32px;overflow:hidden;border:4px solid rgba(255,255,255,.1);box-shadow:0 30px 60px -25px rgba(15,23,42,.3);background:#fff}
+  .demo-card .phone img{width:100%;height:100%;object-fit:cover}
+  .demo-card .phone .placeholder{position:absolute;inset:0;background:linear-gradient(160deg,#0f172a,#1e293b 70%,#334155);display:grid;place-items:center;color:rgba(255,255,255,.4);font-size:13px;font-weight:600;padding:20px;text-align:center}
+  .demo-card h4{margin-top:24px;font-size:17px;font-weight:800;color:var(--ink)}
+  .demo-card p{margin-top:6px;font-size:12px;color:var(--muted);font-weight:600}
+
+  /* STORY TEASER BAND */
+  .story-teaser{position:relative;overflow:hidden;background:#0a0e1a;color:#fff;padding:80px 0}
+  .story-teaser-img{position:absolute;inset:0;z-index:0}
+  .story-teaser-img img{width:100%;height:100%;object-fit:cover;opacity:.55}
+  .story-teaser-img::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,14,26,.95) 0%,rgba(10,14,26,.7) 50%,rgba(10,14,26,.5) 100%)}
+  .teaser-grid{position:relative;z-index:1;max-width:840px;margin:0 auto 0 0}
+  .teaser-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:rgba(245,158,11,.18);border:1px solid rgba(245,158,11,.45);font-weight:800;font-size:12px;letter-spacing:.04em;color:#fde68a;backdrop-filter:blur(10px)}
+  .story-teaser h3{font-family:'Plus Jakarta Sans',sans-serif;font-size:44px;font-weight:900;margin-top:20px;color:#fff;line-height:1.15;letter-spacing:-0.02em;max-width:820px}
+  .story-teaser h3 em{font-style:italic;color:var(--accent-2);font-weight:700;font-family:'Crimson Pro',serif}
+  .story-teaser p{margin-top:16px;font-size:17px;color:rgba(255,255,255,.9);max-width:720px;font-weight:500;line-height:1.6}
+  @media(max-width:900px){.story-teaser h3{font-size:30px}.story-teaser{padding:60px 0}}
+  .teaser-cta{display:inline-flex;align-items:center;gap:8px;margin-top:24px;padding:16px 28px;background:var(--accent);color:#fff;border-radius:14px;font-weight:900;font-size:15px;text-decoration:none;box-shadow:0 12px 28px rgba(245,158,11,.4)}
+  .teaser-cta:hover{transform:translateY(-2px)}
+  .teaser-meta{margin-top:14px;font-size:12px;color:rgba(255,255,255,.6);font-weight:600;letter-spacing:.05em}
+
+  /* PRICING */
+  .price-card{max-width:580px;margin:0 auto;background:#fff;border-radius:28px;padding:48px 40px;text-align:center;border:3px solid var(--accent);box-shadow:0 40px 80px -30px rgba(245,158,11,.3);position:relative}
+  .price-card::before{content:"Early-access waitlist · Free to join";position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:11px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;padding:6px 16px;border-radius:999px;white-space:nowrap}
+  .price-tier{font-size:13px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .price-amt{font-size:72px;font-weight:900;color:var(--ink);font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.04em;line-height:1}
+  .price-amt span{font-size:24px;color:var(--muted);font-weight:700}
+  .price-tagline{margin-top:12px;font-weight:700;color:var(--ink-2);font-size:15px}
+  .price-vs{margin-top:6px;font-style:italic;color:var(--muted);font-size:14px}
+  .price-list{margin:30px 0 24px;padding:0;text-align:left;display:grid;gap:10px}
+  .price-list li{list-style:none;display:flex;gap:12px;align-items:flex-start;font-weight:600;color:var(--ink-2);font-size:15px}
+  .price-list li::before{content:"✓";color:var(--good);font-weight:900;font-size:17px;width:20px;flex-shrink:0}
+  .price-trust{margin-top:18px;font-size:13px;color:var(--muted);font-weight:600}
+  .price-foot{text-align:center;margin-top:24px;font-size:14px;color:var(--muted);font-style:italic}
+
+  /* TRUST */
+  .trust-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:50px;align-items:center}
+  .founder{background:#fff;border-radius:24px;padding:36px;border:1px solid var(--line);box-shadow:0 20px 50px -25px rgba(15,23,42,.12)}
+  .founder-row{display:flex;gap:24px;align-items:flex-start}
+  .founder-photo{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#cbd5e1,#94a3b8);display:grid;place-items:center;color:#fff;font-weight:900;font-size:32px;flex-shrink:0;border:4px solid #fff;box-shadow:0 12px 30px -10px rgba(15,23,42,.2)}
+  .founder-quote{font-size:17px;color:var(--ink);line-height:1.6;font-weight:500;font-style:italic}
+  .founder-name{margin-top:14px;font-weight:800;color:var(--primary);font-size:14px}
+  .trust-badges{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .badge{background:#fff;border-radius:14px;padding:18px 20px;border:1px solid var(--line);display:flex;align-items:center;gap:12px;font-weight:700;font-size:14px;color:var(--ink)}
+  .badge-icon{font-size:22px}
+
+  /* ROADMAP */
+  .roadmap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .roadmap-card{background:#fff;border-radius:24px;padding:32px 28px;border:1px solid var(--line)}
+  .roadmap-card.now{border-color:var(--good);background:linear-gradient(160deg,rgba(16,185,129,.06),#fff)}
+  .roadmap-card.next{border-color:var(--warn);background:linear-gradient(160deg,rgba(245,158,11,.06),#fff)}
+  .roadmap-card.later{border-color:var(--primary);background:linear-gradient(160deg,rgba(14,165,233,.06),#fff)}
+  .roadmap-tag{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;padding:6px 12px;border-radius:8px;margin-bottom:16px}
+  .roadmap-card.now .roadmap-tag{background:rgba(16,185,129,.12);color:var(--good)}
+  .roadmap-card.next .roadmap-tag{background:rgba(245,158,11,.12);color:var(--warn)}
+  .roadmap-card.later .roadmap-tag{background:rgba(14,165,233,.12);color:var(--primary)}
+  .roadmap-card h4{font-size:18px;font-weight:800;color:var(--ink);margin-bottom:12px}
+  .roadmap-card p{color:var(--muted);font-size:14px;line-height:1.6;font-weight:500}
+
+  /* CTA BAND (matches hero gradient · corner blurs · no center wash) */
+  .cta-band{background:linear-gradient(135deg,#0c4a6e 0%,#0c70a4 50%,#0ea5e9 100%);color:#fff;text-align:center;padding:80px 0;position:relative;overflow:hidden}
+  .cta-band::before,.cta-band::after{content:"";position:absolute;border-radius:50%;filter:blur(80px);opacity:.18;pointer-events:none}
+  .cta-band::before{width:400px;height:400px;background:#fff;top:-15%;right:-8%}
+  .cta-band::after{width:460px;height:460px;background:#fbbf24;bottom:-25%;left:-8%}
+  .cta-band h2{font-size:48px;font-weight:900;color:#fff;position:relative;z-index:1;line-height:1.1;text-shadow:0 4px 20px rgba(0,0,0,.3)}
+  .cta-band h2 em{font-style:normal;color:var(--accent-2)}
+  .cta-band p{margin-top:20px;font-size:18px;color:rgba(255,255,255,.92);position:relative;z-index:1;font-weight:500}
+  .cta-band .cta-row{justify-content:center;margin-top:32px;position:relative;z-index:1}
+  .cta-band .btn-primary{box-shadow:0 12px 28px rgba(245,158,11,.5),0 0 0 1px rgba(255,255,255,.1)}
+  .cta-band .btn-ghost{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:#fff;font-weight:800}
+  .cta-band .btn-ghost:hover{background:rgba(255,255,255,.3)}
+
+  /* FAQ */
+  .faq{max-width:840px;margin:0 auto}
+  .faq-item{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px 28px;margin-bottom:14px;transition:all .2s}
+  .faq-item:hover{border-color:rgba(14,165,233,.3);box-shadow:0 12px 30px -15px rgba(14,165,233,.2)}
+  .faq-q{display:flex;justify-content:space-between;align-items:center;font-weight:800;color:var(--ink);font-size:17px}
+  .faq-q .plus{color:var(--primary);font-size:22px;font-weight:300}
+  .faq-a{margin-top:14px;color:var(--muted);font-size:15px;line-height:1.65;font-weight:500;padding-top:14px;border-top:1px solid var(--line)}
+
+  /* FOOTER */
+  .footer{background:#0c1a2e;color:rgba(255,255,255,.7);padding:60px 0 40px}
+  .footer-row{display:flex;justify-content:space-between;align-items:flex-start;gap:40px;flex-wrap:wrap}
+  .footer h4{color:#fff;font-size:22px;font-weight:900;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em}
+  .footer h4 .dot{color:var(--primary)}
+  .footer-tag{margin-top:8px;font-size:14px;color:rgba(255,255,255,.5);font-weight:500}
+  .footer-hindi{margin-top:6px;font-size:13px;color:rgba(255,255,255,.4)}
+  .footer-links{display:flex;gap:24px;font-weight:700;font-size:14px}
+  .footer-contact{margin-top:30px;padding-top:30px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+  .footer-contact a{padding:10px 18px;border:1px solid rgba(255,255,255,.1);border-radius:999px;font-size:13px;font-weight:600}
+  .footer-copy{margin-top:30px;text-align:center;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.3)}
+
+  /* ============ WAITLIST FORM (ported from src/components/WaitlistForm.tsx) ============ */
+  .waitlist-section{padding:80px 0;background:linear-gradient(180deg,#f5f9fc,#eaf4fb)}
+  .waitlist-card{max-width:1100px;margin:0 auto;background:#fff;border-radius:28px;overflow:hidden;box-shadow:0 50px 100px -30px rgba(14,165,233,.18);border:1px solid #fff;display:grid;grid-template-columns:2fr 3fr;min-height:600px}
+  .waitlist-left{background:linear-gradient(135deg,#0c4a6e 0%,#0c70a4 50%,#0ea5e9 100%);padding:50px 40px;color:#fff;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  .waitlist-left::before,.waitlist-left::after{content:"";position:absolute;border-radius:50%;filter:blur(60px);opacity:.2;pointer-events:none}
+  .waitlist-left::before{width:220px;height:220px;background:#fff;top:-15%;right:-10%}
+  .waitlist-left::after{width:280px;height:280px;background:#fbbf24;bottom:-20%;left:-10%}
+  .waitlist-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);font-weight:800;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#fff;backdrop-filter:blur(10px);position:relative;z-index:1;align-self:flex-start}
+  .waitlist-left h2{font-family:'Plus Jakarta Sans',sans-serif;font-size:42px;font-weight:900;color:#fff;line-height:1.05;letter-spacing:-0.02em;margin-top:24px;position:relative;z-index:1}
+  .waitlist-left h2 span{color:rgba(255,255,255,.7)}
+  .waitlist-left p{margin-top:16px;font-size:16px;color:rgba(255,255,255,.85);font-weight:500;line-height:1.6;position:relative;z-index:1}
+  .waitlist-social{display:flex;align-items:center;gap:14px;margin-top:28px;position:relative;z-index:1}
+  .waitlist-avatars{display:flex}
+  .waitlist-avatars div{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.4);margin-left:-10px;display:grid;place-items:center;color:#fff;font-size:9px;font-weight:900;backdrop-filter:blur(10px)}
+  .waitlist-avatars div:first-child{margin-left:0}
+  .waitlist-social-txt{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.75)}
+  .waitlist-right{padding:50px 40px;display:flex;flex-direction:column;justify-content:center}
+  .wl-form{display:grid;gap:18px;max-width:480px;margin:0 auto;width:100%}
+  .wl-field{display:grid;gap:6px}
+  .wl-field label{font-size:10px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-2);margin-left:4px}
+  .wl-input{width:100%;padding:14px 16px 14px 42px;border:2px solid #f1f5f9;background:#f8fafc;border-radius:12px;font-size:14px;font-weight:600;color:var(--ink);font-family:inherit;transition:all .2s;min-height:48px}
+  .wl-input:focus{outline:none;border-color:rgba(14,165,233,.4);background:#fff;box-shadow:0 0 0 4px rgba(14,165,233,.08)}
+  .wl-input::placeholder{color:#94a3b8;font-weight:500}
+  .wl-icon{position:relative}
+  .wl-icon::before{content:attr(data-icon);position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;z-index:1}
+  .wl-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .wl-topics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px}
+  .wl-topic{position:relative;cursor:pointer;background:#f8fafc;border:2px solid #f1f5f9;border-radius:10px;padding:12px 8px;text-align:center;font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:64px;justify-content:center}
+  .wl-topic input{position:absolute;opacity:0;pointer-events:none}
+  .wl-topic .emoji{font-size:18px;filter:grayscale(1);transition:all .2s}
+  .wl-topic:hover{border-color:rgba(14,165,233,.4);color:var(--primary)}
+  .wl-topic:hover .emoji{filter:grayscale(0)}
+  .wl-topic.checked{border-color:var(--primary);background:rgba(14,165,233,.05);color:var(--primary)}
+  .wl-topic.checked .emoji{filter:grayscale(0)}
+  .wl-submit{width:100%;padding:18px;background:var(--accent);color:#fff;font-weight:900;font-size:15px;letter-spacing:.1em;text-transform:uppercase;border:0;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 12px 28px rgba(245,158,11,.35);transition:all .2s;font-family:inherit;min-height:56px}
+  .wl-submit:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(245,158,11,.45)}
+  .wl-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+  .wl-contact{text-align:center;font-size:12px;color:#94a3b8;font-weight:500;margin-top:8px}
+  .wl-contact a{color:var(--primary);font-weight:700}
+  .wl-success{text-align:center;padding:40px 20px}
+  .wl-success .check{width:80px;height:80px;border-radius:50%;background:rgba(14,165,233,.1);display:grid;place-items:center;margin:0 auto 20px;color:var(--primary);font-size:40px}
+  .wl-success h3{font-size:28px;font-weight:900;color:var(--ink);margin-bottom:10px}
+  .wl-success p{color:var(--muted);font-weight:500}
+  .wl-error{color:var(--bad);font-size:13px;font-weight:700;text-align:center}
+  @media(max-width:900px){
+    .waitlist-card{grid-template-columns:1fr}
+    .waitlist-left{padding:40px 28px}
+    .waitlist-right{padding:36px 24px}
+    .waitlist-left h2{font-size:28px}
+    .wl-grid2,.wl-topics{grid-template-columns:1fr 1fr}
+    .waitlist-section{padding:60px 0}
+  }
+
+  /* MOCKUP MARKER (hidden for finalize) */
+  .marker{position:relative}
+  .marker::before{display:none}
+
+  @media(max-width:900px){
+    .hero-grid,.trust-grid{grid-template-columns:1fr}
+    .watchers-grid,.roadmap-grid{grid-template-columns:1fr}
+    .features-grid{grid-template-columns:1fr 1fr}
+    .demo-grid{grid-template-columns:1fr 1fr}
+    .hero h1{font-size:42px}
+    .sec-title{font-size:30px}
+    .cta-band h2{font-size:32px}
+    .nav-links{display:none}
+  }
+</style>
+</head>
+<body>
+
+  <!-- ===== NAV ===== -->
+  <nav class="nav marker" data-label="1 · Navbar">
+    <div class="container nav-row">
+      <a href="./home-mockup.html" class="brand">
+        <img src="./logo.png" alt="Swasth Logo" />
+        <span>Swasth<span class="dot">.</span></span>
+      </a>
+      <div class="nav-links">
+        <a class="nav-link" href="./story-mockup.html" style="color:var(--accent);font-weight:900">Story</a>
+        <a class="nav-link" href="#how-it-works">How it works</a>
+        <a class="nav-link" href="#pricing">Pricing</a>
+      </div>
+      <a href="#pricing" class="nav-cta">Get early access →</a>
+    </div>
+  </nav>
+
+  <!-- ===== HERO (KEPT) ===== -->
+  <section class="hero marker" data-label="2 · Hero (kept)">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">🇮🇳 For NRIs Who Care From Far</span>
+        <h1>Keep your parents <em>healthy</em> — from anywhere.</h1>
+        <p class="sub">AI-powered health monitoring that connects families across borders. Track vitals, weight, and steps effortlessly. Parents can even log readings via WhatsApp photos. <strong style="color:var(--accent-2)">Plus a real nurse visits every 1–2 weeks — so you're never relying on AI alone.</strong></p>
+        <div class="cta-row">
+          <a href="./story-mockup.html" class="btn btn-primary">No more "sab theek hai" →</a>
+          <a href="#waitlist" class="btn btn-ghost">Get early access</a>
+        </div>
+        <div class="cta-meta"><span class="pulse"></span> Free to join · Early access opens end of May 2026 · We email you first</div>
+      </div>
+      <div style="display:flex;justify-content:center">
+        <div class="phone-frame">
+          <div class="swasth-mockup-wrap">
+            <div class="mockup-content">
+              <div class="top-bar">
+                <div>
+                  <div class="brand-sm">SWASTH</div>
+                  <div class="greeting">Good evening,</div>
+                  <div class="user-name">⚕ Deep ↗</div>
+                </div>
+                <div class="top-icons">
+                  <span>📋</span><span>↗</span>
+                  <div class="avatar">D</div>
+                  <span>⏻</span>
+                </div>
+              </div>
+              <div class="badges">
+                <div class="badge">🇮🇳 ENGLISH</div>
+                <div class="badge">🔥 2 DAYS</div>
+                <div class="badge">🏆 10 PTS</div>
+              </div>
+              <div class="health-card">
+                <div class="doing-great">You're doing great</div>
+                <div class="heart-container">
+                  <div class="pulse-ring"></div>
+                  <div class="pulse-ring pulse-ring-2"></div>
+                  <svg class="heart-svg" viewBox="0 0 100 90" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <radialGradient id="hg" cx="50%" cy="40%" r="60%">
+                        <stop offset="0%" stop-color="#4caf50"/>
+                        <stop offset="100%" stop-color="#1b5e20"/>
+                      </radialGradient>
+                    </defs>
+                    <path d="M50 80 C50 80 10 52 10 28 C10 14 20 6 32 8 C40 9 47 15 50 20 C53 15 60 9 68 8 C80 6 90 14 90 28 C90 52 50 80 50 80 Z" fill="url(#hg)" />
+                    <path d="M50 78 C50 78 12 52 12 29 C12 16 21 9 32 10 C40 11 47 17 50 22" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <div class="heart-score">80</div>
+                </div>
+                <div class="dm-all-well"><span class="smiley">😊</span> All is well</div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+                <div class="health-msg">All readings look healthy today. You're doing great!</div>
+              </div>
+              <div class="section-title">VITALS</div>
+              <div class="vitals-grid">
+                <div class="vital-card">
+                  <div class="vital-label">LAST BP</div>
+                  <div class="vital-row"><div><div class="vital-value">130/80</div></div><div class="add-btn">+</div></div>
+                </div>
+                <div class="vital-card">
+                  <div class="vital-label">LAST SUGAR</div>
+                  <div class="vital-row"><div><div class="vital-value">109 mg</div></div><div class="add-btn">+</div></div>
+                </div>
+                <div class="vital-card">
+                  <div class="vital-label">WEIGHT</div>
+                  <div class="vital-row"><div><div class="vital-value" style="color:#333">72.0 kg</div></div><div class="add-btn">+</div></div>
+                </div>
+                <div class="vital-card">
+                  <div class="vital-label">BMI</div>
+                  <div class="vital-row"><div><div class="bmi-label">Overweight</div><div class="vital-value orange">25.5</div><div class="vital-footer">Lose 1.7 kg</div></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="bottom-nav">
+              <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label">HOME</div></div>
+              <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">HISTORY</div></div>
+              <div class="nav-item"><div class="streak-nav">🔥</div><div class="nav-label" style="margin-top:4px">STREAKS</div></div>
+              <div class="nav-item"><div class="nav-icon">📈</div><div class="nav-label">INSIGHTS</div></div>
+              <div class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">CHAT</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== THREE WATCHERS ===== -->
+  <section class="section section-white marker" data-label="3 · Three Watchers">
+    <div class="container">
+      <div class="sec-head">
+        <span class="sec-eyebrow">Why Swasth</span>
+        <h2 class="sec-title">Three sets of eyes on your parent.<br/><span class="accent">Every single day.</span></h2>
+        <p class="sec-sub">A daily AI watcher, a human coach who calls in her language, and a doctor who signs off on her trends every week.</p>
+      </div>
+      <div class="watchers-grid">
+        <div class="watcher">
+          <div class="icon">🩺</div>
+          <h3>Her doctor</h3>
+          <p>Reviews her trends every week and signs off on the summary. A real doctor. A real signature. A real medical record you can share anywhere.</p>
+        </div>
+        <div class="watcher">
+          <div class="icon">💬</div>
+          <h3>Coach + visiting nurse</h3>
+          <p>A real Swasth team member calls her daily in her language. <strong>A trained nurse visits her home every 1–2 weeks</strong> for a vitals check and medicine review. Same person every week.</p>
+        </div>
+        <div class="watcher">
+          <div class="icon">🤖</div>
+          <h3>Smart watcher</h3>
+          <p>Quietly notices the drift no human would catch. A 5-point BP creep over 3 weeks. A sugar pattern after dinner. Flags early — before it's an emergency.</p>
+        </div>
+      </div>
+      <div class="watchers-tag">
+        And every Sunday, <b>one 3-line WhatsApp summary lands on your phone.</b> So you actually know — not just hope.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FEATURES (EXISTING 6-CARD) ===== -->
+  <section class="section section-light marker" data-label="4 · Features (existing 6-card)">
+    <div class="container">
+      <div class="sec-head">
+        <span class="sec-eyebrow">What you get</span>
+        <h2 class="sec-title">Everything your family needs<br/>for <span class="accent">complete</span> health</h2>
+        <p class="sec-sub">Built for families that live apart. So you actually know — not just hope.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="icon">💬</div>
+          <h3>WhatsApp Easy Log</h3>
+          <p>Parents can simply send a photo of their BP or Glucose monitor via WhatsApp. Our AI records it automatically.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">📊</div>
+          <h3>Vitals & Steps</h3>
+          <p>Track BP, Glucose, Weight, and BMI. Automatic step tracking keeps them active and healthy.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">👨‍👩‍👧</div>
+          <h3>Family Dashboard</h3>
+          <p>See your parent's health readings from abroad. Stay connected, stay informed.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🧠</div>
+          <h3>AI Health Insights</h3>
+          <p>Personalized tips in Hindi & English. Smart alerts when readings need immediate attention.</p>
+        </div>
+        <div class="feature" style="position:relative;border-color:rgba(245,158,11,.35)">
+          <span style="position:absolute;top:-10px;right:18px;background:var(--accent);color:#fff;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border-radius:999px;box-shadow:0 6px 16px rgba(245,158,11,.4)">+ Nurse-verified</span>
+          <div class="icon">📈</div>
+          <h3>Weekly Health Reports</h3>
+          <p>Comprehensive weekly summary of health trends. <strong>Verified by a real nurse who visits Maa every 1–2 weeks</strong> — vitals checked in person, not just AI-read.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">📄</div>
+          <h3>Doctor-Ready Reports</h3>
+          <p>Share complete health history with any doctor. No more lost prescriptions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== APP DEMO (EXISTING SCREENSHOTS) ===== -->
+  <section id="how-it-works" class="section section-white marker" data-label="5 · App Preview (existing screenshots)">
+    <div class="container">
+      <div class="sec-head">
+        <span class="sec-eyebrow">App preview</span>
+        <h2 class="sec-title">Simple for parents,<br/><span class="accent">powerful</span> for you.</h2>
+        <p class="sec-sub">Your parents log vitals in seconds via WhatsApp photos. You get the peace of mind knowing they are safe.</p>
+      </div>
+      <div class="demo-grid" style="grid-template-columns:repeat(3,1fr);max-width:900px">
+        <div class="demo-card">
+          <div class="phone">
+            <img src="./app-family-view.png" alt="Family View" />
+          </div>
+          <h4>Family View</h4>
+          <p>Monitor from anywhere</p>
+        </div>
+        <div class="demo-card">
+          <div class="phone">
+            <img src="./weekly_whatsapp_report.png" alt="Weekly WhatsApp Report" />
+          </div>
+          <h4>WhatsApp Reports</h4>
+          <p>Weekly insights direct to your phone</p>
+        </div>
+        <div class="demo-card">
+          <div class="phone">
+            <img src="./Send_reading_via_whatsapp.png" alt="WhatsApp Reading" />
+          </div>
+          <h4>Easy Logging</h4>
+          <p>Share vitals via WhatsApp photos</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STORY TEASER BAND (story link mid-page) ===== -->
+  <section class="story-teaser marker" data-label="5.5 · Story teaser → /story">
+    <div class="story-teaser-img">
+      <img src="./hero-survey.jpg" alt="" />
+    </div>
+    <div class="container">
+      <div class="teaser-grid">
+        <span class="teaser-eyebrow">🩺 The 2-minute story</span>
+        <h3>"<em>We're taking Maa to hospital — chest pain.</em>"<br/>The 3am call you don't want.</h3>
+        <p>Read the story behind Swasth — why we built it, what it actually does, and how it could have changed one night for thousands of families.</p>
+        <a href="./story-mockup.html" class="teaser-cta">Read the 2-minute story →</a>
+        <div class="teaser-meta">No signup. No card. Just the story.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PRICING ===== -->
+  <section id="pricing" class="section section-light marker" data-label="6 · Pricing">
+    <div class="container">
+      <div class="sec-head">
+        <span class="sec-eyebrow">Simple pricing</span>
+        <h2 class="sec-title">One plan.<br/><span class="accent">Less than one doctor consultation.</span></h2>
+      </div>
+      <div class="price-card">
+        <div class="price-tier">Daily companion</div>
+        <div class="price-amt">₹999<span>/mo per parent</span></div>
+        <div class="price-tagline">No credit card · Cancel anytime</div>
+        <div class="price-vs">Less than one ICU night. Less than one flight home.</div>
+        <ul class="price-list">
+          <li>Daily check-in (app + coach call/WhatsApp)</li>
+          <li><b>In-person nurse/ops visit every 1–2 weeks</b> — vitals check, medicine review, photo + video call from Maa's home</li>
+          <li>Doctor-signed weekly health summary</li>
+          <li>3-line WhatsApp summary every Sunday</li>
+          <li>Same-day alert when something's off</li>
+          <li>Quarterly preventive health report (signed PDF)</li>
+          <li>India-resident data · ABDM-compliant · Aadhaar encrypted</li>
+        </ul>
+        <a href="#waitlist" class="btn btn-primary" style="width:100%;justify-content:center;padding:18px;font-size:16px">Reserve Maa's spot →</a>
+        <div class="price-trust">We will email you the moment Swasth opens.</div>
+        <div class="price-foot">Premium Care+ with weekly in-person visits — coming Q3 2026.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TRUST ===== -->
+  <section class="section section-white marker" data-label="7 · Trust (Founding Team + Safety)">
+    <div class="container">
+      <div class="sec-head">
+        <span class="sec-eyebrow">Who's behind this</span>
+        <h2 class="sec-title">Built by a team that has <span class="accent">lived this problem.</span></h2>
+      </div>
+      <div class="trust-grid">
+        <div class="founder">
+          <div class="founder-row">
+            <div class="founder-photo" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);font-size:32px">❤</div>
+            <div>
+              <div class="founder-quote">"Swasth was founded by a team whose own parents live alone in India. Every call home ended in 'sab theek hai.' Every silence felt like a risk. So we built what we wished we had — and now hundreds of families have it too."</div>
+              <div class="founder-name">— The Swasth Founding Team</div>
+            </div>
+          </div>
+        </div>
+        <div class="trust-badges">
+          <div class="badge"><span class="badge-icon">🇮🇳</span> Data stays in India (AWS Mumbai)</div>
+          <div class="badge"><span class="badge-icon">🔐</span> ABDM-compliant · Aadhaar encrypted</div>
+          <div class="badge"><span class="badge-icon">🩺</span> Doctor-signed weekly reports</div>
+          <div class="badge"><span class="badge-icon">👮</span> Background-checked ops team</div>
+          <div class="badge"><span class="badge-icon">✋</span> Cancel anytime, no questions</div>
+          <div class="badge"><span class="badge-icon">📋</span> DPDPA 2023 compliant</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ROADMAP ===== -->
+  <section class="section section-light marker" data-label="8 · Roadmap">
+    <div class="container">
+      <div class="sec-head">
+        <span class="sec-eyebrow">Where we're going</span>
+        <h2 class="sec-title">What ships today.<br/><span class="accent">What's coming next.</span></h2>
+        <p class="sec-sub">Honest with you about what works today vs what we're building.</p>
+      </div>
+      <div class="roadmap-grid">
+        <div class="roadmap-card now">
+          <div class="roadmap-tag">✅ Today · 2026</div>
+          <h4>What you get on day one</h4>
+          <p>Android app · WhatsApp photo logging · Daily check-ins · <b>Weekly nurse/ops visit to Maa</b> · Doctor-signed weekly summary · Sunday WhatsApp report · Same-day alerts · Quarterly preventive PDF</p>
+        </div>
+        <div class="roadmap-card next">
+          <div class="roadmap-tag">🚧 Late 2026</div>
+          <h4>Voice AI + full doctor portal</h4>
+          <p>Maa talks to Swasth like a family member — Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali. No typing, no app. Plus a <b>full clinical management software for her doctor</b> with searchable history.</p>
+        </div>
+        <div class="roadmap-card later">
+          <div class="roadmap-tag">🌅 2027–28</div>
+          <h4>Smart device + Alexa</h4>
+          <p>Swasth device auto-syncs BP, sugar, weight — no manual entry. Alexa wake words at home. Connected platform with labs, pharmacies, imaging centres via API.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA REPEAT ===== -->
+  <section class="cta-band marker" data-label="9 · CTA Repeat">
+    <div class="container">
+      <h2>They'll keep saying <em>sab theek hai.</em><br/>Now you'll actually know.</h2>
+      <p>Get early access. Free to join. We will email you the moment Swasth opens.</p>
+      <div class="cta-row">
+        <a href="#waitlist" class="btn btn-primary">Get early access →</a>
+        <a href="./story-mockup.html" class="btn btn-ghost">Read the 3am story</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== WAITLIST FORM (pre-Play-Store-launch CTA) ===== -->
+  <section id="waitlist" class="waitlist-section">
+    <div class="container">
+      <div class="waitlist-card">
+        <div class="waitlist-left">
+          <span class="waitlist-eyebrow">❤ Family First</span>
+          <h2>Early Access<br/><span>Registration</span></h2>
+          <p>Reserve your spot for the Swasth launch. Takes less than 30 seconds. We'll set up Maa's app together on a video call — so she's comfortable from day one.</p>
+          <div class="waitlist-social">
+            <div class="waitlist-avatars"><div>NRI</div><div>NRI</div><div>NRI</div><div>NRI</div></div>
+            <div class="waitlist-social-txt">Early access opens end of May 2026</div>
+          </div>
+        </div>
+        <div class="waitlist-right">
+          <form id="wlForm" class="wl-form" novalidate>
+            <div class="wl-field">
+              <label for="wl-name">Full Name</label>
+              <div class="wl-icon" data-icon="👤"><input id="wl-name" name="name" class="wl-input" type="text" placeholder="Amit Sharma" required maxlength="100" /></div>
+            </div>
+            <div class="wl-grid2">
+              <div class="wl-field">
+                <label for="wl-email">Email</label>
+                <div class="wl-icon" data-icon="✉"><input id="wl-email" name="email" class="wl-input" type="email" placeholder="amit@example.com" required maxlength="255" /></div>
+              </div>
+              <div class="wl-field">
+                <label for="wl-phone">Phone Number</label>
+                <div class="wl-icon" data-icon="📞"><input id="wl-phone" name="phone" class="wl-input" type="tel" placeholder="+1 234 567 8900" required minlength="7" maxlength="20" /></div>
+              </div>
+            </div>
+            <div class="wl-grid2">
+              <div class="wl-field">
+                <label for="wl-city">Your City</label>
+                <div class="wl-icon" data-icon="📍"><input id="wl-city" name="city" class="wl-input" type="text" placeholder="e.g. London" required maxlength="100" /></div>
+              </div>
+              <div class="wl-field">
+                <label for="wl-parentCity">Parent's City</label>
+                <div class="wl-icon" data-icon="🏠"><input id="wl-parentCity" name="parentCity" class="wl-input" type="text" placeholder="e.g. Ranchi" required maxlength="100" /></div>
+              </div>
+            </div>
+            <div class="wl-field">
+              <label>Health Priorities</label>
+              <div class="wl-topics">
+                <label class="wl-topic"><input type="checkbox" name="interests" value="Diabetes management" /><span class="emoji">🩺</span>Diabetes</label>
+                <label class="wl-topic"><input type="checkbox" name="interests" value="BP monitoring" /><span class="emoji">❤</span>BP</label>
+                <label class="wl-topic"><input type="checkbox" name="interests" value="Overall health" /><span class="emoji">✨</span>Overall</label>
+                <label class="wl-topic"><input type="checkbox" name="interests" value="Weight & BMI" /><span class="emoji">⚖</span>Weight</label>
+                <label class="wl-topic"><input type="checkbox" name="interests" value="Step tracking" /><span class="emoji">👣</span>Steps</label>
+                <label class="wl-topic"><input type="checkbox" name="interests" value="Weekly reports" /><span class="emoji">📊</span>Reports</label>
+              </div>
+            </div>
+            <div id="wlError" class="wl-error" style="display:none"></div>
+            <button type="submit" id="wlSubmit" class="wl-submit">Save my spot →</button>
+            <div class="wl-contact">Questions? <a href="mailto:support@swasth.health">support@swasth.health</a> · <a href="tel:+919742897375">+91 97428 97375</a></div>
+          </form>
+          <div id="wlSuccess" class="wl-success" style="display:none">
+            <div class="check">✓</div>
+            <h3>You're on the list!</h3>
+            <p>Estimated launch: end of May 2026. We'll set up Maa's app together on a free video call when access opens.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="section section-white marker" data-label="10 · FAQ">
+    <div class="container">
+      <div class="sec-head">
+        <span class="sec-eyebrow">Common questions</span>
+        <h2 class="sec-title">What people ask us first.</h2>
+      </div>
+      <div class="faq">
+        <div class="faq-item"><div class="faq-q">What if Mom doesn't have a smartphone, or doesn't use one?<span class="plus">+</span></div>
+          <div class="faq-a">The Swasth coach logs her readings during the daily call. She doesn't have to touch a screen. As we roll out voice AI in late 2026, she'll just speak — no app, no typing.</div></div>
+        <div class="faq-item"><div class="faq-q">Will a real doctor actually sign the weekly summary?<span class="plus">+</span></div>
+          <div class="faq-a">Yes. Every week, an HPR-verified physician reviews her trends and signs the one-page summary. You receive it on WhatsApp. It's a real medical record you can share with any specialist, anywhere.</div></div>
+        <div class="faq-item"><div class="faq-q">When does Swasth actually launch?<span class="plus">+</span></div>
+          <div class="faq-a">We're in pre-launch right now. Join the waitlist and we'll email you the moment Swasth opens for early access (estimated end of May 2026). Waitlist members get the first month free. After that, ₹999/month per parent, cancel anytime.</div></div>
+        <div class="faq-item"><div class="faq-q">Is my parent's data safe?<span class="plus">+</span></div>
+          <div class="faq-a">Yes. Data stored in India (AWS Mumbai). ABDM-compliant. Aadhaar encrypted, never plaintext. DPDPA 2023 compliant. Only Mom and the family she invites can see her health data.</div></div>
+        <div class="faq-item"><div class="faq-q">I'm in India, not abroad — is Swasth for me?<span class="plus">+</span></div>
+          <div class="faq-a">Yes. Anyone whose parent lives alone — whether you're in Berlin, Boston, Bangalore, or Bhubaneswar — gets the same daily peace of mind.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer marker" data-label="11 · Footer">
+    <div class="container">
+      <div class="footer-row">
+        <div>
+          <h4>Swasth<span class="dot">.</span></h4>
+          <div class="footer-tag">Keep your parents healthy — from anywhere.</div>
+          <div class="footer-hindi">माँ की देखभाल, आपकी भाषा में।</div>
+        </div>
+        <div class="footer-links">
+          <a href="#how-it-works">How it works</a>
+          <a href="#pricing">Pricing</a>
+          <a href="./story-mockup.html">Story</a>
+          <a href="/privacy">Privacy</a>
+        </div>
+      </div>
+      <div class="footer-contact">
+        <a href="mailto:support@swasth.health">📧 support@swasth.health</a>
+        <a href="tel:+919742897375">📞 +91 97428 97375</a>
+      </div>
+      <div class="footer-copy">© 2026 Swasth Technologies · ABDM-compliant · Made in India</div>
+    </div>
+  </footer>
+
+<script>
+  // Waitlist form submission (Google Apps Script endpoint)
+  const GOOGLE_SCRIPT_URL = ""; // TODO: paste your deployed Google Apps Script Web App URL here
+  (function(){
+    const form = document.getElementById('wlForm');
+    const submitBtn = document.getElementById('wlSubmit');
+    const errBox = document.getElementById('wlError');
+    const successBox = document.getElementById('wlSuccess');
+    if (!form) return;
+    // Topic chip toggle
+    document.querySelectorAll('.wl-topic input').forEach(cb => {
+      cb.addEventListener('change', e => e.target.closest('.wl-topic').classList.toggle('checked', e.target.checked));
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errBox.style.display = 'none';
+      const data = Object.fromEntries(new FormData(form).entries());
+      const interests = Array.from(form.querySelectorAll('input[name="interests"]:checked')).map(c=>c.value);
+      data.interests = interests.join(', ');
+      data.timestamp = new Date().toISOString();
+      if (!data.name || !data.email || !data.phone || !data.city || !data.parentCity) {
+        errBox.textContent = 'Please fill all required fields.';
+        errBox.style.display = 'block';
+        return;
+      }
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
+      try {
+        if (GOOGLE_SCRIPT_URL) {
+          await fetch(GOOGLE_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        } else {
+          console.log('[waitlist] no GOOGLE_SCRIPT_URL set — would submit:', data);
+        }
+        form.style.display = 'none';
+        successBox.style.display = 'block';
+      } catch (err) {
+        errBox.textContent = 'Something went wrong. Please try again.';
+        errBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save my spot →';
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
