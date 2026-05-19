@@ -24,8 +24,8 @@ const HeroSection = () => {
               Keep your parents <span className="text-accent">healthy</span> - from anywhere.
             </h1>
             <p className="text-lg md:text-xl text-white/90 max-w-xl leading-relaxed font-body">
-              AI-powered health monitoring that connects families across borders. Track vitals, weight, and steps effortlessly. Parents can even log readings via WhatsApp photos.{" "}
-              <strong className="text-accent">Plus a real nurse visits every 1–2 weeks — so you're never relying on AI alone.</strong>
+              The simplest way to look after Maa and Papa from another timezone.{" "}
+              <strong className="text-accent">A real nurse visits every 1–2 weeks</strong>, gentle daily tracking covers the things that age them quietly — BP, sugar, weight, sleep — and you get a clear weekly picture instead of "sab theek hai."
             </p>
             <div className="flex flex-col sm:flex-row gap-5 pt-4">
               <a
