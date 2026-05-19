@@ -85,41 +85,39 @@ class MetricInfoSpec {
 class MetricSources {
   // IHCI — India Hypertension Control Initiative (ICMR-backed) guidelines page.
   static const ihci = SourceRef(label: 'IHCI', url: 'https://www.ihci.in/');
-  // ICMR hypertension: links to the IHCI/NCD programme overview — same
-  // initiative, more content than the bare icmr.gov.in landing page.
+  // WHO Hypertension fact sheet — stable WHO page with clinical thresholds
+  // (140/90, <130/80 for high-risk). Replaces broken ICMR deep link.
   static const icmrHtn = SourceRef(
-    label: 'ICMR-HTN',
-    url: 'https://www.icmr.gov.in/ctevents/national-programme-for-non-communicable-diseases',
+    label: 'WHO-HTN',
+    url: 'https://www.who.int/news-room/fact-sheets/detail/hypertension',
   );
-  // RSSDI — Research Society for the Study of Diabetes in India (diabetes guidelines).
+  // RSSDI 2022 Clinical Practice Recommendations — direct PDF.
   static const rssdi = SourceRef(
-    label: 'RSSDI',
-    url: 'https://www.rssdi.in/',
+    label: 'RSSDI 2022',
+    url: 'https://www.rssdi.in/newwebsite/RSSDI-Clinical-Practice-Recommendations-2022%20(1).pdf',
   );
-  // ICMR diabetes guidelines — same NCD programme page.
+  // WHO Diabetes fact sheet — stable WHO page with diabetes overview.
+  // Replaces broken ICMR deep link.
   static const icmrDm = SourceRef(
-    label: 'ICMR-DM',
-    url: 'https://www.icmr.gov.in/ctevents/national-programme-for-non-communicable-diseases',
+    label: 'WHO-DM',
+    url: 'https://www.who.int/news-room/fact-sheets/detail/diabetes',
   );
-  // JAPI permalink — academic-journal slugs are usually stable but the
-  // `u264a4a4` segment could rotate if JAPI ever migrates. The daily
-  // live-link-check workflow will catch breakage within 12 hours; if it
-  // ever fails, replace with `https://www.japi.org/` (landing page).
-  // Last verified: 2026-05-14.
+  // ResearchGate — Misra et al. consensus on obesity/BMI cutoffs for Asian Indians.
+  // ResearchGate blocks automated fetches (Cloudflare) but opens fine in browser/url_launcher.
   static const icmrBmi = SourceRef(
     label: 'JAPI / ICMR Consensus',
     url:
-        'https://www.japi.org/u264a4a4/consensus-statement-for-diagnosis-of-obesity-abdominal-obesity-and-the-metabolic-syndrome-for-asian-indians',
+        'https://www.researchgate.net/publication/26652681_Consensus_Statement_for_Diagnosis_of_Obesity_Abdominal_Obesity_and_the_Metabolic_Syndrome_for_Asian_Indians_and_Recommendations_for_Physical_Activity_Medical_and_Surgical_Management',
   );
   // WHO physical activity fact sheet — specific article, not the India landing page.
   static const who = SourceRef(
     label: 'WHO Physical Activity',
     url: 'https://www.who.int/news-room/fact-sheets/detail/physical-activity',
   );
-  // ICMR-NIN — National Institute of Nutrition (dietary guidelines).
+  // ICMR-NIN Dietary Guidelines for Indians 2024 — direct PDF.
   static const icmrNin = SourceRef(
     label: 'ICMR-NIN',
-    url: 'https://www.nin.res.in/',
+    url: 'https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf',
   );
 
   /// Single list used by tests and any future audit tooling.
