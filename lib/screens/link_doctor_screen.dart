@@ -437,7 +437,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
         child: GlassCard(
           borderRadius: 16,
           child: Material(
-            color: Colors.transparent,
+            color: AppColors.transparent,
             child: ListTile(
             key: Key('link_doctor_picker_$code'),
             enabled: !alreadyLinked,
