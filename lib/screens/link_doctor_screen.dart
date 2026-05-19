@@ -436,7 +436,9 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
         opacity: alreadyLinked ? 0.55 : 1.0,
         child: GlassCard(
           borderRadius: 16,
-          child: ListTile(
+          child: Material(
+            color: Colors.transparent,
+            child: ListTile(
             key: Key('link_doctor_picker_$code'),
             enabled: !alreadyLinked,
             onTap: alreadyLinked ? null : () => _selectFromPicker(doctor),
@@ -502,6 +504,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
                 : previouslyRejected
                     ? const Icon(Icons.refresh, color: AppColors.statusCritical)
                     : const Icon(Icons.arrow_forward_ios, size: 16),
+          ),
           ),
         ),
       ),
