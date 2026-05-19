@@ -2,30 +2,30 @@ import { Activity, Brain, Users, FileText, MessageSquare, LineChart } from "luci
 
 const features = [
   {
-    icon: MessageSquare,
-    title: "WhatsApp Easy Log",
-    description: "Parents can simply send a photo of their BP or Glucose monitor via WhatsApp. Our AI records it automatically.",
-  },
-  {
-    icon: Activity,
-    title: "Vitals & Steps",
-    description: "Track BP, Glucose, Weight, and BMI. Automatic step tracking keeps them active and healthy.",
-  },
-  {
     icon: Users,
     title: "Family Dashboard",
-    description: "See your parent's health readings from abroad. Stay connected, stay informed.",
-  },
-  {
-    icon: Brain,
-    title: "AI Health Insights",
-    description: "Personalized tips in Hindi & English. Smart alerts when readings need immediate attention.",
+    description: "See how Maa and Papa are really doing — from Berlin, Toronto, or Singapore. Stay connected, stay informed.",
   },
   {
     icon: LineChart,
     title: "Weekly Health Reports",
-    description: "Comprehensive weekly summary of health trends. Verified by a real nurse who visits Maa every 1–2 weeks — vitals checked in person, not just AI-read.",
+    description: "A clear weekly picture of how they're doing. Verified by a real nurse who visits every 1–2 weeks — vitals checked in person, not just AI-read.",
     nurseVerified: true,
+  },
+  {
+    icon: MessageSquare,
+    title: "WhatsApp Easy Log",
+    description: "Parents simply send a photo of their BP or sugar monitor on WhatsApp. AI records it automatically — no app to learn.",
+  },
+  {
+    icon: Activity,
+    title: "BP, Sugar, Weight — Watched Gently",
+    description: "The numbers that age them quietly. Tracked daily, escalated only when they truly matter.",
+  },
+  {
+    icon: Brain,
+    title: "AI Health Insights",
+    description: "Personalized guidance in Hindi & English. Not just numbers — what to do next, what to ignore, when to worry.",
   },
   {
     icon: FileText,
@@ -41,10 +41,10 @@ const FeaturesSection = () => {
         <div className="text-center max-w-2xl mx-auto mb-20">
           <span className="text-xs font-bold text-primary uppercase tracking-[0.2em] bg-primary/10 px-4 py-2 rounded-full border border-primary/20">Why Swasth</span>
           <h2 className="text-3xl md:text-5xl font-extrabold font-heading mt-6 text-foreground tracking-tight">
-            Everything your family needs for <span className="text-primary italic">complete</span> health
+            Everything aging parents need — and everything <span className="text-primary italic">you</span> need to know they're okay.
           </h2>
           <p className="text-muted-foreground mt-6 text-lg font-body leading-relaxed">
-            Built for families that live apart, designed for the peace of mind knowing your parents are well.
+            Built for the second half of life: gentle daily care, a real nurse who shows up, and a clear weekly picture for the daughter abroad.
           </p>
         </div>
 
