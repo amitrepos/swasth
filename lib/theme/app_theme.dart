@@ -93,6 +93,9 @@ abstract final class AppColors {
   static const Color bgPill2 = bgPill;
   static const Color bgPill2Dark = bgPillDark;
 
+  // ── Utility ──────────────────────────────────────────────────────────────
+  static const Color transparent = Color(0x00000000);
+
   // ── Camera screen colors ─────────────────────────────────────────────────
   static const Color cameraBackground = Color(0xFF000000); // black
   static const Color cameraForeground = Color(0xFFFFFFFF); // white
