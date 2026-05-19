@@ -83,15 +83,23 @@ class MetricInfoSpec {
 /// All URLs are verified live by `test/utils/metric_sources_live_links_test.dart`
 /// (network-tagged, opt-in via `flutter test --tags live`).
 class MetricSources {
+  // IHCI — India Hypertension Control Initiative (ICMR-backed) guidelines page.
   static const ihci = SourceRef(label: 'IHCI', url: 'https://www.ihci.in/');
+  // ICMR hypertension: links to the IHCI/NCD programme overview — same
+  // initiative, more content than the bare icmr.gov.in landing page.
   static const icmrHtn = SourceRef(
-    label: 'ICMR',
-    url: 'https://www.icmr.gov.in/',
+    label: 'ICMR-HTN',
+    url: 'https://www.icmr.gov.in/ctevents/national-programme-for-non-communicable-diseases',
   );
-  static const rssdi = SourceRef(label: 'RSSDI', url: 'https://www.rssdi.in/');
+  // RSSDI — Research Society for the Study of Diabetes in India (diabetes guidelines).
+  static const rssdi = SourceRef(
+    label: 'RSSDI',
+    url: 'https://www.rssdi.in/',
+  );
+  // ICMR diabetes guidelines — same NCD programme page.
   static const icmrDm = SourceRef(
-    label: 'ICMR',
-    url: 'https://www.icmr.gov.in/',
+    label: 'ICMR-DM',
+    url: 'https://www.icmr.gov.in/ctevents/national-programme-for-non-communicable-diseases',
   );
   // JAPI permalink — academic-journal slugs are usually stable but the
   // `u264a4a4` segment could rotate if JAPI ever migrates. The daily
@@ -103,10 +111,12 @@ class MetricSources {
     url:
         'https://www.japi.org/u264a4a4/consensus-statement-for-diagnosis-of-obesity-abdominal-obesity-and-the-metabolic-syndrome-for-asian-indians',
   );
+  // WHO physical activity fact sheet — specific article, not the India landing page.
   static const who = SourceRef(
-    label: 'WHO India',
-    url: 'https://www.who.int/india',
+    label: 'WHO Physical Activity',
+    url: 'https://www.who.int/news-room/fact-sheets/detail/physical-activity',
   );
+  // ICMR-NIN — National Institute of Nutrition (dietary guidelines).
   static const icmrNin = SourceRef(
     label: 'ICMR-NIN',
     url: 'https://www.nin.res.in/',
