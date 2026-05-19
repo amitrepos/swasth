@@ -72,6 +72,11 @@
   "addProfile": "प्रोफाइल जोड़ें",
   "pendingInvitesBanner": "आपके पास {count} निमंत्रण हैं",
   "homeTitle": "स्वस्थ हेल्थ ऐप",
+  "navHome": "होम",
+  "navHistory": "इतिहास",
+  "navStreaks": "स्ट्रीक्स",
+  "navInsights": "चार्ट",
+  "navChat": "चैट",
   "viewingProfile": "{name} की स्वास्थ्य जानकारी",
   "switchProfile": "बदलें",
   "shareProfile": "प्रोफाइल साझा करें",
@@ -96,6 +101,8 @@
   "glucometer": "ग्लूकोमीटर",
   "bpMeter": "बीपी मीटर",
   "armband": "आर्मबैंड",
+  "devicePhone": "फ़ोन",
+  "deviceBpMonitor": "बीपी मॉनिटर",
   "quickActions": "त्वरित कार्य",
   "connectNewDevice": "नया डिवाइस जोड़ें",
   "connectNewDeviceSubtitle": "ब्लूटूथ डिवाइस खोजें और जोड़ें",
@@ -112,6 +119,16 @@
   "glucoseTrend": "ग्लूकोज ट्रेंड",
   "bpTrend": "रक्तचाप ट्रेंड",
   "avgLabel": "औसत",
+  "avgDaysFormat": "{count} दिन औसत",
+  "@avgDaysFormat": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "vitalBp": "बीपी",
+  "vitalSugar": "शुगर",
+  "vitalSpo2": "ऑक्सि%",
+  "vitalSteps": "कदम",
   "minLabel": "न्यूनतम",
   "maxLabel": "अधिकतम",
   "normalPct": "सामान्य",
@@ -294,6 +311,9 @@
   "appLanguageSection": "ऐप की भाषा",
   "languageEnglish": "English",
   "languageHindi": "हिंदी",
+  "languageKannada": "ಕನ್ನಡ",
+  "languageTelugu": "తెలుగు",
+  "languageTamil": "தமிழ்",
   "myDoctorTitle": "मेरे डॉक्टर",
   "contactOnWhatsApp": "व्हाट्सएप पर संपर्क करें",
   "doctorDetailsSection": "डॉक्टर की जानकारी",
@@ -836,5 +856,39 @@
   "contactUsWhatsApp": "व्हाट्सऐप",
   "@contactUsWhatsApp": {
     "description": "व्हाट्सऐप बटन का लेबल"
-  }
+  },
+  "quickActionReminder": "रिमाइंडर",
+  "quickActionSummary": "सारांश",
+  "reminderChangeTime": "रिमाइंडर समय बदलें (या बंद करने के लिए रद्द करें)",
+  "reminderSetTime": "दैनिक रिमाइंडर समय सेट करें",
+  "reminderSetFor": "रिमाइंडर प्रतिदिन {time} के लिए सेट किया गया",
+  "@reminderSetFor": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderDisabled": "रिमाइंडर बंद कर दिया गया",
+  "actionCall": "कॉल करें",
+  "actionWhatsApp": "व्हाट्सऐप",
+  "actionEmail": "ईमेल भेजें",
+  "metricBmi": "बीएमआई",
+  "contextFastingShort": "फास्टिंग",
+  "contextBeforeMealShort": "भोजन से पहले",
+  "contextPostMealShort": "भोजन के बाद",
+  "contextRandomShort": "रैंडम",
+  "bmiTipGain": "{amount} किग्रा बढ़ाएं",
+  "@bmiTipGain": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "bmiTipLose": "{amount} किग्रा कम करें",
+  "@bmiTipLose": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "noSummaryAvailable": "कोई सारांश उपलब्ध नहीं है"
 }

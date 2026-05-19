@@ -41,24 +41,21 @@ Future<void> pumpN(
 const _highCarbResult = FoodClassificationResult(
   category: 'HIGH_CARB',
   glucoseImpact: 'HIGH',
-  tipEn: 'Try pairing rice with dal for better glucose control.',
-  tipHi: 'बेहतर ग्लूकोज नियंत्रण के लिए चावल के साथ दाल खाएं।',
+  tips: {'en': 'Try pairing rice with dal for better glucose control.', 'hi': 'बेहतर ग्लूकोज नियंत्रण के लिए चावल के साथ दाल खाएं।'},
   confidence: 0.85,
 );
 
 const _lowCarbResult = FoodClassificationResult(
   category: 'LOW_CARB',
   glucoseImpact: 'LOW',
-  tipEn: 'Great choice! Vegetables are excellent for glucose control.',
-  tipHi: 'बहुत अच्छा! सब्ज़ियाँ ग्लूकोज नियंत्रण के लिए बेहतरीन हैं।',
+  tips: {'en': 'Great choice! Vegetables are excellent for glucose control.', 'hi': 'बहुत अच्छा! सब्ज़ियाँ ग्लूकोज नियंत्रण के लिए बेहतरीन हैं।'},
   confidence: 0.92,
 );
 
 const _sweetsResult = FoodClassificationResult(
   category: 'SWEETS',
   glucoseImpact: 'VERY_HIGH',
-  tipEn: 'Sweets can spike glucose quickly. Keep portion small.',
-  tipHi: 'मिठाई से शुगर तेज़ी से बढ़ती है। कम खाएं।',
+  tips: {'en': 'Sweets can spike glucose quickly. Keep portion small.', 'hi': 'मिठाई से शुगर तेज़ी से बढ़ती है। कम खाएं।'},
   confidence: 0.88,
 );
 

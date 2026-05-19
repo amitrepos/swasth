@@ -91,6 +91,11 @@
     }
   },
   "homeTitle": "Swasth Health App",
+  "navHome": "HOME",
+  "navHistory": "HISTORY",
+  "navStreaks": "STREAKS",
+  "navInsights": "INSIGHTS",
+  "navChat": "CHAT",
   "viewingProfile": "Viewing: {name}'s Health",
   "@viewingProfile": {
     "placeholders": {
@@ -122,6 +127,8 @@
   "glucometer": "Glucometer",
   "bpMeter": "BP Meter",
   "armband": "Armband",
+  "devicePhone": "Phone",
+  "deviceBpMonitor": "BP Monitor",
   "quickActions": "Quick Actions",
   "connectNewDevice": "Connect New Device",
   "connectNewDeviceSubtitle": "Scan and pair Bluetooth devices",
@@ -145,6 +152,16 @@
   "glucoseTrend": "Glucose Trend",
   "bpTrend": "Blood Pressure Trend",
   "avgLabel": "Avg",
+  "avgDaysFormat": "{count} day avg",
+  "@avgDaysFormat": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "vitalBp": "BP",
+  "vitalSugar": "Sugar",
+  "vitalSpo2": "SpO2",
+  "vitalSteps": "Steps",
   "minLabel": "Min",
   "maxLabel": "Max",
   "normalPct": "Normal",
@@ -374,6 +391,9 @@
   "appLanguageSection": "App Language",
   "languageEnglish": "English",
   "languageHindi": "हिंदी",
+  "languageKannada": "ಕನ್ನಡ",
+  "languageTelugu": "తెలుగు",
+  "languageTamil": "தமிழ்",
   "myDoctorTitle": "My Doctor",
   "contactOnWhatsApp": "Contact on WhatsApp",
   "doctorDetailsSection": "Doctor Details",
@@ -1155,5 +1175,39 @@
   "contactUsWhatsApp": "WhatsApp",
   "@contactUsWhatsApp": {
     "description": "Label on the WhatsApp button in the web Contact Us section"
-  }
+  },
+  "quickActionReminder": "Reminder",
+  "quickActionSummary": "Summary",
+  "reminderChangeTime": "Change reminder time (or cancel to disable)",
+  "reminderSetTime": "Set daily reminder time",
+  "reminderSetFor": "Reminder set for {time} daily",
+  "@reminderSetFor": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderDisabled": "Reminder disabled",
+  "actionCall": "Call",
+  "actionWhatsApp": "WhatsApp",
+  "actionEmail": "Send Email",
+  "metricBmi": "BMI",
+  "contextFastingShort": "Fast",
+  "contextBeforeMealShort": "Pre",
+  "contextPostMealShort": "Post",
+  "contextRandomShort": "Random",
+  "bmiTipGain": "Gain {amount} kg",
+  "@bmiTipGain": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "bmiTipLose": "Lose {amount} kg",
+  "@bmiTipLose": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "noSummaryAvailable": "No summary available"
 }

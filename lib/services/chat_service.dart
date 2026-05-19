@@ -15,12 +15,17 @@ class ChatService {
     String token,
     int profileId,
     String message,
+    String languageCode,
   ) {
     return ApiClient.sendJsonObject(
       () => ApiClient.httpClient.post(
         Uri.parse('$baseUrl/chat/send'),
         headers: ApiClient.headers(token: token),
-        body: jsonEncode({'profile_id': profileId, 'message': message}),
+        body: jsonEncode({
+          'profile_id': profileId,
+          'message': message,
+          'language': languageCode,
+        }),
       ),
       timeout: _kChatTimeout,
     );
@@ -30,7 +35,8 @@ class ChatService {
     String token,
     int profileId,
     String message,
-    String imageBase64, {
+    String imageBase64,
+    String languageCode, {
     String mimeType = 'image/jpeg',
   }) {
     return ApiClient.sendJsonObject(
@@ -40,6 +46,7 @@ class ChatService {
         body: jsonEncode({
           'profile_id': profileId,
           'message': message,
+          'language': languageCode,
           'image_base64': imageBase64,
           'image_mime': mimeType,
         }),

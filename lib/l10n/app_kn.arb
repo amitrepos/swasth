@@ -1,0 +1,1233 @@
+{
+  "@@locale": "kn",
+  "appTitle": "ಸ್ವಸ್ಥ ಹೆಲ್ತ್ ಆಪ್",
+  "appName": "ಸ್ವಸ್ಥ",
+  "loading": "ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+  "retry": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
+  "cancel": "ರದ್ದುಮಾಡಿ",
+  "save": "ಉಳಿಸಿ",
+  "delete": "ಅಳಿಸಿ",
+  "edit": "ತಿದ್ದಿ",
+  "accept": "ಒಪ್ಪಿಕೊಳ್ಳಿ",
+  "reject": "ನಿರಾಕರಿಸಿ",
+  "invite": "ಆಹ್ವಾನಿಸಿ",
+  "revoke": "ಹಿಂಪಡೆಯಿರಿ",
+  "connect": "ಸಂಪರ್ಕಿಸಿ",
+  "refresh": "ನವೀಕರಿಸಿ",
+  "logout": "ಲಾಗ್ ಔಟ್",
+  "profile": "ಪ್ರೊಫೈಲ್",
+  "error": "ದೋಷ",
+  "errNetwork": "ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕವಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "@errNetwork": {
+    "description": "Shown when a network call fails due to no connectivity, DNS failure, timeout, or TLS handshake error. Plain-language so Sunita (55yo Ranchi patient) can understand."
+  },
+  "errSessionExpired": "ನಿಮ್ಮ ಸೆಶನ್ ಮುಕ್ತಾಯಗೊಂಡಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಲಾಗ್ ಇನ್ ಮಾಡಿ.",
+  "@errSessionExpired": {
+    "description": "Shown on HTTP 401 before auto-logout. User is about to be sent back to the login screen."
+  },
+  "errServer": "ನಮ್ಮ ಸರ್ವರ್‌ನಲ್ಲಿ ತೊಂದರೆ ಇದೆ. ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "@errServer": {
+    "description": "Shown on HTTP 5xx or when the server returns a malformed body we can't parse. Never expose the raw error."
+  },
+  "errGeneric": "ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "@errGeneric": {
+    "description": "Fallback for any unexpected exception that doesn't fit a known category."
+  },
+  "aiInsightEmptyState": "ಉತ್ತಮ ಆರೋಗ್ಯದ ಒಳನೋಟಗಳಿಗಾಗಿ ಪ್ರತಿದಿನದ ರೀಡಿಂಗ್‌ಗಳನ್ನು ದಾಖಲಿಸಿ.",
+  "@aiInsightEmptyState": {
+    "description": "Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly."
+  },
+  "loginTitle": "ಲಾಗ್ ಇನ್",
+  "emailLabel": "ಇಮೇಲ್",
+  "passwordLabel": "ಪಾಸ್‌ವರ್ಡ್",
+  "rememberMe": "ನನ್ನನ್ನು ನೆನಪಿಡಿ",
+  "forgotPassword": "ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ?",
+  "loginButton": "ಲಾಗ್ ಇನ್",
+  "noAccount": "ಖಾತೆ ಇಲ್ಲವೇ?",
+  "loginDoctorRegisterLink": "ನೀವು ವೈದ್ಯರೇ? ಇಲ್ಲಿ ನೋಂದಾಯಿಸಿ",
+  "register": "ನೋಂದಣಿ",
+  "loginSuccessful": "ಲಾಗ್ ಇನ್ ಯಶಸ್ವಿಯಾಗಿದೆ!",
+  "emailValidationEmpty": "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಮೇಲ್ ನಮೂದಿಸಿ",
+  "emailValidationInvalid": "ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಇಮೇಲ್ ನಮೂದಿಸಿ",
+  "emailAlreadyRegistered": "ಈ ಇಮೇಲ್ ಈಗಾಗಲೇ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದೆ. ದಯವಿಟ್ಟು ಲಾಗ್ ಇನ್ ಮಾಡಿ ಅಥವಾ ಬೇರೆ ಇಮೇಲ್ ಬಳಸಿ.",
+  "passwordValidationEmpty": "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ",
+  "registerTitle": "ನೋಂದಣಿ",
+  "accountDetailsSection": "ಖಾತೆ ವಿವರಗಳು",
+  "healthProfileSection": "ಆರೋಗ್ಯ ಪ್ರೊಫೈಲ್",
+  "fullNameLabel": "ಪೂರ್ಣ ಹೆಸರು",
+  "phoneLabel": "ಫೋನ್ ಸಂಖ್ಯೆ",
+  "phoneValidationEmpty": "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
+  "phoneValidationDigits": "ಫೋನ್ ಸಂಖ್ಯೆಯು ಅಂಕೆಗಳನ್ನು ಮಾತ್ರ ಹೊಂದಿರಬಹುದು",
+  "phoneValidationLength": "ಫೋನ್ ಸಂಖ್ಯೆಯು 10-15 ಅಂಕೆಗಳಿರಬೇಕು",
+  "confirmPasswordLabel": "ಪಾಸ್‌ವರ್ಡ್ ಖಚಿತಪಡಿಸಿ",
+  "profileNameLabel": "ಪ್ರೊಫೈಲ್ ಹೆಸರು",
+  "relationshipLabel": "ರೋಗಿಯೊಂದಿಗಿನ ಸಂಬಂಧ",
+  "ageLabel": "ವಯಸ್ಸು",
+  "genderLabel": "ಲಿಂಗ",
+  "heightLabel": "ಎತ್ತರ (ಸೆಂ.ಮೀ)",
+  "bloodGroupLabel": "ರಕ್ತದ ಗುಂಪು",
+  "medicationsLabel": "ಪ್ರಸ್ತುತ ಔಷಧಿಗಳು (ಐಚ್ಛಿಕ)",
+  "medicalConditionsSection": "ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು",
+  "passwordRequirementsTitle": "ಪಾಸ್‌ವರ್ಡ್ ಅವಶ್ಯಕತೆಗಳು:",
+  "passwordReqLength": "ಕನಿಷ್ಠ 8 ಅಕ್ಷರಗಳು",
+  "passwordReqUppercase": "ಒಂದು ದೊಡ್ಡಕ್ಷರ",
+  "passwordReqLowercase": "ಒಂದು ಸಣ್ಣಕ್ಷರ",
+  "passwordReqNumber": "ಒಂದು ಸಂಖ್ಯೆ",
+  "passwordReqSpecial": "ಒಂದು ವಿಶೇಷ ಅಕ್ಷರ",
+  "alreadyHaveAccount": "ಈಗಾಗಲೇ ಖಾತೆ ಹೊಂದಿದ್ದೀರಾ?",
+  "registerSuccessful": "ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿದೆ! ದಯವಿಟ್ಟು ಲಾಗ್ ಇನ್ ಮಾಡಿ.",
+  "specifyOtherCondition": "ದಯವಿಟ್ಟು ಇತರ ಪರಿಸ್ಥಿತಿಯನ್ನು ತಿಳಿಸಿ",
+  "selectProfileTitle": "ಪ್ರೊಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ",
+  "myProfilesSection": "ನನ್ನ ಪ್ರೊಫೈಲ್‌ಗಳು",
+  "sharedWithMeSection": "ನನ್ನೊಂದಿಗೆ ಹಂಚಿಕೊಳ್ಳಲಾದವು",
+  "noSharedProfiles": "ಇನ್ನೂ ಯಾವುದೇ ಹಂಚಿಕೆಯ ಪ್ರೊಫೈಲ್‌ಗಳಿಲ್ಲ.",
+  "addProfile": "ಪ್ರೊಫೈಲ್ ಸೇರಿಸಿ",
+  "pendingInvitesBanner": "ನಿಮಗೆ {count} ಬಾಕಿ ಇರುವ ಆಹ್ವಾನಗಳಿವೆ",
+  "@pendingInvitesBanner": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeTitle": "ಸ್ವಸ್ಥ ಹೆಲ್ತ್ ಆಪ್",
+  "navHome": "ಮುಖಪುಟ",
+  "navHistory": "ಇತಿಹಾಸ",
+  "navStreaks": "ಸ್ಟ್ರೀಕ್ಸ್",
+  "navInsights": "ಒಳನೋಟ",
+  "navChat": "ಚಾಟ್",
+  "viewingProfile": "{name} ಅವರ ಆರೋಗ್ಯ ವಿವರಗಳನ್ನು ನೋಡಲಾಗುತ್ತಿದೆ",
+  "@viewingProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "switchProfile": "ಬದಲಿಸಿ",
+  "shareProfile": "ಪ್ರೊಫೈಲ್ ಹಂಚಿಕೊಳ್ಳಿ",
+  "welcomeTitle": "ಸ್ವಸ್ಥಕ್ಕೆ ಸ್ವಾಗತ!",
+  "welcomeSubtitle": "ನಿಮ್ಮ ಆರೋಗ್ಯ ಮೇಲ್ವಿಚಾರಣಾ ಸಂಗಾತಿ",
+  "selectDevice": "ಸಾಧನವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  "recordNewMetrics": "ಹೊಸ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ",
+  "flagFitFine": "ಆರೋಗ್ಯವಾಗಿದ್ದೀರಿ",
+  "flagCaution": "ಎಚ್ಚರ",
+  "flagAtRisk": "ಅಪಾಯವಿದೆ",
+  "flagUrgent": "ತುರ್ತು",
+  "weeklyWinnersTitle": "ಈ ವಾರದ ವಿಜೇತರು",
+  "weeklyWinnersSoon": "ಶೀಘ್ರದಲ್ಲೇ ಬರಲಿದೆ",
+  "pointsLabel": "{pts} ಅಂಕಗಳು",
+  "@pointsLabel": {
+    "placeholders": {
+      "pts": {
+        "type": "int"
+      }
+    }
+  },
+  "glucometer": "ಗ್ಲುಕೋಮೀಟರ್",
+  "bpMeter": "ಬಿಪಿ ಮೀಟರ್",
+  "armband": "ಆರ್ಮ್‌ಬ್ಯಾಂಡ್",
+  "devicePhone": "ಫೋನ್",
+  "deviceBpMonitor": "ಬಿಪಿ ಮಾನಿಟರ್",
+  "quickActions": "ತ್ವರಿತ ಕ್ರಿಯೆಗಳು",
+  "connectNewDevice": "ಹೊಸ ಸಾಧನವನ್ನು ಸಂಪರ್ಕಿಸಿ",
+  "connectNewDeviceSubtitle": "ಬ್ಲೂಟೂತ್ ಸಾಧನಗಳನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ ಮತ್ತು ಜೋಡಿಸಿ",
+  "viewHistory": "ಇತಿಹಾಸವನ್ನು ನೋಡಿ",
+  "viewHistorySubtitle": "ನಿಮ್ಮ ಹಿಂದಿನ ರೀಡಿಂಗ್‌ಗಳನ್ನು ಪರಿಶೀಲಿಸಿ",
+  "selectProfileFirst": "ದಯವಿಟ್ಟು ಮೊದಲು ಪ್ರೊಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ",
+  "logReading": "{device} ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ",
+  "@logReading": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "howToLog": "ಈ ರೀಡಿಂಗ್ ಅನ್ನು ನೀವು ಹೇಗೆ ದಾಖಲಿಸಲು ಬಯಸುತ್ತೀರಿ?",
+  "healthTrends": "ಆರೋಗ್ಯದ ಪ್ರವೃತ್ತಿಗಳು",
+  "sevenDays": "7 ದಿನಗಳು",
+  "thirtyDays": "30 ದಿನಗಳು",
+  "ninetyDays": "90 ದಿನಗಳು",
+  "oneYear": "1 ವರ್ಷ",
+  "glucoseTrend": "ಗ್ಲೂಕೋಸ್ ಪ್ರವೃತ್ತಿ",
+  "bpTrend": "ರಕ್ತದೊತ್ತಡದ ಪ್ರವೃತ್ತಿ",
+  "avgLabel": "ಸರಾಸರಿ",
+  "avgDaysFormat": "{count} ದಿನ ಸರಾಸರಿ",
+  "@avgDaysFormat": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "vitalBp": "ಬಿಪಿ",
+  "vitalSugar": "ಸಕ್ಕರೆ",
+  "vitalSpo2": "ಆಕ್ಸಿ%",
+  "vitalSteps": "ಹೆಜ್ಜೆ",
+  "minLabel": "ಕನಿಷ್ಠ",
+  "maxLabel": "ಗರಿಷ್ಠ",
+  "normalPct": "ಸಾಮಾನ್ಯ",
+  "noChartData": "ಈ ಅವಧಿಯಲ್ಲಿ ಯಾವುದೇ ರೀಡಿಂಗ್‌ಗಳಿಲ್ಲ",
+  "noReadingsInWindowGlucose": "ಕಳೆದ {days} ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳಿಲ್ಲ.",
+  "@noReadingsInWindowGlucose": {
+    "description": "Empty state for glucose chart when there are no glucose readings in the selected window.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "noReadingsInWindowBp": "ಕಳೆದ {days} ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳಿಲ್ಲ.",
+  "@noReadingsInWindowBp": {
+    "description": "Empty state for BP chart when there are no BP readings in the selected window.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "noReadingsInWindowWeight": "ಕಳೆದ {days} ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ತೂಕದ ರೀಡಿంగ్‌ಗಳಿಲ್ಲ.",
+  "@noReadingsInWindowWeight": {
+    "description": "Empty state for weight chart when there are no weight readings in the selected window.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "logFromHomeHint": "ಅದನ್ನು ಇಲ್ಲಿ ನೋಡಲು ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ನಿಂದ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ.",
+  "tapToViewTrends": "ಪ್ರವೃತ್ತಿಗಳನ್ನು ನೋಡಲು ಟ್ಯಾಪ್ ಮಾಡಿ →",
+  "viewTrends": "ಪ್ರವೃತ್ತಿಗಳನ್ನು ನೋಡಿ",
+  "viewTrendsSubtitle": "7 ಮತ್ತು 30 ದಿನಗಳ ಗ್ಲೂಕೋಸ್ ಮತ್ತು ಬಿಪಿ ಚಾರ್ಟ್‌ಗಳು",
+  "healthScore": "ಆರೋಗ್ಯದ ಸ್ಕೋರ್",
+  "dayStreak": "{n}-ದಿನಗಳ ಸತತ ದಾಖಲೆ",
+  "@dayStreak": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "lastLogged": "ಕೊನೆಯದಾಗಿ ದಾಖಲಿಸಿದ್ದು: {time}",
+  "@lastLogged": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "noReadingsYetScore": "ನಿಮ್ಮ ಸ್ಕೋರ್ ನೋಡಲು ಮೊದಲ ರೀಡಿಂಗ್ ದಾಖಲಿಸಿ",
+  "todayGlucose": "ಗ್ಲೂಕೋಸ್",
+  "todayBP": "ಬಿಪಿ",
+  "scanWithCamera": "ಕ್ಯಾಮೆರಾದಿಂದ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
+  "connectViaBluetooth": "ಬ್ಲೂಟೂತ್ ಮೂಲಕ ಸಂಪರ್ಕಿಸಿ",
+  "enterManually": "ಕೈಯಾರೆ ನಮೂದಿಸಿ",
+  "scanTitle": "{device} ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
+  "@scanTitle": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "placeDeviceInBox": "ಬಾಕ್ಸ್‌ನ ಒಳಗೆ {device} ಸ್ಕ್ರೀನ್ ಇರಿಸಿ",
+  "@placeDeviceInBox": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "toggleFlash": "ಫ್ಲ್ಯಾಶ್ ಆನ್/ಆಫ್",
+  "photoBlurryTitle": "ಫೋಟೋ ತುಂಬಾ ಅಸ್ಪಷ್ಟವಾಗಿದೆ",
+  "photoBlurryMessage": "ನಮಗೆ ಡಿಸ್‌ಪ್ಲೇ ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಈ ಕೆಳಗಿನಂತೆ ಫೋಟೋವನ್ನು ಮತ್ತೆ ತೆಗೆದುಕೊಳ್ಳಿ:\n\n• ಕ್ಯಾಮೆರಾ ಸ್ಥಿರವಾಗಿರಲಿ (ಲುಗಾಡಿಸಬೇಡಿ)\n• ಸಾಧನದ ಪರದೆಯು ಗೈಡ್ ಬಾಕ್ಸ್‌ನ ಮಧ್ಯದಲ್ಲಿರಲಿ\n• ಉತ್ತಮ ಬೆಳಕು ಇರಲಿ ಅಥವಾ ಫ್ಲ್ಯಾಶ್ ಆನ್ ಮಾಡಿ",
+  "tryAgain": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
+  "readingImage": "ಚಿತ್ರವನ್ನು ಓದಲಾಗುತ್ತಿದೆ...",
+  "glucoseReadingTitle": "ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್",
+  "bpReadingTitle": "ಬಿಪಿ ರೀಡಿಂಗ್",
+  "glucoseValueLabel": "ಗ್ಲೂಕೋಸ್ ಮೌಲ್ಯ",
+  "systolicLabel": "ಸಿಸ್ಟೊಲಿಕ್",
+  "diastolicLabel": "ಡಯಾಸ್ಟೊಲಿಕ್",
+  "pulseLabel": "ನಾಡಿಮಿಡಿತ (ಐಚ್ಛಿಕ)",
+  "mealContextSection": "ಊಟದ ಸಂದರ್ಭ",
+  "fasting": "ಖಾಲಿ ಹೊಟ್ಟೆ",
+  "beforeMeal": "ಊಟಕ್ಕೆ ಮೊದಲು",
+  "afterMeal": "ಊಟದ ನಂತರ",
+  "mealContextRandom": "ಯಾವುದೇ ಸಮಯ / ಖಚಿತವಿಲ್ಲ",
+  "readingTime": "ರೀಡಿಂಗ್ ಸಮಯ",
+  "saveReading": "ರೀಡಿಂಗ್ ಉಳಿಸಿ",
+  "readingSavedSuccess": "ರೀಡಿಂಗ್ ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ",
+  "ocrSuccessPrefix": "ನಾವು ಓದಿದ್ದು:",
+  "ocrEditButton": "ತಿದ್ದಿ",
+  "ocrConfirmHint": "ಇದು ಸರಿಯಾಗಿದೆಯೇ? ಉಳಿಸುವ ಮೊದಲು ನೀವು ಮೇಲೆ ತಿದ್ದಬಹುದು.",
+  "ocrFailedMessage": "ಫೋಟೋದಿಂದ ಮೌಲ್ಯವನ್ನು ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಕೆಳಗೆ ಕೈಯಾರೆ ನಮೂದಿಸಿ.",
+  "manualEntryHint": "ನಿಮ್ಮ ಸಾಧನದಲ್ಲಿ ತೋರಿಸಿರುವ ಮೌಲ್ಯವನ್ನು ನಮೂದಿಸಿ.",
+  "glucoseValidation": "ಮಾನ್ಯವಾದ ಗ್ಲೂಕೋಸ್ ಮೌಲ್ಯವನ್ನು ನಮೂದಿಸಿ (20–600 mg/dL)",
+  "systolicValidation": "ಮಾನ್ಯವಾದ ಸಿಸ್ಟೊಲಿಕ್ ಮೌಲ್ಯವನ್ನು ನಮೂದಿಸಿ (60–250 mmHg)",
+  "diastolicValidation": "ಮಾನ್ಯವಾದ ಡಯಾಸ್ಟೊಲಿಕ್ ಮೌಲ್ಯವನ್ನು ನಮೂದಿಸಿ (40–150 mmHg)",
+  "saveFailed": "ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ: {error}",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "historyTitle": "ರೀಡಿಂಗ್ ಇತಿಹಾಸ",
+  "filterByType": "ಮಾದರಿಯ ಪ್ರಕಾರ ಫಿಲ್ಟರ್ ಮಾಡಿ",
+  "allReadings": "ಎಲ್ಲಾ ರೀಡಿಂಗ್‌ಗಳು",
+  "glucoseOnly": "ಗ್ಲೂಕೋಸ್ ಮಾತ್ರ",
+  "bpOnly": "ಬಿಪಿ ಮಾತ್ರ",
+  "mealsOnly": "ಊಟಗಳು ಮಾತ್ರ",
+  "noMealsYet": "ಇನ್ನೂ ಯಾವುದೇ ಊಟಗಳನ್ನು ದಾಖಲಿಸಿಲ್ಲ",
+  "mealCarbLoadLow": "ಕಡಿಮೆ ಕಾರ್ಬ್ ಊಟ",
+  "mealCarbLoadModerate": "ಮಧ್ಯಮ ಕಾರ್ಬ್ ಊಟ",
+  "mealCarbLoadHigh": "ಹೆಚ್ಚು ಕಾರ್ಬ್ ಊಟ",
+  "mealCarbLoadVeryHigh": "ಸಕ್ಕರೆ ಅಂಶವಿರುವ ಊಟ",
+  "mealLabelDisclaimer": "ಫುಡ್ ಲೇಬಲ್‌ಗಳು ಸಾಮಾನ್ಯ ಕಾರ್ಬೋಹೈಡ್ರೇಟ್ ಅಂಶವನ್ನು ವಿವರಿಸುತ್ತವೆ, ಅದು ನಿಮ್ಮ ದೇಹದ ಪ್ರತಿಕ್ರಿಯೆಯಲ್ಲ.",
+  "caregiverLogMealsHint": "ಊಟವನ್ನು ದಾಖಲಿಸಲು, ಮೇಲ್ಭಾಗದಲ್ಲಿರುವ ರೋಗಿಯ ವ್ಯೂ ಟಾಗಲ್ ಬಳಸಿ.",
+  "noReadingsYet": "ಇನ್ನೂ ಯಾವುದೇ ರೀಡಿಂಗ್‌ಗಳಿಲ್ಲ",
+  "noReadingsSubtitle": "ನಿಮ್ಮ ರೀಡಿಂಗ್ ಇತಿಹಾಸವನ್ನು ಇಲ್ಲಿ ನೋಡಲು\nಸಾಧನವನ್ನು ಸಂಪರ್ಕಿಸಿ ಮತ್ತು ರೀಡಿಂಗ್ ತೆಗೆದುಕೊಳ್ಳಿ",
+  "deleteReading": "ರೀಡಿಂಗ್ ಅಳಿಸಿ",
+  "deleteReadingConfirm": "ನೀವು ಖಂಡಿತವಾಗಿಯೂ ಈ ರೀಡಿಂಗ್ ಅನ್ನು ಅಳಿಸಲು ಬಯಸುವಿರಾ?",
+  "readingDeleted": "ರೀಡಿಂಗ್ ಅಳಿಸಲಾಗಿದೆ",
+  "deleteMeal": "ಊಟದ ದಾಖಲೆ ಅಳಿಸಿ",
+  "deleteMealConfirm": "ನೀವು ಖಂಡಿತವಾಗಿಯೂ ಈ ಊಟದ ದಾಖಲೆಯನ್ನು ಅಳಿಸಲು ಬಯಸುವಿರಾ?",
+  "mealDeleted": "ಊಟದ ದಾಖಲೆ ಅಳಿಸಲಾಗಿದೆ",
+  "editReading": "ರೀಡಿಂಗ್ ತಿದ್ದಿ",
+  "editMeal": "ಊಟದ ದಾಖಲೆ ತಿದ್ದಿ",
+  "@editMeal": {
+    "description": "Tooltip for the edit button on a meal entry in the history timeline."
+  },
+  "readingUpdated": "ರೀಡಿಂಗ್ ನವೀಕರಿಸಲಾಗಿದೆ",
+  "weightLabel": "ತೂಕ",
+  "weightValidation": "ಮಾನ್ಯವಾದ ತೂಕವನ್ನು ನಮೂದಿಸಿ (1–400 kg)",
+  "pulseValidation": "ಮಾನ್ಯವಾದ ನಾಡಿಮಿಡಿತವನ್ನು ನಮೂದಿಸಿ (30–220 bpm)",
+  "notes": "ಟಿಪ್ಪಣಿಗಳು (ಐಚ್ಛಿಕ)",
+  "statusNormal": "ಸಾಮಾನ್ಯ",
+  "statusElevated": "ಹೆಚ್ಚಾಗಿದೆ",
+  "statusHighStage1": "ಹೆಚ್ಚು - ಹಂತ 1",
+  "statusHighStage2": "ಹೆಚ್ಚು - ಹಂತ 2",
+  "statusLow": "ಕಡಿಮೆ",
+  "statusCritical": "ತುರ್ತು",
+  "profileDetailsTitle": "ಪ್ರೊಫೈಲ್ ವಿವರಗಳು",
+  "manageAccess": "ಪ್ರವೇಶ ನಿರ್ವಹಿಸಿ",
+  "yourProfile": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್",
+  "sharedBySomeone": "ಬೇರೆಯವರು ಹಂಚಿಕೊಂಡಿದ್ದು",
+  "healthInfoSection": "ಆರೋಗ್ಯ ಮಾಹಿತಿ",
+  "ageField": "ವಯಸ್ಸು",
+  "ageYears": "{age} ವರ್ಷಗಳು",
+  "@ageYears": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "genderField": "ಲಿಂಗ",
+  "bloodGroupField": "ರಕ್ತದ ಗುಂಪು",
+  "heightField": "ಎತ್ತರ",
+  "heightCm": "{height} ಸೆಂ.ಮೀ",
+  "@heightCm": {
+    "placeholders": {
+      "height": {
+        "type": "String"
+      }
+    }
+  },
+  "medicalConditionsField": "ಪರಿಸ್ಥಿತಿಗಳು",
+  "accountSettingsSection": "ಖಾತೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
+  "shareWithDoctorSection": "ವೈದ್ಯರೊಂದಿಗೆ ಹಂಚಿಕೊಳ್ಳಿ",
+  "myDoctorsSection": "ನನ್ನ ವೈದ್ಯರು",
+  "primaryPhysicianSubheading": "ಪ್ರಾಥಮಿಕ ವೈದ್ಯರು",
+  "sharingHealthDataWithSubheading": "ಆರೋಗ್ಯ ಡೇಟಾವನ್ನು ಇವರೊಂದಿಗೆ ಹಂಚಿಕೊಳ್ಳಲಾಗುತ್ತಿದೆ",
+  "sharingHealthDataWithEmpty": "ನೀವು ಇನ್ನೂ ಯಾವುದೇ ವೈದ್ಯರೊಂದಿಗೆ ಆರೋಗ್ಯ ಡೇಟಾವನ್ನು ಹಂಚಿಕೊಳ್ಳುತ್ತಿಲ್ಲ.",
+  "linkAnotherDoctor": "ಇನ್ನೊಬ್ಬ ವೈದ್ಯರನ್ನು ಲಿಂಕ್ ಮಾಡಿ",
+  "linkedDoctorsTileTitle": "ಪ್ರವೇಶ ಹೊಂದಿರುವ ವೈದ್ಯರು",
+  "linkedDoctorsTileSubtitle": "ನಿಮ್ಮ ರೀಡಿಂಗ್‌ಗಳನ್ನು ಯಾರು ನೋಡಬಹುದು ಎಂಬುದನ್ನು ನೋಡಿ",
+  "linkedDoctorsTitle": "ಪ್ರವೇಶ ಹೊಂದಿರುವ ವೈದ್ಯರು",
+  "linkedDoctorsEmpty": "ಪ್ರಸ್ತುತ ಈ ಪ್ರೊಫೈಲ್‌ಗೆ ಯಾವುದೇ ವೈದ್ಯರು ಲಿಂಕ್ ಆಗಿಲ್ಲ.",
+  "linkedDoctorsEmptyHint": "ನಿಮ್ಮ ರೀಡಿಂಗ್‌ಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಲು ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ 'Link a Doctor' ಟ್ಯಾಪ್ ಮಾಡಿ.",
+  "linkedDoctorsError": "ಲಿಂಕ್ ಮಾಡಲಾದ ವೈದ್ಯರನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+  "linkedDoctorsLinkedSince": "{date} ರಿಂದ ಲಿಂಕ್ ಮಾಡಲಾಗಿದೆ",
+  "@linkedDoctorsLinkedSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "linkedDoctorsRevoke": "ಹಂಚಿಕೆಯನ್ನು ನಿಲ್ಲಿಸಿ",
+  "linkedDoctorsWaitingForDoctor": "ವೈದ್ಯರಿಗಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ",
+  "linkedDoctorsCancelRequest": "ವಿನಂತಿಯನ್ನು ರದ್ದುಗೊಳಿಸಿ",
+  "linkedDoctorsRevokeDialogTitle": "{name} ಅವರೊಂದಿಗೆ ಹಂಚಿಕೆಯನ್ನು ನಿಲ್ಲಿಸಬೇಕೆ?",
+  "@linkedDoctorsRevokeDialogTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkedDoctorsRevokeDialogBody": "ಈ ವೈದ್ಯರು ನಿಮ್ಮ ಹಿಂದಿನ ಅಥವಾ ಭವಿಷ್ಯದ ರೀಡಿಂಗ್‌ಗಳನ್ನು ನೋಡಲು ಸಾಧ್ಯವಾಗುವುದಿಲ್ಲ. ನೀವು ಯಾವಾಗ ಬೇಕಾದರೂ ಮತ್ತೆ ಲಿಂಕ್ ಮಾಡಬಹುದು.",
+  "linkedDoctorsRevokeConfirm": "ಹಂಚಿಕೆಯನ್ನು ನಿಲ್ಲಿಸಿ",
+  "linkedDoctorsRevokeSuccess": "{name} ಅವರು ಇನ್ನು ಮುಂದೆ ನಿಮ್ಮ ರೀಡಿಂಗ್‌ಗಳನ್ನು ನೋಡಲು ಸಾಧ್ಯವಿಲ್ಲ.",
+  "@linkedDoctorsRevokeSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkedDoctorsRevokeReasonLabel": "ಕಾರಣ: {reason}",
+  "@linkedDoctorsRevokeReasonLabel": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "adminMenuTooltip": "ಅಡ್ಮಿನ್",
+  "adminMenuDashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ತೆರೆಯಿರಿ",
+  "adminMenuCreateUser": "ಬಳಕೆದಾರರನ್ನು ರಚಿಸಿ",
+  "linkedEmail": "ಲಿಂಕ್ ಮಾಡಲಾದ ಇಮೇಲ್",
+  "changePassword": "ಖಾತೆ ಪಾಸ್‌ವರ್ಡ್ ಬದಲಿಸಿ",
+  "privacyPolicy": "ಗೌಪ್ಯತಾ ನೀತಿ",
+  "deleteAccount": "ನನ್ನ ಖಾತೆಯನ್ನು ಅಳಿಸಿ",
+  "deleteAccountConfirmMessage": "ಇದು ನಿಮ್ಮ ಖಾತೆ, ಎಲ್ಲಾ ಆರೋಗ್ಯ ರೀಡಿಂಗ್‌ಗಳು, ಪ್ರೊಫೈಲ್‌ಗಳು ಮತ್ತು ಎಐ ಒಳನೋಟಗಳನ್ನು ಶಾಶ್ವತವಾಗಿ ಅಳಿಸುತ್ತದೆ. ಈ ಕ್ರಮವನ್ನು ಹಿಂಪಡೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ.",
+  "deleteAccountConfirm": "ಶಾಶ್ವತವಾಗಿ ಅಳಿಸಿ",
+  "changePasswordTitle": "ಪಾಸ್‌ವರ್ಡ್ ಬದಲಿಸಿ",
+  "currentPasswordLabel": "ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್",
+  "newPasswordLabel": "ಹೊಸ ಪಾಸ್‌ವರ್ಡ್",
+  "confirmNewPasswordLabel": "ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ಖಚಿತಪಡಿಸಿ",
+  "passwordMinChars": "ಕನಿಷ್ಠ 6 ಅಕ್ಷರಗಳು",
+  "passwordChanged": "ಪಾಸ್‌ವರ್ಡ್ ಬದಲಿಸಲಾಗಿದೆ!",
+  "enterCurrentPassword": "ಪ್ರಸ್ತುತ ಪಾಸ್‌ವರ್ಡ್ ನಮೂದಿಸಿ",
+  "passwordTooShort": "ಕನಿಷ್ಠ 6 ಅಕ್ಷರಗಳು",
+  "passwordsDoNotMatch": "ಪಾಸ್‌ವರ್ಡ್‌ಗಳು ಹೊಂದಿಕೆಯಾಗುತ್ತಿಲ್ಲ",
+  "appLanguageSection": "ಅಪ್ಲಿಕೇಶನ್ ಭಾಷೆ",
+  "languageEnglish": "English",
+  "languageHindi": "हिंदी",
+  "languageKannada": "ಕನ್ನಡ",
+  "languageTelugu": "తెలుగు",
+  "languageTamil": "தமிழ்",
+  "myDoctorTitle": "ನನ್ನ ವೈದ್ಯರು",
+  "contactOnWhatsApp": "ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿ ಸಂಪರ್ಕಿಸಿ",
+  "doctorDetailsSection": "ವೈದ್ಯರ ವಿವರಗಳು",
+  "doctorNameField": "ವೈದ್ಯರ ಹೆಸರು",
+  "doctorSpecialtyField": "ವಿಶೇಷತೆ",
+  "doctorWhatsappField": "ವಾಟ್ಸಾಪ್ ಸಂಖ್ಯೆ",
+  "noDoctorLinked": "ಇನ್ನೂ ಯಾವುದೇ ವೈದ್ಯರು ಲಿಂಕ್ ಆಗಿಲ್ಲ.",
+  "linkADoctorCta": "ವೈದ್ಯರನ್ನು ಲಿಂಕ್ ಮಾಡಿ",
+  "doctorPendingAcceptBadge": "ವೈದ್ಯರಿಗಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ",
+  "doctorDeclinedBadge": "ವಿನಂತಿಯನ್ನು ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
+  "doctorDeclineReason": "ಕಾರಣ: {reason}",
+  "@doctorDeclineReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "addDoctor": "ವೈದ್ಯರನ್ನು ಸೇರಿಸಿ",
+  "editDoctor": "ವೈದ್ಯರ ವಿವರಗಳನ್ನು ತಿದ್ದಿ",
+  "editDoctorTitle": "ವೈದ್ಯರ ವಿವರಗಳು",
+  "doctorWhatsappHint": "ಉದಾ. +917001234567",
+  "addHealthProfileTitle": "ಆರೋಗ್ಯ ಪ್ರೊಫೈಲ್ ಸೇರಿಸಿ",
+  "createProfileSubtitle": "ನೀವು ಕಾಳಜಿವಹಿಸುವವರಿಗಾಗಿ ಪ್ರೊಫೈಲ್ ರಚಿಸಿ (ಉದಾ. ಪೋಷಕರು, ಮಕ್ಕಳು)",
+  "profileNameHint": "ಉದಾ. ಅಪ್ಪ, ಅಮ್ಮ",
+  "createProfile": "ಪ್ರೊಫೈಲ್ ರಚಿಸಿ",
+  "manageAccessTitle": "ಪ್ರವೇಶ ನಿರ್ವಹಿಸಿ",
+  "inviteSomeoneTitle": "ಈ ಪ್ರೊಫೈಲ್ ನೋಡಲು ಯಾರನ್ನಾದರೂ ಆಹ್ವಾನಿಸಿ",
+  "enterEmailHint": "ಇಮೇಲ್ ವಿಳಾಸವನ್ನು ನಮೂದಿಸಿ",
+  "notSharedYet": "ಇನ್ನೂ ಯಾರೊಂದಿಗೂ ಹಂಚಿಕೊಂಡಿಲ್ಲ.",
+  "inviteSentSuccess": "ಆಹ್ವಾನವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ",
+  "revokeAccessTitle": "ಪ್ರವೇಶವನ್ನು ಹಿಂಪಡೆಯಬೇಕೆ?",
+  "revokeAccessConfirm": "{name} ಅವರೊಂದಿಗೆ ಈ ಪ್ರೊಫೈಲ್ ಹಂಚಿಕೊಳ್ಳುವುದನ್ನು ನಿಲ್ಲಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ?",
+  "@revokeAccessConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pendingInvitesTitle": "ಬಾಕಿ ಇರುವ ಆಹ್ವಾನಗಳು",
+  "noPendingInvites": "ಯಾವುದೇ ಬಾಕಿ ಇರುವ ಆಹ್ವಾನಗಳಿಲ್ಲ.",
+  "wantsToShare": "\"{profileName}\" ಅನ್ನು ಹಂಚಿಕೊಳ್ಳಲು ಬಯಸುತ್ತಾರೆ",
+  "@wantsToShare": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "expiresInDays": "{days} ದಿನಗಳಲ್ಲಿ ಅವಧಿ ಮುಕ್ತಾಯವಾಗುತ್ತದೆ ({date})",
+  "@expiresInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "acceptedInvite": "{profileName} ಗಾಗಿ ಆಹ್ವಾನವನ್ನು ಒಪ್ಪಿಕೊಳ್ಳಲಾಗಿದೆ",
+  "@acceptedInvite": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "rejectedInvite": "{profileName} ಗಾಗಿ ಆಹ್ವಾನವನ್ನು ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
+  "@rejectedInvite": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "scanDevicesTitle": "ಸ್ವಸ್ಥ — ಸಾಧನಗಳನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
+  "pressScanToFind": "ನಿಮ್ಮ ಸಾಧನವನ್ನು ಹುಡುಕಲು ಸ್ಕ್ಯಾನ್ ಒತ್ತಿರಿ",
+  "scanButton": "ಸ್ಕ್ಯಾನ್",
+  "scanningButton": "ಸ್ಕ್ಯಾನ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+  "noDevicesFound": "ಇನ್ನೂ ಯಾವುದೇ ಸಾಧನಗಳು ಕಂಡುಬಂದಿಲ್ಲ",
+  "lookingForDevices": "ಸಾಧನಗಳಿಗಾಗಿ ಹುಡುಕಲಾಗುತ್ತಿದೆ...",
+  "noDevicesFoundAfterScan": "ಯಾವುದೇ ಸಾಧನಗಳು ಕಂಡುಬಂದಿಲ್ಲ. ಸಾಧನವು ಆನ್ ಆಗಿದೆಯೇ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
+  "connectButton": "ಸಂಪರ್ಕಿಸಿ",
+  "forgotPasswordTitle": "ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ",
+  "forgotPasswordHeadline": "ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ?",
+  "forgotPasswordSubtitle": "ನಿಮ್ಮ ಇಮೇಲ್ ವಿಳಾಸವನ್ನು ನಮೂದಿಸಿ ಮತ್ತು ನಿಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸಲು ನಾವು ನಿಮಗೆ OTP ಕಳುಹಿಸುತ್ತೇವೆ.",
+  "sendOtp": "OTP ಕಳುಹಿಸಿ",
+  "otpSentSuccess": "OTP ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ! ನಿಮ್ಮ ಇಮೇಲ್ ಪರಿಶೀಲಿಸಿ.",
+  "otpSentToPhoneSuccess": "OTP ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ! ನಿಮ್ಮ ಮೆಸೇಜ್ ಪರಿಶೀಲಿಸಿ.",
+  "rememberPassword": "ನಿಮ್ಮ ಪಾಸ್‌ವರ್ಡ್ ನೆನಪಿದೆಯೇ?",
+  "verifyOtpTitle": "OTP ಪರಿಶೀಲಿಸಿ",
+  "enterOtpHeadline": "OTP ನಮೂದಿಸಿ",
+  "otpSentToEmail": "ನಾವು {email} ಗೆ 6-ಅಂಕಿಯ OTP ಕಳುಹಿಸಿದ್ದೇವೆ",
+  "@otpSentToEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "otpLabel": "OTP",
+  "verifyOtp": "OTP ಪರಿಶೀಲಿಸಿ",
+  "otpVerifiedSuccess": "OTP ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಪರಿಶೀಲಿಸಲಾಗಿದೆ!",
+  "didNotReceiveOtp": "OTP ಸ್ವೀಕರಿಸಿಲ್ಲವೇ?",
+  "resendIn": "{seconds} ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಮತ್ತೆ ಕಳುಹಿಸಿ",
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "resendOtp": "OTP ಮತ್ತೆ ಕಳುಹಿಸಿ",
+  "otpResent": "OTP ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಮತ್ತೆ ಕಳುಹಿಸಲಾಗಿದೆ! ನಿಮ್ಮ ಇಮೇಲ್ ಪರಿಶೀಲಿಸಿ.",
+  "wantToGoBack": "ಹಿಂದಕ್ಕೆ ಹೋಗಬೇಕೆ?",
+  "resetPasswordTitle": "ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸಿ",
+  "createNewPasswordHeadline": "ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ರಚಿಸಿ",
+  "createNewPasswordSubtitle": "ನಿಮ್ಮ ಹೊಸ ಪಾಸ್‌ವರ್ಡ್ ನಿಮ್ಮ ಹಳೆಯ ಪಾಸ್‌ವರ್ಡ್‌ಗಿಂತ ಭಿನ್ನವಾಗಿರಬೇಕು.",
+  "resetPasswordButton": "ಪಾಸ್‌ವರ್ಡ್ ಮರುಹೊಂದಿಸಿ",
+  "passwordResetSuccess": "ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಮರುಹೊಂದಿಸಲಾಗಿದೆ!",
+  "wellnessScoreSection": "ಕ್ಷೇಮ ಸ್ಕೋರ್",
+  "vitalSummarySection": "ಪ್ರಮುಖ ಸಾರಾಂಶ",
+  "ninetyDayAvg": "90 ದಿನಗಳ ಸರಾಸರಿ",
+  "aiInsightSection": "ಎಐ ಆರೋಗ್ಯ ಒಳನೋಟ",
+  "primaryPhysicianSection": "ಪ್ರಾಥಮಿಕ ವೈದ್ಯರು",
+  "individualMetricsSection": "ವೈಯಕ್ತಿಕ ಮೆಟ್ರಿಕ್ಸ್",
+  "vitalsSection": "ವೈಟಲ್ಸ್",
+  "trendsSection": "ಪ್ರವೃತ್ತಿಗಳು",
+  "lastSpO2": "ಕೊನೆಯ SpO2",
+  "lastSteps": "ಇಂದಿನ ಹೆಜ್ಜೆಗಳು",
+  "spO2Unit": "%",
+  "viaArmband": "ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
+  "viaPhone": "ಫೋನ್ / ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
+  "pairDevice": "ಸಾಧನವನ್ನು ಜೋಡಿಸಿ",
+  "connectedDevices": "ಸಂಪರ್ಕಿತ ಸಾಧನಗಳು",
+  "readMore": "ಹೆಚ್ಚು ಓದಿ",
+  "mealSlotBreakfast": "ಬಳಗಿನ ಉಪಹಾರ",
+  "mealSlotLunch": "ಮಧ್ಯಾಹ್ನದ ಊಟ",
+  "mealSlotSnack": "ತಿಂಡಿ",
+  "mealSlotDinner": "ರಾತ್ರಿಯ ಊಟ",
+  "mealSlotLogged": "ದಾಖಲಿಸಲಾಗಿದೆ",
+  "mealSlotTapToLog": "ದಾಖಲಿಸಲು ಟ್ಯಾಪ್ ಮಾಡಿ",
+  "footerDisclaimer": "ಇದು ವೈದ್ಯಕೀಯ ರೋಗನಿರ್ಣಯವಲ್ಲ. ಕ್ಲಿನಿಕಲ್ ಸಲಹೆಗಾಗಿ ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ. ಎಲ್ಲಾ ಎಐ ಒಳನೋಟಗಳು ಕೇವಲ ಮಾಹಿತಿ ಉದ್ದೇಶಗಳಿಗಾಗಿ ಮಾತ್ರ.",
+  "goodMorning": "ಶುಭೋದಯ,",
+  "goodAfternoon": "ಶುಭ ಮಧ್ಯಾಹ್ನ,",
+  "goodEvening": "ಶುಭ ಸಂಜೆ,",
+  "hello": "ನಮಸ್ಕಾರ,",
+  "trendStable": "ಸ್ಥಿರವಾಗಿದೆ",
+  "optimumRange": "ಅತ್ಯುತ್ತಮ ಶ್ರೇಣಿ",
+  "physicianConnected": "ಸಂಪರ್ಕಿಸಲಾಗಿದೆ",
+  "physicianNotLinked": "ಲಿಂಕ್ ಮಾಡಲಾಗಿಲ್ಲ",
+  "activeSync": "ಸಕ್ರಿಯ ಸಿಂಕ್",
+  "notConnected": "ಸಂಪರ್ಕಗೊಂಡಿಲ್ಲ",
+  "lastBP": "ಕೊನೆಯ ಬಿಪಿ",
+  "lastSugar": "ಕೊನೆಯ ಸಕ್ಕರೆ ಅಂಶ",
+  "liveSteps": "ಲೈವ್ ಹೆಜ್ಜೆಗಳು",
+  "relationshipFather": "ತಂದೆ",
+  "relationshipMother": "ತಾಯಿ",
+  "relationshipSpouse": "ಪತಿ/ಪತ್ನಿ",
+  "relationshipSon": "ಮಗ",
+  "relationshipDaughter": "ಮಗಳು",
+  "relationshipBrother": "ಸಹೋದರ",
+  "relationshipSister": "ಸಹೋದರಿ",
+  "relationshipUncle": "ಕಾಕಾ/ಮಾವ",
+  "relationshipAunt": "ಅತ್ತೆ/ಚಿಕ್ಕಮ್ಮ",
+  "relationshipFriend": "ಸ್ನೇಹಿತ",
+  "relationshipOther": "ಇತರರು",
+  "consentTitle": "ಗೌಪ್ಯತೆ ಮತ್ತು ಸಮ್ಮತಿ",
+  "consentSubject": "ಆರೋಗ್ಯ ಡೇಟಾ ಸಂಸ್ಕರಣೆಗಾಗಿ ಸಮ್ಮತಿ",
+  "consentIntro": "ಸ್ವಸ್ಥ ಬಳಸುವ ಮೂಲಕ, ನಾನು ಈ ಕೆಳಗಿನವುಗಳಿಗೆ ಒಪ್ಪುತ್ತೇನೆ:",
+  "consentDataCollectionTitle": "ಡೇಟಾ ಸಂಗ್ರಹಣೆ",
+  "consentDataCollection": "ಸ್ವಸ್ಥ ನನ್ನ ರಕ್ತದ ಗ್ಲೂಕೋಸ್, ರಕ್ತದೊತ್ತಡ ಮತ್ತು ಆಹಾರದ ಫೋಟೋಗಳನ್ನು ಸಂಗ್ರಹಿಸಲು ನಾನು ಅನುಮತಿಸುತ್ತೇನೆ.",
+  "consentFamilySharingTitle": "ಕುಟುಂಬದೊಂದಿಗೆ ಹಂಚಿಕೊಳ್ಳುವಿಕೆ",
+  "consentFamilySharing": "ನಾನು ನನ್ನ ಪ್ರೊಫೈಲ್ ಅನ್ನು ಹಂಚಿಕೊಂಡರೆ, ನನ್ನ ನಿಯೋಜಿತ ಕುಟುಂಬ ಸದಸ್ಯರು (ಉದಾ. ಮಗ/ಮಗಳು) ನನ್ನ ಆರೋಗ್ಯ ಸ್ಕೋರ್‌ಗಳನ್ನು ನೋಡುತ್ತಾರೆ ಮತ್ತು ಎಚ್ಚರಿಕೆಗಳನ್ನು ಸ್ವೀಕರಿಸುತ್ತಾರೆ ಎಂದು ನಾನು ಅರ್ಥಮಾಡಿಕೊಂಡಿದ್ದೇನೆ.",
+  "consentPurposeTitle": "ಉದ್ದೇಶ",
+  "consentPurpose": "ನನಗೆ ಆರೋಗ್ಯದ ಒಳನೋಟಗಳನ್ನು ನೀಡಲು ಮತ್ತು ನನ್ನ ಚಿಕಿತ್ಸೆಗಾಗಿ ನನ್ನ ವೈದ್ಯರೊಂದಿಗೆ ಹಂಚಿಕೊಳ್ಳಲು ನನ್ನ ಡೇಟಾವನ್ನು ಬಳಸಲಾಗುತ್ತದೆ.",
+  "consentRightsTitle": "ನನ್ನ ಹಕ್ಕುಗಳು",
+  "consentRights": "ನಾನು ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ಅಪ್ಲಿಕೇಶನ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳ ಮೂಲಕ ನನ್ನ ಸಮ್ಮತಿಯನ್ನು ಹಿಂಪಡೆಯಬಹುದು ಅಥವಾ ನನ್ನ ಡೇಟಾವನ್ನು ಅಳಿಸಲು ಕೇಳಬಹುದು.",
+  "consentAiTitle": "ಎಐ ಚಾಲಿತ ಒಳನೋಟಗಳು",
+  "consentAiBody": "ವೈಯಕ್ತಿಕಗೊಳಿಸಿದ ಆರೋಗ್ಯ ಒಳನೋಟಗಳನ್ನು ರಚಿಸಲು ಸ್ವಸ್ಥ ಮೂರನೇ ವ್ಯಕ್ತಿಯ ಎಐ ಸೇವೆಗಳನ್ನು (Google Gemini ಮತ್ತು DeepSeek) ಬಳಸುತ್ತದೆ. ನನ್ನ ಆರೋಗ್ಯ ಡೇಟಾದ ಸಾರಾಂಶವನ್ನು (ನೇರ ರೀಡಿಂಗ್‌ಗಳಲ್ಲ) ಈ ಸೇವೆಗಳಿಗೆ ಕಳುಹಿಸಬಹುದು. ನಾನು ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ಇದನ್ನು ಬೇಡವೆನ್ನಬಹುದು, ಮತ್ತು ಆಗ ನಿಯಮ ಆಧಾರಿತ ಒಳನೋಟಗಳನ್ನು ಬಳಸಲಾಗುತ್ತದೆ.\n\nಎಲ್ಲಾ ಎಐ-ರಚಿತ ವಿಷಯಗಳು ಕೇವಲ ಆರೋಗ್ಯ ವೀಕ್ಷಣೆಗಳಾಗಿವೆ — ವೈದ್ಯಕೀಯ ಸಲಹೆಯಲ್ಲ. ಔಷಧಿ ಅಥವಾ ಚಿಕಿತ್ಸೆಯಲ್ಲಿ ಯಾವುದೇ ಬದಲಾವಣೆ ಮಾಡುವ ಮೊದಲು ಯಾವಾಗಲೂ ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+  "consentAccept": "ನಾನು ಒಪ್ಪುತ್ತೇನೆ",
+  "consentDecline": "ನಾನು ನಿರಾಕರಿಸುತ್ತೇನೆ",
+  "consentDeclineTitle": "ಸಮ್ಮತಿಯನ್ನು ನಿರಾಕರಿಸಬೇಕೆ?",
+  "consentDeclineMessage": "ಗೌಪ್ಯತಾ ಸೂಚನೆಯನ್ನು ಒಪ್ಪಿಕೊಳ್ಳದೆ ನೀವು ಸ್ವಸ್ಥವನ್ನು ಬಳಸಲು ಸಾಧ್ಯವಿಲ್ಲ. ನಿಮ್ಮ ನೋಂದಣಿ ಪೂರ್ಣಗೊಳ್ಳುವುದಿಲ್ಲ.",
+  "consentDeclineConfirm": "ಹಿಂದಕ್ಕೆ ಹೋಗಿ",
+  "consentScrollToAccept": "ಸಂಪೂರ್ಣ ಸೂಚನೆಯನ್ನು ಓದಲು ಕೆಳಕ್ಕೆ ಸ್ಕ್ರಾಲ್ ಮಾಡಿ",
+  "ppDataCollectionTitle": "ನಾವು ಸಂಗ್ರಹಿಸುವ ಡೇಟಾ",
+  "ppDataCollection": "ಸ್ವಸ್ಥ ಸಂಗ್ರಹಿಸುವ ಮಾಹಿತಿಗಳು: ರಕ್ತದ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳು, ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳು, ನಾಡಿಮಿಡಿತ, ಊಟದ ಟಿಪ್ಪಣಿಗಳು, ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಲಿಂಗ, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು), ಮತ್ತು ಸ್ವಯಂಚಾಲಿತ ರೀಡಿಂಗ್ ಕ್ಯಾಪ್ಚರ್‌ಗಾಗಿ ವೈದ್ಯಕೀಯ ಸಾಧನಗಳ ಫೋಟೋಗಳು.",
+  "ppPurposeTitle": "ಸಂಗ್ರಹಣೆಯ ಉದ್ದೇಶ",
+  "ppPurpose": "ನಿಮ್ಮ ಆರೋಗ್ಯ ಡೇಟಾವನ್ನು ಇವುಗಳಿಗಾಗಿ ಬಳಸಲಾಗುತ್ತದೆ: ಪ್ರವೃತ್ತಿಗಳು ಮತ್ತು ಆರೋಗ್ಯ ಸ್ಕೋರ್‌ಗಳನ್ನು ತೋರಿಸಲು, ವೈಯಕ್ತಿಕಗೊಳಿಸಿದ ಆರೋಗ್ಯ ಒಳನೋಟಗಳನ್ನು ರಚಿಸಲು, ನಿಮ್ಮ ಕುಟುಂಬ ಸದಸ್ಯರೊಂದಿಗೆ ಹಂಚಿಕೊಳ್ಳಲು ಮತ್ತು ಚಿಕಿತ್ಸೆಗಾಗಿ ನಿಮ್ಮ ವೈದ್ಯರಿಗೆ ಮಾಹಿತಿ ನೀಡಲು.",
+  "ppAiTitle": "ಎಐ ಸಂಸ್ಕರಣೆ",
+  "ppAi": "ಆರೋಗ್ಯ ಒಳನೋಟಗಳನ್ನು ರಚಿಸಲು ಸ್ವಸ್ಥ ಮೂರನೇ ವ್ಯಕ್ತಿಯ ಎಐ ಸೇವೆಗಳಾದ Google Gemini ಮತ್ತು DeepSeek ಅನ್ನು ಬಳಸುತ್ತದೆ. ನಿಮ್ಮ ಡೇಟಾದ ಸಾರಾಂಶವನ್ನು (ಸರಾಸರಿ ಮತ್ತು ವ್ಯಾಪ್ತಿಗಳು, ವೈಯಕ್ತಿಕ ರೀಡಿಂಗ್‌ಗಳಲ್ಲ) ಈ ಸೇವೆಗಳಿಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ನೀವು ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ಎಐ ಸಂಸ್ಕರಣೆಯಿಂದ ಹೊರಗುಳಿಯಬಹುದು; ಬದಲಿಗೆ ನಿಯಮ ಆಧಾರಿತ ಒಳನೋಟಗಳನ್ನು ಬಳಸಲಾಗುತ್ತದೆ. ಎಲ್ಲಾ ಎಐ-ರಚಿತ ವಿಷಯಗಳು ಕೇವಲ ಮಾಹಿತಿಗಾಗಿ ಮತ್ತು ವೈದ್ಯಕೀಯ ಸಲಹೆಯಲ್ಲ.",
+  "ppSharingTitle": "ಡೇಟಾ ಹಂಚಿಕೆ",
+  "ppSharing": "ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಇವರೊಂದಿಗೆ ಮಾತ್ರ ಹಂಚಿಕೊಳ್ಳಲಾಗುತ್ತದೆ: ನೀವು ಸ್ಪಷ್ಟವಾಗಿ ಆಹ್ವಾನಿಸುವ ಕುಟುಂಬ ಸದಸ್ಯರು, ನೀವು ಸಮ್ಮತಿಸಿದರೆ ಆರೋಗ್ಯ ಒಳನೋಟಗಳಿಗಾಗಿ ಎಐ ಸೇವೆಗಳು (Google Gemini, DeepSeek), ಮತ್ತು ನೀವು ಆರಿಸಿಕೊಂಡರೆ ನಿಮ್ಮ ವೈದ್ಯರು. ನಾವು ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಜಾಹೀರಾತುದಾರರಿಗೆ ಅಥವಾ ಯಾವುದೇ ಇತರ ಮೂರನೇ ವ್ಯಕ್ತಿಗಳಿಗೆ ಮಾರಾಟ ಮಾಡುವುದಿಲ್ಲ ಅಥವಾ ಹಂಚಿಕೊಳ್ಳುವುದಿಲ್ಲ.",
+  "ppSecurityTitle": "ಭದ್ರತಾ ಕ್ರಮಗಳು",
+  "ppSecurity": "ನಾವು ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಇವುಗಳೊಂದಿಗೆ ರಕ್ಷಿಸುತ್ತೇವೆ: ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಸಂಗ್ರಹಿಸಲಾದ ಆರೋಗ್ಯ ರೀಡಿಂಗ್‌ಗಳಿಗಾಗಿ AES-256 ಎನ್‌ಕ್ರಿಪ್ಶನ್, ಬಿಕ್ರಿಪ್ಟ್ ಪಾಸ್‌ವರ್ಡ್ ಹ್ಯಾಶಿಂಗ್, ಟೋಕನ್ ಮುಕ್ತಾಯದೊಂದಿಗೆ JWT-ಆಧಾರಿತ ದೃಢೀಕರಣ, ಸಾಗಣೆಯಲ್ಲಿರುವ ಎಲ್ಲಾ ಡೇಟಾಗೆ TLS/HTTPS, ಮತ್ತು ನಿಮ್ಮ ಸಾಧನದಲ್ಲಿ ಎನ್‌ಕ್ರಿಪ್ಟ್ ಮಾಡಲಾದ ಸ್ಥಳೀಯ ಸಂಗ್ರಹಣೆ.",
+  "ppRetentionTitle": "ಡೇಟಾ ಉಳಿಸಿಕೊಳ್ಳುವಿಕೆ",
+  "ppRetention": "ನಿಮ್ಮ ಖಾತೆಯು ಸಕ್ರಿಯವಾಗಿರುವವರೆಗೆ ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಸಂಗ್ರಹಿಸಲಾಗುತ್ತದೆ. ಅಪ್ಲಿಕೇಶನ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳ ಮೂಲಕ ನೀವು ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ನಿಮ್ಮ ಎಲ್ಲಾ ಡೇಟಾವನ್ನು ಅಳಿಸಲು ವಿನಂತಿಸಬಹುದು. ಖಾತೆ ಅಳಿಸಿದ ನಂತರ, ಎಲ್ಲಾ ರೀಡಿಂಗ್‌ಗಳು, ಪ್ರೊಫೈಲ್‌ಗಳು, ಎಐ ಲಾಗ್‌ಗಳು ಮತ್ತು ವೈಯಕ್ತಿಕ ಮಾಹಿತಿಯನ್ನು ಶಾಶ್ವತವಾಗಿ ತೆಗೆದುಹಾಕಲಾಗುತ್ತದೆ.",
+  "ppRightsTitle": "ನಿಮ್ಮ ಹಕ್ಕುಗಳು",
+  "ppRights": "ಭಾರತೀಯ ಡೇಟಾ ಸಂರಕ್ಷಣಾ ಕಾನೂನಿನ ಅಡಿಯಲ್ಲಿ (SPDI ನಿಯಮಗಳು 2011 ಮತ್ತು DPDP ಕಾಯಿದೆ 2023), ನೀವು ಈ ಹಕ್ಕುಗಳನ್ನು ಹೊಂದಿದ್ದೀರಿ: ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಪ್ರವೇಶಿಸುವುದು, ತಪ್ಪುಗಳನ್ನು ಸರಿಪಡಿಸುವುದು, ಸಮ್ಮತಿಯನ್ನು ಹಿಂಪಡೆಯುವುದು, ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಅಳಿಸಲು ವಿನಂತಿಸುವುದು ಮತ್ತು ದೂರು ದಾಖಲಿಸುವುದು. ಈ ಹಕ್ಕುಗಳನ್ನು ಚಲಾಯಿಸಲು, ಅಪ್ಲಿಕೇಶನ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಬಳಸಿ ಅಥವಾ ನಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+  "ppDoctorSharingTitle": "ವೈದ್ಯರೊಂದಿಗೆ ಡೇಟಾ ಹಂಚಿಕೆ",
+  "ppDoctorSharing": "ನೀವು ಪ್ರೊಫೈಲ್‌ಗೆ ವೈದ್ಯರನ್ನು ಲಿಂಕ್ ಮಾಡಿದರೆ, ನಿಮ್ಮ ಆರೋಗ್ಯ ರೀಡಿಂಗ್‌ಗಳು, ಪ್ರವೃತ್ತಿಗಳು ಮತ್ತು ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು) ಆ ವೈದ್ಯರಿಗೆ ಗೋಚರಿಸುತ್ತವೆ. ಈ ಹಂಚಿಕೆಯನ್ನು ನೀವು ನಿಯಂತ್ರಿಸುತ್ತೀರಿ — ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳಿಂದ ನೀವು ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ವೈದ್ಯರ ಪ್ರವೇಶವನ್ನು ಹಿಂಪಡೆಯಬಹುದು. ವೈದ್ಯರು ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಬದಲಾಯಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.",
+  "ppWhatsAppTitle": "ವಾಟ್ಸಾಪ್ ಅಧಿಸೂಚನೆಗಳು",
+  "ppWhatsApp": "ನಿಮಗೆ ಆರೋಗ್ಯ ಎಚ್ಚರಿಕೆಗಳು ಮತ್ತು ಸಾಪ್ತಾಹಿಕ ಸಾರಾಂಶಗಳನ್ನು ಕಳುಹಿಸಲು ಸ್ವಸ್ಥ Twilio WhatsApp Business API ಅನ್ನು ಬಳಸುತ್ತದೆ. ನೀವು ಒದಗಿಸಿದ ಫೋನ್ ಸಂಖ್ಯೆಗೆ ಈ ಸಂದೇಶಗಳನ್ನು ಕಳುಹಿಸಲಾಗುತ್ತದೆ. ನೀವು ಇವುಗಳನ್ನು ಸ್ವೀಕರಿಸುತ್ತೀರಿ: (1) ಗಂಭೀರ ರೀಡಿಂಗ್ ದಾಖಲಾದಾಗ ತಕ್ಷಣದ ಎಚ್ಚರಿಕೆಗಳು, (2) ಐಚ್ಛಿಕ ಸಾಪ್ತಾಹಿಕ ಆರೋಗ್ಯ ಸಾರಾಂಶಗಳು. ಅಪ್ಲಿಕೇಶನ್‌ನಲ್ಲಿ ಸೆಟ್ಟಿಂಗ್‌ಗಳು → ಅಧಿಸೂಚನೆಗಳ ಮೂಲಕ ಅಥವಾ support@swasth.app ಅನ್ನು ಸಂಪರ್ಕಿಸುವ ಮೂಲಕ ನೀವು ವಾಟ್ಸಾಪ್ ಸಂದೇಶಗಳಿಂದ ಹೊರಗುಳಿಯಬಹುದು.",
+  "ppLiabilityTitle": "ಜವಾಬ್ದಾರಿಯ ಮಿತಿ",
+  "ppLiability": "ಸ್ವಸ್ಥ ಒಂದು ಆರೋಗ್ಯ ಮೇಲ್ವಿಚಾರಣಾ ಸಾಧನವಾಗಿದೆ, ಇದು ವೈದ್ಯಕೀಯ ಸಾಧನ ಅಥವಾ ಕ್ಲಿನಿಕಲ್ ಸೇವೆಯಲ್ಲ. ಅಪ್ಲಿಕೇಶನ್ ರೋಗನಿರ್ಣಯ, ಚಿಕಿತ್ಸೆ ಅಥವಾ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ನೀಡುವುದಿಲ್ಲ. ಎಲ್ಲಾ ಒಳನೋಟಗಳು ಕೇವಲ ಮಾಹಿತಿಗಾಗಿ ಮಾತ್ರ. ಅಪ್ಲಿಕೇಶನ್ ವಿಷಯದ ಆಧಾರದ ಮೇಲೆ ತೆಗೆದುಕೊಳ್ಳುವ ಯಾವುದೇ ಆರೋಗ್ಯ ನಿರ್ಧಾರಗಳಿಗೆ ಸ್ವಸ್ಥ ಜವಾಬ್ದಾರನಲ್ಲ. ವೈದ್ಯಕೀಯ ಸಲಹೆಗಾಗಿ ಯಾವಾಗಲೂ ಅರ್ಹ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ. ತುರ್ತು ಸಂದರ್ಭದಲ್ಲಿ, 112 ಗೆ ಕರೆ ಮಾಡಿ.",
+  "ppContactTitle": "ಸಂಪರ್ಕ",
+  "ppContact": "ಗೌಪ್ಯತೆ ಸಂಬಂಧಿತ ಪ್ರಶ್ನೆಗಳು ಅಥವಾ ದೂರುಗಳಿಗಾಗಿ, ನಮ್ಮ ಕುಂದುಕೊರತೆ ಅಧಿಕಾರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ: support@swasth.app. ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ಸ್ವೀಕರಿಸಿದ 30 ದಿನಗಳೊಳಗೆ ನಾವು ಪ್ರತಿಕ್ರಿಯಿಸುತ್ತೇವೆ.",
+  "tosTitle": "ಸೇವಾ ನಿಯಮಗಳು",
+  "tosAcceptanceTitle": "ನಿಯಮಗಳ ಒಪ್ಪಿಗೆ",
+  "tosAcceptance": "ಸ್ವಸ್ಥವನ್ನು ಬಳಸುವ ಮೂಲಕ, ನೀವು ಈ ಸೇವಾ ನಿಯಮಗಳಿಗೆ ಒಪ್ಪುತ್ತೀರಿ. ನೀವು ಒಪ್ಪದಿದ್ದರೆ, ಅಪ್ಲಿಕೇಶನ್ ಬಳಸಬೇಡಿ. ಈ ನಿಯಮಗಳು ರೋಗಿಗಳು, ಕುಟುಂಬ ಸದಸ್ಯರು ಮತ್ತು ಆರೈಕೆದಾರರು ಸೇರಿದಂತೆ ಎಲ್ಲಾ ಬಳಕೆದಾರರಿಗೆ ಅನ್ವಯಿಸುತ್ತವೆ.",
+  "tosServiceTitle": "ಸೇವೆಯ ವಿವರಣೆ",
+  "tosService": "ಸ್ವಸ್ಥ ವೈಯಕ್ತಿಕ ಆರೋಗ್ಯ ಮೇಲ್ವಿಚಾರಣಾ ಅಪ್ಲಿಕೇಶನ್ ಆಗಿದ್ದು, ಇದು ರಕ್ತದ ಗ್ಲೂಕೋಸ್, ರಕ್ತದೊತ್ತಡ ಮತ್ತು ಸಂಬಂಧಿತ ಆರೋಗ್ಯ ಮೆಟ್ರಿಕ್‌ಗಳನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಲು ನಿಮಗೆ ಸಹಾಯ ಮಾಡುತ್ತದೆ. ಇದು ಮಾಹಿತಿ ಉದ್ದೇಶಗಳಿಗಾಗಿ ಮಾತ್ರ ಎಐ-ರಚಿತ ಆರೋಗ್ಯ ಒಳನೋಟಗಳನ್ನು ನೀಡುತ್ತದೆ. ಸ್ವಸ್ಥ ಒಂದು ಕ್ಲಿನಿಕಲ್ ಸೇವೆ, ಟೆಲಿಮೆಡಿಸಿನ್ ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಅಥವಾ ನಿಯಂತ್ರಿತ ವೈದ್ಯಕೀಯ ಸಾಧನವಲ್ಲ.",
+  "tosAiTitle": "ಎಐ ಒಳನೋಟಗಳ ಹಕ್ಕುತ್ಯಾಗ",
+  "tosAi": "ಸ್ವಸ್ಥದಲ್ಲಿ ಎಐ-ರಚಿತ ವಿಷಯಗಳು ಕೇವಲ ಮಾಹಿತಿ ಉದ್ದೇಶಗಳಿಗಾಗಿವೆ. ಇದು ವೃತ್ತಿಪರ ವೈದ್ಯಕೀಯ ಸಲಹೆ, ರೋಗನಿರ್ಣಯ ಅಥವಾ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್‌ಗೆ ಪರ್ಯಾಯವಲ್ಲ. ಕೇವಲ ಅಪ್ಲಿಕೇಶನ್ ಒಳನೋಟಗಳ ಆಧಾರದ ಮೇಲೆ ಎಂದಿಗೂ ಔಷಧಿ, ಆಹಾರ ಅಥವಾ ಚಿಕಿತ್ಸೆಯನ್ನು ಬದಲಾಯಿಸಬೇಡಿ. ಆರೋಗ್ಯ ನಿರ್ಧಾರಗಳನ್ನು ತೆಗೆದುಕೊಳ್ಳುವ ಮೊದಲು ಯಾವಾಗಲೂ ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+  "tosDoctorTitle": "ವೈದ್ಯರೊಂದಿಗೆ ಡೇಟಾ ಹಂಚಿಕೆ",
+  "tosDoctor": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ಗೆ ನೀವು ವೈದ್ಯರನ್ನು ಲಿಂಕ್ ಮಾಡಿದಾಗ, ಆ ವೈದ್ಯರೊಂದಿಗೆ ನಿಮ್ಮ ಆರೋಗ್ಯ ಡೇಟಾವನ್ನು ಹಂಚಿಕೊಳ್ಳಲು ನೀವು ಸಮ್ಮತಿಸುತ್ತೀರಿ. ವೈದ್ಯರು ಅವರೊಂದಿಗೆ ಹಂಚಿಕೊಂಡ ಡೇಟಾವನ್ನು ಹೇಗೆ ಬಳಸುತ್ತಾರೆ ಎಂಬುದಕ್ಕೆ ಸ್ವಸ್ಥ ಜವಾಬ್ದಾರನಲ್ಲ. ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಬಳಸುವ ವೈದ್ಯರು ಎನ್‌ಎಂಸಿ ನೈತಿಕ ಮಾರ್ಗಸೂಚಿಗಳ ಅನುಸರಣೆಗೆ ಸ್ವತಂತ್ರವಾಗಿ ಜವಾಬ್ದಾರರಾಗಿರುತ್ತಾರೆ. ನೀವು ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ವೈದ್ಯರ ಪ್ರವೇಶವನ್ನು ಹಿಂಪಡೆಯಬಹುದು.",
+  "tosLiabilityTitle": "ಜವಾಬ್ದಾರಿಯ ಮಿತಿ",
+  "tosLiability": "ಭಾರತೀಯ ಕಾನೂನಿನಿಂದ ಅನುಮತಿಸಲಾದ ಗರಿಷ್ಠ ಮಿತಿಯವರೆಗೆ, ಸ್ವಸ್ಥ ಮತ್ತು ಅದರ ಸಂಸ್ಥಾಪಕರು, ಉದ್ಯೋಗಿಗಳು ಮತ್ತು ಸೇವಾ ಪೂರೈಕೆದಾರರು ಈ ಅಪ್ಲಿಕೇಶನ್‌ನ ಬಳಕೆಯಿಂದ ಉಂಟಾಗುವ ಯಾವುದೇ ಆರೋಗ್ಯ ಫಲಿತಾಂಶಗಳು, ಕ್ಲಿನಿಕಲ್ ನಿರ್ಧಾರಗಳು ಅಥವಾ ಹಾನಿಗಳಿಗೆ ಜವಾಬ್ದಾರರಾಗಿರುವುದಿಲ್ಲ. ಅಪ್ಲಿಕೇಶನ್ ಅನ್ನು 'ಇದ್ದಂತೆಯೇ' ಒದಗಿಸಲಾಗಿದೆ.",
+  "tosTerminationTitle": "ಖಾತೆ ಮುಕ್ತಾಯ",
+  "tosTermination": "ಅಪ್ಲಿಕೇಶನ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳಿಂದ ನೀವು ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಅಳಿಸಬಹುದು. ನಿಮ್ಮ ಎಲ್ಲಾ ಡೇಟಾವನ್ನು 30 ದಿನಗಳೊಳಗೆ ಶಾಶ್ವತವಾಗಿ ಅಳಿಸಲಾಗುತ್ತದೆ. ಈ ನಿಯಮಗಳನ್ನು ಉಲ್ಲಂಘಿಸುವ ಖಾತೆಗಳನ್ನು ಸ್ವಸ್ಥ ಅಮಾನತುಗೊಳಿಸಬಹುದು.",
+  "tosGoverningTitle": "ಆಡಳಿತ ಕಾನೂನು",
+  "tosGoverning": "ಈ ನಿಯಮಗಳು ಭಾರತದ ಕಾನೂನುಗಳಿಂದ ನಿಯಂತ್ರಿಸಲ್ಪಡುತ್ತವೆ. ವಿವಾದಗಳು ಭಾರತದ ನವದೆಹಲಿಯ ನ್ಯಾಯಾಲಯಗಳ ವಿಶೇಷ ಅಧಿಕಾರ ವ್ಯಾಪ್ತಿಗೆ ಒಳಪಟ್ಟಿರುತ್ತವೆ. ಈ ನಿಯಮಗಳು ಡಿಜಿಟಲ್ ವೈಯಕ್ತಿಕ ಡೇಟಾ ಸಂರಕ್ಷಣಾ ಕಾಯಿದೆ 2023 (DPDPA) ಗೆ ಅನುಗುಣವಾಗಿರುತ್ತವೆ. ಕೊನೆಯದಾಗಿ ನವೀಕರಿಸಿದ್ದು: ಮೇ 2026.",
+  "chatTitle": "ಸ್ವಸ್ಥ ಎಐ",
+  "chatSubtitle": "ಆನ್‌ಲೈನ್ ಮತ್ತು ವಿಶ್ಲೇಷಿಸುತ್ತಿದೆ",
+  "chatPlaceholder": "ನಿಮ್ಮ ಆರೋಗ್ಯದ ಬಗ್ಗೆ ಕೇಳಿ...",
+  "chatEmptyState": "ನಿಮ್ಮ ಆರೋಗ್ಯ ರೀಡಿಂಗ್‌ಗಳು, ಔಷಧಿಗಳು, ಆಹಾರ ಅಥವಾ ಜೀವನಶೈಲಿಯ ಬಗ್ಗೆ ಯಾವುದನ್ನಾದರೂ ಕೇಳಿ. ನನಗೆ ನಿಮ್ಮ ಆರೋಗ್ಯ ಡೇಟಾ ಮತ್ತು ಹಿಂದಿನ ಸಂಭಾಷಣೆಗಳ ಪ್ರವೇಶವಿದೆ.",
+  "chatQuotaRemaining": "ಪ್ರಶ್ನೆಗಳು ಇಂದು ಬಾಕಿ ಇವೆ",
+  "chatQuotaExceeded": "ದೈನಂದಿನ ಪ್ರಶ್ನೆ ಮಿತಿ ತಲುಪಿದೆ. ಮಧ್ಯರಾತ್ರಿ ಮರುಹೊಂದಿಸಲಾಗುತ್ತದೆ.",
+  "chatFileTooLarge": "ಫೈಲ್ ತುಂಬಾ ದೊಡ್ಡದಾಗಿದೆ. ಗರಿಷ್ಠ ಗಾತ್ರ 5 ಎಂಬಿ.",
+  "chatUnsupportedFile": "ಬೆಂಬಲವಿಲ್ಲದ ಫೈಲ್ ಮಾದರಿ. ದಯವಿಟ್ಟು ಚಿತ್ರ (JPG, PNG, WEBP) ಅಥವಾ PDF ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
+  "chatAnalyzingPdf": "ಅಪ್‌ಲೋಡ್ ಮಾಡಿದ ದಾಖಲೆಯನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...",
+  "offlineBanner": "ನೀವು ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿದ್ದೀರಿ. ಕೆಲವು ವೈಶಿಷ್ಟ್ಯಗಳು ಸೀಮಿತವಾಗಿರಬಹುದು.",
+  "backOnline": "ಮತ್ತೆ ಆನ್‌ಲೈನ್‌ಗೆ ಬಂದಿದ್ದೀರಿ! ನಿಮ್ಮ ಡೇಟಾವನ್ನು ಸಿಂಕ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+  "loggedInOffline": "ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಲಾಗ್ ಇನ್ ಆಗಿದ್ದೀರಿ",
+  "readingSavedOffline": "ರೀಡಿಂಗ್ ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ. ಸಂಪರ್ಕಗೊಂಡಾಗ ಸಿಂಕ್ ಆಗುತ್ತದೆ.",
+  "syncComplete": "{count} ರೀಡಿಂಗ್‌ಗಳನ್ನು ಸಿಂಕ್ ಮಾಡಲಾಗಿದೆ",
+  "@syncComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineLoginExpired": "ಲಾಗ್ ಇನ್ ಮಾಡಲು ದಯವಿಟ್ಟು ಇಂಟರ್ನೆಟ್‌ಗೆ ಸಂಪರ್ಕಪಡಿಸಿ",
+  "heartStatusHealthy": "ನೀವು ಉತ್ತಮವಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತಿದ್ದೀರಿ",
+  "heartStatusCaution": "ಇಂದು ಹತ್ತಿರದಿಂದ ಗಮನಿಸಿ",
+  "heartStatusUrgent": "ಇಂದೇ ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ",
+  "heartFaceHealthy": "ಎಲ್ಲವೂ ಸರಿಯಾಗಿದೆ",
+  "heartFaceCaution": "ಇಂದು ಎಚ್ಚರದಿಂದಿರಿ",
+  "heartFaceUrgent": "ವೈದ್ಯರ ಸಹಾಯದ ಅಗತ್ಯವಿದೆ",
+  "heartCallDoctor": "ಈಗಲೇ ನಿಮ್ಮ ವೈದ್ಯರಿಗೆ ಕರೆ ಮಾಡಿ",
+  "doctorContactNotAvailable": "ವೈದ್ಯರ ಸಂಪರ್ಕ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಮೊದಲು ವೈದ್ಯರನ್ನು ಲಿಂಕ್ ಮಾಡಿ.",
+  "quickSelectTitle": "ಊಟ ದಾಖಲಿಸಿ",
+  "mealHighCarb": "ಹೆಚ್ಚು — ಅನ್ನ / ರೊಟ್ಟಿ",
+  "mealLowCarb": "ಕಡಿಮೆ — ಪಲ್ಯ / ದಾಲ್",
+  "mealSweets": "ಸಿಹಿ ತಿನಿಸುಗಳು / ಮೀಠಾ",
+  "mealHighProtein": "ಪ್ರೋಟೀನ್ — ಮೊಟ್ಟೆ / ಪನೀರ್",
+  "mealModerateCarb": "ಮಿಶ್ರಿತ / ಸಮತೋಲಿತ",
+  "mealMoreOptions": "ಹೆಚ್ಚಿನ ಆಯ್ಕೆಗಳು",
+  "mealLessOptions": "ಕಡಿಮೆ ಆಯ್ಕೆಗಳು",
+  "mealSavedSuccess": "ಊಟ ದಾಖಲಿಸಲಾಗಿದೆ!",
+  "mealSavedOffline": "ಊಟವನ್ನು ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ. ಸಂಪರ್ಕಗೊಂಡಾಗ ಸಿಂಕ್ ಆಗುತ್ತದೆ.",
+  "@mealSavedOffline": {
+    "description": "Shown when a meal is saved while device is offline, queued for later sync."
+  },
+  "mealTypeBreakfast": "ಬಳಗಿನ ಉಪಹಾರ",
+  "mealTypeLunch": "ಮಧ್ಯಾಹ್ನದ ಊಟ",
+  "mealTypeSnack": "ತಿಂಡಿ",
+  "mealTypeDinner": "ರಾತ್ರಿಯ ಊಟ",
+  "sectionMeals": "ಇತ್ತೀಚಿನ ಊಟಗಳು",
+  "@sectionMeals": {
+    "description": "Section header for recent meals in doctor patient detail screen"
+  },
+  "noMealsLast7Days": "ಕಳೆದ 7 ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ಊಟಗಳನ್ನು ದಾಖಲಿಸಿಲ್ಲ",
+  "@noMealsLast7Days": {
+    "description": "Empty state when no meals found in last 7 days"
+  },
+  "showAllMeals": "ಎಲ್ಲಾ {count} ಊಟಗಳನ್ನು ತೋರಿಸಿ",
+  "@showAllMeals": {
+    "description": "Button to show all meals",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mealDisclaimer": "ಸಾಮಾನ್ಯ ಕ್ಷೇಮಕ್ಕಾಗಿ, ವೈದ್ಯಕೀಯ ಸಲಹೆಯಲ್ಲ",
+  "foodPhotoTitle": "ಆಹಾರದ ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
+  "foodPhotoHint": "ಕ್ಯಾಮೆರಾವನ್ನು ನಿಮ್ಮ ಆಹಾರದ ಕಡೆಗೆ ಗುರಿ ಮಾಡಿ",
+  "foodPhotoGallery": "ಗ್ಯಾಲರಿಯಿಂದ ಆರಿಸಿ",
+  "foodPhotoAnalyzing": "ನಿಮ್ಮ ಆಹಾರವನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...",
+  "foodPhotoFailed": "ಆಹಾರವನ್ನು ವರ್ಗೀಕರಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಕೈಯಾರೆ ಆಯ್ಕೆಮಾಡಿ.",
+  "cameraNotFound": "ಈ ಸಾಧನದಲ್ಲಿ ಯಾವುದೇ ಕ್ಯಾಮೆರಾ ಕಂಡುಬಂದಿಲ್ಲ.",
+  "@cameraNotFound": {
+    "description": "Error message when device has no camera available"
+  },
+  "cameraError": "ಕ್ಯಾಮೆರಾ ಪ್ರಾರಂಭಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "@cameraError": {
+    "description": "Generic camera error message - never leak raw exception details to user"
+  },
+  "foodResultTitle": "ಊಟದ ಫಲಿತಾಂಶ",
+  "foodCategoryHighCarb": "ಹೆಚ್ಚು ಕಾರ್ಬ್",
+  "foodCategoryModerateCarb": "ಮಧ್ಯಮ ಕಾರ್ಬ್",
+  "foodCategoryLowCarb": "ಕಡಿಮೆ ಕಾರ್ಬ್",
+  "foodCategoryHighProtein": "ಹೆಚ್ಚು ಪ್ರೋಟೀನ್",
+  "foodCategorySweets": "ಸಿಹಿ ತಿನಿಸುಗಳು",
+  "foodMealTypeLabel": "ಊಟದ ವಿಧ",
+  "foodNotCorrectChange": "ಸರಿಯಿಲ್ಲವೇ? ಬದಲಿಸಿ",
+  "foodDisclaimer": "ಸಾಮಾನ್ಯ ಕ್ಷೇಮಕ್ಕಾಗಿ, ವೈದ್ಯಕೀಯ ಸಲಹೆಯಲ್ಲ",
+  "foodPhotoSaved": "ಊಟದ ದಾಖಲೆ ಉಳಿಸಲಾಗಿದೆ!",
+  "foodPhotoSaveFailed": "ಊಟವನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "mealsTileLabel": "ಊಟಗಳು",
+  "mealsTodayCount": "ಇಂದು {count}",
+  "@mealsTodayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todaysMeals": "ಇಂದಿನ ಊಟಗಳು",
+  "noMealsToday": "ಇಂದು ಯಾವುದೇ ಊಟಗಳನ್ನು ದಾಖಲಿಸಿಲ್ಲ",
+  "tapToLogMeal": "ದಾಖಲಿಸಲು ಟ್ಯಾಪ್ ಮಾಡಿ",
+  "logMeal": "ಊಟ ದಾಖಲಿಸಿ",
+  "logMealSubtitle": "ನೀವು ಹೇಗೆ ದಾಖಲಿಸಲು ಬಯಸುತ್ತೀರಿ?",
+  "quickSelectOption": "ತ್ವರಿತ ಆಯ್ಕೆ",
+  "scanFoodPhotoOption": "ಆಹಾರದ ಫೋಟೋ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
+  "photoAiHint": "ಫೋಟೋ ಮೂಲಕ ಎಐ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕಾರ್ಬ್ ಮಟ್ಟವನ್ನು ಪತ್ತೆ ಮಾಡುತ್ತದೆ",
+  "wellnessHubTitle": "{relationship} ಅವರ ಕ್ಷೇಮ ಕೇಂದ್ರ",
+  "@wellnessHubTitle": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "wellnessHubSubtitle": "{name} | {location}",
+  "@wellnessHubSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "caregiverStatusGreat": "ನಿಮ್ಮ {relationship} ಇಂದು ಉತ್ತಮವಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತಿದ್ದಾರೆ. ವೈಟಲ್ಸ್ ಸ್ಥಿರವಾಗಿದೆ.",
+  "@caregiverStatusGreat": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "caregiverStatusCaution": "ನಿಮ್ಮ {relationship} ಕಡೆಗೆ ಇಂದು ಗಮನ ಹರಿಸಬೇಕು. ವೈಟಲ್ಸ್ ಪರಿಶೀಲಿಸಿ.",
+  "@caregiverStatusCaution": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "caregiverStatusUrgent": "ನಿಮ್ಮ {relationship} ಗೆ ತಕ್ಷಣದ ಆರೈಕೆಯ ಅಗತ್ಯವಿದೆ. ಈಗಲೇ ಕರೆ ಮಾಡಿ.",
+  "@caregiverStatusUrgent": {
+    "placeholders": {
+      "relationship": {
+        "type": "String"
+      }
+    }
+  },
+  "activityFeedTitle": "ಚಟುವಟಿಕೆ ಫೀಡ್",
+  "careCircleTitle": "ಆರೈಕೆ ವೃತ್ತ",
+  "priorityCall": "ಆದ್ಯತೆಯ ಕರೆ",
+  "noRecentActivity": "ಇತ್ತೀಚಿನ ಯಾವುದೇ ಚಟುವಟಿಕೆಯಿಲ್ಲ",
+  "wellnessRingTitle": "ಕ್ಷೇಮ ಉಂಗುರ",
+  "takeReadings": "ರೀಡಿಂಗ್‌ಗಳನ್ನು ತೆಗೆದುಕೊಳ್ಳಿ",
+  "backToWellnessHub": "ಮತ್ತೆ ಕ್ಷೇಮ ಕೇಂದ್ರಕ್ಕೆ",
+  "glucometerPrerequisites": "ಗ್ಲುಕೋಮೀಟರ್ – ಪೂರ್ವಾಪೇಕ್ಷಿತಗಳು:",
+  "@glucometerPrerequisites": {
+    "description": "Title for glucometer prerequisites section"
+  },
+  "tapDeviceToConnect": "ಸಂಪರ್ಕಿಸಲು ಮೇಲೆ ಒಂದು ಸಾಧನದ ಐಕಾನ್ ಟ್ಯಾಪ್ ಮಾಡಿ",
+  "@tapDeviceToConnect": {
+    "description": "Status message when no device is connected"
+  },
+  "tapToConnectDevice": "ಸಾಧನವನ್ನು ಸಂಪರ್ಕಿಸಲು ಟ್ಯಾಪ್ ಮಾಡಿ",
+  "@tapToConnectDevice": {
+    "description": "Instruction to tap and connect device"
+  },
+  "alreadyConnectedMessage": "{deviceType} ಈಗಾಗಲೇ ಸಂಪರ್ಕಗೊಂಡಿದೆ. ಇನ್ನೊಂದು {deviceType} ಗಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಬೇಕೆ?",
+  "@alreadyConnectedMessage": {
+    "description": "Message when device is already connected",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scanForDeviceMessage": "{deviceType} ಗಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಬೇಕೆ?",
+  "@scanForDeviceMessage": {
+    "description": "Confirmation message to scan for device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "bpTransferHint": "\n\nಮೊದಲು ಸಾಧನದಲ್ಲಿ BT ಒತ್ತಿರಿ (ನಿಧಾನವಾಗಿ LED ಮಿಟುಕಿಸುವುದು = ವರ್ಗಾವಣೆ ಮೋಡ್).",
+  "@bpTransferHint": {
+    "description": "Hint for BP device transfer mode"
+  },
+  "connectDeviceType": "{deviceType} ಸಂಪರ್ಕಿಸಿ",
+  "@connectDeviceType": {
+    "description": "Button to connect device",
+    "placeholders": {
+      "deviceType": {}
+    }
+  },
+  "scan": "ಸ್ಕ್ಯಾನ್",
+  "@scan": {
+    "description": "Button to start scanning"
+  },
+  "bpHistory": "ಬಿಪಿ ಇತಿಹಾಸ",
+  "@bpHistory": {
+    "description": "Title for BP history section"
+  },
+  "recordsCount": "{count} ದಾಖಲೆಗಳು",
+  "@recordsCount": {
+    "description": "Count of records",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allRecords": "ಎಲ್ಲಾ ದಾಖಲೆಗಳು",
+  "@allRecords": {
+    "description": "Title for all records section"
+  },
+  "viewAllHistory": "ಎಲ್ಲಾ ಇತಿಹಾಸ ನೋಡಿ",
+  "@viewAllHistory": {
+    "description": "Tooltip for history button"
+  },
+  "deviceDisconnected": "ಸಾಧನ ಸಂಪರ್ಕ ಕಡಿತಗೊಂಡಿದೆ",
+  "@deviceDisconnected": {
+    "description": "Message shown when device is disconnected"
+  },
+  "unknownDevice": "ಅಜ್ಞಾತ ಸಾಧನ",
+  "@unknownDevice": {
+    "description": "Default name for unnamed BLE devices"
+  },
+  "signalStrength": "ಸಿಗ್ನಲ್: {rssi} dBm",
+  "@signalStrength": {
+    "description": "BLE device signal strength",
+    "placeholders": {
+      "rssi": {
+        "type": "int"
+      }
+    }
+  },
+  "rescan": "ಮತ್ತೆ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
+  "@rescan": {
+    "description": "Button to rescan for devices"
+  },
+  "linkDoctorTitle": "ವೈದ್ಯರನ್ನು ಲಿಂಕ್ ಮಾಡಿ",
+  "linkDoctorHeadline": "ನಿಮ್ಮ ಆರೋಗ್ಯ ರೀಡಿಂಗ್‌ಗಳನ್ನು ವೈದ್ಯರೊಂದಿಗೆ ಹಂಚಿಕೊಳ್ಳಿ",
+  "linkDoctorCodeLabel": "ವೈದ್ಯರ ಕೋಡ್",
+  "linkDoctorCodeHint": "ಉದಾ. DRRAJ52",
+  "linkDoctorCodeEmpty": "ದಯವಿಟ್ಟು ವೈದ್ಯರ ಕೋಡ್ ನಮೂದಿಸಿ",
+  "linkDoctorCodeInvalid": "ವೈದ್ಯರ ಕೋಡ್ ತುಂಬಾ ಚಿಕ್ಕದಾಗಿದೆ",
+  "linkDoctorLookupButton": "ವೈದ್ಯರನ್ನು ಹುಡುಕಿ",
+  "linkDoctorLookupFailed": "ವೈದ್ಯರು ಕಂಡುಬಂದಿಲ್ಲ. ಕೋಡ್ ಪರಿಶೀಲಿಸಿ.",
+  "linkDoctorCodeHelper": "ನಿಮ್ಮ ವೈದ್ಯರಿಂದ ಅವರ ಸ್ವಸ್ಥ ಕೋಡ್ ಕೇಳಿ (DR ನಿಂದ ಪ್ರಾರಂಭವಾಗುತ್ತದೆ)",
+  "linkDoctorPickerTitle": "ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಆರಿಸಿ",
+  "linkDoctorPickerSubtitle": "ನೀವು ಯಾರೊಂದಿಗೆ ರೀಡಿಂಗ್ ಹಂಚಿಕೊಳ್ಳಲು ಬಯಸುತ್ತೀರೋ ಆ ವೈದ್ಯರನ್ನು ಟ್ಯಾಪ್ ಮಾಡಿ.",
+  "linkDoctorAlreadyLinked": "ಈ ವೈದ್ಯರು ಈಗಾಗಲೇ ಈ ಪ್ರೊಫೈಲ್ ನೋಡಬಹುದು.",
+  "linkDoctorAlreadyLinkedBadge": "ಈಗಾಗಲೇ ಹಂಚಿಕೊಳ್ಳಲಾಗುತ್ತಿದೆ",
+  "linkDoctorPreviouslyDeclinedBadge": "ಹಿಂದೆ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ - ಮತ್ತೆ ವಿನಂತಿಸಬಹುದು",
+  "linkDoctorOr": "ಅಥವಾ",
+  "linkDoctorEnterNewCode": "ಹೊಸ ವೈದ್ಯರ ಕೋಡ್ ನಮೂದಿಸಿ",
+  "linkDoctorConsentTitle": "ನೀವು ಈ ವೈದ್ಯರನ್ನು ಹೇಗೆ ಭೇಟಿಯಾದಿರಿ?",
+  "linkDoctorConsentInPerson": "ಕ್ಲಿನಿಕ್‌ನಲ್ಲಿ ನೇರ ಭೇಟಿ",
+  "linkDoctorConsentInPersonHelp": "ನಾನು ಈ ವೈದ್ಯರನ್ನು ಕ್ಲಿನಿಕ್‌ನಲ್ಲಿ ಭೇಟಿ ಮಾಡಿದ್ದೇನೆ.",
+  "linkDoctorConsentVideo": "ವಿಡಿಯೋ ಅಥವಾ ಫೋನ್ ಸಮಾಲೋಚನೆ",
+  "linkDoctorConsentVideoHelp": "ನಾನು ಈ ವೈದ್ಯರೊಂದಿಗೆ ವಿಡಿಯೋ ಅಥವಾ ಫೋನ್ ಮೂಲಕ ಮಾತನಾಡಿದ್ದೇನೆ.",
+  "linkDoctorNotVerified": "ಪರಿಶೀಲನೆ ಬಾಕಿ ಇದೆ",
+  "linkDoctorNotVerifiedHelp": "ಈ ವೈದ್ಯರು ನೋಂದಾಯಿಸಿಕೊಂಡಿದ್ದಾರೆ ಆದರೆ ಸ್ವಸ್ಥ ಇನ್ನೂ ಅವರ ಎನ್‌ಎಂಸಿ ಸಂಖ್ಯೆಯನ್ನು ಪರಿಶೀಲಿಸುತ್ತಿದೆ. ಪರಿಶೀಲನೆ ಪೂರ್ಣಗೊಂಡ ನಂತರ ನೀವು ಲಿಂಕ್ ಮಾಡಬಹುದು.",
+  "linkDoctorVerified": "ಪರಿಶೀಲಿಸಲ್ಪಟ್ಟ ವೈದ್ಯರು",
+  "linkDoctorConfirm": "ನನ್ನ ರೀಡಿಂಗ್‌ಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ",
+  "linkDoctorConfirmDialogTitle": "ನಿಮ್ಮ ರೀಡಿಂಗ್‌ಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಬೇಕೆ?",
+  "linkDoctorConfirmDialogBody": "ಡಾ. {name} ಅವರು ನಿಮ್ಮ ಹಿಂದಿನ ಮತ್ತು ಭವಿಷ್ಯದ ಆರೋಗ್ಯ ರೀಡಿಂಗ್‌ಗಳನ್ನು ನೋಡಲು ಸಾಧ್ಯವಾಗುತ್ತದೆ. ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ನಿಂದ ನೀವು ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ಹಂಚಿಕೆಯನ್ನು ನಿಲ್ಲಿಸಬಹುದು.",
+  "@linkDoctorConfirmDialogBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkDoctorConfirmDialogShare": "ಹೌದು, ಹಂಚಿಕೊಳ್ಳಿ",
+  "linkDoctorNmcDisclaimer": "ರೀಡಿಂಗ್‌ಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳುವುದು ವೈದ್ಯ-ರೋಗಿ ಸಂಬಂಧವನ್ನು ಸೃಷ್ಟಿಸುವುದಿಲ್ಲ. ನಿಮ್ಮ ವೈದ್ಯರು ಯಾವುದೇ ಚಿಕಿತ್ಸೆಯನ್ನು ಪ್ರತ್ಯೇಕವಾಗಿ ದೃಢಪಡಿಸಬೇಕು. ತುರ್ತು ಸಂದರ್ಭದಲ್ಲಿ, 108 ಗೆ ಕರೆ ಮಾಡಿ.",
+  "linkDoctorRequestSent": "{name} ಅವರಿಗೆ ವಿನಂತಿಯನ್ನು ಕಳುಹಿಸಲಾಗಿದೆ. ವೈದ್ಯರು ಒಪ್ಪಿಕೊಂಡ ನಂತರ ನೀವು ಪ್ರವೇಶ ಪಡೆಯುತ್ತೀರಿ.",
+  "@linkDoctorRequestSent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkDoctorSuccess": "ನೀವು ಈಗ {name} ಅವರೊಂದಿಗೆ ಲಿಂಕ್ ಆಗಿದ್ದೀರಿ.",
+  "@linkDoctorSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "linkDoctorRevokeHint": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ನಿಂದ ನೀವು ಯಾವುದೇ ಸಮಯದಲ್ಲಿ ಹಂಚಿಕೆಯನ್ನು ನಿಲ್ಲಿಸಬಹುದು.",
+  "linkDoctorNoProfile": "ದಯವಿಟ್ಟು ಮೊದಲು ಪ್ರೊಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ",
+  "linkDoctorSessionExpired": "ನಿಮ್ಮ ಸೆಶನ್ ಅವಧಿ ಮುಗಿದಿದೆ. ದಯವಿಟ್ಟು ಲಾಗ್ ಔಟ್ ಮಾಡಿ ಮತ್ತು ಮತ್ತೆ ಲಾಗ್ ಇನ್ ಮಾಡಿ.",
+  "linkDoctorNetworkError": "ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕವಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "doctorRegisterTitle": "ವೈದ್ಯರ ಸೈನ್ ಅಪ್",
+  "doctorRegisterHeadline": "ವೈದ್ಯರಾಗಿ ನೋಂದಾಯಿಸಿ",
+  "doctorRegisterSubheadline": "ನೀವು ರೋಗಿಗಳನ್ನು ನೋಡುವ ಮೊದಲು ನಿಮ್ಮ ಎನ್‌ಎಂಸಿ ಸಂಖ್ಯೆಯನ್ನು ಸ್ವಸ್ಥ ತಂಡವು ಪರಿಶೀಲಿಸುತ್ತದೆ.",
+  "doctorFullNameLabel": "ಪೂರ್ಣ ಹೆಸರು",
+  "doctorNmcLabel": "ಎನ್‌ಎಂಸಿ ನೋಂದಣಿ ಸಂಖ್ಯೆ",
+  "doctorNmcHint": "ಮೆಡಿಕಲ್ ಕೌನ್ಸಿಲ್ ಸಂಖ್ಯೆ",
+  "doctorNmcEmpty": "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಎನ್‌ಎಂಸಿ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
+  "doctorSpecialtyLabel": "ವಿಶೇಷತೆ",
+  "doctorClinicLabel": "ಕ್ಲಿನಿಕ್ ಅಥವಾ ಆಸ್ಪತ್ರೆಯ ಹೆಸರು",
+  "doctorRegisterSubmit": "ವೈದ್ಯರ ಖಾತೆ ರಚಿಸಿ",
+  "doctorRegisterSuccess": "ಖಾತೆ ರಚಿಸಲಾಗಿದೆ. ಸ್ವಸ್ಥ ಅಡ್ಮಿನ್ ಶೀಘ್ರದಲ್ಲೇ ನಿಮ್ಮ ಎನ್‌ಎಂಸಿ ಸಂಖ್ಯೆಯನ್ನು ಪರಿಶೀಲಿಸುತ್ತಾರೆ.",
+  "doctorSpecialtyGeneral": "ಜನರಲ್ ಫಿಸಿಶಿಯನ್",
+  "doctorSpecialtyEndocrinologist": "ಎಂಡೋಕ್ರಿನಾಲಜಿಸ್ಟ್",
+  "doctorSpecialtyCardiologist": "ಕಾರ್ಡಿಯಾಲಜಿಸ್ಟ್",
+  "doctorSpecialtyDiabetologist": "ಡಯಾಬಿಟಾಲಜಿಸ್ಟ್",
+  "doctorSpecialtyInternal": "ಇಂಟರ್ನಲ್ ಮೆಡಿಸಿನ್",
+  "doctorSpecialtyFamily": "ಫ್ಯಾಮಿಲಿ ಮೆಡಿಸಿನ್",
+  "doctorSpecialtyGynaecology": "ಗೈನಾಕಾಲಜಿ",
+  "doctorSpecialtyPaediatrics": "ಪೀಡಿಯಾಟ್ರಿಕ್ಸ್",
+  "doctorSpecialtyGeneralSurgery": "ಜನರಲ್ ಸರ್ಜರಿ",
+  "doctorSpecialtyOther": "ಇತರರು",
+  "adminCreateUserTitle": "ಬಳಕೆದಾರರನ್ನು ರಚಿಸಿ",
+  "adminCreateUserHeadline": "ರೋಗಿಯ ಖಾತೆಯನ್ನು ರಚಿಸಿ",
+  "adminCreateUserRoleLabel": "ಖಾತೆ ವಿಧ",
+  "adminCreateUserRolePatient": "ರೋಗಿ",
+  "adminCreateUserRoleDoctor": "ವೈದ್ಯರು (ಶೀಘ್ರದಲ್ಲೇ ಬರಲಿದೆ)",
+  "adminCreateUserDoctorComingSoon": "ಸದ್ಯಕ್ಕೆ ವೈದ್ಯರ ಖಾತೆಗಳನ್ನು ವೈದ್ಯರ ಸೈನ್-ಅಪ್ ಹರಿವಿನ ಮೂಲಕವೇ ರಚಿಸಬೇಕು.",
+  "adminCreateUserTempPasswordHelp": "ಈ ಪಾಸ್‌ವರ್ಡ್ ಅನ್ನು ಬಳಕೆದಾರರೊಂದಿಗೆ ಸುರಕ್ಷಿತವಾಗಿ ಹಂಚಿಕೊಳ್ಳಿ. ಅವರು ತಮ್ಮ ಪ್ರೊಫೈಲ್ ಸ್ಕ್ರೀನ್‌ನಿಂದ ಅದನ್ನು ಬದಲಾಯಿಸಬಹುದು.",
+  "adminCreateUserSubmit": "ಖಾತೆ ರಚಿಸಿ",
+  "adminCreateUserSuccess": "{email} ಗಾಗಿ ಖಾತೆ ರಚಿಸಲಾಗಿದೆ",
+  "@adminCreateUserSuccess": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "adminCreateUserNmcRequired": "ವೈದ್ಯರ ಖಾತೆಗಳಿಗೆ ಎನ್‌ಎಂಸಿ ಸಂಖ್ಯೆ ಅಗತ್ಯವಿದೆ",
+  "emailVerificationTitle": "ನಿಮ್ಮ ಇಮೇಲ್ ಪರಿಶೀಲಿಸಿ",
+  "emailVerificationSubtitle": "ನಾವು {email} ಗೆ 6-ಅಂಕಿಯ ಕೋಡ್ ಕಳುಹಿಸಿದ್ದೇವೆ. ನಿಮ್ಮ ಇಮೇಲ್ ವಿಳಾಸವನ್ನು ಪರಿಶೀಲಿಸಲು ಅದನ್ನು ಕೆಳಗೆ ನಮೂದಿಸಿ.",
+  "@emailVerificationSubtitle": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "verifyEmailButton": "ಇಮೇಲ್ ಪರಿಶೀಲಿಸಿ",
+  "skipForNow": "ಸದ್ಯಕ್ಕೆ ಬೇಡ",
+  "emailNotVerifiedBanner": "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಮೇಲ್ ವಿಳಾಸವನ್ನು ಪರಿಶೀಲಿಸಿ",
+  "emailVerifiedSuccess": "ಇಮೇಲ್ ಯಶಸ್ವಿಯಾಗಿ ಪರಿಶೀಲಿಸಲಾಗಿದೆ!",
+  "verifyEmailDialogTitle": "ನಿಮ್ಮ ಇಮೇಲ್ ಪರಿಶೀಲಿಸಿ",
+  "verifyEmailDialogMessage": "ಖಾತೆ ಭದ್ರತೆಗಾಗಿ ನಿಮ್ಮ ಇಮೇಲ್ ಪರಿಶೀಲಿಸಿ. ನೀವು ಇದನ್ನು ನಂತರವೂ ಮಾಡಬಹುದು.",
+  "verifyNow": "ಈಗಲೇ ಪರಿಶೀಲಿಸಿ",
+  "verifyLater": "ನಂತರ",
+  "emailVerificationOtpSent": "ಪರಿಶೀಲನಾ ಕೋಡ್ ಅನ್ನು ನಿಮ್ಮ ಇಮೇಲ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ",
+  "emailVerificationFailed": "ಪರಿಶೀಲನಾ ಕೋಡ್ ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ",
+  "otpValidationEmpty": "ದಯವಿಟ್ಟು ಕೋಡ್ ನಮೂದಿಸಿ",
+  "otpValidationLength": "ಕೋಡ್ 6 ಅಂಕಿಯಿರಬೇಕು",
+  "otpValidationDigitsOnly": "ಕೋಡ್ ಸಂಖ್ಯೆಗಳನ್ನು ಮಾತ್ರ ಹೊಂದಿರಬೇಕು",
+  "loginModeEmail": "ಇಮೇಲ್",
+  "loginModePhone": "ಫೋನ್",
+  "emailOrPhoneLabel": "ಇಮೇಲ್ ಅಥವಾ ಫೋನ್ ಸಂಖ್ಯೆ",
+  "phoneNumberLabel": "ಫೋನ್ ಸಂಖ್ಯೆ",
+  "phoneNumberHint": "ಉದಾ. 9876543210",
+  "phoneValidationInvalid": "ಮಾನ್ಯವಾದ ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ (10-15 ಅಂಕಿಗಳು)",
+  "continueButton": "ಮುಂದುವರಿಸಿ",
+  "phoneLoginNoAccountTitle": "ಖಾತೆ ಕಂಡುಬಂದಿಲ್ಲ",
+  "phoneLoginNoAccountMessage": "ಈ ಫೋನ್ ಸಂಖ್ಯೆಯೊಂದಿಗೆ ಯಾವುದೇ ಖಾತೆ ಕಂಡುಬಂದಿಲ್ಲ. ನೀವು ಹೊಸ ಖಾತೆ ರಚಿಸಲು ಬಯಸುವಿರಾ?",
+  "createAccount": "ಖಾತೆ ರಚಿಸಿ",
+  "verifyPhoneOTP": "ಫೋನ್ OTP ಪರಿಶೀಲಿಸಿ",
+  "otpSentToPhone": "{phone} ಗೆ OTP ಕಳುಹಿಸಲಾಗಿದೆ",
+  "@otpSentToPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "nameValidationEmpty": "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಹೆಸರು ನಮೂದಿಸಿ",
+  "nameValidationTooShort": "ಹೆಸರು ಕನಿಷ್ಠ 2 ಅಕ್ಷರಗಳಿರಬೇಕು",
+  "verifyOTP": "OTP ಪರಿಶೀಲಿಸಿ",
+  "didntReceiveOTP": "ಕೋಡ್ ಸ್ವೀಕರಿಸಿಲ್ಲವೇ?",
+  "resendOTP": "OTP ಮತ್ತೆ ಕಳುಹಿಸಿ",
+  "accountCreatedSuccess": "ಖಾತೆ ಯಶಸ್ವಿಯಾಗಿ ರಚಿಸಲಾಗಿದೆ! ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಪೂರ್ಣಗೊಳಿಸಿ.",
+  "nutritionAnalysisTitle": "ಪೌಷ್ಟಿಕಾಂಶದ ವಿಶ್ಲೇಷಣೆ",
+  "@nutritionAnalysisTitle": {
+    "description": "Title for the detailed nutrition analysis screen showing macros, micros, and diet flags"
+  },
+  "carbLevel": "ಕಾರ್ಬ್ ಮಟ್ಟ",
+  "@carbLevel": {
+    "description": "Label for carbohydrate level badge (low/medium/high) in nutrition analysis"
+  },
+  "sugarLevel": "ಸಕ್ಕರೆ ಅಂಶ",
+  "@sugarLevel": {
+    "description": "Label for sugar level badge (low/medium/high) in nutrition analysis"
+  },
+  "totalNutrition": "ಒಟ್ಟು ಪೌಷ್ಟಿಕಾಂಶ",
+  "@totalNutrition": {
+    "description": "Section header for total macronutrients summary"
+  },
+  "detectedFoods": "ಪತ್ತೆಯಾದ ಆಹಾರಗಳು",
+  "@detectedFoods": {
+    "description": "Section header for list of individual food items detected in the photo"
+  },
+  "noFoodsDetected": "ಯಾವುದೇ ನಿರ್ದಿಷ್ಟ ಆಹಾರಗಳು ಪತ್ತೆಯಾಗಿಲ್ಲ. ದ್ರವ ಆಹಾರ ಅಥವಾ ಅಸ್ಪಷ್ಟ ಚಿತ್ರಗಳಿದ್ದಾಗ ಹೀಗಾಗಬಹುದು.",
+  "@noFoodsDetected": {
+    "description": "Empty state message when AI returns empty foods array"
+  },
+  "micronutrients": "ಸೂಕ್ಷ್ಮ ಪೌಷ್ಟಿಕಾಂಶಗಳು",
+  "@micronutrients": {
+    "description": "Section header for micronutrients (iron, calcium, vitamin C)"
+  },
+  "dietFlags": "ಆಹಾರದ ಮಾಹಿತಿ",
+  "@dietFlags": {
+    "description": "Section header for diet type flags (vegan, vegetarian, gluten-free, high protein)"
+  },
+  "saveMeal": "ಊಟದ ದಾಖಲೆ ಉಳಿಸಿ",
+  "@saveMeal": {
+    "description": "Button text to save the analyzed meal to the meal log"
+  },
+  "mealHealthScore": "ಊಟದ ಆರೋಗ್ಯ ಸ್ಕೋರ್",
+  "@mealHealthScore": {
+    "description": "Label for the meal health score (1-10) shown in the score card"
+  },
+  "calories": "ಕ್ಯಾಲೋರಿಗಳು",
+  "@calories": {
+    "description": "Label for calories in the macronutrients grid"
+  },
+  "carbs": "ಕಾರ್ಬ್ಸ್",
+  "@carbs": {
+    "description": "Label for carbohydrates (grams) in the macronutrients grid"
+  },
+  "protein": "ಪ್ರೋಟೀನ್",
+  "@protein": {
+    "description": "Label for protein (grams) in the macronutrients grid"
+  },
+  "fat": "ಕೊಬ್ಬಿನಾಂಶ",
+  "@fat": {
+    "description": "Label for fat (grams) in the macronutrients grid"
+  },
+  "vegan": "ವೀಗನ್",
+  "@vegan": {
+    "description": "Diet flag label indicating the meal is vegan"
+  },
+  "vegetarian": "ಸಸ್ಯಾಹಾರಿ",
+  "@vegetarian": {
+    "description": "Diet flag label indicating the meal is vegetarian"
+  },
+  "glutenFree": "ಗ್ಲುಟನ್ ಮುಕ್ತ",
+  "@glutenFree": {
+    "description": "Diet flag label indicating the meal is gluten-free"
+  },
+  "highProtein": "ಹೆಚ್ಚು ಪ್ರೋಟೀನ್",
+  "@highProtein": {
+    "description": "Diet flag label indicating the meal is high in protein"
+  },
+  "analysisTypeTitle": "ವಿಶ್ಲೇಷಣೆಯ ವಿಧವನ್ನು ಆರಿಸಿ",
+  "@analysisTypeTitle": {
+    "description": "Title for the screen where user chooses between quick classification or detailed nutrition analysis"
+  },
+  "quickClassification": "ತ್ವರಿತ ವರ್ಗೀಕರಣ",
+  "@quickClassification": {
+    "description": "Button text for fast carb level detection option"
+  },
+  "quickClassificationDesc": "ಕಾರ್ಬ್ ಮಟ್ಟ + ಆರೋಗ್ಯ ಸಲಹೆ (ವೇಗವಾಗಿ)",
+  "@quickClassificationDesc": {
+    "description": "Description text for quick classification option"
+  },
+  "detailedNutrition": "ವಿವರವಾದ ಪೌಷ್ಟಿಕಾಂಶ",
+  "@detailedNutrition": {
+    "description": "Button text for full nutrition analysis option with macros and micros"
+  },
+  "detailedNutritionDesc": "ಸಂಪೂರ್ಣ ಮ್ಯಾಕ್ರೋಗಳು, ಮೈಕ್ರೋಗಳು ಮತ್ತು ಆಹಾರದ ಮಾಹಿತಿ",
+  "@detailedNutritionDesc": {
+    "description": "Description text for detailed nutrition analysis option"
+  },
+  "nutritionAnalyzing": "ಪೌಷ್ಟಿಕಾಂಶದ ವಿವರಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...",
+  "@nutritionAnalyzing": {
+    "description": "Loading message shown while AI analyzes the food photo for nutrition details"
+  },
+  "iron": "ಕಬ್ಬಿಣಾಂಶ",
+  "@iron": {
+    "description": "Label for iron micronutrient in mg"
+  },
+  "calcium": "ಕ್ಯಾಲ್ಸಿಯಂ",
+  "@calcium": {
+    "description": "Label for calcium micronutrient in mg"
+  },
+  "vitaminC": "ವಿಟಮಿನ್ ಸಿ",
+  "@vitaminC": {
+    "description": "Label for vitamin C micronutrient in mg"
+  },
+  "kcalUnit": "kcal",
+  "@kcalUnit": {
+    "description": "Unit abbreviation for kilocalories"
+  },
+  "gramsUnit": "ಗ್ರಾಂ",
+  "@gramsUnit": {
+    "description": "Unit abbreviation for grams"
+  },
+  "carbsUnit": "ಕಾರ್ಬ್ಸ್",
+  "@carbsUnit": {
+    "description": "Short label for carbohydrates in mini macro badges"
+  },
+  "proteinUnit": "ಪ್ರೋಟೀನ್",
+  "@proteinUnit": {
+    "description": "Short label for protein in mini macro badges"
+  },
+  "fatUnit": "ಕೊಬ್ಬು",
+  "@fatUnit": {
+    "description": "Short label for fat in mini macro badges"
+  },
+  "useQuickSelect": "ಬದಲಿಗೆ ತ್ವರಿತ ಆಯ್ಕೆ ಬಳಸಿ",
+  "@useQuickSelect": {
+    "description": "Button text to fallback to manual meal selection if photo analysis fails"
+  },
+  "nmcDisclaimer": "ಇದು ಮಾಹಿತಿ ಮಾತ್ರ, ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಅಲ್ಲ. ಯಾವುದೇ ಬದಲಾವಣೆ ಮಾಡುವ ಮೊದಲು ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+  "@nmcDisclaimer": {
+    "description": "NMC-required disclaimer shown on all AI-generated health insights"
+  },
+  "splashAppName": "ಸ್ವಸ್ಥ",
+  "@splashAppName": {
+    "description": "App name displayed on splash screen"
+  },
+  "splashTagline": "ನಿಮ್ಮ ಆರೋಗ್ಯ ಸಂಗಾತಿ",
+  "@splashTagline": {
+    "description": "Tagline displayed on splash screen below app name"
+  },
+  "splashInitializing": "ಪ್ರಾರಂಭಿಸಲಾಗುತ್ತಿದೆ...",
+  "@splashInitializing": {
+    "description": "Loading message shown during app initialization on splash screen"
+  },
+  "splashCheckingConnection": "ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...",
+  "@splashCheckingConnection": {
+    "description": "Loading message when checking network connectivity on splash screen"
+  },
+  "splashWorkingOffline": "ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ ಕೆಲಸ ಮಾಡುತ್ತಿದೆ...",
+  "@splashWorkingOffline": {
+    "description": "Loading message when app is operating in offline mode on splash screen"
+  },
+  "splashLoadingProfile": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+  "@splashLoadingProfile": {
+    "description": "Loading message when fetching user profile data on splash screen"
+  },
+  "splashCheckingCredentials": "ಉಳಿಸಲಾದ ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...",
+  "@splashCheckingCredentials": {
+    "description": "Loading message when checking for saved login credentials on splash screen"
+  },
+  "splashSigningIn": "ಸೈನ್ ಇನ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+  "@splashSigningIn": {
+    "description": "Loading message when performing automatic sign-in on splash screen"
+  },
+  "contactUsTitle": "ನಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಿ",
+  "@contactUsTitle": {
+    "description": "Section heading on the web home page Contact Us footer"
+  },
+  "contactUsSubtitle": "ಸಹಾಯ ಮತ್ತು ಬೆಂಬಲ 24/7 — ನಿಮ್ಮ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಲು ನಾವು ಇಲ್ಲಿದ್ದೇವೆ.",
+  "@contactUsSubtitle": {
+    "description": "Subtitle under Contact Us on the web — reassures users that support is always available"
+  },
+  "contactUsWhatsApp": "ವಾಟ್ಸಾಪ್",
+  "@contactUsWhatsApp": {
+    "description": "Label on the WhatsApp button in the web Contact Us section"
+  },
+  "quickActionReminder": "ಜ್ಞಾಪನೆ",
+  "quickActionSummary": "ಸಾರಾಂಶ",
+  "reminderChangeTime": "ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಬದಲಾಯಿಸಿ (ಅಥವಾ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲು ರದ್ದುಮಾಡಿ)",
+  "reminderSetTime": "ದೈನಂದಿನ ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಹೊಂದಿಸಿ",
+  "reminderSetFor": "ಜ್ಞಾಪನೆಯನ್ನು ಪ್ರತಿದಿನ {time} ಗೆ ಹೊಂದಿಸಲಾಗಿದೆ",
+  "@reminderSetFor": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderDisabled": "ಜ್ಞಾಪನೆಯನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ",
+  "actionCall": "ಕರೆ ಮಾಡಿ",
+  "actionWhatsApp": "ವಾಟ್ಸಾಪ್",
+  "actionEmail": "ಇಮೇಲ್ ಕಳುಹಿಸಿ",
+  "metricBmi": "ಬಿಎಂಐ",
+  "contextFastingShort": "ಉಪವಾಸ",
+  "contextBeforeMealShort": "ಊಟಕ್ಕೆ ಮುನ್ನ",
+  "contextPostMealShort": "ಊಟದ ನಂತರ",
+  "contextRandomShort": "ಯಾದೃಚ್ಛಿಕ",
+  "bmiTipGain": "{amount} ಕೆಜಿ ಹೆಚ್ಚಿಸಿ",
+  "@bmiTipGain": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "bmiTipLose": "{amount} ಕೆಜಿ ಕಡಿಮೆ ಮಾಡಿ",
+  "@bmiTipLose": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "noSummaryAvailable": "ಯಾವುದೇ ಸಾರಾಂಶ ಲಭ್ಯವಿಲ್ಲ"
+}

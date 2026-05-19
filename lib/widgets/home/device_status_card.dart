@@ -22,8 +22,8 @@ class DeviceStatusCard extends StatelessWidget {
 
     final devices = [
       _DeviceInfo(l10n.armband, armbandConnected),
-      _DeviceInfo('Phone', phoneSensorsActive),
-      _DeviceInfo('BP Monitor', bpMonitorConnected),
+      _DeviceInfo(l10n.devicePhone, phoneSensorsActive),
+      _DeviceInfo(l10n.deviceBpMonitor, bpMonitorConnected),
     ];
 
     return GlassCard(

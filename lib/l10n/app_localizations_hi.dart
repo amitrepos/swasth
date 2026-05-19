@@ -223,6 +223,21 @@ class AppLocalizationsHi extends AppLocalizations {
   String get homeTitle => 'स्वस्थ हेल्थ ऐप';
 
   @override
+  String get navHome => 'होम';
+
+  @override
+  String get navHistory => 'इतिहास';
+
+  @override
+  String get navStreaks => 'स्ट्रीक्स';
+
+  @override
+  String get navInsights => 'चार्ट';
+
+  @override
+  String get navChat => 'चैट';
+
+  @override
   String viewingProfile(String name) {
     return '$name की स्वास्थ्य जानकारी';
   }
@@ -278,6 +293,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get armband => 'आर्मबैंड';
 
   @override
+  String get devicePhone => 'फ़ोन';
+
+  @override
+  String get deviceBpMonitor => 'बीपी मॉनिटर';
+
+  @override
   String get quickActions => 'त्वरित कार्य';
 
   @override
@@ -326,6 +347,23 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get avgLabel => 'औसत';
+
+  @override
+  String avgDaysFormat(int count) {
+    return '$count दिन औसत';
+  }
+
+  @override
+  String get vitalBp => 'बीपी';
+
+  @override
+  String get vitalSugar => 'शुगर';
+
+  @override
+  String get vitalSpo2 => 'ऑक्सि%';
+
+  @override
+  String get vitalSteps => 'कदम';
 
   @override
   String get minLabel => 'न्यूनतम';
@@ -784,6 +822,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get languageHindi => 'हिंदी';
+
+  @override
+  String get languageKannada => 'ಕನ್ನಡ';
+
+  @override
+  String get languageTelugu => 'తెలుగు';
+
+  @override
+  String get languageTamil => 'தமிழ்';
 
   @override
   String get myDoctorTitle => 'मेरे डॉक्टर';
@@ -2124,4 +2171,62 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get contactUsWhatsApp => 'व्हाट्सऐप';
+
+  @override
+  String get quickActionReminder => 'रिमाइंडर';
+
+  @override
+  String get quickActionSummary => 'सारांश';
+
+  @override
+  String get reminderChangeTime =>
+      'रिमाइंडर समय बदलें (या बंद करने के लिए रद्द करें)';
+
+  @override
+  String get reminderSetTime => 'दैनिक रिमाइंडर समय सेट करें';
+
+  @override
+  String reminderSetFor(String time) {
+    return 'रिमाइंडर प्रतिदिन $time के लिए सेट किया गया';
+  }
+
+  @override
+  String get reminderDisabled => 'रिमाइंडर बंद कर दिया गया';
+
+  @override
+  String get actionCall => 'कॉल करें';
+
+  @override
+  String get actionWhatsApp => 'व्हाट्सऐप';
+
+  @override
+  String get actionEmail => 'ईमेल भेजें';
+
+  @override
+  String get metricBmi => 'बीएमआई';
+
+  @override
+  String get contextFastingShort => 'फास्टिंग';
+
+  @override
+  String get contextBeforeMealShort => 'भोजन से पहले';
+
+  @override
+  String get contextPostMealShort => 'भोजन के बाद';
+
+  @override
+  String get contextRandomShort => 'रैंडम';
+
+  @override
+  String bmiTipGain(String amount) {
+    return '$amount किग्रा बढ़ाएं';
+  }
+
+  @override
+  String bmiTipLose(String amount) {
+    return '$amount किग्रा कम करें';
+  }
+
+  @override
+  String get noSummaryAvailable => 'कोई सारांश उपलब्ध नहीं है';
 }

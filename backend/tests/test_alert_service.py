@@ -94,9 +94,9 @@ class TestBuildAlertMessages:
         from alert_service import _build_alert_messages
         p = _make_profile(db, name="Ramesh")
         r = _make_reading(db, p.id, glucose=400.0, status="CRITICAL")
-        en, hi = _build_alert_messages(r, p.name)
-        assert "Ramesh" in en and "400" in en and "CRITICAL" in en
-        assert "Ramesh" in hi and "400" in hi and "ग्लूकोज" in hi
+        msgs = _build_alert_messages(r, p.name)
+        assert "Ramesh" in msgs["en"] and "400" in msgs["en"] and "CRITICAL" in msgs["en"]
+        assert "Ramesh" in msgs["hi"] and "400" in msgs["hi"] and "ग्लूकोज" in msgs["hi"]
 
     def test_bp_message(self, db):
         from alert_service import _build_alert_messages
@@ -104,26 +104,26 @@ class TestBuildAlertMessages:
         r = _make_reading(db, p.id, reading_type="blood_pressure",
                           glucose=None, systolic=190.0, diastolic=115.0,
                           status="HIGH - STAGE 2")
-        en, hi = _build_alert_messages(r, p.name)
-        assert "190" in en and "115" in en
-        assert "रक्तचाप" in hi
+        msgs = _build_alert_messages(r, p.name)
+        assert "190" in msgs["en"] and "115" in msgs["en"]
+        assert "रक्तचाप" in msgs["hi"]
 
     def test_spo2_message(self, db):
         from alert_service import _build_alert_messages
         p = _make_profile(db, name="Arjun")
         r = _make_reading(db, p.id, reading_type="spo2",
                           glucose=None, spo2=82.0, status="CRITICAL")
-        en, hi = _build_alert_messages(r, p.name)
-        assert "82" in en and "SpO2" in en
+        msgs = _build_alert_messages(r, p.name)
+        assert "82" in msgs["en"] and "SpO2" in msgs["en"]
 
     def test_unknown_reading_type_fallback(self, db):
         from alert_service import _build_alert_messages
         p = _make_profile(db, name="Test")
         r = _make_reading(db, p.id, reading_type="weight",
                           glucose=None, status="CRITICAL")
-        en, hi = _build_alert_messages(r, p.name)
-        assert "Test" in en and "CRITICAL" in en
-        assert "Test" in hi
+        msgs = _build_alert_messages(r, p.name)
+        assert "Test" in msgs["en"] and "CRITICAL" in msgs["en"]
+        assert "Test" in msgs["hi"]
 
 
 # ---------------------------------------------------------------------------

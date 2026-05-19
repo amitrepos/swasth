@@ -9,8 +9,7 @@ class MealLog {
   final int? loggedBy;
   final String category;
   final String glucoseImpact;
-  final String? tipEn;
-  final String? tipHi;
+  final Map<String, dynamic>? tips;
   final String mealType;
   final String? photoPath;
   final String inputMethod;
@@ -33,8 +32,7 @@ class MealLog {
     this.loggedBy,
     required this.category,
     required this.glucoseImpact,
-    this.tipEn,
-    this.tipHi,
+    this.tips,
     required this.mealType,
     this.photoPath,
     required this.inputMethod,
@@ -58,8 +56,7 @@ class MealLog {
       loggedBy: json['logged_by'],
       category: json['category'],
       glucoseImpact: json['glucose_impact'],
-      tipEn: json['tip_en'],
-      tipHi: json['tip_hi'],
+      tips: json['tips_json'],
       mealType: json['meal_type'],
       photoPath: json['photo_path'],
       inputMethod: json['input_method'],
@@ -86,8 +83,7 @@ class MealLogCreate {
   final String mealType;
   final String inputMethod;
   final DateTime timestamp;
-  final String? tipEn;
-  final String? tipHi;
+  final Map<String, dynamic>? tips;
   final double? confidence;
   final bool userConfirmed;
   final String? userCorrectedCategory;
@@ -106,8 +102,7 @@ class MealLogCreate {
     required this.mealType,
     required this.inputMethod,
     required this.timestamp,
-    this.tipEn,
-    this.tipHi,
+    this.tips,
     this.confidence,
     this.userConfirmed = true,
     this.userCorrectedCategory,
@@ -127,8 +122,7 @@ class MealLogCreate {
       'meal_type': mealType,
       'input_method': inputMethod,
       'timestamp': timestamp.toUtc().toIso8601String(),
-      if (tipEn != null) 'tip_en': tipEn,
-      if (tipHi != null) 'tip_hi': tipHi,
+      if (tips != null) 'tips_json': tips,
       if (confidence != null) 'confidence': confidence,
       'user_confirmed': userConfirmed,
       if (userCorrectedCategory != null)

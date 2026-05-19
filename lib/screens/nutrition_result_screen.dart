@@ -148,6 +148,7 @@ class _NutritionResultScreenState extends State<NutritionResultScreen> {
         totalFatG: widget.result.totalFatG,
         totalFiberG: widget.result.totalFiberG,
         mealScore: widget.result.mealScore,
+        tips: (widget.result.tips?.isNotEmpty == true) ? widget.result.tips : null,
       );
 
       // Check connectivity and queue offline if needed

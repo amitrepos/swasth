@@ -39,31 +39,48 @@ class DispatchResult:
     skipped_dedupe: bool
 
 
-def _build_alert_messages(reading: models.HealthReading, patient_name: str) -> tuple[str, str]:
-    """Return (english, hindi) alert body strings for the given reading.
+def _build_alert_messages(reading: models.HealthReading, patient_name: str) -> dict[str, str]:
+    """Return multilingual alert body strings keyed by language code.
 
-    Kept deliberately short and actionable — recipients may be reading
-    these on a notification preview without opening the full message.
+    Keys: "en", "hi", "kn", "te", "ta". Kept short and actionable —
+    recipients may read these on a notification preview.
     """
     severity = reading.status_flag or "CRITICAL"
 
     if reading.reading_type == "glucose" and reading.glucose_value is not None:
         value = f"{reading.glucose_value:.0f} mg/dL"
-        en = f"{patient_name}'s glucose is {value} ({severity}). Please check on them immediately."
-        hi = f"{patient_name} का ग्लूकोज {value} है ({severity})। कृपया तुरंत उनसे संपर्क करें।"
+        return {
+            "en": f"{patient_name}'s glucose is {value} ({severity}). Please check on them immediately.",
+            "hi": f"{patient_name} का ग्लूकोज {value} है ({severity})। कृपया तुरंत उनसे संपर्क करें।",
+            "kn": f"{patient_name} ಅವರ ಗ್ಲುಕೋಸ್ {value} ಆಗಿದೆ ({severity}). ದಯವಿಟ್ಟು ತಕ್ಷಣ ಅವರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+            "te": f"{patient_name} గ్లూకోజ్ {value} ({severity}). దయచేసి వెంటనే వారిని సంప్రదించండి.",
+            "ta": f"{patient_name} குளுக்கோஸ் {value} ({severity}). உடனே அவர்களை சரிபாருங்கள்.",
+        }
     elif reading.reading_type == "blood_pressure" and reading.systolic and reading.diastolic:
         value = f"{reading.systolic:.0f}/{reading.diastolic:.0f} mmHg"
-        en = f"{patient_name}'s BP is {value} ({severity}). Please check on them immediately."
-        hi = f"{patient_name} का रक्तचाप {value} है ({severity})। कृपया तुरंत उनसे संपर्क करें।"
+        return {
+            "en": f"{patient_name}'s BP is {value} ({severity}). Please check on them immediately.",
+            "hi": f"{patient_name} का रक्तचाप {value} है ({severity})। कृपया तुरंत उनसे संपर्क करें।",
+            "kn": f"{patient_name} ಅವರ ರಕ್ತದೊತ್ತಡ {value} ಆಗಿದೆ ({severity}). ದಯವಿಟ್ಟು ತಕ್ಷಣ ಅವರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+            "te": f"{patient_name} రక్తపోటు {value} ({severity}). దయచేసి వెంటనే వారిని సంప్రదించండి.",
+            "ta": f"{patient_name} இரத்த அழுத்தம் {value} ({severity}). உடனே அவர்களை சரிபாருங்கள்.",
+        }
     elif reading.reading_type == "spo2" and reading.spo2_value is not None:
         value = f"{reading.spo2_value:.0f}%"
-        en = f"{patient_name}'s SpO2 is {value} ({severity}). Please check on them immediately."
-        hi = f"{patient_name} का SpO2 {value} है ({severity})। कृपया तुरंत उनसे संपर्क करें।"
-    else:
-        en = f"{patient_name} has a {severity} health reading. Please check on them."
-        hi = f"{patient_name} की एक {severity} स्वास्थ्य रीडिंग है। कृपया उनसे संपर्क करें।"
-
-    return en, hi
+        return {
+            "en": f"{patient_name}'s SpO2 is {value} ({severity}). Please check on them immediately.",
+            "hi": f"{patient_name} का SpO2 {value} है ({severity})। कृपया तुरंत उनसे संपर्क करें।",
+            "kn": f"{patient_name} ಅವರ SpO2 {value} ಆಗಿದೆ ({severity}). ದಯವಿಟ್ಟು ತಕ್ಷಣ ಅವರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+            "te": f"{patient_name} SpO2 {value} ({severity}). దయచేసి వెంటనే వారిని సంప్రదించండి.",
+            "ta": f"{patient_name} SpO2 {value} ({severity}). உடனே அவர்களை சரிபாருங்கள்.",
+        }
+    return {
+        "en": f"{patient_name} has a {severity} health reading. Please check on them.",
+        "hi": f"{patient_name} की एक {severity} स्वास्थ्य रीडिंग है। कृपया उनसे संपर्क करें।",
+        "kn": f"{patient_name} ಅವರ ಆರೋಗ್ಯ ರೀಡಿಂಗ್ {severity} ಆಗಿದೆ. ದಯವಿಟ್ಟು ತಕ್ಷಣ ಅವರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+        "te": f"{patient_name} ఆరోగ్య రీడింగ్ {severity}. దయచేసి వెంటనే వారిని సంప్రదించండి.",
+        "ta": f"{patient_name} உடல்நல அளவீடு {severity}. உடனே அவர்களை சரிபாருங்கள்.",
+    }
 
 
 def _was_recently_alerted(profile_id: int, db: Session) -> bool:
@@ -217,7 +234,7 @@ def dispatch_critical_alert(
         return result
 
     patient_name = profile.name or "Someone"
-    alert_en, alert_hi = _build_alert_messages(reading, patient_name)
+    alert_msgs = _build_alert_messages(reading, patient_name)
     severity = reading.status_flag or "CRITICAL"
 
     for access in family_accesses:
@@ -244,8 +261,11 @@ def dispatch_critical_alert(
                     recipient_email=family_user.email,
                     recipient_name=recipient_name,
                     patient_name=patient_name,
-                    alert_text_en=alert_en,
-                    alert_text_hi=alert_hi,
+                    alert_text_en=alert_msgs["en"],
+                    alert_text_hi=alert_msgs["hi"],
+                    alert_text_kn=alert_msgs["kn"],
+                    alert_text_te=alert_msgs.get("te", ""),
+                    alert_text_ta=alert_msgs.get("ta", ""),
                 ),
             )
             if ok:
@@ -264,8 +284,11 @@ def dispatch_critical_alert(
                 sender=lambda: whatsapp_service.send_critical_alert_whatsapp(
                     to_number=family_user.phone_number,
                     patient_name=patient_name,
-                    alert_text_en=alert_en,
-                    alert_text_hi=alert_hi,
+                    alert_text_en=alert_msgs["en"],
+                    alert_text_hi=alert_msgs["hi"],
+                    alert_text_kn=alert_msgs["kn"],
+                    alert_text_te=alert_msgs.get("te", ""),
+                    alert_text_ta=alert_msgs.get("ta", ""),
                 )[0],
             )
             if ok:
@@ -285,8 +308,11 @@ def dispatch_critical_alert(
                 sender=lambda: sms_service.send_critical_alert_sms(
                     to_number=family_user.phone_number,
                     patient_name=patient_name,
-                    alert_text_en=alert_en,
-                    alert_text_hi=alert_hi,
+                    alert_text_en=alert_msgs["en"],
+                    alert_text_hi=alert_msgs["hi"],
+                    alert_text_kn=alert_msgs["kn"],
+                    alert_text_te=alert_msgs.get("te", ""),
+                    alert_text_ta=alert_msgs.get("ta", ""),
                 ),
             )
             if ok:

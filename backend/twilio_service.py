@@ -113,8 +113,11 @@ class TwilioWhatsAppService:
         patient_name: str,
         alert_text_en: str,
         alert_text_hi: str,
+        alert_text_kn: str,
+        alert_text_te: str = "",
+        alert_text_ta: str = "",
     ) -> tuple[bool, str | None, str | None]:
-        """Send a bilingual critical health alert via WhatsApp.
+        """Send a multilingual critical health alert via WhatsApp.
 
         Returns (success, message_sid, error_message) — same shape as send_whatsapp.
         """
@@ -124,8 +127,13 @@ class TwilioWhatsAppService:
             f"🚨 *Swasth Health Alert*\n\n"
             f"*English:* {alert_text_en}\n\n"
             f"*हिन्दी:* {alert_text_hi}\n\n"
-            f"— Swasth Health App"
+            f"*ಕನ್ನಡ:* {alert_text_kn}\n\n"
         )
+        if alert_text_te:
+            body += f"*తెలుగు:* {alert_text_te}\n\n"
+        if alert_text_ta:
+            body += f"*தமிழ்:* {alert_text_ta}\n\n"
+        body += "— Swasth Health App"
         return self.send_whatsapp(to_number, body)
 
     def send_doctor_decline_notification(

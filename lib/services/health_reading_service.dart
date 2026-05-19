@@ -359,11 +359,11 @@ class HealthReadingService {
   /// Non-critical enrichment: returns empty string on [NetworkException] or
   /// [ServerException] (home screen degrades gracefully). [UnauthorizedException]
   /// still propagates so the app-wide 401 handler fires.
-  Future<String> getAiInsight(String token, int profileId) async {
+  Future<String> getAiInsight(String token, int profileId, String languageCode) async {
     try {
       final data = await ApiClient.sendJsonObject(
         () => ApiClient.httpClient.get(
-          Uri.parse('$baseUrl/readings/ai-insight?profile_id=$profileId'),
+          Uri.parse('$baseUrl/readings/ai-insight?profile_id=$profileId&language=$languageCode'),
           headers: ApiClient.headers(token: token),
         ),
       );
@@ -382,13 +382,14 @@ class HealthReadingService {
   Future<String> getTrendSummary(
     String token,
     int profileId,
-    int period,
-  ) async {
+    int period, {
+    String language = 'en',
+  }) async {
     try {
       final data = await ApiClient.sendJsonObject(
         () => ApiClient.httpClient.get(
           Uri.parse(
-            '$baseUrl/readings/trend-summary?profile_id=$profileId&period=$period',
+            '$baseUrl/readings/trend-summary?profile_id=$profileId&period=$period&language=$language',
           ),
           headers: ApiClient.headers(token: token),
         ),
@@ -476,10 +477,10 @@ class HealthReadingService {
   }
 
   /// Get computed health score, streak, and AI insight for the home screen.
-  Future<Map<String, dynamic>> getHealthScore(String token, int profileId) {
+  Future<Map<String, dynamic>> getHealthScore(String token, int profileId, String languageCode) {
     return ApiClient.sendJsonObject(
       () => ApiClient.httpClient.get(
-        Uri.parse('$baseUrl/readings/health-score?profile_id=$profileId'),
+        Uri.parse('$baseUrl/readings/health-score?profile_id=$profileId&language=$languageCode'),
         headers: ApiClient.headers(token: token),
       ),
     );

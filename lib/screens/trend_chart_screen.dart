@@ -33,9 +33,10 @@ class TrendChartScreenState extends State<TrendChartScreen>
   List<HealthReading> _allReadings = [];
   String? _error;
 
-  // Trend summary per period
-  final Map<int, String> _summaries = {};
-  final Map<int, bool> _summaryLoading = {};
+  // Trend summary keyed by "$period-$lang" so language changes force re-fetch
+  final Map<String, String> _summaries = {};
+  final Map<String, bool> _summaryLoading = {};
+  String _lastLangCode = 'en';
 
   @override
   void initState() {
@@ -43,6 +44,19 @@ class TrendChartScreenState extends State<TrendChartScreen>
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
     _loadReadings();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final langCode = Localizations.localeOf(context).languageCode;
+    if (langCode != _lastLangCode) {
+      _lastLangCode = langCode;
+      _summaries.clear();
+      _summaryLoading.clear();
+      final period = [7, 30, 90][_tabController.index];
+      _loadSummary(period);
+    }
   }
 
   @override
@@ -79,8 +93,10 @@ class TrendChartScreenState extends State<TrendChartScreen>
   }
 
   Future<void> _loadSummary(int period) async {
-    if (_summaries.containsKey(period)) return;
-    setState(() => _summaryLoading[period] = true);
+    final langCode = Localizations.localeOf(context).languageCode;
+    final key = '$period-$langCode';
+    if (_summaries.containsKey(key)) return;
+    setState(() => _summaryLoading[key] = true);
     try {
       final token = await _storageService.getToken();
       if (token == null) return;
@@ -88,14 +104,15 @@ class TrendChartScreenState extends State<TrendChartScreen>
         token,
         widget.profileId,
         period,
+        language: langCode,
       );
       if (mounted)
         setState(() {
-          _summaries[period] = summary;
-          _summaryLoading[period] = false;
+          _summaries[key] = summary;
+          _summaryLoading[key] = false;
         });
     } catch (_) {
-      if (mounted) setState(() => _summaryLoading[period] = false);
+      if (mounted) setState(() => _summaryLoading[key] = false);
     }
   }
 
@@ -162,24 +179,24 @@ class TrendChartScreenState extends State<TrendChartScreen>
                   readings: _allReadings,
                   days: 7,
                   onRefresh: refresh,
-                  summary: _summaries[7],
-                  summaryLoading: _summaryLoading[7] ?? false,
+                  summary: _summaries['7-$_lastLangCode'],
+                  summaryLoading: _summaryLoading['7-$_lastLangCode'] ?? false,
                   profileId: widget.profileId,
                 ),
                 _TrendView(
                   readings: _allReadings,
                   days: 30,
                   onRefresh: refresh,
-                  summary: _summaries[30],
-                  summaryLoading: _summaryLoading[30] ?? false,
+                  summary: _summaries['30-$_lastLangCode'],
+                  summaryLoading: _summaryLoading['30-$_lastLangCode'] ?? false,
                   profileId: widget.profileId,
                 ),
                 _TrendView(
                   readings: _allReadings,
                   days: 90,
                   onRefresh: refresh,
-                  summary: _summaries[90],
-                  summaryLoading: _summaryLoading[90] ?? false,
+                  summary: _summaries['90-$_lastLangCode'],
+                  summaryLoading: _summaryLoading['90-$_lastLangCode'] ?? false,
                   profileId: widget.profileId,
                 ),
               ],

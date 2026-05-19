@@ -85,10 +85,12 @@ class ChatScreenState extends State<ChatScreen> {
   Future<void> _loadVitals() async {
     try {
       final token = await _storageService.getToken();
-      if (token == null) return;
+      if (token == null || !mounted) return;
+      final langCode = Localizations.localeOf(context).languageCode;
       final data = await HealthReadingService().getHealthScore(
         token,
         widget.profileId,
+        langCode,
       );
       setState(() {
         final sys = (data['last_bp_systolic'] as num?)?.toDouble();
@@ -312,6 +314,8 @@ class ChatScreenState extends State<ChatScreen> {
       final token = await _storageService.getToken();
       if (token == null) return;
 
+      final langCode = Localizations.localeOf(context).languageCode;
+
       Map<String, dynamic> response;
       if (imageFile != null) {
         final bytes =
@@ -334,6 +338,7 @@ class ChatScreenState extends State<ChatScreen> {
             widget.profileId,
             msg,
             base64Str,
+            langCode,
             mimeType: _mimeTypeFor(imageFile),
           );
         } else {
@@ -341,6 +346,7 @@ class ChatScreenState extends State<ChatScreen> {
             token,
             widget.profileId,
             text,
+            langCode,
           );
         }
       } else {
@@ -348,6 +354,7 @@ class ChatScreenState extends State<ChatScreen> {
           token,
           widget.profileId,
           text,
+          langCode,
         );
       }
 

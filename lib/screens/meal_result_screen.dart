@@ -11,15 +11,13 @@ class FoodClassificationResult {
   final String
   category; // HIGH_CARB, MODERATE_CARB, LOW_CARB, HIGH_PROTEIN, SWEETS
   final String glucoseImpact; // HIGH, MODERATE, LOW, VERY_HIGH
-  final String tipEn;
-  final String tipHi;
+  final Map<String, dynamic> tips;
   final double confidence;
 
   const FoodClassificationResult({
     required this.category,
     required this.glucoseImpact,
-    required this.tipEn,
-    required this.tipHi,
+    required this.tips,
     required this.confidence,
   });
 
@@ -27,8 +25,7 @@ class FoodClassificationResult {
     return FoodClassificationResult(
       category: json['category'] as String? ?? 'MODERATE_CARB',
       glucoseImpact: json['glucose_impact'] as String? ?? 'MODERATE',
-      tipEn: json['tip_en'] as String? ?? '',
-      tipHi: json['tip_hi'] as String? ?? '',
+      tips: json['tips_json'] as Map<String, dynamic>? ?? {},
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
     );
   }
@@ -152,10 +149,11 @@ class _MealResultScreenState extends State<MealResultScreen> {
   /// Get the tip in the user's locale.
   String _localizedTip() {
     final locale = Localizations.localeOf(context);
-    if (locale.languageCode == 'hi' && widget.result.tipHi.isNotEmpty) {
-      return widget.result.tipHi;
+    final code = locale.languageCode;
+    if (widget.result.tips.containsKey(code)) {
+      return widget.result.tips[code] as String;
     }
-    return widget.result.tipEn;
+    return widget.result.tips['en'] as String? ?? '';
   }
 
   Future<void> _saveMeal() async {
@@ -182,6 +180,7 @@ class _MealResultScreenState extends State<MealResultScreen> {
         confidence: widget.result.confidence,
         inputMethod: 'PHOTO_GEMINI',
         timestamp: DateTime.now(),
+        tips: widget.result.tips.isNotEmpty ? widget.result.tips : null,
       );
 
       if (widget.mealId != null) {
