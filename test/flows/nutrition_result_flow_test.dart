@@ -10,7 +10,6 @@ import 'package:swasth_app/services/storage_service.dart';
 import 'package:swasth_app/services/connectivity_service.dart';
 
 import '../helpers/test_app.dart';
-import '../helpers/finders.dart';
 
 void main() {
   group('NutritionResultScreen — Display', () {

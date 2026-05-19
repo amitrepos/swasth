@@ -55,7 +55,7 @@ void main() {
 
     // Source chips render.
     expect(find.byKey(const Key('source_chip_IHCI')), findsOneWidget);
-    expect(find.byKey(const Key('source_chip_ICMR')), findsOneWidget);
+    expect(find.byKey(const Key('source_chip_WHO-HTN')), findsOneWidget);
   });
 
   testWidgets('BP sheet with no reading shows fallback card', (tester) async {
