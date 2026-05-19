@@ -91,10 +91,11 @@ class MetricSources {
     label: 'WHO-HTN',
     url: 'https://www.who.int/news-room/fact-sheets/detail/hypertension',
   );
-  // RSSDI 2022 Clinical Practice Recommendations — direct PDF.
+  // RSSDI 2022 Clinical Practice Recommendations — PMC/NCBI HTML article
+  // (full-text open access, NIH permalink). Stable, no PDF rot.
   static const rssdi = SourceRef(
     label: 'RSSDI 2022',
-    url: 'https://www.rssdi.in/newwebsite/RSSDI-Clinical-Practice-Recommendations-2022%20(1).pdf',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9534592/',
   );
   // WHO Diabetes fact sheet — stable WHO page with diabetes overview.
   // Replaces broken ICMR deep link.
@@ -114,10 +115,11 @@ class MetricSources {
     label: 'WHO Physical Activity',
     url: 'https://www.who.int/news-room/fact-sheets/detail/physical-activity',
   );
-  // ICMR-NIN Dietary Guidelines for Indians 2024 — direct PDF.
+  // ICMR-NIN Dietary Guidelines 2024 — PMC/NCBI HTML review article
+  // covering DGI 2024 (NIH permalink). Stable, no PDF rot.
   static const icmrNin = SourceRef(
     label: 'ICMR-NIN',
-    url: 'https://nin.res.in/dietaryguidelines/pdfjs/locale/DGI_2024.pdf',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12550444/',
   );
 
   /// Single list used by tests and any future audit tooling.
