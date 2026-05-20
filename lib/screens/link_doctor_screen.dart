@@ -98,7 +98,7 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
             final code = (d['doctor_code'] as String?) ?? '';
             final status = (d['status'] as String?) ?? 'active';
             if (code.isEmpty) continue;
-            
+
             // Only active or pending doctors are "already linked"
             // Revoked doctors should be available for re-request
             if (status == 'active' || status == 'pending_doctor_accept') {
@@ -436,72 +436,79 @@ class _LinkDoctorScreenState extends State<LinkDoctorScreen> {
         opacity: alreadyLinked ? 0.55 : 1.0,
         child: GlassCard(
           borderRadius: 16,
-          child: ListTile(
-            key: Key('link_doctor_picker_$code'),
-            enabled: !alreadyLinked,
-            onTap: alreadyLinked ? null : () => _selectFromPicker(doctor),
-            leading: CircleAvatar(
-              radius: 22,
-              backgroundColor: previouslyRejected
-                  ? AppColors.statusCritical.withOpacity(0.15)
-                  : AppColors.primary.withOpacity(0.15),
-              child: Text(
-                initial,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: previouslyRejected
-                      ? AppColors.statusCritical
-                      : AppColors.primary,
-                  fontWeight: FontWeight.w700,
+          child: Material(
+            color: AppColors.transparent,
+            child: ListTile(
+              key: Key('link_doctor_picker_$code'),
+              enabled: !alreadyLinked,
+              onTap: alreadyLinked ? null : () => _selectFromPicker(doctor),
+              leading: CircleAvatar(
+                radius: 22,
+                backgroundColor: previouslyRejected
+                    ? AppColors.statusCritical.withOpacity(0.15)
+                    : AppColors.primary.withOpacity(0.15),
+                child: Text(
+                  initial,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: previouslyRejected
+                        ? AppColors.statusCritical
+                        : AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-            title: Text(
-              name,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+              title: Text(
+                name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (specialty != null && specialty.isNotEmpty) Text(specialty),
-                if (clinic != null && clinic.isNotEmpty)
-                  Text(
-                    clinic,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                if (alreadyLinked)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      l10n.linkDoctorAlreadyLinkedBadge,
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (specialty != null && specialty.isNotEmpty)
+                    Text(specialty),
+                  if (clinic != null && clinic.isNotEmpty)
+                    Text(
+                      clinic,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.statusNormal,
-                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  ),
-                if (previouslyRejected && !alreadyLinked)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      l10n.linkDoctorPreviouslyDeclinedBadge,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.statusCritical,
-                        fontWeight: FontWeight.w600,
-                        fontStyle: FontStyle.italic,
+                  if (alreadyLinked)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        l10n.linkDoctorAlreadyLinkedBadge,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.statusNormal,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                  if (previouslyRejected && !alreadyLinked)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        l10n.linkDoctorPreviouslyDeclinedBadge,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.statusCritical,
+                          fontWeight: FontWeight.w600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              trailing: alreadyLinked
+                  ? const Icon(
+                      Icons.check_circle,
+                      color: AppColors.statusNormal,
+                    )
+                  : previouslyRejected
+                  ? const Icon(Icons.refresh, color: AppColors.statusCritical)
+                  : const Icon(Icons.arrow_forward_ios, size: 16),
             ),
-            trailing: alreadyLinked
-                ? const Icon(Icons.check_circle, color: AppColors.statusNormal)
-                : previouslyRejected
-                    ? const Icon(Icons.refresh, color: AppColors.statusCritical)
-                    : const Icon(Icons.arrow_forward_ios, size: 16),
           ),
         ),
       ),
