@@ -87,7 +87,7 @@ class MetricSources {
   static const ihci = SourceRef(label: 'IHCI', url: 'https://www.ihci.in/');
   // WHO Hypertension fact sheet — stable WHO page with clinical thresholds
   // (140/90, <130/80 for high-risk). Replaces broken ICMR deep link.
-  static const icmrHtn = SourceRef(
+  static const whoHtn = SourceRef(
     label: 'WHO-HTN',
     url: 'https://www.who.int/news-room/fact-sheets/detail/hypertension',
   );
@@ -99,16 +99,18 @@ class MetricSources {
   );
   // WHO Diabetes fact sheet — stable WHO page with diabetes overview.
   // Replaces broken ICMR deep link.
-  static const icmrDm = SourceRef(
+  static const whoDm = SourceRef(
     label: 'WHO-DM',
     url: 'https://www.who.int/news-room/fact-sheets/detail/diabetes',
   );
-  // ResearchGate — Misra et al. consensus on obesity/BMI cutoffs for Asian Indians.
-  // ResearchGate blocks automated fetches (Cloudflare) but opens fine in browser/url_launcher.
-  static const icmrBmi = SourceRef(
-    label: 'JAPI / ICMR Consensus',
-    url:
-        'https://www.researchgate.net/publication/26652681_Consensus_Statement_for_Diagnosis_of_Obesity_Abdominal_Obesity_and_the_Metabolic_Syndrome_for_Asian_Indians_and_Recommendations_for_Physical_Activity_Medical_and_Surgical_Management',
+  // JAPI (Journal of the Association of Physicians of India) — institution
+  // landing page. The Misra et al. consensus on obesity/BMI cutoffs for Asian
+  // Indians is published here. Use the landing page (per URL policy above)
+  // rather than the ResearchGate deep link, which is blocked by Cloudflare
+  // for automated fetches and would fail live-link CI.
+  static const misraBmi = SourceRef(
+    label: 'JAPI-ICMR',
+    url: 'https://www.japi.org/',
   );
   // WHO physical activity fact sheet — specific article, not the India landing page.
   static const who = SourceRef(
@@ -125,10 +127,10 @@ class MetricSources {
   /// Single list used by tests and any future audit tooling.
   static const all = <SourceRef>[
     ihci,
-    icmrHtn,
+    whoHtn,
     rssdi,
-    icmrDm,
-    icmrBmi,
+    whoDm,
+    misraBmi,
     who,
     icmrNin,
   ];
@@ -383,7 +385,7 @@ MetricInfoSpec buildBpSpec({
     currentLevel: current,
     levels: levels,
     rangeSetLabel: _bpRangeSetLabel(set),
-    sources: const [MetricSources.ihci, MetricSources.icmrHtn],
+    sources: const [MetricSources.ihci, MetricSources.whoHtn],
     disclaimer: _kDisclaimer,
   );
 }
@@ -855,7 +857,7 @@ MetricInfoSpec buildGlucoseSpec({
     levels: levels,
     rangeSetLabel: _glucoseSetLabel(set),
     footnote: footnote,
-    sources: const [MetricSources.rssdi, MetricSources.icmrDm],
+    sources: const [MetricSources.rssdi, MetricSources.whoDm],
     disclaimer: _kDisclaimer,
     consolidatedMessage: consolidated,
     ambiguousCta: ambiguousCta,
@@ -993,7 +995,7 @@ MetricInfoSpec buildBmiSpec({required double? bmi, required int? age}) {
     currentLevel: current,
     levels: levels,
     rangeSetLabel: _bmiSetLabel(set),
-    sources: const [MetricSources.icmrBmi],
+    sources: const [MetricSources.misraBmi],
     disclaimer: _kDisclaimer,
   );
 }
