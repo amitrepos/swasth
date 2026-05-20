@@ -27,6 +27,29 @@ branch_labels = None
 depends_on = None
 
 
+def _column_exists(bind, table: str, column: str) -> bool:
+    """Check whether `table.column` exists on the current connection.
+
+    Works on Postgres (information_schema) and SQLite (PRAGMA). Fresh
+    environments that never ran the legacy standalone migration won't
+    have tip_en/tip_hi/tip_kn at all — we must skip the backfill in
+    that case rather than crash on `UndefinedColumn`.
+    """
+    dialect = bind.dialect.name
+    if dialect == 'postgresql':
+        row = bind.execute(
+            sa.text(
+                "SELECT 1 FROM information_schema.columns "
+                "WHERE table_name = :t AND column_name = :c"
+            ),
+            {'t': table, 'c': column},
+        ).first()
+        return row is not None
+    # SQLite
+    rows = bind.execute(sa.text(f"PRAGMA table_info({table})")).fetchall()
+    return any(r[1] == column for r in rows)
+
+
 def upgrade():
     bind = op.get_bind()
     dialect = bind.dialect.name
@@ -37,46 +60,57 @@ def upgrade():
             "ALTER TABLE meal_logs ADD COLUMN IF NOT EXISTS tips_json JSONB"
         )
     else:
-        # SQLite / other backends — generic JSON
-        with op.batch_alter_table('meal_logs') as batch:
-            batch.add_column(sa.Column('tips_json', sa.JSON(), nullable=True))
+        # SQLite / other backends — generic JSON. Use IF NOT EXISTS via
+        # a column-existence check since batch_alter_table.add_column
+        # is not idempotent.
+        if not _column_exists(bind, 'meal_logs', 'tips_json'):
+            with op.batch_alter_table('meal_logs') as batch:
+                batch.add_column(sa.Column('tips_json', sa.JSON(), nullable=True))
 
-    # 2. Backfill from legacy columns. Use JSON object construction that
-    # omits NULL values so downstream consumers can rely on key presence
-    # as a signal that the language was populated.
-    if dialect == 'postgresql':
-        op.execute(
-            """
-            UPDATE meal_logs
-            SET tips_json = (
-                SELECT jsonb_strip_nulls(jsonb_build_object(
+    # 2. Backfill from legacy columns — ONLY if all three legacy columns
+    # exist. Fresh environments (staging, CI, new dev boxes) never had
+    # tip_en/tip_hi/tip_kn because those columns were created by the
+    # standalone `migrate_multilingual_json.py` script that only ran
+    # against prod. On those environments, there is nothing to backfill
+    # and the UPDATE would fail with UndefinedColumn.
+    legacy_cols_present = all(
+        _column_exists(bind, 'meal_logs', c)
+        for c in ('tip_en', 'tip_hi', 'tip_kn')
+    )
+    if legacy_cols_present:
+        if dialect == 'postgresql':
+            op.execute(
+                """
+                UPDATE meal_logs
+                SET tips_json = (
+                    SELECT jsonb_strip_nulls(jsonb_build_object(
+                        'en', tip_en,
+                        'hi', tip_hi,
+                        'kn', tip_kn
+                    ))
+                )
+                WHERE tips_json IS NULL
+                  AND (tip_en IS NOT NULL OR tip_hi IS NOT NULL OR tip_kn IS NOT NULL);
+                """
+            )
+        else:
+            # SQLite — JSON1 ext is available in stdlib sqlite3 (3.38+).
+            op.execute(
+                """
+                UPDATE meal_logs
+                SET tips_json = json_object(
                     'en', tip_en,
                     'hi', tip_hi,
                     'kn', tip_kn
-                ))
+                )
+                WHERE tips_json IS NULL
+                  AND (tip_en IS NOT NULL OR tip_hi IS NOT NULL OR tip_kn IS NOT NULL);
+                """
             )
-            WHERE tips_json IS NULL
-              AND (tip_en IS NOT NULL OR tip_hi IS NOT NULL OR tip_kn IS NOT NULL);
-            """
-        )
-    else:
-        # SQLite — JSON1 ext is available in stdlib sqlite3 (3.38+).
-        op.execute(
-            """
-            UPDATE meal_logs
-            SET tips_json = json_object(
-                'en', tip_en,
-                'hi', tip_hi,
-                'kn', tip_kn
-            )
-            WHERE tips_json IS NULL
-              AND (tip_en IS NOT NULL OR tip_hi IS NOT NULL OR tip_kn IS NOT NULL);
-            """
-        )
 
     # 3. Drop legacy columns. Use IF EXISTS so a partially-migrated
-    # environment (e.g. dev box that ran the standalone script) can
-    # still complete the upgrade.
+    # environment (e.g. dev box that ran the standalone script) and
+    # a fresh environment (legacy cols never existed) both succeed.
     if dialect == 'postgresql':
         op.execute("ALTER TABLE meal_logs DROP COLUMN IF EXISTS tip_en")
         op.execute("ALTER TABLE meal_logs DROP COLUMN IF EXISTS tip_hi")
