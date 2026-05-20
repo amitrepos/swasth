@@ -83,42 +83,54 @@ class MetricInfoSpec {
 /// All URLs are verified live by `test/utils/metric_sources_live_links_test.dart`
 /// (network-tagged, opt-in via `flutter test --tags live`).
 class MetricSources {
+  // IHCI — India Hypertension Control Initiative (ICMR-backed) guidelines page.
   static const ihci = SourceRef(label: 'IHCI', url: 'https://www.ihci.in/');
-  static const icmrHtn = SourceRef(
-    label: 'ICMR',
-    url: 'https://www.icmr.gov.in/',
+  // WHO Hypertension fact sheet — stable WHO page with clinical thresholds
+  // (140/90, <130/80 for high-risk). Replaces broken ICMR deep link.
+  static const whoHtn = SourceRef(
+    label: 'WHO-HTN',
+    url: 'https://www.who.int/news-room/fact-sheets/detail/hypertension',
   );
-  static const rssdi = SourceRef(label: 'RSSDI', url: 'https://www.rssdi.in/');
-  static const icmrDm = SourceRef(
-    label: 'ICMR',
-    url: 'https://www.icmr.gov.in/',
+  // RSSDI 2022 Clinical Practice Recommendations — PMC/NCBI HTML article
+  // (full-text open access, NIH permalink). Stable, no PDF rot.
+  static const rssdi = SourceRef(
+    label: 'RSSDI 2022',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9534592/',
   );
-  // JAPI permalink — academic-journal slugs are usually stable but the
-  // `u264a4a4` segment could rotate if JAPI ever migrates. The daily
-  // live-link-check workflow will catch breakage within 12 hours; if it
-  // ever fails, replace with `https://www.japi.org/` (landing page).
-  // Last verified: 2026-05-14.
-  static const icmrBmi = SourceRef(
-    label: 'JAPI / ICMR Consensus',
-    url:
-        'https://www.japi.org/u264a4a4/consensus-statement-for-diagnosis-of-obesity-abdominal-obesity-and-the-metabolic-syndrome-for-asian-indians',
+  // WHO Diabetes fact sheet — stable WHO page with diabetes overview.
+  // Replaces broken ICMR deep link.
+  static const whoDm = SourceRef(
+    label: 'WHO-DM',
+    url: 'https://www.who.int/news-room/fact-sheets/detail/diabetes',
   );
+  // JAPI (Journal of the Association of Physicians of India) — institution
+  // landing page. The Misra et al. consensus on obesity/BMI cutoffs for Asian
+  // Indians is published here. Use the landing page (per URL policy above)
+  // rather than the ResearchGate deep link, which is blocked by Cloudflare
+  // for automated fetches and would fail live-link CI.
+  static const misraBmi = SourceRef(
+    label: 'JAPI-ICMR',
+    url: 'https://www.japi.org/',
+  );
+  // WHO physical activity fact sheet — specific article, not the India landing page.
   static const who = SourceRef(
-    label: 'WHO India',
-    url: 'https://www.who.int/india',
+    label: 'WHO Physical Activity',
+    url: 'https://www.who.int/news-room/fact-sheets/detail/physical-activity',
   );
+  // ICMR-NIN Dietary Guidelines 2024 — PMC/NCBI HTML review article
+  // covering DGI 2024 (NIH permalink). Stable, no PDF rot.
   static const icmrNin = SourceRef(
     label: 'ICMR-NIN',
-    url: 'https://www.nin.res.in/',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12550444/',
   );
 
   /// Single list used by tests and any future audit tooling.
   static const all = <SourceRef>[
     ihci,
-    icmrHtn,
+    whoHtn,
     rssdi,
-    icmrDm,
-    icmrBmi,
+    whoDm,
+    misraBmi,
     who,
     icmrNin,
   ];
@@ -373,7 +385,7 @@ MetricInfoSpec buildBpSpec({
     currentLevel: current,
     levels: levels,
     rangeSetLabel: _bpRangeSetLabel(set),
-    sources: const [MetricSources.ihci, MetricSources.icmrHtn],
+    sources: const [MetricSources.ihci, MetricSources.whoHtn],
     disclaimer: _kDisclaimer,
   );
 }
@@ -845,7 +857,7 @@ MetricInfoSpec buildGlucoseSpec({
     levels: levels,
     rangeSetLabel: _glucoseSetLabel(set),
     footnote: footnote,
-    sources: const [MetricSources.rssdi, MetricSources.icmrDm],
+    sources: const [MetricSources.rssdi, MetricSources.whoDm],
     disclaimer: _kDisclaimer,
     consolidatedMessage: consolidated,
     ambiguousCta: ambiguousCta,
@@ -983,7 +995,7 @@ MetricInfoSpec buildBmiSpec({required double? bmi, required int? age}) {
     currentLevel: current,
     levels: levels,
     rangeSetLabel: _bmiSetLabel(set),
-    sources: const [MetricSources.icmrBmi],
+    sources: const [MetricSources.misraBmi],
     disclaimer: _kDisclaimer,
   );
 }

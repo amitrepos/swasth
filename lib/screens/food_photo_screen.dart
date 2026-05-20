@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 
-import '../models/nutrition_analysis_result.dart';
 import '../services/api_exception.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';

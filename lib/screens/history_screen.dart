@@ -11,8 +11,6 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/home/meal_input_modal.dart';
 import 'edit_reading_screen.dart';
-import 'quick_select_screen.dart';
-import 'meal_result_screen.dart';
 
 /// Unified timeline of health events for one profile.
 ///
