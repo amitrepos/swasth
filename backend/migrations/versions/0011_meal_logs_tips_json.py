@@ -27,9 +27,23 @@ branch_labels = None
 depends_on = None
 
 
+def _existing_legacy_tip_cols(bind):
+    """Return the subset of (tip_en, tip_hi, tip_kn) that actually exist
+    on meal_logs in this DB. tip_kn was only ever added by superseded
+    dev-branch scripts on some boxes; staging/prod never had it, so a
+    blind reference here aborts the migration with 'column does not
+    exist'. Detecting at runtime keeps the migration idempotent across
+    every environment that may or may not have run those scripts."""
+    inspector = sa.inspect(bind)
+    cols = {c['name'] for c in inspector.get_columns('meal_logs')}
+    return [c for c in ('tip_en', 'tip_hi', 'tip_kn') if c in cols]
+
+
 def upgrade():
     bind = op.get_bind()
     dialect = bind.dialect.name
+    legacy_cols = _existing_legacy_tip_cols(bind)
+    lang_map = {'tip_en': 'en', 'tip_hi': 'hi', 'tip_kn': 'kn'}
 
     # 1. Add the new JSON column (JSONB on Postgres, JSON elsewhere).
     if dialect == 'postgresql':
@@ -41,38 +55,36 @@ def upgrade():
         with op.batch_alter_table('meal_logs') as batch:
             batch.add_column(sa.Column('tips_json', sa.JSON(), nullable=True))
 
-    # 2. Backfill from legacy columns. Use JSON object construction that
-    # omits NULL values so downstream consumers can rely on key presence
-    # as a signal that the language was populated.
-    if dialect == 'postgresql':
-        op.execute(
-            """
-            UPDATE meal_logs
-            SET tips_json = (
-                SELECT jsonb_strip_nulls(jsonb_build_object(
-                    'en', tip_en,
-                    'hi', tip_hi,
-                    'kn', tip_kn
-                ))
-            )
-            WHERE tips_json IS NULL
-              AND (tip_en IS NOT NULL OR tip_hi IS NOT NULL OR tip_kn IS NOT NULL);
-            """
+    # 2. Backfill from whichever legacy columns are actually present.
+    # If none exist (fresh DB, or already cleaned up), skip the UPDATE
+    # entirely — tips_json starts NULL, which is the correct state.
+    if legacy_cols:
+        kv_pairs = ", ".join(
+            f"'{lang_map[c]}', {c}" for c in legacy_cols
         )
-    else:
-        # SQLite — JSON1 ext is available in stdlib sqlite3 (3.38+).
-        op.execute(
-            """
-            UPDATE meal_logs
-            SET tips_json = json_object(
-                'en', tip_en,
-                'hi', tip_hi,
-                'kn', tip_kn
-            )
-            WHERE tips_json IS NULL
-              AND (tip_en IS NOT NULL OR tip_hi IS NOT NULL OR tip_kn IS NOT NULL);
-            """
+        not_null_clause = " OR ".join(
+            f"{c} IS NOT NULL" for c in legacy_cols
         )
+
+        if dialect == 'postgresql':
+            op.execute(
+                f"""
+                UPDATE meal_logs
+                SET tips_json = jsonb_strip_nulls(jsonb_build_object({kv_pairs}))
+                WHERE tips_json IS NULL
+                  AND ({not_null_clause});
+                """
+            )
+        else:
+            # SQLite — JSON1 ext is available in stdlib sqlite3 (3.38+).
+            op.execute(
+                f"""
+                UPDATE meal_logs
+                SET tips_json = json_object({kv_pairs})
+                WHERE tips_json IS NULL
+                  AND ({not_null_clause});
+                """
+            )
 
     # 3. Drop legacy columns. Use IF EXISTS so a partially-migrated
     # environment (e.g. dev box that ran the standalone script) can
