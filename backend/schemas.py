@@ -1108,3 +1108,39 @@ class AdminSendWhatsAppIndividual(BaseModel):
 class AdminSendWhatsAppBulk(BaseModel):
     """Admin sends WhatsApp reminders to all inactive users using pre-approved template."""
     pass  # No payload needed — uses predefined template from WHATSAPP_REMAINDER_CONTENT_SID
+
+
+# ---------------------------------------------------------------------------
+# Medications (NUO-127) — patient-logged intake, surfaced to doctor.
+# ---------------------------------------------------------------------------
+
+class MedicationCreate(BaseModel):
+    profile_id: int
+    name: str = Field(..., min_length=1, max_length=120)
+    dose: Optional[str] = Field(None, max_length=60)
+    frequency: Optional[str] = Field(None, max_length=120)
+    taken_at: datetime
+    notes: Optional[str] = Field(None, max_length=500)
+
+
+class MedicationUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=120)
+    dose: Optional[str] = Field(None, max_length=60)
+    frequency: Optional[str] = Field(None, max_length=120)
+    taken_at: Optional[datetime] = None
+    notes: Optional[str] = Field(None, max_length=500)
+
+
+class MedicationResponse(BaseModel):
+    id: int
+    profile_id: int
+    logged_by: Optional[int] = None
+    name: str
+    dose: Optional[str] = None
+    frequency: Optional[str] = None
+    taken_at: datetime
+    notes: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -21,6 +21,7 @@ import routes_profiles
 import routes_chat
 import routes_admin
 import routes_meals
+import routes_medications
 import routes_doctor
 import os
 from dotenv import load_dotenv
@@ -221,6 +222,7 @@ app.include_router(routes_chat.router, prefix="/api", tags=["Chat"])
 # Include admin routes
 app.include_router(routes_admin.router, prefix="/api", tags=["Admin"])
 app.include_router(routes_meals.router, prefix="/api", tags=["Meals"])
+app.include_router(routes_medications.router, prefix="/api", tags=["Medications"])
 
 # Include doctor portal routes
 app.include_router(routes_doctor.router, prefix="/api/doctor", tags=["Doctor Portal"])

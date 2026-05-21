@@ -5,7 +5,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import (
-    User, Profile, HealthReading, ProfileAccess,
+    User, Profile, HealthReading, ProfileAccess, Medication,
     ReportGenerationLog, WhatsAppMessageLog,
     ReportTriggerType, WhatsAppMessageStatus, ReportGenerationStatus
 )
@@ -118,10 +118,37 @@ def trigger_single_profile_report(
             insight_clean = re.sub(r"\s+", " ", insight).strip()
             insight_line = f"✨ AI: {insight_clean}"
 
+        # NUO-127: surface medications the patient has logged in the last 7 days
+        # so the doctor reading the report sees what's actually being taken.
+        med_line = None
+        recent_meds = (
+            db.query(Medication)
+            .filter(
+                Medication.profile_id == profile.id,
+                Medication.taken_at >= last_7d,
+            )
+            .order_by(Medication.taken_at.desc())
+            .limit(5)
+            .all()
+        )
+        if recent_meds:
+            # Deduplicate by name (case-insensitive), preserve most-recent first
+            seen, unique = set(), []
+            for m in recent_meds:
+                key = m.name.lower().strip()
+                if key in seen:
+                    continue
+                seen.add(key)
+                dose = f" {m.dose}" if m.dose else ""
+                unique.append(f"{m.name}{dose}")
+            med_line = "💊 Meds: " + ", ".join(unique)
+
         # {{3}}: profile name + all metrics pipe-separated, no \n
         parts = [f"👤 *{profile.name}*", glucose_line, bp_line]
         if weight_line:
             parts.append(weight_line)
+        if med_line:
+            parts.append(med_line)
         if insight_line:
             parts.append(insight_line)
         snippet = " | ".join(parts)

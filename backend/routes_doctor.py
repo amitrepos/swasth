@@ -1231,6 +1231,51 @@ def get_patient_meals(
 
 
 # ---------------------------------------------------------------------------
+# Patient Medications (NUO-127) — what the patient has actually been taking.
+# ---------------------------------------------------------------------------
+
+@router.get("/patients/{profile_id}/medications")
+def get_patient_medications(
+    profile_id: int,
+    days: int = Query(30, ge=1, le=90),
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Patient-logged medication intake. Max 90 days. Audit-logged."""
+    link = get_doctor_patient_access(profile_id, user, db)
+    _log_doctor_access(db, user.id, profile_id, "viewed_medications", f"/api/doctor/patients/{profile_id}/medications")
+
+    days = min(days, 90)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    meds = (
+        db.query(models.Medication)
+        .filter(
+            models.Medication.profile_id == profile_id,
+            models.Medication.taken_at >= since,
+        )
+        .order_by(models.Medication.taken_at.desc())
+        .limit(200)
+        .all()
+    )
+    db.commit()
+
+    return [
+        {
+            "id": m.id,
+            "profile_id": m.profile_id,
+            "name": m.name,
+            "dose": m.dose,
+            "frequency": m.frequency,
+            "taken_at": m.taken_at,
+            "notes": m.notes,
+            "created_at": m.created_at,
+        }
+        for m in meds
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Triage Refresh (called when a new reading is saved)
 # ---------------------------------------------------------------------------
 
