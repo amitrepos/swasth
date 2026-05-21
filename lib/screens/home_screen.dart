@@ -22,6 +22,7 @@ import '../services/meal_service.dart';
 import '../services/sync_service.dart';
 import '../models/meal_log.dart';
 import 'link_doctor_screen.dart';
+import 'medications_screen.dart';
 import '../models/profile_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -1112,6 +1113,41 @@ class HomeScreenState extends State<HomeScreen>
                   Text(
                     l10n.quickActionSummary,
                     style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Medicines log (NUO-127) — patient logs taken meds, doctor sees in report
+        Expanded(
+          child: GestureDetector(
+            key: const Key('quick_action_medicines'),
+            onTap: () {
+              if (_activeProfileId == null) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      MedicationsScreen(profileId: _activeProfileId!),
+                ),
+              );
+            },
+            child: GlassCard(
+              borderRadius: 16,
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Icon(Icons.medication, size: 18, color: AppColors.primary),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Medicines',
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,

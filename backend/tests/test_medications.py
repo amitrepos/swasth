@@ -1,0 +1,198 @@
+"""Tests for medication-intake API (NUO-127).
+
+Covers: create, list, update, delete, access control, doctor view.
+"""
+from datetime import datetime, timezone, timedelta
+
+import pytest
+
+import models
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _profile_id_for(user, db):
+    access = (
+        db.query(models.ProfileAccess)
+        .filter(models.ProfileAccess.user_id == user.id)
+        .first()
+    )
+    return access.profile_id
+
+
+def _post_medication(client, headers, profile_id, **overrides):
+    payload = {
+        "profile_id": profile_id,
+        "name": "Metformin",
+        "dose": "500 mg",
+        "frequency": "Twice daily",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+        "notes": None,
+    }
+    payload.update(overrides)
+    return client.post("/api/medications", json=payload, headers=headers)
+
+
+# ---------------------------------------------------------------------------
+# Create
+# ---------------------------------------------------------------------------
+
+def test_create_medication_returns_201_and_persists(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, notes="Felt fine")
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["name"] == "Metformin"
+    assert body["dose"] == "500 mg"
+    assert body["notes"] == "Felt fine"
+    assert body["profile_id"] == pid
+
+    rows = db.query(models.Medication).filter(models.Medication.profile_id == pid).all()
+    assert len(rows) == 1
+    assert rows[0].logged_by == test_user.id
+
+
+def test_create_medication_rejects_empty_name(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, name="")
+    assert r.status_code == 422
+
+
+def test_create_medication_strips_whitespace(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, name="  Aspirin  ", dose="  ")
+    assert r.status_code == 201
+    body = r.json()
+    assert body["name"] == "Aspirin"
+    assert body["dose"] is None  # blank-only collapses to null
+
+
+def test_create_medication_requires_auth(client, test_user, db):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, headers={}, profile_id=pid)
+    assert r.status_code == 401
+
+
+def test_create_medication_denies_unrelated_profile(client, db, test_user, auth_headers):
+    # Create a second profile the test_user has NO access to
+    other = models.Profile(name="Stranger")
+    db.add(other)
+    db.flush()
+    r = _post_medication(client, auth_headers, other.id)
+    assert r.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# List
+# ---------------------------------------------------------------------------
+
+def test_list_medications_returns_recent_descending(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    now = datetime.now(timezone.utc)
+
+    db.add(models.Medication(profile_id=pid, name="A", taken_at=now - timedelta(days=2)))
+    db.add(models.Medication(profile_id=pid, name="B", taken_at=now - timedelta(hours=1)))
+    db.add(models.Medication(profile_id=pid, name="C", taken_at=now - timedelta(days=10)))
+    db.commit()
+
+    r = client.get(f"/api/medications?profile_id={pid}&days=30", headers=auth_headers)
+    assert r.status_code == 200
+    names = [m["name"] for m in r.json()]
+    assert names == ["B", "A", "C"]
+
+
+def test_list_medications_filters_by_days_window(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    now = datetime.now(timezone.utc)
+
+    db.add(models.Medication(profile_id=pid, name="Recent", taken_at=now - timedelta(days=1)))
+    db.add(models.Medication(profile_id=pid, name="OldOne", taken_at=now - timedelta(days=20)))
+    db.commit()
+
+    r = client.get(f"/api/medications?profile_id={pid}&days=7", headers=auth_headers)
+    names = [m["name"] for m in r.json()]
+    assert "Recent" in names
+    assert "OldOne" not in names
+
+
+# ---------------------------------------------------------------------------
+# Update / Delete
+# ---------------------------------------------------------------------------
+
+def test_update_medication_changes_fields(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    med = models.Medication(profile_id=pid, name="Old", dose="100", taken_at=datetime.now(timezone.utc))
+    db.add(med)
+    db.commit()
+    db.refresh(med)
+
+    r = client.patch(
+        f"/api/medications/{med.id}",
+        json={"name": "New", "notes": "noted"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["name"] == "New"
+    assert body["dose"] == "100"  # untouched
+    assert body["notes"] == "noted"
+
+
+def test_delete_medication_removes_row(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    med = models.Medication(profile_id=pid, name="X", taken_at=datetime.now(timezone.utc))
+    db.add(med)
+    db.commit()
+    db.refresh(med)
+
+    r = client.delete(f"/api/medications/{med.id}", headers=auth_headers)
+    assert r.status_code == 204
+    assert db.query(models.Medication).filter(models.Medication.id == med.id).first() is None
+
+
+def test_delete_unknown_medication_404(client, auth_headers):
+    r = client.delete("/api/medications/99999", headers=auth_headers)
+    assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Doctor view + report integration
+# ---------------------------------------------------------------------------
+
+def test_report_service_includes_medications_in_snippet(db, test_user):
+    """Weekly WhatsApp report snippet should mention the patient's logged meds."""
+    pid = _profile_id_for(test_user, db)
+    now = datetime.now(timezone.utc)
+
+    # Need at least one reading in 7-day window so report doesn't short-circuit
+    db.add(models.HealthReading(
+        profile_id=pid,
+        reading_type="glucose",
+        glucose_value=120,
+        glucose_unit="mg/dL",
+        value_numeric=120,
+        unit_display="mg/dL",
+        reading_timestamp=now - timedelta(hours=2),
+    ))
+    db.add(models.Medication(profile_id=pid, name="Metformin", dose="500 mg", taken_at=now - timedelta(hours=1)))
+    db.add(models.Medication(profile_id=pid, name="Aspirin", taken_at=now - timedelta(days=2)))
+    # Duplicate by name (case-insensitive) — should be deduped
+    db.add(models.Medication(profile_id=pid, name="metformin", dose="500 mg", taken_at=now - timedelta(hours=3)))
+    db.commit()
+
+    profile = db.query(models.Profile).filter(models.Profile.id == pid).first()
+    # Owner must have a phone number for the report to build — test_user has one
+    profile.phone_number = test_user.phone_number
+    db.commit()
+
+    import report_service
+    out = report_service.trigger_single_profile_report(db, profile, owner=test_user)
+    assert out is not None, "Expected report payload, got None"
+    snippet = out["snippet"]
+    assert "💊 Meds:" in snippet
+    assert "Metformin" in snippet
+    assert "Aspirin" in snippet
+    # Dedup: 'Metformin' should appear once
+    assert snippet.lower().count("metformin") == 1
