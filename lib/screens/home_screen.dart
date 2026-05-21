@@ -23,6 +23,7 @@ import '../services/sync_service.dart';
 import '../models/meal_log.dart';
 import 'link_doctor_screen.dart';
 import 'medications_screen.dart';
+import '../services/region_service.dart';
 import '../models/profile_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -81,6 +82,7 @@ class HomeScreenState extends State<HomeScreen>
   int _pts = 0;
   bool _insightSaved = false;
   String? _lastLangCode;
+  bool _canWriteRegion = true; // NUO-135: false when caller is outside India
 
   // Caregiver dashboard state
   List<HealthReading> _activityReadings = [];
@@ -109,6 +111,12 @@ class HomeScreenState extends State<HomeScreen>
     _loadProfileInfo();
     SyncService().syncPendingReadings();
     _initializePedometer();
+    _loadRegion();
+  }
+
+  Future<void> _loadRegion() async {
+    final r = await RegionService.getRegion();
+    if (mounted) setState(() => _canWriteRegion = r.writeAllowed);
   }
 
   /// Called by ShellScreen when the Home tab becomes active. Re-fetches
@@ -1125,39 +1133,41 @@ class HomeScreenState extends State<HomeScreen>
         ),
         const SizedBox(width: 10),
         // Medicines log (NUO-127) — patient logs taken meds, doctor sees in report
-        Expanded(
-          child: GestureDetector(
-            key: const Key('quick_action_medicines'),
-            onTap: () {
-              if (_activeProfileId == null) return;
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      MedicationsScreen(profileId: _activeProfileId!),
-                ),
-              );
-            },
-            child: GlassCard(
-              borderRadius: 16,
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Icon(Icons.medication, size: 18, color: AppColors.primary),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Medicines',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
+        // NUO-135: hidden when caller is outside India (read-only mode)
+        if (_canWriteRegion)
+          Expanded(
+            child: GestureDetector(
+              key: const Key('quick_action_medicines'),
+              onTap: () {
+                if (_activeProfileId == null) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        MedicationsScreen(profileId: _activeProfileId!),
                   ),
-                ],
+                );
+              },
+              child: GlassCard(
+                borderRadius: 16,
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    Icon(Icons.medication, size: 18, color: AppColors.primary),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Medicines',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
         const SizedBox(width: 10),
         // Pair Device
         Expanded(

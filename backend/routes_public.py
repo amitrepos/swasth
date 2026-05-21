@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request
 from limiter import limiter
 
 from config import settings
+from utils.geo import get_request_country, is_india_writer_allowed
 
 router = APIRouter()
 
@@ -36,4 +37,28 @@ def get_support_contacts(request: Request):
         "email": settings.SUPPORT_EMAIL,
         "whatsapp_number": settings.SUPPORT_WHATSAPP_NUMBER,
         "phone_number": settings.SUPPORT_PHONE_NUMBER,
+    }
+
+
+@router.get("/public/region")
+@limiter.limit("30/minute")
+def get_region(request: Request):
+    """Return the caller's region + whether write endpoints are open (NUO-135).
+
+    Unauthenticated by design — Flutter calls this on first paint so it
+    can render the read-only banner before the user even logs in.
+
+    Body:
+        country_code: ISO-2 (e.g. 'IN', 'US') or 'UNKNOWN' on lookup failure
+        is_india:     true if the caller will pass `require_india_writer`
+        write_allowed: alias for is_india (kept stable for client code)
+        source:       'ip' | 'locale' | 'private' | 'disabled' | 'error'
+                      — useful for client-side telemetry, never shown to users
+    """
+    allowed, country, source = is_india_writer_allowed(request)
+    return {
+        "country_code": country,
+        "is_india": allowed,
+        "write_allowed": allowed,
+        "source": source,
     }

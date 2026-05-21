@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, require_india_writer
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +33,12 @@ async def create_medication(
     data: schemas.MedicationCreate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    _region: dict = Depends(require_india_writer),
 ):
-    """Log a medicine that the patient has taken."""
+    """Log a medicine that the patient has taken.
+
+    NUO-135: writes are gated to India IPs (with locale fallback).
+    """
     get_profile_editor_or_403(data.profile_id, user, db)
 
     med = models.Medication(

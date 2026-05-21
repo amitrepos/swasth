@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../models/medication_model.dart';
 import '../services/api_exception.dart';
+import '../services/region_service.dart';
 import '../l10n/app_localizations.dart';
 import '../services/error_mapper.dart';
 import '../services/medication_service.dart';
@@ -27,13 +28,20 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
   final MedicationService _service = MedicationService();
   bool _isLoading = true;
   bool _canEdit = true;
+  bool _canWriteRegion = true; // NUO-135: false when caller is outside India
   List<Medication> _meds = [];
 
   @override
   void initState() {
     super.initState();
     _loadAccessLevel();
+    _loadRegion();
     _load();
+  }
+
+  Future<void> _loadRegion() async {
+    final r = await RegionService.getRegion();
+    if (mounted) setState(() => _canWriteRegion = r.writeAllowed);
   }
 
   @override
@@ -121,7 +129,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
-      floatingActionButton: _canEdit
+      floatingActionButton: (_canEdit && _canWriteRegion)
           ? FloatingActionButton.extended(
               key: const Key('medications-add-fab'),
               onPressed: _openAddSheet,
@@ -133,7 +141,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _meds.isEmpty
-              ? _EmptyState(canEdit: _canEdit, onAdd: _openAddSheet)
+              ? _EmptyState(canEdit: (_canEdit && _canWriteRegion), onAdd: _openAddSheet)
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.separated(
@@ -170,7 +178,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                 Text('Notes: ${m.notes}', style: const TextStyle(fontStyle: FontStyle.italic)),
                             ],
                           ),
-                          trailing: _canEdit
+                          trailing: (_canEdit && _canWriteRegion)
                               ? IconButton(
                                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                                   onPressed: () => _confirmDelete(m),
