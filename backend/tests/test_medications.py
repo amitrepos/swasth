@@ -157,6 +157,80 @@ def test_delete_unknown_medication_404(client, auth_headers):
     assert r.status_code == 404
 
 
+def test_patch_unknown_medication_404(client, auth_headers):
+    r = client.patch("/api/medications/99999", json={"name": "X"}, headers=auth_headers)
+    assert r.status_code == 404
+
+
+def test_patch_medication_updates_dose_frequency_taken_at(client, db, test_user, auth_headers):
+    """Cover PATCH branches that update dose, frequency, and taken_at."""
+    pid = _profile_id_for(test_user, db)
+    med = models.Medication(
+        profile_id=pid,
+        name="Aspirin",
+        dose="75 mg",
+        frequency="Once daily",
+        taken_at=datetime.now(timezone.utc) - timedelta(days=1),
+    )
+    db.add(med)
+    db.commit()
+    db.refresh(med)
+
+    new_ts = datetime.now(timezone.utc)
+    r = client.patch(
+        f"/api/medications/{med.id}",
+        json={
+            "dose": "150 mg",
+            "frequency": "Twice daily",
+            "taken_at": new_ts.isoformat(),
+            "notes": "   ",  # blank-only → null
+        },
+        headers=auth_headers,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["dose"] == "150 mg"
+    assert body["frequency"] == "Twice daily"
+    assert body["notes"] is None  # blank stripped
+
+
+def test_patch_medication_denies_unrelated_profile(client, db, test_user, auth_headers):
+    """A patient who owns nothing about this med cannot edit it."""
+    # Create a med on a profile the user does NOT own
+    other = models.Profile(name="Stranger")
+    db.add(other)
+    db.flush()
+    med = models.Medication(profile_id=other.id, name="Z", taken_at=datetime.now(timezone.utc))
+    db.add(med)
+    db.commit()
+    db.refresh(med)
+
+    r = client.patch(f"/api/medications/{med.id}", json={"name": "Hack"}, headers=auth_headers)
+    assert r.status_code == 403
+
+
+def test_delete_medication_denies_unrelated_profile(client, db, test_user, auth_headers):
+    other = models.Profile(name="Stranger2")
+    db.add(other)
+    db.flush()
+    med = models.Medication(profile_id=other.id, name="Q", taken_at=datetime.now(timezone.utc))
+    db.add(med)
+    db.commit()
+    db.refresh(med)
+
+    r = client.delete(f"/api/medications/{med.id}", headers=auth_headers)
+    assert r.status_code == 403
+
+
+def test_list_medications_denies_unrelated_profile(client, db, auth_headers):
+    other = models.Profile(name="Stranger3")
+    db.add(other)
+    db.commit()
+    db.refresh(other)
+    r = client.get(f"/api/medications?profile_id={other.id}&days=30", headers=auth_headers)
+    assert r.status_code == 403
+
+
 # ---------------------------------------------------------------------------
 # Doctor view + report integration
 # ---------------------------------------------------------------------------
