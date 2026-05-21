@@ -14,7 +14,7 @@ import ai_service
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, require_india_writer
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -124,8 +124,12 @@ async def create_meal(
     meal_data: schemas.MealLogCreate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    _region: dict = Depends(require_india_writer),
 ):
-    """Save a meal log from photo classification or quick select."""
+    """Save a meal log from photo classification or quick select.
+
+    NUO-135: non-India callers are blocked at the dependency layer.
+    """
     get_profile_access_or_403(meal_data.profile_id, user, db)
 
     meal = models.MealLog(

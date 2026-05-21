@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, require_india_writer
 from config import settings
 from health_utils import generate_meal_insights
 from report_service import trigger_single_profile_report, send_weekly_reports
@@ -102,8 +102,10 @@ def save_reading(
     reading: schemas.HealthReadingCreate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    _region: dict = Depends(require_india_writer),
 ):
     """Save a new health reading (glucose, blood pressure, SpO2, or steps) for a specific profile."""
+    # Region gate (NUO-135): non-India callers are blocked upstream by `require_india_writer`.
     # Verify editor/owner access (viewers cannot create readings)
     get_profile_editor_or_403(reading.profile_id, user, db)
 

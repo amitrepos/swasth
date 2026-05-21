@@ -1,11 +1,12 @@
 """Shared FastAPI dependencies."""
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from typing import Annotated
 import models
 import auth
 from database import get_db
 from encryption_service import hash_email
+from utils.geo import is_india_writer_allowed
 
 
 def get_current_user(
@@ -142,3 +143,37 @@ def get_profile_owner_or_403(
             detail="Only the profile owner can perform this action",
         )
     return access
+
+
+# ---------------------------------------------------------------------------
+# Region gate (NUO-135) — clinical writes must originate from India.
+# Caregivers abroad can still read; only logging is blocked.
+# ---------------------------------------------------------------------------
+
+def require_india_writer(request: Request) -> dict:
+    """Block write endpoints when the caller is outside India.
+
+    Returns a small region-info dict on success so the route handler can
+    log it or include it in audit trails. Raises 451 (Unavailable For
+    Legal Reasons) with a structured detail otherwise — the Flutter
+    client special-cases this code to surface the family-member banner.
+
+    The master switch is off by default (`GEO_RESTRICT_ENABLED`); local
+    dev and CI therefore never get blocked.
+    """
+    allowed, country, source = is_india_writer_allowed(request)
+    if allowed:
+        return {"country": country, "source": source}
+    raise HTTPException(
+        status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,
+        detail={
+            "code": "REGION_NOT_ALLOWED",
+            "message": (
+                "Logging health data is only available from India. "
+                "You can still view this profile as a family member."
+            ),
+            "country": country,
+            "source": source,
+        },
+    )
+
