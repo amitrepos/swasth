@@ -42,11 +42,11 @@
       "agent": "agent:doctor",
       "priority_name": "Medium",
       "priority_rank": 3,
-      "queued_at": "2026-05-22T07:45:24Z",
+      "queued_at": "2026-05-22T07:50:15Z",
       "state": "queued",
       "attempt_count": 0,
-      "retry_after": "2026-05-22T07:45:24Z",
-      "priya_hash": "6742f8e834848c3a8d074eb620f2e68ce4fc6bd18bd2308aa244b760d45f6eb7"
+      "retry_after": "2026-05-22T07:50:15Z",
+      "priya_hash": "36e110f126e2b3e89013836863b1ab1fbd5c550fb2438c907242e643e695e85d"
     },
     {
       "ticket_key": "NUO-141",
