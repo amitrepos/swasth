@@ -27,20 +27,6 @@
       "priya_hash": "36e110f126e2b3e89013836863b1ab1fbd5c550fb2438c907242e643e695e85d"
     },
     {
-      "ticket_key": "NUO-141",
-      "agent": "agent:matt",
-      "priority_name": "Medium",
-      "priority_rank": 3,
-      "queued_at": "2026-05-22T08:35:07Z",
-      "state": "queued",
-      "attempt_count": 0,
-      "retry_after": "2026-05-22T08:35:07Z",
-      "priya_hash": "e85257f4d51159a62f87b4a6560b7bfcb7681fb33f454b8271d21687efd0bda0",
-      "pushed_branch_name": "feat/nuo-141-1779438779",
-      "started_at": "2026-05-22T08:32:59Z",
-      "worker_run_id": "26277207666"
-    },
-    {
       "ticket_key": "NUO-139",
       "agent": "agent:sunita",
       "priority_name": "Medium",
