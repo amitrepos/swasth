@@ -20,10 +20,10 @@
       "agent": "agent:doctor",
       "priority_name": "Medium",
       "priority_rank": 3,
-      "queued_at": "2026-05-22T07:44:40Z",
+      "queued_at": "2026-05-22T07:46:44Z",
       "state": "queued",
       "attempt_count": 0,
-      "retry_after": "2026-05-22T07:44:40Z",
+      "retry_after": "2026-05-22T07:46:44Z",
       "priya_hash": "6045d18b9df1570b3540f94afc74a8643182b9261d71ef97fde19e034bd1657c"
     },
     {
