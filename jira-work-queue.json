@@ -16,20 +16,6 @@
       "worker_run_id": "26275962592"
     },
     {
-      "ticket_key": "NUO-145",
-      "agent": "agent:doctor",
-      "priority_name": "Medium",
-      "priority_rank": 3,
-      "queued_at": "2026-05-22T08:52:59Z",
-      "state": "queued",
-      "attempt_count": 0,
-      "retry_after": "2026-05-22T08:52:59Z",
-      "priya_hash": "978b72a6a588af6b99d09e3266e50a870bf067ac6527493f891d1bec9d91cc9e",
-      "pushed_branch_name": "feat/nuo-145-1779439860",
-      "started_at": "2026-05-22T08:51:01Z",
-      "worker_run_id": "26277433092"
-    },
-    {
       "ticket_key": "NUO-139",
       "agent": "agent:sunita",
       "priority_name": "Medium",
