@@ -21,10 +21,13 @@
       "priority_name": "Medium",
       "priority_rank": 3,
       "queued_at": "2026-05-22T07:50:15Z",
-      "state": "queued",
+      "state": "in_flight",
       "attempt_count": 0,
       "retry_after": "2026-05-22T07:50:15Z",
-      "priya_hash": "36e110f126e2b3e89013836863b1ab1fbd5c550fb2438c907242e643e695e85d"
+      "priya_hash": "36e110f126e2b3e89013836863b1ab1fbd5c550fb2438c907242e643e695e85d",
+      "pushed_branch_name": "feat/nuo-145-1779439860",
+      "started_at": "2026-05-22T08:51:01Z",
+      "worker_run_id": "26277433092"
     },
     {
       "ticket_key": "NUO-139",
