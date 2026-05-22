@@ -33,6 +33,17 @@
       "attempt_count": 0,
       "retry_after": "2026-05-22T07:45:08Z",
       "priya_hash": "0272f6f34bfab0f2bdd906bf0d47058aefab7f1ebc51cc78f7ebc251619b006f"
+    },
+    {
+      "ticket_key": "NUO-145",
+      "agent": "agent:doctor",
+      "priority_name": "Medium",
+      "priority_rank": 3,
+      "queued_at": "2026-05-22T07:45:24Z",
+      "state": "queued",
+      "attempt_count": 0,
+      "retry_after": "2026-05-22T07:45:24Z",
+      "priya_hash": "6742f8e834848c3a8d074eb620f2e68ce4fc6bd18bd2308aa244b760d45f6eb7"
     }
   ]
 }
