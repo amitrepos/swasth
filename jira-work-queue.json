@@ -1,4 +1,16 @@
 {
   "schema_version": 1,
-  "entries": []
+  "entries": [
+    {
+      "ticket_key": "NUO-144",
+      "agent": "agent:sunita",
+      "priority_name": "Medium",
+      "priority_rank": 3,
+      "queued_at": "2026-05-22T07:44:28Z",
+      "state": "queued",
+      "attempt_count": 0,
+      "retry_after": "2026-05-22T07:44:28Z",
+      "priya_hash": "db424137a184535d9185663d4cd856793c14ba8b340c0f338e79a60c026a2ed2"
+    }
+  ]
 }
