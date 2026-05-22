@@ -2,20 +2,6 @@
   "schema_version": 1,
   "entries": [
     {
-      "ticket_key": "NUO-144",
-      "agent": "agent:sunita",
-      "priority_name": "Medium",
-      "priority_rank": 3,
-      "queued_at": "2026-05-22T07:48:05Z",
-      "state": "queued",
-      "attempt_count": 0,
-      "retry_after": "2026-05-22T07:48:05Z",
-      "priya_hash": "a92be572370c1bda297da7aa4fd1c57770f9386652bd9c31d13be9390628e2dc",
-      "pushed_branch_name": "feat/nuo-144-1779435949",
-      "started_at": "2026-05-22T07:45:49Z",
-      "worker_run_id": "26275233159"
-    },
-    {
       "ticket_key": "NUO-142",
       "agent": "agent:doctor",
       "priority_name": "Medium",
