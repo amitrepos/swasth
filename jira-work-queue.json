@@ -58,6 +58,17 @@
       "attempt_count": 0,
       "retry_after": "2026-05-22T07:45:30Z",
       "priya_hash": "0a94203ee5a8b64f048513eded1de1df4d15f07dc7c48d935975b7cd02d75d1f"
+    },
+    {
+      "ticket_key": "NUO-139",
+      "agent": "agent:sunita",
+      "priority_name": "Medium",
+      "priority_rank": 3,
+      "queued_at": "2026-05-22T07:47:57Z",
+      "state": "queued",
+      "attempt_count": 0,
+      "retry_after": "2026-05-22T07:47:57Z",
+      "priya_hash": "09c51d399ba5557705ad8663b90092c5d5ad36f72fd8d76244b43cce3dccedc3"
     }
   ]
 }
