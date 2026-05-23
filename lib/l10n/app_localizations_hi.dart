@@ -2077,6 +2077,49 @@ class AppLocalizationsHi extends AppLocalizations {
   String get fat => 'वसा';
 
   @override
+  String get fiber => 'फाइबर';
+
+  @override
+  String get viewMealDetails => 'विवरण देखें';
+
+  @override
+  String get mealDetailsTitle => 'भोजन का विवरण';
+
+  @override
+  String get healthTip => 'स्वास्थ्य सुझाव';
+
+  @override
+  String get noNutritionData =>
+      'इस भोजन के लिए कोई पोषण विवरण सहेजा नहीं गया है।';
+
+  @override
+  String get viewDetails => 'विवरण देखें';
+
+  @override
+  String get readingDetailsTitle => 'रीडिंग का विवरण';
+
+  @override
+  String get mapLabel => 'MAP';
+
+  @override
+  String get sampleTypeLabel => 'नमूना प्रकार';
+
+  @override
+  String get stepsGoalLabel => 'लक्ष्य';
+
+  @override
+  String get recordedAt => 'रिकॉर्ड किया गया';
+
+  @override
+  String get statusLabel => 'स्थिति';
+
+  @override
+  String get pulse => 'नाड़ी';
+
+  @override
+  String get notesLabel => 'नोट्स';
+
+  @override
   String get vegan => 'वेगन';
 
   @override

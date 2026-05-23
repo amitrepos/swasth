@@ -2089,6 +2089,49 @@ class AppLocalizationsTe extends AppLocalizations {
   String get fat => 'కొవ్వు';
 
   @override
+  String get fiber => 'పీచు పదార్థం';
+
+  @override
+  String get viewMealDetails => 'వివరాలను చూడండి';
+
+  @override
+  String get mealDetailsTitle => 'భోజన వివరాలు';
+
+  @override
+  String get healthTip => 'ఆరోగ్య చిట్కా';
+
+  @override
+  String get noNutritionData =>
+      'ఈ భోజనానికి ఎలాంటి పోషకాహార వివరాలు సేవ్ చేయబడలేదు.';
+
+  @override
+  String get viewDetails => 'వివరాలను చూడండి';
+
+  @override
+  String get readingDetailsTitle => 'రీడింగ్ వివరాలు';
+
+  @override
+  String get mapLabel => 'MAP';
+
+  @override
+  String get sampleTypeLabel => 'నమూనా రకం';
+
+  @override
+  String get stepsGoalLabel => 'లక్ష్యం';
+
+  @override
+  String get recordedAt => 'నమోదు చేయబడింది';
+
+  @override
+  String get statusLabel => 'స్థితి';
+
+  @override
+  String get pulse => 'నాడి';
+
+  @override
+  String get notesLabel => 'గమనికలు';
+
+  @override
   String get vegan => 'వేగన్';
 
   @override

@@ -2101,6 +2101,49 @@ class AppLocalizationsKn extends AppLocalizations {
   String get fat => 'ಕೊಬ್ಬಿನಾಂಶ';
 
   @override
+  String get fiber => 'ನಾರಿನಂಶ';
+
+  @override
+  String get viewMealDetails => 'ವಿವರಗಳನ್ನು ನೋಡಿ';
+
+  @override
+  String get mealDetailsTitle => 'ಊಟದ ವಿವರಗಳು';
+
+  @override
+  String get healthTip => 'ಆರೋಗ್ಯ ಸಲಹೆ';
+
+  @override
+  String get noNutritionData =>
+      'ಈ ಊಟಕ್ಕೆ ಯಾವುದೇ ಪೌಷ್ಟಿಕಾಂಶ ವಿವರಗಳನ್ನು ಉಳಿಸಲಾಗಿಲ್ಲ.';
+
+  @override
+  String get viewDetails => 'ವಿವರಗಳನ್ನು ನೋಡಿ';
+
+  @override
+  String get readingDetailsTitle => 'ರೀಡಿಂಗ್ ವಿವರಗಳು';
+
+  @override
+  String get mapLabel => 'MAP';
+
+  @override
+  String get sampleTypeLabel => 'ಮಾದರಿ ಪ್ರಕಾರ';
+
+  @override
+  String get stepsGoalLabel => 'ಗುರಿ';
+
+  @override
+  String get recordedAt => 'ದಾಖಲಿಸಲಾಗಿದೆ';
+
+  @override
+  String get statusLabel => 'ಸ್ಥಿತಿ';
+
+  @override
+  String get pulse => 'ನಾಡಿ';
+
+  @override
+  String get notesLabel => 'ಟಿಪ್ಪಣಿಗಳು';
+
+  @override
   String get vegan => 'ವೀಗನ್';
 
   @override

@@ -2075,6 +2075,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fat => 'Fat';
 
   @override
+  String get fiber => 'Fiber';
+
+  @override
+  String get viewMealDetails => 'View details';
+
+  @override
+  String get mealDetailsTitle => 'Meal details';
+
+  @override
+  String get healthTip => 'Health tip';
+
+  @override
+  String get noNutritionData => 'No nutrition details saved for this meal.';
+
+  @override
+  String get viewDetails => 'View details';
+
+  @override
+  String get readingDetailsTitle => 'Reading details';
+
+  @override
+  String get mapLabel => 'MAP';
+
+  @override
+  String get sampleTypeLabel => 'Sample type';
+
+  @override
+  String get stepsGoalLabel => 'Goal';
+
+  @override
+  String get recordedAt => 'Recorded';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String get pulse => 'Pulse';
+
+  @override
+  String get notesLabel => 'Notes';
+
+  @override
   String get vegan => 'Vegan';
 
   @override
