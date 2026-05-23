@@ -1108,6 +1108,14 @@
   "@notesLabel": {
     "description": "Notes label in the reading details sheet (no optional suffix, unlike notes used in the form)"
   },
+  "spo2Label": "SpO₂",
+  "@spo2Label": {
+    "description": "Display label for blood oxygen saturation (SpO2) reading type"
+  },
+  "stepsLabel": "Steps",
+  "@stepsLabel": {
+    "description": "Display label for daily step-count reading type"
+  },
   "vegan": "Vegan",
   "@vegan": {
     "description": "Diet flag label indicating the meal is vegan"

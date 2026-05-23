@@ -1145,6 +1145,14 @@
   "@notesLabel": {
     "description": "Notes label in the reading details sheet"
   },
+  "spo2Label": "SpO₂",
+  "@spo2Label": {
+    "description": "Display label for blood oxygen saturation reading type"
+  },
+  "stepsLabel": "படிகள்",
+  "@stepsLabel": {
+    "description": "Display label for daily step-count reading type"
+  },
   "vegan": "வீகன்",
   "@vegan": {
     "description": "Diet flag label indicating the meal is vegan"

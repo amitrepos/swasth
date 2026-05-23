@@ -2132,6 +2132,12 @@ class AppLocalizationsTe extends AppLocalizations {
   String get notesLabel => 'గమనికలు';
 
   @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'అడుగులు';
+
+  @override
   String get vegan => 'వేగన్';
 
   @override

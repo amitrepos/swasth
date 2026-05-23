@@ -2144,6 +2144,12 @@ class AppLocalizationsKn extends AppLocalizations {
   String get notesLabel => 'ಟಿಪ್ಪಣಿಗಳು';
 
   @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'ಹೆಜ್ಜೆಗಳು';
+
+  @override
   String get vegan => 'ವೀಗನ್';
 
   @override

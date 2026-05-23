@@ -121,10 +121,12 @@ class HistoryScreenState extends State<HistoryScreen> {
       );
 
       readings.sort((a, b) => b.readingTimestamp.compareTo(a.readingTimestamp));
-      
+
       // Filter out steps readings from history
-      final filteredReadings = readings.where((r) => r.readingType != 'steps').toList();
-      
+      final filteredReadings = readings
+          .where((r) => r.readingType != 'steps')
+          .toList();
+
       if (mounted) setState(() => _readings = filteredReadings);
     } catch (e) {
       if (e is UnauthorizedException) {
@@ -176,7 +178,7 @@ class HistoryScreenState extends State<HistoryScreen> {
   /// applying the active filter. Sorted by timestamp desc.
   List<_TimelineItem> get _timelineItems {
     final items = <_TimelineItem>[];
-    
+
     // Filter readings based on selected filter type
     List<HealthReading> filteredReadings = _readings;
     if (_filterType == 'glucose' || _filterType == 'blood_pressure') {
@@ -184,19 +186,19 @@ class HistoryScreenState extends State<HistoryScreen> {
           .where((r) => r.readingType == _filterType)
           .toList();
     }
-    
+
     // Add readings to timeline (when filter is null or a reading type)
     if (_filterType == null ||
         _filterType == 'glucose' ||
         _filterType == 'blood_pressure') {
       items.addAll(filteredReadings.map(_ReadingItem.new));
     }
-    
+
     // Add meals to timeline (when filter is null or meals)
     if (_filterType == null || _filterType == 'meals') {
       items.addAll(_meals.map(_MealItem.new));
     }
-    
+
     items.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return items;
   }
@@ -368,7 +370,10 @@ class HistoryScreenState extends State<HistoryScreen> {
   /// advice). Stage 2 will introduce a doctor-reviewed rule-based summary.
   /// Maps category (LOW_CARB, MODERATE_CARB, HIGH_CARB, HIGH_PROTEIN, SWEETS)
   /// to localized carb load label for display.
-  String _localizedCarbLoadFromCategory(String category, AppLocalizations l10n) {
+  String _localizedCarbLoadFromCategory(
+    String category,
+    AppLocalizations l10n,
+  ) {
     switch (category) {
       case 'LOW_CARB':
         return l10n.mealCarbLoadLow;
@@ -378,7 +383,8 @@ class HistoryScreenState extends State<HistoryScreen> {
       case 'SWEETS':
         return l10n.mealCarbLoadHigh;
       case 'HIGH_PROTEIN':
-        return l10n.mealCarbLoadLow; // High protein typically has low carb impact
+        return l10n
+            .mealCarbLoadLow; // High protein typically has low carb impact
       default:
         return l10n.mealCarbLoadModerate;
     }
@@ -420,7 +426,6 @@ class HistoryScreenState extends State<HistoryScreen> {
         return Icons.restaurant;
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -599,34 +604,36 @@ class HistoryScreenState extends State<HistoryScreen> {
             ),
           ],
         ),
-        trailing: _canEdit
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    key: Key('history_view_reading_${reading.id}'),
-                    icon: const Icon(Icons.visibility_outlined),
-                    color: AppColors.textSecondary,
-                    onPressed: () => _viewReadingDetails(reading),
-                    tooltip: l10n.viewDetails,
-                  ),
-                  if (_isEditableType(reading.readingType))
-                    IconButton(
-                      key: Key('history_edit_reading_${reading.id}'),
-                      icon: const Icon(Icons.edit_outlined),
-                      color: AppColors.textSecondary,
-                      onPressed: () => _editReading(reading),
-                      tooltip: l10n.editReading,
-                    ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    color: AppColors.statusCritical,
-                    onPressed: () => _deleteReading(reading.id),
-                    tooltip: l10n.delete,
-                  ),
-                ],
-              )
-            : null,
+        // View is read-only and must be available to viewer-role profiles too.
+        // Only edit/delete are gated by _canEdit.
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              key: Key('history_view_reading_${reading.id}'),
+              icon: const Icon(Icons.visibility_outlined),
+              color: AppColors.textSecondary,
+              onPressed: () => _viewReadingDetails(reading),
+              tooltip: l10n.viewDetails,
+            ),
+            if (_canEdit) ...[
+              if (_isEditableType(reading.readingType))
+                IconButton(
+                  key: Key('history_edit_reading_${reading.id}'),
+                  icon: const Icon(Icons.edit_outlined),
+                  color: AppColors.textSecondary,
+                  onPressed: () => _editReading(reading),
+                  tooltip: l10n.editReading,
+                ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                color: AppColors.statusCritical,
+                onPressed: () => _deleteReading(reading.id),
+                tooltip: l10n.delete,
+              ),
+            ],
+          ],
+        ),
         isThreeLine: true,
       ),
     );
@@ -650,15 +657,19 @@ class HistoryScreenState extends State<HistoryScreen> {
         localizedStatus: _localizedStatus(reading.statusFlag, l10n),
         statusColor: _getStatusColor(reading.statusFlag),
         typeIcon: _getTypeIcon(reading.readingType),
-        sampleTypeLabel: _localizedSampleType(reading.sampleType, l10n),
-        mealContextLabel: _localizedMealContext(reading.mealContext, l10n),
+        sampleTypeLabel: _localizedGlucoseContext(reading.sampleType, l10n),
+        mealContextLabel: _localizedGlucoseContext(reading.mealContext, l10n),
         readingTypeLabel: _localizedReadingTypeLabel(reading.readingType, l10n),
       ),
     );
   }
 
-  String _localizedSampleType(String? sampleType, AppLocalizations l10n) {
-    switch (sampleType) {
+  /// Maps the shared glucose context vocabulary (fasting / before_meal /
+  /// post_meal / random) to a localized label. Used for both the glucose
+  /// `sample_type` column and the `meal_context` column — they share the
+  /// same enum, so a single helper covers both.
+  String _localizedGlucoseContext(String? value, AppLocalizations l10n) {
+    switch (value) {
       case 'fasting':
         return l10n.fasting;
       case 'before_meal':
@@ -668,22 +679,7 @@ class HistoryScreenState extends State<HistoryScreen> {
       case 'random':
         return l10n.mealContextRandom;
       default:
-        return sampleType ?? '';
-    }
-  }
-
-  String _localizedMealContext(String? mealContext, AppLocalizations l10n) {
-    switch (mealContext) {
-      case 'fasting':
-        return l10n.fasting;
-      case 'before_meal':
-        return l10n.beforeMeal;
-      case 'post_meal':
-        return l10n.afterMeal;
-      case 'random':
-        return l10n.mealContextRandom;
-      default:
-        return mealContext ?? '';
+        return value ?? '';
     }
   }
 
@@ -694,9 +690,9 @@ class HistoryScreenState extends State<HistoryScreen> {
       case 'blood_pressure':
         return l10n.bpReadingTitle;
       case 'spo2':
-        return 'SpO₂';
+        return l10n.spo2Label;
       case 'steps':
-        return 'Steps';
+        return l10n.stepsLabel;
       case 'weight':
         return l10n.weightLabel;
       default:
@@ -707,9 +703,7 @@ class HistoryScreenState extends State<HistoryScreen> {
   Future<void> _editReading(HealthReading reading) async {
     final updated = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => EditReadingScreen(reading: reading),
-      ),
+      MaterialPageRoute(builder: (_) => EditReadingScreen(reading: reading)),
     );
     if (updated == true) {
       _loadAll();
@@ -723,9 +717,16 @@ class HistoryScreenState extends State<HistoryScreen> {
       ' ',
     );
     // Use category (not glucoseImpact) for visual indicators to ensure consistency
-    final carbColor = _carbLoadColorFromCategory(meal.userCorrectedCategory ?? meal.category);
-    final carbIcon = _carbLoadIconFromCategory(meal.userCorrectedCategory ?? meal.category);
-    final carbLabel = _localizedCarbLoadFromCategory(meal.userCorrectedCategory ?? meal.category, l10n);
+    final carbColor = _carbLoadColorFromCategory(
+      meal.userCorrectedCategory ?? meal.category,
+    );
+    final carbIcon = _carbLoadIconFromCategory(
+      meal.userCorrectedCategory ?? meal.category,
+    );
+    final carbLabel = _localizedCarbLoadFromCategory(
+      meal.userCorrectedCategory ?? meal.category,
+      l10n,
+    );
 
     return GlassCard(
       key: Key('history_meal_tile_${meal.id}'),
@@ -781,38 +782,42 @@ class HistoryScreenState extends State<HistoryScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                DateFormat('MMM dd, yyyy • hh:mm a').format(meal.timestamp.toLocal()),
+                DateFormat(
+                  'MMM dd, yyyy • hh:mm a',
+                ).format(meal.timestamp.toLocal()),
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
           ),
-          trailing: _canEdit
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      key: Key('history_view_meal_${meal.id}'),
-                      icon: const Icon(Icons.visibility_outlined),
-                      color: AppColors.textSecondary,
-                      onPressed: () => _viewMealDetails(meal),
-                      tooltip: l10n.viewMealDetails,
-                    ),
-                    IconButton(
-                      key: Key('history_edit_meal_${meal.id}'),
-                      icon: const Icon(Icons.edit_outlined),
-                      color: AppColors.textSecondary,
-                      onPressed: () => _editMeal(meal),
-                      tooltip: l10n.editMeal,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      color: AppColors.statusCritical,
-                      onPressed: () => _deleteMeal(meal.id),
-                      tooltip: l10n.delete,
-                    ),
-                  ],
-                )
-              : null,
+          // View is read-only and must be available to viewer-role profiles too.
+          // Only edit/delete are gated by _canEdit.
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                key: Key('history_view_meal_${meal.id}'),
+                icon: const Icon(Icons.visibility_outlined),
+                color: AppColors.textSecondary,
+                onPressed: () => _viewMealDetails(meal),
+                tooltip: l10n.viewMealDetails,
+              ),
+              if (_canEdit) ...[
+                IconButton(
+                  key: Key('history_edit_meal_${meal.id}'),
+                  icon: const Icon(Icons.edit_outlined),
+                  color: AppColors.textSecondary,
+                  onPressed: () => _editMeal(meal),
+                  tooltip: l10n.editMeal,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: AppColors.statusCritical,
+                  onPressed: () => _deleteMeal(meal.id),
+                  tooltip: l10n.delete,
+                ),
+              ],
+            ],
+          ),
           isThreeLine: true,
         ),
       ),
@@ -896,91 +901,99 @@ class _ReadingDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Drag handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.textSecondary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Title row with type icon
-            Row(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  backgroundColor: statusColor.withValues(alpha: 0.12),
-                  child: Icon(typeIcon, color: statusColor, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.readingDetailsTitle,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        readingTypeLabel,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
+                const SizedBox(height: 16),
+
+                // Title row with type icon
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: statusColor.withValues(alpha: 0.12),
+                      child: Icon(typeIcon, color: statusColor, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.readingDetailsTitle,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            readingTypeLabel,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Primary value (big number)
+                _buildPrimaryValue(),
+                const SizedBox(height: 16),
+
+                // Status badge
+                if (localizedStatus.isNotEmpty) _buildStatusBadge(),
+                const SizedBox(height: 16),
+
+                // Per-type detail rows
+                ..._buildTypeSpecificRows(),
+
+                const SizedBox(height: 8),
+
+                // Notes (any type)
+                if (reading.notes != null && reading.notes!.trim().isNotEmpty)
+                  _detailRow(
+                    label: l10n.notesLabel,
+                    value: reading.notes!,
+                    icon: Icons.notes,
+                  ),
+
+                // Recorded timestamp
+                _detailRow(
+                  label: l10n.recordedAt,
+                  value: DateFormat(
+                    'MMM dd, yyyy • hh:mm a',
+                  ).format(reading.readingTimestamp.toLocal()),
+                  icon: Icons.schedule,
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Primary value (big number)
-            _buildPrimaryValue(),
-            const SizedBox(height: 16),
-
-            // Status badge
-            if (localizedStatus.isNotEmpty) _buildStatusBadge(),
-            const SizedBox(height: 16),
-
-            // Per-type detail rows
-            ..._buildTypeSpecificRows(),
-
-            const SizedBox(height: 8),
-
-            // Notes (any type)
-            if (reading.notes != null && reading.notes!.trim().isNotEmpty)
-              _detailRow(
-                label: l10n.notesLabel,
-                value: reading.notes!,
-                icon: Icons.notes,
-              ),
-
-            // Recorded timestamp
-            _detailRow(
-              label: l10n.recordedAt,
-              value: DateFormat('MMM dd, yyyy • hh:mm a')
-                  .format(reading.readingTimestamp.toLocal()),
-              icon: Icons.schedule,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1026,8 +1039,10 @@ class _ReadingDetailsSheet extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration:
-                BoxDecoration(color: statusColor, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 8),
           Text(
@@ -1121,9 +1136,7 @@ class _ReadingDetailsSheet extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: AppColors.textSecondary),
             const SizedBox(width: 10),
-            Expanded(
-              child: Text(label, style: const TextStyle(fontSize: 14)),
-            ),
+            Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
             Flexible(
               child: Text(
                 value,
@@ -1172,130 +1185,142 @@ class _MealDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Drag handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.textSecondary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Title row
-            Row(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    l10n.mealDetailsTitle,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            Text(
-              mealTypeLabel,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            if (!_hasAnyNutrition)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.bgGrouped,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
+                // Title row
+                Row(
                   children: [
-                    const Icon(Icons.info_outline,
-                        color: AppColors.textSecondary),
-                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        l10n.noNutritionData,
+                        l10n.mealDetailsTitle,
                         style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              )
-            else ...[
-              if (meal.mealScore != null) ...[
-                _buildScoreCard(),
-                const SizedBox(height: 16),
-              ],
-              _buildCategoryBadge(),
-              const SizedBox(height: 16),
-              Text(
-                l10n.totalNutrition,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildMacroRows(),
-            ],
-
-            if (localizedTip.isNotEmpty) ...[
-              const SizedBox(height: 20),
-              Text(
-                l10n.healthTip,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.lightbulb_outline,
-                        color: AppColors.primary, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        localizedTip,
-                        style: const TextStyle(fontSize: 14),
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ],
+                Text(
+                  mealTypeLabel,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                if (!_hasAnyNutrition)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgGrouped,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.noNutritionData,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  if (meal.mealScore != null) ...[
+                    _buildScoreCard(),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildCategoryBadge(),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.totalNutrition,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildMacroRows(),
+                ],
+
+                if (localizedTip.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    l10n.healthTip,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.lightbulb_outline,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            localizedTip,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1332,10 +1357,7 @@ class _MealDetailsSheet extends StatelessWidget {
           Expanded(
             child: Text(
               l10n.mealHealthScore,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -1378,44 +1400,54 @@ class _MealDetailsSheet extends StatelessWidget {
   Widget _buildMacroRows() {
     final rows = <Widget>[];
     if (meal.totalCalories != null) {
-      rows.add(_macroRow(
-        l10n.calories,
-        '${meal.totalCalories!.round()} ${l10n.kcalUnit}',
-        Icons.local_fire_department,
-        AppColors.danger,
-      ));
+      rows.add(
+        _macroRow(
+          l10n.calories,
+          '${meal.totalCalories!.round()} ${l10n.kcalUnit}',
+          Icons.local_fire_department,
+          AppColors.danger,
+        ),
+      );
     }
     if (meal.totalCarbsG != null) {
-      rows.add(_macroRow(
-        l10n.carbs,
-        '${meal.totalCarbsG!.toStringAsFixed(1)} ${l10n.gramsUnit}',
-        Icons.grain,
-        AppColors.amber,
-      ));
+      rows.add(
+        _macroRow(
+          l10n.carbs,
+          '${meal.totalCarbsG!.toStringAsFixed(1)} ${l10n.gramsUnit}',
+          Icons.grain,
+          AppColors.amber,
+        ),
+      );
     }
     if (meal.totalProteinG != null) {
-      rows.add(_macroRow(
-        l10n.protein,
-        '${meal.totalProteinG!.toStringAsFixed(1)} ${l10n.gramsUnit}',
-        Icons.fitness_center,
-        AppColors.primary,
-      ));
+      rows.add(
+        _macroRow(
+          l10n.protein,
+          '${meal.totalProteinG!.toStringAsFixed(1)} ${l10n.gramsUnit}',
+          Icons.fitness_center,
+          AppColors.primary,
+        ),
+      );
     }
     if (meal.totalFatG != null) {
-      rows.add(_macroRow(
-        l10n.fat,
-        '${meal.totalFatG!.toStringAsFixed(1)} ${l10n.gramsUnit}',
-        Icons.opacity,
-        AppColors.textSecondary,
-      ));
+      rows.add(
+        _macroRow(
+          l10n.fat,
+          '${meal.totalFatG!.toStringAsFixed(1)} ${l10n.gramsUnit}',
+          Icons.opacity,
+          AppColors.textSecondary,
+        ),
+      );
     }
     if (meal.totalFiberG != null) {
-      rows.add(_macroRow(
-        l10n.fiber,
-        '${meal.totalFiberG!.toStringAsFixed(1)} ${l10n.gramsUnit}',
-        Icons.eco,
-        AppColors.success,
-      ));
+      rows.add(
+        _macroRow(
+          l10n.fiber,
+          '${meal.totalFiberG!.toStringAsFixed(1)} ${l10n.gramsUnit}',
+          Icons.eco,
+          AppColors.success,
+        ),
+      );
     }
     return Column(children: rows);
   }
@@ -1433,12 +1465,7 @@ class _MealDetailsSheet extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(fontSize: 14),
-              ),
-            ),
+            Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
             Text(
               value,
               style: TextStyle(

@@ -2148,6 +2148,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get notesLabel => 'குறிப்புகள்';
 
   @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'படிகள்';
+
+  @override
   String get vegan => 'வீகன்';
 
   @override

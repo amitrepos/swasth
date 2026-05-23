@@ -2117,6 +2117,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notesLabel => 'Notes';
 
   @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'Steps';
+
+  @override
   String get vegan => 'Vegan';
 
   @override

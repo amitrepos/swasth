@@ -804,6 +804,8 @@
   "statusLabel": "स्थिति",
   "pulse": "नाड़ी",
   "notesLabel": "नोट्स",
+  "spo2Label": "SpO₂",
+  "stepsLabel": "कदम",
   "vegan": "वेगन",
   "vegetarian": "शाकाहारी",
   "glutenFree": "ग्लूटेन मुक्त",

@@ -2120,6 +2120,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get notesLabel => 'नोट्स';
 
   @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'कदम';
+
+  @override
   String get vegan => 'वेगन';
 
   @override

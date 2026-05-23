@@ -3980,6 +3980,18 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get notesLabel;
 
+  /// Display label for blood oxygen saturation (SpO2) reading type
+  ///
+  /// In en, this message translates to:
+  /// **'SpO₂'**
+  String get spo2Label;
+
+  /// Display label for daily step-count reading type
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get stepsLabel;
+
   /// Diet flag label indicating the meal is vegan
   ///
   /// In en, this message translates to:
