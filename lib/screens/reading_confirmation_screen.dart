@@ -137,7 +137,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     final date = await showDatePicker(
       context: context,
       initialDate: _readingTime,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now(),
     );
     if (date == null || !mounted) return;
