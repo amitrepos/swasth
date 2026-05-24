@@ -2318,4 +2318,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noSummaryAvailable => 'No summary available';
+
+  @override
+  String get regionBannerTitle => 'Read-only mode';
+
+  @override
+  String get regionBannerBody =>
+      'You\'re viewing as a family member. Logging is enabled only in India.';
+
+  @override
+  String get regionErrorWriteBlocked =>
+      'Logging is only available in India. You\'re signed in as a family member and can view, but not log, new readings.';
 }

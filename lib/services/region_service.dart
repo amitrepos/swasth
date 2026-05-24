@@ -11,7 +11,7 @@
 import 'dart:io' show Platform;
 import 'dart:ui' show PlatformDispatcher;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 
 import '../config/app_config.dart';
 import 'api_client.dart';
@@ -43,10 +43,10 @@ class RegionInfo {
   );
 
   factory RegionInfo.fromJson(Map<String, dynamic> json) => RegionInfo(
-        countryCode: (json['country_code'] ?? 'UNKNOWN') as String,
-        writeAllowed: (json['write_allowed'] ?? json['is_india'] ?? true) as bool,
-        source: (json['source'] ?? 'unknown') as String,
-      );
+    countryCode: (json['country_code'] ?? 'UNKNOWN') as String,
+    writeAllowed: (json['write_allowed'] ?? json['is_india'] ?? true) as bool,
+    source: (json['source'] ?? 'unknown') as String,
+  );
 }
 
 class RegionService {
@@ -75,14 +75,20 @@ class RegionService {
     return getRegion();
   }
 
+  /// Test seam — let widget tests preload the cache so they don't make
+  /// HTTP calls. Pass `null` to clear the cache.
+  @visibleForTesting
+  static void setCacheForTest(RegionInfo? region) {
+    _cached = region;
+    _inflight = null;
+  }
+
   static Future<RegionInfo> _fetchAndCache() async {
     try {
       final body = await ApiClient.sendJsonObject(
         () => ApiClient.httpClient.get(
           Uri.parse('${AppConfig.serverHost}/api/public/region'),
-          headers: {
-            ..._localeHeader(),
-          },
+          headers: {..._localeHeader()},
         ),
       );
       _cached = RegionInfo.fromJson(body);
@@ -103,7 +109,8 @@ class RegionService {
     // NAT scenarios where the egress IP is non-deterministic.
     try {
       final locale = PlatformDispatcher.instance.locale;
-      final tag = '${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}';
+      final tag =
+          '${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}';
       if (tag.isEmpty) return const {};
       return {'Accept-Language': tag};
     } catch (_) {

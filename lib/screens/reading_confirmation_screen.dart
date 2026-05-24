@@ -6,6 +6,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/error_mapper.dart';
 import '../services/ocr_service.dart';
 import '../services/health_reading_service.dart';
+import '../services/region_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import 'shell_screen.dart';
@@ -70,6 +71,7 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
   DateTime _readingTime = DateTime.now();
   bool _isSaving = false;
   bool _isEditing = false;
+  bool _canWriteRegion = true; // NUO-135: gate save when outside India
 
   final _readingService = HealthReadingService();
   final _storageService = StorageService();
@@ -86,6 +88,12 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
     if (isGlucose) {
       _loadLastMealContext();
     }
+    _loadRegion();
+  }
+
+  Future<void> _loadRegion() async {
+    final r = await RegionService.getRegion();
+    if (mounted) setState(() => _canWriteRegion = r.writeAllowed);
   }
 
   /// Remembers the user's last-picked meal context (e.g. daily fasting
@@ -654,29 +662,64 @@ class _ReadingConfirmationScreenState extends State<ReadingConfirmationScreen> {
 
             const SizedBox(height: 32),
 
-            ElevatedButton(
-              key: const Key('reading_save_button'),
-              onPressed: _isSaving ? null : _save,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            // NUO-135: replace the Save button with the read-only banner
+            // copy when the caller is outside India. Backend would 451
+            // the request anyway, but better to be honest at the UI.
+            if (_canWriteRegion)
+              ElevatedButton(
+                key: const Key('reading_save_button'),
+                onPressed: _isSaving ? null : _save,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      l10n.saveReading,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        l10n.saveReading,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              )
+            else
+              Container(
+                key: const Key('reading_save_blocked_region'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.amber.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.amber.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.public, size: 18, color: AppColors.amber),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.regionBannerBody,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
-            ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

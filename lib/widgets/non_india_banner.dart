@@ -6,6 +6,7 @@
 // QA can grep for it.
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/region_service.dart';
 import '../theme/app_theme.dart';
 
@@ -35,6 +36,7 @@ class _NonIndiaBannerState extends State<NonIndiaBanner> {
   @override
   Widget build(BuildContext context) {
     if (!_loaded || _region.writeAllowed) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       key: const Key('non_india_banner'),
@@ -45,10 +47,10 @@ class _NonIndiaBannerState extends State<NonIndiaBanner> {
         children: [
           Icon(Icons.public, size: 18, color: AppColors.amber),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
-              "You're viewing as a family member. Logging is enabled only in India.",
-              style: TextStyle(
+              l10n.regionBannerBody,
+              style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,

@@ -213,3 +213,33 @@ def test_post_reading_blocked_when_geo_enabled_non_india(client, db, test_user, 
         headers={**auth_headers, "Accept-Language": "en-US"},
     )
     assert r.status_code == 451
+
+
+def test_post_chat_message_blocked_when_geo_enabled_non_india(client, db, test_user, auth_headers, monkeypatch):
+    """NUO-135: chat is a write endpoint (creates ChatMessage + AI cost) so it
+    must be gated alongside readings/meals/medications. Reads of chat history
+    via GET stay open for diaspora caregivers."""
+    monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
+    pid = _profile_id_for(test_user, db)
+    r = client.post(
+        "/api/chat/messages",
+        json={
+            "profile_id": pid,
+            "message": "Why was my sugar high yesterday?",
+        },
+        headers={**auth_headers, "Accept-Language": "en-US"},
+    )
+    assert r.status_code == 451
+    body = r.json()
+    assert body["detail"]["code"] == "REGION_NOT_ALLOWED"
+
+
+def test_get_chat_messages_NOT_blocked_outside_india(client, db, test_user, auth_headers, monkeypatch):
+    """GET chat history must remain available to diaspora caregivers."""
+    monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
+    pid = _profile_id_for(test_user, db)
+    r = client.get(
+        f"/api/chat/messages?profile_id={pid}",
+        headers={**auth_headers, "Accept-Language": "en-US"},
+    )
+    assert r.status_code == 200

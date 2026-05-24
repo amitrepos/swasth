@@ -489,6 +489,23 @@ class HealthReadingService {
     }
   }
 
+  /// Get per-day step totals for the dashboard chart (NUO-22).
+  ///
+  /// Server returns the last [days] days, oldest-first, including zero-step
+  /// days so the bar chart can render a continuous strip without gap-filling.
+  Future<Map<String, dynamic>> getDailySteps({
+    required String token,
+    required int profileId,
+    int days = 7,
+  }) {
+    return ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$baseUrl/readings/steps/daily?profile_id=$profileId&days=$days'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
+  }
+
   /// Get computed health score, streak, and AI insight for the home screen.
   Future<Map<String, dynamic>> getHealthScore(String token, int profileId, String languageCode) {
     return ApiClient.sendJsonObject(

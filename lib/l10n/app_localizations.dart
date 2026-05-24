@@ -4357,6 +4357,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No summary available'**
   String get noSummaryAvailable;
+
+  /// NUO-135: short title on the amber banner shown when caller is outside India and cannot log clinical data.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only mode'**
+  String get regionBannerTitle;
+
+  /// NUO-135: full banner body explaining read-only mode for diaspora caregivers.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re viewing as a family member. Logging is enabled only in India.'**
+  String get regionBannerBody;
+
+  /// NUO-135: shown when a write request slips through and the server returns HTTP 451 REGION_NOT_ALLOWED.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging is only available in India. You\'re signed in as a family member and can view, but not log, new readings.'**
+  String get regionErrorWriteBlocked;
 }
 
 class _AppLocalizationsDelegate

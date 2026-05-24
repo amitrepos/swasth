@@ -1322,5 +1322,17 @@
       "amount": { "type": "String" }
     }
   },
-  "noSummaryAvailable": "No summary available"
+  "noSummaryAvailable": "No summary available",
+  "regionBannerTitle": "Read-only mode",
+  "@regionBannerTitle": {
+    "description": "NUO-135: short title on the amber banner shown when caller is outside India and cannot log clinical data."
+  },
+  "regionBannerBody": "You're viewing as a family member. Logging is enabled only in India.",
+  "@regionBannerBody": {
+    "description": "NUO-135: full banner body explaining read-only mode for diaspora caregivers."
+  },
+  "regionErrorWriteBlocked": "Logging is only available in India. You're signed in as a family member and can view, but not log, new readings.",
+  "@regionErrorWriteBlocked": {
+    "description": "NUO-135: shown when a write request slips through and the server returns HTTP 451 REGION_NOT_ALLOWED."
+  }
 }
