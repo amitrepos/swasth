@@ -10,6 +10,7 @@ import '../services/chat_service.dart';
 import '../services/api_exception.dart';
 import '../services/error_mapper.dart';
 import '../services/health_reading_service.dart';
+import '../services/region_service.dart';
 import '../services/storage_service.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -38,6 +39,7 @@ class ChatScreenState extends State<ChatScreen> {
   String _lastBp = '--';
   String _lastSugar = '--';
   bool _canEdit = true;
+  bool _canWriteRegion = true; // NUO-135: false when caller is outside India
 
   // Guards sendInitialMessage from firing before _loadMessages completes
   bool _messagesLoaded = false;
@@ -59,6 +61,9 @@ class ChatScreenState extends State<ChatScreen> {
   Future<void> _loadAccessLevel() async {
     final level = await _storageService.getActiveProfileAccessLevel();
     if (mounted) setState(() => _canEdit = level != 'viewer');
+    // NUO-135: gate the input row on region as well as role.
+    final region = await RegionService.getRegion();
+    if (mounted) setState(() => _canWriteRegion = region.writeAllowed);
   }
 
   /// Called by ShellScreen when switching to the Chat tab.
@@ -591,8 +596,8 @@ class ChatScreenState extends State<ChatScreen> {
               ),
             ),
 
-            // --- Input bar (hidden for viewers) ---
-            if (_canEdit)
+            // --- Input bar (hidden for viewers + non-India callers) ---
+            if (_canEdit && _canWriteRegion)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                 child: GlassCard(

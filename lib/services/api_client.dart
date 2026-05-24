@@ -45,10 +45,32 @@ class ApiClient {
       if (body is! Map<String, dynamic>) return fallback;
       final detail = body['detail'];
       if (detail is String) return detail;
+      if (detail is Map<String, dynamic>) {
+        final msg = detail['message'];
+        if (msg is String) return msg;
+      }
       return fallback;
     } catch (_) {
       return fallback;
     }
+  }
+
+  /// NUO-135: structured 4xx body with `code == "REGION_NOT_ALLOWED"` is
+  /// the geo-restrict gate. Backend returns HTTP 451 in production, but
+  /// older clients / proxies may flatten it to 403 — sniff the code too.
+  static bool _isRegionBlocked(http.Response response) {
+    if (response.statusCode < 400 || response.statusCode >= 500) return false;
+    try {
+      final body = jsonDecode(response.body);
+      if (body is! Map<String, dynamic>) return false;
+      final detail = body['detail'];
+      if (detail is Map<String, dynamic>) {
+        return detail['code'] == 'REGION_NOT_ALLOWED';
+      }
+    } catch (_) {
+      // fall through
+    }
+    return false;
   }
 
   /// Executes an HTTP request, translating every outcome into either a
@@ -93,6 +115,12 @@ class ApiClient {
 
     if (successCodes.contains(response.statusCode)) return response;
     if (response.statusCode == 401) throw const UnauthorizedException();
+    if (response.statusCode == 451 || _isRegionBlocked(response)) {
+      // NUO-135: geo-restrict gate. Map to a dedicated exception so the
+      // UI shows the localized read-only banner copy, not the raw English
+      // server detail.
+      throw RegionBlockedException(errorDetail(response, ''));
+    }
     if (response.statusCode >= 500) {
       throw ServerException(errorDetail(response, ''));
     }

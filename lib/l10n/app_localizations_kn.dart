@@ -2255,4 +2255,15 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get noSummaryAvailable => 'ಯಾವುದೇ ಸಾರಾಂಶ ಲಭ್ಯವಿಲ್ಲ';
+
+  @override
+  String get regionBannerTitle => 'ಕೇವಲ ವೀಕ್ಷಣಾ ಮೋಡ್';
+
+  @override
+  String get regionBannerBody =>
+      'ನೀವು ಕುಟುಂಬ ಸದಸ್ಯರಾಗಿ ವೀಕ್ಷಿಸುತ್ತಿದ್ದೀರಿ. ಲಾಗಿಂಗ್ ಭಾರತದಲ್ಲಿ ಮಾತ್ರ ಲಭ್ಯವಿದೆ.';
+
+  @override
+  String get regionErrorWriteBlocked =>
+      'ಲಾಗಿಂಗ್ ಭಾರತದಲ್ಲಿ ಮಾತ್ರ ಲಭ್ಯವಿದೆ. ನೀವು ಕುಟುಂಬ ಸದಸ್ಯರಾಗಿ ಸೈನ್ ಇನ್ ಆಗಿದ್ದೀರಿ — ನೀವು ರೀಡಿಂಗ್‌ಗಳನ್ನು ನೋಡಬಹುದು, ಆದರೆ ಹೊಸದನ್ನು ದಾಖಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.';
 }

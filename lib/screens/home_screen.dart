@@ -34,6 +34,7 @@ import '../widgets/home/physician_card.dart';
 import '../widgets/home/linked_doctors_card.dart';
 import '../widgets/home/vital_summary_card.dart';
 import '../widgets/home/metrics_grid.dart';
+import '../widgets/home/steps_chart_card.dart';
 import '../widgets/home/reading_input_modal.dart';
 import '../widgets/home/meal_input_modal.dart';
 import '../widgets/home/meal_summary_card.dart';
@@ -153,7 +154,9 @@ class HomeScreenState extends State<HomeScreen>
     super.didChangeDependencies();
     routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
     final langCode = Localizations.localeOf(context).languageCode;
-    if (_lastLangCode != null && _lastLangCode != langCode && _activeProfileId != null) {
+    if (_lastLangCode != null &&
+        _lastLangCode != langCode &&
+        _activeProfileId != null) {
       _refreshHealthScore(_activeProfileId!);
     }
     _lastLangCode = langCode;
@@ -200,7 +203,11 @@ class HomeScreenState extends State<HomeScreen>
     final future = _readingService.getHealthScore(token, profileId, langCode);
     setState(() {
       _healthScoreFuture = future;
-      _aiInsightFuture = _readingService.getAiInsight(token, profileId, langCode);
+      _aiInsightFuture = _readingService.getAiInsight(
+        token,
+        profileId,
+        langCode,
+      );
     });
     try {
       final data = await future;
@@ -413,6 +420,9 @@ class HomeScreenState extends State<HomeScreen>
       ).showSnackBar(SnackBar(content: Text(l10n.selectProfileFirst)));
       return;
     }
+    // NUO-135: defense-in-depth — even if the FAB or slot taps slip through,
+    // do not open the meal logger from outside India.
+    if (!_canWriteRegion || _accessLevel == 'viewer') return;
     showMealInputModal(
       context,
       profileId: _activeProfileId!,
@@ -688,7 +698,8 @@ class HomeScreenState extends State<HomeScreen>
                             key: const Key('dashboard_metrics_grid'),
                             data: data,
                             profileId: _activeProfileId,
-                            canEdit: _accessLevel != 'viewer',
+                            canEdit:
+                                _accessLevel != 'viewer' && _canWriteRegion,
                             onAddReading: _handleAddReading,
                             bmi: (data?['bmi'] as num?)?.toDouble(),
                             bmiCategory: data?['bmi_category'] as String?,
@@ -711,8 +722,24 @@ class HomeScreenState extends State<HomeScreen>
                               child: MealSummaryCard(
                                 key: _mealSummaryKey,
                                 profileId: _activeProfileId!,
-                                onTapLogMeal: _handleAddMeal,
+                                // NUO-135: null callback disables the meal
+                                // log CTAs inside the card for non-India.
+                                onTapLogMeal:
+                                    (_accessLevel != 'viewer' &&
+                                        _canWriteRegion)
+                                    ? _handleAddMeal
+                                    : null,
                               ),
+                            ),
+                          if (_activeProfileId != null)
+                            const SizedBox(height: 16),
+
+                          // ④b 7-day steps chart (NUO-22) — uses pedometer data
+                          // already being pushed to /api/readings (steps).
+                          if (_activeProfileId != null)
+                            StepsChartCard(
+                              key: ValueKey('steps_chart_$_activeProfileId'),
+                              profileId: _activeProfileId!,
                             ),
                           if (_activeProfileId != null)
                             const SizedBox(height: 16),
@@ -1204,9 +1231,7 @@ class HomeScreenState extends State<HomeScreen>
     final time = await showTimePicker(
       context: ctx,
       initialTime: TimeOfDay(hour: hour, minute: minute),
-      helpText: enabled
-          ? l10n.reminderChangeTime
-          : l10n.reminderSetTime,
+      helpText: enabled ? l10n.reminderChangeTime : l10n.reminderSetTime,
     );
 
     if (time != null) {

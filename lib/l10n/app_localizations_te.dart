@@ -2243,4 +2243,15 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get noSummaryAvailable => 'సారాంశం అందుబాటులో లేదు';
+
+  @override
+  String get regionBannerTitle => 'చదవడానికి-మాత్రమే మోడ్';
+
+  @override
+  String get regionBannerBody =>
+      'మీరు కుటుంబ సభ్యునిగా చూస్తున్నారు. లాగింగ్ భారతదేశంలో మాత్రమే అందుబాటులో ఉంది.';
+
+  @override
+  String get regionErrorWriteBlocked =>
+      'లాగింగ్ భారతదేశంలో మాత్రమే అందుబాటులో ఉంది. మీరు కుటుంబ సభ్యునిగా సైన్ ఇన్ అయ్యారు — మీరు రీడింగ్‌లను చూడవచ్చు, కానీ క్రొత్తవి నమోదు చేయలేరు.';
 }

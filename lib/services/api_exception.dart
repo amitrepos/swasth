@@ -49,3 +49,11 @@ class ServerException extends ApiException {
 class ValidationException extends ApiException {
   const ValidationException(String super.detail);
 }
+
+/// Backend returned HTTP 451 with code `REGION_NOT_ALLOWED` — the caller is
+/// outside India and the endpoint is gated by [NUO-135]. UI should map this
+/// to the localized "read-only mode" message via [ErrorMapper], not echo
+/// the raw server detail.
+class RegionBlockedException extends ApiException {
+  const RegionBlockedException([super.detail]);
+}

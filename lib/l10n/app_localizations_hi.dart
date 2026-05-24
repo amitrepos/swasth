@@ -2229,4 +2229,15 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get noSummaryAvailable => 'कोई सारांश उपलब्ध नहीं है';
+
+  @override
+  String get regionBannerTitle => 'केवल देखने के लिए मोड';
+
+  @override
+  String get regionBannerBody =>
+      'आप एक परिवार के सदस्य के रूप में देख रहे हैं। लॉगिंग केवल भारत में उपलब्ध है।';
+
+  @override
+  String get regionErrorWriteBlocked =>
+      'लॉगिंग केवल भारत में उपलब्ध है। आप एक परिवार के सदस्य के रूप में साइन इन हैं — आप रीडिंग देख सकते हैं, लेकिन नई रीडिंग दर्ज नहीं कर सकते।';
 }

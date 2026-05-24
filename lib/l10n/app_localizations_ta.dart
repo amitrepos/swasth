@@ -2259,4 +2259,15 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get noSummaryAvailable => 'சுருக்கம் எதுவும் இல்லை';
+
+  @override
+  String get regionBannerTitle => 'படிக்க மட்டுமே பயன்முறை';
+
+  @override
+  String get regionBannerBody =>
+      'நீங்கள் ஒரு குடும்ப உறுப்பினராக பார்க்கிறீர்கள். பதிவுசெய்தல் இந்தியாவில் மட்டுமே இயக்கப்பட்டுள்ளது.';
+
+  @override
+  String get regionErrorWriteBlocked =>
+      'பதிவுசெய்தல் இந்தியாவில் மட்டுமே கிடைக்கிறது. நீங்கள் ஒரு குடும்ப உறுப்பினராக உள்நுழைந்துள்ளீர்கள் — அளவீடுகளைப் பார்க்கலாம், ஆனால் புதியதை பதிவுசெய்ய முடியாது.';
 }
