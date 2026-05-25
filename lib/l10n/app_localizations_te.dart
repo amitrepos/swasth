@@ -1547,6 +1547,24 @@ class AppLocalizationsTe extends AppLocalizations {
       'కెమెరా ప్రారంభించడం విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.';
 
   @override
+  String get scanCouldNotReadTitle => 'స్క్రీన్‌ని చదవలేకపోయాం';
+
+  @override
+  String get scanCouldNotReadMessage =>
+      'పరికరం రీడర్ లేదా AI రెండూ ఈ ఫోటో నుండి విలువలను తీయలేకపోయాయి.\n\nప్రయత్నించండి:\n  • ఫోన్‌ని స్థిరంగా పట్టుకుని స్క్రీన్‌కి దగ్గరగా తీసుకురండి\n  • స్క్రీన్ వెలుగుతూ ఉండాలి, సంఖ్యలు స్పష్టంగా కనిపించాలి\n  • స్క్రీన్‌పై మెరుపు లేదా నీడ లేకుండా చూడండి';
+
+  @override
+  String get scanNumbersNotDetectedTitle => 'సంఖ్యలు గుర్తించబడలేదు';
+
+  @override
+  String scanNumbersNotDetectedMessage(String detected) {
+    return 'ఫోటో తీయబడింది కానీ సరైన రీడింగ్ కనుగొనబడలేదు.\n\nకెమెరా గుర్తించింది: \"$detected\"\n\nమళ్లీ ఫోటో తీయండి లేదా రీడింగ్‌ను మాన్యువల్‌గా నమోదు చేయండి.';
+  }
+
+  @override
+  String get weightScale => 'బరువు యంత్రం';
+
+  @override
   String get foodResultTitle => 'ఆహార విశ్లేషణ';
 
   @override

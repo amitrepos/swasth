@@ -743,6 +743,11 @@
   "@cameraError": {
     "description": "Generic camera error message - never leak raw exception details to user"
   },
+  "scanCouldNotReadTitle": "స్క్రీన్‌ని చదవలేకపోయాం",
+  "scanCouldNotReadMessage": "పరికరం రీడర్ లేదా AI రెండూ ఈ ఫోటో నుండి విలువలను తీయలేకపోయాయి.\n\nప్రయత్నించండి:\n  • ఫోన్‌ని స్థిరంగా పట్టుకుని స్క్రీన్‌కి దగ్గరగా తీసుకురండి\n  • స్క్రీన్ వెలుగుతూ ఉండాలి, సంఖ్యలు స్పష్టంగా కనిపించాలి\n  • స్క్రీన్‌పై మెరుపు లేదా నీడ లేకుండా చూడండి",
+  "scanNumbersNotDetectedTitle": "సంఖ్యలు గుర్తించబడలేదు",
+  "scanNumbersNotDetectedMessage": "ఫోటో తీయబడింది కానీ సరైన రీడింగ్ కనుగొనబడలేదు.\n\nకెమెరా గుర్తించింది: \"{detected}\"\n\nమళ్లీ ఫోటో తీయండి లేదా రీడింగ్‌ను మాన్యువల్‌గా నమోదు చేయండి.",
+  "weightScale": "బరువు యంత్రం",
   "mealsTileLabel": "భోజనాలు",
   "mealsTodayCount": "{count} ఈరోజు",
   "@mealsTodayCount": {

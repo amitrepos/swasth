@@ -1537,6 +1537,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cameraError => 'Camera initialization failed. Please try again.';
 
   @override
+  String get scanCouldNotReadTitle => 'Could Not Read Display';
+
+  @override
+  String get scanCouldNotReadMessage =>
+      'Neither the on-device reader nor the AI could extract values from this photo.\n\nTry:\n  • Hold the phone steady and closer to the display\n  • Make sure the screen is lit and numbers are visible\n  • Avoid glare or shadows on the display';
+
+  @override
+  String get scanNumbersNotDetectedTitle => 'Numbers Not Detected';
+
+  @override
+  String scanNumbersNotDetectedMessage(String detected) {
+    return 'The photo was captured but no valid reading was found.\n\nThe camera detected: \"$detected\"\n\nTry taking the photo again or enter the reading manually.';
+  }
+
+  @override
+  String get weightScale => 'Weight Scale';
+
+  @override
   String get foodResultTitle => 'Meal Result';
 
   @override

@@ -2930,6 +2930,36 @@ abstract class AppLocalizations {
   /// **'Camera initialization failed. Please try again.'**
   String get cameraError;
 
+  /// Title of the OCR-failure dialog on the photo-scan screen
+  ///
+  /// In en, this message translates to:
+  /// **'Could Not Read Display'**
+  String get scanCouldNotReadTitle;
+
+  /// Body of the OCR-failure dialog explaining how to retake the photo
+  ///
+  /// In en, this message translates to:
+  /// **'Neither the on-device reader nor the AI could extract values from this photo.\n\nTry:\n  • Hold the phone steady and closer to the display\n  • Make sure the screen is lit and numbers are visible\n  • Avoid glare or shadows on the display'**
+  String get scanCouldNotReadMessage;
+
+  /// Title shown when OCR succeeded but no numeric reading was found
+  ///
+  /// In en, this message translates to:
+  /// **'Numbers Not Detected'**
+  String get scanNumbersNotDetectedTitle;
+
+  /// Body of the no-numbers dialog, includes the raw text the camera saw
+  ///
+  /// In en, this message translates to:
+  /// **'The photo was captured but no valid reading was found.\n\nThe camera detected: \"{detected}\"\n\nTry taking the photo again or enter the reading manually.'**
+  String scanNumbersNotDetectedMessage(String detected);
+
+  /// Device-name label for the weight scale in scan screens
+  ///
+  /// In en, this message translates to:
+  /// **'Weight Scale'**
+  String get weightScale;
+
   /// No description provided for @foodResultTitle.
   ///
   /// In en, this message translates to:

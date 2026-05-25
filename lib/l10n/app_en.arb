@@ -697,6 +697,29 @@
   "@cameraError": {
     "description": "Generic camera error message - never leak raw exception details to user"
   },
+  "scanCouldNotReadTitle": "Could Not Read Display",
+  "@scanCouldNotReadTitle": {
+    "description": "Title of the OCR-failure dialog on the photo-scan screen"
+  },
+  "scanCouldNotReadMessage": "Neither the on-device reader nor the AI could extract values from this photo.\n\nTry:\n  • Hold the phone steady and closer to the display\n  • Make sure the screen is lit and numbers are visible\n  • Avoid glare or shadows on the display",
+  "@scanCouldNotReadMessage": {
+    "description": "Body of the OCR-failure dialog explaining how to retake the photo"
+  },
+  "scanNumbersNotDetectedTitle": "Numbers Not Detected",
+  "@scanNumbersNotDetectedTitle": {
+    "description": "Title shown when OCR succeeded but no numeric reading was found"
+  },
+  "scanNumbersNotDetectedMessage": "The photo was captured but no valid reading was found.\n\nThe camera detected: \"{detected}\"\n\nTry taking the photo again or enter the reading manually.",
+  "@scanNumbersNotDetectedMessage": {
+    "description": "Body of the no-numbers dialog, includes the raw text the camera saw",
+    "placeholders": {
+      "detected": { "type": "String", "example": "no text" }
+    }
+  },
+  "weightScale": "Weight Scale",
+  "@weightScale": {
+    "description": "Device-name label for the weight scale in scan screens"
+  },
   "foodResultTitle": "Meal Result",
   "foodCategoryHighCarb": "High Carb",
   "foodCategoryModerateCarb": "Moderate Carb",

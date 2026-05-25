@@ -1537,6 +1537,24 @@ class AppLocalizationsHi extends AppLocalizations {
   String get cameraError => 'कैमरा शुरू नहीं हो सका। कृपया फिर से कोशिश करें।';
 
   @override
+  String get scanCouldNotReadTitle => 'स्क्रीन नहीं पढ़ पाए';
+
+  @override
+  String get scanCouldNotReadMessage =>
+      'फ़ोन का रीडर और AI दोनों इस फ़ोटो से नंबर नहीं निकाल सके।\n\nऐसे करें:\n  • फ़ोन को स्थिर रखें और स्क्रीन के पास लाएँ\n  • स्क्रीन की रोशनी जलाएँ ताकि नंबर साफ़ दिखें\n  • स्क्रीन पर चमक या परछाई न हो';
+
+  @override
+  String get scanNumbersNotDetectedTitle => 'नंबर नहीं मिले';
+
+  @override
+  String scanNumbersNotDetectedMessage(String detected) {
+    return 'फ़ोटो ली गई, पर कोई सही रीडिंग नहीं मिली।\n\nकैमरे ने यह देखा: \"$detected\"\n\nफिर से फ़ोटो लें या रीडिंग खुद भरें।';
+  }
+
+  @override
+  String get weightScale => 'वज़न मशीन';
+
+  @override
   String get foodResultTitle => 'खाने का नतीजा';
 
   @override

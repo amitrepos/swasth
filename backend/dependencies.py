@@ -2,67 +2,159 @@
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from typing import Annotated, Optional
+import ipaddress
 import models
 import auth
 import os
 import logging
+import threading
 import geoip2.database
+import geoip2.errors
 from database import get_db
 from encryption_service import hash_email
 
 logger = logging.getLogger(__name__)
 
-# Cache for the GeoIP reader to avoid re-opening the file on every request
+# ──────────────────────────────────────────────────────────────────────
+# Geofence: data-modifying endpoints must come from an Indian IP to
+# satisfy DPDPA 2023 (data fiduciary obligations on cross-border
+# transfer of personal data) and DISHA (digital health data residency).
+# GDPR is EU law and does NOT apply here; do not cite it in code or
+# audit logs — auditors get confused, and we lose the actual statute.
+# ──────────────────────────────────────────────────────────────────────
+
+# Cache for the GeoIP reader to avoid re-opening the file on every request.
+# Lock guards the lazy-init to prevent the race where two concurrent
+# requests both open the mmdb — one FD wins, the other leaks forever.
 _geoip_reader: Optional[geoip2.database.Reader] = None
+_geoip_lock = threading.Lock()
+
+# Trusted-proxy CIDRs. XFF is only honoured when request.client.host is
+# inside one of these — otherwise an attacker can send their own XFF
+# header with a spoofed Indian IP and walk through the geofence.
+# Defaults cover loopback + RFC1918 (the typical nginx-on-localhost or
+# private-LB topology). Override via TRUSTED_PROXIES env (comma-sep CIDRs)
+# in environments with a public LB outside the private range.
+_DEFAULT_TRUSTED_PROXIES = "127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,::1/128,fc00::/7"
+
+
+def _trusted_proxy_networks() -> list:
+    raw = os.environ.get("TRUSTED_PROXIES", _DEFAULT_TRUSTED_PROXIES)
+    nets = []
+    for cidr in (c.strip() for c in raw.split(",") if c.strip()):
+        try:
+            nets.append(ipaddress.ip_network(cidr, strict=False))
+        except ValueError:
+            logger.warning(f"Ignoring invalid TRUSTED_PROXIES entry: {cidr}")
+    return nets
+
+
+def _ip_is_trusted_proxy(ip_str: str, nets: list) -> bool:
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return False
+    return any(ip in net for net in nets)
+
+
+def _get_client_ip(request: Request) -> str:
+    """Return the real client IP, resistant to XFF spoofing.
+
+    XFF is only consulted when the immediate peer (request.client.host)
+    is a trusted proxy. We then walk the XFF chain from right to left,
+    stopping at the first untrusted address — that is the real client
+    as seen by the outermost trusted hop. If no trusted proxy is in
+    front of us, we ignore XFF entirely and trust request.client.host.
+    """
+    peer = request.client.host if request.client else "127.0.0.1"
+    trusted = _trusted_proxy_networks()
+
+    if not _ip_is_trusted_proxy(peer, trusted):
+        # Direct connection (or peer is NOT a trusted proxy). Ignore XFF;
+        # client could have set it themselves.
+        return peer
+
+    xff = request.headers.get("X-Forwarded-For")
+    if not xff:
+        return peer
+
+    # Walk right-to-left, skipping trusted-proxy hops. The first
+    # untrusted IP is the real client; if everything is trusted, fall
+    # back to the leftmost entry.
+    hops = [h.strip() for h in xff.split(",") if h.strip()]
+    for hop in reversed(hops):
+        if not _ip_is_trusted_proxy(hop, trusted):
+            return hop
+    return hops[0] if hops else peer
+
 
 def _get_geoip_reader() -> Optional[geoip2.database.Reader]:
-    """Lazy-load the GeoIP database reader."""
+    """Lazy-load the GeoIP database reader (thread-safe)."""
     global _geoip_reader
     if _geoip_reader is not None:
         return _geoip_reader
-    
-    db_path = os.path.join(os.path.dirname(__file__), "GeoLite2-Country.mmdb")
-    if not os.path.exists(db_path):
-        # Fallback for local development or if DB is missing in CI
-        return None
-    
-    try:
-        _geoip_reader = geoip2.database.Reader(db_path)
-        return _geoip_reader
-    except Exception as e:
-        logger.warning(f"Failed to load GeoIP database: {e}")
-        return None
+
+    with _geoip_lock:
+        # Double-check after acquiring the lock — another thread may
+        # have populated the cache while we were waiting.
+        if _geoip_reader is not None:
+            return _geoip_reader
+
+        db_path = os.path.join(os.path.dirname(__file__), "GeoLite2-Country.mmdb")
+        if not os.path.exists(db_path):
+            # Fallback for local development or if DB is missing in CI
+            return None
+
+        try:
+            _geoip_reader = geoip2.database.Reader(db_path)
+            return _geoip_reader
+        except Exception as e:
+            logger.warning(f"Failed to load GeoIP database: {e}")
+            return None
+
 
 def verify_india_location(request: Request) -> None:
-    """Enforce GDPR geofencing: block data modifications from outside India.
-    
-    Checks X-Forwarded-For (for proxies/Nginx) or request.client.host.
-    If GeoLite2-Country.mmdb is missing, allows the request (dev mode fallback).
-    Raises 403 REGION_RESTRICTED if country is not 'IN'.
+    """Enforce India-only geofencing on data-modifying endpoints.
+
+    Required by DPDPA 2023 (Sec. 16 — restrictions on cross-border data
+    transfer for sensitive personal data) and DISHA's data-residency
+    expectations for digital health records. GDPR is NOT the basis —
+    that's EU law and would not protect Indian data subjects.
+
+    Client IP resolution is XFF-spoof-resistant: see _get_client_ip.
+    If GeoLite2-Country.mmdb is missing, the request is allowed
+    (dev/CI fallback). Raises 403 REGION_RESTRICTED when the resolved
+    country is not 'IN'.
     """
-    # 1. Feature flag / Bypass for testing
+    # 1. Feature flag / bypass for tests + emergency rollback. AUDITED:
+    # we log every bypassed request so the access trail still exists if
+    # someone leaves the flag flipped in production by accident.
     if os.environ.get("BYPASS_GEO_RESTRICTION", "").lower() == "true":
+        peer = request.client.host if request.client else "unknown"
+        logger.warning(
+            "GEOFENCE_BYPASS active — BYPASS_GEO_RESTRICTION=true. "
+            f"peer={peer} path={request.url.path} method={request.method}. "
+            "This must NEVER stay on in production; flip off after the "
+            "incident/test."
+        )
         return
 
-    # 2. Extract client IP
-    # X-Forwarded-For is usually a comma-separated list of IPs. Real client is the first one.
-    xff = request.headers.get("X-Forwarded-For")
-    if xff:
-        client_ip = xff.split(",")[0].strip()
-    else:
-        client_ip = request.client.host if request.client else "127.0.0.1"
+    # 2. Extract client IP (XFF only honoured behind trusted proxies)
+    client_ip = _get_client_ip(request)
 
     # 3. Check location
     reader = _get_geoip_reader()
     if reader is None:
         # Mock behavior: allow all if DB file is missing (dev environment)
-        # logger.debug(f"GeoIP DB missing. Allowing request from {client_ip} (mock).")
         return
 
     try:
         response = reader.country(client_ip)
         if response.country.iso_code != "IN":
-            logger.info(f"Blocked request from {client_ip} (Country: {response.country.iso_code})")
+            logger.info(
+                f"Blocked request from {client_ip} "
+                f"(Country: {response.country.iso_code})"
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="REGION_RESTRICTED"

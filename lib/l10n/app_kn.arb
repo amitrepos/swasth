@@ -715,6 +715,11 @@
   "@cameraError": {
     "description": "Generic camera error message - never leak raw exception details to user"
   },
+  "scanCouldNotReadTitle": "ಪರದೆಯನ್ನು ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+  "scanCouldNotReadMessage": "ಸಾಧನದ ರೀಡರ್ ಮತ್ತು AI ಎರಡೂ ಈ ಫೋಟೋದಿಂದ ಮೌಲ್ಯಗಳನ್ನು ತೆಗೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.\n\nಪ್ರಯತ್ನಿಸಿ:\n  • ಫೋನ್ ಅನ್ನು ಸ್ಥಿರವಾಗಿ ಹಿಡಿದು ಪರದೆಯ ಸಮೀಪಕ್ಕೆ ತನ್ನಿ\n  • ಪರದೆ ಪ್ರಕಾಶಿಸಲ್ಪಟ್ಟಿರಲಿ ಮತ್ತು ಸಂಖ್ಯೆಗಳು ಸ್ಪಷ್ಟವಾಗಿರಲಿ\n  • ಪರದೆಯ ಮೇಲೆ ಪ್ರತಿಫಲನ ಅಥವಾ ನೆರಳು ಬೇಡ",
+  "scanNumbersNotDetectedTitle": "ಸಂಖ್ಯೆಗಳು ಪತ್ತೆಯಾಗಲಿಲ್ಲ",
+  "scanNumbersNotDetectedMessage": "ಫೋಟೋ ತೆಗೆದಾಗಿದೆ ಆದರೆ ಮಾನ್ಯ ರೀಡಿಂಗ್ ಕಂಡುಬರಲಿಲ್ಲ.\n\nಕ್ಯಾಮೆರಾ ಪತ್ತೆ ಮಾಡಿದ್ದು: \"{detected}\"\n\nಮತ್ತೆ ಫೋಟೋ ತೆಗೆಯಿರಿ ಅಥವಾ ಕೈಯಿಂದ ರೀಡಿಂಗ್ ನಮೂದಿಸಿ.",
+  "weightScale": "ತೂಕದ ಯಂತ್ರ",
   "foodResultTitle": "ಊಟದ ಫಲಿತಾಂಶ",
   "foodCategoryHighCarb": "ಹೆಚ್ಚು ಕಾರ್ಬ್",
   "foodCategoryModerateCarb": "ಮಧ್ಯಮ ಕಾರ್ಬ್",

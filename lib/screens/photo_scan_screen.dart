@@ -4,7 +4,6 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/ocr_service.dart';
 import '../services/storage_service.dart';
-import '../services/api_exception.dart';
 import '../services/error_mapper.dart';
 import 'reading_confirmation_screen.dart';
 
@@ -40,8 +39,10 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
   Future<void> _initCamera() async {
     try {
       _cameras = await availableCameras();
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       if (_cameras.isEmpty) {
-        setState(() => _errorMessage = 'No camera found on this device.');
+        setState(() => _errorMessage = l10n.cameraNotFound);
         return;
       }
       final back = _cameras.firstWhere(
@@ -56,8 +57,14 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       );
       await _controller!.initialize();
       if (mounted) setState(() => _isInitialized = true);
-    } catch (e) {
-      setState(() => _errorMessage = 'Camera error: $e');
+    } catch (_) {
+      // Never surface the raw exception — it leaks PlatformException
+      // messages and stack frames to the user. The user only needs to
+      // know to retry; engineering already has the crash report.
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        setState(() => _errorMessage = l10n.cameraError);
+      }
     }
   }
 
@@ -136,23 +143,20 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
 
       if (result == null) {
         _showError(
-          title: 'Could Not Read Display',
-          message: 'Neither the on-device reader nor the AI could extract values from this photo.\n\n'
-              'Try:\n'
-              '  • Hold the phone steady and closer to the display\n'
-              '  • Make sure the screen is lit and numbers are visible\n'
-              '  • Avoid glare or shadows on the display',
+          title: l10n.scanCouldNotReadTitle,
+          message: l10n.scanCouldNotReadMessage,
         );
         setState(() => _isCapturing = false);
         return;
       }
 
       if (!result.hasValue) {
+        // Em-dash is locale-neutral punctuation; avoids hardcoding "no text"
+        // in English when the OCR returned an empty rawText.
+        final detected = result.rawText.isNotEmpty ? result.rawText : '—';
         _showError(
-          title: 'Numbers Not Detected',
-          message: 'The photo was captured but no valid reading was found.\n\n'
-              'The camera detected: "${result.rawText.isNotEmpty ? result.rawText : 'no text'}"\n\n'
-              'Try taking the photo again or enter the reading manually.',
+          title: l10n.scanNumbersNotDetectedTitle,
+          message: l10n.scanNumbersNotDetectedMessage(detected),
         );
         setState(() => _isCapturing = false);
         return;
@@ -169,11 +173,12 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         ),
       );
     } catch (e) {
+      // Route through ErrorMapper instead of leaking the raw exception.
+      // The previous string "Capture failed: $e" surfaced things like
+      // "PlatformException(IOException, …)" to elderly users.
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Capture failed: $e')),
-        );
+        await ErrorMapper.showSnack(context, e);
       }
     } finally {
       if (mounted) setState(() => _isCapturing = false);
@@ -200,6 +205,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
   */
 
   void _showError({required String title, required String message}) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -208,7 +214,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Try Again"),
+            child: Text(l10n.tryAgain),
           ),
           TextButton(
             onPressed: () {
@@ -224,7 +230,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
                 ),
               );
             },
-            child: const Text("Enter Manually"),
+            child: Text(l10n.enterManually),
           ),
         ],
       ),
@@ -249,7 +255,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
     if (isGlucose) {
       deviceLabel = l10n.glucometer;
     } else if (isWeight) {
-      deviceLabel = 'Weight Scale';
+      deviceLabel = l10n.weightScale;
     } else {
       deviceLabel = l10n.bpMeter;
     }

@@ -1557,6 +1557,24 @@ class AppLocalizationsKn extends AppLocalizations {
       'ಕ್ಯಾಮೆರಾ ಪ್ರಾರಂಭಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
+  String get scanCouldNotReadTitle => 'ಪರದೆಯನ್ನು ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ';
+
+  @override
+  String get scanCouldNotReadMessage =>
+      'ಸಾಧನದ ರೀಡರ್ ಮತ್ತು AI ಎರಡೂ ಈ ಫೋಟೋದಿಂದ ಮೌಲ್ಯಗಳನ್ನು ತೆಗೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.\n\nಪ್ರಯತ್ನಿಸಿ:\n  • ಫೋನ್ ಅನ್ನು ಸ್ಥಿರವಾಗಿ ಹಿಡಿದು ಪರದೆಯ ಸಮೀಪಕ್ಕೆ ತನ್ನಿ\n  • ಪರದೆ ಪ್ರಕಾಶಿಸಲ್ಪಟ್ಟಿರಲಿ ಮತ್ತು ಸಂಖ್ಯೆಗಳು ಸ್ಪಷ್ಟವಾಗಿರಲಿ\n  • ಪರದೆಯ ಮೇಲೆ ಪ್ರತಿಫಲನ ಅಥವಾ ನೆರಳು ಬೇಡ';
+
+  @override
+  String get scanNumbersNotDetectedTitle => 'ಸಂಖ್ಯೆಗಳು ಪತ್ತೆಯಾಗಲಿಲ್ಲ';
+
+  @override
+  String scanNumbersNotDetectedMessage(String detected) {
+    return 'ಫೋಟೋ ತೆಗೆದಾಗಿದೆ ಆದರೆ ಮಾನ್ಯ ರೀಡಿಂಗ್ ಕಂಡುಬರಲಿಲ್ಲ.\n\nಕ್ಯಾಮೆರಾ ಪತ್ತೆ ಮಾಡಿದ್ದು: \"$detected\"\n\nಮತ್ತೆ ಫೋಟೋ ತೆಗೆಯಿರಿ ಅಥವಾ ಕೈಯಿಂದ ರೀಡಿಂಗ್ ನಮೂದಿಸಿ.';
+  }
+
+  @override
+  String get weightScale => 'ತೂಕದ ಯಂತ್ರ';
+
+  @override
   String get foodResultTitle => 'ಊಟದ ಫಲಿತಾಂಶ';
 
   @override

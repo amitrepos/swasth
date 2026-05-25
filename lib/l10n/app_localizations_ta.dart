@@ -1556,6 +1556,24 @@ class AppLocalizationsTa extends AppLocalizations {
       'கேமரா தொடங்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
 
   @override
+  String get scanCouldNotReadTitle => 'திரையைப் படிக்க முடியவில்லை';
+
+  @override
+  String get scanCouldNotReadMessage =>
+      'சாதனத்தின் ரீடர் அல்லது AI இரண்டுமே இந்த படத்திலிருந்து மதிப்புகளை எடுக்க முடியவில்லை.\n\nமுயற்சிக்கவும்:\n  • தொலைபேசியை நிலையாக பிடித்து திரைக்கு அருகில் கொண்டு வாருங்கள்\n  • திரை ஒளிர வேண்டும் மற்றும் எண்கள் தெளிவாக தெரிய வேண்டும்\n  • திரையில் ஒளி பிரதிபலிப்பு அல்லது நிழல் இருக்கக் கூடாது';
+
+  @override
+  String get scanNumbersNotDetectedTitle => 'எண்கள் கண்டறியப்படவில்லை';
+
+  @override
+  String scanNumbersNotDetectedMessage(String detected) {
+    return 'படம் எடுக்கப்பட்டது ஆனால் சரியான ரீடிங் கிடைக்கவில்லை.\n\nகேமரா கண்டறிந்தது: \"$detected\"\n\nமீண்டும் படம் எடுக்கவும் அல்லது ரீடிங்கை கைமுறையாக உள்ளிடவும்.';
+  }
+
+  @override
+  String get weightScale => 'எடை அளவி';
+
+  @override
   String get foodResultTitle => 'உணவு பகுப்பாய்வு';
 
   @override
