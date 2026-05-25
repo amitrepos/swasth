@@ -1081,6 +1081,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get mmHgUnit => 'mmHg';
 
   @override
+  String get kgUnit => 'किग्रा';
+
+  @override
   String get viaArmband => 'आर्मबैंड से';
 
   @override

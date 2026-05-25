@@ -1096,6 +1096,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get mmHgUnit => 'mmHg';
 
   @override
+  String get kgUnit => 'ಕೆ.ಜಿ';
+
+  @override
   String get viaArmband => 'ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ';
 
   @override

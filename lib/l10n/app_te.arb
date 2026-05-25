@@ -578,6 +578,7 @@
   "spO2Unit": "%",
   "bpmUnit": "bpm",
   "mmHgUnit": "mmHg",
+  "kgUnit": "కిలో",
   "viaArmband": "ఆర్మ్‌బ్యాండ్ ద్వారా",
   "viaPhone": "ఫోన్ / ఆర్మ్‌బ్యాండ్ ద్వారా",
   "pairDevice": "పరికరాన్ని జత చేయండి",

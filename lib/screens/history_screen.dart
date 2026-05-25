@@ -333,7 +333,10 @@ class HistoryScreenState extends State<HistoryScreen> {
       case 'LOW':
         return AppColors.statusLow;
       default:
-        return AppColors.statusLow;
+        // Unknown/null status → neutral grey. Never reuse a clinical colour
+        // (e.g. statusLow) for an unknown value — that would visually
+        // misrepresent the reading as "normal/low range".
+        return AppColors.textSecondary;
     }
   }
 
@@ -343,6 +346,12 @@ class HistoryScreenState extends State<HistoryScreen> {
         return Icons.water_drop;
       case 'blood_pressure':
         return Icons.favorite;
+      case 'spo2':
+        return Icons.bloodtype_outlined;
+      case 'steps':
+        return Icons.directions_walk;
+      case 'weight':
+        return Icons.monitor_weight_outlined;
       default:
         return Icons.medical_services;
     }
@@ -566,7 +575,8 @@ class HistoryScreenState extends State<HistoryScreen> {
       borderRadius: 16,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: _getStatusColor(reading.statusFlag).withOpacity(0.1),
+          backgroundColor:
+              _getStatusColor(reading.statusFlag).withValues(alpha: 0.10),
           child: Icon(
             _getTypeIcon(reading.readingType),
             color: _getStatusColor(reading.statusFlag),
@@ -583,7 +593,8 @@ class HistoryScreenState extends State<HistoryScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
-                color: _getStatusColor(reading.statusFlag).withOpacity(0.12),
+                color:
+                    _getStatusColor(reading.statusFlag).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -826,15 +837,6 @@ class HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  /// Returns the tip text for the user's current locale from a multilingual
-  /// [tipsJson] map (`{"en": "...", "hi": "...", ...}`). Falls back to English
-  /// if the current locale is missing, then to empty string.
-  String _localizedTip(Map<String, dynamic>? tipsJson) {
-    if (tipsJson == null || tipsJson.isEmpty) return '';
-    final code = Localizations.localeOf(context).languageCode;
-    return (tipsJson[code] as String?) ?? (tipsJson['en'] as String?) ?? '';
-  }
-
   void _viewMealDetails(MealLog meal) {
     final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
@@ -847,7 +849,6 @@ class HistoryScreenState extends State<HistoryScreen> {
       builder: (sheetContext) => _MealDetailsSheet(
         meal: meal,
         l10n: l10n,
-        localizedTip: _localizedTip(meal.tips),
         mealTypeLabel: _localizedMealType(meal.mealType, l10n),
         categoryLabel: _localizedCarbLoadFromCategory(
           meal.userCorrectedCategory ?? meal.category,
@@ -1115,7 +1116,7 @@ class _ReadingDetailsSheet extends StatelessWidget {
             _detailRow(
               label: l10n.spo2Label,
               value:
-                  '${reading.spo2Value!.round()}${reading.spo2Unit ?? '%'}',
+                  '${reading.spo2Value!.round()}${reading.spo2Unit ?? l10n.spO2Unit}',
               icon: Icons.bloodtype_outlined,
             ),
         ];
@@ -1145,7 +1146,7 @@ class _ReadingDetailsSheet extends StatelessWidget {
             _detailRow(
               label: l10n.weightLabel,
               value:
-                  '${reading.weightValue!.toStringAsFixed(1)} ${reading.weightUnit ?? 'kg'}',
+                  '${reading.weightValue!.toStringAsFixed(1)} ${reading.weightUnit ?? l10n.kgUnit}',
               icon: Icons.monitor_weight_outlined,
             ),
         ];
@@ -1195,7 +1196,6 @@ class _ReadingDetailsSheet extends StatelessWidget {
 class _MealDetailsSheet extends StatelessWidget {
   final MealLog meal;
   final AppLocalizations l10n;
-  final String localizedTip;
   final String mealTypeLabel;
   final String categoryLabel;
   final Color categoryColor;
@@ -1203,11 +1203,20 @@ class _MealDetailsSheet extends StatelessWidget {
   const _MealDetailsSheet({
     required this.meal,
     required this.l10n,
-    required this.localizedTip,
     required this.mealTypeLabel,
     required this.categoryLabel,
     required this.categoryColor,
   });
+
+  /// Resolved at build() so a locale switch while the sheet is open
+  /// refreshes the tip on the next rebuild (the StatelessWidget itself is
+  /// rebuilt by Flutter when Localizations changes).
+  String _resolveTip(BuildContext context) {
+    final tipsJson = meal.tips;
+    if (tipsJson == null || tipsJson.isEmpty) return '';
+    final code = Localizations.localeOf(context).languageCode;
+    return (tipsJson[code] as String?) ?? (tipsJson['en'] as String?) ?? '';
+  }
 
   bool get _hasAnyNutrition =>
       meal.totalCalories != null ||
@@ -1219,6 +1228,7 @@ class _MealDetailsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizedTip = _resolveTip(context);
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(

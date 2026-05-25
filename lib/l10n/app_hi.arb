@@ -395,6 +395,7 @@
   "spO2Unit": "%",
   "bpmUnit": "bpm",
   "mmHgUnit": "mmHg",
+  "kgUnit": "किग्रा",
   "viaArmband": "आर्मबैंड से",
   "viaPhone": "फ़ोन / आर्मबैंड से",
   "pairDevice": "डिवाइस जोड़ें",

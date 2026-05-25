@@ -2096,6 +2096,12 @@ abstract class AppLocalizations {
   /// **'mmHg'**
   String get mmHgUnit;
 
+  /// Kilogram unit suffix for weight readings
+  ///
+  /// In en, this message translates to:
+  /// **'kg'**
+  String get kgUnit;
+
   /// No description provided for @viaArmband.
   ///
   /// In en, this message translates to:

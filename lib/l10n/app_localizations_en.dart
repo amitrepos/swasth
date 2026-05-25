@@ -1083,6 +1083,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mmHgUnit => 'mmHg';
 
   @override
+  String get kgUnit => 'kg';
+
+  @override
   String get viaArmband => 'via Armband';
 
   @override

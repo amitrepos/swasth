@@ -1097,6 +1097,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get mmHgUnit => 'mmHg';
 
   @override
+  String get kgUnit => 'கி.கி';
+
+  @override
   String get viaArmband => 'ஆர்ம்பேண்ட் வழியாக';
 
   @override

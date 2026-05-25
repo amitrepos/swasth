@@ -546,6 +546,7 @@
   "spO2Unit": "%",
   "bpmUnit": "bpm",
   "mmHgUnit": "mmHg",
+  "kgUnit": "ಕೆ.ಜಿ",
   "viaArmband": "ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
   "viaPhone": "ಫೋನ್ / ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
   "pairDevice": "ಸಾಧನವನ್ನು ಜೋಡಿಸಿ",

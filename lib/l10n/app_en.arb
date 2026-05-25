@@ -527,6 +527,10 @@
   "spO2Unit": "%",
   "bpmUnit": "bpm",
   "mmHgUnit": "mmHg",
+  "kgUnit": "kg",
+  "@kgUnit": {
+    "description": "Kilogram unit suffix for weight readings"
+  },
   "viaArmband": "via Armband",
   "viaPhone": "via Phone / Armband",
   "pairDevice": "Pair Device",

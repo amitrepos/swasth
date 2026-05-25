@@ -1088,6 +1088,9 @@ class AppLocalizationsTe extends AppLocalizations {
   String get mmHgUnit => 'mmHg';
 
   @override
+  String get kgUnit => 'కిలో';
+
+  @override
   String get viaArmband => 'ఆర్మ్‌బ్యాండ్ ద్వారా';
 
   @override
