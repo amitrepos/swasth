@@ -314,3 +314,147 @@ def test_route_not_geofenced_get_readings_passes_us(client, auth_headers, test_u
         "If this assertion fires, someone added verify_india_location to a "
         "read endpoint — revert that."
     )
+
+
+# ──────────────────────────────────────────────────────────────────
+# Wiring tests for the REMAINING geofenced routes
+# ──────────────────────────────────────────────────────────────────
+# The block above covers POST/DELETE happy paths. These cases cover
+# the rest of the surface; they all use the same pattern: mock the
+# GeoIP reader to claim US, fire the request, assert the geofence
+# 403 surfaces before the route's own validation/404 logic.
+#
+# We don't care about 404/422 here — only that the geofence fires
+# FIRST. If the dep is dropped, the assertion catches it because the
+# request will get past the geofence and produce a different status.
+
+def _assert_geofence_blocked(response, method: str, path: str):
+    detail = ""
+    try:
+        detail = response.json().get("detail", "")
+    except Exception:
+        pass
+    assert response.status_code == 403 and detail == "REGION_RESTRICTED", (
+        f"Expected 403 REGION_RESTRICTED from geofence on {method} {path}, "
+        f"got {response.status_code}: {response.text}. "
+        "Likely cause: verify_india_location was dropped from this route."
+    )
+
+
+def test_route_wired_put_reading_blocks_us(client, auth_headers):
+    """PUT /api/readings/{id} — edit reading."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.put("/api/readings/999999", json={}, headers=auth_headers)
+    _assert_geofence_blocked(r, "PUT", "/api/readings/{id}")
+
+
+def test_route_wired_delete_reading_blocks_us(client, auth_headers):
+    """DELETE /api/readings/{id} — delete reading."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.delete("/api/readings/999999", headers=auth_headers)
+    _assert_geofence_blocked(r, "DELETE", "/api/readings/{id}")
+
+
+def test_route_wired_post_readings_parse_image_blocks_us(client, auth_headers):
+    """POST /api/readings/parse-image — OCR upload (multipart)."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post(
+            "/api/readings/parse-image?device_type=glucose",
+            headers=auth_headers,
+            files={"file": ("x.jpg", b"\x00\x00", "image/jpeg")},
+        )
+    _assert_geofence_blocked(r, "POST", "/api/readings/parse-image")
+
+
+def test_route_wired_patch_meal_blocks_us(client, auth_headers):
+    """PATCH /api/meals/{id} — edit meal."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.patch("/api/meals/999999", json={}, headers=auth_headers)
+    _assert_geofence_blocked(r, "PATCH", "/api/meals/{id}")
+
+
+def test_route_wired_post_meals_parse_image_blocks_us(client, auth_headers):
+    """POST /api/meals/parse-image — food-photo OCR (multipart)."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post(
+            "/api/meals/parse-image",
+            headers=auth_headers,
+            files={"file": ("x.jpg", b"\x00\x00", "image/jpeg")},
+        )
+    _assert_geofence_blocked(r, "POST", "/api/meals/parse-image")
+
+
+def test_route_wired_post_report_manual_trigger_blocks_us(client, auth_headers):
+    """POST /api/report/manual-trigger — WhatsApp report dispatch."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post("/api/report/manual-trigger", headers=auth_headers)
+    _assert_geofence_blocked(r, "POST", "/api/report/manual-trigger")
+
+
+def test_route_wired_post_doctor_notes_blocks_us(client, auth_headers, test_user):
+    """POST /api/doctor/patients/{id}/notes — clinical notes (PHI)."""
+    profile_id = _profile_id_for(test_user)
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post(
+            f"/api/doctor/patients/{profile_id}/notes",
+            json={"note": "test"},
+            headers=auth_headers,
+        )
+    _assert_geofence_blocked(r, "POST", "/api/doctor/patients/{id}/notes")
+
+
+def test_route_wired_post_doctor_verify_blocks_us(client, auth_headers):
+    """POST /api/doctor/verify/{doctor_id} — admin NMC verification."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post("/api/doctor/verify/1", headers=auth_headers)
+    _assert_geofence_blocked(r, "POST", "/api/doctor/verify/{id}")
+
+
+# ──────────────────────────────────────────────────────────────────
+# Cache behaviour for the corrupt/missing-DB sentinel
+# ──────────────────────────────────────────────────────────────────
+
+def test_unavailable_geoip_db_is_cached(tmp_path, monkeypatch, caplog):
+    """When the mmdb is absent the unavailable result must be cached;
+    re-stat'ing the FS on every API call (and re-logging the warning)
+    was the regression flagged by review."""
+    # Force the cache to a fresh state.
+    dependencies._reset_geoip_reader_cache()
+    # Point the lookup at a directory with NO mmdb so the missing-DB
+    # branch fires. We monkey-patch os.path.dirname(__file__) indirectly
+    # by clearing the cache and verifying the sentinel persists.
+    monkeypatch.setattr(
+        "dependencies.os.path.exists", lambda _p: False
+    )
+    with caplog.at_level("WARNING", logger="dependencies"):
+        first = dependencies._get_geoip_reader()
+        second = dependencies._get_geoip_reader()
+    assert first is None and second is None
+    # Sentinel cached → no re-stat. We can detect this indirectly by
+    # checking the global identity is now the sentinel, not bare None.
+    assert dependencies._geoip_reader is dependencies._GEOIP_UNAVAILABLE, (
+        "Missing-DB result must be cached as _GEOIP_UNAVAILABLE so we "
+        "don't retry os.path.exists on every request."
+    )
+    # Clean up so later tests aren't affected.
+    dependencies._reset_geoip_reader_cache()
+
+
+# ──────────────────────────────────────────────────────────────────
+# Empty TRUSTED_PROXIES must NOT silently disable proxy detection
+# ──────────────────────────────────────────────────────────────────
+
+def test_empty_trusted_proxies_logs_warning(caplog, monkeypatch):
+    """TRUSTED_PROXIES='' produces an empty CIDR list; XFF is then
+    ignored for every request. That's a defensible posture but it
+    must be loud — operators need to notice if a deploy script
+    accidentally clears the env var."""
+    monkeypatch.setenv("TRUSTED_PROXIES", "")
+    dependencies._reset_trusted_proxy_cache()
+    with caplog.at_level("WARNING", logger="dependencies"):
+        nets = dependencies._trusted_proxy_networks()
+    assert nets == []
+    assert any(
+        "TRUSTED_PROXIES resolved to an empty CIDR list" in r.message
+        for r in caplog.records
+    ), "Empty TRUSTED_PROXIES must emit a WARNING — silent failure was the regression."

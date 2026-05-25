@@ -22,17 +22,22 @@ from dependencies import (
 )
 
 # ---------------------------------------------------------------------------
-# Geofence scope decision (DPDPA 2023 / DISHA)
+# Geofence scope decision (DPDPA 2023 / DISHA / NMC)
 # ---------------------------------------------------------------------------
-# Doctor-portal endpoints fall into two buckets:
+# Doctor-portal endpoints fall into three buckets:
 #
-#   (a) Clinical PHI writes — adding clinical notes, etc. These write
+#   (a) Clinical PHI writes — POST /patients/{id}/notes. These write
 #       patient health data. Geofenced to India, matching the patient-
 #       side rule on /readings + /meals.
 #
-#   (b) Relationship-management writes — /register, /link, /accept,
-#       /decline, /verify. These do NOT write patient health data; they
-#       manage doctor↔patient relationships. They are intentionally NOT
+#   (b) NMC compliance writes — POST /verify/{doctor_id}. Admin marks
+#       a doctor as NMC-verified. NMC is the Indian medical regulator;
+#       the act of validating an Indian medical registration is a
+#       regulated action that must happen from inside India. Geofenced.
+#
+#   (c) Relationship-management writes — /register, /link, /accept,
+#       /decline. These do NOT write patient health data; they manage
+#       doctor↔patient relationships. They are intentionally NOT
 #       geofenced for now because:
 #         - An Indian-licensed doctor traveling abroad must still be
 #           able to accept a new patient link.
@@ -1303,13 +1308,21 @@ def refresh_triage_for_profile(profile_id: int, db: Session):
 # Admin: Verify Doctor
 # ---------------------------------------------------------------------------
 
-@router.post("/verify/{doctor_id}")
+@router.post(
+    "/verify/{doctor_id}",
+    dependencies=[Depends(verify_india_location)],
+)
 def verify_doctor(
     doctor_id: int,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Admin verifies a doctor's NMC registration."""
+    """Admin verifies a doctor's NMC registration.
+
+    Geofenced — NMC is the Indian medical regulator and the act of
+    validating an Indian medical registration must originate from
+    inside India.
+    """
     if not user.is_admin and user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Admin only")
 

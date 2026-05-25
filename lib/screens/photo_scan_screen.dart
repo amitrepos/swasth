@@ -176,9 +176,19 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
 
       dismissLoadingIfShown();
 
+      // The mounted check below covers ALL three branches that follow
+      // (result==null, !hasValue, push). The token-null path inside
+      // the inner try awaits StorageService().getToken() and returns
+      // null without throwing — so we land here with result==null
+      // even after a long await. Without this guard, _showError would
+      // run AppLocalizations.of(context)! on a disposed widget.
       if (!mounted) return;
 
       if (result == null) {
+        // Belt-and-braces: between line above and here there is no
+        // await, but a future refactor could insert one and the bug
+        // would be invisible until QA on a slow device. Cheap to keep.
+        if (!mounted) return;
         _showError(
           title: l10n.scanCouldNotReadTitle,
           message: l10n.scanCouldNotReadMessage,
@@ -191,6 +201,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         // Em-dash is locale-neutral punctuation; avoids hardcoding "no text"
         // in English when the OCR returned an empty rawText.
         final detected = result.rawText.isNotEmpty ? result.rawText : '—';
+        if (!mounted) return;
         _showError(
           title: l10n.scanNumbersNotDetectedTitle,
           message: l10n.scanNumbersNotDetectedMessage(detected),
@@ -199,6 +210,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         return;
       }
 
+      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(

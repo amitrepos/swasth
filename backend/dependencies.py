@@ -1,7 +1,8 @@
 """Shared FastAPI dependencies."""
+import atexit
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Union
 import ipaddress
 import models
 import auth
@@ -26,8 +27,36 @@ logger = logging.getLogger(__name__)
 # Cache for the GeoIP reader to avoid re-opening the file on every request.
 # Lock guards the lazy-init to prevent the race where two concurrent
 # requests both open the mmdb — one FD wins, the other leaks forever.
-_geoip_reader: Optional[geoip2.database.Reader] = None
+#
+# Sentinel pattern: _geoip_reader holds one of three values:
+#   - None              → not yet attempted (lazy-init has not run)
+#   - _GEOIP_UNAVAILABLE → attempt completed and failed (DB missing /
+#                          corrupt). Cached so we don't retry the file
+#                          open on every request, which would re-stat
+#                          the FS and re-log the warning thousands of
+#                          times per hour on a server with no mmdb.
+#   - geoip2.database.Reader instance → ready to use
+_GEOIP_UNAVAILABLE: object = object()
+_geoip_reader: Union[None, object, geoip2.database.Reader] = None
 _geoip_lock = threading.Lock()
+
+
+def _close_geoip_reader() -> None:
+    """Close the cached mmdb FD. Wired to atexit so process shutdown
+    releases the descriptor cleanly instead of relying on the kernel
+    to reap it. Safe to call multiple times."""
+    global _geoip_reader
+    with _geoip_lock:
+        reader = _geoip_reader
+        _geoip_reader = None
+        if isinstance(reader, geoip2.database.Reader):
+            try:
+                reader.close()
+            except Exception as e:  # pragma: no cover — best-effort cleanup
+                logger.warning(f"GeoIP reader close failed: {e}")
+
+
+atexit.register(_close_geoip_reader)
 
 # Trusted-proxy CIDRs. XFF is only honoured when request.client.host is
 # inside one of these — otherwise an attacker can send their own XFF
@@ -59,6 +88,21 @@ def _trusted_proxy_networks() -> list:
                 nets.append(ipaddress.ip_network(cidr, strict=False))
             except ValueError:
                 logger.warning(f"Ignoring invalid TRUSTED_PROXIES entry: {cidr}")
+        if not nets:
+            # Empty list means "no IP is a trusted proxy" → XFF is
+            # ignored for every request. That's a defensible posture if
+            # intentional (no reverse proxy in front of the API), but
+            # it's also the silent-failure mode of TRUSTED_PROXIES="" or
+            # a CIDR list of only-invalid entries. Warn so operators
+            # notice the geofence is now resolving on the literal peer
+            # IP, not on the X-Forwarded-For header.
+            logger.warning(
+                "TRUSTED_PROXIES resolved to an empty CIDR list. "
+                "X-Forwarded-For will be ignored for ALL requests; "
+                "the geofence will resolve on request.client.host only. "
+                "If this server runs behind a reverse proxy, set "
+                "TRUSTED_PROXIES to the proxy's CIDR range."
+            )
         _trusted_networks_cache = nets
         return _trusted_networks_cache
 
@@ -127,28 +171,58 @@ def _get_client_ip(request: Request) -> str:
 
 
 def _get_geoip_reader() -> Optional[geoip2.database.Reader]:
-    """Lazy-load the GeoIP database reader (thread-safe)."""
+    """Lazy-load the GeoIP database reader (thread-safe).
+
+    Returns either a live Reader, or None to indicate "DB unavailable;
+    fail open". The unavailable result is cached via the sentinel so
+    we don't re-stat the FS on every request when the mmdb is missing
+    or corrupt — under the previous code, a server without the mmdb
+    would re-run os.path.exists() and re-log the warning for every
+    single API call.
+    """
     global _geoip_reader
-    if _geoip_reader is not None:
+    if _geoip_reader is _GEOIP_UNAVAILABLE:
+        return None
+    if isinstance(_geoip_reader, geoip2.database.Reader):
         return _geoip_reader
 
     with _geoip_lock:
         # Double-check after acquiring the lock — another thread may
         # have populated the cache while we were waiting.
-        if _geoip_reader is not None:
+        if _geoip_reader is _GEOIP_UNAVAILABLE:
+            return None
+        if isinstance(_geoip_reader, geoip2.database.Reader):
             return _geoip_reader
 
         db_path = os.path.join(os.path.dirname(__file__), "GeoLite2-Country.mmdb")
         if not os.path.exists(db_path):
-            # Fallback for local development or if DB is missing in CI
+            # Local dev or CI with no mmdb. Cache the negative result.
+            _geoip_reader = _GEOIP_UNAVAILABLE
             return None
 
         try:
             _geoip_reader = geoip2.database.Reader(db_path)
             return _geoip_reader
         except Exception as e:
+            # Corrupt DB or geoip2 internal failure. Cache the negative
+            # result so we don't retry the file open on every request.
             logger.warning(f"Failed to load GeoIP database: {e}")
+            _geoip_reader = _GEOIP_UNAVAILABLE
             return None
+
+
+def _reset_geoip_reader_cache() -> None:
+    """Test-only hook so suites that swap mmdb state mid-run can force
+    a re-init. Production code never calls this."""
+    global _geoip_reader
+    with _geoip_lock:
+        reader = _geoip_reader
+        _geoip_reader = None
+        if isinstance(reader, geoip2.database.Reader):
+            try:
+                reader.close()
+            except Exception:
+                pass
 
 
 def verify_india_location(request: Request) -> None:
