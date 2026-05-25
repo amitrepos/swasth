@@ -145,8 +145,7 @@
       "Bash(npx ccusage@latest statusline)",
       "Bash(npm install *)",
       "Bash(ccusage --version)",
-      "WebFetch(domain:docs.claude.com)",
-      "Bash(node -e ' *)"
+      "WebFetch(domain:docs.claude.com)"
     ],
     "defaultMode": "auto"
   },

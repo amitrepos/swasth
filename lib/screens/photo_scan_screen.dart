@@ -105,6 +105,21 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
 
     final l10n = AppLocalizations.of(context)!;
 
+    // Tracks whether the loading dialog is currently on the navigator
+    // stack. We MUST NOT call Navigator.pop() blindly in the outer catch
+    // — if the dialog was already dismissed (inner catch, or success
+    // path) pop() would walk one route up and dismiss the camera screen
+    // itself. canPop() is not enough either: it returns true whenever
+    // there's a parent route (home screen). The flag is the only safe
+    // signal for "is the loading dialog still showing?".
+    bool loadingShown = false;
+    void dismissLoadingIfShown() {
+      if (loadingShown && mounted) {
+        Navigator.of(context).pop();
+        loadingShown = false;
+      }
+    }
+
     try {
       if (_isFlashOn) await _controller!.setFlashMode(FlashMode.auto);
 
@@ -113,6 +128,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
 
       if (!mounted) return;
 
+      loadingShown = true;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -147,7 +163,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
           );
         }
       } catch (e) {
-        if (mounted) Navigator.of(context).pop(); // dismiss loading
+        dismissLoadingIfShown();
         if (mounted) {
           final message = ErrorMapper.userMessage(l10n, e);
           _showError(
@@ -158,7 +174,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         return;
       }
 
-      if (mounted) Navigator.of(context).pop();
+      dismissLoadingIfShown();
 
       if (!mounted) return;
 
@@ -197,8 +213,14 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       // Route through ErrorMapper instead of leaking the raw exception.
       // The previous string "Capture failed: $e" surfaced things like
       // "PlatformException(IOException, …)" to elderly users.
+      //
+      // Only dismiss the loading dialog if it is actually still showing;
+      // a blind pop() here would dismiss the camera screen when the
+      // failure happened before the dialog was shown (takePicture
+      // throwing) or after it was already dismissed (success path
+      // followed by an unrelated push failure).
+      dismissLoadingIfShown();
       if (mounted) {
-        Navigator.of(context).pop();
         await ErrorMapper.showSnack(context, e);
       }
     } finally {

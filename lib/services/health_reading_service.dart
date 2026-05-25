@@ -435,6 +435,14 @@ class HealthReadingService {
     if (response.statusCode == 401) {
       throw const UnauthorizedException();
     }
+    // This multipart path calls `http` directly (no ApiClient.send) so
+    // we have to translate 4xx ourselves — without this block, a 403
+    // REGION_RESTRICTED would silently degrade to "return null" and
+    // the user would see the generic OCR-failure dialog instead of the
+    // geofence message. Every OTHER backend route goes through
+    // ApiClient.send which already raises ValidationException for 4xx,
+    // so this >=400 handling is specific to the multipart upload, not
+    // a new general policy.
     if (response.statusCode >= 400) {
       throw ValidationException(
         ApiClient.errorDetail(response, 'Failed to parse image.'),

@@ -187,3 +187,130 @@ def test_trusted_proxy_networks_cached_across_calls():
     second = dependencies._trusted_proxy_networks()
     assert first is second, \
         "Trusted-proxy list must be cached (identity match), not re-parsed per call"
+
+
+# ──────────────────────────────────────────────────────────────────
+# Defensive: None country code (satellite / anycast)
+# ──────────────────────────────────────────────────────────────────
+
+def test_none_country_code_fails_open():
+    """GeoLite2 returns iso_code=None for satellite / anycast IPs and
+    records without a country assignment. None != 'IN' would 403 real
+    Bihar users on VSAT links; treat None as fail-open."""
+    request = _make_request(peer_ip="14.139.1.1")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse(None)
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        verify_india_location(request)  # must not raise
+
+
+# ──────────────────────────────────────────────────────────────────
+# Route-wiring integration tests — catch decorator-typo regressions
+# ──────────────────────────────────────────────────────────────────
+#
+# The unit tests above patch verify_india_location's internals. They
+# would all pass even if the dependency were silently dropped from a
+# route. These TestClient cases fire a real HTTP request and assert
+# the 403 surfaces — the only way to detect a regression where someone
+# forgets to add `dependencies=[Depends(verify_india_location)]` to a
+# new route or removes it during refactor.
+
+
+def _us_reader():
+    """Mock GeoIP reader that classifies every IP as US."""
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("US")
+    return reader
+
+
+def _profile_id_for(user) -> int:
+    """Look up the owner ProfileAccess for `user` (User has no
+    `profile_accesses` relationship on the ORM; query it directly)."""
+    import models
+    from sqlalchemy.orm import object_session
+    session = object_session(user)
+    access = (
+        session.query(models.ProfileAccess)
+        .filter(
+            models.ProfileAccess.user_id == user.id,
+            models.ProfileAccess.access_level == "owner",
+        )
+        .first()
+    )
+    assert access is not None, "test_user fixture should create an owner ProfileAccess"
+    return access.profile_id
+
+
+def test_route_wired_post_readings_blocks_us(client, auth_headers, test_user):
+    """POST /readings must surface 403 REGION_RESTRICTED when the
+    geofence is wired AND the caller is outside India. If this fails
+    with 201/422 the dependency has been dropped from the route."""
+    from datetime import datetime, timezone
+
+    profile_id = _profile_id_for(test_user)
+    body = {
+        "profile_id": profile_id,
+        "reading_type": "glucose",
+        "glucose_value": 110,
+        "glucose_unit": "mg/dL",
+        "value_numeric": 110,
+        "unit_display": "mg/dL",
+        "reading_timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post("/api/readings", json=body, headers=auth_headers)
+    assert r.status_code == 403, (
+        f"Expected 403 from geofence, got {r.status_code}: {r.text}. "
+        "Likely cause: verify_india_location was dropped from POST /readings."
+    )
+    assert r.json().get("detail") == "REGION_RESTRICTED"
+
+
+def test_route_wired_post_meals_blocks_us(client, auth_headers, test_user):
+    """POST /meals must also be geofenced."""
+    from datetime import datetime, timezone
+
+    profile_id = _profile_id_for(test_user)
+    body = {
+        "profile_id": profile_id,
+        "meal_type": "BREAKFAST",
+        "category": "MODERATE_CARB",
+        "input_method": "quick_select",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post("/api/meals", json=body, headers=auth_headers)
+    assert r.status_code == 403, (
+        f"Expected 403 from geofence, got {r.status_code}: {r.text}. "
+        "Likely cause: verify_india_location was dropped from POST /meals."
+    )
+    assert r.json().get("detail") == "REGION_RESTRICTED"
+
+
+def test_route_wired_delete_meal_blocks_us(client, auth_headers, test_user):
+    """DELETE /meals/{id} must also be geofenced — destructive ops on
+    PHI are exactly what the rule is meant to protect."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        # The meal doesn't need to exist — the dependency runs before the
+        # 404. If geofence is wired we get 403 first.
+        r = client.delete("/api/meals/999999", headers=auth_headers)
+    assert r.status_code == 403, (
+        f"Expected 403 from geofence, got {r.status_code}: {r.text}. "
+        "Likely cause: verify_india_location was dropped from DELETE /meals/{id}."
+    )
+    assert r.json().get("detail") == "REGION_RESTRICTED"
+
+
+def test_route_not_geofenced_get_readings_passes_us(client, auth_headers, test_user):
+    """GET /readings is intentionally NOT geofenced — diaspora users
+    must be able to view existing history. This is a guardrail: if
+    someone adds the dep to read endpoints by mistake, this test
+    catches it before NRI users lose access to their own data."""
+    profile_id = _profile_id_for(test_user)
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.get(f"/api/readings?profile_id={profile_id}", headers=auth_headers)
+    assert r.status_code != 403 or r.json().get("detail") != "REGION_RESTRICTED", (
+        "GET /readings must NOT be geofenced; NRI users need read access. "
+        "If this assertion fires, someone added verify_india_location to a "
+        "read endpoint — revert that."
+    )

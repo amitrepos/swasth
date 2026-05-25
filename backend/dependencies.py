@@ -188,13 +188,22 @@ def verify_india_location(request: Request) -> None:
 
     try:
         response = reader.country(client_ip)
-        if response.country.iso_code != "IN":
+        iso_code = response.country.iso_code
+        # iso_code can be None for satellite/anycast IPs or records
+        # without a country assignment. None != "IN" would evaluate True
+        # and 403 those users — Bihar pilot VSAT links would fail.
+        # Treat "no country known" the same as AddressNotFoundError:
+        # fail open. Spoofed/unknown traffic is still rate-limited and
+        # authenticated by other layers.
+        if iso_code is None:
+            return
+        if iso_code != "IN":
             # DPDPA: IPs are personal data; do NOT log the full address at
             # INFO. Log country + path + masked IP — enough to correlate
             # with an ASN range during incident review, not enough to
             # uniquely identify a subscriber.
             logger.info(
-                f"GEOFENCE_BLOCK country={response.country.iso_code} "
+                f"GEOFENCE_BLOCK country={iso_code} "
                 f"path={request.url.path} method={request.method} "
                 f"ip_masked={_mask_ip(client_ip)}"
             )
