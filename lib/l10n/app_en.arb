@@ -1128,7 +1128,7 @@
   "@useQuickSelect": {
     "description": "Button text to fallback to manual meal selection if photo analysis fails"
   },
-  "nmcDisclaimer": "This is information, not a prescription. Consult your doctor before making any changes.",
+  "nmcDisclaimer": "Clinical observation, not a prescription. Consult your doctor before making changes.",
   "@nmcDisclaimer": {
     "description": "NMC-required disclaimer shown on all AI-generated health insights"
   },

@@ -137,7 +137,7 @@ class MetricSources {
 }
 
 const String _kDisclaimer =
-    'Reference only. Not a substitute for your doctor\'s advice.';
+    'Clinical observation, not a prescription. Consult your doctor before making changes.';
 
 // ===========================================================================
 //                              MEDICAL FLAG HELPERS

@@ -2135,7 +2135,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get nmcDisclaimer =>
-      'यह जानकारी है, दवाई नहीं। कोई भी बदलाव करने से पहले अपने डॉक्टर से मिलें।';
+      'यह सलाह है, नुस्खा नहीं। बदलाव से पहले डॉक्टर से मिलें।';
 
   @override
   String get splashAppName => 'स्वस्थ';

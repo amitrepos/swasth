@@ -2133,7 +2133,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nmcDisclaimer =>
-      'This is information, not a prescription. Consult your doctor before making any changes.';
+      'Clinical observation, not a prescription. Consult your doctor before making changes.';
 
   @override
   String get splashAppName => 'Swasth';
