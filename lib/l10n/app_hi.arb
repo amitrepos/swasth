@@ -812,7 +812,7 @@
   "phoneNumberLabel": "फ़ोन नंबर",
   "phoneNumberHint": "जैसे 9876543210",
   "phoneValidationInvalid": "कृपया सही फोन नंबर डालें (10-15 अंक)",
-  "nmcDisclaimer": "यह जानकारी है, दवाई नहीं। कोई भी बदलाव करने से पहले अपने डॉक्टर से मिलें।",
+  "nmcDisclaimer": "यह सलाह है, नुस्खा नहीं। बदलाव से पहले डॉक्टर से मिलें।",
   "splashAppName": "स्वस्थ",
   "@splashAppName": {
     "description": "स्प्लैश स्क्रीन पर ऐप का नाम"

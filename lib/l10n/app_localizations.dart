@@ -4013,7 +4013,7 @@ abstract class AppLocalizations {
   /// NMC-required disclaimer shown on all AI-generated health insights
   ///
   /// In en, this message translates to:
-  /// **'This is information, not a prescription. Consult your doctor before making any changes.'**
+  /// **'Clinical observation, not a prescription. Consult your doctor before making changes.'**
   String get nmcDisclaimer;
 
   /// App name displayed on splash screen

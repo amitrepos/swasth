@@ -398,22 +398,36 @@ class _MealResultScreenState extends State<MealResultScreen> {
         color: AppColors.bgGrouped,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
         children: [
-          const Icon(
-            Icons.info_outline,
-            color: AppColors.textSecondary,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              l10n.foodDisclaimer,
-              style: const TextStyle(
+          Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
                 color: AppColors.textSecondary,
-                fontSize: 12,
+                size: 18,
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.foodDisclaimer,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.nmcDisclaimer,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontStyle: FontStyle.italic,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
