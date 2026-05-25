@@ -14,7 +14,36 @@ import models
 import schemas
 import auth
 from database import get_db
-from dependencies import get_current_user, get_doctor_patient_access, get_profile_access_or_403
+from dependencies import (
+    get_current_user,
+    get_doctor_patient_access,
+    get_profile_access_or_403,
+    verify_india_location,
+)
+
+# ---------------------------------------------------------------------------
+# Geofence scope decision (DPDPA 2023 / DISHA)
+# ---------------------------------------------------------------------------
+# Doctor-portal endpoints fall into two buckets:
+#
+#   (a) Clinical PHI writes — adding clinical notes, etc. These write
+#       patient health data. Geofenced to India, matching the patient-
+#       side rule on /readings + /meals.
+#
+#   (b) Relationship-management writes — /register, /link, /accept,
+#       /decline, /verify. These do NOT write patient health data; they
+#       manage doctor↔patient relationships. They are intentionally NOT
+#       geofenced for now because:
+#         - An Indian-licensed doctor traveling abroad must still be
+#           able to accept a new patient link.
+#         - The NRI-care narrative explicitly assumes some doctor-side
+#           workflow can originate outside India.
+#         - DPDPA Sec. 16 governs *personal data* transfer; a link-state
+#           toggle isn't sensitive personal data.
+#       Doctor portal geofence policy is being re-evaluated in a follow-
+#       up PR with legal sign-off; do not geofence these here without
+#       updating that ticket.
+# ---------------------------------------------------------------------------
 from doctor_utils import ensure_unique_doctor_code
 from models import UserRole
 from email_service import email_service
@@ -1092,14 +1121,23 @@ def get_patient_summary(
 # Clinical Notes (doctor-private)
 # ---------------------------------------------------------------------------
 
-@router.post("/patients/{profile_id}/notes", response_model=schemas.DoctorNoteResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/patients/{profile_id}/notes",
+    response_model=schemas.DoctorNoteResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_india_location)],
+)
 def create_doctor_note(
     profile_id: int,
     data: schemas.DoctorNoteCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Add a clinical note on a patient (optionally linked to a specific reading)."""
+    """Add a clinical note on a patient (optionally linked to a specific reading).
+
+    Geofenced — clinical notes are sensitive personal health data per
+    DPDPA 2023; the originating doctor action must be from inside India.
+    """
     link = get_doctor_patient_access(profile_id, user, db)
 
     # Validate reading belongs to this profile if specified

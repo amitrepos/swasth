@@ -5,7 +5,28 @@ import '../services/health_reading_service.dart';
 import '../services/ocr_service.dart';
 import '../services/storage_service.dart';
 import '../services/error_mapper.dart';
+import '../theme/app_theme.dart';
 import 'reading_confirmation_screen.dart';
+
+// Scan-screen color constants — all via AppColors.*. Project rule: no raw
+// Colors.* inside widgets. Mirrors the pattern used by _CameraColors in
+// food_photo_screen.dart so the two camera surfaces stay theme-aligned.
+class _ScanColors {
+  static const Color background = AppColors.cameraBackground;
+  static const Color foreground = AppColors.cameraForeground;
+  static const Color overlay = AppColors.cameraOverlay;
+  static const Color overlayText = AppColors.cameraOverlayText;
+  static const Color iconDisabled = AppColors.cameraIconDisabled;
+  static const Color buttonBorder = AppColors.cameraButtonBorder;
+  static const Color buttonEnabled = AppColors.cameraButtonEnabled;
+  static const Color buttonDisabled = AppColors.cameraButtonDisabled;
+  static const Color buttonIcon = AppColors.cameraButtonIcon;
+  static const Color flashOn = AppColors.cameraFlashOn;
+  static const Color guideAccent = AppColors.cameraGuideAccent;
+  static const Color transparent = AppColors.transparent;
+  // Painter needs a base black to apply alpha to for the dim layer.
+  static const Color dimBase = AppColors.cameraBackground;
+}
 
 class PhotoScanScreen extends StatefulWidget {
   /// 'glucose' or 'blood_pressure'
@@ -261,16 +282,16 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _ScanColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: _ScanColors.background,
+        foregroundColor: _ScanColors.foreground,
         title: Text(l10n.scanTitle(deviceLabel)),
         actions: [
           IconButton(
             icon: Icon(
               _isFlashOn ? Icons.flash_on : Icons.flash_off,
-              color: _isFlashOn ? Colors.yellow : Colors.white,
+              color: _isFlashOn ? _ScanColors.flashOn : _ScanColors.foreground,
             ),
             tooltip: l10n.toggleFlash,
             onPressed: _isInitialized ? _toggleFlash : null,
@@ -284,11 +305,12 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.camera_alt, color: Colors.white54, size: 64),
+                    const Icon(Icons.camera_alt,
+                        color: _ScanColors.iconDisabled, size: 64),
                     const SizedBox(height: 16),
                     Text(
                       _errorMessage!,
-                      style: const TextStyle(color: Colors.white70),
+                      style: const TextStyle(color: _ScanColors.overlayText),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -296,7 +318,9 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
               ),
             )
           : !_isInitialized
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              ? const Center(
+                  child: CircularProgressIndicator(
+                      color: _ScanColors.foreground))
               : Stack(
                   fit: StackFit.expand,
                   children: [
@@ -312,12 +336,13 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.black54,
+                            color: _ScanColors.overlay,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             l10n.placeDeviceInBox(deviceLabel),
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            style: const TextStyle(
+                                color: _ScanColors.foreground, fontSize: 14),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -337,15 +362,19 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
                             height: 72,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 4),
-                              color: _isCapturing ? Colors.grey : Colors.white,
+                              border: Border.all(
+                                  color: _ScanColors.buttonBorder, width: 4),
+                              color: _isCapturing
+                                  ? _ScanColors.buttonDisabled
+                                  : _ScanColors.buttonEnabled,
                             ),
                             child: _isCapturing
                                 ? const Padding(
                                     padding: EdgeInsets.all(16),
                                     child: CircularProgressIndicator(strokeWidth: 3),
                                   )
-                                : const Icon(Icons.camera_alt, size: 32, color: Colors.black87),
+                                : const Icon(Icons.camera_alt,
+                                    size: 32, color: _ScanColors.buttonIcon),
                           ),
                         ),
                       ),
@@ -373,16 +402,17 @@ class _GuideOverlay extends StatelessWidget {
 class _GuidePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final dimPaint = Paint()..color = Colors.black.withOpacity(0.5);
+    final dimPaint = Paint()
+      ..color = _ScanColors.dimBase.withValues(alpha: 0.5);
     final clearPaint = Paint()
-      ..color = Colors.transparent
+      ..color = _ScanColors.transparent
       ..blendMode = BlendMode.clear;
     final borderPaint = Paint()
-      ..color = Colors.white
+      ..color = _ScanColors.foreground
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5;
     final cornerPaint = Paint()
-      ..color = Colors.greenAccent
+      ..color = _ScanColors.guideAccent
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;

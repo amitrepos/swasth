@@ -13,6 +13,16 @@ import dependencies
 from dependencies import verify_india_location
 
 
+@pytest.fixture(autouse=True)
+def _clear_trusted_proxy_cache():
+    """Tests that monkey-patch TRUSTED_PROXIES need a fresh parse; clear
+    the module-level cache before every test so order-of-execution
+    cannot leak state between cases."""
+    dependencies._reset_trusted_proxy_cache()
+    yield
+    dependencies._reset_trusted_proxy_cache()
+
+
 class MockGeoIPResponse:
     def __init__(self, iso_code):
         self.country = mock.Mock()
@@ -141,3 +151,39 @@ def test_bypass_true_emits_audit_log(caplog):
             verify_india_location(request)
         assert any("GEOFENCE_BYPASS" in r.message for r in caplog.records), \
             "Bypass must emit a WARNING with GEOFENCE_BYPASS so audit can grep it"
+
+
+# ──────────────────────────────────────────────────────────────────
+# DPDPA — PII handling in logs
+# ──────────────────────────────────────────────────────────────────
+
+def test_blocked_request_log_masks_client_ip(caplog):
+    """DPDPA treats IPs as personal data; the INFO log on a blocked
+    request must mask the last octet so routine ops logs are not a
+    de facto personal-data store."""
+    request = _make_request(peer_ip="8.8.8.8")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("US")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        with caplog.at_level("INFO", logger="dependencies"):
+            with pytest.raises(HTTPException):
+                verify_india_location(request)
+        joined = " ".join(r.message for r in caplog.records)
+        assert "ip_masked=8.8.8.x" in joined, \
+            "Blocked-request log must include ip_masked=… with the last octet redacted"
+        assert "8.8.8.8" not in joined, \
+            "Full client IP must never appear in INFO logs (DPDPA personal data)"
+
+
+# ──────────────────────────────────────────────────────────────────
+# Perf — trusted-proxy parsing is cached
+# ──────────────────────────────────────────────────────────────────
+
+def test_trusted_proxy_networks_cached_across_calls():
+    """_trusted_proxy_networks is called once per request via
+    _get_client_ip. Re-parsing TRUSTED_PROXIES on every call wastes
+    CPU on a hot path — the value is static at process start."""
+    first = dependencies._trusted_proxy_networks()
+    second = dependencies._trusted_proxy_networks()
+    assert first is second, \
+        "Trusted-proxy list must be cached (identity match), not re-parsed per call"

@@ -230,7 +230,7 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get errGeneric;
 
-  /// Shown on HTTP 403 REGION_RESTRICTED. Explains that logging is geo-fenced to India for GDPR compliance.
+  /// Shown on HTTP 403 REGION_RESTRICTED. Logging is geo-fenced to Indian IPs to comply with DPDPA 2023 (Sec. 16 cross-border transfer restrictions on sensitive personal data) and DISHA data-residency expectations for digital health records. Do NOT cite GDPR — GDPR is EU law and is not the basis for this control.
   ///
   /// In en, this message translates to:
   /// **'Due to regional privacy laws, logging health data is currently restricted to users within India. You can still view your history.'**

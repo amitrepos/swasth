@@ -37,16 +37,54 @@ _geoip_lock = threading.Lock()
 # in environments with a public LB outside the private range.
 _DEFAULT_TRUSTED_PROXIES = "127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,::1/128,fc00::/7"
 
+# Cache of parsed trusted-proxy networks. TRUSTED_PROXIES is read from
+# the environment at process start; re-parsing it on every request
+# allocates a fresh list per HTTP call and burns CPU on a hot path.
+# Lazy + lock-guarded so concurrent first-requests can't double-parse.
+_trusted_networks_cache: Optional[list] = None
+_trusted_networks_lock = threading.Lock()
+
 
 def _trusted_proxy_networks() -> list:
-    raw = os.environ.get("TRUSTED_PROXIES", _DEFAULT_TRUSTED_PROXIES)
-    nets = []
-    for cidr in (c.strip() for c in raw.split(",") if c.strip()):
-        try:
-            nets.append(ipaddress.ip_network(cidr, strict=False))
-        except ValueError:
-            logger.warning(f"Ignoring invalid TRUSTED_PROXIES entry: {cidr}")
-    return nets
+    global _trusted_networks_cache
+    if _trusted_networks_cache is not None:
+        return _trusted_networks_cache
+    with _trusted_networks_lock:
+        if _trusted_networks_cache is not None:
+            return _trusted_networks_cache
+        raw = os.environ.get("TRUSTED_PROXIES", _DEFAULT_TRUSTED_PROXIES)
+        nets = []
+        for cidr in (c.strip() for c in raw.split(",") if c.strip()):
+            try:
+                nets.append(ipaddress.ip_network(cidr, strict=False))
+            except ValueError:
+                logger.warning(f"Ignoring invalid TRUSTED_PROXIES entry: {cidr}")
+        _trusted_networks_cache = nets
+        return _trusted_networks_cache
+
+
+def _reset_trusted_proxy_cache() -> None:
+    """Test-only hook so suites that monkey-patch TRUSTED_PROXIES can
+    force a re-parse. Production code never calls this."""
+    global _trusted_networks_cache
+    with _trusted_networks_lock:
+        _trusted_networks_cache = None
+
+
+def _mask_ip(ip_str: str) -> str:
+    """Mask the last octet (IPv4) or last hextet (IPv6) of an IP for
+    log lines. DPDPA 2023 treats IPs as personal data, so we keep them
+    out of routine INFO logs while preserving enough to correlate with
+    an ASN/range during an incident review."""
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return "invalid"
+    if isinstance(ip, ipaddress.IPv4Address):
+        parts = ip_str.split(".")
+        return ".".join(parts[:3] + ["x"]) if len(parts) == 4 else "ipv4"
+    parts = ip_str.split(":")
+    return ":".join(parts[:-1] + ["x"]) if len(parts) >= 2 else "ipv6"
 
 
 def _ip_is_trusted_proxy(ip_str: str, nets: list) -> bool:
@@ -133,9 +171,9 @@ def verify_india_location(request: Request) -> None:
         peer = request.client.host if request.client else "unknown"
         logger.warning(
             "GEOFENCE_BYPASS active — BYPASS_GEO_RESTRICTION=true. "
-            f"peer={peer} path={request.url.path} method={request.method}. "
-            "This must NEVER stay on in production; flip off after the "
-            "incident/test."
+            f"peer_masked={_mask_ip(peer)} path={request.url.path} "
+            f"method={request.method}. This must NEVER stay on in production; "
+            "flip off after the incident/test."
         )
         return
 
@@ -151,9 +189,14 @@ def verify_india_location(request: Request) -> None:
     try:
         response = reader.country(client_ip)
         if response.country.iso_code != "IN":
+            # DPDPA: IPs are personal data; do NOT log the full address at
+            # INFO. Log country + path + masked IP — enough to correlate
+            # with an ASN range during incident review, not enough to
+            # uniquely identify a subscriber.
             logger.info(
-                f"Blocked request from {client_ip} "
-                f"(Country: {response.country.iso_code})"
+                f"GEOFENCE_BLOCK country={response.country.iso_code} "
+                f"path={request.url.path} method={request.method} "
+                f"ip_masked={_mask_ip(client_ip)}"
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -165,8 +208,11 @@ def verify_india_location(request: Request) -> None:
     except HTTPException:
         raise
     except Exception as e:
-        # Don't block users if the lookup service itself fails
-        logger.error(f"GeoIP lookup error for {client_ip}: {e}")
+        # Don't block users if the lookup service itself fails. Mask the
+        # IP in the error log too — same DPDPA reasoning as above.
+        logger.error(
+            f"GeoIP lookup error: {e} ip_masked={_mask_ip(client_ip)}"
+        )
         return
 
 def get_current_user(

@@ -1967,7 +1967,11 @@ def _rule_based_insight(recent: list, db: Session, total_count: int = 0, languag
 # Private helpers
 # ---------------------------------------------------------------------------
 
-@router.post("/report/manual-trigger", status_code=202)
+@router.post(
+    "/report/manual-trigger",
+    status_code=202,
+    dependencies=[Depends(verify_india_location)],
+)
 @limiter.limit("1/hour", key_func=get_remote_address)
 def manually_trigger_whatsapp_report(
     request: Request,
@@ -1977,6 +1981,10 @@ def manually_trigger_whatsapp_report(
     """
     Manually trigger WhatsApp health reports for all profiles owned by the current user.
     Limited to 1 request per hour to prevent spam.
+
+    Geofenced — triggers an outbound message containing patient health
+    summaries (PHI) via Twilio/WhatsApp. Under DPDPA 2023 the originating
+    request that exfiltrates the data must be from inside India.
     """
     background_tasks.add_task(
         send_weekly_reports,
