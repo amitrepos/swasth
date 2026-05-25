@@ -718,10 +718,18 @@ def get_health_score(
     # Averaging the raw rows undercounts days with few syncs and
     # overcounts days with many. Aggregate per-day MAX first (the end-of-
     # day running total), then average those daily maxes.
-    daily_max_steps_subq = (
+    #
+    # Bucketing in Python (not via SQL func.date()) because the column is
+    # DateTime(timezone=True): Postgres' func.date() runs against the
+    # session timezone, so a midnight-adjacent sync would land in the
+    # wrong day if the server timezone isn't UTC. Pulling rows and
+    # bucketing via ensure_utc(...).date() is unambiguous and portable
+    # across Postgres + SQLite (test). N is bounded: 90 days × a handful
+    # of syncs per day per profile — tens to low hundreds of rows.
+    recent_step_rows = (
         db.query(
-            func.date(models.HealthReading.reading_timestamp).label('day'),
-            func.max(models.HealthReading.steps_count).label('day_max'),
+            models.HealthReading.reading_timestamp,
+            models.HealthReading.steps_count,
         )
         .filter(
             models.HealthReading.profile_id == profile_id,
@@ -729,10 +737,19 @@ def get_health_score(
             models.HealthReading.reading_timestamp >= ninety_days_ago,
             models.HealthReading.steps_count.isnot(None),
         )
-        .group_by(func.date(models.HealthReading.reading_timestamp))
-        .subquery()
+        .all()
     )
-    avg_steps_90d = db.query(func.avg(daily_max_steps_subq.c.day_max)).scalar()
+    per_day_max: dict = {}
+    for ts, count in recent_step_rows:
+        day = ensure_utc(ts).date()
+        if count is None:
+            continue
+        prev = per_day_max.get(day)
+        if prev is None or count > prev:
+            per_day_max[day] = count
+    avg_steps_90d = (
+        sum(per_day_max.values()) / len(per_day_max) if per_day_max else None
+    )
     steps_data_days = db.query(
         func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
     ).filter(

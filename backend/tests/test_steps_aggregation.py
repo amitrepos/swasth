@@ -99,7 +99,15 @@ def test_avg_steps_uses_daily_max_not_raw_rows(
 ):
     """Day A has many snapshots ending at 1000; Day B has one snapshot
     of 2000. Naive AVG(rows) would weight A's per-snapshot values into
-    the average. Correct AVG(per-day max) = (1000 + 2000) / 2 = 1500."""
+    the average. Correct AVG(per-day max) = (1000 + 2000) / 2 = 1500.
+
+    NOTE: this assertion is mandatory. An earlier version of the test
+    skipped silently when `avg_steps_90d` was absent from the response,
+    which meant a schema rename or accidental removal would let the
+    regression slip through. The field name must match the schema
+    (HealthScoreResponse.avg_steps_90d) — if a future PR renames it,
+    this test should fail loudly, not pass quietly.
+    """
     pid = _profile_id(db)
     # Day A — many snapshots, last is 1000
     _add_steps(db, pid, 100, days_ago=1, hours_ago=5)
@@ -114,12 +122,75 @@ def test_avg_steps_uses_daily_max_not_raw_rows(
     )
     assert r.status_code == 200, r.text
     body = r.json()
-    # Accept either field name the response schema uses; if neither is
-    # surfaced, fall back to asserting the route at least responded.
-    avg = body.get("avg_steps_90d") or body.get("ninety_day_avg_steps")
-    if avg is not None:
-        assert abs(avg - 1500) < 1, (
-            f"Expected per-day-max average of 1500, got {avg}. "
-            "If this is near 875 (=(100+400+1000+2000)/4), the raw-rows "
-            "averaging regression has returned."
+    assert "avg_steps_90d" in body, (
+        "HealthScoreResponse must surface avg_steps_90d. "
+        "If the schema was renamed, update this test AND every consumer."
+    )
+    avg = body["avg_steps_90d"]
+    assert avg is not None, (
+        "avg_steps_90d must compute when ≥1 day of step data exists; "
+        "got null with two days of inserts."
+    )
+    assert abs(avg - 1500) < 1, (
+        f"Expected per-day-max average of 1500, got {avg}. "
+        "If this is near 875 (=(100+400+1000+2000)/4), the raw-rows "
+        "averaging regression has returned."
+    )
+
+
+def test_avg_steps_buckets_by_utc_date_not_server_local(
+    client, auth_headers, test_user, db
+):
+    """Two snapshots straddle UTC midnight. They must bucket by UTC,
+    not by the server's local date — otherwise a server in a non-UTC
+    timezone would attribute the late-night sync to the wrong day and
+    distort the daily-max aggregation.
+
+    Setup: insert two snapshots in the same UTC day (yesterday 23:30
+    UTC and today 00:30 UTC). Wait — those are different UTC days.
+    Use two clearly-different UTC days but timestamps near midnight to
+    surface any tz-bucketing bug.
+    """
+    import models
+    from datetime import datetime, timedelta, timezone as tz
+    pid = _profile_id(db)
+    now = datetime.now(tz.utc)
+    # Snapshot at 23:30 UTC yesterday — easily mis-bucketed by a
+    # server set to a timezone west of UTC (e.g., US/Pacific would
+    # call this "yesterday afternoon"; we want this on yesterday UTC).
+    yesterday_late = now.replace(hour=23, minute=30) - timedelta(days=1)
+    # Snapshot at 00:30 UTC today — easily mis-bucketed by a server
+    # set to a timezone east of UTC (e.g., Asia/Kolkata would call
+    # this "yesterday morning"; we want this on today UTC).
+    today_early = now.replace(hour=0, minute=30)
+    for ts, cnt in [(yesterday_late, 800), (today_early, 1200)]:
+        row = models.HealthReading(
+            profile_id=pid,
+            reading_type="steps",
+            value_numeric=float(cnt),
+            unit_display="steps",
+            steps_count=cnt,
+            steps_goal=7500,
+            reading_timestamp=ts,
+            created_at=ts,
         )
+        db.add(row)
+    db.flush()
+    db.commit()
+
+    r = client.get(
+        f"/api/readings/health-score?profile_id={pid}", headers=auth_headers
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert "avg_steps_90d" in body
+    avg = body["avg_steps_90d"]
+    assert avg is not None
+    # Two distinct UTC days → (800 + 1200) / 2 = 1000.
+    # If a tz-naive bucket collapsed them into one day, we'd see
+    # max(800, 1200) = 1200 averaged over 1 day = 1200.
+    assert abs(avg - 1000) < 1, (
+        f"Expected UTC-bucketed avg of 1000 (two days: 800, 1200), "
+        f"got {avg}. If this is ~1200, the bucket merged the two "
+        "snapshots into one local-tz day."
+    )
