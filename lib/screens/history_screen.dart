@@ -1109,6 +1109,46 @@ class _ReadingDetailsSheet extends StatelessWidget {
               icon: Icons.restaurant_menu,
             ),
         ];
+      case 'spo2':
+        return [
+          if (reading.spo2Value != null)
+            _detailRow(
+              label: l10n.spo2Label,
+              value:
+                  '${reading.spo2Value!.round()}${reading.spo2Unit ?? '%'}',
+              icon: Icons.bloodtype_outlined,
+            ),
+        ];
+      case 'steps':
+        // Steps are filtered out of the history list upstream
+        // (_loadReadings → where readingType != 'steps'), so this branch
+        // is currently unreachable. Kept explicit so the l10n strings
+        // (stepsLabel/stepsGoalLabel) stay wired to a real call site and
+        // the sheet renders correctly if steps are ever surfaced here.
+        return [
+          if (reading.stepsCount != null)
+            _detailRow(
+              label: l10n.stepsLabel,
+              value: '${reading.stepsCount}',
+              icon: Icons.directions_walk,
+            ),
+          if (reading.stepsGoal != null)
+            _detailRow(
+              label: l10n.stepsGoalLabel,
+              value: '${reading.stepsGoal}',
+              icon: Icons.flag_outlined,
+            ),
+        ];
+      case 'weight':
+        return [
+          if (reading.weightValue != null)
+            _detailRow(
+              label: l10n.weightLabel,
+              value:
+                  '${reading.weightValue!.toStringAsFixed(1)} ${reading.weightUnit ?? 'kg'}',
+              icon: Icons.monitor_weight_outlined,
+            ),
+        ];
       default:
         return const [];
     }
