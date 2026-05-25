@@ -626,6 +626,7 @@ class HistoryScreenState extends State<HistoryScreen> {
                   tooltip: l10n.editReading,
                 ),
               IconButton(
+                key: Key('history_delete_reading_${reading.id}'),
                 icon: const Icon(Icons.delete_outline),
                 color: AppColors.statusCritical,
                 onPressed: () => _deleteReading(reading.id),
@@ -810,6 +811,7 @@ class HistoryScreenState extends State<HistoryScreen> {
                   tooltip: l10n.editMeal,
                 ),
                 IconButton(
+                  key: Key('history_delete_meal_${meal.id}'),
                   icon: const Icon(Icons.delete_outline),
                   color: AppColors.statusCritical,
                   onPressed: () => _deleteMeal(meal.id),
@@ -967,8 +969,10 @@ class _ReadingDetailsSheet extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Status badge
-                if (localizedStatus.isNotEmpty) _buildStatusBadge(),
-                const SizedBox(height: 16),
+                if (localizedStatus.isNotEmpty) ...[
+                  _buildStatusBadge(),
+                  const SizedBox(height: 16),
+                ],
 
                 // Per-type detail rows
                 ..._buildTypeSpecificRows(),
@@ -1065,27 +1069,27 @@ class _ReadingDetailsSheet extends StatelessWidget {
           if (reading.systolic != null)
             _detailRow(
               label: l10n.systolicLabel,
-              value: '${reading.systolic!.round()} ${reading.bpUnit ?? 'mmHg'}',
+              value: '${reading.systolic!.round()} ${reading.bpUnit ?? l10n.mmHgUnit}',
               icon: Icons.arrow_upward,
             ),
           if (reading.diastolic != null)
             _detailRow(
               label: l10n.diastolicLabel,
               value:
-                  '${reading.diastolic!.round()} ${reading.bpUnit ?? 'mmHg'}',
+                  '${reading.diastolic!.round()} ${reading.bpUnit ?? l10n.mmHgUnit}',
               icon: Icons.arrow_downward,
             ),
           if (reading.meanArterialPressure != null)
             _detailRow(
               label: l10n.mapLabel,
               value:
-                  '${reading.meanArterialPressure!.round()} ${reading.bpUnit ?? 'mmHg'}',
+                  '${reading.meanArterialPressure!.round()} ${reading.bpUnit ?? l10n.mmHgUnit}',
               icon: Icons.show_chart,
             ),
           if (reading.pulseRate != null)
             _detailRow(
               label: l10n.pulse,
-              value: '${reading.pulseRate!.round()} bpm',
+              value: '${reading.pulseRate!.round()} ${l10n.bpmUnit}',
               icon: Icons.favorite,
             ),
         ];
@@ -1103,15 +1107,6 @@ class _ReadingDetailsSheet extends StatelessWidget {
               label: l10n.mealContextSection,
               value: mealContextLabel,
               icon: Icons.restaurant_menu,
-            ),
-        ];
-      case 'steps':
-        return [
-          if (reading.stepsGoal != null)
-            _detailRow(
-              label: l10n.stepsGoalLabel,
-              value: '${reading.stepsGoal}',
-              icon: Icons.flag_outlined,
             ),
         ];
       default:

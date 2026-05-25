@@ -1075,6 +1075,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get spO2Unit => '%';
 
   @override
+  String get bpmUnit => 'bpm';
+
+  @override
+  String get mmHgUnit => 'mmHg';
+
+  @override
   String get viaArmband => 'आर्मबैंड से';
 
   @override

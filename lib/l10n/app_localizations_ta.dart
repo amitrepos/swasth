@@ -1091,6 +1091,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get spO2Unit => '%';
 
   @override
+  String get bpmUnit => 'bpm';
+
+  @override
+  String get mmHgUnit => 'mmHg';
+
+  @override
   String get viaArmband => 'ஆர்ம்பேண்ட் வழியாக';
 
   @override

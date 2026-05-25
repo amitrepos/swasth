@@ -544,6 +544,8 @@
   "lastSpO2": "ಕೊನೆಯ SpO2",
   "lastSteps": "ಇಂದಿನ ಹೆಜ್ಜೆಗಳು",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
   "viaArmband": "ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
   "viaPhone": "ಫೋನ್ / ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
   "pairDevice": "ಸಾಧನವನ್ನು ಜೋಡಿಸಿ",

@@ -576,6 +576,8 @@
   "lastSpO2": "கடைசி SpO2",
   "lastSteps": "இன்று நடந்த அடிகள்",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
   "viaArmband": "ஆர்ம்பேண்ட் வழியாக",
   "viaPhone": "தொலைபேசி / ஆர்ம்பேண்ட் வழியாக",
   "pairDevice": "சாதனம் இணைக்கவும்",

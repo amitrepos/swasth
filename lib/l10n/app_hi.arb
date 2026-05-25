@@ -393,6 +393,8 @@
   "lastSpO2": "अंतिम SpO2",
   "lastSteps": "आज के कदम",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
   "viaArmband": "आर्मबैंड से",
   "viaPhone": "फ़ोन / आर्मबैंड से",
   "pairDevice": "डिवाइस जोड़ें",

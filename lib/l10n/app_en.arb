@@ -525,6 +525,8 @@
   "lastSpO2": "Last SpO2",
   "lastSteps": "Steps Today",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
   "viaArmband": "via Armband",
   "viaPhone": "via Phone / Armband",
   "pairDevice": "Pair Device",

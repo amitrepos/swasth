@@ -2084,6 +2084,18 @@ abstract class AppLocalizations {
   /// **'%'**
   String get spO2Unit;
 
+  /// No description provided for @bpmUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'bpm'**
+  String get bpmUnit;
+
+  /// No description provided for @mmHgUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'mmHg'**
+  String get mmHgUnit;
+
   /// No description provided for @viaArmband.
   ///
   /// In en, this message translates to:
