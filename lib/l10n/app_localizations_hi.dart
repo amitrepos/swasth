@@ -75,6 +75,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get errGeneric => 'कुछ गड़बड़ हुई। कृपया फिर कोशिश करें।';
 
   @override
+  String get errRegionRestricted =>
+      'क्षेत्रीय गोपनीयता कानूनों के कारण, स्वास्थ्य डेटा लॉग करना वर्तमान में भारत के भीतर के उपयोगकर्ताओं तक ही सीमित है। आप अभी भी अपना इतिहास देख सकते हैं।';
+
+  @override
   String get aiInsightEmptyState =>
       'बेहतर स्वास्थ्य जानकारी के लिए रोज़ाना रीडिंग लॉग करें।';
 

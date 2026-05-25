@@ -75,6 +75,10 @@ class AppLocalizationsTe extends AppLocalizations {
   String get errGeneric => 'ఏదో తప్పు జరిగింది. మళ్లీ ప్రయత్నించండి.';
 
   @override
+  String get errRegionRestricted =>
+      'ప్రాంతీయ గోప్యతా చట్టాల కారణంగా, ఆరోగ్య డేటాను లాగ్ చేయడం ప్రస్తుతం భారతదేశంలోని వినియోగదారులకు మాత్రమే పరిమితం చేయబడింది. మీరు ఇప్పటికీ మీ చరిత్రను చూడవచ్చు.';
+
+  @override
   String get aiInsightEmptyState =>
       'ఉత్తమ ఆరోగ్య అంతర్దృష్టుల కోసం రోజువారీ రీడింగ్‌లు నమోదు చేయండి.';
 

@@ -1,12 +1,81 @@
 """Shared FastAPI dependencies."""
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
-from typing import Annotated
+from typing import Annotated, Optional
 import models
 import auth
+import os
+import logging
+import geoip2.database
 from database import get_db
 from encryption_service import hash_email
 
+logger = logging.getLogger(__name__)
+
+# Cache for the GeoIP reader to avoid re-opening the file on every request
+_geoip_reader: Optional[geoip2.database.Reader] = None
+
+def _get_geoip_reader() -> Optional[geoip2.database.Reader]:
+    """Lazy-load the GeoIP database reader."""
+    global _geoip_reader
+    if _geoip_reader is not None:
+        return _geoip_reader
+    
+    db_path = os.path.join(os.path.dirname(__file__), "GeoLite2-Country.mmdb")
+    if not os.path.exists(db_path):
+        # Fallback for local development or if DB is missing in CI
+        return None
+    
+    try:
+        _geoip_reader = geoip2.database.Reader(db_path)
+        return _geoip_reader
+    except Exception as e:
+        logger.warning(f"Failed to load GeoIP database: {e}")
+        return None
+
+def verify_india_location(request: Request) -> None:
+    """Enforce GDPR geofencing: block data modifications from outside India.
+    
+    Checks X-Forwarded-For (for proxies/Nginx) or request.client.host.
+    If GeoLite2-Country.mmdb is missing, allows the request (dev mode fallback).
+    Raises 403 REGION_RESTRICTED if country is not 'IN'.
+    """
+    # 1. Feature flag / Bypass for testing
+    if os.environ.get("BYPASS_GEO_RESTRICTION", "").lower() == "true":
+        return
+
+    # 2. Extract client IP
+    # X-Forwarded-For is usually a comma-separated list of IPs. Real client is the first one.
+    xff = request.headers.get("X-Forwarded-For")
+    if xff:
+        client_ip = xff.split(",")[0].strip()
+    else:
+        client_ip = request.client.host if request.client else "127.0.0.1"
+
+    # 3. Check location
+    reader = _get_geoip_reader()
+    if reader is None:
+        # Mock behavior: allow all if DB file is missing (dev environment)
+        # logger.debug(f"GeoIP DB missing. Allowing request from {client_ip} (mock).")
+        return
+
+    try:
+        response = reader.country(client_ip)
+        if response.country.iso_code != "IN":
+            logger.info(f"Blocked request from {client_ip} (Country: {response.country.iso_code})")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="REGION_RESTRICTED"
+            )
+    except geoip2.errors.AddressNotFoundError:
+        # IP not in database (likely private/local IP). Allow it.
+        return
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Don't block users if the lookup service itself fails
+        logger.error(f"GeoIP lookup error for {client_ip}: {e}")
+        return
 
 def get_current_user(
     token: Annotated[str, Depends(auth.oauth2_scheme)],

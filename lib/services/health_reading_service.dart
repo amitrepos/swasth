@@ -435,6 +435,11 @@ class HealthReadingService {
     if (response.statusCode == 401) {
       throw const UnauthorizedException();
     }
+    if (response.statusCode >= 400) {
+      throw ValidationException(
+        ApiClient.errorDetail(response, 'Failed to parse image.'),
+      );
+    }
     if (response.statusCode != 200) return null;
 
     final Map<String, dynamic> data;

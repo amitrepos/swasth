@@ -75,6 +75,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errGeneric => 'Something went wrong. Please try again.';
 
   @override
+  String get errRegionRestricted =>
+      'Due to regional privacy laws, logging health data is currently restricted to users within India. You can still view your history.';
+
+  @override
   String get aiInsightEmptyState =>
       'Log daily readings for the best health insights.';
 

@@ -70,6 +70,7 @@
     "description": "Shown on HTTP 5xx or when the server returns a malformed body we can't parse. Never expose the raw error."
   },
   "errGeneric": "ఏదో తప్పు జరిగింది. మళ్లీ ప్రయత్నించండి.",
+  "errRegionRestricted": "ప్రాంతీయ గోప్యతా చట్టాల కారణంగా, ఆరోగ్య డేటాను లాగ్ చేయడం ప్రస్తుతం భారతదేశంలోని వినియోగదారులకు మాత్రమే పరిమితం చేయబడింది. మీరు ఇప్పటికీ మీ చరిత్రను చూడవచ్చు.",
   "@errGeneric": {
     "description": "Fallback for any unexpected exception that doesn't fit a known category."
   },

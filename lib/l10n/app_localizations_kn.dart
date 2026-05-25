@@ -75,6 +75,10 @@ class AppLocalizationsKn extends AppLocalizations {
   String get errGeneric => 'ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
+  String get errRegionRestricted =>
+      'ಪ್ರಾದೇಶಿಕ ಗೌಪ್ಯತೆ ಕಾನೂನುಗಳಿಂದಾಗಿ, ಆರೋಗ್ಯ ಡೇಟಾವನ್ನು ಲಾಗ್ ಮಾಡುವುದು ಪ್ರಸ್ತುತ ಭಾರತದೊಳಗಿನ ಬಳಕೆದಾರರಿಗೆ ಮಾತ್ರ ಸೀಮಿತವಾಗಿದೆ. ನೀವು ಇನ್ನೂ ನಿಮ್ಮ ಇತಿಹಾಸವನ್ನು ನೋಡಬಹುದು.';
+
+  @override
   String get aiInsightEmptyState =>
       'ಉತ್ತಮ ಆರೋಗ್ಯದ ಒಳನೋಟಗಳಿಗಾಗಿ ಪ್ರತಿದಿನದ ರೀಡಿಂಗ್‌ಗಳನ್ನು ದಾಖಲಿಸಿ.';
 

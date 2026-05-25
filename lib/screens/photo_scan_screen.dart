@@ -4,6 +4,8 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/ocr_service.dart';
 import '../services/storage_service.dart';
+import '../services/api_exception.dart';
+import '../services/error_mapper.dart';
 import 'reading_confirmation_screen.dart';
 
 class PhotoScanScreen extends StatefulWidget {
@@ -106,14 +108,26 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       // Try Gemini Vision via backend (uses fallback chain: Gemini → DeepSeek)
       // ML Kit local OCR disabled on iOS due to arm64 crash on iOS 26.
       OcrResult? result;
-      final token = await StorageService().getToken();
-      if (token != null) {
-        result = await HealthReadingService().parseImageWithGemini(
-          imageBytes,
-          xfile.name,
-          widget.deviceType,
-          token,
-        );
+      try {
+        final token = await StorageService().getToken();
+        if (token != null) {
+          result = await HealthReadingService().parseImageWithGemini(
+            imageBytes,
+            xfile.name,
+            widget.deviceType,
+            token,
+          );
+        }
+      } catch (e) {
+        if (mounted) Navigator.of(context).pop(); // dismiss loading
+        if (mounted) {
+          final message = ErrorMapper.userMessage(l10n, e);
+          _showError(
+            title: l10n.error,
+            message: message,
+          );
+        }
+        return;
       }
 
       if (mounted) Navigator.of(context).pop();

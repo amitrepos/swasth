@@ -230,6 +230,12 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get errGeneric;
 
+  /// Shown on HTTP 403 REGION_RESTRICTED. Explains that logging is geo-fenced to India for GDPR compliance.
+  ///
+  /// In en, this message translates to:
+  /// **'Due to regional privacy laws, logging health data is currently restricted to users within India. You can still view your history.'**
+  String get errRegionRestricted;
+
   /// Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly.
   ///
   /// In en, this message translates to:

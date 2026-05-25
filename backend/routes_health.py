@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, verify_india_location
 from config import settings
 from health_utils import generate_meal_insights
 from report_service import trigger_single_profile_report, send_weekly_reports
@@ -97,7 +97,7 @@ def _refresh_doctor_triage_for_profile(db: Session, profile_id: int) -> None:
 _insight_cache: dict[tuple[int, str], str] = {}
 
 
-@router.post("/readings", status_code=status.HTTP_201_CREATED)
+@router.post("/readings", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_india_location)])
 def save_reading(
     reading: schemas.HealthReadingCreate,
     db: Session = Depends(get_db),
@@ -1460,7 +1460,7 @@ def get_reading(
     return db_reading
 
 
-@router.put("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
+@router.put("/readings/{reading_id}", response_model=schemas.HealthReadingResponse, dependencies=[Depends(verify_india_location)])
 @limiter.limit("30/minute")
 def update_reading(
     request: Request,
@@ -1610,7 +1610,7 @@ def update_reading(
     return db_reading
 
 
-@router.delete("/readings/{reading_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/readings/{reading_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(verify_india_location)])
 @limiter.limit("30/minute")
 def delete_reading(
     request: Request,
@@ -1679,7 +1679,7 @@ def delete_reading(
     return Response(status_code=204)
 
 
-@router.post("/readings/parse-image")
+@router.post("/readings/parse-image", dependencies=[Depends(verify_india_location)])
 @limiter.limit("20/minute")
 async def parse_image_with_gemini(
     request: Request,
