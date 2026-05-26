@@ -4,12 +4,14 @@ from datetime import datetime, timedelta, date, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal
+from sqlalchemy import func
 from models import (
     User, Profile, HealthReading, ProfileAccess,
     ReportGenerationLog, WhatsAppMessageLog,
-    ReportTriggerType, WhatsAppMessageStatus, ReportGenerationStatus
+    ReportTriggerType, WhatsAppMessageStatus, ReportGenerationStatus,
+    DoctorPatientLink, DoctorReportGenerationLog, DoctorProfile
 )
-from health_utils import classify_bp, classify_glucose
+from health_utils import classify_bp, classify_glucose, classify_spo2
 from utils.phone import normalize_phone
 from utils.datetime_helpers import ensure_utc
 from twilio_service import whatsapp_service
@@ -17,6 +19,256 @@ from config import settings
 import ai_report_service
 
 logger = logging.getLogger(__name__)
+
+
+def build_doctor_summary(db: Session, doctor_id: int, last_7d: datetime) -> dict:
+    """Builds an aggregate summary of all active patients for a doctor.
+
+    Returns:
+        {
+            "patients": [{
+                "name": str,
+                "metrics": {
+                    "glucose": {avg, min, max, count},
+                    "bp": {avg_sys, avg_dia, count},
+                    "spo2": {avg, min, max, count},
+                    "steps": {total}
+                },
+                "critical_metrics": [str],  # e.g. ["BP", "Glucose"]
+            }],
+            "critical_patients": [str],     # Names of patients with critical readings
+            "patients_with_data_count": int,
+            "total_patients_count": int
+        }
+    """
+    links = db.query(DoctorPatientLink).filter(
+        DoctorPatientLink.doctor_id == doctor_id,
+        DoctorPatientLink.status == 'active'
+    ).all()
+
+    summary = {
+        "patients": [],
+        "critical_patients": [],
+        "patients_with_data_count": 0,
+        "total_patients_count": len(links)
+    }
+
+    for link in links:
+        profile = db.query(Profile).filter(Profile.id == link.profile_id).first()
+        if not profile:
+            continue
+
+        readings = db.query(HealthReading).filter(
+            HealthReading.profile_id == profile.id,
+            HealthReading.reading_timestamp >= last_7d
+        ).all()
+
+        if not readings:
+            continue
+
+        summary["patients_with_data_count"] += 1
+        p_summary = {
+            "name": profile.name,
+            "metrics": {},
+            "critical_metrics": []
+        }
+
+        # Aggregate Glucose
+        g_readings = [r for r in readings if r.reading_type == 'glucose' and r.glucose_value]
+        if g_readings:
+            g_vals = [r.glucose_value for r in g_readings]
+            p_summary["metrics"]["glucose"] = {
+                "avg": sum(g_vals) / len(g_vals),
+                "min": min(g_vals),
+                "max": max(g_vals),
+                "count": len(g_vals)
+            }
+            if any(classify_glucose(v) == "CRITICAL" for v in g_vals):
+                p_summary["critical_metrics"].append("Sugar")
+
+        # Aggregate BP
+        bp_readings = [r for r in readings if r.reading_type == 'blood_pressure' and r.systolic and r.diastolic]
+        if bp_readings:
+            sys_vals = [r.systolic for r in bp_readings]
+            dia_vals = [r.diastolic for r in bp_readings]
+            p_summary["metrics"]["bp"] = {
+                "avg_sys": sum(sys_vals) / len(sys_vals),
+                "avg_dia": sum(dia_vals) / len(dia_vals),
+                "count": len(bp_readings)
+            }
+            if any(classify_bp(s, d) == "HIGH - STAGE 2" for s, d in zip(sys_vals, dia_vals)):
+                p_summary["critical_metrics"].append("BP")
+
+        # Aggregate SpO2
+        s_readings = [r for r in readings if r.reading_type == 'spo2' and r.spo2_value]
+        if s_readings:
+            s_vals = [r.spo2_value for r in s_readings]
+            p_summary["metrics"]["spo2"] = {
+                "avg": sum(s_vals) / len(s_vals),
+                "min": min(s_vals),
+                "max": max(s_vals),
+                "count": len(s_vals)
+            }
+            if any(classify_spo2(v) == "CRITICAL" for v in s_vals):
+                p_summary["critical_metrics"].append("SpO2")
+
+        # Aggregate Steps
+        steps_readings = [r for r in readings if r.reading_type == 'steps' and r.steps_count]
+        if steps_readings:
+            p_summary["metrics"]["steps"] = {
+                "total": sum(r.steps_count for r in steps_readings)
+            }
+
+        if p_summary["critical_metrics"]:
+            summary["critical_patients"].append(profile.name)
+
+        summary["patients"].append(p_summary)
+
+    return summary
+
+
+def send_doctor_weekly_reports(
+    db: Optional[Session] = None,
+    trigger_type: ReportTriggerType = ReportTriggerType.SCHEDULED,
+    doctor_user_id: Optional[int] = None,
+) -> dict:
+    """Sends a weekly digest report to doctors for all their linked patients."""
+    managed_session = False
+    if db is None:
+        db = SessionLocal()
+        managed_session = True
+
+    results = {"total_doctors": 0, "successful_deliveries": 0, "failed_deliveries": 0, "errors": []}
+
+    try:
+        if not settings.TWILIO_DOCTOR_REPORT_CONTENT_SID:
+            raise ValueError("TWILIO_DOCTOR_REPORT_CONTENT_SID is not configured")
+
+        now = datetime.now(timezone.utc)
+        last_7d = now - timedelta(days=7)
+        last_week_str = (now - timedelta(days=6)).strftime("%d %b")
+        date_str = now.strftime("%d %b %Y")
+
+        # Find all doctors with active links
+        doctor_query = db.query(User).join(
+            DoctorProfile, DoctorProfile.user_id == User.id
+        ).filter(
+            User.role == 'doctor',
+            User.is_active == True
+        )
+
+        if doctor_user_id:
+            doctor_query = doctor_query.filter(User.id == doctor_user_id)
+
+        doctors = doctor_query.all()
+        results["total_doctors"] = len(doctors)
+
+        for doctor in doctors:
+            d_id = doctor.id
+            try:
+                summary = build_doctor_summary(db, d_id, last_7d)
+
+                if summary["patients_with_data_count"] == 0:
+                    logger.info("Doctor %s has no patient data for the week — skipping.", d_id)
+                    continue
+
+                # Compose the digest message
+                # Header: Critical patients first
+                critical_block = ""
+                if summary["critical_patients"]:
+                    critical_block = "🚨 CRITICAL: " + ", ".join(summary["critical_patients"]) + " | "
+
+                # Per-patient summary lines
+                patient_lines = []
+                for p in summary["patients"]:
+                    m = p["metrics"]
+                    metric_parts = []
+                    if "glucose" in m:
+                        g = m["glucose"]
+                        metric_parts.append(f"Sugar: {int(g['avg'])} avg ({int(g['min'])}-{int(g['max'])})")
+                    if "bp" in m:
+                        bp = m["bp"]
+                        metric_parts.append(f"BP: {int(bp['avg_sys'])}/{int(bp['avg_dia'])} avg")
+                    if "spo2" in m:
+                        s = m["spo2"]
+                        metric_parts.append(f"SpO2: {int(s['avg'])}% avg")
+                    if "steps" in m:
+                        metric_parts.append(f"Steps: {m['steps']['total']}")
+                    
+                    p_line = f"👤 {p['name']}: " + ", ".join(metric_parts)
+                    if p["critical_metrics"]:
+                        p_line += " ⚠️"
+                    patient_lines.append(p_line)
+
+                digest_snippet = critical_block + " | ".join(patient_lines)
+                if len(digest_snippet) > 1000: # Twilio/WhatsApp limit safety
+                    digest_snippet = digest_snippet[:997] + "..."
+
+                # Log generation
+                db.add(DoctorReportGenerationLog(
+                    doctor_id=doctor.id,
+                    trigger_type=trigger_type,
+                    report_date=date.today(),
+                    patients_linked_count=summary["total_patients_count"],
+                    patients_with_data_count=summary["patients_with_data_count"],
+                    critical_patients_count=len(summary["critical_patients"]),
+                    status=ReportGenerationStatus.SUCCESS,
+                ))
+                db.commit()
+
+                # Delivery
+                target_phone = normalize_phone(doctor.phone_number)
+                if not target_phone:
+                    # Try doctor profile phone/whatsapp
+                    dp = db.query(DoctorProfile).filter(DoctorProfile.user_id == doctor.id).first()
+                    target_phone = normalize_phone(dp.whatsapp_number) or normalize_phone(dp.phone_number)
+
+                if not target_phone:
+                    logger.warning("Doctor %s has no phone number — skipping.", doctor.id)
+                    continue
+
+                # {{1}} = week start, {{2}} = week end, {{3}} = digest
+                template_vars = [last_week_str, date_str, digest_snippet]
+
+                delivery_log = WhatsAppMessageLog(
+                    user_id=doctor.id,
+                    phone_number=target_phone,
+                    trigger_type=trigger_type,
+                    report_date=date.today(),
+                    member_ids_included=[], # not applicable for doctor
+                    status=WhatsAppMessageStatus.QUEUED,
+                    message_snapshot=digest_snippet
+                )
+                db.add(delivery_log)
+                db.commit()
+
+                success, sid, err = whatsapp_service.send_whatsapp_template(
+                    target_phone, settings.TWILIO_DOCTOR_REPORT_CONTENT_SID, template_vars
+                )
+                delivery_log.status = WhatsAppMessageStatus.SENT if success else WhatsAppMessageStatus.FAILED
+                delivery_log.twilio_sid = sid
+                delivery_log.error_message = err
+                db.commit()
+
+                if success:
+                    results["successful_deliveries"] += 1
+                else:
+                    results["failed_deliveries"] += 1
+                    results["errors"].append(f"Doctor {doctor.id}: {err}")
+
+            except Exception as e:
+                logger.error("Failed to send report for doctor %s", doctor.id, exc_info=True)
+                results["failed_deliveries"] += 1
+                results["errors"].append(f"Doctor {doctor.id}: {str(e)}")
+
+    except Exception as e:
+        logger.error("Error in send_doctor_weekly_reports", exc_info=True)
+        results["errors"].append(str(e))
+    finally:
+        if managed_session:
+            db.close()
+
+    return results
 
 
 def trigger_single_profile_report(

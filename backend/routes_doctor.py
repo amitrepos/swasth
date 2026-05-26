@@ -4,7 +4,7 @@ All doctor-specific endpoints live here. This file NEVER imports from
 routes_chat.py — doctor access to patient data is deliberately scoped
 to readings, trends, and profile info (not AI chat history).
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 from datetime import datetime, timezone, timedelta
@@ -16,9 +16,10 @@ import auth
 from database import get_db
 from dependencies import get_current_user, get_doctor_patient_access, get_profile_access_or_403
 from doctor_utils import ensure_unique_doctor_code
-from models import UserRole
+from models import UserRole, ReportTriggerType
 from email_service import email_service
 from twilio_service import whatsapp_service
+from report_service import send_doctor_weekly_reports
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -1336,3 +1337,22 @@ def get_access_audit(
         }
         for log, u in logs
     ]
+
+
+@router.post("/report/manual-trigger", status_code=status.HTTP_202_ACCEPTED)
+def manually_trigger_doctor_report(
+    background_tasks: BackgroundTasks,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Manually trigger a weekly report digest for the current doctor."""
+    if user.role != UserRole.doctor:
+        raise HTTPException(status_code=403, detail="Only doctors can trigger this report")
+
+    background_tasks.add_task(
+        send_doctor_weekly_reports,
+        db=None,  # Use a new session in background
+        trigger_type=ReportTriggerType.MANUAL,
+        doctor_user_id=user.id,
+    )
+    return {"message": "Doctor report generation started. You will receive a WhatsApp message shortly."}

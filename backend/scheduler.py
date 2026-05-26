@@ -1,7 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-from report_service import send_weekly_reports
+from report_service import send_weekly_reports, send_doctor_weekly_reports
 from models import ReportTriggerType
 import logging
 from datetime import datetime
@@ -15,6 +15,11 @@ scheduler = BackgroundScheduler()
 def weekly_reports_job():
     logger.info(f"[SCHEDULER] Weekly report job fired at {datetime.now()}")
     send_weekly_reports(trigger_type=ReportTriggerType.SCHEDULED)
+
+
+def doctor_weekly_reports_job():
+    logger.info(f"[SCHEDULER] Doctor weekly report job fired at {datetime.now()}")
+    send_doctor_weekly_reports(trigger_type=ReportTriggerType.SCHEDULED)
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +130,15 @@ def start_scheduler():
             trigger=CronTrigger(day_of_week='sun', hour=2, minute=30),  # 02:30 UTC = 08:00 IST
             id="ops_p2_digest",
             name="Ops P2 weekly digest email",
+            replace_existing=True,
+        )
+
+        # Doctor weekly digest — Mondays 08:00 IST
+        scheduler.add_job(
+            doctor_weekly_reports_job,
+            trigger=CronTrigger(day_of_week='mon', hour=2, minute=30),  # 02:30 UTC = 08:00 IST
+            id="doctor_weekly_reports",
+            name="Generate and send weekly digest reports to doctors",
             replace_existing=True,
         )
 
