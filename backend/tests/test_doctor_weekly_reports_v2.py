@@ -319,6 +319,43 @@ class TestDoctorWeeklyReportsV2:
         )
         assert "once per hour" in resp.json()["detail"]
 
+    def test_manual_trigger_NOT_blocked_by_recent_failed_delivery(
+        self, client, db,
+    ):
+        """Reviewer M1 (the headline fix): a FAILED delivery row <1h
+        old must NOT block a manual retry. The doctor never got their
+        report; a retry is the correct user action. Only SENT or
+        QUEUED rows should cooldown."""
+        doctor = models.User(
+            full_name="Retry After Failure", role=UserRole.doctor,
+            email="failed-rl@test.com", password_hash="...",
+        )
+        db.add(doctor); db.flush()
+
+        # Twilio just failed 5 minutes ago.
+        db.add(models.WhatsAppMessageLog(
+            user_id=doctor.id,
+            phone_number="+919900000000",
+            trigger_type=ReportTriggerType.MANUAL,
+            report_date=datetime.now(timezone.utc).date(),
+            member_ids_included=[],
+            status=models.WhatsAppMessageStatus.FAILED,
+            sent_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+            error_message="twilio error",
+        ))
+        db.commit()
+
+        from auth import create_access_token
+        token = create_access_token({"sub": "failed-rl@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        with patch("routes_doctor.BackgroundTasks.add_task"):
+            resp = client.post("/api/doctor/report/manual-trigger", headers=headers)
+        assert resp.status_code == 202, (
+            f"Expected 202 (retry allowed after FAILED), got {resp.status_code}: "
+            f"{resp.text}. A FAILED row blocking retry is the regression."
+        )
+
     def test_manual_trigger_allowed_when_last_delivery_over_one_hour(
         self, client, db,
     ):

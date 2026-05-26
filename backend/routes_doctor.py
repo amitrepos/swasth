@@ -1357,13 +1357,32 @@ def manually_trigger_doctor_report(
     if user.role != UserRole.doctor:
         raise HTTPException(status_code=403, detail="Only doctors can trigger this report")
 
-    # Cooldown: 1 hour since the last delivery attempt for this doctor.
+    # Cooldown: at most one in-flight or successfully-delivered manual
+    # request per doctor per hour. Semantics:
+    #   - status=SENT     → delivered. Block until 1h after sent_at.
+    #   - status=QUEUED   → in-flight (the worker has the row but Twilio
+    #                       hasn't responded yet). Block — issuing a
+    #                       second request would race the first.
+    #   - status=FAILED   → delivery failed at Twilio. Do NOT block.
+    #                       The doctor never got their report and a
+    #                       retry is the correct fix.
+    #
+    # NOTE on sent_at: WhatsAppMessageLog.sent_at has
+    # `server_default=func.now()`, so it is stamped at row INSERT (when
+    # status=QUEUED) — NOT when Twilio actually delivers. That's why
+    # we cannot use sent_at alone to mean "delivered at"; the status
+    # filter is doing the real work here, and sent_at is just our
+    # creation-time anchor for the window.
     cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
     recent = (
         db.query(models.WhatsAppMessageLog)
         .filter(
             models.WhatsAppMessageLog.user_id == user.id,
             models.WhatsAppMessageLog.trigger_type == ReportTriggerType.MANUAL,
+            models.WhatsAppMessageLog.status.in_([
+                models.WhatsAppMessageStatus.SENT,
+                models.WhatsAppMessageStatus.QUEUED,
+            ]),
             models.WhatsAppMessageLog.sent_at >= cutoff,
         )
         .first()

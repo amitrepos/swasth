@@ -68,7 +68,32 @@ class TestDoctorReportService:
         assert summary["patients_with_data_count"] == 1
         assert len(summary["patients"]) == 1
         p0 = summary["patients"][0]
-        assert p0["name"] == "John's Profile"
+
+        # Encryption round-trip check (Reviewer M2): Profile.name is
+        # stored encrypted (name_enc, AES-256-GCM). The .name property
+        # transparently decrypts via decrypt_pii. If the ORM layer ever
+        # changed to expose name_enc directly (e.g. someone removes the
+        # property), the digest header would surface ciphertext like
+        # "🚨 CRITICAL: gAAAAAB..." — clinically meaningless to the doctor
+        # and a PHI-leak liability. This assertion proves the value
+        # surfaced from build_doctor_summary is plaintext.
+        assert p0["name"] == "John's Profile", (
+            "Profile name in summary must be the plaintext value passed "
+            "into Profile(name=...). If this fails with a base64/hex blob, "
+            "the Profile.name property's decrypt round-trip has broken."
+        )
+        # Belt-and-braces: explicitly assert NOT ciphertext. AES-GCM
+        # ciphertext under our scheme is base64 and starts with the
+        # version prefix used by encrypt_pii — never with an apostrophe.
+        assert not p0["name"].startswith("gAAAAA"), (
+            "Profile name leaked as Fernet/AES ciphertext into the doctor "
+            "digest. PII_ENCRYPTION_KEY round-trip is broken."
+        )
+
+        # Critical-patient header uses the same .name path. If a critical
+        # reading flowed through, that name MUST also be plaintext.
+        # (No critical readings in this test — verified separately in
+        # test_build_doctor_summary_critical.)
         assert "glucose" in p0["metrics"]
         assert "bp" in p0["metrics"]
         assert "spo2" in p0["metrics"]
@@ -175,6 +200,63 @@ class TestDoctorReportService:
             "Sustained-only rule has regressed; doctors will get false-alarm "
             "alerts every week."
         )
+
+    @patch("report_service.whatsapp_service")
+    def test_doctor_profile_phone_decrypts_for_delivery(self, mock_whatsapp, db):
+        """Reviewer M2 (companion to the Profile.name encryption test):
+        the fallback phone path also goes through encrypted PII storage
+        — DoctorProfile.phone_number_enc / whatsapp_number_enc. If the
+        decrypt round-trip is broken there, send_doctor_weekly_reports
+        would hand Twilio a base64 blob as the destination, every
+        message would fail, and ops would see Twilio "invalid number"
+        errors with no obvious cause.
+
+        Sets the doctor's User.phone_number to NULL so the function
+        is forced to consult DoctorProfile.whatsapp_number → exercises
+        the decrypt path end-to-end."""
+        with patch("report_service.settings") as mock_settings:
+            mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+            mock_whatsapp.send_whatsapp_template.return_value = (True, "SM123", None)
+
+            doctor = models.User(
+                full_name="Dr. PhoneOnDP",
+                # phone_number deliberately omitted → forces fallback
+                role=models.UserRole.doctor,
+                password_hash="...",
+            )
+            db.add(doctor); db.flush()
+            dp = models.DoctorProfile(
+                user_id=doctor.id,
+                nmc_number="NMC-PHONE-001",
+                doctor_code="DRPHN001",
+                whatsapp_number="+919811112222",  # stored encrypted, decrypted on read
+            )
+            db.add(dp); db.flush()
+
+            p = models.Profile(name="Phone Path Patient")
+            db.add(p); db.flush()
+            db.add(models.DoctorPatientLink(
+                doctor_id=doctor.id, profile_id=p.id, status='active',
+                consent_granted_at=datetime.now(timezone.utc),
+                consent_type='in_person_exam',
+            )); db.flush()
+            _add_reading(db, p.id, 1, "glucose", 110)
+
+            from report_service import send_doctor_weekly_reports
+            send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
+
+            # Twilio was handed the decrypted plaintext number, not the
+            # ciphertext stored in whatsapp_number_enc.
+            mock_whatsapp.send_whatsapp_template.assert_called_once()
+            phone_arg = mock_whatsapp.send_whatsapp_template.call_args[0][0]
+            # normalize_phone may strip the leading + or country code —
+            # but the digits 9811112222 MUST be in there. A ciphertext
+            # blob would not contain that exact substring.
+            assert "9811112222" in phone_arg, (
+                f"Twilio received {phone_arg!r} as the destination. "
+                "Expected the decrypted plaintext containing 9811112222. "
+                "DoctorProfile.whatsapp_number decrypt round-trip is broken."
+            )
 
     @patch("report_service.whatsapp_service")
     @patch("report_service.settings")
