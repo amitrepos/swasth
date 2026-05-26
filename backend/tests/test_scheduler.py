@@ -71,8 +71,8 @@ class TestSchedulerLifecycle:
         from scheduler import start_scheduler
         start_scheduler()
 
-        # Should add 4 jobs
-        assert mock_scheduler.add_job.call_count == 4
+        # Should add 5 jobs (weekly reports, ops p0, ops p1, ops p2, doctor reports)
+        assert mock_scheduler.add_job.call_count == 5
         mock_scheduler.start.assert_called_once()
 
     @patch("scheduler.scheduler")

@@ -53,16 +53,31 @@ def build_doctor_summary(db: Session, doctor_id: int, last_7d: datetime) -> dict
         "total_patients_count": len(links)
     }
 
+    if not links:
+        return summary
+
+    profile_ids = [link.profile_id for link in links]
+    # Bulk load profiles
+    profiles = db.query(Profile).filter(Profile.id.in_(profile_ids)).all()
+    profile_map = {p.id: p for p in profiles}
+
+    # Bulk load readings for all profiles in the last 7 days
+    all_readings = db.query(HealthReading).filter(
+        HealthReading.profile_id.in_(profile_ids),
+        HealthReading.reading_timestamp >= last_7d
+    ).all()
+
+    # Group readings by profile_id
+    readings_by_profile = {}
+    for r in all_readings:
+        readings_by_profile.setdefault(r.profile_id, []).append(r)
+
     for link in links:
-        profile = db.query(Profile).filter(Profile.id == link.profile_id).first()
+        profile = profile_map.get(link.profile_id)
         if not profile:
             continue
 
-        readings = db.query(HealthReading).filter(
-            HealthReading.profile_id == profile.id,
-            HealthReading.reading_timestamp >= last_7d
-        ).all()
-
+        readings = readings_by_profile.get(link.profile_id, [])
         if not readings:
             continue
 
@@ -206,7 +221,7 @@ def send_doctor_weekly_reports(
 
                 # Log generation
                 db.add(DoctorReportGenerationLog(
-                    doctor_id=doctor.id,
+                    doctor_id=d_id,
                     trigger_type=trigger_type,
                     report_date=date.today(),
                     patients_linked_count=summary["total_patients_count"],
@@ -220,18 +235,19 @@ def send_doctor_weekly_reports(
                 target_phone = normalize_phone(doctor.phone_number)
                 if not target_phone:
                     # Try doctor profile phone/whatsapp
-                    dp = db.query(DoctorProfile).filter(DoctorProfile.user_id == doctor.id).first()
-                    target_phone = normalize_phone(dp.whatsapp_number) or normalize_phone(dp.phone_number)
+                    dp = db.query(DoctorProfile).filter(DoctorProfile.user_id == d_id).first()
+                    if dp:
+                        target_phone = normalize_phone(dp.whatsapp_number) or normalize_phone(dp.phone_number)
 
                 if not target_phone:
-                    logger.warning("Doctor %s has no phone number — skipping.", doctor.id)
+                    logger.warning("Doctor %s has no phone number — skipping.", d_id)
                     continue
 
                 # {{1}} = week start, {{2}} = week end, {{3}} = digest
                 template_vars = [last_week_str, date_str, digest_snippet]
 
                 delivery_log = WhatsAppMessageLog(
-                    user_id=doctor.id,
+                    user_id=d_id,
                     phone_number=target_phone,
                     trigger_type=trigger_type,
                     report_date=date.today(),

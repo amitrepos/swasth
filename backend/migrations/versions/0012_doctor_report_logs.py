@@ -16,17 +16,19 @@ depends_on = None
 
 
 def upgrade():
+    # Use existing types if they exist, otherwise they will be created by sa.Enum
+    # We use lowercase values to match models.py
     op.create_table(
         'doctor_report_generation_logs',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('doctor_id', sa.Integer(), nullable=False),
-        sa.Column('trigger_type', sa.Enum('SCHEDULED', 'MANUAL', 'ON_DEMAND', name='reporttriggertype', create_type=False), nullable=False),
+        sa.Column('trigger_type', sa.Enum('scheduled', 'manual', name='reporttriggertype', create_type=False), nullable=False),
         sa.Column('report_date', sa.Date(), nullable=False),
         sa.Column('generated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
         sa.Column('patients_linked_count', sa.Integer(), nullable=False),
         sa.Column('patients_with_data_count', sa.Integer(), nullable=False),
         sa.Column('critical_patients_count', sa.Integer(), nullable=False),
-        sa.Column('status', sa.Enum('SUCCESS', 'PARTIAL', 'FAILED', name='reportgenerationstatus', create_type=False), nullable=False),
+        sa.Column('status', sa.Enum('success', 'partial', 'failed', name='reportgenerationstatus', create_type=False), nullable=False),
         sa.Column('error_message', sa.Text(), nullable=True),
         sa.ForeignKeyConstraint(['doctor_id'], ['users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
