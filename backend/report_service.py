@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from sqlalchemy import func
 from models import (
-    User, Profile, HealthReading, ProfileAccess,
+    User, UserRole, Profile, HealthReading, ProfileAccess,
     ReportGenerationLog, WhatsAppMessageLog,
     ReportTriggerType, WhatsAppMessageStatus, ReportGenerationStatus,
     DoctorPatientLink, DoctorReportGenerationLog, DoctorProfile
@@ -187,11 +187,18 @@ def send_doctor_weekly_reports(
         last_week_str = (now - timedelta(days=6)).strftime("%d %b")
         date_str = now.strftime("%d %b %Y")
 
-        # Find all doctors with active links
+        # Find all doctors with active links.
+        # User.role is a str-Enum (UserRole). Comparing against the raw
+        # string 'doctor' works today because the enum's value is also
+        # 'doctor', but a future migration that changes case ('Doctor')
+        # or renames the value would silently return 0 doctors with
+        # NO error — the cron would just stop sending reports. Compare
+        # against the enum so a mismatch surfaces at code review,
+        # consistent with every other auth check in routes_doctor.py.
         doctor_query = db.query(User).join(
             DoctorProfile, DoctorProfile.user_id == User.id
         ).filter(
-            User.role == 'doctor',
+            User.role == UserRole.doctor,
             User.is_active == True
         )
 
@@ -200,6 +207,23 @@ def send_doctor_weekly_reports(
 
         doctors = doctor_query.all()
         results["total_doctors"] = len(doctors)
+
+        # Bulk-fetch all DoctorProfile rows for the result set in ONE
+        # query. The previous code re-queried DoctorProfile inside the
+        # per-doctor loop whenever User.phone_number was empty — one
+        # extra round-trip per doctor with no phone, adding tens of
+        # queries per scheduler run at Bihar pilot scale. The outer
+        # JOIN already proves a DoctorProfile exists for every doctor
+        # we're iterating, so this dict is guaranteed populated.
+        doctor_profile_map: dict = {}
+        if doctors:
+            doctor_ids = [d.id for d in doctors]
+            doctor_profile_map = {
+                dp.user_id: dp
+                for dp in db.query(DoctorProfile)
+                .filter(DoctorProfile.user_id.in_(doctor_ids))
+                .all()
+            }
 
         # Today's date in UTC. date.today() reads the SERVER local clock;
         # on a non-UTC host (or a host whose TZ flips during DST) the
@@ -220,7 +244,27 @@ def send_doctor_weekly_reports(
                 summary = build_doctor_summary(db, d_id, last_7d)
 
                 if summary["patients_with_data_count"] == 0:
-                    logger.info("Doctor %s has no patient data for the week — skipping.", d_id)
+                    # Ops needs an audit row even on the no-data skip so
+                    # "doctor processed, nothing to send" is
+                    # distinguishable from "doctor was never evaluated".
+                    # In the Bihar pilot with sparse logging this is a
+                    # common state. ReportGenerationStatus has no
+                    # dedicated SKIPPED value (would require migration);
+                    # we use SUCCESS with patients_with_data_count=0,
+                    # which truthfully reflects what happened: the run
+                    # succeeded, there was simply nothing to deliver.
+                    db.add(DoctorReportGenerationLog(
+                        doctor_id=d_id,
+                        trigger_type=trigger_type,
+                        report_date=report_date_utc,
+                        patients_linked_count=summary["total_patients_count"],
+                        patients_with_data_count=0,
+                        critical_patients_count=0,
+                        status=ReportGenerationStatus.SUCCESS,
+                        error_message="no_data_in_window",
+                    ))
+                    db.commit()
+                    logger.info("Doctor %s has no patient data for the week — skipped (audit row written).", d_id)
                     continue
 
                 # Compose the digest message — Critical patients first
@@ -264,6 +308,11 @@ def send_doctor_weekly_reports(
                 budget = _MAX_LEN - len(critical_block) - _MARGIN
                 kept_lines = []
                 used = 0
+                # Budget bookkeeping: the FIRST kept line has no
+                # leading separator (the join only inserts " | "
+                # between elements, and critical_block already ends
+                # with " | " when non-empty). So we charge 3 chars
+                # only for the second-and-later lines.
                 for line in patient_lines:
                     add = len(line) + (3 if kept_lines else 0)  # " | " separator
                     if used + add > budget:
@@ -271,6 +320,12 @@ def send_doctor_weekly_reports(
                     kept_lines.append(line)
                     used += add
                 omitted = len(patient_lines) - len(kept_lines)
+                # critical_block already ends with " | " when non-empty,
+                # so no extra separator is needed between it and the
+                # first kept patient line — the format is e.g.:
+                #   "🚨 CRITICAL: Sita | 👤 Sita: BP 145/92"
+                # If critical_block is empty, kept_lines just renders
+                # normally with " | " between lines.
                 digest_snippet = critical_block + " | ".join(kept_lines)
                 if omitted > 0:
                     suffix = f" | (+{omitted} patients omitted — see portal)"
@@ -300,8 +355,11 @@ def send_doctor_weekly_reports(
                 # Delivery
                 target_phone = normalize_phone(doctor.phone_number)
                 if not target_phone:
-                    # Try doctor profile phone/whatsapp
-                    dp = db.query(DoctorProfile).filter(DoctorProfile.user_id == d_id).first()
+                    # Fall back to the DoctorProfile contact numbers.
+                    # Use the bulk-loaded map (single query above the
+                    # loop) instead of a fresh per-doctor SELECT —
+                    # avoids N extra round-trips at scheduled scale.
+                    dp = doctor_profile_map.get(d_id)
                     if dp:
                         target_phone = normalize_phone(dp.whatsapp_number) or normalize_phone(dp.phone_number)
 

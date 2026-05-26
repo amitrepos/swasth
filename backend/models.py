@@ -940,6 +940,8 @@ class DoctorReportGenerationLog(Base):
 
     status = Column(Enum(ReportGenerationStatus), nullable=False)
     error_message = Column(Text, nullable=True)
+
+
 class WhatsAppMessageLog(Base):
     """Log for the actual delivery phase of a WhatsApp message."""
     __tablename__ = "whatsapp_message_logs"

@@ -65,6 +65,59 @@ class TestDoctorWeeklyReportsV2:
             results = send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
             assert "TWILIO_DOCTOR_REPORT_CONTENT_SID is not configured" in results["errors"][0]
 
+    def test_send_doctor_weekly_reports_no_data_skip_real_path(self, db):
+        """Reviewer C2: the existing no-data test (below) was vacuous —
+        it omitted DoctorProfile, so the doctor was filtered out by the
+        INNER JOIN long before the no-data branch was reached. This
+        test exercises the REAL path: doctor + DoctorProfile + active
+        link + patient with readings older than 7 days. Asserts:
+          (a) Twilio is NOT called
+          (b) An audit row IS written with patients_with_data_count=0
+              and error_message='no_data_in_window' (the new ops-
+              visibility behavior per M1).
+        """
+        with patch("report_service.settings") as mock_settings, \
+             patch("report_service.whatsapp_service") as mock_whatsapp:
+            mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+
+            doctor = models.User(
+                full_name="Dr. SparseLogger", phone_number="+919900000000",
+                role=UserRole.doctor, password_hash="...",
+            )
+            db.add(doctor); db.flush()
+            db.add(models.DoctorProfile(
+                user_id=doctor.id,
+                nmc_number="NMC-STALE-001",
+                doctor_code="DRSTALE1",
+            )); db.flush()
+
+            profile = models.Profile(name="Idle Patient")
+            db.add(profile); db.flush()
+            db.add(models.DoctorPatientLink(
+                doctor_id=doctor.id, profile_id=profile.id, status='active',
+                consent_granted_at=datetime.now(timezone.utc),
+                consent_type='in_person_exam',
+            )); db.flush()
+            # Reading is 10 days old → outside the 7-day window.
+            _add_reading(db, profile.id, 1, "glucose", 100, hours_ago=240)
+            db.commit()
+
+            from report_service import send_doctor_weekly_reports
+            send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
+
+            mock_whatsapp.send_whatsapp_template.assert_not_called()
+            gen_log = (
+                db.query(models.DoctorReportGenerationLog)
+                .filter_by(doctor_id=doctor.id)
+                .first()
+            )
+            assert gen_log is not None, (
+                "No-data skip MUST still write an audit row so ops can "
+                "distinguish 'processed and skipped' from 'never evaluated'."
+            )
+            assert gen_log.patients_with_data_count == 0
+            assert gen_log.error_message == "no_data_in_window"
+
     def test_send_doctor_weekly_reports_no_data_skip(self, db):
         with patch("report_service.settings") as mock_settings:
             mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
