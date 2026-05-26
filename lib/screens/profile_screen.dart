@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/doctor_service.dart';
 import '../services/error_mapper.dart';
+import '../services/share_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -891,6 +892,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         builder: (_) => const PrivacyPolicyScreen(),
                       ),
                     ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Invite friends — opens the OS share sheet (WhatsApp /
+                // SMS / etc.) with a smart-redirect URL. Placed above
+                // the danger-zone Delete Account tile so the user sees
+                // a positive outbound action before the destructive one.
+                GlassCard(
+                  borderRadius: 16,
+                  child: ListTile(
+                    key: const Key('profile_invite_friends'),
+                    leading: const Icon(
+                      Icons.share_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(l10n.inviteFriendsTile),
+                    subtitle: Text(
+                      l10n.inviteFriendsTileSubtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => ShareService.shareInvite(context),
                   ),
                 ),
                 const SizedBox(height: 8),

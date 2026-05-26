@@ -41,6 +41,14 @@
   "@inviteShareMessage": {
     "description": "Body of the invite message pasted into WhatsApp / SMS / etc. when a user shares Swasth. The invite URL is appended automatically."
   },
+  "inviteFriendsTile": "Invite friends",
+  "@inviteFriendsTile": {
+    "description": "Label for the Account Settings tile that opens the share sheet."
+  },
+  "inviteFriendsTileSubtitle": "Share Swasth via WhatsApp or SMS",
+  "@inviteFriendsTileSubtitle": {
+    "description": "Sub-label under the Invite friends tile explaining what tapping it does."
+  },
   "aiInsightEmptyState": "Log daily readings for the best health insights.",
   "@aiInsightEmptyState": {
     "description": "Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly."

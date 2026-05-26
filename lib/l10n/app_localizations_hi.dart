@@ -82,6 +82,12 @@ class AppLocalizationsHi extends AppLocalizations {
       'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:';
 
   @override
+  String get inviteFriendsTile => 'Invite friends';
+
+  @override
+  String get inviteFriendsTileSubtitle => 'Share Swasth via WhatsApp or SMS';
+
+  @override
   String get aiInsightEmptyState =>
       'बेहतर स्वास्थ्य जानकारी के लिए रोज़ाना रीडिंग लॉग करें।';
 

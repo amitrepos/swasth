@@ -242,6 +242,18 @@ abstract class AppLocalizations {
   /// **'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:'**
   String get inviteShareMessage;
 
+  /// Label for the Account Settings tile that opens the share sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite friends'**
+  String get inviteFriendsTile;
+
+  /// Sub-label under the Invite friends tile explaining what tapping it does.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Swasth via WhatsApp or SMS'**
+  String get inviteFriendsTileSubtitle;
+
   /// Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly.
   ///
   /// In en, this message translates to:
