@@ -1345,9 +1345,38 @@ def manually_trigger_doctor_report(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Manually trigger a weekly report digest for the current doctor."""
+    """Manually trigger a weekly report digest for the current doctor.
+
+    Rate-limited to one outbound WhatsApp per hour per doctor. Every
+    successful trigger costs Twilio money; without a cooldown a doctor
+    (or a misbehaving client retry loop) could rack up thousands of
+    sends. The check is against the actual delivery log, not the
+    request itself — so a queued-but-not-yet-sent request also blocks
+    further triggers until the worker drains it.
+    """
     if user.role != UserRole.doctor:
         raise HTTPException(status_code=403, detail="Only doctors can trigger this report")
+
+    # Cooldown: 1 hour since the last delivery attempt for this doctor.
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+    recent = (
+        db.query(models.WhatsAppMessageLog)
+        .filter(
+            models.WhatsAppMessageLog.user_id == user.id,
+            models.WhatsAppMessageLog.trigger_type == ReportTriggerType.MANUAL,
+            models.WhatsAppMessageLog.sent_at >= cutoff,
+        )
+        .first()
+    )
+    if recent is not None:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "You can only request a manual report once per hour. "
+                "Your last request was at "
+                f"{recent.sent_at.isoformat()}."
+            ),
+        )
 
     background_tasks.add_task(
         send_doctor_weekly_reports,

@@ -186,3 +186,168 @@ class TestDoctorWeeklyReportsV2:
         # the unpatched function.
         doctor_weekly_reports_job()
         mock_send.assert_called_once_with(trigger_type=ReportTriggerType.SCHEDULED)
+
+    # ──────────────────────────────────────────────────────────────────
+    # C1 + M2 — failure logged on every exit path
+    # ──────────────────────────────────────────────────────────────────
+
+    def test_no_phone_writes_failed_gen_log_not_success(self, db):
+        """Reviewer C1: previously a doctor with no phone hit `continue`
+        AFTER a SUCCESS gen log was committed. The audit row falsely
+        claimed success when nothing was sent. Now: status=FAILED with
+        error_message='no_phone_number'."""
+        with patch("report_service.settings") as mock_settings:
+            mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+
+            # Doctor with NO phone number on User AND no DoctorProfile.
+            doctor = models.User(
+                full_name="Dr. Phoneless", role=UserRole.doctor, password_hash="...",
+            )
+            db.add(doctor); db.flush()
+            dp = models.DoctorProfile(
+                user_id=doctor.id, nmc_number="NMC-NOPHONE-001", doctor_code="DRNP0001",
+            )
+            db.add(dp); db.flush()
+
+            p = models.Profile(name="Patient X"); db.add(p); db.flush()
+            db.add(models.DoctorPatientLink(
+                doctor_id=doctor.id, profile_id=p.id, status='active',
+                consent_granted_at=datetime.now(timezone.utc),
+                consent_type='in_person_exam',
+            )); db.flush()
+            _add_reading(db, p.id, 1, "glucose", 110)
+
+            send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
+
+            gen_log = (
+                db.query(models.DoctorReportGenerationLog)
+                .filter_by(doctor_id=doctor.id)
+                .first()
+            )
+            assert gen_log is not None, "Failure path must still leave an audit row."
+            assert gen_log.status == models.ReportGenerationStatus.FAILED, (
+                f"Expected FAILED, got {gen_log.status}. The SUCCESS-before-"
+                "delivery regression has returned."
+            )
+            assert gen_log.error_message == "no_phone_number"
+
+    # ──────────────────────────────────────────────────────────────────
+    # M3 — truncation no longer silently drops patients
+    # ──────────────────────────────────────────────────────────────────
+
+    @patch("report_service.whatsapp_service")
+    def test_truncation_announces_omitted_patient_count(self, mock_whatsapp, db):
+        """Reviewer M3: doctor with 20+ patients used to get a digest
+        chopped mid-line with no indication of how many patients were
+        cut. Now the message includes "(+N patients omitted — see
+        portal)" so the doctor knows to log in to the portal for the
+        full list."""
+        with patch("report_service.settings") as mock_settings:
+            mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+            mock_whatsapp.send_whatsapp_template.return_value = (True, "SM999", None)
+
+            doctor = models.User(
+                full_name="Dr. Panel", phone_number="+919900000000",
+                role=UserRole.doctor, password_hash="...",
+            )
+            db.add(doctor); db.flush()
+            dp = models.DoctorProfile(
+                user_id=doctor.id, nmc_number="NMC-PANEL-001", doctor_code="DRPNL01",
+            )
+            db.add(dp); db.flush()
+
+            # 25 patients, each with one normal-range glucose reading.
+            # Patient names are intentionally long enough that the
+            # digest will exceed the 1000-char budget and trigger
+            # omission logic.
+            for i in range(25):
+                p = models.Profile(name=f"Patient With A Reasonably Long Name {i:02d}")
+                db.add(p); db.flush()
+                db.add(models.DoctorPatientLink(
+                    doctor_id=doctor.id, profile_id=p.id, status='active',
+                    consent_granted_at=datetime.now(timezone.utc),
+                    consent_type='in_person_exam',
+                )); db.flush()
+                _add_reading(db, p.id, 1, "glucose", 105 + i)
+
+            send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
+
+            mock_whatsapp.send_whatsapp_template.assert_called_once()
+            digest = mock_whatsapp.send_whatsapp_template.call_args[0][2][2]
+            assert "patients omitted" in digest, (
+                f"Truncated digest missing the omission notice: {digest!r}. "
+                "Doctors must be told when the message has been cut."
+            )
+            assert "see portal" in digest
+            assert len(digest) <= 1000, (
+                f"Digest exceeded 1000 chars ({len(digest)}). Twilio limit."
+            )
+
+    # ──────────────────────────────────────────────────────────────────
+    # M1 — manual-trigger cooldown returns 429
+    # ──────────────────────────────────────────────────────────────────
+
+    def test_manual_trigger_rate_limited_within_one_hour(self, client, db):
+        """Reviewer M1: a doctor with a recent manual delivery row
+        (<1h old) must get 429 instead of triggering a second send."""
+        doctor = models.User(
+            full_name="I Am Doctor", role=UserRole.doctor,
+            email="rl-doctor@test.com", password_hash="...",
+        )
+        db.add(doctor); db.flush()
+
+        # Simulate a delivery that just happened.
+        db.add(models.WhatsAppMessageLog(
+            user_id=doctor.id,
+            phone_number="+919900000000",
+            trigger_type=ReportTriggerType.MANUAL,
+            report_date=datetime.now(timezone.utc).date(),
+            member_ids_included=[],
+            status=models.WhatsAppMessageStatus.SENT,
+            sent_at=datetime.now(timezone.utc) - timedelta(minutes=15),
+        ))
+        db.commit()
+
+        from auth import create_access_token
+        token = create_access_token({"sub": "rl-doctor@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        resp = client.post("/api/doctor/report/manual-trigger", headers=headers)
+        assert resp.status_code == 429, (
+            f"Expected 429 (rate-limited), got {resp.status_code}: {resp.text}. "
+            "A delivery row <1h old must block further manual triggers."
+        )
+        assert "once per hour" in resp.json()["detail"]
+
+    def test_manual_trigger_allowed_when_last_delivery_over_one_hour(
+        self, client, db,
+    ):
+        """The cooldown must release after exactly 1 hour — a 2-hour-old
+        row must NOT block a new trigger."""
+        doctor = models.User(
+            full_name="Old Delivery Doc", role=UserRole.doctor,
+            email="old-rl@test.com", password_hash="...",
+        )
+        db.add(doctor); db.flush()
+
+        db.add(models.WhatsAppMessageLog(
+            user_id=doctor.id,
+            phone_number="+919900000000",
+            trigger_type=ReportTriggerType.MANUAL,
+            report_date=datetime.now(timezone.utc).date(),
+            member_ids_included=[],
+            status=models.WhatsAppMessageStatus.SENT,
+            sent_at=datetime.now(timezone.utc) - timedelta(hours=2),
+        ))
+        db.commit()
+
+        from auth import create_access_token
+        token = create_access_token({"sub": "old-rl@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        with patch("routes_doctor.BackgroundTasks.add_task"):
+            resp = client.post("/api/doctor/report/manual-trigger", headers=headers)
+        assert resp.status_code == 202, (
+            f"Expected 202, got {resp.status_code}. Cooldown is supposed to "
+            "release after 1 hour."
+        )

@@ -4,7 +4,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from report_service import send_weekly_reports, send_doctor_weekly_reports
 from models import ReportTriggerType
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("swasth-scheduler")
@@ -18,7 +18,15 @@ def weekly_reports_job():
 
 
 def doctor_weekly_reports_job():
-    logger.info(f"[SCHEDULER] Doctor weekly report job fired at {datetime.now()}")
+    # Use UTC + %s lazy formatting. datetime.now() returns a naive
+    # local datetime; every other audit row in this codebase is
+    # UTC-anchored, so a naive local timestamp here makes scheduler
+    # logs un-correlatable with the DoctorReportGenerationLog rows
+    # the job writes downstream.
+    logger.info(
+        "[SCHEDULER] Doctor weekly report job fired at %s",
+        datetime.now(timezone.utc),
+    )
     send_doctor_weekly_reports(trigger_type=ReportTriggerType.SCHEDULED)
 
 

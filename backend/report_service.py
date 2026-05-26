@@ -41,6 +41,12 @@ def build_doctor_summary(db: Session, doctor_id: int, last_7d: datetime) -> dict
             "total_patients_count": int
         }
     """
+    # DoctorPatientLink.status is a plain VARCHAR column (models.py line
+    # 799), NOT an Enum — so string comparison against 'active' is the
+    # correct idiom across both Postgres and SQLite. Valid values are:
+    # 'pending_doctor_accept' | 'pending_patient_accept' | 'active' |
+    # 'rejected' | 'revoked'. If this column is ever migrated to an
+    # Enum, this comparison must switch to the enum value.
     links = db.query(DoctorPatientLink).filter(
         DoctorPatientLink.doctor_id == doctor_id,
         DoctorPatientLink.status == 'active'
@@ -195,8 +201,21 @@ def send_doctor_weekly_reports(
         doctors = doctor_query.all()
         results["total_doctors"] = len(doctors)
 
+        # Today's date in UTC. date.today() reads the SERVER local clock;
+        # on a non-UTC host (or a host whose TZ flips during DST) the
+        # persisted report_date would drift from the `now` we used to
+        # bound the data window above. now.date() uses the same UTC
+        # anchor end-to-end.
+        report_date_utc = now.date()
+
         for doctor in doctors:
             d_id = doctor.id
+            # gen_log is created up-front so EVERY exit path (success,
+            # missing phone, Twilio failure, exception inside compose)
+            # leaves a row behind for ops + legal audit. Status is
+            # finalised at the end of each branch — never committed as
+            # SUCCESS before delivery is confirmed.
+            gen_log = None
             try:
                 summary = build_doctor_summary(db, d_id, last_7d)
 
@@ -204,8 +223,7 @@ def send_doctor_weekly_reports(
                     logger.info("Doctor %s has no patient data for the week — skipping.", d_id)
                     continue
 
-                # Compose the digest message
-                # Header: Critical patients first
+                # Compose the digest message — Critical patients first
                 critical_block = ""
                 if summary["critical_patients"]:
                     critical_block = "🚨 CRITICAL: " + ", ".join(summary["critical_patients"]) + " | "
@@ -226,34 +244,58 @@ def send_doctor_weekly_reports(
                         metric_parts.append(f"SpO2: {int(s['avg'])}% avg")
                     if "steps" in m:
                         metric_parts.append(f"Steps: {m['steps']['total']}")
-                    
+
                     p_line = f"👤 {p['name']}: " + ", ".join(metric_parts)
                     if p["critical_metrics"]:
                         p_line += " ⚠️"
                     patient_lines.append(p_line)
 
-                digest_snippet = critical_block + " | ".join(patient_lines)
-                if len(digest_snippet) > 1000: # Twilio/WhatsApp limit safety
-                    digest_snippet = digest_snippet[:997] + "..."
+                # Truncation that DOES NOT silently drop patients.
+                # The old behavior — `digest[:997] + "..."` — chopped
+                # patient lines from the END with no indication, so a
+                # doctor with 20 patients would see a partial list and
+                # have no clue. Now we drop whole patient lines from
+                # the tail and append "(+N omitted — see portal)" so
+                # the doctor knows to log in. Critical block is built
+                # first (line above) so it always survives.
+                _MAX_LEN = 1000
+                _MARGIN = 80  # space reserved for the omission notice
+                # Reserve budget = MAX - len(critical_block) - margin
+                budget = _MAX_LEN - len(critical_block) - _MARGIN
+                kept_lines = []
+                used = 0
+                for line in patient_lines:
+                    add = len(line) + (3 if kept_lines else 0)  # " | " separator
+                    if used + add > budget:
+                        break
+                    kept_lines.append(line)
+                    used += add
+                omitted = len(patient_lines) - len(kept_lines)
+                digest_snippet = critical_block + " | ".join(kept_lines)
+                if omitted > 0:
+                    suffix = f" | (+{omitted} patients omitted — see portal)"
+                    digest_snippet += suffix
+                # Hard cap as a final safety belt — should never trigger
+                # if the budget math is correct, but if it does we want
+                # the message to fit Twilio's limit, not error out.
+                if len(digest_snippet) > _MAX_LEN:
+                    digest_snippet = digest_snippet[:_MAX_LEN - 3] + "..."
 
-                # Today's date in UTC. date.today() reads the SERVER local
-                # clock; on a non-UTC host (or a host whose TZ flips during
-                # DST) the persisted report_date would drift from the
-                # `now` we used to bound the data window above. now.date()
-                # uses the same UTC anchor end-to-end.
-                report_date_utc = now.date()
-
-                # Log generation
-                db.add(DoctorReportGenerationLog(
+                # Create the gen log row up-front with PARTIAL status as
+                # a tentative state. It gets finalised to SUCCESS only
+                # after Twilio confirms delivery, or to FAILED on any
+                # exit path that did not deliver.
+                gen_log = DoctorReportGenerationLog(
                     doctor_id=d_id,
                     trigger_type=trigger_type,
                     report_date=report_date_utc,
                     patients_linked_count=summary["total_patients_count"],
                     patients_with_data_count=summary["patients_with_data_count"],
                     critical_patients_count=len(summary["critical_patients"]),
-                    status=ReportGenerationStatus.SUCCESS,
-                ))
-                db.commit()
+                    status=ReportGenerationStatus.PARTIAL,
+                )
+                db.add(gen_log)
+                db.flush()  # get the PK; defer commit until status is final
 
                 # Delivery
                 target_phone = normalize_phone(doctor.phone_number)
@@ -264,7 +306,13 @@ def send_doctor_weekly_reports(
                         target_phone = normalize_phone(dp.whatsapp_number) or normalize_phone(dp.phone_number)
 
                 if not target_phone:
-                    logger.warning("Doctor %s has no phone number — skipping.", d_id)
+                    # FAILED — log it so ops can find this doctor in audit.
+                    gen_log.status = ReportGenerationStatus.FAILED
+                    gen_log.error_message = "no_phone_number"
+                    db.commit()
+                    logger.warning("Doctor %s has no phone number — marked FAILED.", d_id)
+                    results["failed_deliveries"] += 1
+                    results["errors"].append(f"Doctor {d_id}: no_phone_number")
                     continue
 
                 # {{1}} = week start, {{2}} = week end, {{3}} = digest
@@ -274,16 +322,15 @@ def send_doctor_weekly_reports(
 
                 # DPDPA 2023: WhatsAppMessageLog persists indefinitely as
                 # an audit row and ALSO surfaces in the ops dashboard.
-                # Storing patient names + raw health values in
-                # message_snapshot would leak third-party PHI into routine
-                # ops surfaces. Persist only aggregate counts + a
-                # classifier of whether a critical block was sent — enough
-                # to investigate delivery + reconstruct what the message
-                # category was, without writing PHI to a non-PHI column.
+                # Persist only aggregate counts — never patient names or
+                # raw health values. The outbound message rendered by
+                # Twilio is ephemeral and may carry PHI; this audit row
+                # is permanent and must not.
                 audit_snapshot = (
                     f"doctor_digest patients_with_data="
                     f"{summary['patients_with_data_count']} "
                     f"critical={len(summary['critical_patients'])} "
+                    f"omitted={omitted} "
                     f"week_start={last_week_str}"
                 )
                 delivery_log = WhatsAppMessageLog(
@@ -304,6 +351,13 @@ def send_doctor_weekly_reports(
                 delivery_log.status = WhatsAppMessageStatus.SENT if success else WhatsAppMessageStatus.FAILED
                 delivery_log.twilio_sid = sid
                 delivery_log.error_message = err
+                # Finalise the gen log status to match the delivery outcome.
+                gen_log.status = (
+                    ReportGenerationStatus.SUCCESS if success
+                    else ReportGenerationStatus.FAILED
+                )
+                if not success:
+                    gen_log.error_message = err
                 db.commit()
 
                 if success:
@@ -316,6 +370,34 @@ def send_doctor_weekly_reports(
                 logger.error("Failed to send report for doctor %s", doctor.id, exc_info=True)
                 results["failed_deliveries"] += 1
                 results["errors"].append(f"Doctor {doctor.id}: {str(e)}")
+                # Either finalise the existing gen_log to FAILED, or
+                # write a fresh failure log if we crashed before it was
+                # created (e.g. inside build_doctor_summary). Either way
+                # ops gets a row.
+                try:
+                    db.rollback()  # discard any half-written state
+                    if gen_log is not None and gen_log.id is not None:
+                        # Re-attach + update via merge to survive rollback.
+                        gen_log = db.merge(gen_log)
+                        gen_log.status = ReportGenerationStatus.FAILED
+                        gen_log.error_message = str(e)[:500]
+                    else:
+                        db.add(DoctorReportGenerationLog(
+                            doctor_id=d_id,
+                            trigger_type=trigger_type,
+                            report_date=report_date_utc,
+                            patients_linked_count=0,
+                            patients_with_data_count=0,
+                            critical_patients_count=0,
+                            status=ReportGenerationStatus.FAILED,
+                            error_message=str(e)[:500],
+                        ))
+                    db.commit()
+                except Exception:
+                    logger.exception(
+                        "Could not persist failure log for doctor %s", doctor.id
+                    )
+                    db.rollback()
 
     except Exception as e:
         logger.error("Error in send_doctor_weekly_reports", exc_info=True)
