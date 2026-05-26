@@ -75,6 +75,13 @@ class AppLocalizationsKn extends AppLocalizations {
   String get errGeneric => 'ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
+  String get inviteShareSubject => 'Try Swasth — daily health tracking';
+
+  @override
+  String get inviteShareMessage =>
+      'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:';
+
+  @override
   String get aiInsightEmptyState =>
       'ಉತ್ತಮ ಆರೋಗ್ಯದ ಒಳನೋಟಗಳಿಗಾಗಿ ಪ್ರತಿದಿನದ ರೀಡಿಂಗ್‌ಗಳನ್ನು ದಾಖಲಿಸಿ.';
 

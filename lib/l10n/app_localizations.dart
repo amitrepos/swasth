@@ -230,6 +230,18 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get errGeneric;
 
+  /// Email/share subject line when a user shares Swasth via the OS share sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Swasth — daily health tracking'**
+  String get inviteShareSubject;
+
+  /// Body of the invite message pasted into WhatsApp / SMS / etc. when a user shares Swasth. The invite URL is appended automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:'**
+  String get inviteShareMessage;
+
   /// Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly.
   ///
   /// In en, this message translates to:

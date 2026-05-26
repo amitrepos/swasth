@@ -126,6 +126,22 @@ class Settings(BaseSettings):
     SUPPORT_WHATSAPP_NUMBER: Optional[str] = None  # E.164 digits only, e.g. "919876543210"
     SUPPORT_PHONE_NUMBER: Optional[str] = None     # tel: link, with or without '+', e.g. "+919876543210"
 
+    # Share-to-install — destinations the /invite smart-redirect serves.
+    # Set the Play / App Store URLs once the listings go live; until then
+    # the smart-redirect falls back to SHARE_WEB_URL (web app).
+    SHARE_ANDROID_URL: Optional[str] = None       # e.g. "https://play.google.com/store/apps/details?id=com.swasth.app"
+    SHARE_IOS_URL: Optional[str] = None           # e.g. "https://apps.apple.com/in/app/swasth/id..."
+    SHARE_WEB_URL: str = "https://swasth.health"  # always-defined fallback
+    PLAY_STORE_URL: Optional[str] = None          # legacy alias — checked if SHARE_ANDROID_URL is unset
+    APP_STORE_URL: Optional[str] = None           # legacy alias — checked if SHARE_IOS_URL is unset
+    # Android App Links — Google's verifier hits /.well-known/assetlinks.json
+    # and validates the signing cert. Empty = serves "[]" (harmless,
+    # verifier reports "not associated", invite links still open in
+    # browser → store). Set once Play Console gives you the release
+    # cert SHA-256 fingerprint.
+    ANDROID_PACKAGE_NAME: str = "com.swasth.app"
+    SHARE_ANDROID_CERT_SHA256: Optional[str] = None  # 64-hex-chars, colons OR continuous
+
     class Config:
         env_file = ".env"
         extra = "ignore"  # Prevent prod deploy failures when a new env var is added on the server

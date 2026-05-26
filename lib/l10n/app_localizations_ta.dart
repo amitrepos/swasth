@@ -75,6 +75,13 @@ class AppLocalizationsTa extends AppLocalizations {
   String get errGeneric => 'ஏதோ தவறு நடந்துவிட்டது. மீண்டும் முயற்சிக்கவும்.';
 
   @override
+  String get inviteShareSubject => 'Try Swasth — daily health tracking';
+
+  @override
+  String get inviteShareMessage =>
+      'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:';
+
+  @override
   String get aiInsightEmptyState =>
       'சிறந்த ஆரோக்கிய நுண்ணறிவுகளுக்கு தினசரி ரீடிங்குகளை பதிவு செய்யவும்.';
 

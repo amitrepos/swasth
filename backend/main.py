@@ -232,6 +232,14 @@ app.include_router(routes_whatsapp.router, prefix="/api", tags=["WhatsApp Inboun
 # addition for PII / abuse risk before merging.
 app.include_router(routes_public.router, prefix="/api", tags=["Public"])
 
+# Share-to-install — mounted at ROOT (no /api prefix) because WhatsApp
+# invite URLs are bare-host like https://api.swasth.health/invite, and
+# .well-known/assetlinks.json MUST be served from the apex of the
+# domain that's claiming the Android App Link (Google's verifier
+# fetches /.well-known/assetlinks.json — not /api/.well-known/...).
+import routes_share  # noqa: E402 — kept local to avoid cycle on cold import
+app.include_router(routes_share.router, tags=["Share"])
+
 
 if __name__ == "__main__":
     import uvicorn
