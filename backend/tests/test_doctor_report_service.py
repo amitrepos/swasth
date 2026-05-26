@@ -81,27 +81,100 @@ class TestDoctorReportService:
         doctor = models.User(full_name="Dr. Smith", role=models.UserRole.doctor, password_hash="...")
         db.add(doctor)
         db.flush()
-        
+
         profile = models.Profile(name="Critical Patient")
         db.add(profile)
         db.flush()
-        
+
         link = models.DoctorPatientLink(
-            doctor_id=doctor.id, profile_id=profile.id, 
+            doctor_id=doctor.id, profile_id=profile.id,
             status='active', consent_granted_at=datetime.now(timezone.utc),
             consent_type='in_person_exam'
         )
         db.add(link)
         db.flush()
-        
+
         # Add critical readings (Stage 2 BP)
         _add_reading(db, profile.id, 1, "blood_pressure", 170, hours_ago=2) # 170/130
-        
+
         last_7d = datetime.now(timezone.utc) - timedelta(days=7)
         summary = build_doctor_summary(db, doctor.id, last_7d)
-        
+
         assert "Critical Patient" in summary["critical_patients"]
         assert "BP" in summary["patients"][0]["critical_metrics"]
+
+    def _add_bp(self, db, pid, sys, dia, hours_ago=0):
+        """BP reading with explicit systolic + diastolic. `_add_reading`
+        hard-codes dia = sys-40, so anything above Stage-1 systolic also
+        lands in Stage-2 diastolic — useless for testing the Stage-1
+        boundary."""
+        r = models.HealthReading(
+            profile_id=pid, logged_by=1, reading_type="blood_pressure",
+            systolic=sys, diastolic=dia,
+            value_numeric=sys, unit_display="mmHg", status_flag="NORMAL",
+            reading_timestamp=datetime.now(timezone.utc) - timedelta(hours=hours_ago),
+        )
+        db.add(r); db.flush()
+        return r
+
+    def test_sustained_stage1_bp_is_flagged_critical(self, db):
+        """A patient with the whole week's BP averaging in Stage 1
+        territory (132/87 daily) must surface as critical — the
+        previous behavior (Stage 2 only) silently missed sustained mild
+        hypertension, which is exactly the population the weekly digest
+        is meant to escalate."""
+        doctor = models.User(full_name="Dr. S1", role=models.UserRole.doctor, password_hash="...")
+        db.add(doctor); db.flush()
+        profile = models.Profile(name="Sustained S1 Patient")
+        db.add(profile); db.flush()
+        db.add(models.DoctorPatientLink(
+            doctor_id=doctor.id, profile_id=profile.id, status='active',
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type='in_person_exam',
+        )); db.flush()
+
+        # 5 readings all clearly Stage 1, none Stage 2.
+        # classify_bp: sys>131 OR dia>86 → STAGE 1; sys>140 OR dia>90 → STAGE 2.
+        for hrs in (24, 48, 72, 96, 120):
+            self._add_bp(db, profile.id, sys=135, dia=88, hours_ago=hrs)
+
+        last_7d = datetime.now(timezone.utc) - timedelta(days=7)
+        summary = build_doctor_summary(db, doctor.id, last_7d)
+        assert "Sustained S1 Patient" in summary["critical_patients"], (
+            "Sustained Stage-1 BP (avg 135/88 over 5 days) must be flagged "
+            "critical. If this fails, the BP critical check has been "
+            "narrowed back to Stage 2 only."
+        )
+
+    def test_single_stage1_bp_reading_is_NOT_flagged(self, db):
+        """Conversely: ONE Stage-1 reading (a stress spike, anxiety,
+        post-coffee) must NOT trigger a critical flag — would flood
+        every weekly digest with non-actionable noise. The flag is for
+        SUSTAINED elevation; we use the week's avg, not any single hit."""
+        doctor = models.User(full_name="Dr. S1B", role=models.UserRole.doctor, password_hash="...")
+        db.add(doctor); db.flush()
+        profile = models.Profile(name="One-off Spike")
+        db.add(profile); db.flush()
+        db.add(models.DoctorPatientLink(
+            doctor_id=doctor.id, profile_id=profile.id, status='active',
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type='in_person_exam',
+        )); db.flush()
+
+        # Mostly normal + ONE Stage-1 reading. Average lands in NORMAL.
+        self._add_bp(db, profile.id, sys=118, dia=78, hours_ago=24)
+        self._add_bp(db, profile.id, sys=120, dia=80, hours_ago=48)
+        self._add_bp(db, profile.id, sys=135, dia=88, hours_ago=72)  # Stage 1 spike
+        self._add_bp(db, profile.id, sys=115, dia=76, hours_ago=96)
+        self._add_bp(db, profile.id, sys=119, dia=79, hours_ago=120)
+
+        last_7d = datetime.now(timezone.utc) - timedelta(days=7)
+        summary = build_doctor_summary(db, doctor.id, last_7d)
+        assert "One-off Spike" not in summary["critical_patients"], (
+            "A single Stage-1 reading must NOT critical-flag the patient. "
+            "Sustained-only rule has regressed; doctors will get false-alarm "
+            "alerts every week."
+        )
 
     @patch("report_service.whatsapp_service")
     @patch("report_service.settings")

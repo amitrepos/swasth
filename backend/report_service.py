@@ -106,12 +106,29 @@ def build_doctor_summary(db: Session, doctor_id: int, last_7d: datetime) -> dict
         if bp_readings:
             sys_vals = [r.systolic for r in bp_readings]
             dia_vals = [r.diastolic for r in bp_readings]
+            avg_sys = sum(sys_vals) / len(sys_vals)
+            avg_dia = sum(dia_vals) / len(dia_vals)
             p_summary["metrics"]["bp"] = {
-                "avg_sys": sum(sys_vals) / len(sys_vals),
-                "avg_dia": sum(dia_vals) / len(dia_vals),
+                "avg_sys": avg_sys,
+                "avg_dia": avg_dia,
                 "count": len(bp_readings)
             }
-            if any(classify_bp(s, d) == "HIGH - STAGE 2" for s, d in zip(sys_vals, dia_vals)):
+            # Flag CRITICAL on EITHER:
+            #   (a) any single reading in Stage 2 — acute event, doctor needs
+            #       to see it even if averages look fine
+            #   (b) the week's AVG falling in Stage 1 — sustained mild
+            #       hypertension over 7 days is itself a clinical concern;
+            #       flagging only Stage 2 missed patients sitting at 135/88
+            #       every day, which is exactly the population the weekly
+            #       digest exists for.
+            # Single-reading Stage 1 is intentionally NOT flagged — too
+            # noisy (one stress reading would trigger every week).
+            had_stage2 = any(
+                classify_bp(s, d) == "HIGH - STAGE 2"
+                for s, d in zip(sys_vals, dia_vals)
+            )
+            sustained_stage1 = classify_bp(avg_sys, avg_dia) == "HIGH - STAGE 1"
+            if had_stage2 or sustained_stage1:
                 p_summary["critical_metrics"].append("BP")
 
         # Aggregate SpO2
@@ -219,11 +236,18 @@ def send_doctor_weekly_reports(
                 if len(digest_snippet) > 1000: # Twilio/WhatsApp limit safety
                     digest_snippet = digest_snippet[:997] + "..."
 
+                # Today's date in UTC. date.today() reads the SERVER local
+                # clock; on a non-UTC host (or a host whose TZ flips during
+                # DST) the persisted report_date would drift from the
+                # `now` we used to bound the data window above. now.date()
+                # uses the same UTC anchor end-to-end.
+                report_date_utc = now.date()
+
                 # Log generation
                 db.add(DoctorReportGenerationLog(
                     doctor_id=d_id,
                     trigger_type=trigger_type,
-                    report_date=date.today(),
+                    report_date=report_date_utc,
                     patients_linked_count=summary["total_patients_count"],
                     patients_with_data_count=summary["patients_with_data_count"],
                     critical_patients_count=len(summary["critical_patients"]),
@@ -244,16 +268,32 @@ def send_doctor_weekly_reports(
                     continue
 
                 # {{1}} = week start, {{2}} = week end, {{3}} = digest
+                # The full digest goes to Twilio's template render (outbound
+                # to the doctor's phone); it does NOT get persisted.
                 template_vars = [last_week_str, date_str, digest_snippet]
 
+                # DPDPA 2023: WhatsAppMessageLog persists indefinitely as
+                # an audit row and ALSO surfaces in the ops dashboard.
+                # Storing patient names + raw health values in
+                # message_snapshot would leak third-party PHI into routine
+                # ops surfaces. Persist only aggregate counts + a
+                # classifier of whether a critical block was sent — enough
+                # to investigate delivery + reconstruct what the message
+                # category was, without writing PHI to a non-PHI column.
+                audit_snapshot = (
+                    f"doctor_digest patients_with_data="
+                    f"{summary['patients_with_data_count']} "
+                    f"critical={len(summary['critical_patients'])} "
+                    f"week_start={last_week_str}"
+                )
                 delivery_log = WhatsAppMessageLog(
                     user_id=d_id,
                     phone_number=target_phone,
                     trigger_type=trigger_type,
-                    report_date=date.today(),
+                    report_date=report_date_utc,
                     member_ids_included=[], # not applicable for doctor
                     status=WhatsAppMessageStatus.QUEUED,
-                    message_snapshot=digest_snippet
+                    message_snapshot=audit_snapshot,
                 )
                 db.add(delivery_log)
                 db.commit()

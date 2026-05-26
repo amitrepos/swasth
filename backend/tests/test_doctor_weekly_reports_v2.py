@@ -114,14 +114,40 @@ class TestDoctorWeeklyReportsV2:
 
             send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
 
-            # Verify message snapshot contains critical emoji
             log = db.query(models.WhatsAppMessageLog).filter_by(user_id=doctor.id).first()
             assert log is not None, (
                 "WhatsAppMessageLog row missing — send_doctor_weekly_reports "
                 "skipped this doctor. Check DoctorProfile setup and "
                 "settings.TWILIO_DOCTOR_REPORT_CONTENT_SID mock."
             )
-            assert "🚨 CRITICAL: Hyper Patient" in log.message_snapshot
+
+            # DPDPA: the persisted audit snapshot must NOT contain
+            # patient names or raw health values. Only aggregate counts.
+            snap = log.message_snapshot
+            assert "Hyper Patient" not in snap, (
+                "Patient name leaked into WhatsAppMessageLog.message_snapshot. "
+                "DPDPA 2023 forbids storing third-party PHI in audit columns."
+            )
+            assert "400" not in snap and "Sugar" not in snap, (
+                "Raw glucose value / metric label leaked into the audit "
+                "snapshot. Persist only counts."
+            )
+            # Aggregate counts MUST be present for the audit to be useful.
+            assert "critical=1" in snap, (
+                f"Aggregate critical count missing from snapshot: {snap!r}"
+            )
+            assert "patients_with_data=1" in snap
+
+            # Verify the actual outbound WhatsApp message (template args)
+            # DID carry the critical header — that render is ephemeral
+            # (Twilio doesn't persist the rendered body for us, so
+            # leaking PHI into the *outbound* message to the patient's
+            # consented doctor is acceptable; leaking PHI into our
+            # audit row is not).
+            mock_whatsapp.send_whatsapp_template.assert_called_once()
+            # send_whatsapp_template(phone, content_sid, template_vars_list)
+            template_vars = mock_whatsapp.send_whatsapp_template.call_args[0][2]
+            assert "🚨 CRITICAL: Hyper Patient" in template_vars[2]
 
     def test_manual_trigger_api_permissions(self, client, db):
         # 1. Test Patient 403
