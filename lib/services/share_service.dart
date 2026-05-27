@@ -41,7 +41,6 @@ class ShareService {
       return false;
     }
 
-    final messenger = ScaffoldMessenger.maybeOf(context);
     final message = '${l10n.inviteShareMessage}\n\n${inviteUrl()}';
 
     // share_plus can throw on devices that have no share targets at
@@ -55,13 +54,20 @@ class ShareService {
         message,
         subject: l10n.inviteShareSubject,
       );
-      // M4: Note that ShareResultStatus.dismissed returns false.
-      // This is intentional as the share did not "complete".
+      // ShareResultStatus.dismissed returns false. Intentional — the
+      // share did not "complete" from the user's perspective.
       return result.status == ShareResultStatus.success;
     } catch (e) {
       debugPrint('ShareService: Share.share threw — $e');
+      // Re-fetch ScaffoldMessenger AFTER the await — capturing it
+      // before the await would store a reference to a possibly-
+      // disposed messenger if the surrounding widget was torn down
+      // mid-share (e.g. the user navigated away while the share
+      // sheet was open). The context.mounted guard proves the
+      // widget is still alive at the moment we look up the messenger,
+      // and maybeOf returns null gracefully if the lookup fails.
       if (context.mounted) {
-        messenger?.showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(content: Text(l10n.errGeneric)),
         );
       }
