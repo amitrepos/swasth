@@ -617,34 +617,49 @@ class HistoryScreenState extends State<HistoryScreen> {
         ),
         // View is read-only and must be available to viewer-role profiles too.
         // Only edit/delete are gated by _canEdit.
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              key: Key('history_view_reading_${reading.id}'),
-              icon: const Icon(Icons.visibility_outlined),
-              color: AppColors.textSecondary,
-              onPressed: () => _viewReadingDetails(reading),
-              tooltip: l10n.viewDetails,
-            ),
-            if (_canEdit) ...[
-              if (_isEditableType(reading.readingType))
-                IconButton(
-                  key: Key('history_edit_reading_${reading.id}'),
-                  icon: const Icon(Icons.edit_outlined),
-                  color: AppColors.textSecondary,
-                  onPressed: () => _editReading(reading),
-                  tooltip: l10n.editReading,
-                ),
+        //
+        // Cap the trailing width to the exact number of IconButtons that
+        // will render — each IconButton is 48dp. ListTile does not bound
+        // its `trailing` slot, so on 360dp-wide phones (the Bihar pilot
+        // baseline) an unbounded 3-button Row overflows the tile and
+        // clips the title text. Three states:
+        //   - viewer (read-only role): 1 button → 48dp
+        //   - editor + non-editable type (BP, etc.): view + delete = 96dp
+        //   - editor + editable type (glucose, spo2, weight): all 3 = 144dp
+        trailing: SizedBox(
+          width: _canEdit
+              ? (_isEditableType(reading.readingType) ? 144.0 : 96.0)
+              : 48.0,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
               IconButton(
-                key: Key('history_delete_reading_${reading.id}'),
-                icon: const Icon(Icons.delete_outline),
-                color: AppColors.statusCritical,
-                onPressed: () => _deleteReading(reading.id),
-                tooltip: l10n.delete,
+                key: Key('history_view_reading_${reading.id}'),
+                icon: const Icon(Icons.visibility_outlined),
+                color: AppColors.textSecondary,
+                onPressed: () => _viewReadingDetails(reading),
+                tooltip: l10n.viewDetails,
               ),
+              if (_canEdit) ...[
+                if (_isEditableType(reading.readingType))
+                  IconButton(
+                    key: Key('history_edit_reading_${reading.id}'),
+                    icon: const Icon(Icons.edit_outlined),
+                    color: AppColors.textSecondary,
+                    onPressed: () => _editReading(reading),
+                    tooltip: l10n.editReading,
+                  ),
+                IconButton(
+                  key: Key('history_delete_reading_${reading.id}'),
+                  icon: const Icon(Icons.delete_outline),
+                  color: AppColors.statusCritical,
+                  onPressed: () => _deleteReading(reading.id),
+                  tooltip: l10n.delete,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
         isThreeLine: true,
       ),
@@ -802,34 +817,42 @@ class HistoryScreenState extends State<HistoryScreen> {
             ],
           ),
           // View is read-only and must be available to viewer-role profiles too.
-          // Only edit/delete are gated by _canEdit.
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                key: Key('history_view_meal_${meal.id}'),
-                icon: const Icon(Icons.visibility_outlined),
-                color: AppColors.textSecondary,
-                onPressed: () => _viewMealDetails(meal),
-                tooltip: l10n.viewMealDetails,
-              ),
-              if (_canEdit) ...[
+          // Only edit/delete are gated by _canEdit. Width-capped for the
+          // same reason as the reading tile above — three IconButtons in
+          // an unbounded Row overflow the 360dp Bihar baseline. Meals are
+          // always editable (no _isEditableType check), so the editor
+          // state is the full 144dp; viewer collapses to 48dp.
+          trailing: SizedBox(
+            width: _canEdit ? 144.0 : 48.0,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
                 IconButton(
-                  key: Key('history_edit_meal_${meal.id}'),
-                  icon: const Icon(Icons.edit_outlined),
+                  key: Key('history_view_meal_${meal.id}'),
+                  icon: const Icon(Icons.visibility_outlined),
                   color: AppColors.textSecondary,
-                  onPressed: () => _editMeal(meal),
-                  tooltip: l10n.editMeal,
+                  onPressed: () => _viewMealDetails(meal),
+                  tooltip: l10n.viewMealDetails,
                 ),
-                IconButton(
-                  key: Key('history_delete_meal_${meal.id}'),
-                  icon: const Icon(Icons.delete_outline),
-                  color: AppColors.statusCritical,
-                  onPressed: () => _deleteMeal(meal.id),
-                  tooltip: l10n.delete,
-                ),
+                if (_canEdit) ...[
+                  IconButton(
+                    key: Key('history_edit_meal_${meal.id}'),
+                    icon: const Icon(Icons.edit_outlined),
+                    color: AppColors.textSecondary,
+                    onPressed: () => _editMeal(meal),
+                    tooltip: l10n.editMeal,
+                  ),
+                  IconButton(
+                    key: Key('history_delete_meal_${meal.id}'),
+                    icon: const Icon(Icons.delete_outline),
+                    color: AppColors.statusCritical,
+                    onPressed: () => _deleteMeal(meal.id),
+                    tooltip: l10n.delete,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
           isThreeLine: true,
         ),
