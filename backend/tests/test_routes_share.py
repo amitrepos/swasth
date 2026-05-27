@@ -36,8 +36,8 @@ def test_invite_route_is_mounted_at_root(client):
     /api/invite. If someone moves this under the /api prefix the share
     URL in the Flutter ShareService stops resolving."""
     resp = client.get("/invite", follow_redirects=False)
-    assert resp.status_code == 302, (
-        f"Expected 302 redirect from /invite, got {resp.status_code}: {resp.text}. "
+    assert resp.status_code == 301, (
+        f"Expected 301 redirect from /invite, got {resp.status_code}: {resp.text}. "
         "If this is 404, the routes_share router is not mounted at root."
     )
 
@@ -55,7 +55,7 @@ def test_invite_redirects_android_to_play_store_when_set(client):
         resp = client.get(
             "/invite", headers={"User-Agent": _ANDROID_UA}, follow_redirects=False
         )
-    assert resp.status_code == 302
+    assert resp.status_code == 301
     assert resp.headers["location"] == play_url
 
 
@@ -71,7 +71,7 @@ def test_invite_redirects_ios_to_app_store_when_set(client):
         resp = client.get(
             "/invite", headers={"User-Agent": _IPHONE_UA}, follow_redirects=False
         )
-    assert resp.status_code == 302
+    assert resp.status_code == 301
     assert resp.headers["location"] == app_url
 
 
@@ -88,7 +88,7 @@ def test_invite_desktop_lands_on_web(client):
         resp = client.get(
             "/invite", headers={"User-Agent": _DESKTOP_UA}, follow_redirects=False
         )
-    assert resp.status_code == 302
+    assert resp.status_code == 301
     assert resp.headers["location"] == web
 
 
@@ -105,14 +105,14 @@ def test_invite_android_falls_back_to_web_when_play_store_unset(client):
         resp = client.get(
             "/invite", headers={"User-Agent": _ANDROID_UA}, follow_redirects=False
         )
-    assert resp.status_code == 302
+    assert resp.status_code == 301
     assert resp.headers["location"] == web
 
 
 def test_invite_handles_missing_user_agent_header(client):
     """Bots / curl without a UA must not crash the endpoint."""
     resp = client.get("/invite", headers={"User-Agent": ""}, follow_redirects=False)
-    assert resp.status_code == 302  # falls through to web fallback
+    assert resp.status_code == 301  # falls through to web fallback
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -192,9 +192,10 @@ def test_assetlinks_empty_state_is_valid_json(client):
 
 def test_invite_prevents_open_redirect_on_malicious_env_var(client):
     """C1 — Malicious input in environment variables (e.g. javascript:)
-    must be blocked. Fallback to settings.SHARE_WEB_URL."""
+    must be blocked. Fallback to settings.SHARE_WEB_URL if safe,
+    otherwise _FINAL_SAFE_FALLBACK."""
     with mock.patch("routes_share.settings") as s:
-        # Attacker-controlled / misconfigured value
+        # Attacker-controlled / misconfigured values
         s.SHARE_ANDROID_URL = "javascript:alert(1)"
         s.SHARE_WEB_URL = "https://swasth.health"
         s.PLAY_STORE_URL = None
@@ -204,8 +205,25 @@ def test_invite_prevents_open_redirect_on_malicious_env_var(client):
             "/invite", headers={"User-Agent": _ANDROID_UA}, follow_redirects=False
         )
     
-    assert resp.status_code == 302
-    # Should NOT be the javascript: URL
+    assert resp.status_code == 301
+    # Should NOT be the javascript: URL. Falls back to SHARE_WEB_URL.
+    assert resp.headers["location"] == "https://swasth.health"
+
+
+def test_invite_prevents_open_redirect_on_all_malicious_env_vars(client):
+    """C1 — Even if SHARE_WEB_URL is malicious, it must not be used."""
+    with mock.patch("routes_share.settings") as s:
+        s.SHARE_ANDROID_URL = "javascript:alert(1)"
+        s.SHARE_WEB_URL = "data:text/html,..."
+        s.PLAY_STORE_URL = None
+        s.APP_STORE_URL = None
+        
+        resp = client.get(
+            "/invite", headers={"User-Agent": _ANDROID_UA}, follow_redirects=False
+        )
+    
+    assert resp.status_code == 301
+    # Falls back to _FINAL_SAFE_FALLBACK
     assert resp.headers["location"] == "https://swasth.health"
 
 
@@ -220,7 +238,7 @@ def test_invite_falls_back_to_legacy_play_store_url(client):
         resp = client.get(
             "/invite", headers={"User-Agent": _ANDROID_UA}, follow_redirects=False
         )
-    assert resp.status_code == 302
+    assert resp.status_code == 301
     assert resp.headers["location"] == legacy_url
 
 
@@ -234,7 +252,7 @@ def test_invite_falls_back_to_legacy_app_store_url(client):
         resp = client.get(
             "/invite", headers={"User-Agent": _IPHONE_UA}, follow_redirects=False
         )
-    assert resp.status_code == 302
+    assert resp.status_code == 301
     assert resp.headers["location"] == legacy_url
 
 

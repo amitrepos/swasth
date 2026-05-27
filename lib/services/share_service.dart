@@ -33,14 +33,14 @@ class ShareService {
   /// Returns true if the share completed (any action), false if the
   /// user dismissed the sheet OR if the platform refused to surface
   /// a share sheet (no targets, channel failure, etc.).
-  ///
-  /// NOTE on WhatsApp specifically: there is no point opening
-  /// `wa.me/?text=…` directly — the OS share sheet on Android already
-  /// surfaces WhatsApp as the default share target when WhatsApp is
-  /// installed, and lets users pick another channel (SMS, Telegram,
-  /// email) without us hardcoding any of them.
   static Future<bool> shareInvite(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
+    // M3: Avoid force-unwrap if context is missing Localizations (e.g. background/test)
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      debugPrint('ShareService: AppLocalizations not found in context');
+      return false;
+    }
+
     final messenger = ScaffoldMessenger.maybeOf(context);
     final message = '${l10n.inviteShareMessage}\n\n${inviteUrl()}';
 
@@ -55,6 +55,8 @@ class ShareService {
         message,
         subject: l10n.inviteShareSubject,
       );
+      // M4: Note that ShareResultStatus.dismissed returns false.
+      // This is intentional as the share did not "complete".
       return result.status == ShareResultStatus.success;
     } catch (e) {
       debugPrint('ShareService: Share.share threw — $e');

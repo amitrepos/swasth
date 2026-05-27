@@ -25,16 +25,23 @@ Why we host this ourselves instead of a third-party smart-link service:
      and iOS Universal Links require for direct-into-app open.
 """
 import json
+import logging
 import os
 
 from urllib.parse import urlparse
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from limiter import limiter
 
 from config import settings
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Default fallback if both device-specific and web-default URLs are unsafe/missing.
+# Hardcoded to a known-safe apex domain.
+_FINAL_SAFE_FALLBACK = "https://swasth.health"
+
 
 def _is_safe_url(url: str) -> bool:
     """Validate that the URL uses an allowed scheme (http/https).
@@ -52,7 +59,11 @@ def _is_safe_url(url: str) -> bool:
 
 
 def _resolve_target(user_agent: str) -> str:
-    """Pick the right store / web URL for the requesting device."""
+    """Pick the right store / web URL for the requesting device.
+    
+    Note: PLAY_STORE_URL and APP_STORE_URL are legacy aliases. 
+    # TODO: remove after SHARE_ANDROID_URL / SHARE_IOS_URL are confirmed set in all envs.
+    """
     ua = (user_agent or "").lower()
 
     if "android" in ua:
@@ -61,17 +72,25 @@ def _resolve_target(user_agent: str) -> str:
             or settings.PLAY_STORE_URL
             or settings.SHARE_WEB_URL
         )
+        if settings.PLAY_STORE_URL and not settings.SHARE_ANDROID_URL:
+            logger.warning("Legacy PLAY_STORE_URL is set. Please migrate to SHARE_ANDROID_URL.")
     elif any(x in ua for x in ("iphone", "ipad", "ipod")):
         target = (
             settings.SHARE_IOS_URL
             or settings.APP_STORE_URL
             or settings.SHARE_WEB_URL
         )
+        if settings.APP_STORE_URL and not settings.SHARE_IOS_URL:
+            logger.warning("Legacy APP_STORE_URL is set. Please migrate to SHARE_IOS_URL.")
     else:
         target = settings.SHARE_WEB_URL
 
+    # C1: Ensure even the fallback is validated.
     if not _is_safe_url(target):
-        return settings.SHARE_WEB_URL
+        if _is_safe_url(settings.SHARE_WEB_URL):
+            return settings.SHARE_WEB_URL
+        return _FINAL_SAFE_FALLBACK
+        
     return target
 
 
@@ -80,18 +99,17 @@ def _resolve_target(user_agent: str) -> str:
 def share_invite_landing(request: Request):
     """Smart-redirect entry point shared via WhatsApp / SMS.
 
-    Returns a 302 to the right store/web URL for the device. Kept
-    deliberately simple — no DB, no auth, no PII. Cacheable for 5 min
-    at the CDN edge.
+    Returns a 301 (Moved Permanently) to the right store/web URL for 
+    the device. This is a stable redirect that can be cached by CDNs 
+    and browsers for 5 min.
     """
     target = _resolve_target(request.headers.get("user-agent", ""))
-    return RedirectResponse(url=target, status_code=302)
+    return RedirectResponse(url=target, status_code=301)
 
 
 @router.get(
     "/.well-known/assetlinks.json",
     include_in_schema=False,
-    response_class=HTMLResponse,
 )
 @limiter.limit("30/minute")
 def android_app_links_assetlinks(request: Request):
@@ -106,7 +124,8 @@ def android_app_links_assetlinks(request: Request):
     which is correct and harmless. Once the cert is known, set
     SHARE_ANDROID_CERT_SHA256 in .env and re-deploy.
     """
-    package = getattr(settings, "ANDROID_PACKAGE_NAME", "com.example.swasth")
+    # C2: Use the real default from settings to avoid inconsistencies.
+    package = settings.ANDROID_PACKAGE_NAME
     cert = getattr(settings, "SHARE_ANDROID_CERT_SHA256", "") or ""
 
     # Build via json.dumps — never f-string interpolation. A mis-paste
@@ -125,7 +144,4 @@ def android_app_links_assetlinks(request: Request):
                 "sha256_cert_fingerprints": [cert],
             },
         }]
-    return HTMLResponse(
-        content=json.dumps(payload, separators=(",", ":")),
-        media_type="application/json",
-    )
+    return JSONResponse(content=payload)

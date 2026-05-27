@@ -48,5 +48,36 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('Something went wrong. Please try again.'), findsOneWidget);
     });
+
+    testWidgets('returns false when Localizations is missing from context (M3)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          // No AppLocalizations delegate provided here
+          home: Scaffold(
+            body: Builder(builder: (context) {
+              return ElevatedButton(
+                onPressed: () async {
+                  final result = await ShareService.shareInvite(context);
+                  // Should return false cleanly, not crash
+                  if (!result) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Handled Null')),
+                    );
+                  }
+                },
+                child: const Text('Share'),
+              );
+            }),
+          ),
+        ),
+      );
+      await pumpN(tester, frames: 3);
+
+      await tester.tap(find.text('Share'));
+      await pumpN(tester, frames: 3);
+
+      // Verify it didn't crash and showed our 'Handled Null' indicator
+      expect(find.text('Handled Null'), findsOneWidget);
+    });
   });
 }
