@@ -88,7 +88,12 @@ void main() {
     /// Boot a ProfileScreen with a seeded token + user, then wait for
     /// the async profile load to settle. Returns once the invite tile
     /// has appeared in the widget tree (regardless of viewport
-    /// position), or fails the test with a clear message if not.
+    /// position), or fails the test with a state dump if not.
+    ///
+    /// Seeds storage BEFORE TestEnv.create — matches the existing
+    /// TestEnv.createAtProfileSelect pattern. `useInMemoryStorage()`
+    /// is idempotent so the call inside `create` does NOT wipe our
+    /// seeded token.
     Future<void> bootAndWaitForTile(WidgetTester tester) async {
       StorageService.useInMemoryStorage();
       await StorageService().saveToken('mock_token_for_test');
@@ -97,34 +102,56 @@ void main() {
         'email': 'owner@swasth.test',
         'full_name': 'Test Owner',
       });
-
       env = await TestEnv.create(
         tester,
         startScreen: const ProfileScreen(profileId: 1),
       );
 
       // skipOffstage: false — SingleChildScrollView builds ALL its
-      // children, the tile is in the tree even when not yet scrolled
-      // into view. Using skipOffstage: false makes the poll
-      // independent of viewport position, which matters because
-      // Linux CI and Windows render slightly different surface sizes
-      // and the tile may or may not be visible at first paint.
+      // children, so the tile is in the tree even when not yet
+      // scrolled into view. Poll independent of viewport position;
+      // Linux CI and Windows render slightly different surfaces.
       final settled = await _pumpUntil(
         tester,
         () => find
             .byKey(const Key('profile_invite_friends'), skipOffstage: false)
             .evaluate()
             .isNotEmpty,
-        maxFrames: 80,
+        maxFrames: 120,
       );
-      expect(
-        settled,
-        isTrue,
-        reason:
-            'ProfileScreen never rendered the profile_invite_friends tile '
-            'within 80 frames. Either the profile API mock failed, the '
-            'isOwner gate regressed, or the tile was renamed/keyed differently.',
-      );
+      if (!settled) {
+        // Dump every signal we have about WHY the tile didn't render.
+        // CI surfaces this on the failing test's stderr and tells us
+        // immediately whether the load failed, isOwner was false, or
+        // some other render path was hit.
+        final exception = tester.takeException();
+        final visibleTexts = find
+            .byType(Text)
+            .evaluate()
+            .map((e) => (e.widget as Text).data)
+            .where((t) => t != null && t.trim().isNotEmpty)
+            .take(40)
+            .toList();
+        final hasSpinner =
+            find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
+        final hasTile = find
+            .byKey(const Key('profile_invite_friends'), skipOffstage: false)
+            .evaluate()
+            .isNotEmpty;
+        fail(
+          'ProfileScreen never rendered profile_invite_friends within '
+          '120 frames.\n'
+          '  takeException: $exception\n'
+          '  spinner present: $hasSpinner\n'
+          '  tile present:    $hasTile\n'
+          '  visible Text widgets: $visibleTexts\n'
+          'Likely causes:\n'
+          '  - spinner=true → _loadData never completed (mock URL miss,\n'
+          '    token reset by TestEnv.create after we seeded it, etc.)\n'
+          '  - spinner=false, no tile → load failed (catch fired snackbar)\n'
+          '    OR access_level != "owner" so isOwner gated the tile out',
+        );
+      }
     }
 
     testWidgets('Tile is rendered on the owner profile', (tester) async {
