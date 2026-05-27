@@ -7,12 +7,14 @@ import '../glass_card.dart';
 class DeviceStatusCard extends StatelessWidget {
   final bool armbandConnected;
   final bool bpMonitorConnected;
+  final bool glucometerConnected;
   final bool phoneSensorsActive;
 
   const DeviceStatusCard({
     super.key,
     this.armbandConnected = false,
     this.bpMonitorConnected = false,
+    this.glucometerConnected = false,
     this.phoneSensorsActive = true,
   });
 
@@ -24,6 +26,7 @@ class DeviceStatusCard extends StatelessWidget {
       _DeviceInfo(l10n.armband, armbandConnected),
       _DeviceInfo(l10n.devicePhone, phoneSensorsActive),
       _DeviceInfo(l10n.deviceBpMonitor, bpMonitorConnected),
+      _DeviceInfo(l10n.glucometer, glucometerConnected),
     ];
 
     return GlassCard(

@@ -544,6 +544,9 @@
   "lastSpO2": "ಕೊನೆಯ SpO2",
   "lastSteps": "ಇಂದಿನ ಹೆಜ್ಜೆಗಳು",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
+  "kgUnit": "ಕೆ.ಜಿ",
   "viaArmband": "ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
   "viaPhone": "ಫೋನ್ / ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
   "pairDevice": "ಸಾಧನವನ್ನು ಜೋಡಿಸಿ",
@@ -1071,6 +1074,70 @@
   "fat": "ಕೊಬ್ಬಿನಾಂಶ",
   "@fat": {
     "description": "Label for fat (grams) in the macronutrients grid"
+  },
+  "fiber": "ನಾರಿನಂಶ",
+  "@fiber": {
+    "description": "Label for dietary fiber (grams) in the meal details sheet"
+  },
+  "viewMealDetails": "ವಿವರಗಳನ್ನು ನೋಡಿ",
+  "@viewMealDetails": {
+    "description": "Tooltip for the view-details icon button on a meal history tile"
+  },
+  "mealDetailsTitle": "ಊಟದ ವಿವರಗಳು",
+  "@mealDetailsTitle": {
+    "description": "Title shown at the top of the meal details bottom sheet"
+  },
+  "healthTip": "ಆರೋಗ್ಯ ಸಲಹೆ",
+  "@healthTip": {
+    "description": "Section label above the localized health tip in the meal details sheet"
+  },
+  "noNutritionData": "ಈ ಊಟಕ್ಕೆ ಯಾವುದೇ ಪೌಷ್ಟಿಕಾಂಶ ವಿವರಗಳನ್ನು ಉಳಿಸಲಾಗಿಲ್ಲ.",
+  "@noNutritionData": {
+    "description": "Shown when meal has no stored nutrition fields (older quick-select entries)"
+  },
+  "viewDetails": "ವಿವರಗಳನ್ನು ನೋಡಿ",
+  "@viewDetails": {
+    "description": "Generic tooltip for view-details icon buttons on history tiles"
+  },
+  "readingDetailsTitle": "ರೀಡಿಂಗ್ ವಿವರಗಳು",
+  "@readingDetailsTitle": {
+    "description": "Title shown at the top of the reading details bottom sheet"
+  },
+  "mapLabel": "MAP",
+  "@mapLabel": {
+    "description": "Abbreviation for Mean Arterial Pressure"
+  },
+  "sampleTypeLabel": "ಮಾದರಿ ಪ್ರಕಾರ",
+  "@sampleTypeLabel": {
+    "description": "Label for glucose sample type"
+  },
+  "stepsGoalLabel": "ಗುರಿ",
+  "@stepsGoalLabel": {
+    "description": "Label for daily steps goal"
+  },
+  "recordedAt": "ದಾಖಲಿಸಲಾಗಿದೆ",
+  "@recordedAt": {
+    "description": "Label preceding the recorded timestamp"
+  },
+  "statusLabel": "ಸ್ಥಿತಿ",
+  "@statusLabel": {
+    "description": "Label for the clinical status badge"
+  },
+  "pulse": "ನಾಡಿ",
+  "@pulse": {
+    "description": "Pulse rate label in the reading details sheet"
+  },
+  "notesLabel": "ಟಿಪ್ಪಣಿಗಳು",
+  "@notesLabel": {
+    "description": "Notes label in the reading details sheet"
+  },
+  "spo2Label": "SpO₂",
+  "@spo2Label": {
+    "description": "Display label for blood oxygen saturation reading type"
+  },
+  "stepsLabel": "ಹೆಜ್ಜೆಗಳು",
+  "@stepsLabel": {
+    "description": "Display label for daily step-count reading type"
   },
   "vegan": "ವೀಗನ್",
   "@vegan": {

@@ -525,6 +525,12 @@
   "lastSpO2": "Last SpO2",
   "lastSteps": "Steps Today",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
+  "kgUnit": "kg",
+  "@kgUnit": {
+    "description": "Kilogram unit suffix for weight readings"
+  },
   "viaArmband": "via Armband",
   "viaPhone": "via Phone / Armband",
   "pairDevice": "Pair Device",
@@ -1051,6 +1057,70 @@
   "fat": "Fat",
   "@fat": {
     "description": "Label for fat (grams) in the macronutrients grid"
+  },
+  "fiber": "Fiber",
+  "@fiber": {
+    "description": "Label for dietary fiber (grams) in the meal details sheet"
+  },
+  "viewMealDetails": "View details",
+  "@viewMealDetails": {
+    "description": "Tooltip for the view-details icon button on a meal history tile"
+  },
+  "mealDetailsTitle": "Meal details",
+  "@mealDetailsTitle": {
+    "description": "Title shown at the top of the meal details bottom sheet"
+  },
+  "healthTip": "Health tip",
+  "@healthTip": {
+    "description": "Section label above the localized health tip in the meal details sheet"
+  },
+  "noNutritionData": "No nutrition details saved for this meal.",
+  "@noNutritionData": {
+    "description": "Shown in the meal details sheet when the meal has no stored nutrition fields (older quick-select entries)"
+  },
+  "viewDetails": "View details",
+  "@viewDetails": {
+    "description": "Generic tooltip for view-details icon buttons on history tiles"
+  },
+  "readingDetailsTitle": "Reading details",
+  "@readingDetailsTitle": {
+    "description": "Title shown at the top of the reading details bottom sheet"
+  },
+  "mapLabel": "MAP",
+  "@mapLabel": {
+    "description": "Abbreviation for Mean Arterial Pressure in the reading details sheet"
+  },
+  "sampleTypeLabel": "Sample type",
+  "@sampleTypeLabel": {
+    "description": "Label for glucose sample type (fasting/before-meal/post-meal/random) in details sheet"
+  },
+  "stepsGoalLabel": "Goal",
+  "@stepsGoalLabel": {
+    "description": "Label for daily steps goal in the reading details sheet"
+  },
+  "recordedAt": "Recorded",
+  "@recordedAt": {
+    "description": "Label preceding the timestamp at which a reading was recorded"
+  },
+  "statusLabel": "Status",
+  "@statusLabel": {
+    "description": "Label for the clinical status badge in the reading details sheet"
+  },
+  "pulse": "Pulse",
+  "@pulse": {
+    "description": "Pulse rate label in the reading details sheet (no optional suffix, unlike pulseLabel used in the form)"
+  },
+  "notesLabel": "Notes",
+  "@notesLabel": {
+    "description": "Notes label in the reading details sheet (no optional suffix, unlike notes used in the form)"
+  },
+  "spo2Label": "SpO₂",
+  "@spo2Label": {
+    "description": "Display label for blood oxygen saturation (SpO2) reading type"
+  },
+  "stepsLabel": "Steps",
+  "@stepsLabel": {
+    "description": "Display label for daily step-count reading type"
   },
   "vegan": "Vegan",
   "@vegan": {

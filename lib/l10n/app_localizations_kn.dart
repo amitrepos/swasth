@@ -1090,6 +1090,15 @@ class AppLocalizationsKn extends AppLocalizations {
   String get spO2Unit => '%';
 
   @override
+  String get bpmUnit => 'bpm';
+
+  @override
+  String get mmHgUnit => 'mmHg';
+
+  @override
+  String get kgUnit => 'ಕೆ.ಜಿ';
+
+  @override
   String get viaArmband => 'ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ';
 
   @override
@@ -2099,6 +2108,55 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get fat => 'ಕೊಬ್ಬಿನಾಂಶ';
+
+  @override
+  String get fiber => 'ನಾರಿನಂಶ';
+
+  @override
+  String get viewMealDetails => 'ವಿವರಗಳನ್ನು ನೋಡಿ';
+
+  @override
+  String get mealDetailsTitle => 'ಊಟದ ವಿವರಗಳು';
+
+  @override
+  String get healthTip => 'ಆರೋಗ್ಯ ಸಲಹೆ';
+
+  @override
+  String get noNutritionData =>
+      'ಈ ಊಟಕ್ಕೆ ಯಾವುದೇ ಪೌಷ್ಟಿಕಾಂಶ ವಿವರಗಳನ್ನು ಉಳಿಸಲಾಗಿಲ್ಲ.';
+
+  @override
+  String get viewDetails => 'ವಿವರಗಳನ್ನು ನೋಡಿ';
+
+  @override
+  String get readingDetailsTitle => 'ರೀಡಿಂಗ್ ವಿವರಗಳು';
+
+  @override
+  String get mapLabel => 'MAP';
+
+  @override
+  String get sampleTypeLabel => 'ಮಾದರಿ ಪ್ರಕಾರ';
+
+  @override
+  String get stepsGoalLabel => 'ಗುರಿ';
+
+  @override
+  String get recordedAt => 'ದಾಖಲಿಸಲಾಗಿದೆ';
+
+  @override
+  String get statusLabel => 'ಸ್ಥಿತಿ';
+
+  @override
+  String get pulse => 'ನಾಡಿ';
+
+  @override
+  String get notesLabel => 'ಟಿಪ್ಪಣಿಗಳು';
+
+  @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'ಹೆಜ್ಜೆಗಳು';
 
   @override
   String get vegan => 'ವೀಗನ್';

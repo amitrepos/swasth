@@ -2084,6 +2084,24 @@ abstract class AppLocalizations {
   /// **'%'**
   String get spO2Unit;
 
+  /// No description provided for @bpmUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'bpm'**
+  String get bpmUnit;
+
+  /// No description provided for @mmHgUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'mmHg'**
+  String get mmHgUnit;
+
+  /// Kilogram unit suffix for weight readings
+  ///
+  /// In en, this message translates to:
+  /// **'kg'**
+  String get kgUnit;
+
   /// No description provided for @viaArmband.
   ///
   /// In en, this message translates to:
@@ -3895,6 +3913,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fat'**
   String get fat;
+
+  /// Label for dietary fiber (grams) in the meal details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Fiber'**
+  String get fiber;
+
+  /// Tooltip for the view-details icon button on a meal history tile
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get viewMealDetails;
+
+  /// Title shown at the top of the meal details bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Meal details'**
+  String get mealDetailsTitle;
+
+  /// Section label above the localized health tip in the meal details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Health tip'**
+  String get healthTip;
+
+  /// Shown in the meal details sheet when the meal has no stored nutrition fields (older quick-select entries)
+  ///
+  /// In en, this message translates to:
+  /// **'No nutrition details saved for this meal.'**
+  String get noNutritionData;
+
+  /// Generic tooltip for view-details icon buttons on history tiles
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get viewDetails;
+
+  /// Title shown at the top of the reading details bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Reading details'**
+  String get readingDetailsTitle;
+
+  /// Abbreviation for Mean Arterial Pressure in the reading details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'MAP'**
+  String get mapLabel;
+
+  /// Label for glucose sample type (fasting/before-meal/post-meal/random) in details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Sample type'**
+  String get sampleTypeLabel;
+
+  /// Label for daily steps goal in the reading details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get stepsGoalLabel;
+
+  /// Label preceding the timestamp at which a reading was recorded
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded'**
+  String get recordedAt;
+
+  /// Label for the clinical status badge in the reading details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get statusLabel;
+
+  /// Pulse rate label in the reading details sheet (no optional suffix, unlike pulseLabel used in the form)
+  ///
+  /// In en, this message translates to:
+  /// **'Pulse'**
+  String get pulse;
+
+  /// Notes label in the reading details sheet (no optional suffix, unlike notes used in the form)
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesLabel;
+
+  /// Display label for blood oxygen saturation (SpO2) reading type
+  ///
+  /// In en, this message translates to:
+  /// **'SpO₂'**
+  String get spo2Label;
+
+  /// Display label for daily step-count reading type
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get stepsLabel;
 
   /// Diet flag label indicating the meal is vegan
   ///
