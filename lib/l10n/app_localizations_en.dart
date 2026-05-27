@@ -1081,6 +1081,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spO2Unit => '%';
 
   @override
+  String get bpmUnit => 'bpm';
+
+  @override
+  String get mmHgUnit => 'mmHg';
+
+  @override
+  String get kgUnit => 'kg';
+
+  @override
   String get viaArmband => 'via Armband';
 
   @override
@@ -2095,6 +2104,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fat => 'Fat';
+
+  @override
+  String get fiber => 'Fiber';
+
+  @override
+  String get viewMealDetails => 'View details';
+
+  @override
+  String get mealDetailsTitle => 'Meal details';
+
+  @override
+  String get healthTip => 'Health tip';
+
+  @override
+  String get noNutritionData => 'No nutrition details saved for this meal.';
+
+  @override
+  String get viewDetails => 'View details';
+
+  @override
+  String get readingDetailsTitle => 'Reading details';
+
+  @override
+  String get mapLabel => 'MAP';
+
+  @override
+  String get sampleTypeLabel => 'Sample type';
+
+  @override
+  String get stepsGoalLabel => 'Goal';
+
+  @override
+  String get recordedAt => 'Recorded';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String get pulse => 'Pulse';
+
+  @override
+  String get notesLabel => 'Notes';
+
+  @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'Steps';
 
   @override
   String get vegan => 'Vegan';

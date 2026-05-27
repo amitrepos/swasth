@@ -577,6 +577,9 @@
   "lastSpO2": "చివరి SpO2",
   "lastSteps": "ఈరోజు అడుగులు",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
+  "kgUnit": "కిలో",
   "viaArmband": "ఆర్మ్‌బ్యాండ్ ద్వారా",
   "viaPhone": "ఫోన్ / ఆర్మ్‌బ్యాండ్ ద్వారా",
   "pairDevice": "పరికరాన్ని జత చేయండి",
@@ -1094,6 +1097,70 @@
   "fat": "కొవ్వు",
   "@fat": {
     "description": "Label for fat (grams) in the macronutrients grid"
+  },
+  "fiber": "పీచు పదార్థం",
+  "@fiber": {
+    "description": "Label for dietary fiber (grams) in the meal details sheet"
+  },
+  "viewMealDetails": "వివరాలను చూడండి",
+  "@viewMealDetails": {
+    "description": "Tooltip for the view-details icon button on a meal history tile"
+  },
+  "mealDetailsTitle": "భోజన వివరాలు",
+  "@mealDetailsTitle": {
+    "description": "Title shown at the top of the meal details bottom sheet"
+  },
+  "healthTip": "ఆరోగ్య చిట్కా",
+  "@healthTip": {
+    "description": "Section label above the localized health tip in the meal details sheet"
+  },
+  "noNutritionData": "ఈ భోజనానికి ఎలాంటి పోషకాహార వివరాలు సేవ్ చేయబడలేదు.",
+  "@noNutritionData": {
+    "description": "Shown when meal has no stored nutrition fields (older quick-select entries)"
+  },
+  "viewDetails": "వివరాలను చూడండి",
+  "@viewDetails": {
+    "description": "Generic tooltip for view-details icon buttons on history tiles"
+  },
+  "readingDetailsTitle": "రీడింగ్ వివరాలు",
+  "@readingDetailsTitle": {
+    "description": "Title shown at the top of the reading details bottom sheet"
+  },
+  "mapLabel": "MAP",
+  "@mapLabel": {
+    "description": "Abbreviation for Mean Arterial Pressure"
+  },
+  "sampleTypeLabel": "నమూనా రకం",
+  "@sampleTypeLabel": {
+    "description": "Label for glucose sample type"
+  },
+  "stepsGoalLabel": "లక్ష్యం",
+  "@stepsGoalLabel": {
+    "description": "Label for daily steps goal"
+  },
+  "recordedAt": "నమోదు చేయబడింది",
+  "@recordedAt": {
+    "description": "Label preceding the recorded timestamp"
+  },
+  "statusLabel": "స్థితి",
+  "@statusLabel": {
+    "description": "Label for the clinical status badge"
+  },
+  "pulse": "నాడి",
+  "@pulse": {
+    "description": "Pulse rate label in the reading details sheet"
+  },
+  "notesLabel": "గమనికలు",
+  "@notesLabel": {
+    "description": "Notes label in the reading details sheet"
+  },
+  "spo2Label": "SpO₂",
+  "@spo2Label": {
+    "description": "Display label for blood oxygen saturation reading type"
+  },
+  "stepsLabel": "అడుగులు",
+  "@stepsLabel": {
+    "description": "Display label for daily step-count reading type"
   },
   "vegan": "వేగన్",
   "@vegan": {

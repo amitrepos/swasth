@@ -78,8 +78,8 @@ jobs:
                       flow_events.append(json.loads(line))
                   except Exception:
                       pass
-          flow_pass = sum(1 for e in flow_events if e.get('type')=='testDone' and e.get('result')=='success')
-          flow_fail = sum(1 for e in flow_events if e.get('type')=='testDone' and e.get('result')=='error')
+          flow_pass = sum(1 for e in flow_events if isinstance(e, dict) and e.get('type')=='testDone' and e.get('result')=='success')
+          flow_fail = sum(1 for e in flow_events if isinstance(e, dict) and e.get('type')=='testDone' and e.get('result')=='error')
           flow_files = len(list(Path('test/flows').rglob('*_test.dart'))) if Path('test/flows').exists() else 0
 
           sha = subprocess.check_output(['git','rev-parse','HEAD']).decode().strip()

@@ -577,6 +577,9 @@
   "lastSpO2": "கடைசி SpO2",
   "lastSteps": "இன்று நடந்த அடிகள்",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
+  "kgUnit": "கி.கி",
   "viaArmband": "ஆர்ம்பேண்ட் வழியாக",
   "viaPhone": "தொலைபேசி / ஆர்ம்பேண்ட் வழியாக",
   "pairDevice": "சாதனம் இணைக்கவும்",
@@ -1094,6 +1097,70 @@
   "fat": "கொழுப்பு",
   "@fat": {
     "description": "Label for fat (grams) in the macronutrients grid"
+  },
+  "fiber": "நார்ச்சத்து",
+  "@fiber": {
+    "description": "Label for dietary fiber (grams) in the meal details sheet"
+  },
+  "viewMealDetails": "விவரங்களைக் காண்க",
+  "@viewMealDetails": {
+    "description": "Tooltip for the view-details icon button on a meal history tile"
+  },
+  "mealDetailsTitle": "உணவு விவரங்கள்",
+  "@mealDetailsTitle": {
+    "description": "Title shown at the top of the meal details bottom sheet"
+  },
+  "healthTip": "ஆரோக்கிய குறிப்பு",
+  "@healthTip": {
+    "description": "Section label above the localized health tip in the meal details sheet"
+  },
+  "noNutritionData": "இந்த உணவுக்கான ஊட்டச்சத்து விவரங்கள் சேமிக்கப்படவில்லை.",
+  "@noNutritionData": {
+    "description": "Shown when meal has no stored nutrition fields (older quick-select entries)"
+  },
+  "viewDetails": "விவரங்களைக் காண்க",
+  "@viewDetails": {
+    "description": "Generic tooltip for view-details icon buttons on history tiles"
+  },
+  "readingDetailsTitle": "அளவீட்டு விவரங்கள்",
+  "@readingDetailsTitle": {
+    "description": "Title shown at the top of the reading details bottom sheet"
+  },
+  "mapLabel": "MAP",
+  "@mapLabel": {
+    "description": "Abbreviation for Mean Arterial Pressure"
+  },
+  "sampleTypeLabel": "மாதிரி வகை",
+  "@sampleTypeLabel": {
+    "description": "Label for glucose sample type"
+  },
+  "stepsGoalLabel": "இலக்கு",
+  "@stepsGoalLabel": {
+    "description": "Label for daily steps goal"
+  },
+  "recordedAt": "பதிவு செய்யப்பட்டது",
+  "@recordedAt": {
+    "description": "Label preceding the recorded timestamp"
+  },
+  "statusLabel": "நிலை",
+  "@statusLabel": {
+    "description": "Label for the clinical status badge"
+  },
+  "pulse": "துடிப்பு",
+  "@pulse": {
+    "description": "Pulse rate label in the reading details sheet"
+  },
+  "notesLabel": "குறிப்புகள்",
+  "@notesLabel": {
+    "description": "Notes label in the reading details sheet"
+  },
+  "spo2Label": "SpO₂",
+  "@spo2Label": {
+    "description": "Display label for blood oxygen saturation reading type"
+  },
+  "stepsLabel": "படிகள்",
+  "@stepsLabel": {
+    "description": "Display label for daily step-count reading type"
   },
   "vegan": "வீகன்",
   "@vegan": {
