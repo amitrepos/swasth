@@ -22,6 +22,23 @@ class MedicationService {
     return Medication.fromJson(body);
   }
 
+  /// PATCH /api/medications/{id} — edit an existing log.
+  Future<Medication> updateMedication(
+    int medId,
+    MedicationUpdate data,
+    String token,
+  ) async {
+    final body = await ApiClient.sendJsonObject(
+      () => ApiClient.httpClient.patch(
+        Uri.parse('$_baseUrl/$medId'),
+        headers: ApiClient.headers(token: token),
+        body: jsonEncode(data.toJson()),
+      ),
+      successCodes: const [200],
+    );
+    return Medication.fromJson(body);
+  }
+
   /// GET /api/medications?profile_id=X&days=Y — recent log.
   Future<List<Medication>> getMedications(
     int profileId,

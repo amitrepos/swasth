@@ -2254,4 +2254,65 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get regionErrorWriteBlocked =>
       'లాగింగ్ భారతదేశంలో మాత్రమే అందుబాటులో ఉంది. మీరు కుటుంబ సభ్యునిగా సైన్ ఇన్ అయ్యారు — మీరు రీడింగ్‌లను చూడవచ్చు, కానీ క్రొత్తవి నమోదు చేయలేరు.';
+
+  @override
+  String get medicationsScreenTitle => 'నేను తీసుకున్న మందులు';
+
+  @override
+  String get medicationsLogFab => 'మందు నమోదు చేయండి';
+
+  @override
+  String get medicationsLogFirst => 'మొదటి మందు నమోదు చేయండి';
+
+  @override
+  String get medicationsColDateTime => 'తేదీ & సమయం';
+
+  @override
+  String get medicationsColMedicine => 'మందు';
+
+  @override
+  String get medicationsColDose => 'మోతాదు';
+
+  @override
+  String get medicationsColFrequency => 'పౌనఃపున్యం';
+
+  @override
+  String get medicationsColNotes => 'గమనికలు';
+
+  @override
+  String get medicationsColActions => 'చర్యలు';
+
+  @override
+  String get medicationsEmptyTitle => 'ఇంకా మందులు నమోదు కాలేదు';
+
+  @override
+  String get medicationsEmptyBody =>
+      'మీరు తీసుకున్న మందులను నమోదు చేస్తే మీ డాక్టర్ తదుపరి నివేదికలో చూడగలరు.';
+
+  @override
+  String get medicationsDeleteTitle => 'మందు నమోదును తొలగించాలా?';
+
+  @override
+  String medicationsDeleteBody(String name, String dateTime) {
+    return '$dateTime వద్ద \"$name\" నమోదును తొలగించాలా?';
+  }
+
+  @override
+  String medicationsDeleteSemantics(String name) {
+    return '$name తొలగించు';
+  }
+
+  @override
+  String get medicationsEditTitle => 'మందు సవరించండి';
+
+  @override
+  String get medicationsSaveChanges => 'మార్పులను సేవ్ చేయండి';
+
+  @override
+  String medicationsEditSemantics(String name) {
+    return '$name సవరించండి';
+  }
+
+  @override
+  String get medicationsCellEmpty => '-';
 }

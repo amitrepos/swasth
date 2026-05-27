@@ -2266,4 +2266,65 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get regionErrorWriteBlocked =>
       'ಲಾಗಿಂಗ್ ಭಾರತದಲ್ಲಿ ಮಾತ್ರ ಲಭ್ಯವಿದೆ. ನೀವು ಕುಟುಂಬ ಸದಸ್ಯರಾಗಿ ಸೈನ್ ಇನ್ ಆಗಿದ್ದೀರಿ — ನೀವು ರೀಡಿಂಗ್‌ಗಳನ್ನು ನೋಡಬಹುದು, ಆದರೆ ಹೊಸದನ್ನು ದಾಖಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.';
+
+  @override
+  String get medicationsScreenTitle => 'ನಾನು ತೆಗೆದುಕೊಂಡ ಔಷಧಿಗಳು';
+
+  @override
+  String get medicationsLogFab => 'ಔಷಧಿ ದಾಖಲಿಸಿ';
+
+  @override
+  String get medicationsLogFirst => 'ಮೊದಲ ಔಷಧಿ ದಾಖಲಿಸಿ';
+
+  @override
+  String get medicationsColDateTime => 'ದಿನಾಂಕ & ಸಮಯ';
+
+  @override
+  String get medicationsColMedicine => 'ಔಷಧಿ';
+
+  @override
+  String get medicationsColDose => 'ಮೊತ್ತ';
+
+  @override
+  String get medicationsColFrequency => 'ಆವರ್ತನೆ';
+
+  @override
+  String get medicationsColNotes => 'ಟಿಪ್ಪಣಿಗಳು';
+
+  @override
+  String get medicationsColActions => 'ಕ್ರಿಯೆಗಳು';
+
+  @override
+  String get medicationsEmptyTitle => 'ಇನ್ನೂ ಯಾವುದೇ ಔಷಧಿ ದಾಖಲಾಗಿಲ್ಲ';
+
+  @override
+  String get medicationsEmptyBody =>
+      'ನೀವು ತೆಗೆದುಕೊಂಡ ಔಷಧಿಗಳನ್ನು ದಾಖಲಿಸಿ — ಮುಂದಿನ ವರದಿಯಲ್ಲಿ ನಿಮ್ಮ ವೈದ್ಯರಿಗೆ ಕಾಣಿಸುತ್ತದೆ.';
+
+  @override
+  String get medicationsDeleteTitle => 'ಔಷಧಿ ನಮೂದನ್ನು ಅಳಿಸಬೇಕೇ?';
+
+  @override
+  String medicationsDeleteBody(String name, String dateTime) {
+    return '$dateTime ನಲ್ಲಿ \"$name\" ನಮೂದನ್ನು ಅಳಿಸಬೇಕೇ?';
+  }
+
+  @override
+  String medicationsDeleteSemantics(String name) {
+    return '$name ಅಳಿಸಿ';
+  }
+
+  @override
+  String get medicationsEditTitle => 'ಔಷಧಿ ಸಂಪಾದಿಸಿ';
+
+  @override
+  String get medicationsSaveChanges => 'ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ';
+
+  @override
+  String medicationsEditSemantics(String name) {
+    return '$name ಸಂಪಾದಿಸಿ';
+  }
+
+  @override
+  String get medicationsCellEmpty => '-';
 }

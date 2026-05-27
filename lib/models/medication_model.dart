@@ -68,3 +68,30 @@ class MedicationCreate {
         if (notes != null && notes!.isNotEmpty) 'notes': notes,
       };
 }
+
+/// Payload for PATCH /api/medications/{id}.
+///
+/// All fields are optional; only provided fields are updated.
+class MedicationUpdate {
+  final String? name;
+  final String? dose;
+  final String? frequency;
+  final DateTime? takenAt;
+  final String? notes;
+
+  MedicationUpdate({
+    this.name,
+    this.dose,
+    this.frequency,
+    this.takenAt,
+    this.notes,
+  });
+
+  Map<String, dynamic> toJson() => {
+        if (name != null) 'name': name,
+        if (dose != null) 'dose': dose,
+        if (frequency != null) 'frequency': frequency,
+        if (takenAt != null) 'taken_at': takenAt!.toUtc().toIso8601String(),
+        if (notes != null) 'notes': notes,
+      };
+}

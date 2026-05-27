@@ -104,21 +104,27 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
   }
 
   Future<void> _confirmDelete(Medication med) async {
+    final l10n = AppLocalizations.of(context)!;
+    final dateTime =
+        DateFormat.yMMMd().add_jm().format(med.takenAt.toLocal());
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete medication entry?'),
+        title: Text(l10n.medicationsDeleteTitle),
         content: Text(
-          'Remove "${med.name}" log from ${DateFormat.yMMMd().add_jm().format(med.takenAt.toLocal())}?',
+          l10n.medicationsDeleteBody(med.name, dateTime),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -144,18 +150,22 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final showActions = _canEdit && _canWriteRegion;
+    final emptyDash = l10n.medicationsCellEmpty;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Medicines I took'),
+        title: Text(l10n.medicationsScreenTitle),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
-      floatingActionButton: (_canEdit && _canWriteRegion)
+      floatingActionButton: showActions
           ? FloatingActionButton.extended(
               key: const Key('medications-add-fab'),
               onPressed: _openAddScreen,
               icon: const Icon(Icons.add),
-              label: const Text('Log medicine'),
+              label: Text(l10n.medicationsLogFab),
               backgroundColor: AppColors.primary,
             )
           : null,
@@ -163,70 +173,211 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _meds.isEmpty
           ? _EmptyState(
-              canEdit: (_canEdit && _canWriteRegion),
+              canEdit: showActions,
               onAdd: _openAddScreen,
             )
           : RefreshIndicator(
               onRefresh: _load,
-              child: ListView.separated(
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                itemCount: _meds.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, i) {
-                  final m = _meds[i];
-                  return Card(
+                children: [
+                  Card(
+                    key: const Key('medications-table'),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade300),
+                      side: const BorderSide(color: AppColors.glassCardBorder),
                     ),
-                    child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Color(0xFFE3F2FD),
-                        child: Icon(Icons.medication, color: AppColors.primary),
-                      ),
-                      title: Text(
-                        m.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (m.dose != null) Text('Dose: ${m.dose}'),
-                          if (m.frequency != null)
-                            Text('Frequency: ${m.frequency}'),
-                          Text(
-                            DateFormat.yMMMd().add_jm().format(
-                              m.takenAt.toLocal(),
-                            ),
-                            style: TextStyle(
-                              color: Colors.grey.shade700,
-                              fontSize: 12,
-                            ),
-                          ),
-                          if (m.notes != null && m.notes!.isNotEmpty)
-                            Text(
-                              'Notes: ${m.notes}',
-                              style: const TextStyle(
-                                fontStyle: FontStyle.italic,
+                    clipBehavior: Clip.antiAlias,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Container(
+                        constraints: BoxConstraints(
+                          minWidth: MediaQuery.of(context).size.width - 32,
+                        ),
+                        width: (MediaQuery.of(context).size.width - 32) < 720
+                            ? 720
+                            : (MediaQuery.of(context).size.width - 32),
+                        child: Table(
+                          columnWidths: {
+                            0: const FlexColumnWidth(1.2),
+                            1: const FlexColumnWidth(1.4),
+                            2: const FlexColumnWidth(1.0),
+                            3: const FlexColumnWidth(1.0),
+                            4: const FlexColumnWidth(2.0),
+                            if (showActions) 5: const FixedColumnWidth(104),
+                          },
+                          defaultVerticalAlignment:
+                              TableCellVerticalAlignment.middle,
+                          children: [
+                            TableRow(
+                              decoration: const BoxDecoration(
+                                color: AppColors.bgPage,
                               ),
+                              children: [
+                                _buildHeaderCell(
+                                  l10n.medicationsColDateTime,
+                                ),
+                                _buildHeaderCell(l10n.medicationsColMedicine),
+                                _buildHeaderCell(l10n.medicationsColDose),
+                                _buildHeaderCell(
+                                  l10n.medicationsColFrequency,
+                                ),
+                                _buildHeaderCell(l10n.medicationsColNotes),
+                                if (showActions)
+                                  _buildHeaderCell(l10n.medicationsColActions),
+                              ],
                             ),
-                        ],
+                            ..._meds.map((m) {
+                              return TableRow(
+                                decoration: const BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: AppColors.separator,
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                                children: [
+                                  _buildDataCell(
+                                    DateFormat.MMMd().add_jm().format(
+                                      m.takenAt.toLocal(),
+                                    ),
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  _buildDataCell(m.name, isBold: true),
+                                  _buildDataCell(m.dose ?? emptyDash),
+                                  _buildDataCell(m.frequency ?? emptyDash),
+                                  _buildNotesDataCell(m.notes, emptyDash),
+                                  if (showActions)
+                                    TableCell(
+                                      verticalAlignment:
+                                          TableCellVerticalAlignment.middle,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 6,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Semantics(
+                                              label: l10n
+                                                  .medicationsEditSemantics(
+                                                m.name,
+                                              ),
+                                              button: true,
+                                              child: IconButton(
+                                                key: Key(
+                                                  'medications-edit-${m.id}',
+                                                ),
+                                                padding: EdgeInsets.zero,
+                                                constraints:
+                                                    const BoxConstraints(),
+                                                icon: const Icon(
+                                                  Icons.edit_outlined,
+                                                  color: AppColors.primary,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () async {
+                                                  final saved =
+                                                      await showAddMedicationSheet(
+                                                    context,
+                                                    profileId: widget.profileId,
+                                                    initialMedication: m,
+                                                  );
+                                                  if (saved == true) _load();
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Semantics(
+                                              label:
+                                                  l10n.medicationsDeleteSemantics(
+                                                m.name,
+                                              ),
+                                              button: true,
+                                              child: IconButton(
+                                                key: Key(
+                                                  'medications-delete-${m.id}',
+                                                ),
+                                                padding: EdgeInsets.zero,
+                                                constraints:
+                                                    const BoxConstraints(),
+                                                icon: const Icon(
+                                                  Icons.delete_outline,
+                                                  color: AppColors.danger,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () =>
+                                                    _confirmDelete(m),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            }),
+                          ],
+                        ),
                       ),
-                      trailing: (_canEdit && _canWriteRegion)
-                          ? IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.redAccent,
-                              ),
-                              onPressed: () => _confirmDelete(m),
-                            )
-                          : null,
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
+    );
+  }
+
+  Widget _buildHeaderCell(String text) {
+    return Semantics(
+      header: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataCell(String text, {bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+          color: color ?? AppColors.textPrimary,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotesDataCell(String? notes, String emptyDash) {
+    final hasNotes = notes != null && notes.isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Text(
+        hasNotes ? notes : emptyDash,
+        style: TextStyle(
+          fontStyle: hasNotes ? FontStyle.italic : FontStyle.normal,
+          color: hasNotes ? AppColors.textSecondary : AppColors.textPrimary,
+          fontSize: 13,
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }
@@ -238,26 +389,27 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.medication_outlined,
             size: 64,
-            color: Colors.grey.shade400,
+            color: AppColors.textTertiary,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No medicines logged yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          Text(
+            l10n.medicationsEmptyTitle,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Log medicines you have taken so your doctor can see them in your next report.',
-            style: TextStyle(color: Colors.grey.shade600),
+            l10n.medicationsEmptyBody,
+            style: const TextStyle(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           if (canEdit) ...[
@@ -265,7 +417,7 @@ class _EmptyState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add),
-              label: const Text('Log first medicine'),
+              label: Text(l10n.medicationsLogFirst),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

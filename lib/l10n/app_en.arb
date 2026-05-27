@@ -1221,5 +1221,39 @@
   "regionErrorWriteBlocked": "Logging is only available in India. You're signed in as a family member and can view, but not log, new readings.",
   "@regionErrorWriteBlocked": {
     "description": "NUO-135: shown when a write request slips through and the server returns HTTP 451 REGION_NOT_ALLOWED."
-  }
+  },
+  "medicationsScreenTitle": "Medicines I took",
+  "medicationsLogFab": "Log medicine",
+  "medicationsLogFirst": "Log first medicine",
+  "medicationsColDateTime": "Date & Time",
+  "medicationsColMedicine": "Medicine",
+  "medicationsColDose": "Dose",
+  "medicationsColFrequency": "Frequency",
+  "medicationsColNotes": "Notes",
+  "medicationsColActions": "Actions",
+  "medicationsEmptyTitle": "No medicines logged yet",
+  "medicationsEmptyBody": "Log medicines you have taken so your doctor can see them in your next report.",
+  "medicationsDeleteTitle": "Delete medication entry?",
+  "medicationsDeleteBody": "Remove \"{name}\" log from {dateTime}?",
+  "@medicationsDeleteBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "dateTime": { "type": "String" }
+    }
+  },
+  "medicationsDeleteSemantics": "Delete {name}",
+  "@medicationsDeleteSemantics": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "medicationsEditTitle": "Edit medicine",
+  "medicationsSaveChanges": "Save changes",
+  "medicationsEditSemantics": "Edit {name}",
+  "@medicationsEditSemantics": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "medicationsCellEmpty": "-"
 }

@@ -2270,4 +2270,66 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get regionErrorWriteBlocked =>
       'பதிவுசெய்தல் இந்தியாவில் மட்டுமே கிடைக்கிறது. நீங்கள் ஒரு குடும்ப உறுப்பினராக உள்நுழைந்துள்ளீர்கள் — அளவீடுகளைப் பார்க்கலாம், ஆனால் புதியதை பதிவுசெய்ய முடியாது.';
+
+  @override
+  String get medicationsScreenTitle => 'நான் உட்கொண்ட மருந்துகள்';
+
+  @override
+  String get medicationsLogFab => 'மருந்து பதிவு செய்';
+
+  @override
+  String get medicationsLogFirst => 'முதல் மருந்தை பதிவு செய்';
+
+  @override
+  String get medicationsColDateTime => 'தேதி & நேரம்';
+
+  @override
+  String get medicationsColMedicine => 'மருந்து';
+
+  @override
+  String get medicationsColDose => 'அளவு';
+
+  @override
+  String get medicationsColFrequency => 'அதிர்வெண்';
+
+  @override
+  String get medicationsColNotes => 'குறிப்புகள்';
+
+  @override
+  String get medicationsColActions => 'செயல்கள்';
+
+  @override
+  String get medicationsEmptyTitle =>
+      'இன்னும் மருந்துகள் பதிவு செய்யப்படவில்லை';
+
+  @override
+  String get medicationsEmptyBody =>
+      'நீங்கள் உட்கொண்ட மருந்துகளை பதிவு செய்தால் அடுத்த அறிக்கையில் மருத்துவருக்குத் தெரியும்.';
+
+  @override
+  String get medicationsDeleteTitle => 'மருந்து பதிவை நீக்கவா?';
+
+  @override
+  String medicationsDeleteBody(String name, String dateTime) {
+    return '$dateTime இல் \"$name\" பதிவை நீக்கவா?';
+  }
+
+  @override
+  String medicationsDeleteSemantics(String name) {
+    return '$name நீக்கு';
+  }
+
+  @override
+  String get medicationsEditTitle => 'மருந்தை திருத்து';
+
+  @override
+  String get medicationsSaveChanges => 'மாற்றங்களை சேமி';
+
+  @override
+  String medicationsEditSemantics(String name) {
+    return '$name திருத்து';
+  }
+
+  @override
+  String get medicationsCellEmpty => '-';
 }
