@@ -2329,4 +2329,65 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get regionErrorWriteBlocked =>
       'Logging is only available in India. You\'re signed in as a family member and can view, but not log, new readings.';
+
+  @override
+  String get medicationsScreenTitle => 'Medicines I took';
+
+  @override
+  String get medicationsLogFab => 'Log medicine';
+
+  @override
+  String get medicationsLogFirst => 'Log first medicine';
+
+  @override
+  String get medicationsColDateTime => 'Date & Time';
+
+  @override
+  String get medicationsColMedicine => 'Medicine';
+
+  @override
+  String get medicationsColDose => 'Dose';
+
+  @override
+  String get medicationsColFrequency => 'Frequency';
+
+  @override
+  String get medicationsColNotes => 'Notes';
+
+  @override
+  String get medicationsColActions => 'Actions';
+
+  @override
+  String get medicationsEmptyTitle => 'No medicines logged yet';
+
+  @override
+  String get medicationsEmptyBody =>
+      'Log medicines you have taken so your doctor can see them in your next report.';
+
+  @override
+  String get medicationsDeleteTitle => 'Delete medication entry?';
+
+  @override
+  String medicationsDeleteBody(String name, String dateTime) {
+    return 'Remove \"$name\" log from $dateTime?';
+  }
+
+  @override
+  String medicationsDeleteSemantics(String name) {
+    return 'Delete $name';
+  }
+
+  @override
+  String get medicationsEditTitle => 'Edit medicine';
+
+  @override
+  String get medicationsSaveChanges => 'Save changes';
+
+  @override
+  String medicationsEditSemantics(String name) {
+    return 'Edit $name';
+  }
+
+  @override
+  String get medicationsCellEmpty => '-';
 }

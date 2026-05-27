@@ -23,13 +23,17 @@ import '../theme/app_theme.dart';
 Future<bool?> showAddMedicationSheet(
   BuildContext context, {
   required int profileId,
+  Medication? initialMedication,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     isDismissible: false,
-    builder: (_) => AddMedicationSheet(profileId: profileId),
+    builder: (_) => AddMedicationSheet(
+      profileId: profileId,
+      initialMedication: initialMedication,
+    ),
   );
 }
 
@@ -37,7 +41,12 @@ Future<bool?> showAddMedicationSheet(
 /// widget tests can mount it directly without going through showModalBottomSheet.
 class AddMedicationSheet extends StatefulWidget {
   final int profileId;
-  const AddMedicationSheet({super.key, required this.profileId});
+  final Medication? initialMedication;
+  const AddMedicationSheet({
+    super.key,
+    required this.profileId,
+    this.initialMedication,
+  });
 
   @override
   State<AddMedicationSheet> createState() => _AddMedicationSheetState();
@@ -54,6 +63,21 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
   bool _saving = false;
   int _savedCount = 0;
   String? _lastSavedName;
+
+  bool get _isEditMode => widget.initialMedication != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.initialMedication;
+    if (m != null) {
+      _nameCtl.text = m.name;
+      _doseCtl.text = m.dose ?? '';
+      _freqCtl.text = m.frequency ?? '';
+      _notesCtl.text = m.notes ?? '';
+      _takenAt = m.takenAt.toLocal();
+    }
+  }
 
   @override
   void dispose() {
@@ -106,23 +130,42 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
       final token = await StorageService().getToken();
       if (token == null) throw Exception('Not authenticated');
       final savedName = _nameCtl.text.trim();
-      await MedicationService().saveMedication(
-        MedicationCreate(
-          profileId: widget.profileId,
-          name: savedName,
-          dose: _doseCtl.text.trim().isEmpty ? null : _doseCtl.text.trim(),
-          frequency: _freqCtl.text.trim().isEmpty ? null : _freqCtl.text.trim(),
-          takenAt: _takenAt,
-          notes: _notesCtl.text.trim().isEmpty ? null : _notesCtl.text.trim(),
-        ),
-        token,
-      );
-      if (!mounted) return;
-      setState(() {
-        _savedCount += 1;
-        _lastSavedName = savedName;
-      });
-      _resetForm();
+
+      if (_isEditMode) {
+        await MedicationService().updateMedication(
+          widget.initialMedication!.id,
+          MedicationUpdate(
+            name: savedName,
+            dose: _doseCtl.text.trim(),
+            frequency: _freqCtl.text.trim(),
+            takenAt: _takenAt,
+            notes: _notesCtl.text.trim(),
+          ),
+          token,
+        );
+        if (!mounted) return;
+        Navigator.pop(context, true);
+        return;
+      } else {
+        await MedicationService().saveMedication(
+          MedicationCreate(
+            profileId: widget.profileId,
+            name: savedName,
+            dose: _doseCtl.text.trim().isEmpty ? null : _doseCtl.text.trim(),
+            frequency:
+                _freqCtl.text.trim().isEmpty ? null : _freqCtl.text.trim(),
+            takenAt: _takenAt,
+            notes: _notesCtl.text.trim().isEmpty ? null : _notesCtl.text.trim(),
+          ),
+          token,
+        );
+        if (!mounted) return;
+        setState(() {
+          _savedCount += 1;
+          _lastSavedName = savedName;
+        });
+        _resetForm();
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -148,6 +191,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final mq = MediaQuery.of(context);
     // Sheet covers ~92% of viewport so chained logging has comfortable space.
     final maxHeight = mq.size.height * 0.92;
@@ -177,10 +221,12 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
               padding: const EdgeInsets.fromLTRB(20, 4, 8, 0),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Log medicine',
-                      style: TextStyle(
+                      _isEditMode
+                          ? l10n.medicationsEditTitle
+                          : l10n.medicationsLogFab,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
@@ -194,7 +240,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                 ],
               ),
             ),
-            if (_lastSavedName != null)
+            if (_lastSavedName != null && !_isEditMode)
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -324,7 +370,9 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                             )
                           : const Icon(Icons.add, size: 20),
                       label: Text(
-                        _savedCount == 0 ? 'Save' : 'Save & add more',
+                        _isEditMode
+                            ? l10n.medicationsSaveChanges
+                            : (_savedCount == 0 ? 'Save' : 'Save & add more'),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -334,21 +382,24 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      key: const Key('medication-done-btn'),
-                      onPressed: _saving ? null : _done,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                      child: Text(
-                        _savedCount > 0 ? 'Done ($_savedCount logged)' : 'Done',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                  if (!_isEditMode)
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        key: const Key('medication-done-btn'),
+                        onPressed: _saving ? null : _done,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        child: Text(
+                          _savedCount > 0
+                              ? 'Done ($_savedCount logged)'
+                              : 'Done',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

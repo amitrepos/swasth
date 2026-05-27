@@ -4375,6 +4375,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logging is only available in India. You\'re signed in as a family member and can view, but not log, new readings.'**
   String get regionErrorWriteBlocked;
+
+  /// No description provided for @medicationsScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines I took'**
+  String get medicationsScreenTitle;
+
+  /// No description provided for @medicationsLogFab.
+  ///
+  /// In en, this message translates to:
+  /// **'Log medicine'**
+  String get medicationsLogFab;
+
+  /// No description provided for @medicationsLogFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Log first medicine'**
+  String get medicationsLogFirst;
+
+  /// No description provided for @medicationsColDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & Time'**
+  String get medicationsColDateTime;
+
+  /// No description provided for @medicationsColMedicine.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine'**
+  String get medicationsColMedicine;
+
+  /// No description provided for @medicationsColDose.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose'**
+  String get medicationsColDose;
+
+  /// No description provided for @medicationsColFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get medicationsColFrequency;
+
+  /// No description provided for @medicationsColNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get medicationsColNotes;
+
+  /// No description provided for @medicationsColActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get medicationsColActions;
+
+  /// No description provided for @medicationsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No medicines logged yet'**
+  String get medicationsEmptyTitle;
+
+  /// No description provided for @medicationsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Log medicines you have taken so your doctor can see them in your next report.'**
+  String get medicationsEmptyBody;
+
+  /// No description provided for @medicationsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete medication entry?'**
+  String get medicationsDeleteTitle;
+
+  /// No description provided for @medicationsDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{name}\" log from {dateTime}?'**
+  String medicationsDeleteBody(String name, String dateTime);
+
+  /// No description provided for @medicationsDeleteSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}'**
+  String medicationsDeleteSemantics(String name);
+
+  /// No description provided for @medicationsEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit medicine'**
+  String get medicationsEditTitle;
+
+  /// No description provided for @medicationsSaveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get medicationsSaveChanges;
+
+  /// No description provided for @medicationsEditSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String medicationsEditSemantics(String name);
+
+  /// No description provided for @medicationsCellEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'-'**
+  String get medicationsCellEmpty;
 }
 
 class _AppLocalizationsDelegate
