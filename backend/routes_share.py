@@ -101,7 +101,16 @@ def _is_safe_url(url: str) -> bool:
         parsed = urlparse(url)
     except Exception:
         return False
-    if parsed.scheme not in ("http", "https"):
+    # HTTPS-only. A plaintext http:// redirect over a plaintext
+    # network request lets a MITM intercept the Location header and
+    # swap the destination — TLS-stripping on Bihar mobile networks
+    # is a realistic attack vector. The store URLs (play.google.com,
+    # apps.apple.com) and the swasth.health web app all serve HTTPS,
+    # so http:// here can only be a misconfiguration or an attacker
+    # value. If a future dev environment needs http://localhost,
+    # gate it behind an explicit settings.DEBUG branch rather than
+    # weakening this production path.
+    if parsed.scheme != "https":
         return False
     # Reject URLs that carry userinfo (user:pass@host). Browsers do
     # honor the host AFTER the @, but the URL as a string LOOKS like
@@ -163,4 +172,14 @@ def android_app_links_assetlinks(request: Request):
                 "sha256_cert_fingerprints": [cert],
             },
         }]
-    return JSONResponse(content=payload)
+    # Google's Digital Asset Links verifier caches the manifest for
+    # up to 24 hours by default. When we rotate signing keys (Play
+    # Console re-sign, new internal-testing track), App Links break
+    # for the whole cache window. max-age=3600 keeps the verifier
+    # cached for an hour — short enough to roll out a cert rotation
+    # without a multi-day outage, long enough to avoid hammering us
+    # on every install.
+    return JSONResponse(
+        content=payload,
+        headers={"Cache-Control": "max-age=3600"},
+    )

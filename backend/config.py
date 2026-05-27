@@ -1,6 +1,20 @@
+import re
+
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, field_validator
 from typing import Optional, List, ClassVar
+
+
+# Regex for a valid Android package name. RFC: dotted-identifier, each
+# segment starts with a letter and contains only [a-zA-Z0-9_]; at
+# least one dot. Matches Google Play's actual constraints; rejects
+# control chars, Unicode, spaces, single-segment names like "com".
+_ANDROID_PACKAGE_RE = re.compile(
+    r"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$"
+)
+# 32-byte SHA-256, either colon-separated (AA:BB:CC:...) or continuous
+# (AABBCC...). 64 hex chars either way after stripping colons.
+_CERT_SHA256_RE = re.compile(r"^[0-9A-F]{64}$")
 
 
 class Settings(BaseSettings):
@@ -141,6 +155,40 @@ class Settings(BaseSettings):
     # cert SHA-256 fingerprint.
     ANDROID_PACKAGE_NAME: str = "com.swasth.app"
     SHARE_ANDROID_CERT_SHA256: Optional[str] = None  # 64-hex-chars, colons OR continuous
+
+    # Format validators — fail loud at startup if the env var is
+    # garbage rather than silently serving a broken assetlinks.json
+    # that Google's verifier rejects without telling us why. Pydantic
+    # raises ValidationError before the app accepts traffic, so a
+    # bad value is immediately visible in the process logs.
+
+    @field_validator("ANDROID_PACKAGE_NAME")
+    @classmethod
+    def _validate_android_package_name(cls, v: str) -> str:
+        if not _ANDROID_PACKAGE_RE.fullmatch(v):
+            raise ValueError(
+                "ANDROID_PACKAGE_NAME must be a valid Android package name "
+                "(dotted identifier, each segment starts with a letter, "
+                f"e.g. 'com.swasth.app'); got: {v!r}"
+            )
+        return v
+
+    @field_validator("SHARE_ANDROID_CERT_SHA256")
+    @classmethod
+    def _validate_share_android_cert_sha256(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        # Play Console renders the fingerprint colon-separated by
+        # default ("AA:BB:..."); operators sometimes strip the colons
+        # before pasting. Accept both and normalize to upper-case
+        # colon-separated for downstream consumption.
+        clean = v.replace(":", "").upper()
+        if not _CERT_SHA256_RE.fullmatch(clean):
+            raise ValueError(
+                "SHARE_ANDROID_CERT_SHA256 must be 32 hex bytes "
+                "(colon-separated or continuous); got: {v!r}".format(v=v)
+            )
+        return ":".join(clean[i:i + 2] for i in range(0, 64, 2))
 
     class Config:
         env_file = ".env"

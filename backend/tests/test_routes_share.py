@@ -225,6 +225,23 @@ def test_assetlinks_empty_state_is_valid_json(client):
     assert _json.loads(resp.text) == []
 
 
+def test_assetlinks_sets_cache_control_for_rotation_window(client):
+    """Reviewer M1: Google's verifier caches assetlinks.json for up to
+    24h by default. Without a Cache-Control header we have no way to
+    roll out a cert rotation (new signing key, Play Console re-sign)
+    without a multi-day App-Links outage. max-age=3600 caps the cache
+    at 1 hour."""
+    with mock.patch("routes_share.settings") as s:
+        _apply(s, ANDROID_PACKAGE_NAME="com.swasth.app", SHARE_ANDROID_CERT_SHA256=None)
+        resp = client.get("/.well-known/assetlinks.json")
+    assert resp.status_code == 200
+    cc = resp.headers.get("cache-control", "")
+    assert "max-age=3600" in cc, (
+        f"Cache-Control header missing or wrong: {cc!r}. Verifier will "
+        "cache stale manifests for up to 24h after a cert rotation."
+    )
+
+
 # ──────────────────────────────────────────────────────────────────
 # Open-redirect defence — reviewer Issue 3 (netloc allowlist)
 # ──────────────────────────────────────────────────────────────────
@@ -303,7 +320,7 @@ def test_is_safe_url_accepts_swasth_subdomains_and_stores():
 
 
 def test_is_safe_url_rejects_lookalikes_and_bad_schemes():
-    """Lookalike domains, plain HTTP for stores, and non-HTTP schemes
+    """Lookalike domains, plain HTTP for stores, and non-HTTPS schemes
     must all be rejected."""
     from routes_share import _is_safe_url
 
@@ -311,13 +328,42 @@ def test_is_safe_url_rejects_lookalikes_and_bad_schemes():
     # check (the leading dot in _ALLOWED_SUFFIX prevents it).
     assert _is_safe_url("https://notswasth.health") is False
     assert _is_safe_url("https://swasth.health.evil.com") is False
-    # Non-HTTP schemes.
+    # Non-HTTPS schemes — HTTP is now also rejected (C1).
     assert _is_safe_url("javascript:alert(1)") is False
     assert _is_safe_url("data:text/html,foo") is False
     assert _is_safe_url("ftp://swasth.health") is False
     # Empty / malformed.
     assert _is_safe_url("") is False
     assert _is_safe_url("not-a-url") is False
+
+
+def test_is_safe_url_rejects_plain_http_even_on_allowed_host():
+    """Reviewer C1: plaintext http:// over a plaintext request lets
+    a MITM strip TLS and intercept the redirect. The store URLs and
+    swasth.health all serve HTTPS at their end, so http:// here can
+    only be a misconfiguration or an attack. Reject every http:// —
+    no exception for any host."""
+    from routes_share import _is_safe_url
+
+    assert _is_safe_url("http://swasth.health") is False
+    assert _is_safe_url("http://app.swasth.health") is False
+    assert _is_safe_url("http://play.google.com/store/apps/details?id=x") is False
+    assert _is_safe_url("http://apps.apple.com/in/app/swasth/id123") is False
+
+
+def test_invite_blocks_http_share_web_url(client):
+    """If SHARE_WEB_URL is mistakenly configured as http://, resolver
+    must fall through to _FINAL_SAFE_FALLBACK (the hardcoded https
+    constant) rather than serving the plaintext URL."""
+    with mock.patch("routes_share.settings") as s:
+        _apply(s, SHARE_WEB_URL="http://swasth.health")
+        resp = client.get(
+            "/invite", headers={"User-Agent": _DESKTOP_UA}, follow_redirects=False
+        )
+    assert resp.status_code == 302
+    # _FINAL_SAFE_FALLBACK is hardcoded https://swasth.health.
+    assert resp.headers["location"] == "https://swasth.health"
+    assert not resp.headers["location"].startswith("http://")
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -375,6 +421,93 @@ def test_legacy_alias_warning_logs_every_hit_no_dedup(client, caplog):
 # ──────────────────────────────────────────────────────────────────
 # Limiter wiring
 # ──────────────────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────────
+# Settings format validators — reviewer M2
+# ──────────────────────────────────────────────────────────────────
+# These are unit tests on the Settings class, not the route. They
+# instantiate Settings directly with the field overridden — bypassing
+# the .env file — to assert that bad values are rejected at startup.
+
+def test_settings_rejects_invalid_android_package_name():
+    """Garbage in ANDROID_PACKAGE_NAME must fail at startup, not
+    silently serve a manifest Google's verifier will reject."""
+    import pytest as _pytest
+    from pydantic import ValidationError
+    from config import Settings
+
+    for bad in [
+        "",              # empty
+        "com",           # single segment
+        "1com.swasth",   # segment starts with digit
+        "com..swasth",   # empty segment
+        "com.swasth!",   # invalid char
+        "com.swasth\n",  # control char
+        "com swasth",    # space
+    ]:
+        with _pytest.raises(ValidationError):
+            Settings(ANDROID_PACKAGE_NAME=bad)
+
+
+def test_settings_accepts_valid_android_package_name():
+    """Realistic values: dotted identifiers with letters / digits /
+    underscores per segment."""
+    from config import Settings
+
+    for ok in [
+        "com.swasth.app",
+        "com.swasth",
+        "io.flutter.plugins.test_app",
+        "com.swasth.app.staging",
+    ]:
+        s = Settings(ANDROID_PACKAGE_NAME=ok)
+        assert s.ANDROID_PACKAGE_NAME == ok
+
+
+def test_settings_accepts_cert_sha256_in_both_formats():
+    """Play Console renders the fingerprint colon-separated by
+    default; operators sometimes strip the colons before pasting.
+    Both forms must work; output normalizes to colon-separated
+    upper-case for downstream consumers."""
+    from config import Settings
+
+    expected = "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
+    continuous = expected.replace(":", "")
+    lower = expected.lower()
+
+    for form in (expected, continuous, lower):
+        s = Settings(SHARE_ANDROID_CERT_SHA256=form)
+        assert s.SHARE_ANDROID_CERT_SHA256 == expected, (
+            f"Cert format {form!r} did not normalize to canonical "
+            f"colon-separated upper-case: got {s.SHARE_ANDROID_CERT_SHA256!r}"
+        )
+
+
+def test_settings_rejects_invalid_cert_sha256():
+    """Bad fingerprints must fail at startup."""
+    import pytest as _pytest
+    from pydantic import ValidationError
+    from config import Settings
+
+    for bad in [
+        "tooshort",
+        "AA:BB",
+        "ZZ" * 32,             # non-hex
+        "AA" * 31,             # 62 chars, not 64
+        "AA" * 33,             # 66 chars, not 64
+        "AA:BB:CC:" + ("AA" * 30),  # right length minus the trailing bytes
+    ]:
+        with _pytest.raises(ValidationError):
+            Settings(SHARE_ANDROID_CERT_SHA256=bad)
+
+
+def test_settings_accepts_null_cert_sha256():
+    """None / empty string → None (pre-launch state). Must NOT raise."""
+    from config import Settings
+
+    assert Settings(SHARE_ANDROID_CERT_SHA256=None).SHARE_ANDROID_CERT_SHA256 is None
+    assert Settings(SHARE_ANDROID_CERT_SHA256="").SHARE_ANDROID_CERT_SHA256 is None
+
 
 def test_share_invite_uses_shared_limiter_for_429_not_500(client):
     """Ensure routes_share imports the SAME limiter instance the FastAPI
