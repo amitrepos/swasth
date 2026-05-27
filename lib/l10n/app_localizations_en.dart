@@ -75,6 +75,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errGeneric => 'Something went wrong. Please try again.';
 
   @override
+  String get errRegionRestricted =>
+      'Due to regional privacy laws, logging health data is currently restricted to users within India. You can still view your history.';
+
+  @override
   String get aiInsightEmptyState =>
       'Log daily readings for the best health insights.';
 
@@ -1540,6 +1544,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cameraError => 'Camera initialization failed. Please try again.';
+
+  @override
+  String get scanCouldNotReadTitle => 'Could Not Read Display';
+
+  @override
+  String get scanCouldNotReadMessage =>
+      'Neither the on-device reader nor the AI could extract values from this photo.\n\nTry:\n  • Hold the phone steady and closer to the display\n  • Make sure the screen is lit and numbers are visible\n  • Avoid glare or shadows on the display';
+
+  @override
+  String get scanNumbersNotDetectedTitle => 'Numbers Not Detected';
+
+  @override
+  String scanNumbersNotDetectedMessage(String detected) {
+    return 'The photo was captured but no valid reading was found.\n\nThe camera detected: \"$detected\"\n\nTry taking the photo again or enter the reading manually.';
+  }
+
+  @override
+  String get weightScale => 'Weight Scale';
 
   @override
   String get foodResultTitle => 'Meal Result';

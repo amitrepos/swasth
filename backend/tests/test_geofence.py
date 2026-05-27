@@ -1,0 +1,460 @@
+"""Unit tests for the India-only geofence dependency.
+
+NOTE on import path: CI and the local pre-commit hook both run pytest with
+the working directory set to backend/, which means modules live at the
+top level (e.g. `dependencies`, not `backend.dependencies`). Using the
+package-prefixed import broke on CI. Keep this as a flat import.
+"""
+import pytest
+from fastapi import HTTPException, Request
+import unittest.mock as mock
+
+import dependencies
+from dependencies import verify_india_location
+
+
+@pytest.fixture(autouse=True)
+def _clear_trusted_proxy_cache():
+    """Tests that monkey-patch TRUSTED_PROXIES need a fresh parse; clear
+    the module-level cache before every test so order-of-execution
+    cannot leak state between cases."""
+    dependencies._reset_trusted_proxy_cache()
+    yield
+    dependencies._reset_trusted_proxy_cache()
+
+
+class MockGeoIPResponse:
+    def __init__(self, iso_code):
+        self.country = mock.Mock()
+        self.country.iso_code = iso_code
+
+
+def _make_request(peer_ip="14.139.1.1", xff=None):
+    request = mock.Mock(spec=Request)
+    request.headers = {"X-Forwarded-For": xff} if xff else {}
+    if peer_ip is None:
+        request.client = None
+    else:
+        request.client = mock.Mock()
+        request.client.host = peer_ip
+    request.url = mock.Mock()
+    request.url.path = "/readings"
+    request.method = "POST"
+    return request
+
+
+# ──────────────────────────────────────────────────────────────────
+# Original happy / unhappy paths
+# ──────────────────────────────────────────────────────────────────
+
+def test_verify_india_location_missing_db():
+    """When the mmdb is absent, the dep fails open (dev/CI fallback)."""
+    request = _make_request(peer_ip="8.8.8.8")
+    with mock.patch("dependencies._get_geoip_reader", return_value=None):
+        verify_india_location(request)  # must not raise
+
+
+def test_verify_india_location_allowed_ip():
+    request = _make_request(peer_ip="14.139.1.1")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("IN")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        verify_india_location(request)
+
+
+def test_verify_india_location_blocked_ip():
+    request = _make_request(peer_ip="8.8.8.8")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("US")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        with pytest.raises(HTTPException) as exc:
+            verify_india_location(request)
+        assert exc.value.status_code == 403
+        assert exc.value.detail == "REGION_RESTRICTED"
+
+
+# ──────────────────────────────────────────────────────────────────
+# XFF spoofing resistance — trust XFF only behind a trusted proxy
+# ──────────────────────────────────────────────────────────────────
+
+def test_xff_honored_when_peer_is_trusted_proxy():
+    """Peer is a private/loopback hop → XFF is the source of truth."""
+    request = _make_request(peer_ip="10.0.0.1", xff="14.139.1.1, 10.0.0.5")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("IN")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        verify_india_location(request)
+        reader.country.assert_called_once_with("14.139.1.1")
+
+
+def test_xff_ignored_when_peer_is_public():
+    """Attacker hits the API directly with a forged XFF claiming an
+    Indian IP. Peer is a real US address → we must ignore the header
+    and geofence the peer, otherwise the geofence is decorative."""
+    request = _make_request(peer_ip="8.8.8.8", xff="14.139.1.1")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("US")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        with pytest.raises(HTTPException) as exc:
+            verify_india_location(request)
+        assert exc.value.detail == "REGION_RESTRICTED"
+        reader.country.assert_called_once_with("8.8.8.8")
+
+
+# ──────────────────────────────────────────────────────────────────
+# Edge cases the previous suite missed
+# ──────────────────────────────────────────────────────────────────
+
+def test_request_client_is_none_does_not_crash():
+    """ASGI can hand us request.client=None (lifespan or unit-test
+    Requests). The dep must not AttributeError; falls back to localhost
+    which is in the trusted-proxy range, so XFF (absent) is ignored
+    and the loopback lookup short-circuits AddressNotFoundError."""
+    request = _make_request(peer_ip=None)
+    reader = mock.Mock()
+    reader.country.side_effect = __import__("geoip2.errors", fromlist=["AddressNotFoundError"]).AddressNotFoundError("private")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        verify_india_location(request)  # must not raise
+
+
+def test_generic_geoip_exception_fails_open():
+    """If the GeoIP library itself blows up (corrupt DB, OSError, …) we
+    must not block the user — we fail open and log."""
+    request = _make_request(peer_ip="14.139.1.1")
+    reader = mock.Mock()
+    reader.country.side_effect = RuntimeError("mmdb corrupt")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        verify_india_location(request)  # must not raise
+
+
+def test_bypass_only_accepts_literal_true_lowercase():
+    """BYPASS_GEO_RESTRICTION must require the literal string 'true'
+    (case-insensitive). '1', 'yes', anything else MUST NOT bypass —
+    otherwise a stray env value silently disables the geofence."""
+    request = _make_request(peer_ip="8.8.8.8")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("US")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        with mock.patch.dict("os.environ", {"BYPASS_GEO_RESTRICTION": "1"}, clear=False):
+            with pytest.raises(HTTPException) as exc:
+                verify_india_location(request)
+            assert exc.value.detail == "REGION_RESTRICTED"
+
+
+def test_bypass_true_emits_audit_log(caplog):
+    """When the bypass IS active we must leave an audit trail. Without
+    this, an operator could leave the flag flipped in prod and we'd
+    have no record of which requests skipped the check."""
+    request = _make_request(peer_ip="8.8.8.8")
+    with mock.patch.dict("os.environ", {"BYPASS_GEO_RESTRICTION": "true"}, clear=False):
+        with caplog.at_level("WARNING", logger="dependencies"):
+            verify_india_location(request)
+        assert any("GEOFENCE_BYPASS" in r.message for r in caplog.records), \
+            "Bypass must emit a WARNING with GEOFENCE_BYPASS so audit can grep it"
+
+
+# ──────────────────────────────────────────────────────────────────
+# DPDPA — PII handling in logs
+# ──────────────────────────────────────────────────────────────────
+
+def test_blocked_request_log_masks_client_ip(caplog):
+    """DPDPA treats IPs as personal data; the INFO log on a blocked
+    request must mask the last octet so routine ops logs are not a
+    de facto personal-data store."""
+    request = _make_request(peer_ip="8.8.8.8")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("US")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        with caplog.at_level("INFO", logger="dependencies"):
+            with pytest.raises(HTTPException):
+                verify_india_location(request)
+        joined = " ".join(r.message for r in caplog.records)
+        assert "ip_masked=8.8.8.x" in joined, \
+            "Blocked-request log must include ip_masked=… with the last octet redacted"
+        assert "8.8.8.8" not in joined, \
+            "Full client IP must never appear in INFO logs (DPDPA personal data)"
+
+
+# ──────────────────────────────────────────────────────────────────
+# Perf — trusted-proxy parsing is cached
+# ──────────────────────────────────────────────────────────────────
+
+def test_trusted_proxy_networks_cached_across_calls():
+    """_trusted_proxy_networks is called once per request via
+    _get_client_ip. Re-parsing TRUSTED_PROXIES on every call wastes
+    CPU on a hot path — the value is static at process start."""
+    first = dependencies._trusted_proxy_networks()
+    second = dependencies._trusted_proxy_networks()
+    assert first is second, \
+        "Trusted-proxy list must be cached (identity match), not re-parsed per call"
+
+
+# ──────────────────────────────────────────────────────────────────
+# Defensive: None country code (satellite / anycast)
+# ──────────────────────────────────────────────────────────────────
+
+def test_none_country_code_fails_open():
+    """GeoLite2 returns iso_code=None for satellite / anycast IPs and
+    records without a country assignment. None != 'IN' would 403 real
+    Bihar users on VSAT links; treat None as fail-open."""
+    request = _make_request(peer_ip="14.139.1.1")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse(None)
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        verify_india_location(request)  # must not raise
+
+
+# ──────────────────────────────────────────────────────────────────
+# Route-wiring integration tests — catch decorator-typo regressions
+# ──────────────────────────────────────────────────────────────────
+#
+# The unit tests above patch verify_india_location's internals. They
+# would all pass even if the dependency were silently dropped from a
+# route. These TestClient cases fire a real HTTP request and assert
+# the 403 surfaces — the only way to detect a regression where someone
+# forgets to add `dependencies=[Depends(verify_india_location)]` to a
+# new route or removes it during refactor.
+
+
+def _us_reader():
+    """Mock GeoIP reader that classifies every IP as US."""
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("US")
+    return reader
+
+
+def _profile_id_for(user) -> int:
+    """Look up the owner ProfileAccess for `user` (User has no
+    `profile_accesses` relationship on the ORM; query it directly)."""
+    import models
+    from sqlalchemy.orm import object_session
+    session = object_session(user)
+    access = (
+        session.query(models.ProfileAccess)
+        .filter(
+            models.ProfileAccess.user_id == user.id,
+            models.ProfileAccess.access_level == "owner",
+        )
+        .first()
+    )
+    assert access is not None, "test_user fixture should create an owner ProfileAccess"
+    return access.profile_id
+
+
+def test_route_wired_post_readings_blocks_us(client, auth_headers, test_user):
+    """POST /readings must surface 403 REGION_RESTRICTED when the
+    geofence is wired AND the caller is outside India. If this fails
+    with 201/422 the dependency has been dropped from the route."""
+    from datetime import datetime, timezone
+
+    profile_id = _profile_id_for(test_user)
+    body = {
+        "profile_id": profile_id,
+        "reading_type": "glucose",
+        "glucose_value": 110,
+        "glucose_unit": "mg/dL",
+        "value_numeric": 110,
+        "unit_display": "mg/dL",
+        "reading_timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post("/api/readings", json=body, headers=auth_headers)
+    assert r.status_code == 403, (
+        f"Expected 403 from geofence, got {r.status_code}: {r.text}. "
+        "Likely cause: verify_india_location was dropped from POST /readings."
+    )
+    assert r.json().get("detail") == "REGION_RESTRICTED"
+
+
+def test_route_wired_post_meals_blocks_us(client, auth_headers, test_user):
+    """POST /meals must also be geofenced."""
+    from datetime import datetime, timezone
+
+    profile_id = _profile_id_for(test_user)
+    body = {
+        "profile_id": profile_id,
+        "meal_type": "BREAKFAST",
+        "category": "MODERATE_CARB",
+        "input_method": "quick_select",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post("/api/meals", json=body, headers=auth_headers)
+    assert r.status_code == 403, (
+        f"Expected 403 from geofence, got {r.status_code}: {r.text}. "
+        "Likely cause: verify_india_location was dropped from POST /meals."
+    )
+    assert r.json().get("detail") == "REGION_RESTRICTED"
+
+
+def test_route_wired_delete_meal_blocks_us(client, auth_headers, test_user):
+    """DELETE /meals/{id} must also be geofenced — destructive ops on
+    PHI are exactly what the rule is meant to protect."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        # The meal doesn't need to exist — the dependency runs before the
+        # 404. If geofence is wired we get 403 first.
+        r = client.delete("/api/meals/999999", headers=auth_headers)
+    assert r.status_code == 403, (
+        f"Expected 403 from geofence, got {r.status_code}: {r.text}. "
+        "Likely cause: verify_india_location was dropped from DELETE /meals/{id}."
+    )
+    assert r.json().get("detail") == "REGION_RESTRICTED"
+
+
+def test_route_not_geofenced_get_readings_passes_us(client, auth_headers, test_user):
+    """GET /readings is intentionally NOT geofenced — diaspora users
+    must be able to view existing history. This is a guardrail: if
+    someone adds the dep to read endpoints by mistake, this test
+    catches it before NRI users lose access to their own data."""
+    profile_id = _profile_id_for(test_user)
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.get(f"/api/readings?profile_id={profile_id}", headers=auth_headers)
+    assert r.status_code != 403 or r.json().get("detail") != "REGION_RESTRICTED", (
+        "GET /readings must NOT be geofenced; NRI users need read access. "
+        "If this assertion fires, someone added verify_india_location to a "
+        "read endpoint — revert that."
+    )
+
+
+# ──────────────────────────────────────────────────────────────────
+# Wiring tests for the REMAINING geofenced routes
+# ──────────────────────────────────────────────────────────────────
+# The block above covers POST/DELETE happy paths. These cases cover
+# the rest of the surface; they all use the same pattern: mock the
+# GeoIP reader to claim US, fire the request, assert the geofence
+# 403 surfaces before the route's own validation/404 logic.
+#
+# We don't care about 404/422 here — only that the geofence fires
+# FIRST. If the dep is dropped, the assertion catches it because the
+# request will get past the geofence and produce a different status.
+
+def _assert_geofence_blocked(response, method: str, path: str):
+    detail = ""
+    try:
+        detail = response.json().get("detail", "")
+    except Exception:
+        pass
+    assert response.status_code == 403 and detail == "REGION_RESTRICTED", (
+        f"Expected 403 REGION_RESTRICTED from geofence on {method} {path}, "
+        f"got {response.status_code}: {response.text}. "
+        "Likely cause: verify_india_location was dropped from this route."
+    )
+
+
+def test_route_wired_put_reading_blocks_us(client, auth_headers):
+    """PUT /api/readings/{id} — edit reading."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.put("/api/readings/999999", json={}, headers=auth_headers)
+    _assert_geofence_blocked(r, "PUT", "/api/readings/{id}")
+
+
+def test_route_wired_delete_reading_blocks_us(client, auth_headers):
+    """DELETE /api/readings/{id} — delete reading."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.delete("/api/readings/999999", headers=auth_headers)
+    _assert_geofence_blocked(r, "DELETE", "/api/readings/{id}")
+
+
+def test_route_wired_post_readings_parse_image_blocks_us(client, auth_headers):
+    """POST /api/readings/parse-image — OCR upload (multipart)."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post(
+            "/api/readings/parse-image?device_type=glucose",
+            headers=auth_headers,
+            files={"file": ("x.jpg", b"\x00\x00", "image/jpeg")},
+        )
+    _assert_geofence_blocked(r, "POST", "/api/readings/parse-image")
+
+
+def test_route_wired_patch_meal_blocks_us(client, auth_headers):
+    """PATCH /api/meals/{id} — edit meal."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.patch("/api/meals/999999", json={}, headers=auth_headers)
+    _assert_geofence_blocked(r, "PATCH", "/api/meals/{id}")
+
+
+def test_route_wired_post_meals_parse_image_blocks_us(client, auth_headers):
+    """POST /api/meals/parse-image — food-photo OCR (multipart)."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post(
+            "/api/meals/parse-image",
+            headers=auth_headers,
+            files={"file": ("x.jpg", b"\x00\x00", "image/jpeg")},
+        )
+    _assert_geofence_blocked(r, "POST", "/api/meals/parse-image")
+
+
+def test_route_wired_post_report_manual_trigger_blocks_us(client, auth_headers):
+    """POST /api/report/manual-trigger — WhatsApp report dispatch."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post("/api/report/manual-trigger", headers=auth_headers)
+    _assert_geofence_blocked(r, "POST", "/api/report/manual-trigger")
+
+
+def test_route_wired_post_doctor_notes_blocks_us(client, auth_headers, test_user):
+    """POST /api/doctor/patients/{id}/notes — clinical notes (PHI)."""
+    profile_id = _profile_id_for(test_user)
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post(
+            f"/api/doctor/patients/{profile_id}/notes",
+            json={"note": "test"},
+            headers=auth_headers,
+        )
+    _assert_geofence_blocked(r, "POST", "/api/doctor/patients/{id}/notes")
+
+
+def test_route_wired_post_doctor_verify_blocks_us(client, auth_headers):
+    """POST /api/doctor/verify/{doctor_id} — admin NMC verification."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post("/api/doctor/verify/1", headers=auth_headers)
+    _assert_geofence_blocked(r, "POST", "/api/doctor/verify/{id}")
+
+
+# ──────────────────────────────────────────────────────────────────
+# Cache behaviour for the corrupt/missing-DB sentinel
+# ──────────────────────────────────────────────────────────────────
+
+def test_unavailable_geoip_db_is_cached(tmp_path, monkeypatch, caplog):
+    """When the mmdb is absent the unavailable result must be cached;
+    re-stat'ing the FS on every API call (and re-logging the warning)
+    was the regression flagged by review."""
+    # Force the cache to a fresh state.
+    dependencies._reset_geoip_reader_cache()
+    # Point the lookup at a directory with NO mmdb so the missing-DB
+    # branch fires. We monkey-patch os.path.dirname(__file__) indirectly
+    # by clearing the cache and verifying the sentinel persists.
+    monkeypatch.setattr(
+        "dependencies.os.path.exists", lambda _p: False
+    )
+    with caplog.at_level("WARNING", logger="dependencies"):
+        first = dependencies._get_geoip_reader()
+        second = dependencies._get_geoip_reader()
+    assert first is None and second is None
+    # Sentinel cached → no re-stat. We can detect this indirectly by
+    # checking the global identity is now the sentinel, not bare None.
+    assert dependencies._geoip_reader is dependencies._GEOIP_UNAVAILABLE, (
+        "Missing-DB result must be cached as _GEOIP_UNAVAILABLE so we "
+        "don't retry os.path.exists on every request."
+    )
+    # Clean up so later tests aren't affected.
+    dependencies._reset_geoip_reader_cache()
+
+
+# ──────────────────────────────────────────────────────────────────
+# Empty TRUSTED_PROXIES must NOT silently disable proxy detection
+# ──────────────────────────────────────────────────────────────────
+
+def test_empty_trusted_proxies_logs_warning(caplog, monkeypatch):
+    """TRUSTED_PROXIES='' produces an empty CIDR list; XFF is then
+    ignored for every request. That's a defensible posture but it
+    must be loud — operators need to notice if a deploy script
+    accidentally clears the env var."""
+    monkeypatch.setenv("TRUSTED_PROXIES", "")
+    dependencies._reset_trusted_proxy_cache()
+    with caplog.at_level("WARNING", logger="dependencies"):
+        nets = dependencies._trusted_proxy_networks()
+    assert nets == []
+    assert any(
+        "TRUSTED_PROXIES resolved to an empty CIDR list" in r.message
+        for r in caplog.records
+    ), "Empty TRUSTED_PROXIES must emit a WARNING — silent failure was the regression."

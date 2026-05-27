@@ -65,6 +65,7 @@ android/**/*.keystore
 backend/*.db
 backend/*.sqlite3
 backend/swasth.db
+backend/*.mmdb
 
 # pytest artifacts
 backend/.coverage
