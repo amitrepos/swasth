@@ -7,18 +7,11 @@ PII / abuse vectors before adding new endpoints.
 import os
 
 from fastapi import APIRouter, Request
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from limiter import limiter
 
 from config import settings
 
 router = APIRouter()
-
-# Per-IP rate limiter — these endpoints are unauthenticated, so without
-# a limit a single client could scrape config or exhaust DB/connection
-# pools cheaply. Disabled under TESTING=true (same pattern as routes.py).
-_enabled = os.environ.get("TESTING", "").lower() != "true"
-limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 
 
 @router.get("/public/support")

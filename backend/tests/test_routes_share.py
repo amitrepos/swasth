@@ -184,3 +184,78 @@ def test_assetlinks_empty_state_is_valid_json(client):
         resp = client.get("/.well-known/assetlinks.json")
     assert resp.status_code == 200
     assert _json.loads(resp.text) == []
+
+
+# ──────────────────────────────────────────────────────────────────
+# Security & Rate Limiting — Reviewer Issues C1, C2
+# ──────────────────────────────────────────────────────────────────
+
+def test_invite_prevents_open_redirect_on_malicious_env_var(client):
+    """C1 — Malicious input in environment variables (e.g. javascript:)
+    must be blocked. Fallback to settings.SHARE_WEB_URL."""
+    with mock.patch("routes_share.settings") as s:
+        # Attacker-controlled / misconfigured value
+        s.SHARE_ANDROID_URL = "javascript:alert(1)"
+        s.SHARE_WEB_URL = "https://swasth.health"
+        s.PLAY_STORE_URL = None
+        s.APP_STORE_URL = None
+        
+        resp = client.get(
+            "/invite", headers={"User-Agent": _ANDROID_UA}, follow_redirects=False
+        )
+    
+    assert resp.status_code == 302
+    # Should NOT be the javascript: URL
+    assert resp.headers["location"] == "https://swasth.health"
+
+
+def test_invite_falls_back_to_legacy_play_store_url(client):
+    """M5 — If SHARE_ANDROID_URL is None but PLAY_STORE_URL is set,
+    the redirect must use the legacy alias."""
+    legacy_url = "https://play.google.com/store/apps/details?id=legacy.app"
+    with mock.patch("routes_share.settings") as s:
+        s.SHARE_ANDROID_URL = None
+        s.PLAY_STORE_URL = legacy_url
+        s.SHARE_WEB_URL = "https://swasth.health"
+        resp = client.get(
+            "/invite", headers={"User-Agent": _ANDROID_UA}, follow_redirects=False
+        )
+    assert resp.status_code == 302
+    assert resp.headers["location"] == legacy_url
+
+
+def test_invite_falls_back_to_legacy_app_store_url(client):
+    """M5 — Same for iOS/APP_STORE_URL."""
+    legacy_url = "https://apps.apple.com/app/legacy/id123"
+    with mock.patch("routes_share.settings") as s:
+        s.SHARE_IOS_URL = None
+        s.APP_STORE_URL = legacy_url
+        s.SHARE_WEB_URL = "https://swasth.health"
+        resp = client.get(
+            "/invite", headers={"User-Agent": _IPHONE_UA}, follow_redirects=False
+        )
+    assert resp.status_code == 302
+    assert resp.headers["location"] == legacy_url
+
+
+def test_share_invite_uses_shared_limiter_for_429_not_500(client):
+    """C2, M6 — Ensure we are using the shared limiter. When the limit is
+    tripped, we must return 429 (Rate Limit Exceeded) via the global
+    handler in main.py, NOT a 500 (AttributeError) from an isolated
+    limiter with no registered handler."""
+    from limiter import limiter
+
+    # 1. Verification of singleton (fixes C2)
+    import routes_share
+    assert routes_share.limiter is limiter
+
+    # 2. Verification of global handler registration (fixes M6)
+    # Check that the FastAPI app has the correct exception handler registered
+    from slowapi.errors import RateLimitExceeded
+    from main import app
+
+    assert RateLimitExceeded in app.exception_handlers
+    # The handler is _rate_limit_exceeded_handler from slowapi
+    from slowapi import _rate_limit_exceeded_handler
+    assert app.exception_handlers[RateLimitExceeded] == _rate_limit_exceeded_handler
+

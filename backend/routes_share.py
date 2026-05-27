@@ -27,28 +27,28 @@ Why we host this ourselves instead of a third-party smart-link service:
 import json
 import os
 
+from urllib.parse import urlparse
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from limiter import limiter
 
 from config import settings
 
 router = APIRouter()
 
-# Per-IP rate limit on the unauthenticated endpoints. /invite is a
-# permanent public URL — without a limit, a bot could hammer it as a
-# free redirect-by-proxy (or just burn our CPU). Matches the pattern
-# used by routes_public.py. Disabled under TESTING=true so the test
-# suite can fire arbitrary numbers of requests without tripping it.
-_enabled = os.environ.get("TESTING", "").lower() != "true"
-limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
-
-
-# Default destinations. These are env-overridable (see config.py /
-# .env) so we can flip from web-only fallback → Play Store listing
-# the moment the store goes live, without an app rebuild.
-_DEFAULT_WEB_URL = "https://swasth.health"
+def _is_safe_url(url: str) -> bool:
+    """Validate that the URL uses an allowed scheme (http/https).
+    
+    Prevents 'open redirect' vulnerabilities where a malicious URL 
+    (e.g. javascript:alert(1)) could be injected via environment variables.
+    """
+    if not url:
+        return False
+    try:
+        parsed = urlparse(url)
+        return parsed.scheme in ("http", "https")
+    except Exception:
+        return False
 
 
 def _resolve_target(user_agent: str) -> str:
@@ -56,18 +56,23 @@ def _resolve_target(user_agent: str) -> str:
     ua = (user_agent or "").lower()
 
     if "android" in ua:
-        return (
-            getattr(settings, "SHARE_ANDROID_URL", None)
-            or getattr(settings, "PLAY_STORE_URL", None)
-            or _DEFAULT_WEB_URL
+        target = (
+            settings.SHARE_ANDROID_URL
+            or settings.PLAY_STORE_URL
+            or settings.SHARE_WEB_URL
         )
-    if "iphone" in ua or "ipad" in ua or "ipod" in ua:
-        return (
-            getattr(settings, "SHARE_IOS_URL", None)
-            or getattr(settings, "APP_STORE_URL", None)
-            or _DEFAULT_WEB_URL
+    elif any(x in ua for x in ("iphone", "ipad", "ipod")):
+        target = (
+            settings.SHARE_IOS_URL
+            or settings.APP_STORE_URL
+            or settings.SHARE_WEB_URL
         )
-    return getattr(settings, "SHARE_WEB_URL", None) or _DEFAULT_WEB_URL
+    else:
+        target = settings.SHARE_WEB_URL
+
+    if not _is_safe_url(target):
+        return settings.SHARE_WEB_URL
+    return target
 
 
 @router.get("/invite", include_in_schema=False)

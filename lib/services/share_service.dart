@@ -58,9 +58,11 @@ class ShareService {
       return result.status == ShareResultStatus.success;
     } catch (e) {
       debugPrint('ShareService: Share.share threw — $e');
-      messenger?.showSnackBar(
-        SnackBar(content: Text(l10n.errGeneric)),
-      );
+      if (context.mounted) {
+        messenger?.showSnackBar(
+          SnackBar(content: Text(l10n.errGeneric)),
+        );
+      }
       return false;
     }
   }

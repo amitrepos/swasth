@@ -5,12 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from database import engine, Base
 from config import settings
+from limiter import limiter
 import ops_metrics  # must import before Base.metadata.create_all so middleware attaches first
 import models
 import routes_whatsapp
@@ -22,6 +22,7 @@ import routes_chat
 import routes_admin
 import routes_meals
 import routes_doctor
+import routes_share
 import os
 from dotenv import load_dotenv
 from scheduler import start_scheduler, stop_scheduler
@@ -43,12 +44,6 @@ logger = logging.getLogger("swasth")
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
-
-# ---------------------------------------------------------------------------
-# Rate limiter — shared instance used by route files via app.state.limiter
-# ---------------------------------------------------------------------------
-_rate_limit_enabled = os.getenv("TESTING", "").lower() != "true"
-limiter = Limiter(key_func=get_remote_address, enabled=_rate_limit_enabled)
 
 app = FastAPI(
     title="Swasth Health App API",
@@ -237,7 +232,6 @@ app.include_router(routes_public.router, prefix="/api", tags=["Public"])
 # .well-known/assetlinks.json MUST be served from the apex of the
 # domain that's claiming the Android App Link (Google's verifier
 # fetches /.well-known/assetlinks.json — not /api/.well-known/...).
-import routes_share  # noqa: E402 — kept local to avoid cycle on cold import
 app.include_router(routes_share.router, tags=["Share"])
 
 
