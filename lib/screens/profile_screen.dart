@@ -915,7 +915,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () => ShareService.shareInvite(context),
+                    onTap: () async => await ShareService.shareInvite(context),
                   ),
                 ),
                 const SizedBox(height: 8),
