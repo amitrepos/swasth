@@ -146,3 +146,41 @@ def test_assetlinks_includes_cert_when_set(client):
     assert "com.swasth.app" in body
     assert cert in body
     assert "delegate_permission/common.handle_all_urls" in body
+
+
+# ──────────────────────────────────────────────────────────────────
+# JSON safety — reviewer Issue 1
+# ──────────────────────────────────────────────────────────────────
+
+def test_assetlinks_handles_malicious_input_safely(client):
+    """A mis-paste from Play Console could include a stray double-quote,
+    backslash, or control char. The previous f-string interpolation
+    produced invalid JSON OR an injection surface for any consumer
+    that trusted the structure. json.dumps escapes correctly. Test
+    asserts the served body is parseable JSON for every input."""
+    import json as _json
+
+    with mock.patch("routes_share.settings") as s:
+        s.ANDROID_PACKAGE_NAME = 'com.evil"app'      # stray double-quote
+        s.SHARE_ANDROID_CERT_SHA256 = "AA\\BB:CC"    # backslash
+        resp = client.get("/.well-known/assetlinks.json")
+    assert resp.status_code == 200
+    # MUST parse — invalid JSON would crash here and surface the
+    # f-string-injection regression.
+    parsed = _json.loads(resp.text)
+    assert isinstance(parsed, list)
+    assert parsed[0]["target"]["package_name"] == 'com.evil"app'
+    assert parsed[0]["target"]["sha256_cert_fingerprints"] == ["AA\\BB:CC"]
+
+
+def test_assetlinks_empty_state_is_valid_json(client):
+    """The empty-cert branch must also return parseable JSON, not a
+    bare "[]" string we hand-rolled."""
+    import json as _json
+
+    with mock.patch("routes_share.settings") as s:
+        s.ANDROID_PACKAGE_NAME = "com.swasth.app"
+        s.SHARE_ANDROID_CERT_SHA256 = None
+        resp = client.get("/.well-known/assetlinks.json")
+    assert resp.status_code == 200
+    assert _json.loads(resp.text) == []

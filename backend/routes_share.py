@@ -24,12 +24,25 @@ Why we host this ourselves instead of a third-party smart-link service:
      association from the same host, which is what Android App Links
      and iOS Universal Links require for direct-into-app open.
 """
+import json
+import os
+
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from config import settings
 
 router = APIRouter()
+
+# Per-IP rate limit on the unauthenticated endpoints. /invite is a
+# permanent public URL — without a limit, a bot could hammer it as a
+# free redirect-by-proxy (or just burn our CPU). Matches the pattern
+# used by routes_public.py. Disabled under TESTING=true so the test
+# suite can fire arbitrary numbers of requests without tripping it.
+_enabled = os.environ.get("TESTING", "").lower() != "true"
+limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 
 
 # Default destinations. These are env-overridable (see config.py /
@@ -58,6 +71,7 @@ def _resolve_target(user_agent: str) -> str:
 
 
 @router.get("/invite", include_in_schema=False)
+@limiter.limit("60/minute")
 def share_invite_landing(request: Request):
     """Smart-redirect entry point shared via WhatsApp / SMS.
 
@@ -74,7 +88,8 @@ def share_invite_landing(request: Request):
     include_in_schema=False,
     response_class=HTMLResponse,
 )
-def android_app_links_assetlinks():
+@limiter.limit("30/minute")
+def android_app_links_assetlinks(request: Request):
     """Android App Links manifest.
 
     Serves the JSON Google's verifier fetches when registering this
@@ -87,18 +102,25 @@ def android_app_links_assetlinks():
     SHARE_ANDROID_CERT_SHA256 in .env and re-deploy.
     """
     package = getattr(settings, "ANDROID_PACKAGE_NAME", "com.example.swasth")
-    cert = getattr(settings, "SHARE_ANDROID_CERT_SHA256", "")
+    cert = getattr(settings, "SHARE_ANDROID_CERT_SHA256", "") or ""
+
+    # Build via json.dumps — never f-string interpolation. A mis-paste
+    # from Play Console (stray double-quote, backslash, control char)
+    # would produce invalid JSON OR open an injection surface if a
+    # client trusted the structure. json.dumps escapes correctly
+    # for every input and we serve the result verbatim.
     if not cert:
-        body = "[]"
+        payload: list = []
     else:
-        body = (
-            '[{'
-            '"relation":["delegate_permission/common.handle_all_urls"],'
-            '"target":{'
-            '"namespace":"android_app",'
-            f'"package_name":"{package}",'
-            f'"sha256_cert_fingerprints":["{cert}"]'
-            '}'
-            '}]'
-        )
-    return HTMLResponse(content=body, media_type="application/json")
+        payload = [{
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+                "namespace": "android_app",
+                "package_name": package,
+                "sha256_cert_fingerprints": [cert],
+            },
+        }]
+    return HTMLResponse(
+        content=json.dumps(payload, separators=(",", ":")),
+        media_type="application/json",
+    )

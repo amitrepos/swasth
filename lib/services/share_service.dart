@@ -21,18 +21,18 @@ class ShareService {
   ShareService._();
 
   /// Build the invite URL by appending `/invite` to the server host
-  /// the app is currently pointed at. Strips any trailing `/api` or
-  /// `/api/` suffix the host happens to carry — `/invite` lives at
-  /// the root of the API domain, not under `/api`.
+  /// the app is currently pointed at. AppConfig.serverHost is already
+  /// trimmed of any trailing slashes, so a plain concatenation here
+  /// always produces a well-formed URL.
   static String inviteUrl() {
     final host = AppConfig.serverHost;
-    // serverHost is already stripped of trailing slashes by AppConfig.
     return '$host/invite';
   }
 
   /// Show the OS share sheet pre-filled with the invite message.
   /// Returns true if the share completed (any action), false if the
-  /// user dismissed the sheet.
+  /// user dismissed the sheet OR if the platform refused to surface
+  /// a share sheet (no targets, channel failure, etc.).
   ///
   /// NOTE on WhatsApp specifically: there is no point opening
   /// `wa.me/?text=…` directly — the OS share sheet on Android already
@@ -41,11 +41,27 @@ class ShareService {
   /// email) without us hardcoding any of them.
   static Future<bool> shareInvite(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.maybeOf(context);
     final message = '${l10n.inviteShareMessage}\n\n${inviteUrl()}';
-    final result = await Share.share(
-      message,
-      subject: l10n.inviteShareSubject,
-    );
-    return result.status == ShareResultStatus.success;
+
+    // share_plus can throw on devices that have no share targets at
+    // all (e.g. a fresh Android emulator without any messaging apps
+    // installed) or when the platform channel hiccups. Without this
+    // try/catch the user just sees nothing happen — they can't tell
+    // whether their tap registered. Show a SnackBar fallback so the
+    // failure mode is visible.
+    try {
+      final result = await Share.share(
+        message,
+        subject: l10n.inviteShareSubject,
+      );
+      return result.status == ShareResultStatus.success;
+    } catch (e) {
+      debugPrint('ShareService: Share.share threw — $e');
+      messenger?.showSnackBar(
+        SnackBar(content: Text(l10n.errGeneric)),
+      );
+      return false;
+    }
   }
 }

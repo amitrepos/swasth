@@ -910,10 +910,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     title: Text(l10n.inviteFriendsTile),
                     subtitle: Text(
                       l10n.inviteFriendsTileSubtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () => ShareService.shareInvite(context),
