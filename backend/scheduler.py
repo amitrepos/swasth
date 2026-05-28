@@ -13,7 +13,11 @@ scheduler = BackgroundScheduler()
 
 
 def weekly_reports_job():
-    logger.info(f"[SCHEDULER] Weekly report job fired at {datetime.now()}")
+    # UTC-anchored to correlate with audit rows downstream.
+    logger.info(
+        "[SCHEDULER] Weekly report job fired at %s",
+        datetime.now(timezone.utc),
+    )
     send_weekly_reports(trigger_type=ReportTriggerType.SCHEDULED)
 
 

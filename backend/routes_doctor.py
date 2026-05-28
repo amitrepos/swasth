@@ -1439,13 +1439,25 @@ def manually_trigger_doctor_report(
         .first()
     )
     if recent is not None:
+        sent_at = recent.sent_at
+        if sent_at.tzinfo is None:
+            sent_at = sent_at.replace(tzinfo=timezone.utc)
+        
+        now = datetime.now(timezone.utc)
+        # Calculate seconds until the 1-hour cooldown expires.
+        # Clamp to [1, 3600] per spec.
+        retry_after = max(1, min(int(
+            (sent_at + timedelta(hours=1) - now).total_seconds()
+        ), 3600))
+        
         raise HTTPException(
             status_code=429,
-            detail=(
-                "You can only request a manual report once per hour. "
-                "Your last request was at "
-                f"{recent.sent_at.isoformat()}."
-            ),
+            detail={
+                "message": "You can only request a manual report once per hour.",
+                "last_request_at": sent_at.isoformat(),
+                "retry_after_seconds": retry_after,
+            },
+            headers={"Retry-After": str(retry_after)},
         )
 
     background_tasks.add_task(

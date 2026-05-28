@@ -946,17 +946,30 @@ class WhatsAppMessageLog(Base):
     """Log for the actual delivery phase of a WhatsApp message."""
     __tablename__ = "whatsapp_message_logs"
 
+    # M2: Composite index supports the doctor manual-trigger cooldown
+    # query in routes_doctor.manually_trigger_doctor_report, which
+    # filters on (user_id, trigger_type, status, sent_at) and runs on
+    # every manual trigger. Without it, Postgres scans by user_id and
+    # filters the rest in memory — fine at Bihar pilot scale, slow once
+    # an active doctor has thousands of message rows.
+    __table_args__ = (
+        Index(
+            "ix_wa_msg_log_cooldown",
+            "user_id", "trigger_type", "status", "sent_at",
+        ),
+    )
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     phone_number = Column(String, nullable=False)
-    
+
     trigger_type = Column(Enum(ReportTriggerType), nullable=False)
     report_date = Column(Date, nullable=False)
     sent_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     member_ids_included = Column(JSON, nullable=False)
     reading_ids_included = Column(JSON, nullable=True)
-    
+
     status = Column(Enum(WhatsAppMessageStatus), nullable=False, default=WhatsAppMessageStatus.QUEUED)
     twilio_sid = Column(String, nullable=True, index=True)
     error_message = Column(Text, nullable=True)

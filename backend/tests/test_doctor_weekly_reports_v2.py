@@ -370,7 +370,14 @@ class TestDoctorWeeklyReportsV2:
             f"Expected 429 (rate-limited), got {resp.status_code}: {resp.text}. "
             "A delivery row <1h old must block further manual triggers."
         )
-        assert "once per hour" in resp.json()["detail"]
+        body = resp.json()
+        assert "once per hour" in body["detail"]["message"]
+        assert "retry_after_seconds" in body["detail"]
+        assert "Retry-After" in resp.headers
+        
+        retry_after = int(resp.headers["Retry-After"])
+        assert 1 <= retry_after <= 3600
+        assert body["detail"]["retry_after_seconds"] == retry_after
 
     def test_manual_trigger_NOT_blocked_by_recent_failed_delivery(
         self, client, db,

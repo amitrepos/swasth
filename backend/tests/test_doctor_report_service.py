@@ -296,3 +296,185 @@ class TestDoctorReportService:
         log = db.query(models.DoctorReportGenerationLog).filter_by(doctor_id=doctor.id).first()
         assert log is not None
         assert log.status == ReportGenerationStatus.SUCCESS
+
+    @patch("report_service.whatsapp_service")
+    @patch("report_service.settings")
+    def test_critical_block_bounded_with_many_patients(self, mock_settings, mock_whatsapp, db):
+        """C1: Verify that with many critical patients, the critical_block
+        is bounded to ~333 chars and includes an omission notice."""
+        mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+        mock_whatsapp.send_whatsapp_template.return_value = (True, "SM123", None)
+        
+        doctor = models.User(full_name="Dr. Busy", phone_number="+919999999999", role=models.UserRole.doctor, password_hash="...")
+        db.add(doctor); db.flush()
+        db.add(models.DoctorProfile(user_id=doctor.id, nmc_number="BUSY001", doctor_code="BUSY001")); db.flush()
+        
+        # Create 50 patients with critical readings
+        for i in range(50):
+            p = models.Profile(name=f"Patient With Very Long Name {i}")
+            db.add(p); db.flush()
+            db.add(models.DoctorPatientLink(
+                doctor_id=doctor.id, profile_id=p.id, status='active',
+                consent_granted_at=datetime.now(timezone.utc),
+                consent_type='in_person_exam',
+            )); db.flush()
+            # 350 mg/dL is critical
+            _add_reading(db, p.id, 1, "glucose", 350)
+            
+        send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
+        
+        # Check the digest snippet passed to Twilio
+        args = mock_whatsapp.send_whatsapp_template.call_args[0]
+        template_vars = args[2]
+        digest = template_vars[2]
+        
+        # Extract critical block (everything before the first " | 👤")
+        # format: "🚨 CRITICAL: P1, P2 +N more | 👤 P1: ..."
+        critical_section = digest.split(" | 👤")[0]
+        
+        assert "🚨 CRITICAL:" in critical_section
+        assert "more" in critical_section
+        # Tightened assertion: use the budget directly (333 chars)
+        assert len(critical_section) <= 333 + len(" | "), (
+            f"Critical section too long: {len(critical_section)} chars. "
+            f"Content: {critical_section}"
+        )
+
+    @patch("report_service.whatsapp_service")
+    @patch("report_service.settings")
+    def test_digest_total_under_max_len(self, mock_settings, mock_whatsapp, db):
+        """C1 load-bearing invariant: even with 100 critical and 100 regular
+        patients, the final digest snippet passed to Twilio MUST NOT exceed
+        _MAX_LEN (1000 chars)."""
+        mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+        mock_whatsapp.send_whatsapp_template.return_value = (True, "SM-LOAD", None)
+        
+        doctor = models.User(full_name="Dr. LoadTest", phone_number="+919999999999", role=models.UserRole.doctor, password_hash="...")
+        db.add(doctor); db.flush()
+        db.add(models.DoctorProfile(user_id=doctor.id, nmc_number="LOAD001", doctor_code="LOAD001")); db.flush()
+        
+        # 100 critical patients
+        for i in range(100):
+            p = models.Profile(name=f"Crit Patient {i}")
+            db.add(p); db.flush()
+            db.add(models.DoctorPatientLink(
+                doctor_id=doctor.id, profile_id=p.id, status='active',
+                consent_granted_at=datetime.now(timezone.utc),
+                consent_type='in_person_exam',
+            )); db.flush()
+            _add_reading(db, p.id, 1, "glucose", 350)
+            
+        # 100 regular patients (total 200)
+        for i in range(100):
+            p = models.Profile(name=f"Reg Patient {i}")
+            db.add(p); db.flush()
+            db.add(models.DoctorPatientLink(
+                doctor_id=doctor.id, profile_id=p.id, status='active',
+                consent_granted_at=datetime.now(timezone.utc),
+                consent_type='in_person_exam',
+            )); db.flush()
+            _add_reading(db, p.id, 1, "glucose", 110)
+            
+        send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
+        
+        args = mock_whatsapp.send_whatsapp_template.call_args[0]
+        digest = args[2][2]
+        
+        assert len(digest) <= 1000, f"Digest exceeds 1000 chars: {len(digest)}"
+        assert "omitted" in digest, "Expected omission notice in such a large panel"
+
+    @patch("report_service.whatsapp_service")
+    @patch("report_service.settings")
+    def test_critical_block_omits_zero_suffix_when_all_fit(self, mock_settings, mock_whatsapp, db):
+        """C1: Verify that when all critical patients fit, no suffix is shown."""
+        mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+        mock_whatsapp.send_whatsapp_template.return_value = (True, "SM123", None)
+        
+        doctor = models.User(full_name="Dr. Calm", phone_number="+919999999999", role=models.UserRole.doctor, password_hash="...")
+        db.add(doctor); db.flush()
+        db.add(models.DoctorProfile(user_id=doctor.id, nmc_number="CALM001", doctor_code="CALM001")); db.flush()
+        
+        # Only 2 critical patients
+        for i in range(2):
+            p = models.Profile(name=f"Patient {i}")
+            db.add(p); db.flush()
+            db.add(models.DoctorPatientLink(
+                doctor_id=doctor.id, profile_id=p.id, status='active',
+                consent_granted_at=datetime.now(timezone.utc),
+                consent_type='in_person_exam',
+            )); db.flush()
+            _add_reading(db, p.id, 1, "glucose", 350)
+            
+        send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
+        
+        args = mock_whatsapp.send_whatsapp_template.call_args[0]
+        digest = args[2][2]
+        critical_section = digest.split(" | 👤")[0]
+        
+        assert "🚨 CRITICAL:" in critical_section
+        assert "more" not in critical_section
+        assert "Patient 0" in critical_section
+        assert "Patient 1" in critical_section
+
+    @patch("report_service.whatsapp_service")
+    @patch("report_service.settings")
+    def test_patient_with_only_non_aggregated_readings_skipped(self, mock_settings, mock_whatsapp, db):
+        """M3: A patient with readings whose type the digest does NOT
+        aggregate (e.g. weight) must not render as '👤 Name: ' with an
+        empty metrics list. Such patients are skipped at line-build time;
+        the doctor only sees patients with at least one displayable
+        metric (glucose, bp, spo2, steps)."""
+        mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+        mock_whatsapp.send_whatsapp_template.return_value = (True, "SM-M3", None)
+
+        doctor = models.User(
+            full_name="Dr. M3", phone_number="+919999999999",
+            role=models.UserRole.doctor, password_hash="...",
+        )
+        db.add(doctor); db.flush()
+        db.add(models.DoctorProfile(
+            user_id=doctor.id, nmc_number="M3001", doctor_code="M3001",
+        )); db.flush()
+
+        # Patient WITH aggregated metric (glucose) — should appear
+        good = models.Profile(name="Visible Patient")
+        db.add(good); db.flush()
+        db.add(models.DoctorPatientLink(
+            doctor_id=doctor.id, profile_id=good.id, status='active',
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type='in_person_exam',
+        )); db.flush()
+        _add_reading(db, good.id, 1, "glucose", 110)
+
+        # Patient with ONLY weight readings — should NOT appear in digest
+        # even though build_doctor_summary still counts them in
+        # patients_with_data_count (different concern: audit vs render).
+        weight_only = models.Profile(name="Weight Only Patient")
+        db.add(weight_only); db.flush()
+        db.add(models.DoctorPatientLink(
+            doctor_id=doctor.id, profile_id=weight_only.id, status='active',
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type='in_person_exam',
+        )); db.flush()
+        # 'weight' is not aggregated by build_doctor_summary — the
+        # readings exist, but yield no glucose/bp/spo2/steps metric.
+        _add_reading(db, weight_only.id, 1, "weight", 72)
+
+        send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
+
+        args = mock_whatsapp.send_whatsapp_template.call_args[0]
+        digest = args[2][2]
+
+        assert "Visible Patient" in digest, "Patient with glucose should be in digest"
+        assert "Weight Only Patient" not in digest, (
+            "Patient with only non-aggregated readings must be skipped — "
+            f"otherwise the digest would contain '👤 Weight Only Patient: ' "
+            f"(empty metrics). Got: {digest}"
+        )
+        # Sanity: no orphan "👤 <name>: " entries with no metrics.
+        # Every "👤" should be followed by name + ": " + at least one metric.
+        import re
+        empty_lines = re.findall(r"👤 [^:]+: (?=\s*(?:\||$))", digest)
+        assert empty_lines == [], (
+            f"Found empty patient lines: {empty_lines}"
+        )

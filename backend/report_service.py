@@ -20,6 +20,12 @@ import ai_report_service
 
 logger = logging.getLogger(__name__)
 
+# Doctor Report Digest Constants (C1)
+# 1000 is the safe limit for WhatsApp template body to avoid truncation.
+_MAX_LEN = 1000
+_MARGIN = 80  # Space reserved for the omission notice at the end.
+_CRITICAL_BUDGET = _MAX_LEN // 3  # ~333 chars
+
 
 def build_doctor_summary(db: Session, doctor_id: int, last_7d: datetime) -> dict:
     """Builds an aggregate summary of all active patients for a doctor.
@@ -267,10 +273,29 @@ def send_doctor_weekly_reports(
                     logger.info("Doctor %s has no patient data for the week — skipped (audit row written).", d_id)
                     continue
 
-                # Compose the digest message — Critical patients first
+                # Compose the digest message — Critical patients first.
+                # critical_block is built with a budget to prevent it
+                # from consuming the entire message (C1).
                 critical_block = ""
                 if summary["critical_patients"]:
-                    critical_block = "🚨 CRITICAL: " + ", ".join(summary["critical_patients"]) + " | "
+                    prefix = "🚨 CRITICAL: "
+                    sep = ", "
+                    # Reserve space for "+999 more" suffix
+                    reserved_suffix_len = len(" +999 more")
+                    used = len(prefix) + len(" | ")
+                    kept_critical = []
+                    for name in summary["critical_patients"]:
+                        add = len(name) + (len(sep) if kept_critical else 0)
+                        if used + add + reserved_suffix_len > _CRITICAL_BUDGET:
+                            break
+                        kept_critical.append(name)
+                        used += add
+                    
+                    critical_omitted = len(summary["critical_patients"]) - len(kept_critical)
+                    critical_block = prefix + sep.join(kept_critical)
+                    if critical_omitted > 0:
+                        critical_block += f" +{critical_omitted} more"
+                    critical_block += " | "
 
                 # Per-patient summary lines
                 patient_lines = []
@@ -289,6 +314,17 @@ def send_doctor_weekly_reports(
                     if "steps" in m:
                         metric_parts.append(f"Steps: {m['steps']['total']}")
 
+                    # M3: A patient with readings of ONLY non-aggregated
+                    # types (e.g. weight, temperature) reaches this point
+                    # with metric_parts == []. The old code would render
+                    # "👤 Sita: " — a useless line that wastes the
+                    # 1000-char digest budget AND confuses the doctor
+                    # ("what does an empty entry mean?"). Skip rendering
+                    # but keep patients_with_data_count honest in the
+                    # audit row above — that count means "had readings",
+                    # the digest is just "had readings we surface".
+                    if not metric_parts:
+                        continue
                     p_line = f"👤 {p['name']}: " + ", ".join(metric_parts)
                     if p["critical_metrics"]:
                         p_line += " ⚠️"
@@ -302,8 +338,6 @@ def send_doctor_weekly_reports(
                 # the tail and append "(+N omitted — see portal)" so
                 # the doctor knows to log in. Critical block is built
                 # first (line above) so it always survives.
-                _MAX_LEN = 1000
-                _MARGIN = 80  # space reserved for the omission notice
                 # Reserve budget = MAX - len(critical_block) - margin
                 budget = _MAX_LEN - len(critical_block) - _MARGIN
                 kept_lines = []
