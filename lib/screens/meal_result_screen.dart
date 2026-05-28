@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 
 import '../models/meal_log.dart';
+import '../services/error_mapper.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -197,12 +198,14 @@ class _MealResultScreenState extends State<MealResultScreen> {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
+      // MUST await: on UnauthorizedException, showSnack opens a blocking
+      // 401 dialog, awaits dismissal, clears StorageService, and only
+      // then calls navigator.pushNamedAndRemoveUntil. Without await,
+      // the finally below would fire setState on a widget the 401 flow
+      // is about to unmount, and the navigator push would race the
+      // dispose() — crashes on session expiry during a meal save.
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.foodPhotoSaveFailed),
-          ),
-        );
+        await ErrorMapper.showSnack(context, e);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

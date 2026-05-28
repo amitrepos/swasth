@@ -33,6 +33,10 @@
   "@errGeneric": {
     "description": "Fallback for any unexpected exception that doesn't fit a known category."
   },
+  "errRegionRestricted": "Due to regional privacy laws, logging health data is currently restricted to users within India. You can still view your history.",
+  "@errRegionRestricted": {
+    "description": "Shown on HTTP 403 REGION_RESTRICTED. Logging is geo-fenced to Indian IPs to comply with DPDPA 2023 (Sec. 16 cross-border transfer restrictions on sensitive personal data) and DISHA data-residency expectations for digital health records. Do NOT cite GDPR — GDPR is EU law and is not the basis for this control."
+  },
   "aiInsightEmptyState": "Log daily readings for the best health insights.",
   "@aiInsightEmptyState": {
     "description": "Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly."
@@ -525,6 +529,12 @@
   "lastSpO2": "Last SpO2",
   "lastSteps": "Steps Today",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
+  "kgUnit": "kg",
+  "@kgUnit": {
+    "description": "Kilogram unit suffix for weight readings"
+  },
   "viaArmband": "via Armband",
   "viaPhone": "via Phone / Armband",
   "pairDevice": "Pair Device",
@@ -692,6 +702,29 @@
   "cameraError": "Camera initialization failed. Please try again.",
   "@cameraError": {
     "description": "Generic camera error message - never leak raw exception details to user"
+  },
+  "scanCouldNotReadTitle": "Could Not Read Display",
+  "@scanCouldNotReadTitle": {
+    "description": "Title of the OCR-failure dialog on the photo-scan screen"
+  },
+  "scanCouldNotReadMessage": "Neither the on-device reader nor the AI could extract values from this photo.\n\nTry:\n  • Hold the phone steady and closer to the display\n  • Make sure the screen is lit and numbers are visible\n  • Avoid glare or shadows on the display",
+  "@scanCouldNotReadMessage": {
+    "description": "Body of the OCR-failure dialog explaining how to retake the photo"
+  },
+  "scanNumbersNotDetectedTitle": "Numbers Not Detected",
+  "@scanNumbersNotDetectedTitle": {
+    "description": "Title shown when OCR succeeded but no numeric reading was found"
+  },
+  "scanNumbersNotDetectedMessage": "The photo was captured but no valid reading was found.\n\nThe camera detected: \"{detected}\"\n\nTry taking the photo again or enter the reading manually.",
+  "@scanNumbersNotDetectedMessage": {
+    "description": "Body of the no-numbers dialog, includes the raw text the camera saw",
+    "placeholders": {
+      "detected": { "type": "String", "example": "no text" }
+    }
+  },
+  "weightScale": "Weight Scale",
+  "@weightScale": {
+    "description": "Device-name label for the weight scale in scan screens"
   },
   "foodResultTitle": "Meal Result",
   "foodCategoryHighCarb": "High Carb",
@@ -1051,6 +1084,70 @@
   "fat": "Fat",
   "@fat": {
     "description": "Label for fat (grams) in the macronutrients grid"
+  },
+  "fiber": "Fiber",
+  "@fiber": {
+    "description": "Label for dietary fiber (grams) in the meal details sheet"
+  },
+  "viewMealDetails": "View details",
+  "@viewMealDetails": {
+    "description": "Tooltip for the view-details icon button on a meal history tile"
+  },
+  "mealDetailsTitle": "Meal details",
+  "@mealDetailsTitle": {
+    "description": "Title shown at the top of the meal details bottom sheet"
+  },
+  "healthTip": "Health tip",
+  "@healthTip": {
+    "description": "Section label above the localized health tip in the meal details sheet"
+  },
+  "noNutritionData": "No nutrition details saved for this meal.",
+  "@noNutritionData": {
+    "description": "Shown in the meal details sheet when the meal has no stored nutrition fields (older quick-select entries)"
+  },
+  "viewDetails": "View details",
+  "@viewDetails": {
+    "description": "Generic tooltip for view-details icon buttons on history tiles"
+  },
+  "readingDetailsTitle": "Reading details",
+  "@readingDetailsTitle": {
+    "description": "Title shown at the top of the reading details bottom sheet"
+  },
+  "mapLabel": "MAP",
+  "@mapLabel": {
+    "description": "Abbreviation for Mean Arterial Pressure in the reading details sheet"
+  },
+  "sampleTypeLabel": "Sample type",
+  "@sampleTypeLabel": {
+    "description": "Label for glucose sample type (fasting/before-meal/post-meal/random) in details sheet"
+  },
+  "stepsGoalLabel": "Goal",
+  "@stepsGoalLabel": {
+    "description": "Label for daily steps goal in the reading details sheet"
+  },
+  "recordedAt": "Recorded",
+  "@recordedAt": {
+    "description": "Label preceding the timestamp at which a reading was recorded"
+  },
+  "statusLabel": "Status",
+  "@statusLabel": {
+    "description": "Label for the clinical status badge in the reading details sheet"
+  },
+  "pulse": "Pulse",
+  "@pulse": {
+    "description": "Pulse rate label in the reading details sheet (no optional suffix, unlike pulseLabel used in the form)"
+  },
+  "notesLabel": "Notes",
+  "@notesLabel": {
+    "description": "Notes label in the reading details sheet (no optional suffix, unlike notes used in the form)"
+  },
+  "spo2Label": "SpO₂",
+  "@spo2Label": {
+    "description": "Display label for blood oxygen saturation (SpO2) reading type"
+  },
+  "stepsLabel": "Steps",
+  "@stepsLabel": {
+    "description": "Display label for daily step-count reading type"
   },
   "vegan": "Vegan",
   "@vegan": {

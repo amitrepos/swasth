@@ -40,6 +40,7 @@ class ErrorMapper {
     if (error is NetworkException) return l10n.errNetwork;
     if (error is UnauthorizedException) return l10n.errSessionExpired;
     if (error is ValidationException) {
+      if (error.detail == 'REGION_RESTRICTED') return l10n.errRegionRestricted;
       // ValidationException.detail comes from a 4xx body. Backend is the
       // source of truth; assume the string is already user-friendly.
       // Fall back to generic if somehow empty.

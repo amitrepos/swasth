@@ -30,6 +30,7 @@
     "description": "Shown on HTTP 5xx or when the server returns a malformed body we can't parse. Never expose the raw error."
   },
   "errGeneric": "ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "errRegionRestricted": "ಪ್ರಾದೇಶಿಕ ಗೌಪ್ಯತೆ ಕಾನೂನುಗಳಿಂದಾಗಿ, ಆರೋಗ್ಯ ಡೇಟಾವನ್ನು ಲಾಗ್ ಮಾಡುವುದು ಪ್ರಸ್ತುತ ಭಾರತದೊಳಗಿನ ಬಳಕೆದಾರರಿಗೆ ಮಾತ್ರ ಸೀಮಿತವಾಗಿದೆ. ನೀವು ಇನ್ನೂ ನಿಮ್ಮ ಇತಿಹಾಸವನ್ನು ನೋಡಬಹುದು.",
   "@errGeneric": {
     "description": "Fallback for any unexpected exception that doesn't fit a known category."
   },
@@ -544,6 +545,9 @@
   "lastSpO2": "ಕೊನೆಯ SpO2",
   "lastSteps": "ಇಂದಿನ ಹೆಜ್ಜೆಗಳು",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
+  "kgUnit": "ಕೆ.ಜಿ",
   "viaArmband": "ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
   "viaPhone": "ಫೋನ್ / ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ",
   "pairDevice": "ಸಾಧನವನ್ನು ಜೋಡಿಸಿ",
@@ -714,6 +718,11 @@
   "@cameraError": {
     "description": "Generic camera error message - never leak raw exception details to user"
   },
+  "scanCouldNotReadTitle": "ಪರದೆಯನ್ನು ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+  "scanCouldNotReadMessage": "ಸಾಧನದ ರೀಡರ್ ಮತ್ತು AI ಎರಡೂ ಈ ಫೋಟೋದಿಂದ ಮೌಲ್ಯಗಳನ್ನು ತೆಗೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.\n\nಪ್ರಯತ್ನಿಸಿ:\n  • ಫೋನ್ ಅನ್ನು ಸ್ಥಿರವಾಗಿ ಹಿಡಿದು ಪರದೆಯ ಸಮೀಪಕ್ಕೆ ತನ್ನಿ\n  • ಪರದೆ ಪ್ರಕಾಶಿಸಲ್ಪಟ್ಟಿರಲಿ ಮತ್ತು ಸಂಖ್ಯೆಗಳು ಸ್ಪಷ್ಟವಾಗಿರಲಿ\n  • ಪರದೆಯ ಮೇಲೆ ಪ್ರತಿಫಲನ ಅಥವಾ ನೆರಳು ಬೇಡ",
+  "scanNumbersNotDetectedTitle": "ಸಂಖ್ಯೆಗಳು ಪತ್ತೆಯಾಗಲಿಲ್ಲ",
+  "scanNumbersNotDetectedMessage": "ಫೋಟೋ ತೆಗೆದಾಗಿದೆ ಆದರೆ ಮಾನ್ಯ ರೀಡಿಂಗ್ ಕಂಡುಬರಲಿಲ್ಲ.\n\nಕ್ಯಾಮೆರಾ ಪತ್ತೆ ಮಾಡಿದ್ದು: \"{detected}\"\n\nಮತ್ತೆ ಫೋಟೋ ತೆಗೆಯಿರಿ ಅಥವಾ ಕೈಯಿಂದ ರೀಡಿಂಗ್ ನಮೂದಿಸಿ.",
+  "weightScale": "ತೂಕದ ಯಂತ್ರ",
   "foodResultTitle": "ಊಟದ ಫಲಿತಾಂಶ",
   "foodCategoryHighCarb": "ಹೆಚ್ಚು ಕಾರ್ಬ್",
   "foodCategoryModerateCarb": "ಮಧ್ಯಮ ಕಾರ್ಬ್",
@@ -1071,6 +1080,70 @@
   "fat": "ಕೊಬ್ಬಿನಾಂಶ",
   "@fat": {
     "description": "Label for fat (grams) in the macronutrients grid"
+  },
+  "fiber": "ನಾರಿನಂಶ",
+  "@fiber": {
+    "description": "Label for dietary fiber (grams) in the meal details sheet"
+  },
+  "viewMealDetails": "ವಿವರಗಳನ್ನು ನೋಡಿ",
+  "@viewMealDetails": {
+    "description": "Tooltip for the view-details icon button on a meal history tile"
+  },
+  "mealDetailsTitle": "ಊಟದ ವಿವರಗಳು",
+  "@mealDetailsTitle": {
+    "description": "Title shown at the top of the meal details bottom sheet"
+  },
+  "healthTip": "ಆರೋಗ್ಯ ಸಲಹೆ",
+  "@healthTip": {
+    "description": "Section label above the localized health tip in the meal details sheet"
+  },
+  "noNutritionData": "ಈ ಊಟಕ್ಕೆ ಯಾವುದೇ ಪೌಷ್ಟಿಕಾಂಶ ವಿವರಗಳನ್ನು ಉಳಿಸಲಾಗಿಲ್ಲ.",
+  "@noNutritionData": {
+    "description": "Shown when meal has no stored nutrition fields (older quick-select entries)"
+  },
+  "viewDetails": "ವಿವರಗಳನ್ನು ನೋಡಿ",
+  "@viewDetails": {
+    "description": "Generic tooltip for view-details icon buttons on history tiles"
+  },
+  "readingDetailsTitle": "ರೀಡಿಂಗ್ ವಿವರಗಳು",
+  "@readingDetailsTitle": {
+    "description": "Title shown at the top of the reading details bottom sheet"
+  },
+  "mapLabel": "MAP",
+  "@mapLabel": {
+    "description": "Abbreviation for Mean Arterial Pressure"
+  },
+  "sampleTypeLabel": "ಮಾದರಿ ಪ್ರಕಾರ",
+  "@sampleTypeLabel": {
+    "description": "Label for glucose sample type"
+  },
+  "stepsGoalLabel": "ಗುರಿ",
+  "@stepsGoalLabel": {
+    "description": "Label for daily steps goal"
+  },
+  "recordedAt": "ದಾಖಲಿಸಲಾಗಿದೆ",
+  "@recordedAt": {
+    "description": "Label preceding the recorded timestamp"
+  },
+  "statusLabel": "ಸ್ಥಿತಿ",
+  "@statusLabel": {
+    "description": "Label for the clinical status badge"
+  },
+  "pulse": "ನಾಡಿ",
+  "@pulse": {
+    "description": "Pulse rate label in the reading details sheet"
+  },
+  "notesLabel": "ಟಿಪ್ಪಣಿಗಳು",
+  "@notesLabel": {
+    "description": "Notes label in the reading details sheet"
+  },
+  "spo2Label": "SpO₂",
+  "@spo2Label": {
+    "description": "Display label for blood oxygen saturation reading type"
+  },
+  "stepsLabel": "ಹೆಜ್ಜೆಗಳು",
+  "@stepsLabel": {
+    "description": "Display label for daily step-count reading type"
   },
   "vegan": "ವೀಗನ್",
   "@vegan": {

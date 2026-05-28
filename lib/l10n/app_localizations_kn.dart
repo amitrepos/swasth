@@ -75,6 +75,10 @@ class AppLocalizationsKn extends AppLocalizations {
   String get errGeneric => 'ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
+  String get errRegionRestricted =>
+      'ಪ್ರಾದೇಶಿಕ ಗೌಪ್ಯತೆ ಕಾನೂನುಗಳಿಂದಾಗಿ, ಆರೋಗ್ಯ ಡೇಟಾವನ್ನು ಲಾಗ್ ಮಾಡುವುದು ಪ್ರಸ್ತುತ ಭಾರತದೊಳಗಿನ ಬಳಕೆದಾರರಿಗೆ ಮಾತ್ರ ಸೀಮಿತವಾಗಿದೆ. ನೀವು ಇನ್ನೂ ನಿಮ್ಮ ಇತಿಹಾಸವನ್ನು ನೋಡಬಹುದು.';
+
+  @override
   String get aiInsightEmptyState =>
       'ಉತ್ತಮ ಆರೋಗ್ಯದ ಒಳನೋಟಗಳಿಗಾಗಿ ಪ್ರತಿದಿನದ ರೀಡಿಂಗ್‌ಗಳನ್ನು ದಾಖಲಿಸಿ.';
 
@@ -1090,6 +1094,15 @@ class AppLocalizationsKn extends AppLocalizations {
   String get spO2Unit => '%';
 
   @override
+  String get bpmUnit => 'bpm';
+
+  @override
+  String get mmHgUnit => 'mmHg';
+
+  @override
+  String get kgUnit => 'ಕೆ.ಜಿ';
+
+  @override
   String get viaArmband => 'ಆರ್ಮ್‌ಬ್ಯಾಂಡ್ ಮೂಲಕ';
 
   @override
@@ -1551,6 +1564,24 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get cameraError =>
       'ಕ್ಯಾಮೆರಾ ಪ್ರಾರಂಭಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get scanCouldNotReadTitle => 'ಪರದೆಯನ್ನು ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ';
+
+  @override
+  String get scanCouldNotReadMessage =>
+      'ಸಾಧನದ ರೀಡರ್ ಮತ್ತು AI ಎರಡೂ ಈ ಫೋಟೋದಿಂದ ಮೌಲ್ಯಗಳನ್ನು ತೆಗೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.\n\nಪ್ರಯತ್ನಿಸಿ:\n  • ಫೋನ್ ಅನ್ನು ಸ್ಥಿರವಾಗಿ ಹಿಡಿದು ಪರದೆಯ ಸಮೀಪಕ್ಕೆ ತನ್ನಿ\n  • ಪರದೆ ಪ್ರಕಾಶಿಸಲ್ಪಟ್ಟಿರಲಿ ಮತ್ತು ಸಂಖ್ಯೆಗಳು ಸ್ಪಷ್ಟವಾಗಿರಲಿ\n  • ಪರದೆಯ ಮೇಲೆ ಪ್ರತಿಫಲನ ಅಥವಾ ನೆರಳು ಬೇಡ';
+
+  @override
+  String get scanNumbersNotDetectedTitle => 'ಸಂಖ್ಯೆಗಳು ಪತ್ತೆಯಾಗಲಿಲ್ಲ';
+
+  @override
+  String scanNumbersNotDetectedMessage(String detected) {
+    return 'ಫೋಟೋ ತೆಗೆದಾಗಿದೆ ಆದರೆ ಮಾನ್ಯ ರೀಡಿಂಗ್ ಕಂಡುಬರಲಿಲ್ಲ.\n\nಕ್ಯಾಮೆರಾ ಪತ್ತೆ ಮಾಡಿದ್ದು: \"$detected\"\n\nಮತ್ತೆ ಫೋಟೋ ತೆಗೆಯಿರಿ ಅಥವಾ ಕೈಯಿಂದ ರೀಡಿಂಗ್ ನಮೂದಿಸಿ.';
+  }
+
+  @override
+  String get weightScale => 'ತೂಕದ ಯಂತ್ರ';
 
   @override
   String get foodResultTitle => 'ಊಟದ ಫಲಿತಾಂಶ';
@@ -2099,6 +2130,55 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get fat => 'ಕೊಬ್ಬಿನಾಂಶ';
+
+  @override
+  String get fiber => 'ನಾರಿನಂಶ';
+
+  @override
+  String get viewMealDetails => 'ವಿವರಗಳನ್ನು ನೋಡಿ';
+
+  @override
+  String get mealDetailsTitle => 'ಊಟದ ವಿವರಗಳು';
+
+  @override
+  String get healthTip => 'ಆರೋಗ್ಯ ಸಲಹೆ';
+
+  @override
+  String get noNutritionData =>
+      'ಈ ಊಟಕ್ಕೆ ಯಾವುದೇ ಪೌಷ್ಟಿಕಾಂಶ ವಿವರಗಳನ್ನು ಉಳಿಸಲಾಗಿಲ್ಲ.';
+
+  @override
+  String get viewDetails => 'ವಿವರಗಳನ್ನು ನೋಡಿ';
+
+  @override
+  String get readingDetailsTitle => 'ರೀಡಿಂಗ್ ವಿವರಗಳು';
+
+  @override
+  String get mapLabel => 'MAP';
+
+  @override
+  String get sampleTypeLabel => 'ಮಾದರಿ ಪ್ರಕಾರ';
+
+  @override
+  String get stepsGoalLabel => 'ಗುರಿ';
+
+  @override
+  String get recordedAt => 'ದಾಖಲಿಸಲಾಗಿದೆ';
+
+  @override
+  String get statusLabel => 'ಸ್ಥಿತಿ';
+
+  @override
+  String get pulse => 'ನಾಡಿ';
+
+  @override
+  String get notesLabel => 'ಟಿಪ್ಪಣಿಗಳು';
+
+  @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'ಹೆಜ್ಜೆಗಳು';
 
   @override
   String get vegan => 'ವೀಗನ್';

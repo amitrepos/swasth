@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, verify_india_location
 from config import settings
 from health_utils import generate_meal_insights
 from report_service import trigger_single_profile_report, send_weekly_reports
@@ -97,7 +97,7 @@ def _refresh_doctor_triage_for_profile(db: Session, profile_id: int) -> None:
 _insight_cache: dict[tuple[int, str], str] = {}
 
 
-@router.post("/readings", status_code=status.HTTP_201_CREATED)
+@router.post("/readings", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_india_location)])
 def save_reading(
     reading: schemas.HealthReadingCreate,
     db: Session = Depends(get_db),
@@ -334,9 +334,14 @@ def get_health_score(
     today_bp = next((r for r in today_readings if r.reading_type == 'blood_pressure'), None)
     today_spo2 = next((r for r in today_readings if r.reading_type == 'spo2'), None)
 
-    # Steps: sum all step entries today (may have multiple syncs)
+    # Steps: the phone reports cumulative-today snapshots (every sync sends
+    # the running total since midnight, not the delta). Summing them
+    # double-counted every prior sync — 100→200→350 became 650. Take the
+    # MAX instead: the largest snapshot of the day IS the running total.
+    # MAX is also safe against out-of-order arrivals (network retries,
+    # background sync racing a foreground sync).
     today_steps_readings = [r for r in today_readings if r.reading_type == 'steps']
-    today_steps_count = sum(r.steps_count or 0 for r in today_steps_readings) if today_steps_readings else 0
+    today_steps_count = max((r.steps_count or 0 for r in today_steps_readings), default=0)
     today_steps_goal = next((r.steps_goal for r in today_steps_readings if r.steps_goal), None)
 
     today_weight = next((r for r in today_readings if r.reading_type == 'weight'), None)
@@ -708,12 +713,43 @@ def get_health_score(
         .order_by(models.HealthReading.reading_timestamp.desc())
         .first()
     )
-    avg_steps_90d = db.query(func.avg(models.HealthReading.steps_count)).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'steps',
-        models.HealthReading.reading_timestamp >= ninety_days_ago,
-        models.HealthReading.steps_count.isnot(None),
-    ).scalar()
+    # Same cumulative-snapshot model as today_steps_count above: each row
+    # is a snapshot of the running daily total at sync time, NOT a delta.
+    # Averaging the raw rows undercounts days with few syncs and
+    # overcounts days with many. Aggregate per-day MAX first (the end-of-
+    # day running total), then average those daily maxes.
+    #
+    # Bucketing in Python (not via SQL func.date()) because the column is
+    # DateTime(timezone=True): Postgres' func.date() runs against the
+    # session timezone, so a midnight-adjacent sync would land in the
+    # wrong day if the server timezone isn't UTC. Pulling rows and
+    # bucketing via ensure_utc(...).date() is unambiguous and portable
+    # across Postgres + SQLite (test). N is bounded: 90 days × a handful
+    # of syncs per day per profile — tens to low hundreds of rows.
+    recent_step_rows = (
+        db.query(
+            models.HealthReading.reading_timestamp,
+            models.HealthReading.steps_count,
+        )
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'steps',
+            models.HealthReading.reading_timestamp >= ninety_days_ago,
+            models.HealthReading.steps_count.isnot(None),
+        )
+        .all()
+    )
+    per_day_max: dict = {}
+    for ts, count in recent_step_rows:
+        day = ensure_utc(ts).date()
+        if count is None:
+            continue
+        prev = per_day_max.get(day)
+        if prev is None or count > prev:
+            per_day_max[day] = count
+    avg_steps_90d = (
+        sum(per_day_max.values()) / len(per_day_max) if per_day_max else None
+    )
     steps_data_days = db.query(
         func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
     ).filter(
@@ -1460,7 +1496,7 @@ def get_reading(
     return db_reading
 
 
-@router.put("/readings/{reading_id}", response_model=schemas.HealthReadingResponse)
+@router.put("/readings/{reading_id}", response_model=schemas.HealthReadingResponse, dependencies=[Depends(verify_india_location)])
 @limiter.limit("30/minute")
 def update_reading(
     request: Request,
@@ -1610,7 +1646,7 @@ def update_reading(
     return db_reading
 
 
-@router.delete("/readings/{reading_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/readings/{reading_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(verify_india_location)])
 @limiter.limit("30/minute")
 def delete_reading(
     request: Request,
@@ -1679,7 +1715,7 @@ def delete_reading(
     return Response(status_code=204)
 
 
-@router.post("/readings/parse-image")
+@router.post("/readings/parse-image", dependencies=[Depends(verify_india_location)])
 @limiter.limit("20/minute")
 async def parse_image_with_gemini(
     request: Request,
@@ -1967,7 +2003,11 @@ def _rule_based_insight(recent: list, db: Session, total_count: int = 0, languag
 # Private helpers
 # ---------------------------------------------------------------------------
 
-@router.post("/report/manual-trigger", status_code=202)
+@router.post(
+    "/report/manual-trigger",
+    status_code=202,
+    dependencies=[Depends(verify_india_location)],
+)
 @limiter.limit("1/hour", key_func=get_remote_address)
 def manually_trigger_whatsapp_report(
     request: Request,
@@ -1977,6 +2017,10 @@ def manually_trigger_whatsapp_report(
     """
     Manually trigger WhatsApp health reports for all profiles owned by the current user.
     Limited to 1 request per hour to prevent spam.
+
+    Geofenced — triggers an outbound message containing patient health
+    summaries (PHI) via Twilio/WhatsApp. Under DPDPA 2023 the originating
+    request that exfiltrates the data must be from inside India.
     """
     background_tasks.add_task(
         send_weekly_reports,
