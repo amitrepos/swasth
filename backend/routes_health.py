@@ -334,9 +334,14 @@ def get_health_score(
     today_bp = next((r for r in today_readings if r.reading_type == 'blood_pressure'), None)
     today_spo2 = next((r for r in today_readings if r.reading_type == 'spo2'), None)
 
-    # Steps: sum all step entries today (may have multiple syncs)
+    # Steps: the phone reports cumulative-today snapshots (every sync sends
+    # the running total since midnight, not the delta). Summing them
+    # double-counted every prior sync — 100→200→350 became 650. Take the
+    # MAX instead: the largest snapshot of the day IS the running total.
+    # MAX is also safe against out-of-order arrivals (network retries,
+    # background sync racing a foreground sync).
     today_steps_readings = [r for r in today_readings if r.reading_type == 'steps']
-    today_steps_count = sum(r.steps_count or 0 for r in today_steps_readings) if today_steps_readings else 0
+    today_steps_count = max((r.steps_count or 0 for r in today_steps_readings), default=0)
     today_steps_goal = next((r.steps_goal for r in today_steps_readings if r.steps_goal), None)
 
     today_weight = next((r for r in today_readings if r.reading_type == 'weight'), None)
@@ -708,12 +713,43 @@ def get_health_score(
         .order_by(models.HealthReading.reading_timestamp.desc())
         .first()
     )
-    avg_steps_90d = db.query(func.avg(models.HealthReading.steps_count)).filter(
-        models.HealthReading.profile_id == profile_id,
-        models.HealthReading.reading_type == 'steps',
-        models.HealthReading.reading_timestamp >= ninety_days_ago,
-        models.HealthReading.steps_count.isnot(None),
-    ).scalar()
+    # Same cumulative-snapshot model as today_steps_count above: each row
+    # is a snapshot of the running daily total at sync time, NOT a delta.
+    # Averaging the raw rows undercounts days with few syncs and
+    # overcounts days with many. Aggregate per-day MAX first (the end-of-
+    # day running total), then average those daily maxes.
+    #
+    # Bucketing in Python (not via SQL func.date()) because the column is
+    # DateTime(timezone=True): Postgres' func.date() runs against the
+    # session timezone, so a midnight-adjacent sync would land in the
+    # wrong day if the server timezone isn't UTC. Pulling rows and
+    # bucketing via ensure_utc(...).date() is unambiguous and portable
+    # across Postgres + SQLite (test). N is bounded: 90 days × a handful
+    # of syncs per day per profile — tens to low hundreds of rows.
+    recent_step_rows = (
+        db.query(
+            models.HealthReading.reading_timestamp,
+            models.HealthReading.steps_count,
+        )
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == 'steps',
+            models.HealthReading.reading_timestamp >= ninety_days_ago,
+            models.HealthReading.steps_count.isnot(None),
+        )
+        .all()
+    )
+    per_day_max: dict = {}
+    for ts, count in recent_step_rows:
+        day = ensure_utc(ts).date()
+        if count is None:
+            continue
+        prev = per_day_max.get(day)
+        if prev is None or count > prev:
+            per_day_max[day] = count
+    avg_steps_90d = (
+        sum(per_day_max.values()) / len(per_day_max) if per_day_max else None
+    )
     steps_data_days = db.query(
         func.count(func.distinct(func.date(models.HealthReading.reading_timestamp)))
     ).filter(

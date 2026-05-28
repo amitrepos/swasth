@@ -27,6 +27,16 @@ class PedometerService {
   DateTime? _lastStepDate;
   int _baselineSteps = 0; // Steps count at the start of today
   int _lastSyncedSteps = -1; // Track last synced step count to avoid duplicates
+
+  /// Broadcasts the new today_steps_count whenever a sync to the backend
+  /// succeeds. The home screen subscribes to this so it can refresh its
+  /// health-score future — without it, the dashboard tile shows a stale
+  /// value (or 0) until the user navigates away and back, even though
+  /// the backend already has the correct number. Broadcast stream so
+  /// multiple listeners (home, dashboard) can subscribe.
+  final StreamController<int> _stepsSyncedController =
+      StreamController<int>.broadcast();
+  Stream<int> get onStepsSynced => _stepsSyncedController.stream;
   
   /// Current step count for today
   int get todaySteps => _todaySteps;
@@ -81,6 +91,10 @@ class PedometerService {
   /// Stop listening to step updates
   void dispose() {
     _stepSubscription?.cancel();
+    // Do NOT close _stepsSyncedController here. PedometerService is a
+    // singleton; the home screen's dispose() runs on logout/tab-switch
+    // but the singleton may be reused on the next login. Closing the
+    // controller would break subsequent subscribers permanently.
     debugPrint('PedometerService: Disposed');
   }
 
@@ -231,7 +245,15 @@ class PedometerService {
       // Update last synced count
       _lastSyncedSteps = _todaySteps;
       await _storage.saveLastSyncedSteps(_todaySteps);
-      
+
+      // Notify listeners (home screen) so the dashboard re-fetches the
+      // health-score. Without this, the tile sticks at the value it had
+      // when the screen was last loaded — admin sees the new count, the
+      // user sees yesterday's number.
+      if (!_stepsSyncedController.isClosed) {
+        _stepsSyncedController.add(_todaySteps);
+      }
+
       debugPrint('PedometerService: Steps synced successfully');
       return true;
     } catch (e) {
