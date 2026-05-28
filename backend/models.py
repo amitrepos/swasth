@@ -946,18 +946,13 @@ class WhatsAppMessageLog(Base):
     """Log for the actual delivery phase of a WhatsApp message."""
     __tablename__ = "whatsapp_message_logs"
 
-    # M2: Composite index supports the doctor manual-trigger cooldown
-    # query in routes_doctor.manually_trigger_doctor_report, which
-    # filters on (user_id, trigger_type, status, sent_at) and runs on
-    # every manual trigger. Without it, Postgres scans by user_id and
-    # filters the rest in memory — fine at Bihar pilot scale, slow once
-    # an active doctor has thousands of message rows.
-    __table_args__ = (
-        Index(
-            "ix_wa_msg_log_cooldown",
-            "user_id", "trigger_type", "status", "sent_at",
-        ),
-    )
+    # M2 cooldown composite index lives in migration 0013 only — it is
+    # the single source of truth for that index. Declaring it here as
+    # well via __table_args__ would create two DDL emitters: one through
+    # Base.metadata.create_all() in main.py and one through alembic.
+    # That dual-source path is fragile on downgrade→re-upgrade cycles
+    # (the ORM keeps declaring the index between drop and re-create).
+    # See migration 0013_whatsapp_log_cooldown_index.py.
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

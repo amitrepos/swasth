@@ -89,6 +89,7 @@ class TestDoctorWeeklyReportsV2:
                 user_id=doctor.id,
                 nmc_number="NMC-STALE-001",
                 doctor_code="DRSTALE1",
+                is_verified=True,
             )); db.flush()
 
             profile = models.Profile(name="Idle Patient")
@@ -146,6 +147,7 @@ class TestDoctorWeeklyReportsV2:
                 user_id=doctor.id,
                 nmc_number="NMC-TEST-CRIT-001",
                 doctor_code="DRCRIT01",
+                is_verified=True,
             )
             db.add(dp)
             db.flush()
@@ -215,20 +217,42 @@ class TestDoctorWeeklyReportsV2:
         resp = client.post("/api/doctor/report/manual-trigger", headers=headers)
         assert resp.status_code == 403
         
-        # 2. Test Doctor 202
+        # 2. Test Doctor 202 — verified doctor with profile
         doctor = models.User(full_name="I Am Doctor", role=UserRole.doctor, email="d@test.com", password_hash="...")
         db.add(doctor)
         db.flush()
-        
+        # MEDIUM #3: manual-trigger endpoint now requires is_verified=True.
+        db.add(models.DoctorProfile(
+            user_id=doctor.id, nmc_number="NMC-PERM-001", doctor_code="DRPERM01",
+            is_verified=True,
+        ))
+        db.flush()
+
         token = create_access_token({"sub": "d@test.com"})
         headers = {"Authorization": f"Bearer {token}"}
-        
+
         # Patch background task to avoid actual run
         with patch("routes_doctor.BackgroundTasks.add_task") as mock_task:
             resp = client.post("/api/doctor/report/manual-trigger", headers=headers)
             assert resp.status_code == 202
             assert "Doctor report generation started" in resp.json()["message"]
             mock_task.assert_called_once()
+
+        # 3. Test Unverified Doctor 403 (MEDIUM #3)
+        unverified = models.User(full_name="Dr. Pending", role=UserRole.doctor, email="pending@test.com", password_hash="...")
+        db.add(unverified); db.flush()
+        db.add(models.DoctorProfile(
+            user_id=unverified.id, nmc_number="NMC-PEND-001", doctor_code="DRPEND01",
+            is_verified=False,  # explicit
+        )); db.flush()
+
+        token = create_access_token({"sub": "pending@test.com"})
+        headers = {"Authorization": f"Bearer {token}"}
+        resp = client.post("/api/doctor/report/manual-trigger", headers=headers)
+        assert resp.status_code == 403, (
+            f"Unverified doctor must be rejected, got {resp.status_code}: {resp.text}"
+        )
+        assert "verification" in resp.text.lower()
 
     @patch("scheduler.send_doctor_weekly_reports")
     def test_scheduler_job_callable(self, mock_send):
@@ -259,6 +283,7 @@ class TestDoctorWeeklyReportsV2:
             db.add(doctor); db.flush()
             dp = models.DoctorProfile(
                 user_id=doctor.id, nmc_number="NMC-NOPHONE-001", doctor_code="DRNP0001",
+                is_verified=True,
             )
             db.add(dp); db.flush()
 
@@ -306,6 +331,7 @@ class TestDoctorWeeklyReportsV2:
             db.add(doctor); db.flush()
             dp = models.DoctorProfile(
                 user_id=doctor.id, nmc_number="NMC-PANEL-001", doctor_code="DRPNL01",
+                is_verified=True,
             )
             db.add(dp); db.flush()
 
@@ -348,6 +374,10 @@ class TestDoctorWeeklyReportsV2:
             email="rl-doctor@test.com", password_hash="...",
         )
         db.add(doctor); db.flush()
+        db.add(models.DoctorProfile(
+            user_id=doctor.id, nmc_number="NMC-RL-001", doctor_code="DRRL001",
+            is_verified=True,
+        )); db.flush()
 
         # Simulate a delivery that just happened.
         db.add(models.WhatsAppMessageLog(
@@ -391,6 +421,10 @@ class TestDoctorWeeklyReportsV2:
             email="failed-rl@test.com", password_hash="...",
         )
         db.add(doctor); db.flush()
+        db.add(models.DoctorProfile(
+            user_id=doctor.id, nmc_number="NMC-RLF-001", doctor_code="DRRLF001",
+            is_verified=True,
+        )); db.flush()
 
         # Twilio just failed 5 minutes ago.
         db.add(models.WhatsAppMessageLog(
@@ -426,6 +460,10 @@ class TestDoctorWeeklyReportsV2:
             email="old-rl@test.com", password_hash="...",
         )
         db.add(doctor); db.flush()
+        db.add(models.DoctorProfile(
+            user_id=doctor.id, nmc_number="NMC-OLD-001", doctor_code="DROLD001",
+            is_verified=True,
+        )); db.flush()
 
         db.add(models.WhatsAppMessageLog(
             user_id=doctor.id,

@@ -1408,6 +1408,27 @@ def manually_trigger_doctor_report(
     if user.role != UserRole.doctor:
         raise HTTPException(status_code=403, detail="Only doctors can trigger this report")
 
+    # MEDIUM #3: an unverified doctor (DoctorProfile.is_verified=False)
+    # MUST NOT receive a PHI digest, even if they hold a valid JWT.
+    # Patient→doctor linking is also gated on is_verified, so in steady
+    # state an unverified doctor has no links and the digest would be
+    # empty; but a revocation AFTER linking could leave stale links.
+    # Hard-block at the trigger boundary so PHI never enters the queue.
+    dp = (
+        db.query(models.DoctorProfile)
+        .filter(models.DoctorProfile.user_id == user.id)
+        .first()
+    )
+    if dp is None or not dp.is_verified:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Your doctor profile is pending NMC verification. "
+                "Reports become available once an admin verifies your "
+                "credentials."
+            ),
+        )
+
     # Cooldown: at most one in-flight or successfully-delivered manual
     # request per doctor per hour. Semantics:
     #   - status=SENT     → delivered. Block until 1h after sent_at.

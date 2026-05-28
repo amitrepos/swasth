@@ -230,6 +230,7 @@ class TestDoctorReportService:
                 nmc_number="NMC-PHONE-001",
                 doctor_code="DRPHN001",
                 whatsapp_number="+919811112222",  # stored encrypted, decrypted on read
+                is_verified=True,  # required for digest path (CRITICAL #1)
             )
             db.add(dp); db.flush()
 
@@ -268,7 +269,7 @@ class TestDoctorReportService:
         db.add(doctor)
         db.flush()
         
-        doc_profile = models.DoctorProfile(user_id=doctor.id, nmc_number="12345", doctor_code="DR123", specialty="Gen")
+        doc_profile = models.DoctorProfile(user_id=doctor.id, nmc_number="12345", doctor_code="DR123", specialty="Gen", is_verified=True)
         db.add(doc_profile)
         db.flush()
         
@@ -307,7 +308,7 @@ class TestDoctorReportService:
         
         doctor = models.User(full_name="Dr. Busy", phone_number="+919999999999", role=models.UserRole.doctor, password_hash="...")
         db.add(doctor); db.flush()
-        db.add(models.DoctorProfile(user_id=doctor.id, nmc_number="BUSY001", doctor_code="BUSY001")); db.flush()
+        db.add(models.DoctorProfile(user_id=doctor.id, nmc_number="BUSY001", doctor_code="BUSY001", is_verified=True)); db.flush()
         
         # Create 50 patients with critical readings
         for i in range(50):
@@ -351,7 +352,7 @@ class TestDoctorReportService:
         
         doctor = models.User(full_name="Dr. LoadTest", phone_number="+919999999999", role=models.UserRole.doctor, password_hash="...")
         db.add(doctor); db.flush()
-        db.add(models.DoctorProfile(user_id=doctor.id, nmc_number="LOAD001", doctor_code="LOAD001")); db.flush()
+        db.add(models.DoctorProfile(user_id=doctor.id, nmc_number="LOAD001", doctor_code="LOAD001", is_verified=True)); db.flush()
         
         # 100 critical patients
         for i in range(100):
@@ -392,7 +393,7 @@ class TestDoctorReportService:
         
         doctor = models.User(full_name="Dr. Calm", phone_number="+919999999999", role=models.UserRole.doctor, password_hash="...")
         db.add(doctor); db.flush()
-        db.add(models.DoctorProfile(user_id=doctor.id, nmc_number="CALM001", doctor_code="CALM001")); db.flush()
+        db.add(models.DoctorProfile(user_id=doctor.id, nmc_number="CALM001", doctor_code="CALM001", is_verified=True)); db.flush()
         
         # Only 2 critical patients
         for i in range(2):
@@ -419,11 +420,11 @@ class TestDoctorReportService:
     @patch("report_service.whatsapp_service")
     @patch("report_service.settings")
     def test_patient_with_only_non_aggregated_readings_skipped(self, mock_settings, mock_whatsapp, db):
-        """M3: A patient with readings whose type the digest does NOT
-        aggregate (e.g. weight) must not render as '👤 Name: ' with an
-        empty metrics list. Such patients are skipped at line-build time;
-        the doctor only sees patients with at least one displayable
-        metric (glucose, bp, spo2, steps)."""
+        """M3 + M5: A patient with readings whose type the digest does
+        NOT aggregate (e.g. weight) must not appear in the digest AND
+        must not inflate patients_with_data_count. After the M5 fix in
+        build_doctor_summary, the skip happens upstream — both audit
+        row and rendered digest agree on the same patient list."""
         mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
         mock_whatsapp.send_whatsapp_template.return_value = (True, "SM-M3", None)
 
@@ -434,6 +435,7 @@ class TestDoctorReportService:
         db.add(doctor); db.flush()
         db.add(models.DoctorProfile(
             user_id=doctor.id, nmc_number="M3001", doctor_code="M3001",
+            is_verified=True,
         )); db.flush()
 
         # Patient WITH aggregated metric (glucose) — should appear
@@ -446,9 +448,8 @@ class TestDoctorReportService:
         )); db.flush()
         _add_reading(db, good.id, 1, "glucose", 110)
 
-        # Patient with ONLY weight readings — should NOT appear in digest
-        # even though build_doctor_summary still counts them in
-        # patients_with_data_count (different concern: audit vs render).
+        # Patient with ONLY weight readings — should be skipped by
+        # build_doctor_summary so audit count and digest agree.
         weight_only = models.Profile(name="Weight Only Patient")
         db.add(weight_only); db.flush()
         db.add(models.DoctorPatientLink(
@@ -477,4 +478,139 @@ class TestDoctorReportService:
         empty_lines = re.findall(r"👤 [^:]+: (?=\s*(?:\||$))", digest)
         assert empty_lines == [], (
             f"Found empty patient lines: {empty_lines}"
+        )
+
+    def test_build_doctor_summary_skips_empty_metric_patient(self, db):
+        """M5: build_doctor_summary must not count or include patients
+        whose readings produce no aggregated metric. The audit row's
+        patients_with_data_count must match what the digest renders."""
+        doctor = models.User(
+            full_name="Dr. M5", role=models.UserRole.doctor, password_hash="...",
+        )
+        db.add(doctor); db.flush()
+
+        # Patient A: glucose reading → included
+        a = models.Profile(name="Has Glucose")
+        db.add(a); db.flush()
+        db.add(models.DoctorPatientLink(
+            doctor_id=doctor.id, profile_id=a.id, status='active',
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type='in_person_exam',
+        )); db.flush()
+        _add_reading(db, a.id, 1, "glucose", 110)
+
+        # Patient B: weight only → excluded
+        b = models.Profile(name="Only Weight")
+        db.add(b); db.flush()
+        db.add(models.DoctorPatientLink(
+            doctor_id=doctor.id, profile_id=b.id, status='active',
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type='in_person_exam',
+        )); db.flush()
+        _add_reading(db, b.id, 1, "weight", 72)
+
+        last_7d = datetime.now(timezone.utc) - timedelta(days=7)
+        summary = build_doctor_summary(db, doctor.id, last_7d)
+
+        assert summary["patients_with_data_count"] == 1, (
+            "Only the glucose patient should be counted; the weight-only "
+            "patient produces no aggregated metric. Got "
+            f"{summary['patients_with_data_count']}"
+        )
+        patient_names = [p["name"] for p in summary["patients"]]
+        assert "Has Glucose" in patient_names
+        assert "Only Weight" not in patient_names
+
+    @patch("report_service.whatsapp_service")
+    @patch("report_service.settings")
+    def test_unverified_doctor_excluded_from_scheduled_report(self, mock_settings, mock_whatsapp, db):
+        """CRITICAL #1: An unverified doctor (DoctorProfile.is_verified=False)
+        must NEVER receive a PHI digest, even with active patient links.
+        Bug: doctor_query joined on DoctorProfile without filtering on
+        is_verified, so a doctor whose NMC verification was revoked
+        AFTER linking would still get weekly reports."""
+        mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+        mock_whatsapp.send_whatsapp_template.return_value = (True, "SM-UV", None)
+
+        unverified = models.User(
+            full_name="Dr. Unverified", phone_number="+919900000001",
+            role=models.UserRole.doctor, password_hash="...",
+        )
+        db.add(unverified); db.flush()
+        db.add(models.DoctorProfile(
+            user_id=unverified.id, nmc_number="NMC-UV-001",
+            doctor_code="DRUV0001",
+            is_verified=False,  # explicit
+        )); db.flush()
+
+        # Active link + critical reading — would have triggered a send
+        # under the buggy query.
+        p = models.Profile(name="At Risk Patient")
+        db.add(p); db.flush()
+        db.add(models.DoctorPatientLink(
+            doctor_id=unverified.id, profile_id=p.id, status='active',
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type='in_person_exam',
+        )); db.flush()
+        _add_reading(db, p.id, 1, "glucose", 350)  # critical
+
+        results = send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.SCHEDULED)
+
+        assert results["total_doctors"] == 0, (
+            "Unverified doctor must be filtered OUT of the query "
+            f"entirely. Got {results['total_doctors']} doctor(s)."
+        )
+        assert results["successful_deliveries"] == 0
+        # And crucially — Twilio must NEVER have been called with PHI.
+        mock_whatsapp.send_whatsapp_template.assert_not_called()
+
+    @patch("report_service.whatsapp_service")
+    @patch("report_service.settings")
+    def test_twilio_crash_triggers_failure_path(self, mock_settings, mock_whatsapp, db):
+        """CRITICAL #2 (result-based): if Twilio raises mid-flight, the
+        function MUST exercise the except handler — not crash the
+        scheduler, AND record the failure in results so ops/audit can
+        see it. The delivery_log row state (QUEUED → FAILED) cannot be
+        asserted here because the test fixture's outer-transaction
+        rollback semantics undo the in-function commit; the FAILED-row
+        invariant is covered by integration tests against real
+        Postgres."""
+        mock_settings.TWILIO_DOCTOR_REPORT_CONTENT_SID = "HX123"
+        mock_whatsapp.send_whatsapp_template.side_effect = RuntimeError(
+            "twilio connection reset"
+        )
+
+        doctor = models.User(
+            full_name="Dr. CrashTest", phone_number="+919900000099",
+            role=models.UserRole.doctor, password_hash="...",
+        )
+        db.add(doctor); db.flush()
+        db.add(models.DoctorProfile(
+            user_id=doctor.id, nmc_number="NMC-CR-001", doctor_code="DRCR001",
+            is_verified=True,
+        )); db.flush()
+
+        p = models.Profile(name="Crash Patient")
+        db.add(p); db.flush()
+        db.add(models.DoctorPatientLink(
+            doctor_id=doctor.id, profile_id=p.id, status='active',
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type='in_person_exam',
+        )); db.flush()
+        _add_reading(db, p.id, 1, "glucose", 110)
+        db.commit()  # persist test setup so the function's rollback
+                     # does NOT nuke it under the test fixture's
+                     # outer-transaction semantics.
+
+        results = send_doctor_weekly_reports(db, trigger_type=ReportTriggerType.MANUAL)
+
+        # The Twilio path was exercised — proves the except handler
+        # ran (not a bypass via missing phone or unverified doctor).
+        mock_whatsapp.send_whatsapp_template.assert_called_once()
+
+        # Results report the failure cleanly — no unhandled crash.
+        assert results["failed_deliveries"] == 1
+        assert results["successful_deliveries"] == 0
+        assert any("twilio connection reset" in err for err in results["errors"]), (
+            f"Expected the Twilio error in results['errors'], got: {results['errors']}"
         )

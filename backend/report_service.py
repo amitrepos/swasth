@@ -93,7 +93,6 @@ def build_doctor_summary(db: Session, doctor_id: int, last_7d: datetime) -> dict
         if not readings:
             continue
 
-        summary["patients_with_data_count"] += 1
         p_summary = {
             "name": profile.name,
             "metrics": {},
@@ -163,6 +162,18 @@ def build_doctor_summary(db: Session, doctor_id: int, last_7d: datetime) -> dict
                 "total": sum(r.steps_count for r in steps_readings)
             }
 
+        # M5: only count + render a patient if at least one metric
+        # actually aggregated. A patient with only weight/temperature
+        # readings reaches here with metrics={} — they had data but
+        # nothing the digest surfaces. Counting them in
+        # patients_with_data_count made the audit row diverge from
+        # what the doctor sees ("3 patients reported" but digest shows
+        # 2 lines). Move the skip upstream so audit = render.
+        if not p_summary["metrics"]:
+            continue
+
+        summary["patients_with_data_count"] += 1
+
         if p_summary["critical_metrics"]:
             summary["critical_patients"].append(profile.name)
 
@@ -201,11 +212,19 @@ def send_doctor_weekly_reports(
         # NO error — the cron would just stop sending reports. Compare
         # against the enum so a mismatch surfaces at code review,
         # consistent with every other auth check in routes_doctor.py.
+        # CRITICAL #1: filter on DoctorProfile.is_verified — an
+        # unverified doctor (NMC not admin-approved) must NEVER receive
+        # PHI digests. Patient→doctor linking already blocks unverified
+        # doctors at routes_doctor._link, but a verification revocation
+        # AFTER linking would leave stale active links pointing at a
+        # now-unverified doctor. This filter ensures the digest path
+        # is the hard gate at delivery time.
         doctor_query = db.query(User).join(
             DoctorProfile, DoctorProfile.user_id == User.id
         ).filter(
             User.role == UserRole.doctor,
-            User.is_active == True
+            User.is_active == True,
+            DoctorProfile.is_verified == True,  # noqa: E712
         )
 
         if doctor_user_id:
@@ -245,7 +264,18 @@ def send_doctor_weekly_reports(
             # leaves a row behind for ops + legal audit. Status is
             # finalised at the end of each branch — never committed as
             # SUCCESS before delivery is confirmed.
+            #
+            # CRITICAL #2: delivery_log is ALSO tracked so the except
+            # handler below can mark it FAILED. Without this, a crash
+            # between the QUEUED commit and the Twilio response leaves
+            # the row stuck at QUEUED with no twilio_sid — and the
+            # manual-trigger cooldown in routes_doctor blocks the
+            # doctor for 1h on a phantom in-flight request.
             gen_log = None
+            delivery_log = None
+            gen_log_id = None      # captured for except-handler queries
+            delivery_log_id = None # — ORM objects can expire / detach after
+                                   # rollback, IDs survive.
             try:
                 summary = build_doctor_summary(db, d_id, last_7d)
 
@@ -314,17 +344,13 @@ def send_doctor_weekly_reports(
                     if "steps" in m:
                         metric_parts.append(f"Steps: {m['steps']['total']}")
 
-                    # M3: A patient with readings of ONLY non-aggregated
-                    # types (e.g. weight, temperature) reaches this point
-                    # with metric_parts == []. The old code would render
-                    # "👤 Sita: " — a useless line that wastes the
-                    # 1000-char digest budget AND confuses the doctor
-                    # ("what does an empty entry mean?"). Skip rendering
-                    # but keep patients_with_data_count honest in the
-                    # audit row above — that count means "had readings",
-                    # the digest is just "had readings we surface".
-                    if not metric_parts:
-                        continue
+                    # Render-time skip removed: build_doctor_summary now
+                    # filters out patients with empty metrics (M5), so
+                    # metric_parts is guaranteed non-empty here. If this
+                    # invariant is ever broken, the assertion below will
+                    # surface it loudly in tests rather than rendering a
+                    # silent "👤 Name: " line.
+                    assert metric_parts, "build_doctor_summary must filter empty-metric patients"
                     p_line = f"👤 {p['name']}: " + ", ".join(metric_parts)
                     if p["critical_metrics"]:
                         p_line += " ⚠️"
@@ -385,6 +411,7 @@ def send_doctor_weekly_reports(
                 )
                 db.add(gen_log)
                 db.flush()  # get the PK; defer commit until status is final
+                gen_log_id = gen_log.id
 
                 # Delivery
                 target_phone = normalize_phone(doctor.phone_number)
@@ -436,6 +463,7 @@ def send_doctor_weekly_reports(
                 )
                 db.add(delivery_log)
                 db.commit()
+                delivery_log_id = delivery_log.id
 
                 success, sid, err = whatsapp_service.send_whatsapp_template(
                     target_phone, settings.TWILIO_DOCTOR_REPORT_CONTENT_SID, template_vars
@@ -459,20 +487,41 @@ def send_doctor_weekly_reports(
                     results["errors"].append(f"Doctor {doctor.id}: {err}")
 
             except Exception as e:
-                logger.error("Failed to send report for doctor %s", doctor.id, exc_info=True)
+                logger.error("Failed to send report for doctor %s", d_id, exc_info=True)
                 results["failed_deliveries"] += 1
-                results["errors"].append(f"Doctor {doctor.id}: {str(e)}")
-                # Either finalise the existing gen_log to FAILED, or
-                # write a fresh failure log if we crashed before it was
-                # created (e.g. inside build_doctor_summary). Either way
-                # ops gets a row.
+                results["errors"].append(f"Doctor {d_id}: {str(e)}")
+                # Either finalise the existing gen_log/delivery_log to
+                # FAILED, or write a fresh failure gen_log if we crashed
+                # before it was created (e.g. inside build_doctor_summary).
+                # Use captured IDs rather than ORM references — after the
+                # rollback below the ORM objects are detached/expired and
+                # accessing their attributes can ObjectDeletedError.
                 try:
                     db.rollback()  # discard any half-written state
-                    if gen_log is not None and gen_log.id is not None:
-                        # Re-attach + update via merge to survive rollback.
-                        gen_log = db.merge(gen_log)
-                        gen_log.status = ReportGenerationStatus.FAILED
-                        gen_log.error_message = str(e)[:500]
+
+                    if gen_log_id is not None:
+                        existing_gen = (
+                            db.query(DoctorReportGenerationLog)
+                            .filter(DoctorReportGenerationLog.id == gen_log_id)
+                            .first()
+                        )
+                        if existing_gen is not None:
+                            existing_gen.status = ReportGenerationStatus.FAILED
+                            existing_gen.error_message = str(e)[:500]
+                        else:
+                            # gen_log was created in a flushed-but-not-
+                            # committed state and the rollback nuked it.
+                            # Write a fresh failure row.
+                            db.add(DoctorReportGenerationLog(
+                                doctor_id=d_id,
+                                trigger_type=trigger_type,
+                                report_date=report_date_utc,
+                                patients_linked_count=0,
+                                patients_with_data_count=0,
+                                critical_patients_count=0,
+                                status=ReportGenerationStatus.FAILED,
+                                error_message=str(e)[:500],
+                            ))
                     else:
                         db.add(DoctorReportGenerationLog(
                             doctor_id=d_id,
@@ -484,10 +533,28 @@ def send_doctor_weekly_reports(
                             status=ReportGenerationStatus.FAILED,
                             error_message=str(e)[:500],
                         ))
+
+                    # CRITICAL #2: if delivery_log was committed as
+                    # QUEUED before the crash (Twilio call hung or
+                    # process died mid-flight), update it to FAILED so
+                    # the cooldown query does NOT treat it as in-flight
+                    # for the next hour.
+                    if delivery_log_id is not None:
+                        existing_delivery = (
+                            db.query(WhatsAppMessageLog)
+                            .filter(WhatsAppMessageLog.id == delivery_log_id)
+                            .first()
+                        )
+                        if existing_delivery is not None:
+                            existing_delivery.status = WhatsAppMessageStatus.FAILED
+                            existing_delivery.error_message = (
+                                f"crashed_mid_delivery: {str(e)[:400]}"
+                            )
+
                     db.commit()
                 except Exception:
                     logger.exception(
-                        "Could not persist failure log for doctor %s", doctor.id
+                        "Could not persist failure log for doctor %s", d_id
                     )
                     db.rollback()
 
