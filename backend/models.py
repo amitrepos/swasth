@@ -946,13 +946,24 @@ class WhatsAppMessageLog(Base):
     """Log for the actual delivery phase of a WhatsApp message."""
     __tablename__ = "whatsapp_message_logs"
 
-    # M2 cooldown composite index lives in migration 0013 only — it is
-    # the single source of truth for that index. Declaring it here as
-    # well via __table_args__ would create two DDL emitters: one through
-    # Base.metadata.create_all() in main.py and one through alembic.
-    # That dual-source path is fragile on downgrade→re-upgrade cycles
-    # (the ORM keeps declaring the index between drop and re-create).
-    # See migration 0013_whatsapp_log_cooldown_index.py.
+    # M2 cooldown composite index. MUST stay declared here AND mirrored
+    # in migration 0013 — `alembic check` (CI migration round-trip)
+    # compares the live schema against the ORM model and fails if they
+    # diverge. Removing this from __table_args__ caused CI to detect
+    # "ORM doesn't declare ix_wa_msg_log_cooldown but schema has it"
+    # and demand a new migration to drop the index.
+    #
+    # The reviewer's "two sources of truth" concern (#6) is addressed
+    # by keeping the two in lockstep: any future change to the index
+    # must be applied to BOTH this declaration AND a new alembic
+    # migration in the same commit (enforced by .githooks/pre-commit
+    # Gate 2). See migration 0013_whatsapp_log_cooldown_index.py.
+    __table_args__ = (
+        Index(
+            "ix_wa_msg_log_cooldown",
+            "user_id", "trigger_type", "status", "sent_at",
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

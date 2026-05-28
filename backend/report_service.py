@@ -155,11 +155,24 @@ def build_doctor_summary(db: Session, doctor_id: int, last_7d: datetime) -> dict
             if any(classify_spo2(v) == "CRITICAL" for v in s_vals):
                 p_summary["critical_metrics"].append("SpO2")
 
-        # Aggregate Steps
+        # Aggregate Steps — per-day MAX, then sum.
+        # Step counters are CUMULATIVE within a day (each new reading
+        # replaces the previous total, not adds to it). Summing raw
+        # readings double-counts: a patient logging at 09:00 (3500
+        # steps) and 18:00 (8000 steps) actually walked 8000 that day,
+        # not 11500. PR 267 fixed this on the patient dashboard; the
+        # doctor digest had the same bug.
         steps_readings = [r for r in readings if r.reading_type == 'steps' and r.steps_count]
         if steps_readings:
+            daily_max: dict = {}
+            for r in steps_readings:
+                # r.reading_timestamp is tz-aware UTC; bucket by UTC
+                # date — consistent with the rest of the 7-day window
+                # math which is also UTC-anchored.
+                day = r.reading_timestamp.date()
+                daily_max[day] = max(daily_max.get(day, 0), r.steps_count)
             p_summary["metrics"]["steps"] = {
-                "total": sum(r.steps_count for r in steps_readings)
+                "total": sum(daily_max.values())
             }
 
         # M5: only count + render a patient if at least one metric
@@ -284,11 +297,17 @@ def send_doctor_weekly_reports(
                     # "doctor processed, nothing to send" is
                     # distinguishable from "doctor was never evaluated".
                     # In the Bihar pilot with sparse logging this is a
-                    # common state. ReportGenerationStatus has no
-                    # dedicated SKIPPED value (would require migration);
-                    # we use SUCCESS with patients_with_data_count=0,
-                    # which truthfully reflects what happened: the run
-                    # succeeded, there was simply nothing to deliver.
+                    # common state.
+                    #
+                    # Status = PARTIAL (was SUCCESS): SUCCESS alongside
+                    # error_message="no_data_in_window" is semantically
+                    # contradictory — ops queries filtering
+                    # `status=SUCCESS AND error_message IS NOT NULL`
+                    # would surface this as a delivery anomaly when
+                    # it's actually a clean no-data skip. PARTIAL maps
+                    # to "ran, did not deliver" which is exactly what
+                    # happened. SUCCESS is reserved for confirmed
+                    # Twilio delivery.
                     db.add(DoctorReportGenerationLog(
                         doctor_id=d_id,
                         trigger_type=trigger_type,
@@ -296,7 +315,7 @@ def send_doctor_weekly_reports(
                         patients_linked_count=summary["total_patients_count"],
                         patients_with_data_count=0,
                         critical_patients_count=0,
-                        status=ReportGenerationStatus.SUCCESS,
+                        status=ReportGenerationStatus.PARTIAL,
                         error_message="no_data_in_window",
                     ))
                     db.commit()
@@ -344,13 +363,21 @@ def send_doctor_weekly_reports(
                     if "steps" in m:
                         metric_parts.append(f"Steps: {m['steps']['total']}")
 
-                    # Render-time skip removed: build_doctor_summary now
-                    # filters out patients with empty metrics (M5), so
-                    # metric_parts is guaranteed non-empty here. If this
-                    # invariant is ever broken, the assertion below will
-                    # surface it loudly in tests rather than rendering a
-                    # silent "👤 Name: " line.
-                    assert metric_parts, "build_doctor_summary must filter empty-metric patients"
+                    # build_doctor_summary should already have filtered
+                    # patients with no aggregated metric (M5). This guard
+                    # is the production safety net — `assert` would be
+                    # stripped under `python -O`, leaving a silent blank
+                    # "👤 Name: " line on the doctor's WhatsApp. logger
+                    # surfaces the upstream regression to ops AND skips
+                    # the line so the doctor never sees the artefact.
+                    if not metric_parts:
+                        logger.error(
+                            "Patient %s reached render with empty metrics — "
+                            "build_doctor_summary M5 filter regression. "
+                            "Skipping line.",
+                            p["name"],
+                        )
+                        continue
                     p_line = f"👤 {p['name']}: " + ", ".join(metric_parts)
                     if p["critical_metrics"]:
                         p_line += " ⚠️"

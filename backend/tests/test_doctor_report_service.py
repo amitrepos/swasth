@@ -614,3 +614,60 @@ class TestDoctorReportService:
         assert any("twilio connection reset" in err for err in results["errors"]), (
             f"Expected the Twilio error in results['errors'], got: {results['errors']}"
         )
+
+    def test_steps_aggregation_uses_per_day_max_not_sum(self, db):
+        """MEDIUM #2: Step counters are cumulative within a day — a
+        single reading at 18:00 contains all steps walked since 00:00.
+        Summing every reading double-counts (a patient who logs 3
+        times a day for 7 days = 21 readings but only 7 days of
+        steps). Aggregation must be MAX-per-day then sum across days,
+        matching the patient dashboard fix in PR 267."""
+        doctor = models.User(
+            full_name="Dr. Step", role=models.UserRole.doctor, password_hash="...",
+        )
+        db.add(doctor); db.flush()
+
+        p = models.Profile(name="Step Patient")
+        db.add(p); db.flush()
+        db.add(models.DoctorPatientLink(
+            doctor_id=doctor.id, profile_id=p.id, status='active',
+            consent_granted_at=datetime.now(timezone.utc),
+            consent_type='in_person_exam',
+        )); db.flush()
+
+        # Use explicit timestamps anchored at midday on two distinct
+        # calendar dates so the test is immune to wall-clock-relative
+        # date-bucket flips (e.g. hours_ago=25 vs 26 can span midnight
+        # depending on what time the test runs).
+        now = datetime.now(timezone.utc)
+        day1 = (now - timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
+        day2 = (now - timedelta(days=2)).replace(hour=12, minute=0, second=0, microsecond=0)
+
+        def _add_step_at(ts, val):
+            r = models.HealthReading(
+                profile_id=p.id, logged_by=1, reading_type="steps",
+                steps_count=val, value_numeric=val, unit_display="steps",
+                status_flag="NORMAL", reading_timestamp=ts,
+            )
+            db.add(r); db.flush()
+
+        # Day 1 — two cumulative readings, max should win:
+        _add_step_at(day1.replace(hour=6),  3500)   # morning
+        _add_step_at(day1.replace(hour=18), 8000)   # evening (daily final)
+        # Day 2 — two cumulative readings, max should win:
+        _add_step_at(day2.replace(hour=8),  5000)
+        _add_step_at(day2.replace(hour=20), 6500)   # daily final
+        # Expected: 8000 + 6500 = 14500.
+        # Buggy SUM gives 3500+8000+5000+6500 = 23000.
+
+        last_7d = datetime.now(timezone.utc) - timedelta(days=7)
+        summary = build_doctor_summary(db, doctor.id, last_7d)
+
+        assert "steps" in summary["patients"][0]["metrics"]
+        total = summary["patients"][0]["metrics"]["steps"]["total"]
+        assert total == 14500, (
+            f"Expected per-day MAX aggregation = 14500 (8000 + 6500), "
+            f"got {total}. A value of 23000 means the buggy SUM-of-all-"
+            f"readings logic is still in place — same bug PR 267 fixed "
+            f"on the patient dashboard."
+        )

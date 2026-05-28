@@ -118,6 +118,13 @@ class TestDoctorWeeklyReportsV2:
             )
             assert gen_log.patients_with_data_count == 0
             assert gen_log.error_message == "no_data_in_window"
+            # Status MUST be PARTIAL (not SUCCESS). SUCCESS alongside an
+            # error_message would be semantically contradictory and
+            # confuse ops queries filtering on
+            # `status=SUCCESS AND error_message IS NOT NULL`.
+            assert gen_log.status == ReportGenerationStatus.PARTIAL, (
+                f"No-data skip must write PARTIAL, got {gen_log.status}"
+            )
 
     def test_send_doctor_weekly_reports_no_data_skip(self, db):
         with patch("report_service.settings") as mock_settings:
