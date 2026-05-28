@@ -14,7 +14,13 @@ import ai_service
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, require_india_writer
+from dependencies import (
+    get_current_user,
+    get_profile_access_or_403,
+    get_profile_editor_or_403,
+    require_india_writer,
+    verify_india_location,
+)
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -117,7 +123,7 @@ Respond ONLY in this exact JSON format, nothing else:
 # POST /meals — save a meal log
 # ---------------------------------------------------------------------------
 
-@router.post("/meals", status_code=status.HTTP_201_CREATED)
+@router.post("/meals", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_india_location)])
 @limiter.limit("20/minute")
 async def create_meal(
     request: Request,
@@ -228,7 +234,7 @@ async def today_meals(
 # DELETE /meals/{id}
 # ---------------------------------------------------------------------------
 
-@router.delete("/meals/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/meals/{meal_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(verify_india_location)])
 @limiter.limit("20/minute")
 async def delete_meal(
     request: Request,
@@ -253,7 +259,7 @@ async def delete_meal(
 # PATCH /meals/{id} — update a meal log
 # ---------------------------------------------------------------------------
 
-@router.patch("/meals/{meal_id}", response_model=schemas.MealLogResponse)
+@router.patch("/meals/{meal_id}", response_model=schemas.MealLogResponse, dependencies=[Depends(verify_india_location)])
 @limiter.limit("20/minute")
 async def update_meal(
     request: Request,
@@ -282,7 +288,7 @@ async def update_meal(
 # POST /meals/parse-image — Gemini Vision food classification
 # ---------------------------------------------------------------------------
 
-@router.post("/meals/parse-image")
+@router.post("/meals/parse-image", dependencies=[Depends(verify_india_location)])
 @limiter.limit("20/minute")
 async def parse_food_image(
     request: Request,
@@ -395,6 +401,7 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
     "/meals/analyze-nutrition",
     status_code=status.HTTP_200_OK,
     response_model=schemas.NutritionAnalysisResult,
+    dependencies=[Depends(verify_india_location)]
 )
 @limiter.limit("3/minute")
 async def analyze_nutrition(

@@ -101,9 +101,6 @@ void main() {
   testWidgets('Disclaimer always present', (tester) async {
     final spec = buildBpSpec(sys: 120, dia: 80, age: 30, conditions: const []);
     await _openSheet(tester, spec);
-    expect(
-      find.textContaining('Not a substitute for your doctor'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('not a prescription'), findsOneWidget);
   });
 }

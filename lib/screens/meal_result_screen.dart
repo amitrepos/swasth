@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 
 import '../models/meal_log.dart';
+import '../services/error_mapper.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -197,12 +198,14 @@ class _MealResultScreenState extends State<MealResultScreen> {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
+      // MUST await: on UnauthorizedException, showSnack opens a blocking
+      // 401 dialog, awaits dismissal, clears StorageService, and only
+      // then calls navigator.pushNamedAndRemoveUntil. Without await,
+      // the finally below would fire setState on a widget the 401 flow
+      // is about to unmount, and the navigator push would race the
+      // dispose() — crashes on session expiry during a meal save.
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.foodPhotoSaveFailed),
-          ),
-        );
+        await ErrorMapper.showSnack(context, e);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -398,22 +401,36 @@ class _MealResultScreenState extends State<MealResultScreen> {
         color: AppColors.bgGrouped,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
         children: [
-          const Icon(
-            Icons.info_outline,
-            color: AppColors.textSecondary,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              l10n.foodDisclaimer,
-              style: const TextStyle(
+          Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
                 color: AppColors.textSecondary,
-                fontSize: 12,
+                size: 18,
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.foodDisclaimer,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.nmcDisclaimer,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontStyle: FontStyle.italic,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

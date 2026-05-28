@@ -70,6 +70,7 @@
     "description": "Shown on HTTP 5xx or when the server returns a malformed body we can't parse. Never expose the raw error."
   },
   "errGeneric": "ஏதோ தவறு நடந்துவிட்டது. மீண்டும் முயற்சிக்கவும்.",
+  "errRegionRestricted": "வட்டாரத் தனியுரிமைச் சட்டங்கள் காரணமாக, சுகாதாரத் தரவைப் பதிவு செய்வது தற்போது இந்தியாவுக்குள் இருக்கும் பயனர்களுக்கு மட்டுமே கட்டுப்படுத்தப்பட்டுள்ளது. உங்கள் வரலாற்றை நீங்கள் இன்னும் பார்க்கலாம்.",
   "@errGeneric": {
     "description": "Fallback for any unexpected exception that doesn't fit a known category."
   },
@@ -576,6 +577,9 @@
   "lastSpO2": "கடைசி SpO2",
   "lastSteps": "இன்று நடந்த அடிகள்",
   "spO2Unit": "%",
+  "bpmUnit": "bpm",
+  "mmHgUnit": "mmHg",
+  "kgUnit": "கி.கி",
   "viaArmband": "ஆர்ம்பேண்ட் வழியாக",
   "viaPhone": "தொலைபேசி / ஆர்ம்பேண்ட் வழியாக",
   "pairDevice": "சாதனம் இணைக்கவும்",
@@ -742,6 +746,11 @@
   "@cameraError": {
     "description": "Generic camera error message - never leak raw exception details to user"
   },
+  "scanCouldNotReadTitle": "திரையைப் படிக்க முடியவில்லை",
+  "scanCouldNotReadMessage": "சாதனத்தின் ரீடர் அல்லது AI இரண்டுமே இந்த படத்திலிருந்து மதிப்புகளை எடுக்க முடியவில்லை.\n\nமுயற்சிக்கவும்:\n  • தொலைபேசியை நிலையாக பிடித்து திரைக்கு அருகில் கொண்டு வாருங்கள்\n  • திரை ஒளிர வேண்டும் மற்றும் எண்கள் தெளிவாக தெரிய வேண்டும்\n  • திரையில் ஒளி பிரதிபலிப்பு அல்லது நிழல் இருக்கக் கூடாது",
+  "scanNumbersNotDetectedTitle": "எண்கள் கண்டறியப்படவில்லை",
+  "scanNumbersNotDetectedMessage": "படம் எடுக்கப்பட்டது ஆனால் சரியான ரீடிங் கிடைக்கவில்லை.\n\nகேமரா கண்டறிந்தது: \"{detected}\"\n\nமீண்டும் படம் எடுக்கவும் அல்லது ரீடிங்கை கைமுறையாக உள்ளிடவும்.",
+  "weightScale": "எடை அளவி",
   "mealsTileLabel": "உணவுகள்",
   "mealsTodayCount": "{count} இன்று",
   "@mealsTodayCount": {
@@ -1088,6 +1097,70 @@
   "fat": "கொழுப்பு",
   "@fat": {
     "description": "Label for fat (grams) in the macronutrients grid"
+  },
+  "fiber": "நார்ச்சத்து",
+  "@fiber": {
+    "description": "Label for dietary fiber (grams) in the meal details sheet"
+  },
+  "viewMealDetails": "விவரங்களைக் காண்க",
+  "@viewMealDetails": {
+    "description": "Tooltip for the view-details icon button on a meal history tile"
+  },
+  "mealDetailsTitle": "உணவு விவரங்கள்",
+  "@mealDetailsTitle": {
+    "description": "Title shown at the top of the meal details bottom sheet"
+  },
+  "healthTip": "ஆரோக்கிய குறிப்பு",
+  "@healthTip": {
+    "description": "Section label above the localized health tip in the meal details sheet"
+  },
+  "noNutritionData": "இந்த உணவுக்கான ஊட்டச்சத்து விவரங்கள் சேமிக்கப்படவில்லை.",
+  "@noNutritionData": {
+    "description": "Shown when meal has no stored nutrition fields (older quick-select entries)"
+  },
+  "viewDetails": "விவரங்களைக் காண்க",
+  "@viewDetails": {
+    "description": "Generic tooltip for view-details icon buttons on history tiles"
+  },
+  "readingDetailsTitle": "அளவீட்டு விவரங்கள்",
+  "@readingDetailsTitle": {
+    "description": "Title shown at the top of the reading details bottom sheet"
+  },
+  "mapLabel": "MAP",
+  "@mapLabel": {
+    "description": "Abbreviation for Mean Arterial Pressure"
+  },
+  "sampleTypeLabel": "மாதிரி வகை",
+  "@sampleTypeLabel": {
+    "description": "Label for glucose sample type"
+  },
+  "stepsGoalLabel": "இலக்கு",
+  "@stepsGoalLabel": {
+    "description": "Label for daily steps goal"
+  },
+  "recordedAt": "பதிவு செய்யப்பட்டது",
+  "@recordedAt": {
+    "description": "Label preceding the recorded timestamp"
+  },
+  "statusLabel": "நிலை",
+  "@statusLabel": {
+    "description": "Label for the clinical status badge"
+  },
+  "pulse": "துடிப்பு",
+  "@pulse": {
+    "description": "Pulse rate label in the reading details sheet"
+  },
+  "notesLabel": "குறிப்புகள்",
+  "@notesLabel": {
+    "description": "Notes label in the reading details sheet"
+  },
+  "spo2Label": "SpO₂",
+  "@spo2Label": {
+    "description": "Display label for blood oxygen saturation reading type"
+  },
+  "stepsLabel": "படிகள்",
+  "@stepsLabel": {
+    "description": "Display label for daily step-count reading type"
   },
   "vegan": "வீகன்",
   "@vegan": {

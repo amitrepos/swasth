@@ -1,6 +1,8 @@
 // E2E Test: History/trends flow — view readings list
 // RULE: Never use pumpAndSettle — use pumpN() to avoid animation hangs.
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -276,5 +278,104 @@ void main() {
       expect(find.text('No readings yet'), findsOneWidget);
       expect(find.byType(ErrorWidget), findsNothing);
     });
+
+    // ──────────────────────────────────────────────────────────────────
+    // View Details Sheets (PR: glucometer + view-details sheets)
+    // ──────────────────────────────────────────────────────────────────
+
+    testWidgets('Tap view on BP tile → opens ReadingDetailsSheet with BP info', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtHistory(tester);
+      await pumpN(tester, frames: 20); // extra wait for readings
+
+      // Reading id=1 from mock is blood_pressure (136/85)
+      final viewBtn = find.byKey(const Key('history_view_reading_1'));
+      expect(viewBtn, findsOneWidget);
+      await tester.tap(viewBtn);
+      await pumpN(tester, frames: 10);
+
+      // Sheet should be open
+      expect(find.text('Reading details'), findsOneWidget);
+      expect(find.text('BP Reading'), findsOneWidget);
+      expect(find.text('Systolic'), findsOneWidget);
+      expect(find.text('136 mmHg'), findsOneWidget);
+      expect(find.text('Diastolic'), findsOneWidget);
+      expect(find.text('85 mmHg'), findsOneWidget);
+    });
+
+    testWidgets(
+      'Tap view on meal tile with nutrition → MealDetailsSheet shows macros',
+      (tester) async {
+        // Override mock so meal 101 carries nutrition; this exercises the
+        // macros branch instead of the no-nutrition fallback.
+        final today = DateTime.now();
+        env = await TestEnv.createAtHistory(
+          tester,
+          overrides: {
+            'GET /meals': http.Response(
+              jsonEncode([
+                {
+                  'id': 101,
+                  'profile_id': 1,
+                  'logged_by': 1,
+                  'category': 'MODERATE_CARB',
+                  'glucose_impact': 'LOW',
+                  'meal_type': 'BREAKFAST',
+                  'input_method': 'quick_select',
+                  'user_confirmed': true,
+                  'total_calories': 420,
+                  'total_carbs_g': 55,
+                  'total_protein_g': 18,
+                  'total_fat_g': 12,
+                  'total_fiber_g': 8,
+                  'meal_score': 78,
+                  'timestamp':
+                      today.copyWith(hour: 8, minute: 30).toIso8601String(),
+                  'created_at':
+                      today.copyWith(hour: 8, minute: 30).toIso8601String(),
+                },
+              ]),
+              200,
+            ),
+          },
+        );
+        await pumpN(tester, frames: 30);
+
+        expect(find.byKey(const Key('history_meal_tile_101')), findsOneWidget);
+        await tester.tap(find.byKey(const Key('history_view_meal_101')));
+        await pumpN(tester, frames: 10);
+
+        expect(find.text('Meal details'), findsOneWidget);
+        expect(find.text('Breakfast'), findsWidgets);
+        // Macro section header renders.
+        expect(find.text('Total Nutrition'), findsOneWidget);
+        // No-nutrition fallback must NOT render.
+        expect(
+          find.text('No nutrition details saved for this meal.'),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'Meal with no nutrition → shows "No nutrition details saved for this meal."',
+      (tester) async {
+        env = await TestEnv.createAtHistory(tester);
+        await pumpN(tester, frames: 30);
+
+        // Default mock id=101 has no nutrition data
+        expect(find.byKey(const Key('history_meal_tile_101')), findsOneWidget);
+        final viewBtn = find.byKey(const Key('history_view_meal_101'));
+        expect(viewBtn, findsOneWidget);
+        await tester.tap(viewBtn);
+        await pumpN(tester, frames: 10);
+
+        expect(
+          find.text('No nutrition details saved for this meal.'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }
