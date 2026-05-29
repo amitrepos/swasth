@@ -59,7 +59,7 @@ def _resolve_target(user_agent: str) -> str:
 
 @router.get("/invite", include_in_schema=False)
 @limiter.limit("60/minute")
-def share_invite_landing(request: Request):
+async def share_invite_landing(request: Request):
     """Smart-redirect entry point shared via WhatsApp / SMS.
 
     Uses a temporary redirect (302) during pre-launch because store
@@ -76,7 +76,7 @@ def share_invite_landing(request: Request):
     include_in_schema=False,
 )
 @limiter.limit("30/minute")
-def android_app_links_assetlinks(request: Request):
+async def android_app_links_assetlinks(request: Request):
     """Android App Links manifest.
 
     Serves the JSON Google's verifier fetches when registering this

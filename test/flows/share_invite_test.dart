@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:swasth_app/l10n/app_localizations.dart';
 import 'package:swasth_app/screens/profile_screen.dart';
 import 'package:swasth_app/services/share_service.dart';
 import 'package:swasth_app/services/storage_service.dart';
@@ -171,15 +172,23 @@ void main() {
               'Invite tile must render for owner — if this fails the '
               'isOwner guard on _buildSection has regressed.');
 
-      // Localized strings appear via AppLocalizations (also
-      // off-stage-tolerant for the same reason).
+      // Reviewer M2: pull strings from AppLocalizations rather than
+      // hard-coding the English text. Hard-coded literals here would
+      // silently desync if app_en.arb changes (flutter analyze won't
+      // catch it). Look up via the live BuildContext on the tile so
+      // we always assert the same string the app actually rendered.
+      final ctx = tester.element(tile);
+      final l10n = AppLocalizations.of(ctx)!;
       expect(
-        find.text('Invite friends', skipOffstage: false),
+        find.text(l10n.inviteFriendsTile, skipOffstage: false),
         findsOneWidget,
+        reason: 'Title text from inviteFriendsTile must render on the tile.',
       );
       expect(
-        find.text('Share Swasth via WhatsApp or SMS', skipOffstage: false),
+        find.text(l10n.inviteFriendsTileSubtitle, skipOffstage: false),
         findsOneWidget,
+        reason:
+            'Subtitle from inviteFriendsTileSubtitle must render on the tile.',
       );
     });
 
