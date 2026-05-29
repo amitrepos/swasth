@@ -7,8 +7,9 @@ from typing import Optional, List, ClassVar
 
 
 # Default fallback if both device-specific and web-default URLs are unsafe/missing.
-# Hardcoded to a known-safe apex domain.
-FINAL_SAFE_FALLBACK = "https://swasth.health"
+# Hardcoded to the production app host. The Swasth web app lives at
+# app.swasth.health; the apex swasth.health is the marketing site.
+FINAL_SAFE_FALLBACK = "https://app.swasth.health"
 
 # Allowlist of hostnames that may be used as redirect targets. The
 # scheme check in is_safe_url stops obvious shenanigans (javascript:,
@@ -203,7 +204,7 @@ class Settings(BaseSettings):
     # the smart-redirect falls back to SHARE_WEB_URL (web app).
     SHARE_ANDROID_URL: Optional[str] = None       # e.g. "https://play.google.com/store/apps/details?id=com.swasth.app"
     SHARE_IOS_URL: Optional[str] = None           # e.g. "https://apps.apple.com/in/app/swasth/id..."
-    SHARE_WEB_URL: str = "https://swasth.health"  # always-defined fallback
+    SHARE_WEB_URL: str = "https://app.swasth.health"  # always-defined fallback (app subdomain — not apex)
     PLAY_STORE_URL: Optional[str] = None          # legacy alias — checked if SHARE_ANDROID_URL is unset
     APP_STORE_URL: Optional[str] = None           # legacy alias — checked if SHARE_IOS_URL is unset
     # Android App Links — Google's verifier hits /.well-known/assetlinks.json

@@ -51,7 +51,7 @@ _DESKTOP_UA = (
 _SHARE_ATTRS = {
     "SHARE_ANDROID_URL": None,
     "SHARE_IOS_URL": None,
-    "SHARE_WEB_URL": "https://swasth.health",
+    "SHARE_WEB_URL": "https://app.swasth.health",
     "PLAY_STORE_URL": None,
     "APP_STORE_URL": None,
     "ANDROID_PACKAGE_NAME": "com.swasth.app",
@@ -120,7 +120,7 @@ def test_invite_redirects_ios_to_app_store_when_set(client):
 def test_invite_desktop_lands_on_web(client):
     """Desktop / unrecognized UA must always fall through to the web
     app — the Play Store URL is meaningless on a laptop."""
-    web = "https://swasth.health"
+    web = "https://app.swasth.health"
     with mock.patch("routes_share.settings") as s:
         _apply(
             s,
@@ -138,7 +138,7 @@ def test_invite_desktop_lands_on_web(client):
 def test_invite_android_falls_back_to_web_when_play_store_unset(client):
     """Pre-launch state: no Play Store URL yet. Android UA must still
     work — landing on the web app — not 500 or empty redirect."""
-    web = "https://swasth.health"
+    web = "https://app.swasth.health"
     with mock.patch("routes_share.settings") as s:
         _apply(s, SHARE_WEB_URL=web)
         resp = client.get(
@@ -280,7 +280,7 @@ def test_invite_prevents_open_redirect_on_malicious_env_var(client):
             "/invite", headers={"User-Agent": _ANDROID_UA}, follow_redirects=False
         )
     assert resp.status_code == 302
-    assert resp.headers["location"] == "https://swasth.health"
+    assert resp.headers["location"] == "https://app.swasth.health"
 
 
 def test_invite_blocks_https_phishing_host(client):
@@ -295,7 +295,7 @@ def test_invite_blocks_https_phishing_host(client):
     assert resp.status_code == 302
     # Must fall back to the safe web URL, NOT echo evil.com.
     assert "evil.com" not in resp.headers["location"]
-    assert resp.headers["location"] == "https://swasth.health"
+    assert resp.headers["location"] == "https://app.swasth.health"
 
 
 def test_invite_blocks_userinfo_bypass(client):
@@ -313,7 +313,7 @@ def test_invite_blocks_userinfo_bypass(client):
     assert resp.status_code == 302
     # The userinfo-bearing URL must not be echoed back as the
     # Location header — falls back to the safe web URL.
-    assert resp.headers["location"] == "https://swasth.health"
+    assert resp.headers["location"] == "https://app.swasth.health"
 
 
 def test_invite_prevents_open_redirect_on_all_malicious_env_vars(client):
@@ -329,7 +329,7 @@ def test_invite_prevents_open_redirect_on_all_malicious_env_vars(client):
             "/invite", headers={"User-Agent": _ANDROID_UA}, follow_redirects=False
         )
     assert resp.status_code == 302
-    assert resp.headers["location"] == "https://swasth.health"
+    assert resp.headers["location"] == "https://app.swasth.health"
 
 
 def test_is_safe_url_accepts_swasth_subdomains_and_stores():
@@ -385,8 +385,8 @@ def test_invite_blocks_http_share_web_url(client):
             "/invite", headers={"User-Agent": _DESKTOP_UA}, follow_redirects=False
         )
     assert resp.status_code == 302
-    # FINAL_SAFE_FALLBACK is hardcoded https://swasth.health.
-    assert resp.headers["location"] == "https://swasth.health"
+    # FINAL_SAFE_FALLBACK is hardcoded https://app.swasth.health.
+    assert resp.headers["location"] == "https://app.swasth.health"
     assert not resp.headers["location"].startswith("http://")
 
 
