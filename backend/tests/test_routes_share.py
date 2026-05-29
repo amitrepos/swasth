@@ -39,7 +39,7 @@ _DESKTOP_UA = (
 # a fresh MagicMock, which is truthy and is NOT None. That used to let
 # tests pass for the wrong reason — e.g. the legacy-fallback tests did
 # not set the modern alias and the resolver picked a MagicMock as a
-# truthy value, which then failed _is_safe_url (no scheme) and the
+# truthy value, which then failed is_safe_url (no scheme) and the
 # test happened to assert the right outcome via that broken path.
 #
 # This helper returns a MagicMock with EVERY share-related attribute
@@ -279,7 +279,7 @@ def test_invite_blocks_userinfo_bypass(client):
     Browsers DO honor the host after the @ (so the destination is
     actually play.google.com), but the URL-as-shown reads like it
     points at evil.com — a tell that has no legitimate reason in a
-    store/web target. `_is_safe_url` rejects any URL with userinfo,
+    store/web target. `is_safe_url` rejects any URL with userinfo,
     so the resolver falls back to SHARE_WEB_URL."""
     with mock.patch("routes_share.settings") as s:
         _apply(s, SHARE_ANDROID_URL="https://evil.com@play.google.com/x")
@@ -294,7 +294,7 @@ def test_invite_blocks_userinfo_bypass(client):
 
 def test_invite_prevents_open_redirect_on_all_malicious_env_vars(client):
     """Even if SHARE_WEB_URL itself is malicious, the hardcoded
-    _FINAL_SAFE_FALLBACK kicks in. No path lets evil through."""
+    FINAL_SAFE_FALLBACK kicks in. No path lets evil through."""
     with mock.patch("routes_share.settings") as s:
         _apply(
             s,
@@ -308,52 +308,52 @@ def test_invite_prevents_open_redirect_on_all_malicious_env_vars(client):
     assert resp.headers["location"] == "https://swasth.health"
 
 
-def test_is_safe_url_accepts_swasth_subdomains_and_stores():
+def testis_safe_url_accepts_swasth_subdomains_and_stores():
     """Direct unit-level coverage of the allowlist policy."""
-    from routes_share import _is_safe_url
+    from config import is_safe_url
 
-    assert _is_safe_url("https://swasth.health") is True
-    assert _is_safe_url("https://app.swasth.health") is True
-    assert _is_safe_url("https://staging.swasth.health/path?q=1") is True
-    assert _is_safe_url("https://play.google.com/store/apps/details?id=x") is True
-    assert _is_safe_url("https://apps.apple.com/in/app/swasth/id123") is True
+    assert is_safe_url("https://swasth.health") is True
+    assert is_safe_url("https://app.swasth.health") is True
+    assert is_safe_url("https://staging.swasth.health/path?q=1") is True
+    assert is_safe_url("https://play.google.com/store/apps/details?id=x") is True
+    assert is_safe_url("https://apps.apple.com/in/app/swasth/id123") is True
 
 
-def test_is_safe_url_rejects_lookalikes_and_bad_schemes():
+def testis_safe_url_rejects_lookalikes_and_bad_schemes():
     """Lookalike domains, plain HTTP for stores, and non-HTTPS schemes
     must all be rejected."""
-    from routes_share import _is_safe_url
+    from config import is_safe_url
 
     # Lookalike — "notswasth.health" must not satisfy the suffix
     # check (the leading dot in _ALLOWED_SUFFIX prevents it).
-    assert _is_safe_url("https://notswasth.health") is False
-    assert _is_safe_url("https://swasth.health.evil.com") is False
+    assert is_safe_url("https://notswasth.health") is False
+    assert is_safe_url("https://swasth.health.evil.com") is False
     # Non-HTTPS schemes — HTTP is now also rejected (C1).
-    assert _is_safe_url("javascript:alert(1)") is False
-    assert _is_safe_url("data:text/html,foo") is False
-    assert _is_safe_url("ftp://swasth.health") is False
+    assert is_safe_url("javascript:alert(1)") is False
+    assert is_safe_url("data:text/html,foo") is False
+    assert is_safe_url("ftp://swasth.health") is False
     # Empty / malformed.
-    assert _is_safe_url("") is False
-    assert _is_safe_url("not-a-url") is False
+    assert is_safe_url("") is False
+    assert is_safe_url("not-a-url") is False
 
 
-def test_is_safe_url_rejects_plain_http_even_on_allowed_host():
+def testis_safe_url_rejects_plain_http_even_on_allowed_host():
     """Reviewer C1: plaintext http:// over a plaintext request lets
     a MITM strip TLS and intercept the redirect. The store URLs and
     swasth.health all serve HTTPS at their end, so http:// here can
     only be a misconfiguration or an attack. Reject every http:// —
     no exception for any host."""
-    from routes_share import _is_safe_url
+    from config import is_safe_url
 
-    assert _is_safe_url("http://swasth.health") is False
-    assert _is_safe_url("http://app.swasth.health") is False
-    assert _is_safe_url("http://play.google.com/store/apps/details?id=x") is False
-    assert _is_safe_url("http://apps.apple.com/in/app/swasth/id123") is False
+    assert is_safe_url("http://swasth.health") is False
+    assert is_safe_url("http://app.swasth.health") is False
+    assert is_safe_url("http://play.google.com/store/apps/details?id=x") is False
+    assert is_safe_url("http://apps.apple.com/in/app/swasth/id123") is False
 
 
 def test_invite_blocks_http_share_web_url(client):
     """If SHARE_WEB_URL is mistakenly configured as http://, resolver
-    must fall through to _FINAL_SAFE_FALLBACK (the hardcoded https
+    must fall through to FINAL_SAFE_FALLBACK (the hardcoded https
     constant) rather than serving the plaintext URL."""
     with mock.patch("routes_share.settings") as s:
         _apply(s, SHARE_WEB_URL="http://swasth.health")
@@ -361,7 +361,7 @@ def test_invite_blocks_http_share_web_url(client):
             "/invite", headers={"User-Agent": _DESKTOP_UA}, follow_redirects=False
         )
     assert resp.status_code == 302
-    # _FINAL_SAFE_FALLBACK is hardcoded https://swasth.health.
+    # FINAL_SAFE_FALLBACK is hardcoded https://swasth.health.
     assert resp.headers["location"] == "https://swasth.health"
     assert not resp.headers["location"].startswith("http://")
 

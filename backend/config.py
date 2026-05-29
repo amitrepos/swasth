@@ -1,8 +1,65 @@
 import re
+from urllib.parse import urlparse
 
 from pydantic_settings import BaseSettings
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, ValidationInfo
 from typing import Optional, List, ClassVar
+
+
+# Default fallback if both device-specific and web-default URLs are unsafe/missing.
+# Hardcoded to a known-safe apex domain.
+FINAL_SAFE_FALLBACK = "https://swasth.health"
+
+# Allowlist of hostnames that may be used as redirect targets. The
+# scheme check in is_safe_url stops obvious shenanigans (javascript:,
+# data:), but a misconfigured env var pointing at a phishing host
+# (e.g. SHARE_WEB_URL=https://evil.com) would otherwise silently
+# redirect every WhatsApp invite tap. The netloc check below requires
+# the resolved hostname to match one of these apex domains OR be a
+# subdomain of swasth.health.
+_ALLOWED_HOSTS = frozenset({
+    "play.google.com",      # Android store
+    "apps.apple.com",       # iOS store
+    "swasth.health",        # web app apex
+})
+# Suffix match for subdomains. NOTE the leading dot — prevents
+# "notswasth.health" from matching ".swasth.health".
+_ALLOWED_SUFFIX = ".swasth.health"
+
+
+def is_safe_url(url: str) -> bool:
+    """Validate that a URL is safe to use as a redirect target.
+
+    Two checks, both must pass:
+
+    1. Scheme is https only — blocks `http:`, `javascript:`, `data:`,
+       `file:`, etc.
+    2. Hostname is on the allowlist (_ALLOWED_HOSTS) OR matches the
+       allowed suffix (_ALLOWED_SUFFIX). Hostname is read from
+       parsed.hostname (lowercased + port/user-info stripped by
+       urllib), which prevents bypasses like
+       https://evil.com:443@play.google.com/...
+    """
+    if not url:
+        return False
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+    # HTTPS-only enforcement.
+    if parsed.scheme != "https":
+        return False
+    # Reject URLs that carry userinfo (user:pass@host).
+    if parsed.username is not None or parsed.password is not None:
+        return False
+    host = (parsed.hostname or "").lower()
+    if not host:
+        return False
+    if host in _ALLOWED_HOSTS:
+        return True
+    if host.endswith(_ALLOWED_SUFFIX):
+        return True
+    return False
 
 
 # Regex for a valid Android package name. RFC: dotted-identifier, each
@@ -163,6 +220,37 @@ class Settings(BaseSettings):
     # raises ValidationError before the app accepts traffic, so a
     # bad value is immediately visible in the process logs.
 
+    @field_validator(
+        "SHARE_ANDROID_URL",
+        "SHARE_IOS_URL",
+        "SHARE_WEB_URL",
+        "PLAY_STORE_URL",
+        "APP_STORE_URL",
+        mode="after",
+    )
+    @classmethod
+    def _validate_share_urls(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        # SHARE_WEB_URL is declared `str` (non-Optional) — it is the
+        # always-defined web fallback that _resolve_target relies on.
+        # Allowing an empty string to coerce to None here would violate
+        # the type contract and make every downstream `settings.SHARE_WEB_URL`
+        # reference unsafe. Raise instead.
+        if v is None or v == "":
+            if info.field_name == "SHARE_WEB_URL":
+                raise ValueError(
+                    "SHARE_WEB_URL must be a non-empty HTTPS URL belonging to "
+                    "an approved domain (it is the always-on web fallback for "
+                    "the /invite smart-redirect); got empty value"
+                )
+            return None
+        if not is_safe_url(v):
+            raise ValueError(
+                f"{info.field_name} must be a valid, secure HTTPS URL belonging to "
+                f"an approved domain (play.google.com, apps.apple.com, swasth.health); "
+                f"got: {v!r}"
+            )
+        return v
+
     @field_validator("ANDROID_PACKAGE_NAME")
     @classmethod
     def _validate_android_package_name(cls, v: str) -> str:
@@ -186,8 +274,8 @@ class Settings(BaseSettings):
         clean = v.replace(":", "").upper()
         if not _CERT_SHA256_RE.fullmatch(clean):
             raise ValueError(
-                "SHARE_ANDROID_CERT_SHA256 must be 32 hex bytes "
-                "(colon-separated or continuous); got: {v!r}".format(v=v)
+                f"SHARE_ANDROID_CERT_SHA256 must be 32 hex bytes "
+                f"(colon-separated or continuous); got: {v!r}"
             )
         return ":".join(clean[i:i + 2] for i in range(0, 64, 2))
 

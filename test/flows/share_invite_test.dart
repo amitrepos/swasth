@@ -1,9 +1,12 @@
 // E2E coverage for the "Invite friends" tile on the Profile screen.
 // RULE: never use pumpAndSettle — use pumpN() to avoid animation hangs.
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:swasth_app/screens/profile_screen.dart';
 import 'package:swasth_app/services/share_service.dart';
 import 'package:swasth_app/services/storage_service.dart';
@@ -177,6 +180,83 @@ void main() {
       expect(
         find.text('Share Swasth via WhatsApp or SMS', skipOffstage: false),
         findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'Tile is NOT rendered for non-owner (viewer) profile', (tester) async {
+      // Reviewer #3 (M3): the invite tile is owner-only (`if (isOwner)`
+      // guard in profile_screen.dart). If that guard is removed or the
+      // tile is moved outside the block, a shared/viewer user would be
+      // able to "invite friends" using the OWNER's account context —
+      // a privacy + identity-confusion bug. Pin the negative case.
+      //
+      // Override GET /profiles/1 to return access_level: 'viewer',
+      // boot ProfileScreen, wait for the load to settle, then assert
+      // the tile is absent.
+      StorageService.useInMemoryStorage();
+      await StorageService().saveToken('mock_token_for_test');
+      await StorageService().saveUserData({
+        'id': 1,
+        'email': 'viewer@swasth.test',
+        'full_name': 'Test Viewer',
+      });
+
+      // Build a non-owner response. Keep the shape identical to the
+      // default mock_http.dart payload so the screen's load path is
+      // exercised the same way — only access_level changes.
+      final viewerPayload = http.Response(
+        jsonEncode({
+          'id': 1,
+          'name': 'Shared Profile',
+          'relationship': 'parent',
+          'age': 65,
+          'gender': 'Male',
+          'height': 170.0,
+          'weight': 75.0,
+          'blood_group': 'B+',
+          'medical_conditions': const <String>[],
+          'phone_number': '918700151250',
+          'access_level': 'viewer',
+          'doctor_name': null,
+          'doctor_whatsapp': null,
+          'created_at': '2026-01-01T00:00:00Z',
+          'updated_at': '2026-04-01T00:00:00Z',
+        }),
+        200,
+      );
+
+      env = await TestEnv.create(
+        tester,
+        startScreen: const ProfileScreen(profileId: 1),
+        overrides: {'GET /profiles/1': viewerPayload},
+      );
+
+      // Wait for the load spinner to clear (proxy for _loadData done).
+      // We cannot poll for "tile present" — the tile must be absent.
+      // Polling for spinner-gone is the closest deterministic signal.
+      final loaded = await _pumpUntil(
+        tester,
+        () => find.byType(CircularProgressIndicator).evaluate().isEmpty,
+        maxFrames: 120,
+      );
+      expect(loaded, isTrue,
+          reason:
+              'ProfileScreen never finished loading the viewer profile within '
+              '120 frames — check the GET /profiles/1 override.');
+
+      // Extra pumps so any post-load build settles.
+      await pumpN(tester, frames: 10);
+
+      // Tile must be absent in the FULL tree (skipOffstage:false), not
+      // just the visible viewport.
+      expect(
+        find.byKey(const Key('profile_invite_friends'), skipOffstage: false),
+        findsNothing,
+        reason:
+            'Invite tile rendered on a viewer profile — the `if (isOwner)` '
+            'guard in profile_screen.dart has regressed. Non-owners must '
+            'not be able to invite using the owner\'s account context.',
       );
     });
 
