@@ -332,7 +332,7 @@ def test_invite_prevents_open_redirect_on_all_malicious_env_vars(client):
     assert resp.headers["location"] == "https://swasth.health"
 
 
-def testis_safe_url_accepts_swasth_subdomains_and_stores():
+def test_is_safe_url_accepts_swasth_subdomains_and_stores():
     """Direct unit-level coverage of the allowlist policy."""
     from config import is_safe_url
 
@@ -343,7 +343,7 @@ def testis_safe_url_accepts_swasth_subdomains_and_stores():
     assert is_safe_url("https://apps.apple.com/in/app/swasth/id123") is True
 
 
-def testis_safe_url_rejects_lookalikes_and_bad_schemes():
+def test_is_safe_url_rejects_lookalikes_and_bad_schemes():
     """Lookalike domains, plain HTTP for stores, and non-HTTPS schemes
     must all be rejected."""
     from config import is_safe_url
@@ -361,7 +361,7 @@ def testis_safe_url_rejects_lookalikes_and_bad_schemes():
     assert is_safe_url("not-a-url") is False
 
 
-def testis_safe_url_rejects_plain_http_even_on_allowed_host():
+def test_is_safe_url_rejects_plain_http_even_on_allowed_host():
     """Reviewer C1: plaintext http:// over a plaintext request lets
     a MITM strip TLS and intercept the redirect. The store URLs and
     swasth.health all serve HTTPS at their end, so http:// here can
