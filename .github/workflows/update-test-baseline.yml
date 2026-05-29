@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: update-test-baseline
@@ -101,14 +102,35 @@ jobs:
           print('Baseline written:', baseline)
           PY
 
-      - name: Commit baseline update if changed
+      - name: Check for baseline changes
+        id: diff
         run: |
-          git config user.name "swasth-automation-bot"
-          git config user.email "bot@swasth.health"
           if git diff --quiet -- .claude/test-baseline.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
             echo "Baseline unchanged."
-            exit 0
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
-          git add .claude/test-baseline.json
-          git commit -m "chore(test-baseline): refresh after $(git rev-parse --short HEAD~1) [skip ci]"
-          git push origin master
+
+      - name: Open PR with baseline update
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(test-baseline): refresh after ${{ github.sha }} [skip ci]"
+          title: "chore(test-baseline): refresh baseline"
+          body: |
+            Automated baseline refresh triggered by commit ${{ github.sha }}.
+
+            This PR updates `.claude/test-baseline.json` with the latest unit + flow
+            test counts captured after the merge to master.
+
+            Safe to auto-merge once CI passes.
+          branch: bot/test-baseline-refresh
+          delete-branch: true
+          author: "swasth-automation-bot <bot@swasth.health>"
+          committer: "swasth-automation-bot <bot@swasth.health>"
+          base: master
+          labels: |
+            automation
+            test-baseline

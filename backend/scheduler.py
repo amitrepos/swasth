@@ -1,10 +1,10 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-from report_service import send_weekly_reports
+from report_service import send_weekly_reports, send_doctor_weekly_reports
 from models import ReportTriggerType
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("swasth-scheduler")
@@ -13,8 +13,25 @@ scheduler = BackgroundScheduler()
 
 
 def weekly_reports_job():
-    logger.info(f"[SCHEDULER] Weekly report job fired at {datetime.now()}")
+    # UTC-anchored to correlate with audit rows downstream.
+    logger.info(
+        "[SCHEDULER] Weekly report job fired at %s",
+        datetime.now(timezone.utc),
+    )
     send_weekly_reports(trigger_type=ReportTriggerType.SCHEDULED)
+
+
+def doctor_weekly_reports_job():
+    # Use UTC + %s lazy formatting. datetime.now() returns a naive
+    # local datetime; every other audit row in this codebase is
+    # UTC-anchored, so a naive local timestamp here makes scheduler
+    # logs un-correlatable with the DoctorReportGenerationLog rows
+    # the job writes downstream.
+    logger.info(
+        "[SCHEDULER] Doctor weekly report job fired at %s",
+        datetime.now(timezone.utc),
+    )
+    send_doctor_weekly_reports(trigger_type=ReportTriggerType.SCHEDULED)
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +142,15 @@ def start_scheduler():
             trigger=CronTrigger(day_of_week='sun', hour=2, minute=30),  # 02:30 UTC = 08:00 IST
             id="ops_p2_digest",
             name="Ops P2 weekly digest email",
+            replace_existing=True,
+        )
+
+        # Doctor weekly digest — Mondays 08:00 IST
+        scheduler.add_job(
+            doctor_weekly_reports_job,
+            trigger=CronTrigger(day_of_week='mon', hour=2, minute=30),  # 02:30 UTC = 08:00 IST
+            id="doctor_weekly_reports",
+            name="Generate and send weekly digest reports to doctors",
             replace_existing=True,
         )
 
