@@ -29,9 +29,24 @@ class MockGeoIPResponse:
         self.country.iso_code = iso_code
 
 
-def _make_request(peer_ip="14.139.1.1", xff=None):
+def _make_request(peer_ip="14.139.1.1", xff=None, auth_token=None):
+    """Build a mock Request that mirrors production header semantics.
+
+    Uses starlette.datastructures.Headers so header lookups are
+    case-insensitive — matches what FastAPI hands us at runtime. A
+    plain dict would silently break any production code path that
+    reads a header with a different case than the test set, which is
+    the failure mode that originally motivated the lowercase-only
+    convention.
+    """
+    from starlette.datastructures import Headers
+    raw: dict = {}
+    if xff:
+        raw["x-forwarded-for"] = xff
+    if auth_token:
+        raw["authorization"] = f"Bearer {auth_token}"
     request = mock.Mock(spec=Request)
-    request.headers = {"X-Forwarded-For": xff} if xff else {}
+    request.headers = Headers(raw)
     if peer_ip is None:
         request.client = None
     else:
@@ -509,8 +524,10 @@ def test_allowlist_empty_no_behaviour_change():
     A US IP must still block, even if a valid token is attached. This
     pins that we didn't accidentally make the allowlist branch
     fail-open when the env var is unset."""
-    request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"authorization": f"Bearer {_mint_bearer_token('anyone@swasth.health')}"}
+    request = _make_request(
+        peer_ip="8.8.8.8",
+        auth_token=_mint_bearer_token("anyone@swasth.health"),
+    )
     reader = mock.Mock()
     reader.country.return_value = MockGeoIPResponse("US")
     with mock.patch("dependencies._get_geoip_reader", return_value=reader):
@@ -523,8 +540,10 @@ def test_allowlist_hit_allows_us_request(monkeypatch):
     """Authenticated user whose email is in GEOFENCE_EMAIL_ALLOWLIST
     must bypass the IP check even from a US IP."""
     _set_allowlist(monkeypatch, "smoke@swasth.health,qa@swasth.health")
-    request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"authorization": f"Bearer {_mint_bearer_token('smoke@swasth.health')}"}
+    request = _make_request(
+        peer_ip="8.8.8.8",
+        auth_token=_mint_bearer_token("smoke@swasth.health"),
+    )
     reader = mock.Mock()
     reader.country.return_value = MockGeoIPResponse("US")
     with mock.patch("dependencies._get_geoip_reader", return_value=reader):
@@ -541,8 +560,10 @@ def test_allowlist_miss_still_blocks_us(monkeypatch):
     """Allowlist is non-empty but the caller is not on it. US IP must
     still block — the bypass must not generalise."""
     _set_allowlist(monkeypatch, "smoke@swasth.health")
-    request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"authorization": f"Bearer {_mint_bearer_token('attacker@evil.com')}"}
+    request = _make_request(
+        peer_ip="8.8.8.8",
+        auth_token=_mint_bearer_token("attacker@evil.com"),
+    )
     reader = mock.Mock()
     reader.country.return_value = MockGeoIPResponse("US")
     with mock.patch("dependencies._get_geoip_reader", return_value=reader):
@@ -557,8 +578,10 @@ def test_allowlist_hit_emits_audit_log(monkeypatch, caplog):
     path=… method=…. The 12-char prefix preserves correlation without
     being long enough to brute-force the email."""
     _set_allowlist(monkeypatch, "smoke@swasth.health")
-    request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"authorization": f"Bearer {_mint_bearer_token('smoke@swasth.health')}"}
+    request = _make_request(
+        peer_ip="8.8.8.8",
+        auth_token=_mint_bearer_token("smoke@swasth.health"),
+    )
     with caplog.at_level("INFO", logger="dependencies"):
         verify_india_location(request)
     hits = [r.message for r in caplog.records if "GEOFENCE_ALLOWLIST_HIT" in r.message]
@@ -590,41 +613,45 @@ def test_missing_bearer_token_falls_through_to_ip_check(monkeypatch):
         assert exc.value.detail == "REGION_RESTRICTED"
 
 
-def test_expired_bearer_token_falls_through_to_ip_check(monkeypatch):
+def test_expired_bearer_token_falls_through_to_ip_check(monkeypatch, caplog):
     """Expired JWT must NOT bypass the geofence — the decode-failure
     path in _email_hash_from_bearer_token already handles this via
     `except Exception`, but pin it explicitly so a future JWT-library
     upgrade that changes the expired-token exception type can't
-    silently regress the gate. Without this test, a swap from python-
-    jose to PyJWT (or a major version bump) could let expired tokens
-    through and we wouldn't notice until the audit log told us."""
+    silently regress the gate. Two assertions: (a) the request still
+    403s, (b) the allowlist audit log did NOT fire — a regression
+    that let the expired token through to the allowlist branch would
+    leave that log line even though the IP check eventually blocks."""
     from datetime import timedelta
     import auth as _auth
 
     _set_allowlist(monkeypatch, "smoke@swasth.health")
-    # Mint a token that expired one second ago — auth.create_access_token
-    # supports negative expires_delta so we don't need a time-travel
-    # fixture for this single case.
     expired_token = _auth.create_access_token(
         {"sub": "smoke@swasth.health"},
         expires_delta=timedelta(seconds=-1),
     )
-    request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"authorization": f"Bearer {expired_token}"}
+    request = _make_request(peer_ip="8.8.8.8", auth_token=expired_token)
     reader = mock.Mock()
     reader.country.return_value = MockGeoIPResponse("US")
     with mock.patch("dependencies._get_geoip_reader", return_value=reader):
-        with pytest.raises(HTTPException) as exc:
-            verify_india_location(request)
-        assert exc.value.detail == "REGION_RESTRICTED"
+        with caplog.at_level("INFO", logger="dependencies"):
+            with pytest.raises(HTTPException) as exc:
+                verify_india_location(request)
+            assert exc.value.detail == "REGION_RESTRICTED"
+        assert not any("GEOFENCE_ALLOWLIST_HIT" in r.message for r in caplog.records), (
+            "Expired token must NOT fire the allowlist audit-log. If this "
+            "fires, the decode-failure path is not catching the expired-"
+            "token exception type — a JWT-library upgrade may have broken it."
+        )
 
 
 def test_malformed_bearer_token_falls_through_to_ip_check(monkeypatch):
-    """Garbage in Authorization header → decode fails → email_hash is
-    None → falls through to IP check. A broken token must NOT bypass."""
+    """Garbage in the authorization header -> decode fails -> email_hash
+    is None -> falls through to IP check. A broken token must NOT bypass."""
+    from starlette.datastructures import Headers
     _set_allowlist(monkeypatch, "smoke@swasth.health")
     request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"authorization": "Bearer this-is-not-a-jwt"}
+    request.headers = Headers({"authorization": "Bearer this-is-not-a-jwt"})
     reader = mock.Mock()
     reader.country.return_value = MockGeoIPResponse("US")
     with mock.patch("dependencies._get_geoip_reader", return_value=reader):
@@ -638,8 +665,10 @@ def test_allowlist_runs_after_env_bypass(monkeypatch):
     when the caller is on the allowlist. Operators rely on the env flag
     as the emergency-rollback escape hatch."""
     _set_allowlist(monkeypatch, "smoke@swasth.health")
-    request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"authorization": f"Bearer {_mint_bearer_token('smoke@swasth.health')}"}
+    request = _make_request(
+        peer_ip="8.8.8.8",
+        auth_token=_mint_bearer_token("smoke@swasth.health"),
+    )
     with mock.patch.dict("os.environ", {"BYPASS_GEO_RESTRICTION": "true"}, clear=False):
         # Both bypasses would allow this request; we want to prove the
         # env flag wins (warning log, NOT info log).

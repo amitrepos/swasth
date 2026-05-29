@@ -310,9 +310,10 @@ def _email_hash_from_bearer_token(request: Request) -> Optional[str]:
     this file) and because we don't need the DB row — only the hash.
     """
     # Starlette's Headers object normalises all keys to lowercase, so
-    # production code only ever needs the lowercase lookup. Tests must
-    # mirror that by using starlette.datastructures.Headers (see
-    # test_geofence._make_request) rather than a plain dict.
+    # the lowercase lookup is sufficient in production. Tests build
+    # the mock request via test_geofence._make_request which constructs
+    # a starlette.datastructures.Headers (case-insensitive) — so any
+    # case in the test setup also resolves here.
     auth_header = request.headers.get("authorization")
     if not auth_header:
         return None
