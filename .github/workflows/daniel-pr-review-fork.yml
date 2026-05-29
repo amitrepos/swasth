@@ -15,9 +15,15 @@ on:
       - 'docs/**'
       - '.github/ISSUE_TEMPLATE/**'
       - 'AUDIT.md'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review (fork PRs)'
+        required: true
+        type: number
 
 concurrency:
-  group: daniel-review-fork-${{ github.event.pull_request.number }}
+  group: daniel-review-fork-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
@@ -26,11 +32,14 @@ jobs:
     runs-on: ubuntu-latest
 
     if: >-
-      github.event.pull_request.head.repo.full_name != github.repository &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.user.login != 'amitrepos' &&
-      !endsWith(github.event.pull_request.user.login, '[bot]') &&
-      !contains(github.event.pull_request.title, '[skip-daniel]')
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.pull_request.head.repo.full_name != github.repository &&
+        github.event.pull_request.draft == false &&
+        github.event.pull_request.user.login != 'amitrepos' &&
+        !endsWith(github.event.pull_request.user.login, '[bot]') &&
+        !contains(github.event.pull_request.title, '[skip-daniel]')
+      )
 
     permissions:
       contents: read
@@ -38,27 +47,42 @@ jobs:
       issues: write
 
     steps:
+      - name: Resolve PR metadata
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            NUM="${{ inputs.pr_number }}"
+          else
+            NUM="${{ github.event.pull_request.number }}"
+          fi
+          JSON=$(gh pr view "$NUM" --repo "${{ github.repository }}" --json headRefOid,title,author,headRepository)
+          echo "number=$NUM" >> "$GITHUB_OUTPUT"
+          echo "sha=$(echo "$JSON" | jq -r .headRefOid)" >> "$GITHUB_OUTPUT"
+          echo "title=$(echo "$JSON" | jq -r .title)" >> "$GITHUB_OUTPUT"
+          echo "author=$(echo "$JSON" | jq -r .author.login)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout PR head
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ steps.pr.outputs.sha }}
 
       - name: Run Daniel review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Fork author has read-only on amitrepos; GITHUB_TOKEN posts the review.
           allowed_non_write_users: '*'
           prompt: |
             /daniel-review
 
-            You are reviewing PR #${{ github.event.pull_request.number }} in ${{ github.repository }},
-            opened by @${{ github.event.pull_request.user.login }}.
+            You are reviewing PR #${{ steps.pr.outputs.number }} in ${{ github.repository }},
+            opened by @${{ steps.pr.outputs.author }}.
 
-            PR title: ${{ github.event.pull_request.title }}
-            Head SHA: ${{ github.event.pull_request.head.sha }}
+            PR title: ${{ steps.pr.outputs.title }}
+            Head SHA: ${{ steps.pr.outputs.sha }}
 
             Follow the GitHub PR Reviews section in your SKILL.md exactly.
 
@@ -70,7 +94,7 @@ jobs:
             - Never use `--approve` from CI. Approvals are reserved for humans.
 
             1. Post the structured summary review (CRITICAL/MEDIUM/MINOR + verdict) via
-               `gh pr review ${{ github.event.pull_request.number }} --request-changes|--comment --body ...`
+               `gh pr review ${{ steps.pr.outputs.number }} --request-changes|--comment --body ...`
                per the rule above.
             2. Post inline line comments pinned to exact lines via the
                `POST /repos/{owner}/{repo}/pulls/{number}/reviews` API.
