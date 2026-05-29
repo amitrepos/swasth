@@ -32,17 +32,17 @@ class StepsChartCard extends StatefulWidget {
 class StepsChartCardState extends State<StepsChartCard> {
   final HealthReadingService _service = HealthReadingService();
   bool _loading = true;
+  bool _loadFailed = false;
   List<_DayBar> _bars = const [];
   int _total = 0;
   int _avg = 0;
   int? _goal;
   int _goalHitDays = 0;
-  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   @override
@@ -58,10 +58,10 @@ class StepsChartCardState extends State<StepsChartCard> {
   Future<void> reload() => _load();
 
   Future<void> _load() async {
-    final loadError = AppLocalizations.of(context)!.stepsChartLoadError;
+    if (!mounted) return;
     setState(() {
       _loading = true;
-      _error = null;
+      _loadFailed = false;
     });
     try {
       final token = await StorageService().getToken();
@@ -94,13 +94,13 @@ class StepsChartCardState extends State<StepsChartCard> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = loadError;
+        _loadFailed = true;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = loadError;
+        _loadFailed = true;
       });
     }
   }
@@ -129,10 +129,10 @@ class StepsChartCardState extends State<StepsChartCard> {
             height: 120,
             child: _loading
                 ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
-                : _error != null
+                : _loadFailed
                     ? Center(
                         child: Text(
-                          _error!,
+                          l10n.stepsChartLoadError,
                           style: const TextStyle(color: AppColors.statusCritical),
                         ),
                       )
