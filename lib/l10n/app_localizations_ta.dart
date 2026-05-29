@@ -88,6 +88,10 @@ class AppLocalizationsTa extends AppLocalizations {
   String get inviteFriendsTileSubtitle => 'Share Swasth via WhatsApp or SMS';
 
   @override
+  String get errRegionRestricted =>
+      'வட்டாரத் தனியுரிமைச் சட்டங்கள் காரணமாக, சுகாதாரத் தரவைப் பதிவு செய்வது தற்போது இந்தியாவுக்குள் இருக்கும் பயனர்களுக்கு மட்டுமே கட்டுப்படுத்தப்பட்டுள்ளது. உங்கள் வரலாற்றை நீங்கள் இன்னும் பார்க்கலாம்.';
+
+  @override
   String get aiInsightEmptyState =>
       'சிறந்த ஆரோக்கிய நுண்ணறிவுகளுக்கு தினசரி ரீடிங்குகளை பதிவு செய்யவும்.';
 
@@ -1104,6 +1108,15 @@ class AppLocalizationsTa extends AppLocalizations {
   String get spO2Unit => '%';
 
   @override
+  String get bpmUnit => 'bpm';
+
+  @override
+  String get mmHgUnit => 'mmHg';
+
+  @override
+  String get kgUnit => 'கி.கி';
+
+  @override
   String get viaArmband => 'ஆர்ம்பேண்ட் வழியாக';
 
   @override
@@ -1563,6 +1576,24 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get cameraError =>
       'கேமரா தொடங்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get scanCouldNotReadTitle => 'திரையைப் படிக்க முடியவில்லை';
+
+  @override
+  String get scanCouldNotReadMessage =>
+      'சாதனத்தின் ரீடர் அல்லது AI இரண்டுமே இந்த படத்திலிருந்து மதிப்புகளை எடுக்க முடியவில்லை.\n\nமுயற்சிக்கவும்:\n  • தொலைபேசியை நிலையாக பிடித்து திரைக்கு அருகில் கொண்டு வாருங்கள்\n  • திரை ஒளிர வேண்டும் மற்றும் எண்கள் தெளிவாக தெரிய வேண்டும்\n  • திரையில் ஒளி பிரதிபலிப்பு அல்லது நிழல் இருக்கக் கூடாது';
+
+  @override
+  String get scanNumbersNotDetectedTitle => 'எண்கள் கண்டறியப்படவில்லை';
+
+  @override
+  String scanNumbersNotDetectedMessage(String detected) {
+    return 'படம் எடுக்கப்பட்டது ஆனால் சரியான ரீடிங் கிடைக்கவில்லை.\n\nகேமரா கண்டறிந்தது: \"$detected\"\n\nமீண்டும் படம் எடுக்கவும் அல்லது ரீடிங்கை கைமுறையாக உள்ளிடவும்.';
+  }
+
+  @override
+  String get weightScale => 'எடை அளவி';
 
   @override
   String get foodResultTitle => 'உணவு பகுப்பாய்வு';
@@ -2116,6 +2147,55 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get fat => 'கொழுப்பு';
+
+  @override
+  String get fiber => 'நார்ச்சத்து';
+
+  @override
+  String get viewMealDetails => 'விவரங்களைக் காண்க';
+
+  @override
+  String get mealDetailsTitle => 'உணவு விவரங்கள்';
+
+  @override
+  String get healthTip => 'ஆரோக்கிய குறிப்பு';
+
+  @override
+  String get noNutritionData =>
+      'இந்த உணவுக்கான ஊட்டச்சத்து விவரங்கள் சேமிக்கப்படவில்லை.';
+
+  @override
+  String get viewDetails => 'விவரங்களைக் காண்க';
+
+  @override
+  String get readingDetailsTitle => 'அளவீட்டு விவரங்கள்';
+
+  @override
+  String get mapLabel => 'MAP';
+
+  @override
+  String get sampleTypeLabel => 'மாதிரி வகை';
+
+  @override
+  String get stepsGoalLabel => 'இலக்கு';
+
+  @override
+  String get recordedAt => 'பதிவு செய்யப்பட்டது';
+
+  @override
+  String get statusLabel => 'நிலை';
+
+  @override
+  String get pulse => 'துடிப்பு';
+
+  @override
+  String get notesLabel => 'குறிப்புகள்';
+
+  @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'படிகள்';
 
   @override
   String get vegan => 'வீகன்';

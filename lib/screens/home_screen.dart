@@ -93,6 +93,7 @@ class HomeScreenState extends State<HomeScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   Timer? _stepsSyncTimer;
+  StreamSubscription<int>? _stepsSyncedSub;
 
   @override
   void initState() {
@@ -119,6 +120,15 @@ class HomeScreenState extends State<HomeScreen>
   /// Initialize pedometer service for step counting
   Future<void> _initializePedometer() async {
     try {
+      // Subscribe BEFORE initialize() so we don't miss the first sync
+      // event fired by the 3-second initial-sync delay inside the service.
+      _stepsSyncedSub = _pedometerService.onStepsSynced.listen((newSteps) {
+        debugPrint('HomeScreen: Pedometer synced $newSteps steps — refreshing dashboard');
+        if (mounted && _activeProfileId != null) {
+          _refreshHealthScore(_activeProfileId!);
+        }
+      });
+
       await _pedometerService.initialize();
       // Sync steps to backend after initialization
       await _pedometerService.syncStepsToBackend();
@@ -154,6 +164,7 @@ class HomeScreenState extends State<HomeScreen>
   void dispose() {
     _pulseController.dispose();
     _stepsSyncTimer?.cancel();
+    _stepsSyncedSub?.cancel();
     _pedometerService.dispose();
     _backgroundStepService.cancel();
     routeObserver.unsubscribe(this);

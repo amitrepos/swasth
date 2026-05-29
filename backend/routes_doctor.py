@@ -4,7 +4,7 @@ All doctor-specific endpoints live here. This file NEVER imports from
 routes_chat.py — doctor access to patient data is deliberately scoped
 to readings, trends, and profile info (not AI chat history).
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 from datetime import datetime, timezone, timedelta
@@ -14,11 +14,46 @@ import models
 import schemas
 import auth
 from database import get_db
-from dependencies import get_current_user, get_doctor_patient_access, get_profile_access_or_403
+from dependencies import (
+    get_current_user,
+    get_doctor_patient_access,
+    get_profile_access_or_403,
+    verify_india_location,
+)
+
+# ---------------------------------------------------------------------------
+# Geofence scope decision (DPDPA 2023 / DISHA / NMC)
+# ---------------------------------------------------------------------------
+# Doctor-portal endpoints fall into three buckets:
+#
+#   (a) Clinical PHI writes — POST /patients/{id}/notes. These write
+#       patient health data. Geofenced to India, matching the patient-
+#       side rule on /readings + /meals.
+#
+#   (b) NMC compliance writes — POST /verify/{doctor_id}. Admin marks
+#       a doctor as NMC-verified. NMC is the Indian medical regulator;
+#       the act of validating an Indian medical registration is a
+#       regulated action that must happen from inside India. Geofenced.
+#
+#   (c) Relationship-management writes — /register, /link, /accept,
+#       /decline. These do NOT write patient health data; they manage
+#       doctor↔patient relationships. They are intentionally NOT
+#       geofenced for now because:
+#         - An Indian-licensed doctor traveling abroad must still be
+#           able to accept a new patient link.
+#         - The NRI-care narrative explicitly assumes some doctor-side
+#           workflow can originate outside India.
+#         - DPDPA Sec. 16 governs *personal data* transfer; a link-state
+#           toggle isn't sensitive personal data.
+#       Doctor portal geofence policy is being re-evaluated in a follow-
+#       up PR with legal sign-off; do not geofence these here without
+#       updating that ticket.
+# ---------------------------------------------------------------------------
 from doctor_utils import ensure_unique_doctor_code
-from models import UserRole
+from models import UserRole, ReportTriggerType
 from email_service import email_service
 from twilio_service import whatsapp_service
+from report_service import send_doctor_weekly_reports
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -1092,14 +1127,23 @@ def get_patient_summary(
 # Clinical Notes (doctor-private)
 # ---------------------------------------------------------------------------
 
-@router.post("/patients/{profile_id}/notes", response_model=schemas.DoctorNoteResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/patients/{profile_id}/notes",
+    response_model=schemas.DoctorNoteResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_india_location)],
+)
 def create_doctor_note(
     profile_id: int,
     data: schemas.DoctorNoteCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Add a clinical note on a patient (optionally linked to a specific reading)."""
+    """Add a clinical note on a patient (optionally linked to a specific reading).
+
+    Geofenced — clinical notes are sensitive personal health data per
+    DPDPA 2023; the originating doctor action must be from inside India.
+    """
     link = get_doctor_patient_access(profile_id, user, db)
 
     # Validate reading belongs to this profile if specified
@@ -1265,13 +1309,21 @@ def refresh_triage_for_profile(profile_id: int, db: Session):
 # Admin: Verify Doctor
 # ---------------------------------------------------------------------------
 
-@router.post("/verify/{doctor_id}")
+@router.post(
+    "/verify/{doctor_id}",
+    dependencies=[Depends(verify_india_location)],
+)
 def verify_doctor(
     doctor_id: int,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Admin verifies a doctor's NMC registration."""
+    """Admin verifies a doctor's NMC registration.
+
+    Geofenced — NMC is the Indian medical regulator and the act of
+    validating an Indian medical registration must originate from
+    inside India.
+    """
     if not user.is_admin and user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Admin only")
 
@@ -1336,3 +1388,103 @@ def get_access_audit(
         }
         for log, u in logs
     ]
+
+
+@router.post("/report/manual-trigger", status_code=status.HTTP_202_ACCEPTED)
+def manually_trigger_doctor_report(
+    background_tasks: BackgroundTasks,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Manually trigger a weekly report digest for the current doctor.
+
+    Rate-limited to one outbound WhatsApp per hour per doctor. Every
+    successful trigger costs Twilio money; without a cooldown a doctor
+    (or a misbehaving client retry loop) could rack up thousands of
+    sends. The check is against the actual delivery log, not the
+    request itself — so a queued-but-not-yet-sent request also blocks
+    further triggers until the worker drains it.
+    """
+    if user.role != UserRole.doctor:
+        raise HTTPException(status_code=403, detail="Only doctors can trigger this report")
+
+    # MEDIUM #3: an unverified doctor (DoctorProfile.is_verified=False)
+    # MUST NOT receive a PHI digest, even if they hold a valid JWT.
+    # Patient→doctor linking is also gated on is_verified, so in steady
+    # state an unverified doctor has no links and the digest would be
+    # empty; but a revocation AFTER linking could leave stale links.
+    # Hard-block at the trigger boundary so PHI never enters the queue.
+    dp = (
+        db.query(models.DoctorProfile)
+        .filter(models.DoctorProfile.user_id == user.id)
+        .first()
+    )
+    if dp is None or not dp.is_verified:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Your doctor profile is pending NMC verification. "
+                "Reports become available once an admin verifies your "
+                "credentials."
+            ),
+        )
+
+    # Cooldown: at most one in-flight or successfully-delivered manual
+    # request per doctor per hour. Semantics:
+    #   - status=SENT     → delivered. Block until 1h after sent_at.
+    #   - status=QUEUED   → in-flight (the worker has the row but Twilio
+    #                       hasn't responded yet). Block — issuing a
+    #                       second request would race the first.
+    #   - status=FAILED   → delivery failed at Twilio. Do NOT block.
+    #                       The doctor never got their report and a
+    #                       retry is the correct fix.
+    #
+    # NOTE on sent_at: WhatsAppMessageLog.sent_at has
+    # `server_default=func.now()`, so it is stamped at row INSERT (when
+    # status=QUEUED) — NOT when Twilio actually delivers. That's why
+    # we cannot use sent_at alone to mean "delivered at"; the status
+    # filter is doing the real work here, and sent_at is just our
+    # creation-time anchor for the window.
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+    recent = (
+        db.query(models.WhatsAppMessageLog)
+        .filter(
+            models.WhatsAppMessageLog.user_id == user.id,
+            models.WhatsAppMessageLog.trigger_type == ReportTriggerType.MANUAL,
+            models.WhatsAppMessageLog.status.in_([
+                models.WhatsAppMessageStatus.SENT,
+                models.WhatsAppMessageStatus.QUEUED,
+            ]),
+            models.WhatsAppMessageLog.sent_at >= cutoff,
+        )
+        .first()
+    )
+    if recent is not None:
+        sent_at = recent.sent_at
+        if sent_at.tzinfo is None:
+            sent_at = sent_at.replace(tzinfo=timezone.utc)
+        
+        now = datetime.now(timezone.utc)
+        # Calculate seconds until the 1-hour cooldown expires.
+        # Clamp to [1, 3600] per spec.
+        retry_after = max(1, min(int(
+            (sent_at + timedelta(hours=1) - now).total_seconds()
+        ), 3600))
+        
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "message": "You can only request a manual report once per hour.",
+                "last_request_at": sent_at.isoformat(),
+                "retry_after_seconds": retry_after,
+            },
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    background_tasks.add_task(
+        send_doctor_weekly_reports,
+        db=None,  # Use a new session in background
+        trigger_type=ReportTriggerType.MANUAL,
+        doctor_user_id=user.id,
+    )
+    return {"message": "Doctor report generation started. You will receive a WhatsApp message shortly."}

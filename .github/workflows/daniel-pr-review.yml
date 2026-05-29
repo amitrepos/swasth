@@ -3,6 +3,13 @@ name: Daniel PR Review
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    # Skip Daniel for PRs that only touch docs/text — saves tokens. Code PRs
+    # always run Daniel regardless of which other paths they also touch.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'AUDIT.md'
 
 concurrency:
   group: daniel-review-${{ github.event.pull_request.number }}
@@ -13,12 +20,14 @@ jobs:
     name: Daniel reviews PR
     runs-on: ubuntu-latest
 
-    # Skip: draft PRs, PRs opened by repo owner (amitrepos), bot PRs.
+    # Skip: draft PRs, PRs opened by repo owner (amitrepos), bot PRs, and PRs
+    # whose title contains `[skip-daniel]` (manual escape hatch for trivial fixes).
     # Rationale: Daniel is for team-member PRs. Owner self-reviews locally via /daniel-review.
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.user.login != 'amitrepos' &&
-      !endsWith(github.event.pull_request.user.login, '[bot]')
+      !endsWith(github.event.pull_request.user.login, '[bot]') &&
+      !contains(github.event.pull_request.title, '[skip-daniel]')
 
     permissions:
       contents: read
@@ -46,11 +55,21 @@ jobs:
             PR title: ${{ github.event.pull_request.title }}
             Head SHA: ${{ github.event.pull_request.head.sha }}
 
-            Follow the GitHub PR Reviews section in your SKILL.md exactly:
+            Follow the GitHub PR Reviews section in your SKILL.md exactly.
+
+            Severity-aware review event (STRICT):
+            - If your review contains 1+ CRITICAL issues → use `--request-changes`.
+              These are correctness/security/compliance bugs that must block merge.
+            - If your review contains zero CRITICAL issues (MEDIUM/MINOR only, or clean)
+              → use `--comment`. MEDIUM/MINOR are advisory and must NEVER block merges.
+            - Never use `--approve` from CI. Approvals are reserved for humans.
+
             1. Post the structured summary review (CRITICAL/MEDIUM/MINOR + verdict) via
-               `gh pr review ${{ github.event.pull_request.number }} ...`
+               `gh pr review ${{ github.event.pull_request.number }} --request-changes|--comment --body ...`
+               per the rule above.
             2. Post inline line comments pinned to exact lines via the
                `POST /repos/{owner}/{repo}/pulls/{number}/reviews` API.
+               Use `"event": "REQUEST_CHANGES"` only when 1+ CRITICAL, else `"event": "COMMENT"`.
 
             Do NOT write the pre-commit review marker — that is a local-only concept and
             does not apply to PRs opened by other team members.

@@ -88,6 +88,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get inviteFriendsTileSubtitle => 'Share Swasth via WhatsApp or SMS';
 
   @override
+  String get errRegionRestricted =>
+      'क्षेत्रीय गोपनीयता कानूनों के कारण, स्वास्थ्य डेटा लॉग करना वर्तमान में भारत के भीतर के उपयोगकर्ताओं तक ही सीमित है। आप अभी भी अपना इतिहास देख सकते हैं।';
+
+  @override
   String get aiInsightEmptyState =>
       'बेहतर स्वास्थ्य जानकारी के लिए रोज़ाना रीडिंग लॉग करें।';
 
@@ -1088,6 +1092,15 @@ class AppLocalizationsHi extends AppLocalizations {
   String get spO2Unit => '%';
 
   @override
+  String get bpmUnit => 'bpm';
+
+  @override
+  String get mmHgUnit => 'mmHg';
+
+  @override
+  String get kgUnit => 'किग्रा';
+
+  @override
   String get viaArmband => 'आर्मबैंड से';
 
   @override
@@ -1544,6 +1557,24 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get cameraError => 'कैमरा शुरू नहीं हो सका। कृपया फिर से कोशिश करें।';
+
+  @override
+  String get scanCouldNotReadTitle => 'स्क्रीन नहीं पढ़ पाए';
+
+  @override
+  String get scanCouldNotReadMessage =>
+      'फ़ोन का रीडर और AI दोनों इस फ़ोटो से नंबर नहीं निकाल सके।\n\nऐसे करें:\n  • फ़ोन को स्थिर रखें और स्क्रीन के पास लाएँ\n  • स्क्रीन की रोशनी जलाएँ ताकि नंबर साफ़ दिखें\n  • स्क्रीन पर चमक या परछाई न हो';
+
+  @override
+  String get scanNumbersNotDetectedTitle => 'नंबर नहीं मिले';
+
+  @override
+  String scanNumbersNotDetectedMessage(String detected) {
+    return 'फ़ोटो ली गई, पर कोई सही रीडिंग नहीं मिली।\n\nकैमरे ने यह देखा: \"$detected\"\n\nफिर से फ़ोटो लें या रीडिंग खुद भरें।';
+  }
+
+  @override
+  String get weightScale => 'वज़न मशीन';
 
   @override
   String get foodResultTitle => 'खाने का नतीजा';
@@ -2088,6 +2119,55 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get fat => 'वसा';
+
+  @override
+  String get fiber => 'फाइबर';
+
+  @override
+  String get viewMealDetails => 'विवरण देखें';
+
+  @override
+  String get mealDetailsTitle => 'भोजन का विवरण';
+
+  @override
+  String get healthTip => 'स्वास्थ्य सुझाव';
+
+  @override
+  String get noNutritionData =>
+      'इस भोजन के लिए कोई पोषण विवरण सहेजा नहीं गया है।';
+
+  @override
+  String get viewDetails => 'विवरण देखें';
+
+  @override
+  String get readingDetailsTitle => 'रीडिंग का विवरण';
+
+  @override
+  String get mapLabel => 'MAP';
+
+  @override
+  String get sampleTypeLabel => 'नमूना प्रकार';
+
+  @override
+  String get stepsGoalLabel => 'लक्ष्य';
+
+  @override
+  String get recordedAt => 'रिकॉर्ड किया गया';
+
+  @override
+  String get statusLabel => 'स्थिति';
+
+  @override
+  String get pulse => 'नाड़ी';
+
+  @override
+  String get notesLabel => 'नोट्स';
+
+  @override
+  String get spo2Label => 'SpO₂';
+
+  @override
+  String get stepsLabel => 'कदम';
 
   @override
   String get vegan => 'वेगन';

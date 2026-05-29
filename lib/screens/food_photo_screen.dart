@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 
 import '../services/api_exception.dart';
+import '../services/error_mapper.dart';
 import '../services/meal_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -240,7 +241,7 @@ class _FoodPhotoScreenState extends State<FoodPhotoScreen> {
       _showFallbackSnackbar();
     } catch (e) {
       if (mounted) Navigator.of(context).pop(); // dismiss dialog
-      final msg = e is ValidationException ? e.detail : null;
+      final msg = ErrorMapper.userMessage(l10n, e);
       _showFallbackSnackbar(message: msg, retry: _lastRetryAction);
     } finally {
       if (mounted) setState(() => _isProcessing = false);

@@ -254,6 +254,12 @@ abstract class AppLocalizations {
   /// **'Share Swasth via WhatsApp or SMS'**
   String get inviteFriendsTileSubtitle;
 
+  /// Shown on HTTP 403 REGION_RESTRICTED. Logging is geo-fenced to Indian IPs to comply with DPDPA 2023 (Sec. 16 cross-border transfer restrictions on sensitive personal data) and DISHA data-residency expectations for digital health records. Do NOT cite GDPR — GDPR is EU law and is not the basis for this control.
+  ///
+  /// In en, this message translates to:
+  /// **'Due to regional privacy laws, logging health data is currently restricted to users within India. You can still view your history.'**
+  String get errRegionRestricted;
+
   /// Placeholder text shown in AI Insight card when no insights are available yet. Encourages patients to log readings regularly.
   ///
   /// In en, this message translates to:
@@ -2108,6 +2114,24 @@ abstract class AppLocalizations {
   /// **'%'**
   String get spO2Unit;
 
+  /// No description provided for @bpmUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'bpm'**
+  String get bpmUnit;
+
+  /// No description provided for @mmHgUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'mmHg'**
+  String get mmHgUnit;
+
+  /// Kilogram unit suffix for weight readings
+  ///
+  /// In en, this message translates to:
+  /// **'kg'**
+  String get kgUnit;
+
   /// No description provided for @viaArmband.
   ///
   /// In en, this message translates to:
@@ -2947,6 +2971,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Camera initialization failed. Please try again.'**
   String get cameraError;
+
+  /// Title of the OCR-failure dialog on the photo-scan screen
+  ///
+  /// In en, this message translates to:
+  /// **'Could Not Read Display'**
+  String get scanCouldNotReadTitle;
+
+  /// Body of the OCR-failure dialog explaining how to retake the photo
+  ///
+  /// In en, this message translates to:
+  /// **'Neither the on-device reader nor the AI could extract values from this photo.\n\nTry:\n  • Hold the phone steady and closer to the display\n  • Make sure the screen is lit and numbers are visible\n  • Avoid glare or shadows on the display'**
+  String get scanCouldNotReadMessage;
+
+  /// Title shown when OCR succeeded but no numeric reading was found
+  ///
+  /// In en, this message translates to:
+  /// **'Numbers Not Detected'**
+  String get scanNumbersNotDetectedTitle;
+
+  /// Body of the no-numbers dialog, includes the raw text the camera saw
+  ///
+  /// In en, this message translates to:
+  /// **'The photo was captured but no valid reading was found.\n\nThe camera detected: \"{detected}\"\n\nTry taking the photo again or enter the reading manually.'**
+  String scanNumbersNotDetectedMessage(String detected);
+
+  /// Device-name label for the weight scale in scan screens
+  ///
+  /// In en, this message translates to:
+  /// **'Weight Scale'**
+  String get weightScale;
 
   /// No description provided for @foodResultTitle.
   ///
@@ -3919,6 +3973,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fat'**
   String get fat;
+
+  /// Label for dietary fiber (grams) in the meal details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Fiber'**
+  String get fiber;
+
+  /// Tooltip for the view-details icon button on a meal history tile
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get viewMealDetails;
+
+  /// Title shown at the top of the meal details bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Meal details'**
+  String get mealDetailsTitle;
+
+  /// Section label above the localized health tip in the meal details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Health tip'**
+  String get healthTip;
+
+  /// Shown in the meal details sheet when the meal has no stored nutrition fields (older quick-select entries)
+  ///
+  /// In en, this message translates to:
+  /// **'No nutrition details saved for this meal.'**
+  String get noNutritionData;
+
+  /// Generic tooltip for view-details icon buttons on history tiles
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get viewDetails;
+
+  /// Title shown at the top of the reading details bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Reading details'**
+  String get readingDetailsTitle;
+
+  /// Abbreviation for Mean Arterial Pressure in the reading details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'MAP'**
+  String get mapLabel;
+
+  /// Label for glucose sample type (fasting/before-meal/post-meal/random) in details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Sample type'**
+  String get sampleTypeLabel;
+
+  /// Label for daily steps goal in the reading details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get stepsGoalLabel;
+
+  /// Label preceding the timestamp at which a reading was recorded
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded'**
+  String get recordedAt;
+
+  /// Label for the clinical status badge in the reading details sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get statusLabel;
+
+  /// Pulse rate label in the reading details sheet (no optional suffix, unlike pulseLabel used in the form)
+  ///
+  /// In en, this message translates to:
+  /// **'Pulse'**
+  String get pulse;
+
+  /// Notes label in the reading details sheet (no optional suffix, unlike notes used in the form)
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesLabel;
+
+  /// Display label for blood oxygen saturation (SpO2) reading type
+  ///
+  /// In en, this message translates to:
+  /// **'SpO₂'**
+  String get spo2Label;
+
+  /// Display label for daily step-count reading type
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get stepsLabel;
 
   /// Diet flag label indicating the meal is vegan
   ///

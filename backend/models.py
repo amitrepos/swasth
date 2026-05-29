@@ -911,7 +911,7 @@ class ReportGenerationLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    
+
     trigger_type = Column(Enum(ReportTriggerType), nullable=False)
     report_date = Column(Date, nullable=False, default=func.current_date())
     generated_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -919,25 +919,63 @@ class ReportGenerationLog(Base):
     members_requested = Column(JSON, nullable=False)    # List of profile IDs expected
     members_with_data = Column(JSON, nullable=False)     # List of profile IDs found with data
     members_skipped = Column(JSON, nullable=True)       # List of profile IDs with no data
-    
+
     status = Column(Enum(ReportGenerationStatus), nullable=False)
     error_message = Column(Text, nullable=True)
+
+class DoctorReportGenerationLog(Base):
+    """Log for the data aggregation phase of a doctor digest report."""
+    __tablename__ = "doctor_report_generation_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    trigger_type = Column(Enum(ReportTriggerType), nullable=False)
+    report_date = Column(Date, nullable=False, default=func.current_date())
+    generated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    patients_linked_count = Column(Integer, nullable=False)
+    patients_with_data_count = Column(Integer, nullable=False)
+    critical_patients_count = Column(Integer, nullable=False, default=0)
+
+    status = Column(Enum(ReportGenerationStatus), nullable=False)
+    error_message = Column(Text, nullable=True)
+
 
 class WhatsAppMessageLog(Base):
     """Log for the actual delivery phase of a WhatsApp message."""
     __tablename__ = "whatsapp_message_logs"
 
+    # M2 cooldown composite index. MUST stay declared here AND mirrored
+    # in migration 0013 — `alembic check` (CI migration round-trip)
+    # compares the live schema against the ORM model and fails if they
+    # diverge. Removing this from __table_args__ caused CI to detect
+    # "ORM doesn't declare ix_wa_msg_log_cooldown but schema has it"
+    # and demand a new migration to drop the index.
+    #
+    # The reviewer's "two sources of truth" concern (#6) is addressed
+    # by keeping the two in lockstep: any future change to the index
+    # must be applied to BOTH this declaration AND a new alembic
+    # migration in the same commit (enforced by .githooks/pre-commit
+    # Gate 2). See migration 0013_whatsapp_log_cooldown_index.py.
+    __table_args__ = (
+        Index(
+            "ix_wa_msg_log_cooldown",
+            "user_id", "trigger_type", "status", "sent_at",
+        ),
+    )
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     phone_number = Column(String, nullable=False)
-    
+
     trigger_type = Column(Enum(ReportTriggerType), nullable=False)
     report_date = Column(Date, nullable=False)
     sent_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     member_ids_included = Column(JSON, nullable=False)
     reading_ids_included = Column(JSON, nullable=True)
-    
+
     status = Column(Enum(WhatsAppMessageStatus), nullable=False, default=WhatsAppMessageStatus.QUEUED)
     twilio_sid = Column(String, nullable=True, index=True)
     error_message = Column(Text, nullable=True)

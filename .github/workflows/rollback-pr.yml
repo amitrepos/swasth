@@ -1,0 +1,87 @@
+name: Rollback PR (revert merged change)
+
+# Quick-rollback utility. Given a merged PR number, opens a revert PR against
+# master that undoes that PR's merge commit. Use when a shipped change breaks
+# production and a clean revert is faster than a forward-fix.
+#
+# How to run:
+#   GitHub UI → Actions → "Rollback PR" → Run workflow → enter PR number
+#   or: gh workflow run rollback-pr.yml -f pr_number=267
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Merged PR number to revert (e.g. 267)'
+        required: true
+        type: string
+      reason:
+        description: 'Why are we rolling this back? (one line)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  revert:
+    name: Open revert PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name 'swasth-rollback-bot'
+          git config user.email 'bot@swasth.health'
+
+      - name: Resolve merge commit SHA
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ inputs.pr_number }}
+        run: |
+          SHA=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json mergeCommit -q '.mergeCommit.oid')
+          if [ -z "$SHA" ] || [ "$SHA" = "null" ]; then
+            echo "PR #$PR is not merged or has no merge commit. Aborting."
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Reverting merge commit: $SHA"
+
+      - name: Create revert branch
+        env:
+          SHA: ${{ steps.resolve.outputs.sha }}
+          PR: ${{ inputs.pr_number }}
+        run: |
+          BRANCH="revert/pr-${PR}-$(date -u +%Y%m%d-%H%M%S)"
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+          git checkout -b "$BRANCH"
+          # -m 1 picks the first parent (master line) for a merge revert.
+          git revert --no-edit -m 1 "$SHA"
+          git push origin "$BRANCH"
+
+      - name: Open revert PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ inputs.pr_number }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base master \
+            --head "$BRANCH" \
+            --title "Revert PR #${PR}: ${REASON}" \
+            --body "Automated rollback of #${PR}.
+
+          **Reason:** ${REASON}
+
+          This PR reverts the merge commit. Merge it after a teammate sanity-checks the diff.
+
+          Triggered by: @${{ github.actor }}"

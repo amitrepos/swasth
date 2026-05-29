@@ -4,7 +4,29 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/health_reading_service.dart';
 import '../services/ocr_service.dart';
 import '../services/storage_service.dart';
+import '../services/error_mapper.dart';
+import '../theme/app_theme.dart';
 import 'reading_confirmation_screen.dart';
+
+// Scan-screen color constants — all via AppColors.*. Project rule: no raw
+// Colors.* inside widgets. Mirrors the pattern used by _CameraColors in
+// food_photo_screen.dart so the two camera surfaces stay theme-aligned.
+class _ScanColors {
+  static const Color background = AppColors.cameraBackground;
+  static const Color foreground = AppColors.cameraForeground;
+  static const Color overlay = AppColors.cameraOverlay;
+  static const Color overlayText = AppColors.cameraOverlayText;
+  static const Color iconDisabled = AppColors.cameraIconDisabled;
+  static const Color buttonBorder = AppColors.cameraButtonBorder;
+  static const Color buttonEnabled = AppColors.cameraButtonEnabled;
+  static const Color buttonDisabled = AppColors.cameraButtonDisabled;
+  static const Color buttonIcon = AppColors.cameraButtonIcon;
+  static const Color flashOn = AppColors.cameraFlashOn;
+  static const Color guideAccent = AppColors.cameraGuideAccent;
+  static const Color transparent = AppColors.transparent;
+  // Painter needs a base black to apply alpha to for the dim layer.
+  static const Color dimBase = AppColors.cameraBackground;
+}
 
 class PhotoScanScreen extends StatefulWidget {
   /// 'glucose' or 'blood_pressure'
@@ -38,8 +60,10 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
   Future<void> _initCamera() async {
     try {
       _cameras = await availableCameras();
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       if (_cameras.isEmpty) {
-        setState(() => _errorMessage = 'No camera found on this device.');
+        setState(() => _errorMessage = l10n.cameraNotFound);
         return;
       }
       final back = _cameras.firstWhere(
@@ -54,8 +78,14 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       );
       await _controller!.initialize();
       if (mounted) setState(() => _isInitialized = true);
-    } catch (e) {
-      setState(() => _errorMessage = 'Camera error: $e');
+    } catch (_) {
+      // Never surface the raw exception — it leaks PlatformException
+      // messages and stack frames to the user. The user only needs to
+      // know to retry; engineering already has the crash report.
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        setState(() => _errorMessage = l10n.cameraError);
+      }
     }
   }
 
@@ -75,6 +105,21 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
 
     final l10n = AppLocalizations.of(context)!;
 
+    // Tracks whether the loading dialog is currently on the navigator
+    // stack. We MUST NOT call Navigator.pop() blindly in the outer catch
+    // — if the dialog was already dismissed (inner catch, or success
+    // path) pop() would walk one route up and dismiss the camera screen
+    // itself. canPop() is not enough either: it returns true whenever
+    // there's a parent route (home screen). The flag is the only safe
+    // signal for "is the loading dialog still showing?".
+    bool loadingShown = false;
+    void dismissLoadingIfShown() {
+      if (loadingShown && mounted) {
+        Navigator.of(context).pop();
+        loadingShown = false;
+      }
+    }
+
     try {
       if (_isFlashOn) await _controller!.setFlashMode(FlashMode.auto);
 
@@ -83,6 +128,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
 
       if (!mounted) return;
 
+      loadingShown = true;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -106,44 +152,65 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
       // Try Gemini Vision via backend (uses fallback chain: Gemini → DeepSeek)
       // ML Kit local OCR disabled on iOS due to arm64 crash on iOS 26.
       OcrResult? result;
-      final token = await StorageService().getToken();
-      if (token != null) {
-        result = await HealthReadingService().parseImageWithGemini(
-          imageBytes,
-          xfile.name,
-          widget.deviceType,
-          token,
-        );
+      try {
+        final token = await StorageService().getToken();
+        if (token != null) {
+          result = await HealthReadingService().parseImageWithGemini(
+            imageBytes,
+            xfile.name,
+            widget.deviceType,
+            token,
+          );
+        }
+      } catch (e) {
+        dismissLoadingIfShown();
+        if (mounted) {
+          final message = ErrorMapper.userMessage(l10n, e);
+          _showError(
+            title: l10n.error,
+            message: message,
+          );
+        }
+        return;
       }
 
-      if (mounted) Navigator.of(context).pop();
+      dismissLoadingIfShown();
 
+      // The mounted check below covers ALL three branches that follow
+      // (result==null, !hasValue, push). The token-null path inside
+      // the inner try awaits StorageService().getToken() and returns
+      // null without throwing — so we land here with result==null
+      // even after a long await. Without this guard, _showError would
+      // run AppLocalizations.of(context)! on a disposed widget.
       if (!mounted) return;
 
       if (result == null) {
+        // Belt-and-braces: between line above and here there is no
+        // await, but a future refactor could insert one and the bug
+        // would be invisible until QA on a slow device. Cheap to keep.
+        if (!mounted) return;
         _showError(
-          title: 'Could Not Read Display',
-          message: 'Neither the on-device reader nor the AI could extract values from this photo.\n\n'
-              'Try:\n'
-              '  • Hold the phone steady and closer to the display\n'
-              '  • Make sure the screen is lit and numbers are visible\n'
-              '  • Avoid glare or shadows on the display',
+          title: l10n.scanCouldNotReadTitle,
+          message: l10n.scanCouldNotReadMessage,
         );
         setState(() => _isCapturing = false);
         return;
       }
 
       if (!result.hasValue) {
+        // Em-dash is locale-neutral punctuation; avoids hardcoding "no text"
+        // in English when the OCR returned an empty rawText.
+        final detected = result.rawText.isNotEmpty ? result.rawText : '—';
+        if (!mounted) return;
         _showError(
-          title: 'Numbers Not Detected',
-          message: 'The photo was captured but no valid reading was found.\n\n'
-              'The camera detected: "${result.rawText.isNotEmpty ? result.rawText : 'no text'}"\n\n'
-              'Try taking the photo again or enter the reading manually.',
+          title: l10n.scanNumbersNotDetectedTitle,
+          message: l10n.scanNumbersNotDetectedMessage(detected),
         );
         setState(() => _isCapturing = false);
         return;
       }
 
+      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -155,11 +222,18 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         ),
       );
     } catch (e) {
+      // Route through ErrorMapper instead of leaking the raw exception.
+      // The previous string "Capture failed: $e" surfaced things like
+      // "PlatformException(IOException, …)" to elderly users.
+      //
+      // Only dismiss the loading dialog if it is actually still showing;
+      // a blind pop() here would dismiss the camera screen when the
+      // failure happened before the dialog was shown (takePicture
+      // throwing) or after it was already dismissed (success path
+      // followed by an unrelated push failure).
+      dismissLoadingIfShown();
       if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Capture failed: $e')),
-        );
+        await ErrorMapper.showSnack(context, e);
       }
     } finally {
       if (mounted) setState(() => _isCapturing = false);
@@ -186,6 +260,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
   */
 
   void _showError({required String title, required String message}) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -194,7 +269,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Try Again"),
+            child: Text(l10n.tryAgain),
           ),
           TextButton(
             onPressed: () {
@@ -210,7 +285,7 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
                 ),
               );
             },
-            child: const Text("Enter Manually"),
+            child: Text(l10n.enterManually),
           ),
         ],
       ),
@@ -235,22 +310,22 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
     if (isGlucose) {
       deviceLabel = l10n.glucometer;
     } else if (isWeight) {
-      deviceLabel = 'Weight Scale';
+      deviceLabel = l10n.weightScale;
     } else {
       deviceLabel = l10n.bpMeter;
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _ScanColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: _ScanColors.background,
+        foregroundColor: _ScanColors.foreground,
         title: Text(l10n.scanTitle(deviceLabel)),
         actions: [
           IconButton(
             icon: Icon(
               _isFlashOn ? Icons.flash_on : Icons.flash_off,
-              color: _isFlashOn ? Colors.yellow : Colors.white,
+              color: _isFlashOn ? _ScanColors.flashOn : _ScanColors.foreground,
             ),
             tooltip: l10n.toggleFlash,
             onPressed: _isInitialized ? _toggleFlash : null,
@@ -264,11 +339,12 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.camera_alt, color: Colors.white54, size: 64),
+                    const Icon(Icons.camera_alt,
+                        color: _ScanColors.iconDisabled, size: 64),
                     const SizedBox(height: 16),
                     Text(
                       _errorMessage!,
-                      style: const TextStyle(color: Colors.white70),
+                      style: const TextStyle(color: _ScanColors.overlayText),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -276,7 +352,9 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
               ),
             )
           : !_isInitialized
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              ? const Center(
+                  child: CircularProgressIndicator(
+                      color: _ScanColors.foreground))
               : Stack(
                   fit: StackFit.expand,
                   children: [
@@ -292,12 +370,13 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.black54,
+                            color: _ScanColors.overlay,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             l10n.placeDeviceInBox(deviceLabel),
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            style: const TextStyle(
+                                color: _ScanColors.foreground, fontSize: 14),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -317,15 +396,19 @@ class _PhotoScanScreenState extends State<PhotoScanScreen> {
                             height: 72,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 4),
-                              color: _isCapturing ? Colors.grey : Colors.white,
+                              border: Border.all(
+                                  color: _ScanColors.buttonBorder, width: 4),
+                              color: _isCapturing
+                                  ? _ScanColors.buttonDisabled
+                                  : _ScanColors.buttonEnabled,
                             ),
                             child: _isCapturing
                                 ? const Padding(
                                     padding: EdgeInsets.all(16),
                                     child: CircularProgressIndicator(strokeWidth: 3),
                                   )
-                                : const Icon(Icons.camera_alt, size: 32, color: Colors.black87),
+                                : const Icon(Icons.camera_alt,
+                                    size: 32, color: _ScanColors.buttonIcon),
                           ),
                         ),
                       ),
@@ -353,16 +436,17 @@ class _GuideOverlay extends StatelessWidget {
 class _GuidePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final dimPaint = Paint()..color = Colors.black.withOpacity(0.5);
+    final dimPaint = Paint()
+      ..color = _ScanColors.dimBase.withValues(alpha: 0.5);
     final clearPaint = Paint()
-      ..color = Colors.transparent
+      ..color = _ScanColors.transparent
       ..blendMode = BlendMode.clear;
     final borderPaint = Paint()
-      ..color = Colors.white
+      ..color = _ScanColors.foreground
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5;
     final cornerPaint = Paint()
-      ..color = Colors.greenAccent
+      ..color = _ScanColors.guideAccent
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
