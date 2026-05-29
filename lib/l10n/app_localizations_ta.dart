@@ -75,6 +75,19 @@ class AppLocalizationsTa extends AppLocalizations {
   String get errGeneric => 'ஏதோ தவறு நடந்துவிட்டது. மீண்டும் முயற்சிக்கவும்.';
 
   @override
+  String get inviteShareSubject => 'Try Swasth — daily health tracking';
+
+  @override
+  String get inviteShareMessage =>
+      'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:';
+
+  @override
+  String get inviteFriendsTile => 'Invite friends';
+
+  @override
+  String get inviteFriendsTileSubtitle => 'Share Swasth via WhatsApp or SMS';
+
+  @override
   String get errRegionRestricted =>
       'வட்டாரத் தனியுரிமைச் சட்டங்கள் காரணமாக, சுகாதாரத் தரவைப் பதிவு செய்வது தற்போது இந்தியாவுக்குள் இருக்கும் பயனர்களுக்கு மட்டுமே கட்டுப்படுத்தப்பட்டுள்ளது. உங்கள் வரலாற்றை நீங்கள் இன்னும் பார்க்கலாம்.';
 

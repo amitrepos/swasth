@@ -75,6 +75,19 @@ class AppLocalizationsKn extends AppLocalizations {
   String get errGeneric => 'ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 
   @override
+  String get inviteShareSubject => 'Try Swasth — daily health tracking';
+
+  @override
+  String get inviteShareMessage =>
+      'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:';
+
+  @override
+  String get inviteFriendsTile => 'Invite friends';
+
+  @override
+  String get inviteFriendsTileSubtitle => 'Share Swasth via WhatsApp or SMS';
+
+  @override
   String get errRegionRestricted =>
       'ಪ್ರಾದೇಶಿಕ ಗೌಪ್ಯತೆ ಕಾನೂನುಗಳಿಂದಾಗಿ, ಆರೋಗ್ಯ ಡೇಟಾವನ್ನು ಲಾಗ್ ಮಾಡುವುದು ಪ್ರಸ್ತುತ ಭಾರತದೊಳಗಿನ ಬಳಕೆದಾರರಿಗೆ ಮಾತ್ರ ಸೀಮಿತವಾಗಿದೆ. ನೀವು ಇನ್ನೂ ನಿಮ್ಮ ಇತಿಹಾಸವನ್ನು ನೋಡಬಹುದು.';
 

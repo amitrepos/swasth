@@ -34,6 +34,18 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Why the inner Material(type: transparency):
+    // ListTile (which is the most common child of GlassCard) renders
+    // its own background + ink splashes onto the NEAREST Material
+    // ancestor. Without a Material between the colored Container
+    // below and ListTile, Flutter fires a debug assertion at paint
+    // time ("ListTile background color or ink splashes may be
+    // invisible") and the widget-test harness counts every such
+    // assertion as a test failure — CI showed five of these per
+    // ProfileScreen test run, masking the actual assertions.
+    // A transparent Material gives ListTile the ancestor it needs
+    // for ink splashes to land on the glass surface (the visible
+    // background still comes from the BoxDecoration below it).
     Widget card = ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
@@ -53,7 +65,10 @@ class GlassCard extends StatelessWidget {
               ),
             ],
           ),
-          child: child,
+          child: Material(
+            type: MaterialType.transparency,
+            child: child,
+          ),
         ),
       ),
     );

@@ -230,6 +230,30 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get errGeneric;
 
+  /// Email/share subject line when a user shares Swasth via the OS share sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Swasth — daily health tracking'**
+  String get inviteShareSubject;
+
+  /// Body of the invite message pasted into WhatsApp / SMS / etc. when a user shares Swasth. The invite URL is appended automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:'**
+  String get inviteShareMessage;
+
+  /// Label for the Account Settings tile that opens the share sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite friends'**
+  String get inviteFriendsTile;
+
+  /// Sub-label under the Invite friends tile explaining what tapping it does.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Swasth via WhatsApp or SMS'**
+  String get inviteFriendsTileSubtitle;
+
   /// Shown on HTTP 403 REGION_RESTRICTED. Logging is geo-fenced to Indian IPs to comply with DPDPA 2023 (Sec. 16 cross-border transfer restrictions on sensitive personal data) and DISHA data-residency expectations for digital health records. Do NOT cite GDPR — GDPR is EU law and is not the basis for this control.
   ///
   /// In en, this message translates to:

@@ -75,6 +75,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errGeneric => 'Something went wrong. Please try again.';
 
   @override
+  String get inviteShareSubject => 'Try Swasth — daily health tracking';
+
+  @override
+  String get inviteShareMessage =>
+      'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:';
+
+  @override
+  String get inviteFriendsTile => 'Invite friends';
+
+  @override
+  String get inviteFriendsTileSubtitle => 'Share Swasth via WhatsApp or SMS';
+
+  @override
   String get errRegionRestricted =>
       'Due to regional privacy laws, logging health data is currently restricted to users within India. You can still view your history.';
 

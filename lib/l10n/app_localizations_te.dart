@@ -75,6 +75,19 @@ class AppLocalizationsTe extends AppLocalizations {
   String get errGeneric => 'ఏదో తప్పు జరిగింది. మళ్లీ ప్రయత్నించండి.';
 
   @override
+  String get inviteShareSubject => 'Try Swasth — daily health tracking';
+
+  @override
+  String get inviteShareMessage =>
+      'I\'m using Swasth to track my family\'s health daily — sugar, BP, meals, all in one place. Try it:';
+
+  @override
+  String get inviteFriendsTile => 'Invite friends';
+
+  @override
+  String get inviteFriendsTileSubtitle => 'Share Swasth via WhatsApp or SMS';
+
+  @override
   String get errRegionRestricted =>
       'ప్రాంతీయ గోప్యతా చట్టాల కారణంగా, ఆరోగ్య డేటాను లాగ్ చేయడం ప్రస్తుతం భారతదేశంలోని వినియోగదారులకు మాత్రమే పరిమితం చేయబడింది. మీరు ఇప్పటికీ మీ చరిత్రను చూడవచ్చు.';
 
