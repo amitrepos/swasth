@@ -6,6 +6,7 @@ import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/insights/steps_chart_card.dart';
 import 'shell_screen.dart';
 
 // ── Semantic chart colors (distinct from UI palette) ──────────────────────────
@@ -37,6 +38,7 @@ class TrendChartScreenState extends State<TrendChartScreen>
   final Map<String, String> _summaries = {};
   final Map<String, bool> _summaryLoading = {};
   String _lastLangCode = 'en';
+  int _stepsRefreshSignal = 0;
 
   @override
   void initState() {
@@ -73,6 +75,7 @@ class TrendChartScreenState extends State<TrendChartScreen>
   Future<void> refresh() async {
     _summaries.clear();
     _summaryLoading.clear();
+    if (mounted) setState(() => _stepsRefreshSignal++);
     await _loadReadings(); // always fetches period=7 summary
     final activePeriod = [7, 30, 90][_tabController.index];
     if (activePeriod != 7) _loadSummary(activePeriod);
@@ -182,6 +185,7 @@ class TrendChartScreenState extends State<TrendChartScreen>
                   summary: _summaries['7-$_lastLangCode'],
                   summaryLoading: _summaryLoading['7-$_lastLangCode'] ?? false,
                   profileId: widget.profileId,
+                  stepsRefreshSignal: _stepsRefreshSignal,
                 ),
                 _TrendView(
                   readings: _allReadings,
@@ -190,6 +194,7 @@ class TrendChartScreenState extends State<TrendChartScreen>
                   summary: _summaries['30-$_lastLangCode'],
                   summaryLoading: _summaryLoading['30-$_lastLangCode'] ?? false,
                   profileId: widget.profileId,
+                  stepsRefreshSignal: _stepsRefreshSignal,
                 ),
                 _TrendView(
                   readings: _allReadings,
@@ -198,6 +203,7 @@ class TrendChartScreenState extends State<TrendChartScreen>
                   summary: _summaries['90-$_lastLangCode'],
                   summaryLoading: _summaryLoading['90-$_lastLangCode'] ?? false,
                   profileId: widget.profileId,
+                  stepsRefreshSignal: _stepsRefreshSignal,
                 ),
               ],
             ),
@@ -215,6 +221,7 @@ class _TrendView extends StatelessWidget {
   final String? summary;
   final bool summaryLoading;
   final int profileId;
+  final int stepsRefreshSignal;
   final Future<void> Function() onRefresh;
 
   const _TrendView({
@@ -224,6 +231,7 @@ class _TrendView extends StatelessWidget {
     this.summary,
     this.summaryLoading = false,
     required this.profileId,
+    this.stepsRefreshSignal = 0,
   });
 
   List<HealthReading> get _filtered {
@@ -246,7 +254,9 @@ class _TrendView extends StatelessWidget {
         .where((r) => r.readingType == 'weight' && r.weightValue != null)
         .toList();
 
-    if (glucose.isEmpty && bp.isEmpty && weight.isEmpty) {
+    // C6: 7-day steps chart lives here even when BP/glucose/weight are empty.
+    final showStepsChart = days == 7;
+    if (glucose.isEmpty && bp.isEmpty && weight.isEmpty && !showStepsChart) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -389,6 +399,17 @@ class _TrendView extends StatelessWidget {
               ),
             if (summary != null && summary!.isNotEmpty || summaryLoading)
               const SizedBox(height: 16),
+
+            // ── 7-day steps (C6) — pedometer data via /readings/steps/daily ─
+            if (showStepsChart) ...[
+              StepsChartCard(
+                key: ValueKey('insights_steps_$profileId'),
+                profileId: profileId,
+                days: 7,
+                refreshSignal: stepsRefreshSignal,
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // ── Correlation overview (always shown if any data) ──────────
             if (glucose.isNotEmpty || bp.isNotEmpty) ...[

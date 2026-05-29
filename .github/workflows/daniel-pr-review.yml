@@ -47,6 +47,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Fork PRs: the author only has read on amitrepos/swasth, but
+          # GITHUB_TOKEN (pull-requests: write above) can still post reviews.
+          # Without this, claude-code-action fails with "Actor does not have
+          # write permissions" before Daniel runs (see run logs).
+          allowed_non_write_users: ${{ github.event.pull_request.head.repo.full_name != github.repository && '*' || '' }}
           prompt: |
             /daniel-review
 

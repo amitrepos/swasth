@@ -34,7 +34,6 @@ import '../widgets/home/physician_card.dart';
 import '../widgets/home/linked_doctors_card.dart';
 import '../widgets/home/vital_summary_card.dart';
 import '../widgets/home/metrics_grid.dart';
-import '../widgets/home/steps_chart_card.dart';
 import '../widgets/home/reading_input_modal.dart';
 import '../widgets/home/meal_input_modal.dart';
 import '../widgets/home/meal_summary_card.dart';
@@ -741,16 +740,6 @@ class HomeScreenState extends State<HomeScreen>
                                     ? _handleAddMeal
                                     : null,
                               ),
-                            ),
-                          if (_activeProfileId != null)
-                            const SizedBox(height: 16),
-
-                          // ④b 7-day steps chart (NUO-22) — uses pedometer data
-                          // already being pushed to /api/readings (steps).
-                          if (_activeProfileId != null)
-                            StepsChartCard(
-                              key: ValueKey('steps_chart_$_activeProfileId'),
-                              profileId: _activeProfileId!,
                             ),
                           if (_activeProfileId != null)
                             const SizedBox(height: 16),

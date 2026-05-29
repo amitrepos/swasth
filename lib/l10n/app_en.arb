@@ -1165,6 +1165,39 @@
   "@stepsLabel": {
     "description": "Display label for daily step-count reading type"
   },
+  "stepsChartTitle": "Steps · {days} days",
+  "@stepsChartTitle": {
+    "description": "Header for the daily steps bar chart on the Insights tab",
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "stepsChartSummary": "{total} · avg {avg}",
+  "@stepsChartSummary": {
+    "description": "Steps chart footer when no daily goal is set",
+    "placeholders": {
+      "total": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "stepsChartSummaryWithGoal": "{total} · avg {avg} · {hits}/{days} ≥ goal",
+  "@stepsChartSummaryWithGoal": {
+    "description": "Steps chart footer showing goal-hit days",
+    "placeholders": {
+      "total": { "type": "String" },
+      "avg": { "type": "String" },
+      "hits": { "type": "int" },
+      "days": { "type": "int" }
+    }
+  },
+  "stepsChartLoadError": "Could not load steps",
+  "@stepsChartLoadError": {
+    "description": "Error message when the steps daily API fails"
+  },
+  "stepsChartEmpty": "No step data yet. Walk a bit and check back tomorrow.",
+  "@stepsChartEmpty": {
+    "description": "Empty state for the 7-day steps chart on Insights"
+  },
   "vegan": "Vegan",
   "@vegan": {
     "description": "Diet flag label indicating the meal is vegan"

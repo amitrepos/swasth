@@ -195,6 +195,50 @@ def test_get_medications_NOT_blocked_outside_india(client, db, test_user, auth_h
     assert r.status_code == 200
 
 
+def _create_medication_for_geo_tests(client, db, test_user, auth_headers, monkeypatch):
+    """Create a med while geo gate is off (CI default), return row id."""
+    monkeypatch.delenv("GEO_RESTRICT_ENABLED", raising=False)
+    pid = _profile_id_for(test_user, db)
+    r = client.post(
+        "/api/medications",
+        json={
+            "profile_id": pid,
+            "name": "Aspirin",
+            "taken_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers=auth_headers,
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
+def test_patch_medication_blocked_when_geo_enabled_non_india(
+    client, db, test_user, auth_headers, monkeypatch
+):
+    med_id = _create_medication_for_geo_tests(client, db, test_user, auth_headers, monkeypatch)
+    monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
+    r = client.patch(
+        f"/api/medications/{med_id}",
+        json={"dose": "100 mg"},
+        headers={**auth_headers, "Accept-Language": "en-US"},
+    )
+    assert r.status_code == 451
+    assert r.json()["detail"]["code"] == "REGION_NOT_ALLOWED"
+
+
+def test_delete_medication_blocked_when_geo_enabled_non_india(
+    client, db, test_user, auth_headers, monkeypatch
+):
+    med_id = _create_medication_for_geo_tests(client, db, test_user, auth_headers, monkeypatch)
+    monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
+    r = client.delete(
+        f"/api/medications/{med_id}",
+        headers={**auth_headers, "Accept-Language": "en-US"},
+    )
+    assert r.status_code == 451
+    assert r.json()["detail"]["code"] == "REGION_NOT_ALLOWED"
+
+
 def test_post_reading_blocked_when_geo_enabled_non_india(client, db, test_user, auth_headers, monkeypatch):
     monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
     pid = _profile_id_for(test_user, db)

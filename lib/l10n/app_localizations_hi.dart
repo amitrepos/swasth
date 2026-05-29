@@ -2170,6 +2170,33 @@ class AppLocalizationsHi extends AppLocalizations {
   String get stepsLabel => 'कदम';
 
   @override
+  String stepsChartTitle(int days) {
+    return 'कदम · $days दिन';
+  }
+
+  @override
+  String stepsChartSummary(String total, String avg) {
+    return '$total · औसत $avg';
+  }
+
+  @override
+  String stepsChartSummaryWithGoal(
+    String total,
+    String avg,
+    int hits,
+    int days,
+  ) {
+    return '$total · औसत $avg · $hits/$days ≥ लक्ष्य';
+  }
+
+  @override
+  String get stepsChartLoadError => 'कदम लोड नहीं हो सके';
+
+  @override
+  String get stepsChartEmpty =>
+      'अभी कदम का डेटा नहीं है। थोड़ा चलें, कल देखें।';
+
+  @override
   String get vegan => 'वेगन';
 
   @override

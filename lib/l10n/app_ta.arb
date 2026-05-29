@@ -1162,6 +1162,11 @@
   "@stepsLabel": {
     "description": "Display label for daily step-count reading type"
   },
+  "stepsChartTitle": "Steps · {days} days",
+  "stepsChartSummary": "{total} · avg {avg}",
+  "stepsChartSummaryWithGoal": "{total} · avg {avg} · {hits}/{days} ≥ goal",
+  "stepsChartLoadError": "Could not load steps",
+  "stepsChartEmpty": "No step data yet. Walk a bit and check back tomorrow.",
   "vegan": "வீகன்",
   "@vegan": {
     "description": "Diet flag label indicating the meal is vegan"
