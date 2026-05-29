@@ -17,12 +17,12 @@ on:
       - 'AUDIT.md'
 
 concurrency:
-  group: daniel-review-${{ github.event.pull_request.number }}
+  group: daniel-review-fork-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   review:
-    name: Daniel reviews PR
+    name: Daniel reviews PR (fork)
     runs-on: ubuntu-latest
 
     if: >-
