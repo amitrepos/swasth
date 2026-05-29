@@ -1,10 +1,15 @@
-name: Daniel PR Review
+# Daniel review for PRs opened from forks (e.g. abhijatdakshesh/swasth → amitrepos/swasth).
+#
+# Uses pull_request_target so repo secrets (CLAUDE_CODE_OAUTH_TOKEN) are available.
+# Workflow definition always comes from the default branch — never from the PR.
+# We only checkout the PR head SHA and run Claude with a fixed prompt + a tight
+# tool allowlist (no npm install / no scripts from the PR). See GitHub's
+# pull_request_target hardening guide.
+name: Daniel PR Review (fork)
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
-    # Skip Daniel for PRs that only touch docs/text — saves tokens. Code PRs
-    # always run Daniel regardless of which other paths they also touch.
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
@@ -20,11 +25,8 @@ jobs:
     name: Daniel reviews PR
     runs-on: ubuntu-latest
 
-    # Same-repo PRs only. Fork PRs use daniel-pr-review-fork.yml (pull_request_target)
-    # so CLAUDE_CODE_OAUTH_TOKEN is available — GitHub does not pass secrets to
-    # pull_request workflows triggered from forks.
     if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.repo.full_name != github.repository &&
       github.event.pull_request.draft == false &&
       github.event.pull_request.user.login != 'amitrepos' &&
       !endsWith(github.event.pull_request.user.login, '[bot]') &&
@@ -47,6 +49,8 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Fork author has read-only on amitrepos; GITHUB_TOKEN posts the review.
+          allowed_non_write_users: '*'
           prompt: |
             /daniel-review
 
