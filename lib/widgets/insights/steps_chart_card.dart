@@ -1,11 +1,10 @@
-// 7-day steps bar chart (NUO-22).
+// 7-day steps bar chart (C6 / NUO-22) — Insights tab.
 //
-// Reads the new `/api/readings/steps/daily` endpoint and renders a small
-// BarChart on the dashboard. Bars on/above goal are emerald; below-goal
-// are slate. Tappable for a 30-day modal could come later.
+// Reads `/api/readings/steps/daily` and renders a bar chart with goal line.
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:swasth_app/l10n/app_localizations.dart';
 
 import '../../services/api_exception.dart';
 import '../../services/health_reading_service.dart';
@@ -15,13 +14,22 @@ import '../glass_card.dart';
 
 class StepsChartCard extends StatefulWidget {
   final int profileId;
-  const StepsChartCard({super.key, required this.profileId});
+  final int days;
+  /// Increment from parent on pull-to-refresh / tab revisit to reload data.
+  final int refreshSignal;
+
+  const StepsChartCard({
+    super.key,
+    required this.profileId,
+    this.days = 7,
+    this.refreshSignal = 0,
+  });
 
   @override
-  State<StepsChartCard> createState() => _StepsChartCardState();
+  State<StepsChartCard> createState() => StepsChartCardState();
 }
 
-class _StepsChartCardState extends State<StepsChartCard> {
+class StepsChartCardState extends State<StepsChartCard> {
   final HealthReadingService _service = HealthReadingService();
   bool _loading = true;
   List<_DayBar> _bars = const [];
@@ -38,12 +46,19 @@ class _StepsChartCardState extends State<StepsChartCard> {
   }
 
   @override
-  void didUpdateWidget(StepsChartCard old) {
-    super.didUpdateWidget(old);
-    if (old.profileId != widget.profileId) _load();
+  void didUpdateWidget(StepsChartCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.profileId != widget.profileId ||
+        oldWidget.days != widget.days ||
+        oldWidget.refreshSignal != widget.refreshSignal) {
+      _load();
+    }
   }
 
+  Future<void> reload() => _load();
+
   Future<void> _load() async {
+    final loadError = AppLocalizations.of(context)!.stepsChartLoadError;
     setState(() {
       _loading = true;
       _error = null;
@@ -54,7 +69,7 @@ class _StepsChartCardState extends State<StepsChartCard> {
       final data = await _service.getDailySteps(
         token: token,
         profileId: widget.profileId,
-        days: 7,
+        days: widget.days,
       );
       final list = (data['days'] as List? ?? []);
       final bars = <_DayBar>[];
@@ -79,27 +94,30 @@ class _StepsChartCardState extends State<StepsChartCard> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Could not load steps';
+        _error = loadError;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Could not load steps';
+        _error = loadError;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return GlassCard(
-      key: const Key('steps_chart_card'),
-      borderRadius: 16,
+      key: const Key('insights_steps_chart_card'),
+      borderRadius: 20,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _Header(
+            l10n: l10n,
+            days: widget.days,
             total: _total,
             avg: _avg,
             goal: _goal,
@@ -112,9 +130,14 @@ class _StepsChartCardState extends State<StepsChartCard> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
                 : _error != null
-                    ? Center(child: Text(_error!, style: const TextStyle(color: Colors.redAccent)))
+                    ? Center(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(color: AppColors.statusCritical),
+                        ),
+                      )
                     : _bars.isEmpty
-                        ? const _EmptyState()
+                        ? _EmptyState(message: l10n.stepsChartEmpty)
                         : _Chart(bars: _bars, goal: _goal),
           ),
         ],
@@ -131,12 +154,17 @@ class _DayBar {
 }
 
 class _Header extends StatelessWidget {
+  final AppLocalizations l10n;
+  final int days;
   final int total;
   final int avg;
   final int? goal;
   final int hits;
   final bool loading;
+
   const _Header({
+    required this.l10n,
+    required this.days,
     required this.total,
     required this.avg,
     required this.goal,
@@ -152,9 +180,9 @@ class _Header extends StatelessWidget {
       children: [
         const Icon(Icons.directions_walk, size: 20, color: AppColors.primary),
         const SizedBox(width: 8),
-        const Text(
-          'Steps · 7 days',
-          style: TextStyle(
+        Text(
+          l10n.stepsChartTitle(days),
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
@@ -164,12 +192,17 @@ class _Header extends StatelessWidget {
         if (!loading)
           Text(
             goal != null
-                ? '${fmt.format(total)} · avg ${fmt.format(avg)} · ${hits}/7 ≥ goal'
-                : '${fmt.format(total)} · avg ${fmt.format(avg)}',
-            style: TextStyle(
+                ? l10n.stepsChartSummaryWithGoal(
+                    fmt.format(total),
+                    fmt.format(avg),
+                    hits,
+                    days,
+                  )
+                : l10n.stepsChartSummary(fmt.format(total), fmt.format(avg)),
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade700,
+              color: AppColors.textSecondary,
             ),
           ),
       ],
@@ -178,12 +211,17 @@ class _Header extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  final String message;
+  const _EmptyState({required this.message});
+
   @override
   Widget build(BuildContext context) => Center(
         child: Text(
-          'No step data yet. Walk a bit and check back tomorrow.',
-          style: TextStyle(color: Colors.grey.shade600),
+          message,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+          ),
           textAlign: TextAlign.center,
         ),
       );
@@ -200,7 +238,7 @@ class _Chart extends StatelessWidget {
     final maxVal = [
       ...bars.map((b) => b.steps),
       if (goal != null) goal!,
-      1, // avoid divide-by-zero / collapsed bars on first day
+      1,
     ].reduce((a, b) => a > b ? a : b);
     final yMax = (maxVal * 1.15).ceilToDouble();
 
@@ -226,7 +264,10 @@ class _Chart extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     DateFormat('E').format(bars[i].date),
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 );
               },
@@ -252,7 +293,7 @@ class _Chart extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                 color: (goal != null && bars[i].steps >= goal!)
                     ? AppColors.scoreHealthy
-                    : Colors.grey.shade400,
+                    : AppColors.textSecondary.withValues(alpha: 0.45),
               ),
             ]),
         ],

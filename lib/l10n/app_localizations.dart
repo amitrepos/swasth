@@ -4046,6 +4046,41 @@ abstract class AppLocalizations {
   /// **'Steps'**
   String get stepsLabel;
 
+  /// Header for the daily steps bar chart on the Insights tab
+  ///
+  /// In en, this message translates to:
+  /// **'Steps · {days} days'**
+  String stepsChartTitle(int days);
+
+  /// Steps chart footer when no daily goal is set
+  ///
+  /// In en, this message translates to:
+  /// **'{total} · avg {avg}'**
+  String stepsChartSummary(String total, String avg);
+
+  /// Steps chart footer showing goal-hit days
+  ///
+  /// In en, this message translates to:
+  /// **'{total} · avg {avg} · {hits}/{days} ≥ goal'**
+  String stepsChartSummaryWithGoal(
+    String total,
+    String avg,
+    int hits,
+    int days,
+  );
+
+  /// Error message when the steps daily API fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load steps'**
+  String get stepsChartLoadError;
+
+  /// Empty state for the 7-day steps chart on Insights
+  ///
+  /// In en, this message translates to:
+  /// **'No step data yet. Walk a bit and check back tomorrow.'**
+  String get stepsChartEmpty;
+
   /// Diet flag label indicating the meal is vegan
   ///
   /// In en, this message translates to:

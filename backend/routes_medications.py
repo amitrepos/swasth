@@ -89,6 +89,7 @@ async def update_medication(
     data: schemas.MedicationUpdate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    _region: dict = Depends(require_india_writer),
 ):
     """Edit a logged medication (patient correcting an entry)."""
     med = db.query(models.Medication).filter(models.Medication.id == med_id).first()
@@ -119,6 +120,7 @@ async def delete_medication(
     med_id: int,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    _region: dict = Depends(require_india_writer),
 ):
     """Delete a medication entry."""
     med = db.query(models.Medication).filter(models.Medication.id == med_id).first()

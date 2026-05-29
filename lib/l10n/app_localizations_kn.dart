@@ -2181,6 +2181,33 @@ class AppLocalizationsKn extends AppLocalizations {
   String get stepsLabel => 'ಹೆಜ್ಜೆಗಳು';
 
   @override
+  String stepsChartTitle(int days) {
+    return 'Steps · $days days';
+  }
+
+  @override
+  String stepsChartSummary(String total, String avg) {
+    return '$total · avg $avg';
+  }
+
+  @override
+  String stepsChartSummaryWithGoal(
+    String total,
+    String avg,
+    int hits,
+    int days,
+  ) {
+    return '$total · avg $avg · $hits/$days ≥ goal';
+  }
+
+  @override
+  String get stepsChartLoadError => 'Could not load steps';
+
+  @override
+  String get stepsChartEmpty =>
+      'No step data yet. Walk a bit and check back tomorrow.';
+
+  @override
   String get vegan => 'ವೀಗನ್';
 
   @override
