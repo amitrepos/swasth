@@ -510,7 +510,7 @@ def test_allowlist_empty_no_behaviour_change():
     pins that we didn't accidentally make the allowlist branch
     fail-open when the env var is unset."""
     request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"Authorization": f"Bearer {_mint_bearer_token('anyone@swasth.health')}"}
+    request.headers = {"authorization": f"Bearer {_mint_bearer_token('anyone@swasth.health')}"}
     reader = mock.Mock()
     reader.country.return_value = MockGeoIPResponse("US")
     with mock.patch("dependencies._get_geoip_reader", return_value=reader):
@@ -524,7 +524,7 @@ def test_allowlist_hit_allows_us_request(monkeypatch):
     must bypass the IP check even from a US IP."""
     _set_allowlist(monkeypatch, "smoke@swasth.health,qa@swasth.health")
     request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"Authorization": f"Bearer {_mint_bearer_token('smoke@swasth.health')}"}
+    request.headers = {"authorization": f"Bearer {_mint_bearer_token('smoke@swasth.health')}"}
     reader = mock.Mock()
     reader.country.return_value = MockGeoIPResponse("US")
     with mock.patch("dependencies._get_geoip_reader", return_value=reader):
@@ -542,7 +542,7 @@ def test_allowlist_miss_still_blocks_us(monkeypatch):
     still block — the bypass must not generalise."""
     _set_allowlist(monkeypatch, "smoke@swasth.health")
     request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"Authorization": f"Bearer {_mint_bearer_token('attacker@evil.com')}"}
+    request.headers = {"authorization": f"Bearer {_mint_bearer_token('attacker@evil.com')}"}
     reader = mock.Mock()
     reader.country.return_value = MockGeoIPResponse("US")
     with mock.patch("dependencies._get_geoip_reader", return_value=reader):
@@ -558,7 +558,7 @@ def test_allowlist_hit_emits_audit_log(monkeypatch, caplog):
     being long enough to brute-force the email."""
     _set_allowlist(monkeypatch, "smoke@swasth.health")
     request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"Authorization": f"Bearer {_mint_bearer_token('smoke@swasth.health')}"}
+    request.headers = {"authorization": f"Bearer {_mint_bearer_token('smoke@swasth.health')}"}
     with caplog.at_level("INFO", logger="dependencies"):
         verify_india_location(request)
     hits = [r.message for r in caplog.records if "GEOFENCE_ALLOWLIST_HIT" in r.message]
@@ -590,12 +590,41 @@ def test_missing_bearer_token_falls_through_to_ip_check(monkeypatch):
         assert exc.value.detail == "REGION_RESTRICTED"
 
 
+def test_expired_bearer_token_falls_through_to_ip_check(monkeypatch):
+    """Expired JWT must NOT bypass the geofence — the decode-failure
+    path in _email_hash_from_bearer_token already handles this via
+    `except Exception`, but pin it explicitly so a future JWT-library
+    upgrade that changes the expired-token exception type can't
+    silently regress the gate. Without this test, a swap from python-
+    jose to PyJWT (or a major version bump) could let expired tokens
+    through and we wouldn't notice until the audit log told us."""
+    from datetime import timedelta
+    import auth as _auth
+
+    _set_allowlist(monkeypatch, "smoke@swasth.health")
+    # Mint a token that expired one second ago — auth.create_access_token
+    # supports negative expires_delta so we don't need a time-travel
+    # fixture for this single case.
+    expired_token = _auth.create_access_token(
+        {"sub": "smoke@swasth.health"},
+        expires_delta=timedelta(seconds=-1),
+    )
+    request = _make_request(peer_ip="8.8.8.8")
+    request.headers = {"authorization": f"Bearer {expired_token}"}
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("US")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        with pytest.raises(HTTPException) as exc:
+            verify_india_location(request)
+        assert exc.value.detail == "REGION_RESTRICTED"
+
+
 def test_malformed_bearer_token_falls_through_to_ip_check(monkeypatch):
     """Garbage in Authorization header → decode fails → email_hash is
     None → falls through to IP check. A broken token must NOT bypass."""
     _set_allowlist(monkeypatch, "smoke@swasth.health")
     request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"Authorization": "Bearer this-is-not-a-jwt"}
+    request.headers = {"authorization": "Bearer this-is-not-a-jwt"}
     reader = mock.Mock()
     reader.country.return_value = MockGeoIPResponse("US")
     with mock.patch("dependencies._get_geoip_reader", return_value=reader):
@@ -610,7 +639,7 @@ def test_allowlist_runs_after_env_bypass(monkeypatch):
     as the emergency-rollback escape hatch."""
     _set_allowlist(monkeypatch, "smoke@swasth.health")
     request = _make_request(peer_ip="8.8.8.8")
-    request.headers = {"Authorization": f"Bearer {_mint_bearer_token('smoke@swasth.health')}"}
+    request.headers = {"authorization": f"Bearer {_mint_bearer_token('smoke@swasth.health')}"}
     with mock.patch.dict("os.environ", {"BYPASS_GEO_RESTRICTION": "true"}, clear=False):
         # Both bypasses would allow this request; we want to prove the
         # env flag wins (warning log, NOT info log).

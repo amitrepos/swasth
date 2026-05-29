@@ -296,13 +296,6 @@ class Settings(BaseSettings):
         if not v or not v.strip():
             return ""
         raw = [e.strip().lower() for e in v.split(",") if e.strip()]
-        if len(raw) > _GEOFENCE_ALLOWLIST_MAX:
-            raise ValueError(
-                f"GEOFENCE_EMAIL_ALLOWLIST has {len(raw)} entries; the cap is "
-                f"{_GEOFENCE_ALLOWLIST_MAX}. Long allowlists are a compliance "
-                "smell — review the roster against the DPDPA designated-account "
-                "policy before raising the cap."
-            )
         bad = [e for e in raw if not _EMAIL_RE.fullmatch(e)]
         if bad:
             raise ValueError(
@@ -317,6 +310,13 @@ class Settings(BaseSettings):
             if e not in seen:
                 seen.add(e)
                 deduped.append(e)
+        if len(deduped) > _GEOFENCE_ALLOWLIST_MAX:
+            raise ValueError(
+                f"GEOFENCE_EMAIL_ALLOWLIST has {len(deduped)} unique entries; the cap is "
+                f"{_GEOFENCE_ALLOWLIST_MAX}. Long allowlists are a compliance "
+                "smell — review the roster against the DPDPA designated-account "
+                "policy before raising the cap."
+            )
         return ",".join(deduped)
 
     @field_validator("SHARE_ANDROID_CERT_SHA256")

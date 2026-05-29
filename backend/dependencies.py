@@ -309,7 +309,11 @@ def _email_hash_from_bearer_token(request: Request) -> Optional[str]:
     dance (verify_india_location is defined above get_current_user in
     this file) and because we don't need the DB row — only the hash.
     """
-    auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+    # Starlette's Headers object normalises all keys to lowercase, so
+    # production code only ever needs the lowercase lookup. Tests must
+    # mirror that by using starlette.datastructures.Headers (see
+    # test_geofence._make_request) rather than a plain dict.
+    auth_header = request.headers.get("authorization")
     if not auth_header:
         return None
     parts = auth_header.split(None, 1)
