@@ -8,10 +8,14 @@
 #
 # In the interactive developer session SWASTH_AGENT_WORKTREE is unset, so this is a NO-OP (it must
 # not interfere with normal work such as writing to ~/.claude/ memory or plans).
+#
+# Mode (SWASTH_AGENT_WORKTREE_MODE): `audit` logs an out-of-worktree write but does not block (exit 0);
+# anything else (default) enforces (exit 1). Audit-first mirrors the egress allowlist rollout.
 set -euo pipefail
 
 root="${SWASTH_AGENT_WORKTREE:-}"
 [[ -z "$root" ]] && exit 0   # not in an agent sandbox → no confinement here
+MODE="${SWASTH_AGENT_WORKTREE_MODE:-block}"
 
 raw="$(cat 2>/dev/null || true)"
 [[ -z "$raw" ]] && raw="${TOOL_INPUT:-}"
@@ -32,6 +36,10 @@ abs="$dir/$(basename "$abs")"
 case "$abs" in
   "$root"/*) exit 0 ;;             # inside the assigned worktree → allow
   *)
+    if [[ "$MODE" == "audit" ]]; then
+      echo "AUDIT (worktree confinement): '$abs' is outside the agent worktree '$root' (would block in enforce mode)." >&2
+      exit 0
+    fi
     echo "BLOCKED (worktree confinement): '$abs' is outside the agent worktree '$root'." >&2
     echo "Sandboxed agents may only write inside their assigned worktree." >&2
     exit 1

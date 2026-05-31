@@ -28,8 +28,11 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  # WS1 least-privilege. The worker pushes a branch (contents) and opens a draft PR
+  # (pull-requests). It does NOT dispatch workflows itself (the producer triggers it), so `actions`
+  # is read-only. `id-token` stays absent until OIDC per-task creds land (deferred, IAM change).
   contents: write
-  actions: write
+  actions: read
   pull-requests: write
 
 jobs:
@@ -53,6 +56,16 @@ jobs:
       GIT_COMMITTER_EMAIL: 'bot@swasth.health'
 
     steps:
+      # WS1 sandbox (Option A) — egress allowlist. AUDIT mode for now: it records every outbound
+      # connection without blocking, so we learn the real baseline before flipping to block-mode
+      # (a separate, reviewed change). Primary leak control once enforced; the Security/PHI reviewers
+      # are defence-in-depth on top. See docs/agent-platform/SANDBOX.md.
+      - name: Harden runner (egress audit)
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+          disable-sudo: false
+
       - name: Checkout master
         uses: actions/checkout@v4
         with:
@@ -271,6 +284,13 @@ jobs:
         env:
           PERSONA_LINES: ${{ steps.persona.outputs.skill_lines }}
           TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
+          # WS1/WS2 sandbox guards (Option A) — AUDIT mode for now. The PreToolUse hooks in
+          # .claude/settings.json log disallowed commands and out-of-worktree writes WITHOUT
+          # blocking, so we learn Matt's real behaviour before enforcing (a later reviewed change
+          # flips these to `block` / drops the `_MODE` overrides). See docs/agent-platform/SANDBOX.md.
+          SWASTH_AGENT_SANDBOX: audit
+          SWASTH_AGENT_WORKTREE: ${{ github.workspace }}
+          SWASTH_AGENT_WORKTREE_MODE: audit
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -382,6 +402,10 @@ jobs:
         if: steps.budget.outputs.decision == 'proceed' && steps.regress.outputs.regress_exit == '0'
         env:
           TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
+          # WS1/WS2 sandbox guards (audit mode) — same rationale as the Matt step above.
+          SWASTH_AGENT_SANDBOX: audit
+          SWASTH_AGENT_WORKTREE: ${{ github.workspace }}
+          SWASTH_AGENT_WORKTREE_MODE: audit
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

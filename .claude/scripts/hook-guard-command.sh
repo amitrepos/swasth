@@ -9,10 +9,17 @@
 # In the interactive developer session SWASTH_AGENT_SANDBOX is unset, so this is a NO-OP. (The
 # separate `--no-verify` block in settings.local.json still applies to everyone.)
 #
+# Modes (SWASTH_AGENT_SANDBOX):
+#   unset/empty → NO-OP (interactive dev).
+#   audit       → log a violation to stderr but DO NOT block (exit 0). Used to learn the real
+#                 command baseline on the live worker before enforcing, mirroring harden-runner.
+#   1 | block   → enforce: a disallowed command exits 1 and blocks the call.
+#
 # This is defence-in-depth on top of the network egress allowlist (WS1) — never the only line.
 set -euo pipefail
 
-[[ "${SWASTH_AGENT_SANDBOX:-}" == "1" ]] || exit 0   # not in agent sandbox → no-op
+MODE="${SWASTH_AGENT_SANDBOX:-}"
+[[ -z "$MODE" ]] && exit 0                            # not in agent sandbox → no-op
 
 raw="$(cat 2>/dev/null || true)"
 [[ -z "$raw" ]] && raw="${TOOL_INPUT:-}"
@@ -35,6 +42,10 @@ while IFS= read -r seg; do
   tok="${tok##*/}"                        # strip any path prefix
   [[ "$tok" == *=* ]] && continue        # leading env assignment (VAR=val) → skip
   if ! printf '%s' "$tok" | grep -qE "$ALLOW"; then
+    if [[ "$MODE" == "audit" ]]; then
+      echo "AUDIT (sandbox command allowlist): '$tok' is not in the safe set (would block in enforce mode)." >&2
+      continue
+    fi
     echo "BLOCKED (sandbox command allowlist): '$tok' is not in the safe set." >&2
     echo "Arbitrary shell is denied inside the agent sandbox. Surface the blocker; do not widen the list to work around it." >&2
     exit 1
