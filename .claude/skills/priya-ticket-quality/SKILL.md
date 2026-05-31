@@ -89,6 +89,37 @@ If you cannot honestly produce all 7 evidence lines:
 4. Remove the `agent:*` label via `scripts/jira_remove_label.sh "$TICKET_KEY" "<the agent label that was set>"` — this prevents the automation re-firing on the same ticket while questions are open.
 5. Output your reasoning summary and `VERDICT: NEEDS_INFO`.
 
+## Stage 2 — Necessity aggregation (intake gate · WS5)
+
+After a quality **PASS**, you also own the **necessity** question for the intake gate. Quality asks
+"is this ticket well-written?"; necessity asks "should we build this at all?" (G6 — validate before
+code). You invoke three personas as skills and fold their verdicts into one:
+
+- **Meera** (`reality-check`) — product / business necessity. Emits `VERDICT: GREEN|YELLOW|RED|BLACK`.
+- **Sunita** (`sunita`) — customer / end-user desirability. Emits `VERDICT: PASS|BLOCK`.
+- **Doctor / Dr. Ramesh** (`doctor-feedback`) — clinical necessity (Swasth domain). `VERDICT: PASS|BLOCK`.
+
+You are the **aggregator**, not a debate engine (this is why `council` is not used here — see
+`docs/agent-platform/SKILLS_AUDIT.md`). Collect the three verdict lines and combine deterministically:
+
+- **not-needed** — if Meera is `RED`/`BLACK`, OR Doctor `BLOCK` on clinical grounds. Stop; no build.
+- **needs-clarification** — if any persona is `YELLOW`/`BLOCK` for a reason a human/requester can
+  resolve, OR the quality verdict was REWRITTEN/NEEDS_INFO.
+- **needed** — quality PASS AND Meera `GREEN` AND Sunita `PASS` AND Doctor `PASS`.
+
+Quote each persona's verdict line as evidence before aggregating. Then emit a second
+machine-parseable line (in addition to the quality `VERDICT:` line above):
+
+```
+INTAKE_VERDICT: needed
+INTAKE_VERDICT: needs-clarification
+INTAKE_VERDICT: not-needed
+```
+
+A **human** makes the GO / NO-GO decision off `INTAKE_VERDICT` before any branch is created. The
+workflow wiring that invokes the three personas and consumes `INTAKE_VERDICT` lands in Phase 3
+(intake gate); until then this section is the spec and Priya runs Stage 2 when invoked for intake.
+
 ## Tone for JIRA comments
 
 - Polite, brief, action-oriented. The requester is your colleague.

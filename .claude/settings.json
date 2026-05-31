@@ -1,0 +1,33 @@
+{
+  "$comment": "Project-shared, version-controlled Claude Code settings. WS2 deterministic guardrails. Hook arrays here MERGE with (do not replace) the personal hooks in settings.local.json. See docs/agent-platform/FINDINGS.md and the brief docs/AGENT_PLATFORM_UPGRADE_BRIEF (1).md.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/scripts/hook-guard-config-edit.sh"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/scripts/hook-guard-worktree.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/scripts/hook-guard-destructive.sh"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/scripts/hook-guard-command.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

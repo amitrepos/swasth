@@ -92,3 +92,12 @@ If your verdict is PASS or CONDITIONAL PASS (no CRITICAL or HIGH findings), call
 If your verdict is FAIL (CRITICAL or HIGH findings), do NOT write the marker. The user needs to fix the vulnerabilities first, restage, and re-run the audit on the new staged content (which will have a new hash and invalidate all prior markers).
 
 $ARGUMENTS
+## Machine-parseable verdict (required — last line of your review)
+End with exactly one line so the orchestrator and PR-time status-check gating (WS4/WS6) can consume it deterministically:
+
+```
+VERDICT: PASS
+VERDICT: BLOCK
+```
+
+`PASS` = no blocking findings (write the marker). `BLOCK` = blocking finding(s) — do NOT write the marker; the issue must be fixed, restaged, and re-reviewed.
