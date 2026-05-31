@@ -1,0 +1,50 @@
+name: Agent Platform — Guard Tests
+
+# Runs the WS2 guard-hook + sandbox-seam test suite. Blocks PRs that regress a deterministic
+# guardrail. Cheap (pure bash + jq), no app build required.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.claude/scripts/**'
+      - '.claude/*.json'
+      - '.claude/settings.json'
+      - 'tests/agent-platform/**'
+      - '.github/workflows/agent-platform-tests.yml'
+  pull_request:
+    paths:
+      - '.claude/scripts/**'
+      - '.claude/*.json'
+      - '.claude/settings.json'
+      - 'tests/agent-platform/**'
+      - '.github/workflows/agent-platform-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  guard-tests:
+    name: Guard hooks + sandbox seam
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run guard test suite
+        run: bash tests/agent-platform/test_hook_guards.sh
+
+      - name: Validate all workflow YAML parses
+        run: |
+          python3 - <<'PY'
+          import glob, sys, yaml
+          bad = []
+          for f in glob.glob('.github/workflows/*.yml'):
+              try:
+                  yaml.safe_load(open(f))
+              except Exception as e:
+                  bad.append(f"{f}: {e}")
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          print("all workflow YAML valid")
+          PY
