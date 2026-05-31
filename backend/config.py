@@ -2,7 +2,7 @@ import re
 from urllib.parse import urlparse
 
 from pydantic_settings import BaseSettings
-from pydantic import Field, field_validator, ValidationInfo
+from pydantic import Field, field_validator, model_validator, ValidationInfo
 from typing import Optional, List, ClassVar
 
 
@@ -73,6 +73,18 @@ _ANDROID_PACKAGE_RE = re.compile(
 # 32-byte SHA-256, either colon-separated (AA:BB:CC:...) or continuous
 # (AABBCC...). 64 hex chars either way after stripping colons.
 _CERT_SHA256_RE = re.compile(r"^[0-9A-F]{64}$")
+
+# Loose-but-defensive email regex for GEOFENCE_EMAIL_ALLOWLIST validation
+# at config load. NOT for full RFC 5321 conformance — we just need to
+# refuse obviously-malformed entries (no @, whitespace, missing TLD)
+# at boot so a typo in .env never silently broadens the geofence
+# escape hatch. Real auth still goes through the normal login path.
+_EMAIL_RE = re.compile(r"^[^@\s,]+@[^@\s,]+\.[^@\s,]+$")
+# Cap on allowlist size — long lists are a compliance smell. DPDPA
+# audits expect a documented, bounded roster of "designated accounts."
+# 25 covers a smoke-test runner + a small ops/staff group with room
+# to grow; beyond that, the policy has eroded and needs review.
+_GEOFENCE_ALLOWLIST_MAX = 25
 
 
 class Settings(BaseSettings):
@@ -215,6 +227,19 @@ class Settings(BaseSettings):
     ANDROID_PACKAGE_NAME: str = "com.swasth.app"
     SHARE_ANDROID_CERT_SHA256: Optional[str] = None  # 64-hex-chars, colons OR continuous
 
+    # Geofence email allowlist — comma-separated emails whose accounts
+    # bypass verify_india_location's IP-country check. Authentication,
+    # rate-limits, and audit logging still apply; only the IP-country
+    # gate is skipped. Use case: a smoke-test runner in GitHub Actions
+    # (US IP) hitting POST /readings on prod, or a staff account
+    # operating from a non-India office. DPDPA-compliant because every
+    # hit is audit-logged via a SHA-256 prefix of the user's email_hash
+    # — see dependencies.verify_india_location step 1.5.
+    #
+    # Format: "smoke@swasth.health,qa@swasth.health" (no spaces required).
+    # Empty string = feature off (default).
+    GEOFENCE_EMAIL_ALLOWLIST: str = ""
+
     # Format validators — fail loud at startup if the env var is
     # garbage rather than silently serving a broken assetlinks.json
     # that Google's verifier rejects without telling us why. Pydantic
@@ -263,6 +288,37 @@ class Settings(BaseSettings):
             )
         return v
 
+    @field_validator("GEOFENCE_EMAIL_ALLOWLIST", mode="after")
+    @classmethod
+    def _validate_geofence_email_allowlist(cls, v: str) -> str:
+        # Empty string = feature disabled. Return early so an operator
+        # who hasn't set the env var doesn't accidentally trip the cap.
+        if not v or not v.strip():
+            return ""
+        raw = [e.strip().lower() for e in v.split(",") if e.strip()]
+        bad = [e for e in raw if not _EMAIL_RE.fullmatch(e)]
+        if bad:
+            raise ValueError(
+                "GEOFENCE_EMAIL_ALLOWLIST contains malformed entries (need "
+                f"`local@domain.tld`, comma-separated): {bad}"
+            )
+        # Deduplicate while preserving order — operator may paste the
+        # same email twice and we don't want to silently inflate the cap.
+        seen: set = set()
+        deduped: list = []
+        for e in raw:
+            if e not in seen:
+                seen.add(e)
+                deduped.append(e)
+        if len(deduped) > _GEOFENCE_ALLOWLIST_MAX:
+            raise ValueError(
+                f"GEOFENCE_EMAIL_ALLOWLIST has {len(deduped)} unique entries; the cap is "
+                f"{_GEOFENCE_ALLOWLIST_MAX}. Long allowlists are a compliance "
+                "smell — review the roster against the DPDPA designated-account "
+                "policy before raising the cap."
+            )
+        return ",".join(deduped)
+
     @field_validator("SHARE_ANDROID_CERT_SHA256")
     @classmethod
     def _validate_share_android_cert_sha256(cls, v: Optional[str]) -> Optional[str]:
@@ -279,6 +335,24 @@ class Settings(BaseSettings):
                 f"(colon-separated or continuous); got: {v!r}"
             )
         return ":".join(clean[i:i + 2] for i in range(0, 64, 2))
+
+    @model_validator(mode="after")
+    def _require_pii_key_when_allowlist_set(self) -> "Settings":
+        # The geofence email allowlist matches by HMAC-SHA256(email) under
+        # PII_ENCRYPTION_KEY. When the key is unset, hash_email() returns
+        # None for every entry — the allowlist is silently disabled at
+        # runtime. Refuse boot so the misconfiguration is visible in the
+        # process logs before traffic is accepted, not discovered hours
+        # later via a smoke test that "won't bypass."
+        if self.GEOFENCE_EMAIL_ALLOWLIST and not self.PII_ENCRYPTION_KEY:
+            raise ValueError(
+                "GEOFENCE_EMAIL_ALLOWLIST is set but PII_ENCRYPTION_KEY is "
+                "unset. The allowlist hashes emails using PII_ENCRYPTION_KEY; "
+                "without the key, no entry will ever match a real request. "
+                "Set PII_ENCRYPTION_KEY in .env and restart, or clear the "
+                "allowlist."
+            )
+        return self
 
     class Config:
         env_file = ".env"

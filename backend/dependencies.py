@@ -225,6 +225,119 @@ def _reset_geoip_reader_cache() -> None:
                 pass
 
 
+# ──────────────────────────────────────────────────────────────────────
+# Email allowlist (GEOFENCE_EMAIL_ALLOWLIST)
+#
+# Designated-account bypass for verify_india_location. The allowlist
+# lives in settings as a comma-separated plaintext list. We hash each
+# entry with the same HMAC routine that produces user.email_hash, then
+# compare against the authenticated user's column at request time. This
+# keeps the comparison O(1) and the hot path off the SHA-256 codepath.
+#
+# Cached lazy + lock-guarded — same pattern as the GeoIP reader. The
+# env var doesn't change at runtime, so recomputing hashes per request
+# would burn CPU for nothing.
+# ──────────────────────────────────────────────────────────────────────
+_geofence_allowlist_hashes_cache: Optional[frozenset] = None
+_geofence_allowlist_lock = threading.Lock()
+
+
+def _get_geofence_allowlist_hashes() -> frozenset:
+    """Return the SHA-256-hashed allowlist as a frozenset.
+
+    Lazy import of `settings` because dependencies.py is imported very
+    early in the FastAPI bootstrap; pulling config at module-load time
+    would risk a circular import if settings ever grows a dependency
+    on anything in this file.
+    """
+    global _geofence_allowlist_hashes_cache
+    if _geofence_allowlist_hashes_cache is not None:
+        return _geofence_allowlist_hashes_cache
+    with _geofence_allowlist_lock:
+        if _geofence_allowlist_hashes_cache is not None:
+            return _geofence_allowlist_hashes_cache
+        from config import settings
+        raw = settings.GEOFENCE_EMAIL_ALLOWLIST or ""
+        emails = [e.strip().lower() for e in raw.split(",") if e.strip()]
+        # hash_email is HMAC-SHA256(normalised_email) using PII_ENCRYPTION_KEY
+        # and matches models.User.email_hash — that match is what makes
+        # the membership test work. When PII_ENCRYPTION_KEY is unset the
+        # function returns None for every entry; the config-layer
+        # model_validator should have already refused boot in that case,
+        # but we still defend at runtime: drop None hashes so the frozenset
+        # never contains a sentinel that could accidentally match against
+        # another None lookup result, and emit a loud WARNING so an
+        # operator who somehow got past the boot check sees the cause.
+        hashes: list = []
+        dropped = 0
+        for e in emails:
+            h = hash_email(e)
+            if h is None:
+                dropped += 1
+            else:
+                hashes.append(h)
+        if dropped:
+            logger.warning(
+                f"GEOFENCE_EMAIL_ALLOWLIST has {len(emails)} entries but "
+                f"{dropped} hashed to None — likely PII_ENCRYPTION_KEY is "
+                "unset. The dropped entries will NEVER match a real request. "
+                "Set PII_ENCRYPTION_KEY in .env and restart."
+            )
+        _geofence_allowlist_hashes_cache = frozenset(hashes)
+        return _geofence_allowlist_hashes_cache
+
+
+def _reset_geofence_allowlist_cache() -> None:
+    """Test-only — force a re-read of GEOFENCE_EMAIL_ALLOWLIST after a
+    suite mutates the setting. Production code never calls this."""
+    global _geofence_allowlist_hashes_cache
+    with _geofence_allowlist_lock:
+        _geofence_allowlist_hashes_cache = None
+
+
+def _email_hash_from_bearer_token(request: Request) -> Optional[str]:
+    """Best-effort: extract email_hash from the request's Bearer token.
+
+    Returns None on any failure — caller falls through to the IP-country
+    check. This is intentionally lenient: a missing/invalid/expired
+    token must NOT inadvertently flip the geofence into "allow"; it
+    must flow into the regular IP path. Real auth still runs in
+    get_current_user on the same request — that's where token
+    validation actually gates access.
+
+    We avoid calling get_current_user here because of the forward-ref
+    dance (verify_india_location is defined above get_current_user in
+    this file) and because we don't need the DB row — only the hash.
+    """
+    # Starlette's Headers object normalises all keys to lowercase, so
+    # the lowercase lookup is sufficient in production. Tests build
+    # the mock request via test_geofence._make_request which constructs
+    # a starlette.datastructures.Headers (case-insensitive) — so any
+    # case in the test setup also resolves here.
+    auth_header = request.headers.get("authorization")
+    if not auth_header:
+        return None
+    parts = auth_header.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return None
+    token = parts[1].strip()
+    if not token:
+        return None
+    try:
+        payload = auth.decode_access_token(token)
+    except Exception:
+        return None
+    if not payload:
+        return None
+    email = payload.get("sub")
+    if not isinstance(email, str) or not email:
+        return None
+    try:
+        return hash_email(email)
+    except Exception:
+        return None
+
+
 def verify_india_location(request: Request) -> None:
     """Enforce India-only geofencing on data-modifying endpoints.
 
@@ -250,6 +363,28 @@ def verify_india_location(request: Request) -> None:
             "flip off after the incident/test."
         )
         return
+
+    # 1.5. Per-user email allowlist (GEOFENCE_EMAIL_ALLOWLIST).
+    # Audit-logged designated-account bypass for cases where an
+    # authenticated user legitimately operates from outside India
+    # (smoke-test runners on US-hosted CI, staff in non-India offices).
+    # Order matters: this runs AFTER the env-flag rollback (operators
+    # need an emergency switch that does not depend on DB/auth state)
+    # but BEFORE IP resolution (the allowlist is a per-identity decision,
+    # not per-IP — no point burning a GeoIP lookup if we're going to
+    # allow anyway). DPDPA: the email_hash itself is PII; we log only
+    # a 12-char prefix, enough to correlate to an audit-trail entry
+    # but not enough to brute-force the address.
+    allowlist_hashes = _get_geofence_allowlist_hashes()
+    if allowlist_hashes:
+        email_hash = _email_hash_from_bearer_token(request)
+        if email_hash is not None and email_hash in allowlist_hashes:
+            logger.info(
+                "GEOFENCE_ALLOWLIST_HIT "
+                f"email_hash_prefix={email_hash[:12]} "
+                f"path={request.url.path} method={request.method}"
+            )
+            return
 
     # 2. Extract client IP (XFF only honoured behind trusted proxies)
     client_ip = _get_client_ip(request)
