@@ -12,6 +12,7 @@ on:
       - '.claude/settings.json'
       - 'scripts/compute_required_reviewers.py'
       - 'scripts/classify_diff_sensitivity.py'
+      - 'scripts/orchestrator_claim.py'
       - 'tests/agent-platform/**'
       - '.github/workflows/agent-platform-tests.yml'
   pull_request:
@@ -37,6 +38,9 @@ jobs:
 
       - name: Run guard test suite
         run: bash tests/agent-platform/test_hook_guards.sh
+
+      - name: Run orchestrator-claim tests
+        run: python3 tests/agent-platform/test_orchestrator_claim.py
 
       - name: Validate all workflow YAML parses
         run: |
