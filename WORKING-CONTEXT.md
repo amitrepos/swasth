@@ -8,6 +8,16 @@
 
 ---
 
+## ⏭️ NEXT SESSION (2026-06-01) — Agent platform: assignee-driven JIRA flow
+Agent-platform upgrade Phases 0–7 merged (PRs #277–283). Assignee-flow repo side prepped in **PR #284 (OPEN, flag OFF)**. Tomorrow, once Amit has JIRA admin:
+1. Merge **#284**.
+2. Amit (JIRA): create **Priya** + **Matt** users in NUO (grab accountIds); confirm/add statuses; Automation rule **assignee→Priya ⇒ `repository_dispatch` `jira-ticket-assigned` {ticket_key}** + GitHub PAT secret.
+3. Set repo vars: `gh variable set SWASTH_ASSIGNEE_FLOW on`, `JIRA_MATT_ACCOUNT_ID <id>`.
+4. Smoke-test one low-risk ticket assigned to Priya end-to-end.
+Runbook: `docs/agent-platform/ASSIGNEE_FLOW.md`. Other built-but-OFF toggles + enable steps: `docs/agent-platform/{INTAKE_GATE,MERGE_POLICY,SANDBOX,ORCHESTRATION}.md`.
+
+---
+
 ## Current Focus
 D7 critical alerts shipped and verified at dispatch level. Email delivery blocked on Brevo sender verification (see blockers). Next session: unblock email delivery, fix local Flutter SDK, then either A9 offline mode or pilot-launch readiness.
 
