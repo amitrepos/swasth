@@ -10,8 +10,13 @@
 # (newer schema) or .file_path (older schema).
 set -euo pipefail
 
+# WS8 audit logging (no-op unless SWASTH_AGENT_AUDIT_LOG is set).
+source "$(dirname "$0")/hook-audit-lib.sh" 2>/dev/null || true
+command -v swasth_audit_event >/dev/null 2>&1 || swasth_audit_event() { :; }
+
 # Audited escape hatch for deliberate, human-reviewed gate edits.
 if [[ "${SWASTH_BYPASS_CONFIG_EDIT:-}" == "1" ]]; then
+  swasth_audit_event "config-edit" "bypass" "SWASTH_BYPASS_CONFIG_EDIT=1"
   exit 0
 fi
 
@@ -34,6 +39,7 @@ case "$fp" in
   */.claude/scripts/check-agent-branch-policy.sh|\
   */.claude/scripts/check-migration-required.sh|\
   */.claude/scripts/hook-guard-*.sh)
+    swasth_audit_event "config-edit" "block" "$fp"
     echo "BLOCKED (WS2 config protection): '$fp' is a gate/policy file." >&2
     echo "These change the automation's guarantees and must go through a human-reviewed PR." >&2
     echo "If this is an intentional, reviewed change, re-run with SWASTH_BYPASS_CONFIG_EDIT=1 (audited)." >&2

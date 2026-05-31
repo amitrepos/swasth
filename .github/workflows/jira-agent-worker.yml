@@ -34,6 +34,7 @@ permissions:
   contents: write
   actions: read
   pull-requests: write
+  issues: write   # WS8 — open an alert issue if a guard logs a block/bypass/hook-failure
 
 jobs:
   drain:
@@ -291,6 +292,7 @@ jobs:
           SWASTH_AGENT_SANDBOX: audit
           SWASTH_AGENT_WORKTREE: ${{ github.workspace }}
           SWASTH_AGENT_WORKTREE_MODE: audit
+          SWASTH_AGENT_AUDIT_LOG: ${{ github.workspace }}/.agent-tmp/guard-audit.jsonl
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -406,6 +408,7 @@ jobs:
           SWASTH_AGENT_SANDBOX: audit
           SWASTH_AGENT_WORKTREE: ${{ github.workspace }}
           SWASTH_AGENT_WORKTREE_MODE: audit
+          SWASTH_AGENT_AUDIT_LOG: ${{ github.workspace }}/.agent-tmp/guard-audit.jsonl
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -624,6 +627,42 @@ jobs:
           PY
           bash scripts/write_to_automation_state.sh queue-status.md /tmp/queue-status.md \
             "status: tick after worker run $WORKER_RUN_ID" || true
+
+      # WS8 observability — fully non-fatal (|| true everywhere, if: always). Summarizes the guard
+      # audit log, attaches it to the run + JIRA, and opens an alert issue if any block/bypass/hook
+      # failure was recorded. Must never break a build — it is pure reporting.
+      - name: Guard audit summary + alert
+        if: always()
+        id: audit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
+          AUDIT_LOG: ${{ github.workspace }}/.agent-tmp/guard-audit.jsonl
+        run: |
+          set +e
+          python3 scripts/summarize_agent_audit.py "$AUDIT_LOG" --github-output > /tmp/audit-summary.md 2>/dev/null
+          cat /tmp/audit-summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          # Attach to JIRA (best-effort) and upload the raw log.
+          if [ -n "${TICKET_KEY:-}" ] && [ -s /tmp/audit-summary.md ]; then
+            bash scripts/jira_comment.sh "$TICKET_KEY" @/tmp/audit-summary.md || true
+          fi
+          # Open an alert issue if alert==true.
+          if grep -q '^alert=true' "$GITHUB_OUTPUT" 2>/dev/null; then
+            gh issue create --repo "${{ github.repository }}" \
+              --title "⚠️ Agent guard alert — run ${{ github.run_id }} (${TICKET_KEY:-no-ticket})" \
+              --body-file /tmp/audit-summary.md \
+              --label "agent-alert" 2>/dev/null || true
+          fi
+          exit 0
+
+      - name: Upload guard audit log
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: guard-audit-${{ github.run_id }}
+          path: ${{ github.workspace }}/.agent-tmp/guard-audit.jsonl
+          if-no-files-found: ignore
 
       - name: Summary
         if: always()

@@ -111,6 +111,22 @@ else
   echo "  skip python3 or classifier missing"
 fi
 
+echo "== WS8 audit logging + summarizer =="
+ALOG="$(mktemp)"; rm -f "$ALOG"
+# guards write JSONL only when SWASTH_AGENT_AUDIT_LOG is set
+STDIN='{"tool_input":{"command":"curl http://x"}}'; SWASTH_AGENT_SANDBOX=1 SWASTH_AGENT_AUDIT_LOG="$ALOG" "$S/hook-guard-command.sh" <<<"$STDIN" >/dev/null 2>&1
+[ -f "$ALOG" ] && grep -q '"event":"block"' "$ALOG" && { PASS=$((PASS+1)); echo "  ok   command block writes audit JSONL"; } || { FAIL=$((FAIL+1)); echo "  FAIL command block audit line"; }
+NOLOG="$(mktemp)"; rm -f "$NOLOG"
+STDIN='{"tool_input":{"command":"curl http://x"}}'; SWASTH_AGENT_SANDBOX=1 "$S/hook-guard-command.sh" <<<"$STDIN" >/dev/null 2>&1
+[ ! -f "$NOLOG" ] && { PASS=$((PASS+1)); echo "  ok   no audit log written when env unset"; } || { FAIL=$((FAIL+1)); echo "  FAIL audit log leaked without env"; }
+SUM="$ROOT/scripts/summarize_agent_audit.py"
+if command -v python3 >/dev/null 2>&1 && [ -f "$SUM" ]; then
+  python3 "$SUM" "$ALOG" 2>/dev/null | grep -q "alert-worthy" && { PASS=$((PASS+1)); echo "  ok   summarizer flags alert-worthy events"; } || { FAIL=$((FAIL+1)); echo "  FAIL summarizer alert flag"; }
+  printf '' > "$ALOG"
+  python3 "$SUM" "$ALOG" 2>/dev/null | grep -qi "clean run" && { PASS=$((PASS+1)); echo "  ok   summarizer reports clean run on empty log"; } || { FAIL=$((FAIL+1)); echo "  FAIL summarizer clean run"; }
+fi
+rm -f "$ALOG"
+
 echo
 echo "RESULT: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
