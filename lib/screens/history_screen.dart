@@ -570,98 +570,144 @@ class HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildReadingTile(HealthReading reading, AppLocalizations l10n) {
+    final statusColor = _getStatusColor(reading.statusFlag);
+    final ts = reading.readingTimestamp.toLocal();
     return GlassCard(
+      key: Key('history_reading_tile_${reading.id}'),
       margin: const EdgeInsets.only(bottom: 12),
       borderRadius: 16,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor:
-              _getStatusColor(reading.statusFlag).withValues(alpha: 0.10),
-          child: Icon(
-            _getTypeIcon(reading.readingType),
-            color: _getStatusColor(reading.statusFlag),
-          ),
-        ),
-        title: Text(
-          reading.displayValue,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color:
-                    _getStatusColor(reading.statusFlag).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _localizedStatus(reading.statusFlag, l10n),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: _getStatusColor(reading.statusFlag),
-                  fontWeight: FontWeight.w600,
+            // Left: date column
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.calendar_today_outlined,
+                    size: 14, color: AppColors.textSecondary),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('MMM dd,\nyyyy').format(ts),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  '•',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                ),
+                Text(
+                  DateFormat('hh:mm a').format(ts),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+            // Vertical divider between date and content
+            const SizedBox(width: 8),
+            VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: AppColors.textSecondary.withValues(alpha: 0.25),
+            ),
+            const SizedBox(width: 8),
+            // Center: icon + value + badges
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: statusColor.withValues(alpha: 0.12),
+                    child: Icon(_getTypeIcon(reading.readingType),
+                        color: statusColor, size: 22),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          reading.displayValue,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _localizedStatus(reading.statusFlag, l10n),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: statusColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              DateFormat(
-                'MMM dd, yyyy • hh:mm a',
-              ).format(reading.readingTimestamp.toLocal()),
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            const SizedBox(width: 4),
+            // Right: action buttons stacked vertically
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.bgPage,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    key: Key('history_view_reading_${reading.id}'),
+                    icon: const Icon(Icons.visibility_outlined, size: 20),
+                    color: AppColors.textSecondary,
+                    onPressed: () => _viewReadingDetails(reading),
+                    tooltip: l10n.viewDetails,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(),
+                  ),
+                  if (_canEdit) ...[
+                    if (_isEditableType(reading.readingType))
+                      IconButton(
+                        key: Key('history_edit_reading_${reading.id}'),
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        color: AppColors.textSecondary,
+                        onPressed: () => _editReading(reading),
+                        tooltip: l10n.editReading,
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(),
+                      ),
+                    IconButton(
+                      key: Key('history_delete_reading_${reading.id}'),
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      color: AppColors.statusCritical,
+                      onPressed: () => _deleteReading(reading.id),
+                      tooltip: l10n.delete,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
-        // View is read-only and must be available to viewer-role profiles too.
-        // Only edit/delete are gated by _canEdit.
-        //
-        // Cap the trailing width to the exact number of IconButtons that
-        // will render — each IconButton is 48dp. ListTile does not bound
-        // its `trailing` slot, so on 360dp-wide phones (the Bihar pilot
-        // baseline) an unbounded 3-button Row overflows the tile and
-        // clips the title text. Three states:
-        //   - viewer (read-only role): 1 button → 48dp
-        //   - editor + non-editable type (BP, etc.): view + delete = 96dp
-        //   - editor + editable type (glucose, spo2, weight): all 3 = 144dp
-        trailing: SizedBox(
-          width: _canEdit
-              ? (_isEditableType(reading.readingType) ? 144.0 : 96.0)
-              : 48.0,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                key: Key('history_view_reading_${reading.id}'),
-                icon: const Icon(Icons.visibility_outlined),
-                color: AppColors.textSecondary,
-                onPressed: () => _viewReadingDetails(reading),
-                tooltip: l10n.viewDetails,
-              ),
-              if (_canEdit) ...[
-                if (_isEditableType(reading.readingType))
-                  IconButton(
-                    key: Key('history_edit_reading_${reading.id}'),
-                    icon: const Icon(Icons.edit_outlined),
-                    color: AppColors.textSecondary,
-                    onPressed: () => _editReading(reading),
-                    tooltip: l10n.editReading,
-                  ),
-                IconButton(
-                  key: Key('history_delete_reading_${reading.id}'),
-                  icon: const Icon(Icons.delete_outline),
-                  color: AppColors.statusCritical,
-                  onPressed: () => _deleteReading(reading.id),
-                  tooltip: l10n.delete,
-                ),
-              ],
-            ],
-          ),
-        ),
-        isThreeLine: true,
       ),
     );
   }
@@ -755,106 +801,165 @@ class HistoryScreenState extends State<HistoryScreen> {
       l10n,
     );
 
+    final ts = meal.timestamp.toLocal();
+    final mealEmoji = switch (meal.mealType) {
+      'BREAKFAST' => '🌅',
+      'LUNCH'     => '🥗',
+      'DINNER'    => '🍽️',
+      'SNACK'     => '🍎',
+      _           => '🍴',
+    };
     return GlassCard(
       key: Key('history_meal_tile_${meal.id}'),
       margin: const EdgeInsets.only(bottom: 12),
       borderRadius: 16,
       child: Semantics(
         label: '$mealType, $category, $carbLabel',
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: carbColor.withValues(alpha: 0.10),
-            child: const Text('🍚', style: TextStyle(fontSize: 18)),
-          ),
-          title: Text(
-            mealType,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          subtitle: Column(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 6),
-              Text(
-                category,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: carbColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(carbIcon, size: 14, color: carbColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      carbLabel,
+              // Left: date column
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(Icons.calendar_today_outlined,
+                      size: 14, color: AppColors.textSecondary),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('MMM dd,\nyyyy').format(ts),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text('•',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: carbColor,
-                        fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary, fontSize: 10)),
+                  Text(
+                    DateFormat('hh:mm a').format(ts),
+                    textAlign: TextAlign.center,
+                    style:
+                        TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+              // Vertical divider between date and content
+              const SizedBox(width: 8),
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: AppColors.textSecondary.withValues(alpha: 0.25),
+              ),
+              const SizedBox(width: 8),
+              // Center: meal icon + type + category badge + carb badge
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: carbColor.withValues(alpha: 0.12),
+                      child: Text(mealEmoji, style: const TextStyle(fontSize: 20)),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            mealType,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            category,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: carbColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(carbIcon, size: 14, color: carbColor),
+                                const SizedBox(width: 4),
+                                Text(
+                                  carbLabel,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: carbColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                DateFormat(
-                  'MMM dd, yyyy • hh:mm a',
-                ).format(meal.timestamp.toLocal()),
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              const SizedBox(width: 4),
+              // Right: action buttons stacked vertically
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.bgPage,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      key: Key('history_view_meal_${meal.id}'),
+                      icon: const Icon(Icons.visibility_outlined, size: 20),
+                      color: AppColors.textSecondary,
+                      onPressed: () => _viewMealDetails(meal),
+                      tooltip: l10n.viewMealDetails,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                    if (_canEdit) ...[
+                      IconButton(
+                        key: Key('history_edit_meal_${meal.id}'),
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        color: AppColors.textSecondary,
+                        onPressed: () => _editMeal(meal),
+                        tooltip: l10n.editMeal,
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(),
+                      ),
+                      IconButton(
+                        key: Key('history_delete_meal_${meal.id}'),
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        color: AppColors.statusCritical,
+                        onPressed: () => _deleteMeal(meal.id),
+                        tooltip: l10n.delete,
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
           ),
-          // View is read-only and must be available to viewer-role profiles too.
-          // Only edit/delete are gated by _canEdit. Width-capped for the
-          // same reason as the reading tile above — three IconButtons in
-          // an unbounded Row overflow the 360dp Bihar baseline. Meals are
-          // always editable (no _isEditableType check), so the editor
-          // state is the full 144dp; viewer collapses to 48dp.
-          trailing: SizedBox(
-            width: _canEdit ? 144.0 : 48.0,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  key: Key('history_view_meal_${meal.id}'),
-                  icon: const Icon(Icons.visibility_outlined),
-                  color: AppColors.textSecondary,
-                  onPressed: () => _viewMealDetails(meal),
-                  tooltip: l10n.viewMealDetails,
-                ),
-                if (_canEdit) ...[
-                  IconButton(
-                    key: Key('history_edit_meal_${meal.id}'),
-                    icon: const Icon(Icons.edit_outlined),
-                    color: AppColors.textSecondary,
-                    onPressed: () => _editMeal(meal),
-                    tooltip: l10n.editMeal,
-                  ),
-                  IconButton(
-                    key: Key('history_delete_meal_${meal.id}'),
-                    icon: const Icon(Icons.delete_outline),
-                    color: AppColors.statusCritical,
-                    onPressed: () => _deleteMeal(meal.id),
-                    tooltip: l10n.delete,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          isThreeLine: true,
         ),
       ),
     );

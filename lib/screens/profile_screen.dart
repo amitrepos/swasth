@@ -489,56 +489,55 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       borderRadius: 16,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.language, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                l10n.appLanguageSection,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+            // Label row — no longer competing with chips for width
+            Row(
+              children: [
+                Icon(Icons.language, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 12),
+                Text(
+                  l10n.appLanguageSection,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
+              ],
             ),
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              child: Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  _langChip(
-                    l10n.languageEnglish,
-                    currentLang == 'en',
-                    () => ref.read(languageProvider.notifier).setLanguage('en'),
-                  ),
-                  _langChip(
-                    l10n.languageHindi,
-                    currentLang == 'hi',
-                    () => ref.read(languageProvider.notifier).setLanguage('hi'),
-                  ),
-                  _langChip(
-                    l10n.languageKannada,
-                    currentLang == 'kn',
-                    () => ref.read(languageProvider.notifier).setLanguage('kn'),
-                  ),
-                  _langChip(
-                    l10n.languageTelugu,
-                    currentLang == 'te',
-                    () => ref.read(languageProvider.notifier).setLanguage('te'),
-                  ),
-                  _langChip(
-                    l10n.languageTamil,
-                    currentLang == 'ta',
-                    () => ref.read(languageProvider.notifier).setLanguage('ta'),
-                  ),
-                ],
-              ),
+            const SizedBox(height: 12),
+            // Chips on their own full-width row — wraps naturally on narrow screens
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _langChip(
+                  l10n.languageEnglish,
+                  currentLang == 'en',
+                  () => ref.read(languageProvider.notifier).setLanguage('en'),
+                ),
+                _langChip(
+                  l10n.languageHindi,
+                  currentLang == 'hi',
+                  () => ref.read(languageProvider.notifier).setLanguage('hi'),
+                ),
+                _langChip(
+                  l10n.languageKannada,
+                  currentLang == 'kn',
+                  () => ref.read(languageProvider.notifier).setLanguage('kn'),
+                ),
+                _langChip(
+                  l10n.languageTelugu,
+                  currentLang == 'te',
+                  () => ref.read(languageProvider.notifier).setLanguage('te'),
+                ),
+                _langChip(
+                  l10n.languageTamil,
+                  currentLang == 'ta',
+                  () => ref.read(languageProvider.notifier).setLanguage('ta'),
+                ),
+              ],
             ),
           ],
         ),

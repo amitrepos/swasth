@@ -173,8 +173,11 @@ class MetricsGrid extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        // Row 2: BMI + Steps
-        Row(
+        // Row 2: BMI + Steps — IntrinsicHeight forces both cards
+        // to match the taller sibling's height so they look uniform.
+        IntrinsicHeight(
+         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: _BmiTile(
@@ -213,6 +216,7 @@ class MetricsGrid extends StatelessWidget {
               ),
             ),
           ],
+         ),
         ),
         if (ageContextBp != null || ageContextGlucose != null) ...[
           const SizedBox(height: 8),
@@ -556,10 +560,12 @@ class _BmiTile extends StatelessWidget {
                   ),
                 ],
               ),
-              // Right side: Weight
+              // Right side: Weight — vertical stack, no horizontal
+              // competition with BMI so it never overflows.
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  // 1. Heading
                   Text(
                     AppLocalizations.of(context)!.weightLabel.toUpperCase(),
                     style: const TextStyle(
@@ -569,36 +575,33 @@ class _BmiTile extends StatelessWidget {
                       letterSpacing: 1,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        weightDisplay,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                  const SizedBox(height: 6),
+                  // 2. Add button (standalone, below heading)
+                  if (onAddWeight != null)
+                    GestureDetector(
+                      onTap: onAddWeight,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: AppColors.textPrimary,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 14,
                         ),
                       ),
-                      if (onAddWeight != null) ...[
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: onAddWeight,
-                          child: Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: AppColors.textPrimary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
+                  const SizedBox(height: 6),
+                  // 3. Actual weight value below the button
+                  Text(
+                    weightDisplay,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ],
               ),
