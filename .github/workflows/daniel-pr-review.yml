@@ -12,7 +12,7 @@ on:
       - 'AUDIT.md'
 
 concurrency:
-  group: daniel-review-${{ github.event.pull_request.number }}
+  group: daniel-review-same-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
