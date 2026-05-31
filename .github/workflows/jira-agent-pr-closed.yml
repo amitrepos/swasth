@@ -14,6 +14,8 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  statuses: read
+  checks: read
 
 jobs:
   notify_jira:
@@ -46,12 +48,39 @@ jobs:
           fi
           echo "ticket=$TICKET" >> "$GITHUB_OUTPUT"
 
-      - name: Update JIRA — merged path
+      # WS7 — Matt posts a completion summary on merge (what was built, PR link, change size, checks).
+      # Deterministic (composed from PR metadata via the API) so it is reliable and free — no model call.
+      - name: Update JIRA — merged path (Matt completion summary)
         if: steps.extract.outputs.ticket != '' && env.MERGED == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          ADDS: ${{ github.event.pull_request.additions }}
+          DELS: ${{ github.event.pull_request.deletions }}
+          NFILES: ${{ github.event.pull_request.changed_files }}
         run: |
           TICKET="${{ steps.extract.outputs.ticket }}"
-          bash scripts/jira_comment.sh "$TICKET" \
-            "PR merged: ${{ github.event.pull_request.html_url }}"
+          # Top changed files (best-effort; non-fatal).
+          FILES=$(gh pr view "$PR_NUM" --repo "${{ github.repository }}" --json files \
+            -q '.files[].path' 2>/dev/null | head -8 | sed 's/^/  - /' || true)
+          # Whether the merge commit's checks were green (best-effort).
+          CHECKS=$(gh pr checks "$PR_NUM" --repo "${{ github.repository }}" 2>/dev/null \
+            | awk '{print $2}' | sort | uniq -c | tr '\n' ' ' || echo "n/a")
+          {
+            echo "✅ **Matt — implementation complete and merged.**"
+            echo ""
+            echo "**What was built:** ${PR_TITLE}"
+            echo "**PR:** ${PR_URL} (merged as \`${MERGE_SHA}\`)"
+            echo "**Change size:** ${NFILES} files, +${ADDS} / -${DELS}"
+            echo "**CI checks at merge:** ${CHECKS}"
+            if [ -n "$FILES" ]; then echo ""; echo "**Key files:**"; echo "$FILES"; fi
+            echo ""
+            echo "— Matt (automation builder)"
+          } > /tmp/completion.md
+          bash scripts/jira_comment.sh "$TICKET" @/tmp/completion.md
           bash scripts/jira_set_status_label.sh "$TICKET" merged || true
           bash scripts/jira_transition.sh "$TICKET" "Done" || echo "::warning::jira_transition non-fatal failure"
 
