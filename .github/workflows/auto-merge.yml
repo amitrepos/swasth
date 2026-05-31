@@ -1,0 +1,85 @@
+name: Auto-merge policy (WS6)
+
+# Enables GitHub native auto-merge for LOW-RISK agent PRs once all required checks pass; HOLDS
+# SENSITIVE diffs (auth/data/PHI/migrations/logging/infra) for human approval. Native auto-merge
+# respects branch protection, so a "sensitive" PR that requires a human review will simply wait.
+#
+# Feature-flagged: repo variable SWASTH_AUTO_MERGE. Until it is `on`, this workflow runs in DRY-RUN
+# (classifies + logs + comments, but never enables a merge) so the decision logic can be observed
+# safely. Enabling also requires repo setting "Allow auto-merge" + the required status checks in
+# branch protection (operator step — see docs/agent-platform/MERGE_POLICY.md).
+#
+# Uses pull_request_target but NEVER checks out or executes PR code — it reads the changed-file LIST
+# via the API and runs the classifier from the trusted base (master). Safe against fork/poisoned PRs.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  decide:
+    name: Classify + (maybe) enable auto-merge
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR: ${{ github.event.pull_request.number }}
+      AUTHOR: ${{ github.event.pull_request.user.login }}
+      FLAG: ${{ vars.SWASTH_AUTO_MERGE || 'off' }}
+      # Comma-separated logins eligible for auto-merge (agent/bot authors). Humans merge their own PRs.
+      ELIGIBLE_AUTHORS: ${{ vars.SWASTH_AUTOMERGE_AUTHORS || 'github-actions[bot],swasth-automation-bot,app/github-actions' }}
+    steps:
+      - name: Checkout base (trusted) for the classifier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+
+      - name: Classify diff sensitivity
+        id: classify
+        run: |
+          gh pr view "$PR" --repo "${{ github.repository }}" --json files -q '.files[].path' > .changed.txt
+          echo "Changed files:"; cat .changed.txt
+          RESULT=$(python3 scripts/classify_diff_sensitivity.py - < .changed.txt)
+          echo "sensitivity=$RESULT" >> "$GITHUB_OUTPUT"
+          echo "Classified: $RESULT"
+
+      - name: Decide + act
+        run: |
+          SENS="${{ steps.classify.outputs.sensitivity }}"
+          ELIGIBLE=false
+          case ",$ELIGIBLE_AUTHORS," in *",$AUTHOR,"*) ELIGIBLE=true ;; esac
+
+          echo "PR #$PR · author=$AUTHOR · eligible_author=$ELIGIBLE · sensitivity=$SENS · flag=$FLAG"
+
+          if [ "$SENS" = "sensitive" ]; then
+            MSG="🔒 **Sensitive diff** (auth/data/PHI/migrations/logging/infra) — auto-merge is NOT enabled; this PR requires human approval."
+          elif [ "$ELIGIBLE" != "true" ]; then
+            MSG="ℹ️ Author \`$AUTHOR\` is not in the auto-merge eligibility list — no auto-merge (human merges their own PR)."
+          else
+            MSG="✅ Low-risk agent PR — eligible for auto-merge once all required checks pass."
+          fi
+          echo "$MSG"
+
+          if [ "$FLAG" != "on" ]; then
+            echo "DRY-RUN (SWASTH_AUTO_MERGE != on): would have decided — $MSG"
+            gh pr comment "$PR" --repo "${{ github.repository }}" --body "[auto-merge dry-run] $MSG" || true
+            exit 0
+          fi
+
+          # Flag ON — act for real.
+          if [ "$SENS" != "sensitive" ] && [ "$ELIGIBLE" = "true" ]; then
+            gh pr merge "$PR" --repo "${{ github.repository }}" --squash --auto \
+              && gh pr comment "$PR" --repo "${{ github.repository }}" --body "$MSG (auto-merge enabled)" \
+              || gh pr comment "$PR" --repo "${{ github.repository }}" --body "⚠️ Could not enable auto-merge (is 'Allow auto-merge' on + required checks configured?). $MSG" || true
+          else
+            gh pr comment "$PR" --repo "${{ github.repository }}" --body "$MSG" || true
+          fi

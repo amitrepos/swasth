@@ -11,6 +11,7 @@ on:
       - '.claude/*.json'
       - '.claude/settings.json'
       - 'scripts/compute_required_reviewers.py'
+      - 'scripts/classify_diff_sensitivity.py'
       - 'tests/agent-platform/**'
       - '.github/workflows/agent-platform-tests.yml'
   pull_request:
@@ -19,6 +20,7 @@ on:
       - '.claude/*.json'
       - '.claude/settings.json'
       - 'scripts/compute_required_reviewers.py'
+      - 'scripts/classify_diff_sensitivity.py'
       - 'tests/agent-platform/**'
       - '.github/workflows/agent-platform-tests.yml'
 
