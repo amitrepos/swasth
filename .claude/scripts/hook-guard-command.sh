@@ -21,6 +21,10 @@ set -euo pipefail
 MODE="${SWASTH_AGENT_SANDBOX:-}"
 [[ -z "$MODE" ]] && exit 0                            # not in agent sandbox → no-op
 
+# WS8 audit logging (no-op unless SWASTH_AGENT_AUDIT_LOG is set).
+source "$(dirname "$0")/hook-audit-lib.sh" 2>/dev/null || true
+command -v swasth_audit_event >/dev/null 2>&1 || swasth_audit_event() { :; }
+
 raw="$(cat 2>/dev/null || true)"
 [[ -z "$raw" ]] && raw="${TOOL_INPUT:-}"
 [[ -z "$raw" ]] && exit 0
@@ -43,9 +47,11 @@ while IFS= read -r seg; do
   [[ "$tok" == *=* ]] && continue        # leading env assignment (VAR=val) → skip
   if ! printf '%s' "$tok" | grep -qE "$ALLOW"; then
     if [[ "$MODE" == "audit" ]]; then
+      swasth_audit_event "command" "audit" "$tok"
       echo "AUDIT (sandbox command allowlist): '$tok' is not in the safe set (would block in enforce mode)." >&2
       continue
     fi
+    swasth_audit_event "command" "block" "$tok"
     echo "BLOCKED (sandbox command allowlist): '$tok' is not in the safe set." >&2
     echo "Arbitrary shell is denied inside the agent sandbox. Surface the blocker; do not widen the list to work around it." >&2
     exit 1

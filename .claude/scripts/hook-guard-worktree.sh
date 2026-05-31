@@ -17,6 +17,10 @@ root="${SWASTH_AGENT_WORKTREE:-}"
 [[ -z "$root" ]] && exit 0   # not in an agent sandbox → no confinement here
 MODE="${SWASTH_AGENT_WORKTREE_MODE:-block}"
 
+# WS8 audit logging (no-op unless SWASTH_AGENT_AUDIT_LOG is set).
+source "$(dirname "$0")/hook-audit-lib.sh" 2>/dev/null || true
+command -v swasth_audit_event >/dev/null 2>&1 || swasth_audit_event() { :; }
+
 raw="$(cat 2>/dev/null || true)"
 [[ -z "$raw" ]] && raw="${TOOL_INPUT:-}"
 [[ -z "$raw" ]] && exit 0
@@ -37,9 +41,11 @@ case "$abs" in
   "$root"/*) exit 0 ;;             # inside the assigned worktree → allow
   *)
     if [[ "$MODE" == "audit" ]]; then
+      swasth_audit_event "worktree" "audit" "$abs"
       echo "AUDIT (worktree confinement): '$abs' is outside the agent worktree '$root' (would block in enforce mode)." >&2
       exit 0
     fi
+    swasth_audit_event "worktree" "block" "$abs"
     echo "BLOCKED (worktree confinement): '$abs' is outside the agent worktree '$root'." >&2
     echo "Sandboxed agents may only write inside their assigned worktree." >&2
     exit 1

@@ -7,7 +7,14 @@
 # SWASTH_ALLOW_DESTRUCTIVE=1 (audited).
 set -euo pipefail
 
-[[ "${SWASTH_ALLOW_DESTRUCTIVE:-}" == "1" ]] && exit 0
+# WS8 audit logging (no-op unless SWASTH_AGENT_AUDIT_LOG is set).
+source "$(dirname "$0")/hook-audit-lib.sh" 2>/dev/null || true
+command -v swasth_audit_event >/dev/null 2>&1 || swasth_audit_event() { :; }
+
+if [[ "${SWASTH_ALLOW_DESTRUCTIVE:-}" == "1" ]]; then
+  swasth_audit_event "destructive" "bypass" "SWASTH_ALLOW_DESTRUCTIVE=1"
+  exit 0
+fi
 
 raw="$(cat 2>/dev/null || true)"
 [[ -z "$raw" ]] && raw="${TOOL_INPUT:-}"
@@ -17,6 +24,7 @@ cmd="$(printf '%s' "$raw" | jq -r '(.tool_input.command // .command // "")' 2>/d
 [[ -z "$cmd" ]] && exit 0
 
 block() {
+  swasth_audit_event "destructive" "block" "$1"
   echo "BLOCKED (WS2 destructive-op guard): $1" >&2
   echo "If this is intentional and understood, re-run with SWASTH_ALLOW_DESTRUCTIVE=1 (audited)." >&2
   exit 1
