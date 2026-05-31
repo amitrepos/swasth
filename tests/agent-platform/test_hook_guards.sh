@@ -82,6 +82,23 @@ else
   echo "  skip jq not installed"
 fi
 
+echo "== compute_required_reviewers.py (WS4 reviewer selection) =="
+CR="$ROOT/scripts/compute_required_reviewers.py"
+if command -v python3 >/dev/null 2>&1 && [ -f "$CR" ]; then
+  out=$(python3 "$CR" lib/screens/home.dart 2>/dev/null)
+  echo "$out" | grep -q '^sunita$' && echo "$out" | grep -q '^aditya$' && echo "$out" | grep -q '^doctor$' \
+    && { PASS=$((PASS+1)); echo "  ok   screen change → sunita+aditya+doctor"; } || { FAIL=$((FAIL+1)); echo "  FAIL screen change reviewers"; }
+  [ "$(echo "$out" | tail -1)" = "daniel" ] && { PASS=$((PASS+1)); echo "  ok   daniel is always last"; } || { FAIL=$((FAIL+1)); echo "  FAIL daniel not last"; }
+  mj=$(python3 "$CR" --format json backend/models.py 2>/dev/null)
+  echo "$mj" | jq -e '.mandatory_blocking | index("phi")' >/dev/null 2>&1 && { PASS=$((PASS+1)); echo "  ok   models.py → phi is mandatory-blocking"; } || { FAIL=$((FAIL+1)); echo "  FAIL models.py mandatory phi"; }
+  ej=$(python3 "$CR" --format json backend/encryption_service.py 2>/dev/null)
+  echo "$ej" | jq -e '.mandatory_blocking | (index("phi") and index("security"))' >/dev/null 2>&1 && { PASS=$((PASS+1)); echo "  ok   encryption → phi+security mandatory"; } || { FAIL=$((FAIL+1)); echo "  FAIL encryption mandatory set"; }
+  docs=$(python3 "$CR" docs/x.md README.md 2>/dev/null)
+  [ -z "$docs" ] && { PASS=$((PASS+1)); echo "  ok   docs-only PR → no reviewers required"; } || { FAIL=$((FAIL+1)); echo "  FAIL docs-only should need no reviewers"; }
+else
+  echo "  skip python3 or compute script missing"
+fi
+
 echo
 echo "RESULT: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
