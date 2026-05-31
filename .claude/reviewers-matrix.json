@@ -16,6 +16,14 @@
     { "match": "pubspec.yaml | backend/requirements.txt", "globs": ["^pubspec\\.yaml$", "^backend/requirements\\.txt$"], "experts": ["security", "daniel"] },
     { "match": "backend/tests/*.py | test/*.dart", "globs": ["^backend/tests/.*\\.py$", "^test/.*\\.dart$"], "experts": ["priya", "daniel"] }
   ],
+  "sensitive_globs": {
+    "$comment": "WS6 — a diff touching ANY of these is SENSITIVE: it requires human approval (auto-merge disabled), even when all checks are green. DRAFT — confirm with Amit (brief §10). Regexes on repo-relative paths.",
+    "auth": ["^backend/(auth|dependencies|routes)\\.py$", "^backend/routes_admin\\.py$"],
+    "data_phi": ["^backend/(models|schemas|encryption_service|ai_service|routes_health|health_utils|routes_meals|routes_doctor)\\.py$"],
+    "migrations": ["^backend/migrations/"],
+    "logging_serialization": ["(^|/)log(ging|ger)?[^/]*\\.py$", "(^|/)serial[^/]*\\.py$", "(^|/)schemas?\\.py$"],
+    "infra": ["^\\.github/workflows/", "^\\.githooks/", "^deploy/", "(^|/)Dockerfile$", "^backend/requirements\\.txt$", "^pubspec\\.yaml$", "^\\.claude/settings\\.json$", "^\\.claude/scripts/(check-required-reviewers|write-review-marker|check-agent-branch-policy|hook-guard-.*)\\.sh$"]
+  },
   "intake_gate_personas": {
     "$comment": "Run BEFORE code (Path B intake gate, owned by Priya). Not commit-time markers.",
     "owner": "priya",

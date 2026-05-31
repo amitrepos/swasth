@@ -99,6 +99,18 @@ else
   echo "  skip python3 or compute script missing"
 fi
 
+echo "== classify_diff_sensitivity.py (WS6 merge policy) =="
+CS="$ROOT/scripts/classify_diff_sensitivity.py"
+if command -v python3 >/dev/null 2>&1 && [ -f "$CS" ]; then
+  [ "$(python3 "$CS" backend/models.py 2>/dev/null)" = "sensitive" ]      && { PASS=$((PASS+1)); echo "  ok   models.py → sensitive"; }      || { FAIL=$((FAIL+1)); echo "  FAIL models.py sensitive"; }
+  [ "$(python3 "$CS" backend/auth.py 2>/dev/null)" = "sensitive" ]        && { PASS=$((PASS+1)); echo "  ok   auth.py → sensitive"; }        || { FAIL=$((FAIL+1)); echo "  FAIL auth.py sensitive"; }
+  [ "$(python3 "$CS" backend/migrations/x.py 2>/dev/null)" = "sensitive" ]&& { PASS=$((PASS+1)); echo "  ok   migration → sensitive"; }      || { FAIL=$((FAIL+1)); echo "  FAIL migration sensitive"; }
+  [ "$(python3 "$CS" .github/workflows/ci.yml 2>/dev/null)" = "sensitive" ]&& { PASS=$((PASS+1)); echo "  ok   workflow (infra) → sensitive"; }|| { FAIL=$((FAIL+1)); echo "  FAIL workflow sensitive"; }
+  [ "$(python3 "$CS" lib/widgets/card.dart docs/x.md 2>/dev/null)" = "low-risk" ] && { PASS=$((PASS+1)); echo "  ok   widget+docs → low-risk"; } || { FAIL=$((FAIL+1)); echo "  FAIL widget+docs low-risk"; }
+else
+  echo "  skip python3 or classifier missing"
+fi
+
 echo
 echo "RESULT: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
