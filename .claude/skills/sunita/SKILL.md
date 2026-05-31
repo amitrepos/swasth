@@ -126,3 +126,12 @@ If the verdict is PASS (no Must Fix items), call this script to write the review
 ```
 
 If the verdict is BLOCK, do NOT write the marker. The user (or developer) needs to address the Must Fix items first, then the review will need to run again on the updated code.
+## Machine-parseable verdict (required — last line of your review)
+End with exactly one line so the orchestrator and PR-time status-check gating (WS4/WS6) can consume it deterministically:
+
+```
+VERDICT: PASS
+VERDICT: BLOCK
+```
+
+`PASS` = no blocking findings (write the marker). `BLOCK` = blocking finding(s) — do NOT write the marker; the issue must be fixed, restaged, and re-reviewed.

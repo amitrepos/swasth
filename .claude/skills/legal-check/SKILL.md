@@ -50,3 +50,12 @@ If your verdict has no HIGH-risk findings (only MEDIUM or LOW), call this script
 If there are HIGH-risk findings (legal liability, NMC violations, DPDPA non-compliance), do NOT write the marker. The user needs to fix the issues first, restage, and re-run the review on the new staged content (which will have a new hash and invalidate all prior markers).
 
 $ARGUMENTS
+## Machine-parseable verdict (required — last line of your review)
+End with exactly one line so the orchestrator and PR-time status-check gating (WS4/WS6) can consume it deterministically:
+
+```
+VERDICT: PASS
+VERDICT: BLOCK
+```
+
+`PASS` = no blocking findings (write the marker). `BLOCK` = blocking finding(s) — do NOT write the marker; the issue must be fixed, restaged, and re-reviewed.

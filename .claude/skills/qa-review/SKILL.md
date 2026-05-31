@@ -81,3 +81,12 @@ If your verdict is PASS (test strategy GOOD, no CRITICAL missing tests), call th
 ```
 
 If your verdict is BLOCK (CRITICAL missing tests on health-critical paths, or test strategy NEEDS WORK), do NOT write the marker. Add the missing tests first, restage, and re-run the review on the new staged content (which will have a new hash and invalidate all prior markers).
+## Machine-parseable verdict (required — last line of your review)
+End with exactly one line so the orchestrator and PR-time status-check gating (WS4/WS6) can consume it deterministically:
+
+```
+VERDICT: PASS
+VERDICT: BLOCK
+```
+
+`PASS` = no blocking findings (write the marker). `BLOCK` = blocking finding(s) — do NOT write the marker; the issue must be fixed, restaged, and re-reviewed.

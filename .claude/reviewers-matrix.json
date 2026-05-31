@@ -1,0 +1,24 @@
+{
+  "$comment": "Canonical Domain Expert Review Matrix (data-driven, WS2/WS9). Source of truth that .claude/scripts/check-required-reviewers.sh mirrors. Daniel is always appended last. Meera is intentionally absent — necessity validation moved to the intake gate (see docs/agent-platform/SKILLS_AUDIT.md). Wiring the bash gate to read this JSON directly is deferred to a later phase (with tests); until then keep the two in sync.",
+  "always_last": "daniel",
+  "rules": [
+    { "match": "any .dart or .py source", "experts": ["daniel"] },
+    { "match": "lib/screens/ | lib/widgets/ | lib/theme/", "experts": ["sunita", "aditya", "doctor", "daniel"] },
+    { "match": "lib/l10n/*.arb", "experts": ["sunita", "aditya", "daniel"] },
+    { "match": "routes_health.py | health_utils.py | routes_meals.py", "experts": ["doctor", "phi", "legal", "sunita", "priya", "daniel"] },
+    { "match": "ai_service.py", "experts": ["doctor", "legal", "phi", "sunita", "daniel"] },
+    { "match": "models.py | schemas.py | backend/migrations/", "experts": ["legal", "phi", "priya", "daniel"] },
+    { "match": "auth.py | dependencies.py | routes.py", "experts": ["security", "legal", "daniel"] },
+    { "match": "encryption_service.py", "experts": ["phi", "security", "daniel"] },
+    { "match": "routes_doctor.py | lib/screens/doctor_*", "experts": ["doctor", "legal", "daniel"] },
+    { "match": "routes_admin.py | admin_dashboard*", "experts": ["legal", "aditya", "daniel"] },
+    { "match": "pubspec.yaml | backend/requirements.txt", "experts": ["security", "daniel"] },
+    { "match": "backend/tests/*.py | test/*.dart", "experts": ["priya", "daniel"] }
+  ],
+  "intake_gate_personas": {
+    "$comment": "Run BEFORE code (Path B intake gate, owned by Priya). Not commit-time markers.",
+    "owner": "priya",
+    "necessity": ["meera", "sunita", "doctor"]
+  },
+  "valid_marker_experts": ["sunita", "aditya", "doctor", "daniel", "phi", "legal", "security", "priya"]
+}
