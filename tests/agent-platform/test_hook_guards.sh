@@ -164,6 +164,16 @@ except TypeError:
     print("CRASH")
 ' 2>/dev/null)
   [ "$R" = "OK" ] && { PASS=$((PASS+1)); echo "  ok   baseline_diff survives null failures (no TypeError)"; } || { FAIL=$((FAIL+1)); echo "  FAIL baseline_diff crashes on null"; }
+  # collection error must be reported as a collection error, NOT a 0-passing regression
+  printf '{"passing":0,"failures":0,"collection_error":true,"error_modules":"tests/test_x.py"}' > /tmp/unit-summary.json
+  printf '{"passing":0,"failures":0}' > /tmp/integration-summary.json
+  printf '{"passing":162,"failures":0}' > /tmp/flow-summary.json
+  RC=$(cd "$ROOT" && python3 -c '
+import importlib.util as u
+s=u.spec_from_file_location("cnr","scripts/check_no_regression.py"); m=u.module_from_spec(s); s.loader.exec_module(m)
+r=[]; ok=m.baseline_diff(r); print("FAIL" if not ok and any("COLLECTION error" in x for x in r) else "WRONG")
+' 2>/dev/null)
+  [ "$RC" = "FAIL" ] && { PASS=$((PASS+1)); echo "  ok   collection error surfaced as collection error (not regression)"; } || { FAIL=$((FAIL+1)); echo "  FAIL collection-error surfacing"; }
 fi
 
 echo
