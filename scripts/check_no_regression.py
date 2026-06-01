@@ -142,11 +142,22 @@ def baseline_diff(report: list[str]) -> bool:
     integ = _load("/tmp/integration-summary.json")
     flow = _load("/tmp/flow-summary.json")
 
-    # Coerce to int — a summary may carry an explicit `null` (pytest-json-report / shell wrapper),
-    # so .get(k, 0) can still return None and `None > 0` would crash the whole gate.
+    # Coerce to int — a summary may carry an explicit `null`, so .get(k, 0) can still return None and
+    # `None > 0` would crash the whole gate.
     def _num(d: dict, key: str) -> int:
         v = d.get(key)
         return int(v) if isinstance(v, (int, float)) else 0
+
+    # Collection / import error in a suite → report it as exactly that (actionable), NOT as a
+    # misleading "0-passing regression". A suite that can't be collected wasn't measured.
+    for label, summ in (("unit", unit), ("integration", integ), ("flow", flow)):
+        if summ.get("collection_error"):
+            mods = summ.get("error_modules") or "?"
+            report.append(
+                f"## Baseline diff\n\n**FAIL — {label} test COLLECTION error** (import failure, not a "
+                f"regression). Fix these modules so the suite can run: `{mods}`."
+            )
+            return False
 
     issues: list[str] = []
     if _num(unit, "failures") > 0:

@@ -28,20 +28,32 @@ fi
 # Step 1 — fast churn check.
 python3 "$PY" || { code=$?; if [[ $code -eq 2 ]]; then exit 2; fi; }
 
+# Count extraction parses pytest's terminal summary line ("N passed, N failed, ...") — 100% reliable
+# and always printed — instead of the `--json-report` plugin, which was emitting null/0 even when the
+# suite passed (the NUO-155 "1105→0" false regression). Collection/import errors are surfaced
+# explicitly so they read as "fix the import", not "tests regressed".
+_pytest_summary() {                          # $1 = pytest marker expr, $2 = output summary json
+  local log; log="/tmp/pytest-$(printf '%s' "$1" | tr -c 'a-zA-Z0-9' '_').log"
+  ( cd backend && timeout 10m env TESTING=true python -m pytest tests/ -m "$1" -q -p no:cacheprovider ) > "$log" 2>&1 || true
+  if grep -qE "errors during collection|ERROR collecting|Interrupted:" "$log"; then
+    local ne; ne=$(grep -cE "ERROR collecting" "$log" || echo 0)
+    local mods; mods=$(grep -oE "ERROR collecting [^ ]+" "$log" | awk '{print $3}' | paste -sd',' - 2>/dev/null || true)
+    echo "{\"passing\":0,\"failures\":0,\"skipped\":0,\"collection_error\":true,\"error_count\":${ne:-0},\"error_modules\":\"${mods}\"}" > "$2"
+    echo "check_no_regression: COLLECTION ERROR in: ${mods}" >&2
+    return
+  fi
+  local line p f s
+  line=$(grep -E "[0-9]+ (passed|failed|error)" "$log" | tail -1)
+  p=$(printf '%s' "$line" | grep -oE "[0-9]+ passed"  | grep -oE "[0-9]+" || true)
+  f=$(printf '%s' "$line" | grep -oE "[0-9]+ (failed|error)" | grep -oE "[0-9]+" | paste -sd+ - | bc 2>/dev/null || true)
+  s=$(printf '%s' "$line" | grep -oE "[0-9]+ skipped" | grep -oE "[0-9]+" || true)
+  echo "{\"passing\":${p:-0},\"failures\":${f:-0},\"skipped\":${s:-0}}" > "$2"
+}
+
 # Step 2 — unit suite.
 echo "check_no_regression: unit suite..."
 if [[ -d backend ]]; then
-  (
-    cd backend
-    timeout 10m env TESTING=true python -m pytest tests/ -m "not integration" \
-      --json-report --json-report-file=/tmp/unit-pytest-report.json -q || true
-  )
-  if [[ -f /tmp/unit-pytest-report.json ]]; then
-    jq '{passing:.summary.passed, failures:.summary.failed, skipped:.summary.skipped}' \
-       /tmp/unit-pytest-report.json > /tmp/unit-summary.json
-  else
-    echo '{"passing":0,"failures":0,"skipped":0}' > /tmp/unit-summary.json
-  fi
+  _pytest_summary "not integration" /tmp/unit-summary.json
 fi
 if [[ -f pubspec.yaml ]]; then
   timeout 10m flutter test --exclude-tags=flow,integration --machine \
@@ -55,27 +67,24 @@ fi
 # Step 3 — integration suite (real Postgres; assumes DB env vars set by the workflow).
 echo "check_no_regression: integration suite..."
 if [[ -d backend ]]; then
-  (
-    cd backend
-    timeout 10m env TESTING=true python -m pytest tests/ -m integration \
-      --json-report --json-report-file=/tmp/integration-pytest-report.json -q || true
-  )
-  if [[ -f /tmp/integration-pytest-report.json ]]; then
-    jq '{passing:.summary.passed, failures:.summary.failed, skipped:.summary.skipped}' \
-       /tmp/integration-pytest-report.json > /tmp/integration-summary.json
-  else
-    echo '{"passing":0,"failures":0,"skipped":0}' > /tmp/integration-summary.json
-  fi
+  _pytest_summary "integration" /tmp/integration-summary.json
 fi
 
 # Step 4 — smoke / E2E flow suite.
 echo "check_no_regression: smoke/flow suite..."
 if [[ -d test/flows ]]; then
+  [[ -f pubspec.yaml ]] && (flutter pub get >/dev/null 2>&1 || true)   # ensure deps before running
   timeout 10m flutter test test/flows/ --timeout 30s --machine \
-    > /tmp/flow-raw.json 2>/dev/null || true
-  jq -s '{passing:(map(select(.type=="testDone" and .result=="success"))|length),failures:(map(select(.type=="testDone" and .result=="error"))|length),skipped:0}' \
-     /tmp/flow-raw.json 2>/dev/null > /tmp/flow-summary.json \
-    || echo '{"passing":0,"failures":0,"skipped":0}' > /tmp/flow-summary.json
+    > /tmp/flow-raw.json 2>/tmp/flow-err.log || true
+  fp=$(jq -s '[.[]|select(.type=="testDone" and .result=="success")]|length' /tmp/flow-raw.json 2>/dev/null || echo 0)
+  ff=$(jq -s '[.[]|select(.type=="testDone" and (.result=="error" or .result=="failure"))]|length' /tmp/flow-raw.json 2>/dev/null || echo 0)
+  # Fallback: if the --machine stream was empty/garbled, parse flutter's human "+N -M" summary.
+  if [[ "${fp:-0}" -eq 0 && "${ff:-0}" -eq 0 ]]; then
+    hp=$(grep -oE "\+[0-9]+" /tmp/flow-err.log /tmp/flow-raw.json 2>/dev/null | grep -oE "[0-9]+" | tail -1 || true)
+    fp=${hp:-0}
+  fi
+  echo "{\"passing\":${fp:-0},\"failures\":${ff:-0},\"skipped\":0}" > /tmp/flow-summary.json
+  echo "check_no_regression: flow passing=${fp:-0} failures=${ff:-0}" >&2
 fi
 
 # Step 5 — baseline diff + final verdict.
