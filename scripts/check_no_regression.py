@@ -142,20 +142,26 @@ def baseline_diff(report: list[str]) -> bool:
     integ = _load("/tmp/integration-summary.json")
     flow = _load("/tmp/flow-summary.json")
 
-    issues: list[str] = []
-    if unit.get("failures", 0) > 0:
-        issues.append(f"unit failures: {unit['failures']}")
-    if integ.get("failures", 0) > 0:
-        issues.append(f"integration failures: {integ['failures']}")
-    if flow.get("failures", 0) > 0:
-        issues.append(f"flow failures: {flow['failures']}")
+    # Coerce to int — a summary may carry an explicit `null` (pytest-json-report / shell wrapper),
+    # so .get(k, 0) can still return None and `None > 0` would crash the whole gate.
+    def _num(d: dict, key: str) -> int:
+        v = d.get(key)
+        return int(v) if isinstance(v, (int, float)) else 0
 
-    new_unit_passing = unit.get("passing", 0)
-    base_unit = baseline.get("unit_passing", 0)
+    issues: list[str] = []
+    if _num(unit, "failures") > 0:
+        issues.append(f"unit failures: {_num(unit, 'failures')}")
+    if _num(integ, "failures") > 0:
+        issues.append(f"integration failures: {_num(integ, 'failures')}")
+    if _num(flow, "failures") > 0:
+        issues.append(f"flow failures: {_num(flow, 'failures')}")
+
+    new_unit_passing = _num(unit, "passing")
+    base_unit = _num(baseline, "unit_passing")
     if base_unit and new_unit_passing < base_unit:
         issues.append(f"unit-passing regression: was {base_unit}, now {new_unit_passing}")
-    new_flow_passing = flow.get("passing", 0)
-    base_flow = baseline.get("flow_passing", 0)
+    new_flow_passing = _num(flow, "passing")
+    base_flow = _num(baseline, "flow_passing")
     if base_flow and new_flow_passing < base_flow:
         issues.append(f"flow-passing regression: was {base_flow}, now {new_flow_passing}")
 

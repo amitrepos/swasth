@@ -150,6 +150,22 @@ print(j._adf_to_text(doc)+j._adf_to_text(para))
   echo "$OUT" | grep -qE '\*\*[^*]*ok[^*]*\*\*' && { PASS=$((PASS+1)); echo "  ok   bold preserved as **"; } || { FAIL=$((FAIL+1)); echo "  FAIL bold **"; }
 fi
 
+echo "== check_no_regression baseline_diff null-safety (Gate C-regress crash fix) =="
+if command -v python3 >/dev/null 2>&1 && [ -f "$ROOT/scripts/check_no_regression.py" ]; then
+  printf '{"passing":1105,"failures":null}' > /tmp/unit-summary.json
+  printf '{"passing":0,"failures":null}'    > /tmp/integration-summary.json
+  printf '{"passing":999,"failures":null}'  > /tmp/flow-summary.json
+  R=$(cd "$ROOT" && python3 -c '
+import importlib.util as u, os
+s=u.spec_from_file_location("cnr","scripts/check_no_regression.py"); m=u.module_from_spec(s); s.loader.exec_module(m)
+try:
+    m.baseline_diff([]); print("OK")
+except TypeError:
+    print("CRASH")
+' 2>/dev/null)
+  [ "$R" = "OK" ] && { PASS=$((PASS+1)); echo "  ok   baseline_diff survives null failures (no TypeError)"; } || { FAIL=$((FAIL+1)); echo "  FAIL baseline_diff crashes on null"; }
+fi
+
 echo
 echo "RESULT: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
