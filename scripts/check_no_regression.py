@@ -22,6 +22,7 @@ Output:
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -173,7 +174,10 @@ def baseline_diff(report: list[str]) -> bool:
         issues.append(f"unit-passing regression: was {base_unit}, now {new_unit_passing}")
     new_flow_passing = _num(flow, "passing")
     base_flow = _num(baseline, "flow_passing")
-    if base_flow and new_flow_passing < base_flow:
+    # Integration (needs Postgres) and flutter E2E flow are heavy/flaky inside the agent worker and
+    # are already enforced on the PR by ci.yml + pipeline.yml (Playwright). So they are ADVISORY here
+    # (reported, not blocking) unless SWASTH_REGRESS_FULL=1. The worker gate blocks on UNIT only.
+    if os.environ.get("SWASTH_REGRESS_FULL") == "1" and base_flow and new_flow_passing < base_flow:
         issues.append(f"flow-passing regression: was {base_flow}, now {new_flow_passing}")
 
     if issues:
@@ -188,17 +192,28 @@ def baseline_diff(report: list[str]) -> bool:
     return True
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    # Modes (so the shell can run the cheap churn check first, then the baseline AFTER the suites
+    # have written their summaries — previously both ran on every call, so Step 1 produced a spurious
+    # "FAIL (baseline)" with empty summaries):
+    #   churn     → churn check only (exit 2 on fail)
+    #   baseline  → baseline diff only (exit 3 on fail)
+    #   (default) → both (back-compat)
+    argv = argv if argv is not None else sys.argv[1:]
+    mode = argv[0].lstrip("-") if argv else "all"
     report = ["# Gate C-regress report\n"]
-    ok = True
-    ok &= churn_check(report)
-    if not ok:
-        # Fail-fast on cheapest signal per M6.
-        Path("/tmp/regression-report.md").write_text("\n".join(report) + "\n")
-        print("check_no_regression: FAIL (churn)")
-        return 2
 
-    ok &= baseline_diff(report)
+    if mode in ("all", "churn"):
+        if not churn_check(report):
+            Path("/tmp/regression-report.md").write_text("\n".join(report) + "\n")
+            print("check_no_regression: FAIL (churn)")
+            return 2
+        if mode == "churn":
+            Path("/tmp/regression-report.md").write_text("\n".join(report) + "\n")
+            print("check_no_regression: churn PASS")
+            return 0
+
+    ok = baseline_diff(report)
     Path("/tmp/regression-report.md").write_text("\n".join(report) + "\n")
     if not ok:
         print("check_no_regression: FAIL (baseline)")
