@@ -174,6 +174,13 @@ s=u.spec_from_file_location("cnr","scripts/check_no_regression.py"); m=u.module_
 r=[]; ok=m.baseline_diff(r); print("FAIL" if not ok and any("COLLECTION error" in x for x in r) else "WRONG")
 ' 2>/dev/null)
   [ "$RC" = "FAIL" ] && { PASS=$((PASS+1)); echo "  ok   collection error surfaced as collection error (not regression)"; } || { FAIL=$((FAIL+1)); echo "  FAIL collection-error surfacing"; }
+  # unit-only gate: flow=0 (skipped) must NOT block when unit matches baseline
+  BU=$(jq -r '.unit_passing' "$ROOT/.claude/test-baseline.json" 2>/dev/null || echo 1105)
+  printf '{"passing":%s,"failures":0}' "$BU" > /tmp/unit-summary.json
+  printf '{"passing":0,"failures":0}' > /tmp/integration-summary.json
+  printf '{"passing":0,"failures":0}' > /tmp/flow-summary.json
+  (cd "$ROOT" && python3 scripts/check_no_regression.py baseline >/dev/null 2>&1)
+  [ $? -eq 0 ] && { PASS=$((PASS+1)); echo "  ok   unit-only gate passes; flow advisory (not blocking)"; } || { FAIL=$((FAIL+1)); echo "  FAIL unit-only gate blocks on flow"; }
 fi
 
 echo
