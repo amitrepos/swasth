@@ -117,11 +117,12 @@ class MetricSources {
     label: 'WHO Physical Activity',
     url: 'https://www.who.int/news-room/fact-sheets/detail/physical-activity',
   );
-  // ICMR-NIN Dietary Guidelines 2024 — PMC/NCBI HTML review article
-  // covering DGI 2024 (NIH permalink). Stable, no PDF rot.
+  // ICMR-NIN Dietary Guidelines 2024 — National Institute of Nutrition
+  // (ICMR) stable institution landing page. Deep PMC link (PMC12550444)
+  // was 404. Per URL policy, use institution root over deep article paths.
   static const icmrNin = SourceRef(
     label: 'ICMR-NIN',
-    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12550444/',
+    url: 'https://www.nin.res.in/',
   );
 
   /// Single list used by tests and any future audit tooling.
