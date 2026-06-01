@@ -21,10 +21,13 @@
       "priority_name": "Medium",
       "priority_rank": 3,
       "queued_at": "2026-06-01T15:48:54Z",
-      "state": "queued",
+      "state": "in_flight",
       "attempt_count": 0,
       "retry_after": "2026-06-01T15:48:54Z",
-      "priya_hash": "683d2ebb90ed8c874d04f2b9bfc556460448fcf803ff2a75f619f7619ada074c"
+      "priya_hash": "683d2ebb90ed8c874d04f2b9bfc556460448fcf803ff2a75f619f7619ada074c",
+      "pushed_branch_name": "feat/nuo-155-1780329023",
+      "started_at": "2026-06-01T15:50:24Z",
+      "worker_run_id": "26765748649"
     }
   ]
 }
