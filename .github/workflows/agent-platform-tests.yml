@@ -15,6 +15,7 @@ on:
       - 'scripts/orchestrator_claim.py'
       - 'scripts/summarize_agent_audit.py'
       - 'scripts/md_to_adf.py'
+      - 'scripts/jira_fetch_ticket.py'
       - 'tests/agent-platform/**'
       - '.github/workflows/agent-platform-tests.yml'
   pull_request:
@@ -27,6 +28,7 @@ on:
       - 'scripts/orchestrator_claim.py'
       - 'scripts/summarize_agent_audit.py'
       - 'scripts/md_to_adf.py'
+      - 'scripts/jira_fetch_ticket.py'
       - 'tests/agent-platform/**'
       - '.github/workflows/agent-platform-tests.yml'
 

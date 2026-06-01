@@ -37,16 +37,33 @@ except ImportError:
 
 
 def _adf_to_text(node: Any) -> str:
-    """Flatten Atlassian Document Format (ADF) JSON to plain text."""
+    """Render Atlassian Document Format (ADF) JSON to **Markdown**.
+
+    Preserves headings (`#`), bold (`**`), and inline code (backticks) — the downstream churn gate
+    (check_no_regression.py) keys off `## Affected Surfaces` / `**Affected Surfaces**` markers and
+    backticked file paths, so these marks must survive the fetch (previously they were stripped).
+    """
     if isinstance(node, str):
         return node
     if isinstance(node, dict):
         ntype = node.get("type")
         if ntype == "text":
-            return node.get("text", "")
+            text = node.get("text", "")
+            marks = {m.get("type") for m in node.get("marks", [])}
+            if "code" in marks:
+                text = f"`{text}`"
+            if "strong" in marks:
+                text = f"**{text}**"
+            if "em" in marks:
+                text = f"*{text}*"
+            return text
         if ntype == "hardBreak":
             return "\n"
-        if ntype in ("paragraph", "heading"):
+        if ntype == "heading":
+            level = (node.get("attrs") or {}).get("level", 2)
+            inner = "".join(_adf_to_text(c) for c in node.get("content", [])).strip()
+            return f"\n{'#' * int(level)} {inner}\n\n"
+        if ntype == "paragraph":
             return "".join(_adf_to_text(c) for c in node.get("content", [])) + "\n\n"
         if ntype in ("bulletList", "orderedList"):
             return "".join(_adf_to_text(c) for c in node.get("content", []))
