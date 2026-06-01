@@ -1545,6 +1545,18 @@ class AppLocalizationsKn extends AppLocalizations {
   String get sectionMeals => 'ಇತ್ತೀಚಿನ ಊಟಗಳು';
 
   @override
+  String get sectionMedicationsTaken => 'Medicines taken (patient log)';
+
+  @override
+  String get doctorNoMedicationsLogged =>
+      'No medicines logged in the last 30 days';
+
+  @override
+  String doctorMedicationLogSubtitle(String dose, String frequency) {
+    return '$dose · $frequency';
+  }
+
+  @override
   String get noMealsLast7Days => 'ಕಳೆದ 7 ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ಊಟಗಳನ್ನು ದಾಖಲಿಸಿಲ್ಲ';
 
   @override
@@ -2447,4 +2459,58 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get medicationsCellEmpty => '-';
+
+  @override
+  String get medicationsFormNameLabel => 'Medicine name *';
+
+  @override
+  String get medicationsFormNameHint => 'e.g. Metformin';
+
+  @override
+  String get medicationsFormNameRequired => 'Name required';
+
+  @override
+  String get medicationsFormDoseLabel => 'Dose (optional)';
+
+  @override
+  String get medicationsFormDoseHint => 'e.g. 500 mg, 1 tablet';
+
+  @override
+  String get medicationsFormFrequencyLabel => 'Frequency (optional)';
+
+  @override
+  String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
+
+  @override
+  String get medicationsFormTakenAtLabel => 'Taken at';
+
+  @override
+  String get medicationsFormNotesLabel => 'Notes (optional)';
+
+  @override
+  String get medicationsFormNotesHint => 'e.g. Felt nauseous after';
+
+  @override
+  String get medicationsFormSave => 'Save';
+
+  @override
+  String get medicationsFormSaveAndMore => 'Save & add more';
+
+  @override
+  String get medicationsFormDone => 'Done';
+
+  @override
+  String medicationsFormDoneLogged(int count) {
+    return 'Done ($count logged)';
+  }
+
+  @override
+  String medicationsFormSavedBanner(String name) {
+    return '\"$name\" saved';
+  }
+
+  @override
+  String medicationsFormSavedBannerMulti(String name, int count) {
+    return '\"$name\" saved  ·  $count logged';
+  }
 }

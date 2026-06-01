@@ -2912,6 +2912,24 @@ abstract class AppLocalizations {
   /// **'Recent Meals'**
   String get sectionMeals;
 
+  /// Doctor portal: NUO-127 intake log section header
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines taken (patient log)'**
+  String get sectionMedicationsTaken;
+
+  /// Doctor portal empty state when patient has not logged any meds
+  ///
+  /// In en, this message translates to:
+  /// **'No medicines logged in the last 30 days'**
+  String get doctorNoMedicationsLogged;
+
+  /// No description provided for @doctorMedicationLogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{dose} · {frequency}'**
+  String doctorMedicationLogSubtitle(String dose, String frequency);
+
   /// Empty state when no meals found in last 7 days
   ///
   /// In en, this message translates to:
@@ -4518,6 +4536,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'-'**
   String get medicationsCellEmpty;
+
+  /// No description provided for @medicationsFormNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine name *'**
+  String get medicationsFormNameLabel;
+
+  /// No description provided for @medicationsFormNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Metformin'**
+  String get medicationsFormNameHint;
+
+  /// No description provided for @medicationsFormNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name required'**
+  String get medicationsFormNameRequired;
+
+  /// No description provided for @medicationsFormDoseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose (optional)'**
+  String get medicationsFormDoseLabel;
+
+  /// No description provided for @medicationsFormDoseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 500 mg, 1 tablet'**
+  String get medicationsFormDoseHint;
+
+  /// No description provided for @medicationsFormFrequencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency (optional)'**
+  String get medicationsFormFrequencyLabel;
+
+  /// No description provided for @medicationsFormFrequencyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Twice daily after food'**
+  String get medicationsFormFrequencyHint;
+
+  /// No description provided for @medicationsFormTakenAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken at'**
+  String get medicationsFormTakenAtLabel;
+
+  /// No description provided for @medicationsFormNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get medicationsFormNotesLabel;
+
+  /// No description provided for @medicationsFormNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Felt nauseous after'**
+  String get medicationsFormNotesHint;
+
+  /// No description provided for @medicationsFormSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get medicationsFormSave;
+
+  /// No description provided for @medicationsFormSaveAndMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & add more'**
+  String get medicationsFormSaveAndMore;
+
+  /// No description provided for @medicationsFormDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get medicationsFormDone;
+
+  /// No description provided for @medicationsFormDoneLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Done ({count} logged)'**
+  String medicationsFormDoneLogged(int count);
+
+  /// No description provided for @medicationsFormSavedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" saved'**
+  String medicationsFormSavedBanner(String name);
+
+  /// No description provided for @medicationsFormSavedBannerMulti.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" saved  ·  {count} logged'**
+  String medicationsFormSavedBannerMulti(String name, int count);
 }
 
 class _AppLocalizationsDelegate

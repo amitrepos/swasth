@@ -46,6 +46,36 @@ class ApiCallTracker {
   }
 }
 
+/// Seven days of step readings for Insights chart (oldest → newest).
+List<Map<String, dynamic>> mockSevenDayStepReadings({
+  int profileId = 1,
+  int idStart = 10,
+}) {
+  const goal = 7500;
+  const dailySteps = [3200, 5100, 6800, 7500, 4200, 8900, 6100];
+  final now = DateTime.now().toUtc();
+  final today = DateTime.utc(now.year, now.month, now.day);
+
+  return [
+    for (var i = 0; i < dailySteps.length; i++)
+      {
+        'id': idStart + i,
+        'profile_id': profileId,
+        'reading_type': 'steps',
+        'steps_count': dailySteps[i],
+        'steps_goal': goal,
+        'value_numeric': dailySteps[i].toDouble(),
+        'unit_display': 'steps',
+        'status_flag': 'NORMAL',
+        'reading_timestamp': today
+            .subtract(Duration(days: dailySteps.length - 1 - i))
+            .add(const Duration(hours: 21))
+            .toIso8601String(),
+        'created_at': DateTime.now().toIso8601String(),
+      },
+  ];
+}
+
 /// Creates a MockClient that simulates the Swasth backend.
 /// Returns realistic responses for all API endpoints.
 MockClient createMockClient({
@@ -354,6 +384,7 @@ MockClient createMockClient({
             'reading_timestamp': DateTime.now().toIso8601String(),
             'created_at': DateTime.now().toIso8601String(),
           },
+          ...mockSevenDayStepReadings(),
         ]),
         200,
       );

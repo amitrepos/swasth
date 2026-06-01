@@ -161,6 +161,20 @@ class DoctorService {
     );
   }
 
+  /// Patient-logged medicine intake (NUO-127) — what they actually took.
+  Future<List<dynamic>> getPatientMedications(
+    String token,
+    int profileId, {
+    int days = 30,
+  }) {
+    return ApiClient.sendJsonList(
+      () => ApiClient.httpClient.get(
+        Uri.parse('$_baseUrl/patients/$profileId/medications?days=$days'),
+        headers: ApiClient.headers(token: token),
+      ),
+    );
+  }
+
   Future<Map<String, dynamic>> lookupDoctor(String token, String doctorCode) {
     return ApiClient.sendJsonObject(
       () => ApiClient.httpClient.get(

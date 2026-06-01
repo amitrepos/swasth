@@ -1,4 +1,5 @@
 """Tests for region-based write gating (NUO-135)."""
+import asyncio
 import os
 from datetime import datetime, timezone
 
@@ -15,6 +16,18 @@ def _clear_geo_cache():
     geo.reset_cache()
     yield
     geo.reset_cache()
+
+
+def _decide(req):
+    """Run the now-async decision function from a sync test body."""
+    return asyncio.run(geo.is_india_writer_allowed(req))
+
+
+def _async_country(value):
+    """Build an async stand-in for `geo._lookup_country` returning `value`."""
+    async def _stub(ip):
+        return value
+    return _stub
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +51,7 @@ def _fake_request(headers=None, client_host="8.8.8.8"):
 def test_master_switch_disabled_treats_everyone_as_india(monkeypatch):
     monkeypatch.delenv("GEO_RESTRICT_ENABLED", raising=False)
     req = _fake_request(client_host="1.1.1.1")
-    allowed, country, source = geo.is_india_writer_allowed(req)
+    allowed, country, source = _decide(req)
     assert allowed is True
     assert country == "IN"
     assert source == "disabled"
@@ -47,7 +60,7 @@ def test_master_switch_disabled_treats_everyone_as_india(monkeypatch):
 def test_private_ip_with_no_locale_is_unknown(monkeypatch):
     monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
     req = _fake_request(client_host="10.0.0.5")
-    allowed, country, source = geo.is_india_writer_allowed(req)
+    allowed, country, source = _decide(req)
     assert allowed is False
     assert country == "UNKNOWN"
     assert source == "private"
@@ -56,7 +69,7 @@ def test_private_ip_with_no_locale_is_unknown(monkeypatch):
 def test_private_ip_with_in_locale_falls_back_to_india(monkeypatch):
     monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
     req = _fake_request(headers={"Accept-Language": "hi-IN,en;q=0.5"}, client_host="127.0.0.1")
-    allowed, country, source = geo.is_india_writer_allowed(req)
+    allowed, country, source = _decide(req)
     assert allowed is True
     assert country == "IN"
     assert source == "private"
@@ -65,9 +78,9 @@ def test_private_ip_with_in_locale_falls_back_to_india(monkeypatch):
 def test_x_forwarded_for_is_honored(monkeypatch):
     monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
     # ipapi is mocked to return US
-    monkeypatch.setattr(geo, "_lookup_country_cached", lambda ip: "US")
+    monkeypatch.setattr(geo, "_lookup_country", _async_country("US"))
     req = _fake_request(headers={"X-Forwarded-For": "8.8.8.8, 10.0.0.1"}, client_host="10.0.0.1")
-    allowed, country, source = geo.is_india_writer_allowed(req)
+    allowed, country, source = _decide(req)
     assert allowed is False
     assert country == "US"
     assert source == "ip"
@@ -75,9 +88,9 @@ def test_x_forwarded_for_is_honored(monkeypatch):
 
 def test_lookup_returns_india_allows_write(monkeypatch):
     monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
-    monkeypatch.setattr(geo, "_lookup_country_cached", lambda ip: "IN")
+    monkeypatch.setattr(geo, "_lookup_country", _async_country("IN"))
     req = _fake_request(client_host="49.207.0.1")
-    allowed, country, source = geo.is_india_writer_allowed(req)
+    allowed, country, source = _decide(req)
     assert allowed is True
     assert country == "IN"
     assert source == "ip"
@@ -85,12 +98,12 @@ def test_lookup_returns_india_allows_write(monkeypatch):
 
 def test_lookup_unknown_with_in_locale_allows(monkeypatch):
     monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
-    monkeypatch.setattr(geo, "_lookup_country_cached", lambda ip: "UNKNOWN")
+    monkeypatch.setattr(geo, "_lookup_country", _async_country("UNKNOWN"))
     req = _fake_request(
         headers={"Accept-Language": "en-IN"},
         client_host="203.0.113.5",
     )
-    allowed, country, source = geo.is_india_writer_allowed(req)
+    allowed, country, source = _decide(req)
     assert allowed is True
     assert source == "locale"
 
@@ -106,7 +119,7 @@ def test_no_client_no_headers_is_error(monkeypatch):
         "query_string": b"",
     }
     req = Request(scope)
-    allowed, country, source = geo.is_india_writer_allowed(req)
+    allowed, country, source = _decide(req)
     assert allowed is False
     assert source == "error"
 

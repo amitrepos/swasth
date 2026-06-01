@@ -1,113 +1,33 @@
 // 7-day steps bar chart (C6 / NUO-22) — Insights tab.
 //
-// Reads `/api/readings/steps/daily` and renders a bar chart with goal line.
+// Aggregates step readings already loaded by TrendChartScreen (MAX per
+// calendar day — same semantics as GET /readings/steps/daily). Avoids a
+// second network round-trip that could hang or race with tab refresh.
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 
-import '../../services/api_exception.dart';
 import '../../services/health_reading_service.dart';
-import '../../services/storage_service.dart';
 import '../../theme/app_theme.dart';
 import '../glass_card.dart';
 
-class StepsChartCard extends StatefulWidget {
-  final int profileId;
+class StepsChartCard extends StatelessWidget {
+  final List<HealthReading> readings;
   final int days;
-  /// Increment from parent on pull-to-refresh / tab revisit to reload data.
-  final int refreshSignal;
 
   const StepsChartCard({
     super.key,
-    required this.profileId,
+    required this.readings,
     this.days = 7,
-    this.refreshSignal = 0,
   });
-
-  @override
-  State<StepsChartCard> createState() => StepsChartCardState();
-}
-
-class StepsChartCardState extends State<StepsChartCard> {
-  final HealthReadingService _service = HealthReadingService();
-  bool _loading = true;
-  bool _loadFailed = false;
-  List<_DayBar> _bars = const [];
-  int _total = 0;
-  int _avg = 0;
-  int? _goal;
-  int _goalHitDays = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
-  }
-
-  @override
-  void didUpdateWidget(StepsChartCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.profileId != widget.profileId ||
-        oldWidget.days != widget.days ||
-        oldWidget.refreshSignal != widget.refreshSignal) {
-      _load();
-    }
-  }
-
-  Future<void> reload() => _load();
-
-  Future<void> _load() async {
-    if (!mounted) return;
-    setState(() {
-      _loading = true;
-      _loadFailed = false;
-    });
-    try {
-      final token = await StorageService().getToken();
-      if (token == null) throw Exception('Not authenticated');
-      final data = await _service.getDailySteps(
-        token: token,
-        profileId: widget.profileId,
-        days: widget.days,
-      );
-      final list = (data['days'] as List? ?? []);
-      final bars = <_DayBar>[];
-      for (final raw in list) {
-        final m = raw as Map<String, dynamic>;
-        bars.add(_DayBar(
-          date: DateTime.parse(m['date'] as String),
-          steps: (m['steps'] as num?)?.toInt() ?? 0,
-          goal: (m['goal'] as num?)?.toInt(),
-        ));
-      }
-      if (!mounted) return;
-      setState(() {
-        _bars = bars;
-        _total = (data['total'] as num?)?.toInt() ?? 0;
-        _avg = (data['avg'] as num?)?.toInt() ?? 0;
-        _goal = (data['goal'] as num?)?.toInt();
-        _goalHitDays = (data['goal_hit_days'] as num?)?.toInt() ?? 0;
-        _loading = false;
-      });
-    } on ApiException catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _loadFailed = true;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _loadFailed = true;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final aggregate = _aggregateDailySteps(readings, days);
+    final hasData = aggregate.bars.any((b) => b.steps > 0);
+
     return GlassCard(
       key: const Key('insights_steps_chart_card'),
       borderRadius: 20,
@@ -117,33 +37,87 @@ class StepsChartCardState extends State<StepsChartCard> {
         children: [
           _Header(
             l10n: l10n,
-            days: widget.days,
-            total: _total,
-            avg: _avg,
-            goal: _goal,
-            hits: _goalHitDays,
-            loading: _loading,
+            days: days,
+            total: aggregate.total,
+            avg: aggregate.avg,
+            goal: aggregate.goal,
+            hits: aggregate.goalHitDays,
+            hasData: hasData,
           ),
           const SizedBox(height: 8),
           SizedBox(
-            height: 120,
-            child: _loading
-                ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
-                : _loadFailed
-                    ? Center(
-                        child: Text(
-                          l10n.stepsChartLoadError,
-                          style: const TextStyle(color: AppColors.statusCritical),
-                        ),
-                      )
-                    : _bars.isEmpty
-                        ? _EmptyState(message: l10n.stepsChartEmpty)
-                        : _Chart(bars: _bars, goal: _goal),
+            height: 140,
+            width: double.infinity,
+            child: !hasData
+                ? _EmptyState(message: l10n.stepsChartEmpty)
+                : _Chart(bars: aggregate.bars, goal: aggregate.goal),
           ),
         ],
       ),
     );
   }
+}
+
+class _DailyStepsAggregate {
+  final List<_DayBar> bars;
+  final int total;
+  final int avg;
+  final int? goal;
+  final int goalHitDays;
+
+  const _DailyStepsAggregate({
+    required this.bars,
+    required this.total,
+    required this.avg,
+    required this.goal,
+    required this.goalHitDays,
+  });
+}
+
+/// MAX-per-UTC-day aggregation — mirrors backend/routes_health.py#get_daily_steps.
+_DailyStepsAggregate _aggregateDailySteps(List<HealthReading> readings, int days) {
+  final now = DateTime.now().toUtc();
+  final today = DateTime.utc(now.year, now.month, now.day);
+  final startDate = today.subtract(Duration(days: days - 1));
+
+  final byDay = <DateTime, int>{};
+  int? latestGoal;
+
+  for (final r in readings) {
+    if (r.readingType != 'steps' || r.stepsCount == null) continue;
+    final ts = r.readingTimestamp.toUtc();
+    final d = DateTime.utc(ts.year, ts.month, ts.day);
+    if (d.isBefore(startDate) || d.isAfter(today)) continue;
+
+    var steps = r.stepsCount!;
+    if (r.valueNumeric > steps) {
+      steps = r.valueNumeric.round();
+    }
+    final prev = byDay[d] ?? 0;
+    if (steps > prev) byDay[d] = steps;
+    if (r.stepsGoal != null) latestGoal = r.stepsGoal;
+  }
+
+  final bars = <_DayBar>[];
+  var total = 0;
+  var goalHitDays = 0;
+  for (var i = 0; i < days; i++) {
+    final d = startDate.add(Duration(days: i));
+    final stepsVal = byDay[d] ?? 0;
+    total += stepsVal;
+    if (latestGoal != null && stepsVal >= latestGoal) {
+      goalHitDays++;
+    }
+    bars.add(_DayBar(date: d, steps: stepsVal, goal: latestGoal));
+  }
+
+  return _DailyStepsAggregate(
+    bars: bars,
+    total: total,
+    avg: days > 0 ? (total / days).round() : 0,
+    goal: latestGoal,
+    goalHitDays: goalHitDays,
+  );
 }
 
 class _DayBar {
@@ -160,7 +134,7 @@ class _Header extends StatelessWidget {
   final int avg;
   final int? goal;
   final int hits;
-  final bool loading;
+  final bool hasData;
 
   const _Header({
     required this.l10n,
@@ -169,7 +143,7 @@ class _Header extends StatelessWidget {
     required this.avg,
     required this.goal,
     required this.hits,
-    required this.loading,
+    required this.hasData,
   });
 
   @override
@@ -189,7 +163,7 @@ class _Header extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        if (!loading)
+        if (hasData)
           Text(
             goal != null
                 ? l10n.stepsChartSummaryWithGoal(
@@ -235,19 +209,26 @@ class _Chart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat.decimalPattern();
-    final maxVal = [
-      ...bars.map((b) => b.steps),
-      if (goal != null) goal!,
-      1,
-    ].reduce((a, b) => a > b ? a : b);
-    final yMax = (maxVal * 1.15).ceilToDouble();
+    final peak = bars.map((b) => b.steps).fold(0, (a, b) => a > b ? a : b);
+    // Scale to actual step counts so bars stay visible when peak << goal.
+    final yMax = (peak * 1.2).ceilToDouble().clamp(50.0, double.infinity);
+    final showGoalLine =
+        goal != null && goal! > 0 && goal! <= yMax;
 
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
         maxY: yMax,
         minY: 0,
-        gridData: const FlGridData(show: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: yMax / 3,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: AppColors.separator,
+            strokeWidth: 1,
+          ),
+        ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
           leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -256,12 +237,16 @@ class _Chart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 22,
-              getTitlesWidget: (value, _) {
-                final i = value.toInt();
-                if (i < 0 || i >= bars.length) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 4),
+              reservedSize: 24,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                final i = value.round();
+                if (i < 0 || i >= bars.length) {
+                  return const SizedBox.shrink();
+                }
+                return SideTitleWidget(
+                  meta: meta,
+                  space: 4,
                   child: Text(
                     DateFormat('E').format(bars[i].date),
                     style: const TextStyle(
@@ -274,42 +259,54 @@ class _Chart extends StatelessWidget {
             ),
           ),
         ),
-        extraLinesData: goal != null
-            ? ExtraLinesData(horizontalLines: [
-                HorizontalLine(
-                  y: goal!.toDouble(),
-                  color: AppColors.amber,
-                  strokeWidth: 1,
-                  dashArray: [4, 4],
-                ),
-              ])
-            : null,
+        extraLinesData: showGoalLine
+            ? ExtraLinesData(
+                horizontalLines: [
+                  HorizontalLine(
+                    y: goal!.toDouble(),
+                    color: AppColors.amber,
+                    strokeWidth: 1.5,
+                    dashArray: [4, 4],
+                  ),
+                ],
+              )
+            : const ExtraLinesData(),
         barGroups: [
           for (var i = 0; i < bars.length; i++)
-            BarChartGroupData(x: i, barRods: [
-              BarChartRodData(
-                toY: bars[i].steps.toDouble(),
-                width: 16,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                color: (goal != null && bars[i].steps >= goal!)
-                    ? AppColors.scoreHealthy
-                    : AppColors.textSecondary.withValues(alpha: 0.45),
-              ),
-            ]),
+            BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(
+                  toY: bars[i].steps.toDouble(),
+                  width: 14,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(4),
+                  ),
+                  color: bars[i].steps == 0
+                      ? AppColors.textTertiary.withValues(alpha: 0.35)
+                      : (goal != null &&
+                              goal! > 0 &&
+                              bars[i].steps >= goal!)
+                          ? AppColors.scoreHealthy
+                          : AppColors.primary,
+                ),
+              ],
+            ),
         ],
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             tooltipMargin: 4,
-            getTooltipItem: (group, _, rod, __) {
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
               final b = bars[group.x];
               return BarTooltipItem(
                 '${DateFormat.MMMd().format(b.date)}\n${fmt.format(b.steps)}',
-                const TextStyle(color: Colors.white, fontSize: 11),
+                const TextStyle(color: AppColors.onPrimary, fontSize: 11),
               );
             },
           ),
         ),
       ),
+      duration: Duration.zero,
     );
   }
 }

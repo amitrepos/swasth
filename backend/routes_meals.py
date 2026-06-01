@@ -117,7 +117,7 @@ Respond ONLY in this exact JSON format, nothing else:
 # POST /meals — save a meal log
 # ---------------------------------------------------------------------------
 
-@router.post("/meals", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_india_location)])
+@router.post("/meals", status_code=status.HTTP_201_CREATED)
 @limiter.limit("20/minute")
 async def create_meal(
     request: Request,

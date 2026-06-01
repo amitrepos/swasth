@@ -1085,6 +1085,58 @@ class TestPatientSummary:
 
 
 # ---------------------------------------------------------------------------
+# GET /api/doctor/patients/{id}/medications (NUO-127)
+# ---------------------------------------------------------------------------
+
+class TestPatientMedications:
+    def test_get_medications_returns_logged_intake(
+        self, client, doctor_headers, patient_user, linked_doctor_patient, db
+    ):
+        _, profile = patient_user
+        now = datetime.now(timezone.utc)
+        db.add(
+            models.Medication(
+                profile_id=profile.id,
+                name="Metformin",
+                dose="500 mg",
+                frequency="Twice daily",
+                taken_at=now - timedelta(hours=2),
+            )
+        )
+        db.add(
+            models.Medication(
+                profile_id=profile.id,
+                name="Aspirin",
+                taken_at=now - timedelta(days=3),
+            )
+        )
+        db.commit()
+
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/medications?days=30",
+            headers=doctor_headers,
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 2
+        names = {row["name"] for row in body}
+        assert names == {"Metformin", "Aspirin"}
+        metformin = next(r for r in body if r["name"] == "Metformin")
+        assert metformin["dose"] == "500 mg"
+        assert metformin["frequency"] == "Twice daily"
+
+    def test_get_medications_denies_unlinked_doctor(
+        self, client, doctor_headers, patient_user, db
+    ):
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/medications",
+            headers=doctor_headers,
+        )
+        assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
 # POST /api/doctor/patients/{id}/notes
 # ---------------------------------------------------------------------------
 
@@ -1410,3 +1462,94 @@ class TestAuditLog:
             headers={"Authorization": f"Bearer {other_token}"},
         )
         assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# GET /api/doctor/patients/{profile_id}/medications (NUO-127, m2)
+# ---------------------------------------------------------------------------
+
+class TestPatientMedications:
+    """Tests for GET /api/doctor/patients/{profile_id}/medications endpoint."""
+
+    @pytest.fixture()
+    def patient_with_medications(self, db, patient_user):
+        """Add some medication-intake rows to the patient profile."""
+        _, profile = patient_user
+        now = datetime.now(timezone.utc)
+        meds = [
+            models.Medication(
+                profile_id=profile.id,
+                name="Metformin",
+                dose="500 mg",
+                frequency="Twice daily",
+                taken_at=now - timedelta(hours=2),
+            ),
+            models.Medication(
+                profile_id=profile.id,
+                name="Amlodipine",
+                dose="5 mg",
+                taken_at=now - timedelta(days=2),
+            ),
+        ]
+        db.add_all(meds)
+        db.flush()
+        return meds
+
+    def test_get_medications_success(
+        self, client, doctor_headers, patient_user, linked_doctor_patient, patient_with_medications
+    ):
+        """Happy path: linked doctor sees decrypted meds, most recent first."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/medications", headers=doctor_headers
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body) == 2
+        # Decrypted PHI surfaces through MedicationResponse, most recent first.
+        assert body[0]["name"] == "Metformin"
+        assert body[0]["dose"] == "500 mg"
+        assert body[0]["frequency"] == "Twice daily"
+        assert body[1]["name"] == "Amlodipine"
+
+    def test_get_medications_unauthorized_doctor(
+        self, client, doctor_headers, patient_user
+    ):
+        """Doctor without an active link should get 403."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/medications", headers=doctor_headers
+        )
+        assert resp.status_code == 403
+
+    def test_get_medications_patient_cannot_access(
+        self, client, patient_headers, patient_user
+    ):
+        """Patient cannot use the doctor endpoint to view medications."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/medications", headers=patient_headers
+        )
+        assert resp.status_code == 403
+
+    def test_get_medications_empty(
+        self, client, doctor_headers, patient_user, linked_doctor_patient
+    ):
+        """Linked doctor, but the patient has logged no medications."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/medications", headers=doctor_headers
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_get_medications_days_validation_exceeds_90(
+        self, client, doctor_headers, patient_user, linked_doctor_patient
+    ):
+        """Requesting days > 90 should be rejected with 422."""
+        _, profile = patient_user
+        resp = client.get(
+            f"/api/doctor/patients/{profile.id}/medications?days=91",
+            headers=doctor_headers,
+        )
+        assert resp.status_code == 422

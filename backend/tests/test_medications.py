@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 import pytest
 
 import models
+from auth import create_access_token, get_password_hash
 
 
 # ---------------------------------------------------------------------------
@@ -52,6 +53,10 @@ def test_create_medication_returns_201_and_persists(client, db, test_user, auth_
     rows = db.query(models.Medication).filter(models.Medication.profile_id == pid).all()
     assert len(rows) == 1
     assert rows[0].logged_by == test_user.id
+    assert rows[0].name == "Metformin"
+    # PHI must be encrypted at rest (C2), not stored as plaintext.
+    assert rows[0].name_enc is not None
+    assert rows[0].name_enc != "Metformin"
 
 
 def test_create_medication_rejects_empty_name(client, db, test_user, auth_headers):
@@ -229,6 +234,73 @@ def test_list_medications_denies_unrelated_profile(client, db, auth_headers):
     db.refresh(other)
     r = client.get(f"/api/medications?profile_id={other.id}&days=30", headers=auth_headers)
     assert r.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Viewer-role access control (m1) — a user with viewer access on the profile
+# can READ medications but must be denied every write (get_profile_editor_or_403).
+# ---------------------------------------------------------------------------
+
+def _make_viewer(db, profile_id, email="viewer@swasth.app") -> dict:
+    """Create a second user with VIEWER access to `profile_id`; return auth headers."""
+    viewer = models.User(
+        email=email,
+        password_hash=get_password_hash("Test@1234"),
+        full_name="Viewer User",
+    )
+    db.add(viewer)
+    db.flush()
+    db.add(
+        models.ProfileAccess(
+            user_id=viewer.id,
+            profile_id=profile_id,
+            access_level="viewer",
+        )
+    )
+    db.flush()
+    token = create_access_token(data={"sub": viewer.email})
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_viewer_cannot_create_medication(client, db, test_user):
+    pid = _profile_id_for(test_user, db)
+    viewer_headers = _make_viewer(db, pid)
+    r = _post_medication(client, viewer_headers, pid)
+    assert r.status_code == 403
+
+
+def test_viewer_cannot_update_medication(client, db, test_user):
+    pid = _profile_id_for(test_user, db)
+    med = models.Medication(profile_id=pid, name="Old", taken_at=datetime.now(timezone.utc))
+    db.add(med)
+    db.commit()
+    db.refresh(med)
+    viewer_headers = _make_viewer(db, pid)
+    r = client.patch(
+        f"/api/medications/{med.id}", json={"name": "New"}, headers=viewer_headers
+    )
+    assert r.status_code == 403
+
+
+def test_viewer_cannot_delete_medication(client, db, test_user):
+    pid = _profile_id_for(test_user, db)
+    med = models.Medication(profile_id=pid, name="X", taken_at=datetime.now(timezone.utc))
+    db.add(med)
+    db.commit()
+    db.refresh(med)
+    viewer_headers = _make_viewer(db, pid)
+    r = client.delete(f"/api/medications/{med.id}", headers=viewer_headers)
+    assert r.status_code == 403
+
+
+def test_viewer_can_list_medications(client, db, test_user):
+    pid = _profile_id_for(test_user, db)
+    db.add(models.Medication(profile_id=pid, name="A", taken_at=datetime.now(timezone.utc)))
+    db.commit()
+    viewer_headers = _make_viewer(db, pid)
+    r = client.get(f"/api/medications?profile_id={pid}&days=30", headers=viewer_headers)
+    assert r.status_code == 200
+    assert len(r.json()) >= 1
 
 
 # ---------------------------------------------------------------------------

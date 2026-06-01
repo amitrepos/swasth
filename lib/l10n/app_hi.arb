@@ -533,6 +533,9 @@
   "mealTypeLunch": "दोपहर का खाना",
   "mealTypeSnack": "नाश्ता",
   "mealTypeDinner": "रात का खाना",
+  "sectionMedicationsTaken": "ली गई दवाइयाँ (रोगी दर्ज)",
+  "doctorNoMedicationsLogged": "पिछले 30 दिनों में कोई दवा दर्ज नहीं",
+  "doctorMedicationLogSubtitle": "{dose} · {frequency}",
   "sectionMeals": "हाल के भोजन",
   "@sectionMeals": {
     "description": "डॉक्टर पेजेंट डिटेल स्क्रीन में हाल के भोजन का सेक्शन हेडर"
@@ -942,5 +945,21 @@
   "medicationsEditTitle": "दवा संपादित करें",
   "medicationsSaveChanges": "बदलाव सहेजें",
   "medicationsEditSemantics": "{name} संपादित करें",
-  "medicationsCellEmpty": "-"
+  "medicationsCellEmpty": "-",
+  "medicationsFormNameLabel": "दवा का नाम *",
+  "medicationsFormNameHint": "जैसे मेटफॉर्मिन",
+  "medicationsFormNameRequired": "नाम ज़रूरी है",
+  "medicationsFormDoseLabel": "खुराक (वैकल्पिक)",
+  "medicationsFormDoseHint": "जैसे 500 mg, 1 गोली",
+  "medicationsFormFrequencyLabel": "आवृत्ति (वैकल्पिक)",
+  "medicationsFormFrequencyHint": "जैसे दिन में दो बार खाने के बाद",
+  "medicationsFormTakenAtLabel": "कब ली",
+  "medicationsFormNotesLabel": "नोट्स (वैकल्पिक)",
+  "medicationsFormNotesHint": "जैसे दवा के बाद मतली",
+  "medicationsFormSave": "सहेजें",
+  "medicationsFormSaveAndMore": "सहेजें और और जोड़ें",
+  "medicationsFormDone": "हो गया",
+  "medicationsFormDoneLogged": "हो गया ({count} दर्ज)",
+  "medicationsFormSavedBanner": "\"{name}\" सहेजी गई",
+  "medicationsFormSavedBannerMulti": "\"{name}\" सहेजी गई  ·  {count} दर्ज"
 }

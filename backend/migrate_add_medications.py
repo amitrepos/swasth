@@ -29,11 +29,11 @@ def migrate():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
             logged_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-            name VARCHAR NOT NULL,
-            dose VARCHAR,
-            frequency VARCHAR,
+            name_enc TEXT NOT NULL,
+            dose_enc TEXT,
+            frequency_enc TEXT,
+            notes_enc TEXT,
             taken_at TIMESTAMP NOT NULL,
-            notes VARCHAR,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """
@@ -44,11 +44,11 @@ def migrate():
             id SERIAL PRIMARY KEY,
             profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
             logged_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-            name VARCHAR NOT NULL,
-            dose VARCHAR,
-            frequency VARCHAR,
+            name_enc TEXT NOT NULL,
+            dose_enc TEXT,
+            frequency_enc TEXT,
+            notes_enc TEXT,
             taken_at TIMESTAMP WITH TIME ZONE NOT NULL,
-            notes VARCHAR,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
         """

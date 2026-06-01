@@ -97,7 +97,7 @@ def _refresh_doctor_triage_for_profile(db: Session, profile_id: int) -> None:
 _insight_cache: dict[tuple[int, str], str] = {}
 
 
-@router.post("/readings", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_india_location)])
+@router.post("/readings", status_code=status.HTTP_201_CREATED)
 def save_reading(
     reading: schemas.HealthReadingCreate,
     db: Session = Depends(get_db),
@@ -355,9 +355,12 @@ def get_daily_steps(
         d = r.reading_timestamp.date() if r.reading_timestamp else None
         if d is None:
             continue
+        steps_val = int(r.steps_count or 0)
+        if r.value_numeric and r.value_numeric > steps_val:
+            steps_val = int(r.value_numeric)
         prev = by_day.get(d, 0)
-        if (r.steps_count or 0) > prev:
-            by_day[d] = r.steps_count or 0
+        if steps_val > prev:
+            by_day[d] = steps_val
         if r.steps_goal:
             latest_goal = r.steps_goal
 

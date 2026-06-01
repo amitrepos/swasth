@@ -1527,6 +1527,18 @@ class AppLocalizationsHi extends AppLocalizations {
   String get sectionMeals => 'हाल के भोजन';
 
   @override
+  String get sectionMedicationsTaken => 'ली गई दवाइयाँ (रोगी दर्ज)';
+
+  @override
+  String get doctorNoMedicationsLogged =>
+      'पिछले 30 दिनों में कोई दवा दर्ज नहीं';
+
+  @override
+  String doctorMedicationLogSubtitle(String dose, String frequency) {
+    return '$dose · $frequency';
+  }
+
+  @override
   String get noMealsLast7Days => 'पिछले 7 दिनों में कोई भोजन दर्ज नहीं';
 
   @override
@@ -2421,4 +2433,58 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get medicationsCellEmpty => '-';
+
+  @override
+  String get medicationsFormNameLabel => 'दवा का नाम *';
+
+  @override
+  String get medicationsFormNameHint => 'जैसे मेटफॉर्मिन';
+
+  @override
+  String get medicationsFormNameRequired => 'नाम ज़रूरी है';
+
+  @override
+  String get medicationsFormDoseLabel => 'खुराक (वैकल्पिक)';
+
+  @override
+  String get medicationsFormDoseHint => 'जैसे 500 mg, 1 गोली';
+
+  @override
+  String get medicationsFormFrequencyLabel => 'आवृत्ति (वैकल्पिक)';
+
+  @override
+  String get medicationsFormFrequencyHint => 'जैसे दिन में दो बार खाने के बाद';
+
+  @override
+  String get medicationsFormTakenAtLabel => 'कब ली';
+
+  @override
+  String get medicationsFormNotesLabel => 'नोट्स (वैकल्पिक)';
+
+  @override
+  String get medicationsFormNotesHint => 'जैसे दवा के बाद मतली';
+
+  @override
+  String get medicationsFormSave => 'सहेजें';
+
+  @override
+  String get medicationsFormSaveAndMore => 'सहेजें और और जोड़ें';
+
+  @override
+  String get medicationsFormDone => 'हो गया';
+
+  @override
+  String medicationsFormDoneLogged(int count) {
+    return 'हो गया ($count दर्ज)';
+  }
+
+  @override
+  String medicationsFormSavedBanner(String name) {
+    return '\"$name\" सहेजी गई';
+  }
+
+  @override
+  String medicationsFormSavedBannerMulti(String name, int count) {
+    return '\"$name\" सहेजी गई  ·  $count दर्ज';
+  }
 }

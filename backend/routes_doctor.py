@@ -1278,7 +1278,10 @@ def get_patient_meals(
 # Patient Medications (NUO-127) — what the patient has actually been taking.
 # ---------------------------------------------------------------------------
 
-@router.get("/patients/{profile_id}/medications")
+@router.get(
+    "/patients/{profile_id}/medications",
+    response_model=list[schemas.MedicationResponse],
+)
 def get_patient_medications(
     profile_id: int,
     days: int = Query(30, ge=1, le=90),
@@ -1304,19 +1307,7 @@ def get_patient_medications(
     )
     db.commit()
 
-    return [
-        {
-            "id": m.id,
-            "profile_id": m.profile_id,
-            "name": m.name,
-            "dose": m.dose,
-            "frequency": m.frequency,
-            "taken_at": m.taken_at,
-            "notes": m.notes,
-            "created_at": m.created_at,
-        }
-        for m in meds
-    ]
+    return [schemas.MedicationResponse.model_validate(m) for m in meds]
 
 
 # ---------------------------------------------------------------------------

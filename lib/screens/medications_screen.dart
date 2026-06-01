@@ -158,7 +158,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
       appBar: AppBar(
         title: Text(l10n.medicationsScreenTitle),
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.onPrimary,
       ),
       floatingActionButton: showActions
           ? FloatingActionButton.extended(
@@ -420,7 +420,7 @@ class _EmptyState extends StatelessWidget {
               label: Text(l10n.medicationsLogFirst),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

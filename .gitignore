@@ -85,5 +85,6 @@ ios_backup/
 docs/INDIA_TRIP_APR_MAY_2026.md
 docs/FOUNDER_KIT_CHECKLIST.md
 
-# Allow a safe, debug-only web dotenv file (no secrets).
-!assets/.env
+# Allow the committed example dotenv (no secrets). A real `.env` (root, used by
+# dotenv.load in lib/bootstrap.dart) stays gitignored via the `.env` rule above.
+!assets/.env.example

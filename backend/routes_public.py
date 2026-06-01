@@ -42,7 +42,7 @@ def get_support_contacts(request: Request):
 
 @router.get("/public/region")
 @limiter.limit("30/minute")
-def get_region(request: Request):
+async def get_region(request: Request):
     """Return the caller's region + whether write endpoints are open (NUO-135).
 
     Unauthenticated by design — Flutter calls this on first paint so it
@@ -55,7 +55,7 @@ def get_region(request: Request):
         source:       'ip' | 'locale' | 'private' | 'disabled' | 'error'
                       — useful for client-side telemetry, never shown to users
     """
-    allowed, country, source = is_india_writer_allowed(request)
+    allowed, country, source = await is_india_writer_allowed(request)
     return {
         "country_code": country,
         "is_india": allowed,

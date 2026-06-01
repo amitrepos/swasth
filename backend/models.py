@@ -596,6 +596,9 @@ class Medication(Base):
     Captures *what the patient actually took*, not a prescription. Doctors see
     this in the patient summary + WhatsApp report so they can spot missed
     doses, self-medication, or drug interactions before clinical decisions.
+
+    Drug name, dose, frequency, and notes are AES-256-GCM encrypted at rest
+    (same pattern as HealthReading notes_enc / Profile medical fields).
     """
     __tablename__ = "medications"
 
@@ -603,17 +606,52 @@ class Medication(Base):
     profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
     logged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    name = Column(String, nullable=False)              # e.g. "Metformin"
-    dose = Column(String, nullable=True)               # e.g. "500 mg" — free text (units vary by drug)
-    frequency = Column(String, nullable=True)          # e.g. "Twice daily", "After breakfast"
+    name_enc = Column(Text, nullable=False)
+    dose_enc = Column(Text, nullable=True)
+    frequency_enc = Column(Text, nullable=True)
+    notes_enc = Column(Text, nullable=True)
     taken_at = Column(DateTime(timezone=True), nullable=False)
-    notes = Column(String, nullable=True)              # patient context — "felt nauseous", etc.
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
         Index("ix_medications_profile_time", "profile_id", "taken_at"),
     )
+
+    @property
+    def name(self) -> str:
+        return decrypt_pii(self.name_enc) or ""
+
+    @name.setter
+    def name(self, value: str) -> None:
+        enc = _enc_str((value or "").strip())
+        if enc is None:
+            raise ValueError("Medication name is required")
+        self.name_enc = enc
+
+    @property
+    def dose(self) -> Optional[str]:
+        return decrypt_pii(self.dose_enc)
+
+    @dose.setter
+    def dose(self, value: Optional[str]) -> None:
+        self.dose_enc = _enc_str((value or "").strip() or None)
+
+    @property
+    def frequency(self) -> Optional[str]:
+        return decrypt_pii(self.frequency_enc)
+
+    @frequency.setter
+    def frequency(self, value: Optional[str]) -> None:
+        self.frequency_enc = _enc_str((value or "").strip() or None)
+
+    @property
+    def notes(self) -> Optional[str]:
+        return decrypt_pii(self.notes_enc)
+
+    @notes.setter
+    def notes(self, value: Optional[str]) -> None:
+        self.notes_enc = _enc_str((value or "").strip() or None)
 
 
 from encryption_service import hash_otp as _hash_otp

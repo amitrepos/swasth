@@ -694,6 +694,21 @@
   "@sectionMeals": {
     "description": "Section header for recent meals in doctor patient detail screen"
   },
+  "sectionMedicationsTaken": "Medicines taken (patient log)",
+  "@sectionMedicationsTaken": {
+    "description": "Doctor portal: NUO-127 intake log section header"
+  },
+  "doctorNoMedicationsLogged": "No medicines logged in the last 30 days",
+  "@doctorNoMedicationsLogged": {
+    "description": "Doctor portal empty state when patient has not logged any meds"
+  },
+  "doctorMedicationLogSubtitle": "{dose} · {frequency}",
+  "@doctorMedicationLogSubtitle": {
+    "placeholders": {
+      "dose": { "type": "String" },
+      "frequency": { "type": "String" }
+    }
+  },
   "noMealsLast7Days": "No meals logged in the last 7 days",
   "@noMealsLast7Days": {
     "description": "Empty state when no meals found in last 7 days"
@@ -1401,5 +1416,37 @@
       "name": { "type": "String" }
     }
   },
-  "medicationsCellEmpty": "-"
+  "medicationsCellEmpty": "-",
+  "medicationsFormNameLabel": "Medicine name *",
+  "medicationsFormNameHint": "e.g. Metformin",
+  "medicationsFormNameRequired": "Name required",
+  "medicationsFormDoseLabel": "Dose (optional)",
+  "medicationsFormDoseHint": "e.g. 500 mg, 1 tablet",
+  "medicationsFormFrequencyLabel": "Frequency (optional)",
+  "medicationsFormFrequencyHint": "e.g. Twice daily after food",
+  "medicationsFormTakenAtLabel": "Taken at",
+  "medicationsFormNotesLabel": "Notes (optional)",
+  "medicationsFormNotesHint": "e.g. Felt nauseous after",
+  "medicationsFormSave": "Save",
+  "medicationsFormSaveAndMore": "Save & add more",
+  "medicationsFormDone": "Done",
+  "medicationsFormDoneLogged": "Done ({count} logged)",
+  "@medicationsFormDoneLogged": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "medicationsFormSavedBanner": "\"{name}\" saved",
+  "@medicationsFormSavedBanner": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "medicationsFormSavedBannerMulti": "\"{name}\" saved  ·  {count} logged",
+  "@medicationsFormSavedBannerMulti": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  }
 }

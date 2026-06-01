@@ -575,7 +575,7 @@ def get_profile_owner_or_403(
 # Caregivers abroad can still read; only logging is blocked.
 # ---------------------------------------------------------------------------
 
-def require_india_writer(request: Request) -> dict:
+async def require_india_writer(request: Request) -> dict:
     """Block write endpoints when the caller is outside India.
 
     Returns a small region-info dict on success so the route handler can
@@ -583,10 +583,13 @@ def require_india_writer(request: Request) -> dict:
     Legal Reasons) with a structured detail otherwise — the Flutter
     client special-cases this code to surface the family-member banner.
 
+    Async so the underlying ipapi.co lookup awaits on the event loop
+    instead of holding a thread-pool worker for up to 1.5s per cache-miss.
+
     The master switch is off by default (`GEO_RESTRICT_ENABLED`); local
     dev and CI therefore never get blocked.
     """
-    allowed, country, source = is_india_writer_allowed(request)
+    allowed, country, source = await is_india_writer_allowed(request)
     if allowed:
         return {"country": country, "source": source}
     raise HTTPException(

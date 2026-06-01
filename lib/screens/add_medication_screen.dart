@@ -28,7 +28,7 @@ Future<bool?> showAddMedicationSheet(
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: AppColors.transparent,
     isDismissible: false,
     builder: (_) => AddMedicationSheet(
       profileId: profileId,
@@ -176,12 +176,13 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not save: $e')));
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errGeneric)),
+      );
     }
   }
 
@@ -200,7 +201,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
       child: Container(
         constraints: BoxConstraints(maxHeight: maxHeight),
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -212,7 +213,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
               height: 4,
               margin: const EdgeInsets.only(top: 10, bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: AppColors.textTertiary,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -229,6 +230,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -249,25 +251,30 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: AppColors.successMuted,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade300),
+                  border: Border.all(color: AppColors.successBorder),
                 ),
                 child: Row(
                   key: const Key('medication-saved-banner'),
                   children: [
                     const Icon(
                       Icons.check_circle,
-                      color: Colors.green,
+                      color: AppColors.success,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '"$_lastSavedName" saved${_savedCount > 1 ? '  ·  $_savedCount logged' : ''}',
+                        _savedCount > 1
+                            ? l10n.medicationsFormSavedBannerMulti(
+                                _lastSavedName!,
+                                _savedCount,
+                              )
+                            : l10n.medicationsFormSavedBanner(_lastSavedName!),
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -286,13 +293,13 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                         key: const Key('medication-name-field'),
                         controller: _nameCtl,
                         focusNode: _nameFocus,
-                        decoration: const InputDecoration(
-                          labelText: 'Medicine name *',
-                          hintText: 'e.g. Metformin',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.medicationsFormNameLabel,
+                          hintText: l10n.medicationsFormNameHint,
+                          border: const OutlineInputBorder(),
                         ),
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Name required'
+                            ? l10n.medicationsFormNameRequired
                             : null,
                         textCapitalization: TextCapitalization.words,
                       ),
@@ -300,28 +307,28 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                       TextFormField(
                         key: const Key('medication-dose-field'),
                         controller: _doseCtl,
-                        decoration: const InputDecoration(
-                          labelText: 'Dose (optional)',
-                          hintText: 'e.g. 500 mg, 1 tablet',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.medicationsFormDoseLabel,
+                          hintText: l10n.medicationsFormDoseHint,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _freqCtl,
-                        decoration: const InputDecoration(
-                          labelText: 'Frequency (optional)',
-                          hintText: 'e.g. Twice daily after food',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.medicationsFormFrequencyLabel,
+                          hintText: l10n.medicationsFormFrequencyHint,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                       const SizedBox(height: 12),
                       InkWell(
                         onTap: _pickDateTime,
                         child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Taken at',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: l10n.medicationsFormTakenAtLabel,
+                            border: const OutlineInputBorder(),
                           ),
                           child: Text(
                             DateFormat.yMMMd().add_jm().format(_takenAt),
@@ -331,10 +338,10 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _notesCtl,
-                        decoration: const InputDecoration(
-                          labelText: 'Notes (optional)',
-                          hintText: 'e.g. Felt nauseous after',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.medicationsFormNotesLabel,
+                          hintText: l10n.medicationsFormNotesHint,
+                          border: const OutlineInputBorder(),
                         ),
                         maxLines: 2,
                       ),
@@ -346,9 +353,9 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                border: Border(top: BorderSide(color: AppColors.separator)),
               ),
               child: Column(
                 children: [
@@ -364,7 +371,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation(
-                                  Colors.white,
+                                  AppColors.onPrimary,
                                 ),
                               ),
                             )
@@ -372,11 +379,13 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                       label: Text(
                         _isEditMode
                             ? l10n.medicationsSaveChanges
-                            : (_savedCount == 0 ? 'Save' : 'Save & add more'),
+                            : (_savedCount == 0
+                                ? l10n.medicationsFormSave
+                                : l10n.medicationsFormSaveAndMore),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
@@ -394,8 +403,8 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                         ),
                         child: Text(
                           _savedCount > 0
-                              ? 'Done ($_savedCount logged)'
-                              : 'Done',
+                              ? l10n.medicationsFormDoneLogged(_savedCount)
+                              : l10n.medicationsFormDone,
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
