@@ -136,6 +136,20 @@ if command -v python3 >/dev/null 2>&1 && [ -f "$MD" ]; then
   echo "$T" | jq -e 'any(.[]?.content[]?; .marks[]?.type=="strong")' >/dev/null 2>&1 && { PASS=$((PASS+1)); echo "  ok   bold mark emitted"; } || { FAIL=$((FAIL+1)); echo "  FAIL bold mark"; }
 fi
 
+echo "== jira_fetch_ticket _adf_to_text (preserve markdown for churn gate) =="
+if command -v python3 >/dev/null 2>&1 && [ -f "$ROOT/scripts/jira_fetch_ticket.py" ]; then
+  OUT=$(cd "$ROOT" && python3 -c '
+import sys; sys.path.insert(0,"scripts")
+import jira_fetch_ticket as j
+doc={"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Affected Surfaces"}]}
+para={"type":"paragraph","content":[{"type":"text","text":"x.py","marks":[{"type":"code"}]},{"type":"text","text":" ok","marks":[{"type":"strong"}]}]}
+print(j._adf_to_text(doc)+j._adf_to_text(para))
+' 2>/dev/null)
+  echo "$OUT" | grep -q "## Affected Surfaces" && { PASS=$((PASS+1)); echo "  ok   heading rendered as ##"; } || { FAIL=$((FAIL+1)); echo "  FAIL heading ##"; }
+  echo "$OUT" | grep -q '`x.py`' && { PASS=$((PASS+1)); echo "  ok   inline code preserved as backticks"; } || { FAIL=$((FAIL+1)); echo "  FAIL inline code backticks"; }
+  echo "$OUT" | grep -qE '\*\*[^*]*ok[^*]*\*\*' && { PASS=$((PASS+1)); echo "  ok   bold preserved as **"; } || { FAIL=$((FAIL+1)); echo "  FAIL bold **"; }
+fi
+
 echo
 echo "RESULT: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
