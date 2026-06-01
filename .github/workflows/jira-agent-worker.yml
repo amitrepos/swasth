@@ -134,7 +134,7 @@ jobs:
         run: |
           if [ "$ATTEMPT_COUNT" -ge 5 ]; then
             echo "Attempt count exhausted (>=5) for $TICKET_KEY." >&2
-            bash scripts/jira_comment.sh "$TICKET_KEY" \
+            bash scripts/jira_comment.sh --as matt "$TICKET_KEY" \
               "Auto-defer/retry exceeded 5 cycles — manual investigation required."
             bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human"
             bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
@@ -222,7 +222,7 @@ jobs:
             RETRY=$(date -u -d '+30 minutes' +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u -v +30M +"%Y-%m-%dT%H:%M:%SZ")
           fi
           export RETRY_SANITIZED="$RETRY"
-          bash scripts/jira_comment.sh "$TICKET_KEY" \
+          bash scripts/jira_comment.sh --as matt "$TICKET_KEY" \
             "Deferred (token budget). Will retry after $RETRY_SANITIZED."
           bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
             'if [ "$CURRENT" = "/dev/null" ] || [ ! -s "$CURRENT" ]; then echo "{\"entries\":[]}" > "$NEXT"; else jq --arg t "$TICKET_KEY" --arg r "$RETRY_SANITIZED" ".entries |= map(if .ticket_key == \$t then .retry_after = \$r | .attempt_count = ((.attempt_count // 0) + 1) else . end)" "$CURRENT" > "$NEXT"; fi' \
@@ -388,9 +388,9 @@ jobs:
           REGRESS_EXIT: ${{ steps.regress.outputs.regress_exit }}
         run: |
           if [ -f /tmp/regression-report.md ]; then
-            bash scripts/jira_comment.sh "$TICKET_KEY" "@/tmp/regression-report.md"
+            bash scripts/jira_comment.sh --as matt "$TICKET_KEY" "@/tmp/regression-report.md"
           else
-            bash scripts/jira_comment.sh "$TICKET_KEY" \
+            bash scripts/jira_comment.sh --as matt "$TICKET_KEY" \
               "Gate C-regress aborted with exit code $REGRESS_EXIT (no report)."
           fi
           bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human" || true
@@ -502,7 +502,7 @@ jobs:
         env:
           TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
         run: |
-          bash scripts/jira_comment.sh "$TICKET_KEY" "@.agent-tmp/qa-output.md"
+          bash scripts/jira_comment.sh --as matt "$TICKET_KEY" "@.agent-tmp/qa-output.md"
           bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human" || true
           bash scripts/jira_set_status_label.sh "$TICKET_KEY" needs-human-qa || true
           bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
@@ -520,7 +520,7 @@ jobs:
           git fetch origin master --quiet
           git rebase origin/master || {
             git rebase --abort || true
-            bash scripts/jira_comment.sh "$TICKET_KEY" \
+            bash scripts/jira_comment.sh --as matt "$TICKET_KEY" \
               "Rebase onto fresh master failed with conflicts. Manual investigation needed."
             bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human"
             exit 1
@@ -564,7 +564,7 @@ jobs:
             --title "$PR_TITLE" \
             --body-file "$PR_BODY_FILE")
           echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
-          bash scripts/jira_comment.sh "$TICKET_KEY" \
+          bash scripts/jira_comment.sh --as matt "$TICKET_KEY" \
             "Draft PR opened: $PR_URL"
           # Transition is non-fatal: PR has already been opened above, so a
           # missing JIRA status (e.g. project renamed "In Review" → "In Progress")
@@ -644,7 +644,7 @@ jobs:
           cat /tmp/audit-summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           # Attach to JIRA (best-effort) and upload the raw log.
           if [ -n "${TICKET_KEY:-}" ] && [ -s /tmp/audit-summary.md ]; then
-            bash scripts/jira_comment.sh "$TICKET_KEY" @/tmp/audit-summary.md || true
+            bash scripts/jira_comment.sh --as matt "$TICKET_KEY" @/tmp/audit-summary.md || true
           fi
           # Open an alert issue if alert==true.
           if grep -q '^alert=true' "$GITHUB_OUTPUT" 2>/dev/null; then
