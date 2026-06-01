@@ -127,6 +127,15 @@ if command -v python3 >/dev/null 2>&1 && [ -f "$SUM" ]; then
 fi
 rm -f "$ALOG"
 
+echo "== md_to_adf.py (JIRA comment rendering) =="
+MD="$ROOT/scripts/md_to_adf.py"
+if command -v python3 >/dev/null 2>&1 && [ -f "$MD" ]; then
+  T=$(printf '## H\n\n**b** and `c`\n\n- x\n- y\n' | python3 "$MD" 2>/dev/null)
+  echo "$T" | jq -e '.[0].type=="heading"' >/dev/null 2>&1 && { PASS=$((PASS+1)); echo "  ok   heading node emitted"; } || { FAIL=$((FAIL+1)); echo "  FAIL heading node"; }
+  echo "$T" | jq -e 'any(.[]; .type=="bulletList")' >/dev/null 2>&1 && { PASS=$((PASS+1)); echo "  ok   bulletList emitted"; } || { FAIL=$((FAIL+1)); echo "  FAIL bulletList"; }
+  echo "$T" | jq -e 'any(.[]?.content[]?; .marks[]?.type=="strong")' >/dev/null 2>&1 && { PASS=$((PASS+1)); echo "  ok   bold mark emitted"; } || { FAIL=$((FAIL+1)); echo "  FAIL bold mark"; }
+fi
+
 echo
 echo "RESULT: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

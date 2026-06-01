@@ -173,7 +173,7 @@ jobs:
                       story, Acceptance criteria, Scope, Affected Surfaces with
                       file paths in backticks, Data shape, Edge cases, plus
                       explicit "no ambiguous language" note).
-                   b. Run `bash scripts/jira_comment.sh "${{ env.TICKET_KEY }}" @.agent-tmp/rewrite.md`.
+                   b. Run `bash scripts/jira_comment.sh --as priya "${{ env.TICKET_KEY }}" @.agent-tmp/rewrite.md`.
                       Do NOT skip this — you have direct authority; no
                       operator approval needed.
                    c. Run `bash scripts/jira_transition.sh "${{ env.TICKET_KEY }}" "Spec Ready"` (non-fatal if status doesn't exist).
@@ -283,14 +283,14 @@ jobs:
       - name: Intake outcome — not-needed (stop, no build)
         if: ${{ env.INTAKE_GATE == 'on' && env.HUMAN_GO != 'true' && steps.intake_verdict.outputs.intake == 'not-needed' }}
         run: |
-          bash scripts/jira_comment.sh "$TICKET_KEY" @.agent-tmp/intake-output.md || true
+          bash scripts/jira_comment.sh --as priya "$TICKET_KEY" @.agent-tmp/intake-output.md || true
           bash scripts/jira_set_status_label.sh "$TICKET_KEY" intake-not-needed || true
           bash scripts/jira_remove_label.sh "$TICKET_KEY" "$AGENT_LABEL" || true
 
       - name: Intake outcome — needs-clarification (hold)
         if: ${{ env.INTAKE_GATE == 'on' && env.HUMAN_GO != 'true' && steps.intake_verdict.outputs.intake == 'needs-clarification' }}
         run: |
-          bash scripts/jira_comment.sh "$TICKET_KEY" @.agent-tmp/intake-output.md || true
+          bash scripts/jira_comment.sh --as priya "$TICKET_KEY" @.agent-tmp/intake-output.md || true
           bash scripts/jira_set_status_label.sh "$TICKET_KEY" intake-needs-clarification || true
           bash scripts/jira_remove_label.sh "$TICKET_KEY" "$AGENT_LABEL" || true
 
@@ -299,9 +299,9 @@ jobs:
       - name: Intake outcome — needed (await human GO)
         if: ${{ env.INTAKE_GATE == 'on' && env.HUMAN_GO != 'true' && env.ASSIGNEE_FLOW != 'on' && steps.intake_verdict.outputs.intake == 'needed' }}
         run: |
-          bash scripts/jira_comment.sh "$TICKET_KEY" @.agent-tmp/intake-output.md || true
+          bash scripts/jira_comment.sh --as priya "$TICKET_KEY" @.agent-tmp/intake-output.md || true
           printf '%s\n' "**Intake gate: NEEDED.** Quality + necessity passed. Awaiting a human GO/NO-GO before any code is written. To approve, add the label \`agent:go\` to this ticket (or re-run the producer with human_go=true). — Priya (intake gate)" > .agent-tmp/await-go.md
-          bash scripts/jira_comment.sh "$TICKET_KEY" @.agent-tmp/await-go.md || true
+          bash scripts/jira_comment.sh --as priya "$TICKET_KEY" @.agent-tmp/await-go.md || true
           bash scripts/jira_set_status_label.sh "$TICKET_KEY" awaiting-go || true
 
       - name: Post Priya rewrite to JIRA (REWRITTEN path)
@@ -312,7 +312,7 @@ jobs:
           # we post the rewrite she wrote to disk. This guarantees the
           # downstream worker re-fetches a ticket that HAS the Affected
           # Surfaces / acceptance criteria sections Priya generated.
-          bash scripts/jira_comment.sh "$TICKET_KEY" @.agent-tmp/rewrite.md
+          bash scripts/jira_comment.sh --as priya "$TICKET_KEY" @.agent-tmp/rewrite.md
           bash scripts/jira_transition.sh "$TICKET_KEY" "Spec Ready" || echo "::warning::Spec Ready status not available (non-fatal)"
 
       - name: Fetch ticket priority

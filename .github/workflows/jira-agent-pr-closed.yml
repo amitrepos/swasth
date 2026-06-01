@@ -80,7 +80,7 @@ jobs:
             echo ""
             echo "— Matt (automation builder)"
           } > /tmp/completion.md
-          bash scripts/jira_comment.sh "$TICKET" @/tmp/completion.md
+          bash scripts/jira_comment.sh --as matt "$TICKET" @/tmp/completion.md
           bash scripts/jira_set_status_label.sh "$TICKET" merged || true
           bash scripts/jira_transition.sh "$TICKET" "Done" || echo "::warning::jira_transition non-fatal failure"
 
@@ -88,6 +88,6 @@ jobs:
         if: steps.extract.outputs.ticket != '' && env.MERGED != 'true'
         run: |
           TICKET="${{ steps.extract.outputs.ticket }}"
-          bash scripts/jira_comment.sh "$TICKET" \
+          bash scripts/jira_comment.sh --as matt "$TICKET" \
             "PR closed without merge: ${{ github.event.pull_request.html_url }}"
           bash scripts/jira_set_status_label.sh "$TICKET" closed-without-merge || true
