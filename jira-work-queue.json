@@ -14,6 +14,17 @@
       "pushed_branch_name": "feat/nuo-140-1779443624",
       "started_at": "2026-05-22T09:53:44Z",
       "worker_run_id": "26279586428"
+    },
+    {
+      "ticket_key": "NUO-155",
+      "agent": "agent:matt",
+      "priority_name": "Medium",
+      "priority_rank": 3,
+      "queued_at": "2026-06-01T16:24:33Z",
+      "state": "queued",
+      "attempt_count": 0,
+      "retry_after": "2026-06-01T16:24:33Z",
+      "priya_hash": "c91097bfea667bad99cb64040ba01c8b4c8ea5d5bd9923933ed0f475b7252d5c"
     }
   ]
 }
