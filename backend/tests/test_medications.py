@@ -226,8 +226,10 @@ def test_patch_medication_denies_unrelated_profile(client, db, test_user, auth_h
     db.commit()
     db.refresh(med)
 
+    # IDOR hardening: the caller has no access to this profile, so existence
+    # is hidden behind a 404 (not 403) to prevent med-ID enumeration.
     r = client.patch(f"/api/medications/{med.id}", json={"name": "Hack"}, headers=auth_headers)
-    assert r.status_code == 403
+    assert r.status_code == 404
 
 
 def test_delete_medication_denies_unrelated_profile(client, db, test_user, auth_headers):
@@ -239,8 +241,9 @@ def test_delete_medication_denies_unrelated_profile(client, db, test_user, auth_
     db.commit()
     db.refresh(med)
 
+    # IDOR hardening: no access to this profile → 404 (hide existence), not 403.
     r = client.delete(f"/api/medications/{med.id}", headers=auth_headers)
-    assert r.status_code == 403
+    assert r.status_code == 404
 
 
 def test_list_medications_denies_unrelated_profile(client, db, auth_headers):

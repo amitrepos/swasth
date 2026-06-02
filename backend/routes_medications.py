@@ -100,7 +100,19 @@ async def update_medication(
     med = db.query(models.Medication).filter(models.Medication.id == med_id).first()
     if not med:
         raise HTTPException(status_code=404, detail="Medication not found")
-    get_profile_editor_or_403(med.profile_id, user, db)
+    # IDOR hardening (OWASP A01): hide existence from callers with NO access
+    # to the profile, so sequential med IDs can't be enumerated by telling
+    # 403 (exists, someone else's) from 404 (absent). A viewer (has read
+    # access but isn't an editor) already sees the row via GET, so they
+    # correctly keep getting 403 — that leaks nothing — rather than a 404.
+    try:
+        get_profile_editor_or_403(med.profile_id, user, db)
+    except HTTPException:
+        try:
+            get_profile_access_or_403(med.profile_id, user, db)
+        except HTTPException:
+            raise HTTPException(status_code=404, detail="Medication not found")
+        raise
 
     if data.name is not None:
         med.name = data.name.strip()
@@ -131,7 +143,20 @@ async def delete_medication(
     med = db.query(models.Medication).filter(models.Medication.id == med_id).first()
     if not med:
         raise HTTPException(status_code=404, detail="Medication not found")
-    get_profile_editor_or_403(med.profile_id, user, db)
+    # IDOR hardening (OWASP A01): hide existence from callers with NO access
+    # to the profile, so sequential med IDs can't be enumerated by telling
+    # 403 (exists, someone else's) from 404 (absent). A viewer (has read
+    # access but isn't an editor) already sees the row via GET, so they
+    # correctly keep getting 403 — that leaks nothing — rather than a 404.
+    try:
+        get_profile_editor_or_403(med.profile_id, user, db)
+    except HTTPException:
+        try:
+            get_profile_access_or_403(med.profile_id, user, db)
+        except HTTPException:
+            raise HTTPException(status_code=404, detail="Medication not found")
+        raise
 
     db.delete(med)
     db.commit()
+    return None

@@ -332,7 +332,10 @@ def get_daily_steps(
     """
     get_profile_access_or_403(profile_id, user, db)
 
-    today = date.today()
+    # UTC date: the server runs IST (UTC+5:30); date.today() would roll to the
+    # next calendar day at 00:00 IST while the timestamp filter below is UTC,
+    # emptying the "today" bucket for the 5.5h after local midnight.
+    today = datetime.now(timezone.utc).date()
     start_date = today - timedelta(days=days - 1)
     start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc)
 

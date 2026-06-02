@@ -711,12 +711,16 @@ def trigger_single_profile_report(
             # Deduplicate by name (case-insensitive), preserve most-recent first
             seen, unique = set(), []
             for m in recent_meds:
-                key = m.name.lower().strip()
+                # Materialise once: each .name/.dose access runs an AES-GCM
+                # decrypt through the ORM property getter.
+                name = m.name
+                dose = m.dose
+                key = name.lower().strip()
                 if key in seen:
                     continue
                 seen.add(key)
-                dose = f" {m.dose}" if m.dose else ""
-                unique.append(f"{m.name}{dose}")
+                dose_suffix = f" {dose}" if dose else ""
+                unique.append(f"{name}{dose_suffix}")
             med_line = "💊 Meds: " + ", ".join(unique)
 
         # {{3}}: profile name + all metrics pipe-separated, no \n

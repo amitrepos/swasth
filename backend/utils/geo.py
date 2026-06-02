@@ -84,6 +84,17 @@ def _is_private_ip(ip: str) -> bool:
     return ip.startswith(_PRIVATE_PREFIXES)
 
 
+def _mask_ip(ip: str) -> str:
+    """Mask the host portion of an IP for logs — DPDPA treats IPs as personal
+    data. Kept local (not imported from dependencies._mask_ip) to avoid a
+    circular import: dependencies imports from this module."""
+    if ":" in ip:
+        parts = ip.split(":")
+        return ":".join(parts[:-1] + ["x"]) if len(parts) >= 2 else "ipv6"
+    parts = ip.split(".")
+    return ".".join(parts[:3] + ["x"]) if len(parts) == 4 else "ipv4"
+
+
 async def _lookup_country(ip: str) -> str:
     """Async network lookup, TTL-cached by IP. Returns ISO-2 code or 'UNKNOWN'.
 
@@ -143,6 +154,15 @@ async def get_request_country(request: Request, ip: Optional[str]) -> Tuple[str,
 
     country = await _lookup_country(ip)
     if country == "UNKNOWN":
+        # Quota exhaustion or a network blip on a real public IP lands here.
+        # We fail open to the locale check so genuine India users are never
+        # locked out, but WARN: during these windows a non-India caller whose
+        # device sends an *-IN Accept-Language can slip through. The log lets
+        # an operator correlate a spike with an ipapi.co quota/outage window.
+        logger.warning(
+            "geo: locale fallback for public IP %s (ipapi.co quota or network error?)",
+            _mask_ip(ip),
+        )
         return ("IN" if _locale_suggests_india(request) else "UNKNOWN"), "locale"
     return country, "ip"
 
