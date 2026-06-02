@@ -193,6 +193,9 @@ G="$ROOT/.claude/skills/groomer/SKILL.md"
 grep -q "GROOM_VERDICT: ai-ready" "$G" && grep -q "GROOM_VERDICT: needs-split" "$G" && { PASS=$((PASS+1)); echo "  ok   groomer emits GROOM_VERDICT contract"; } || { FAIL=$((FAIL+1)); echo "  FAIL groomer verdict contract"; }
 grep -q "h2. Affected Surfaces" "$G" && grep -q '{{' "$G" && { PASS=$((PASS+1)); echo "  ok   groomer documents Affected Surfaces format"; } || { FAIL=$((FAIL+1)); echo "  FAIL groomer Affected Surfaces format"; }
 grep -q 'anya)' "$ROOT/scripts/jira_comment.sh" && { PASS=$((PASS+1)); echo "  ok   jira_comment knows the anya persona"; } || { FAIL=$((FAIL+1)); echo "  FAIL anya persona missing"; }
+bash -n "$ROOT/scripts/jira_set_description.sh" && { PASS=$((PASS+1)); echo "  ok   jira_set_description syntax"; } || { FAIL=$((FAIL+1)); echo "  FAIL jira_set_description syntax"; }
+# rewritten path must update the DESCRIPTION (not only comment) so the build reads it
+grep -q 'jira_set_description.sh' "$ROOT/.github/workflows/jira-grooming.yml" && { PASS=$((PASS+1)); echo "  ok   grooming rewritten path updates description"; } || { FAIL=$((FAIL+1)); echo "  FAIL grooming does not update description"; }
 
 echo
 echo "RESULT: $PASS passed, $FAIL failed"

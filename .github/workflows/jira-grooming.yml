@@ -120,7 +120,11 @@ jobs:
               bash scripts/jira_comment.sh --as anya "$TICKET_KEY" @.agent-tmp/note.md || true
               bash scripts/jira_add_label.sh "$TICKET_KEY" ai-ready || true ;;
             rewritten)
-              bash scripts/jira_comment.sh --as anya "$TICKET_KEY" @.agent-tmp/groom-body.md || true
+              # Update the DESCRIPTION (the build/Priya read the description, not comments), then a
+              # short visibility comment, then label.
+              bash scripts/jira_set_description.sh "$TICKET_KEY" @.agent-tmp/groom-body.md || true
+              printf '%s\n' "**🤖 Anya — backlog grooming**" "" "Rewrote this ticket into AI-ready form (description updated) and labelled \`ai-ready\`. A human can now assign it to Priya to build." > .agent-tmp/note.md
+              bash scripts/jira_comment.sh --as anya "$TICKET_KEY" @.agent-tmp/note.md || true
               bash scripts/jira_add_label.sh "$TICKET_KEY" ai-ready || true ;;
             needs-split)
               bash scripts/jira_comment.sh --as anya "$TICKET_KEY" @.agent-tmp/groom-split.md || true

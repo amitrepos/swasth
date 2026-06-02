@@ -18,6 +18,7 @@ on:
       - 'scripts/jira_fetch_ticket.py'
       - 'scripts/check_no_regression.py'
       - 'scripts/jira_add_label.sh'
+      - 'scripts/jira_set_description.sh'
       - 'tests/agent-platform/**'
       - '.github/workflows/agent-platform-tests.yml'
   pull_request:
@@ -33,6 +34,7 @@ on:
       - 'scripts/jira_fetch_ticket.py'
       - 'scripts/check_no_regression.py'
       - 'scripts/jira_add_label.sh'
+      - 'scripts/jira_set_description.sh'
       - 'tests/agent-platform/**'
       - '.github/workflows/agent-platform-tests.yml'
 
