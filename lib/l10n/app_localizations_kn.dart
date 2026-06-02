@@ -366,6 +366,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get bpTrend => 'ರಕ್ತದೊತ್ತಡದ ಪ್ರವೃತ್ತಿ';
 
   @override
+  String get pulseTrend => 'ನಾಡಿಮಿಡಿತದ ಪ್ರವೃತ್ತಿ';
+
+  @override
   String get avgLabel => 'ಸರಾಸರಿ';
 
   @override
@@ -410,6 +413,11 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String noReadingsInWindowWeight(int days) {
     return 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ತೂಕದ ರೀಡಿంగ్‌ಗಳಿಲ್ಲ.';
+  }
+
+  @override
+  String noReadingsInWindowPulse(int days) {
+    return 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ನಾಡಿಮಿಡಿತದ ರೀಡಿಂಗ್‌ಗಳಿಲ್ಲ.';
   }
 
   @override
@@ -2211,6 +2219,11 @@ class AppLocalizationsKn extends AppLocalizations {
   }
 
   @override
+  String pulseChartTitle(int days) {
+    return 'ಹೃದಯ ಬಡಿತ · $days ದಿನಗಳು';
+  }
+
+  @override
   String stepsChartSummary(String total, String avg) {
     return '$total · avg $avg';
   }
@@ -2231,6 +2244,9 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get stepsChartEmpty =>
       'No step data yet. Walk a bit and check back tomorrow.';
+
+  @override
+  String get stepsTotalLabel => 'ಒಟ್ಟು';
 
   @override
   String get vegan => 'ವೀಗನ್';

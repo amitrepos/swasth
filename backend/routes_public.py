@@ -10,6 +10,7 @@ from fastapi import APIRouter, Request
 from limiter import limiter
 
 from config import settings
+from dependencies import _get_client_ip
 from utils.geo import get_request_country, is_india_writer_allowed
 
 router = APIRouter()
@@ -55,7 +56,7 @@ async def get_region(request: Request):
         source:       'ip' | 'locale' | 'private' | 'disabled' | 'error'
                       — useful for client-side telemetry, never shown to users
     """
-    allowed, country, source = await is_india_writer_allowed(request)
+    allowed, country, source = await is_india_writer_allowed(request, _get_client_ip(request))
     return {
         "country_code": country,
         "is_india": allowed,

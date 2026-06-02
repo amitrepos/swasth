@@ -185,6 +185,7 @@
   "oneYear": "1 సంవత్సరం",
   "glucoseTrend": "గ్లూకోజ్ ధోరణి",
   "bpTrend": "రక్తపోటు ధోరణి",
+  "pulseTrend": "నాడి ధోరణి",
   "avgLabel": "సగటు",
   "avgDaysFormat": "{count} రోజుల సగటు",
   "@avgDaysFormat": {
@@ -223,6 +224,16 @@
   "noReadingsInWindowWeight": "గత {days} రోజులలో బరువు రీడింగ్‌లు లేవు.",
   "@noReadingsInWindowWeight": {
     "description": "Empty state for weight chart when there are no weight readings in the selected window.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "noReadingsInWindowPulse": "గత {days} రోజులలో నాడి రీడింగ్‌లు లేవు.",
+  "@noReadingsInWindowPulse": {
+    "description": "Empty state for pulse chart when there are no pulse readings in the selected window.",
     "placeholders": {
       "days": {
         "type": "int",
@@ -1163,10 +1174,13 @@
     "description": "Display label for daily step-count reading type"
   },
   "stepsChartTitle": "Steps · {days} days",
+  "pulseChartTitle": "హృదయ స్పందన · {days} రోజులు",
   "stepsChartSummary": "{total} · avg {avg}",
   "stepsChartSummaryWithGoal": "{total} · avg {avg} · {hits}/{days} ≥ goal",
   "stepsChartLoadError": "Could not load steps",
   "stepsChartEmpty": "No step data yet. Walk a bit and check back tomorrow.",
+  "stepsTotalLabel": "మొత్తం",
+  "stepsGoalLabel": "లక్ష్యం",
   "vegan": "వేగన్",
   "@vegan": {
     "description": "Diet flag label indicating the meal is vegan"

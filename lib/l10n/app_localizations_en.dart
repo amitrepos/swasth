@@ -363,6 +363,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bpTrend => 'Blood Pressure Trend';
 
   @override
+  String get pulseTrend => 'Pulse Trend';
+
+  @override
   String get avgLabel => 'Avg';
 
   @override
@@ -407,6 +410,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String noReadingsInWindowWeight(int days) {
     return 'No weight readings in the last $days days.';
+  }
+
+  @override
+  String noReadingsInWindowPulse(int days) {
+    return 'No pulse readings in the last $days days.';
   }
 
   @override
@@ -2184,6 +2192,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String pulseChartTitle(int days) {
+    return 'Heart Rate · $days days';
+  }
+
+  @override
   String stepsChartSummary(String total, String avg) {
     return '$total · avg $avg';
   }
@@ -2204,6 +2217,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get stepsChartEmpty =>
       'No step data yet. Walk a bit and check back tomorrow.';
+
+  @override
+  String get stepsTotalLabel => 'Total';
 
   @override
   String get vegan => 'Vegan';

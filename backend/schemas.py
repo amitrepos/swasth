@@ -1114,6 +1114,22 @@ class AdminSendWhatsAppBulk(BaseModel):
 # Medications (NUO-127) — patient-logged intake, surfaced to doctor.
 # ---------------------------------------------------------------------------
 
+# Allow a little client clock-skew, but reject clearly future-dated entries:
+# a future taken_at would silently fall outside the report/list windows and
+# never surface to the doctor (Daniel review m2).
+_MEDICATION_FUTURE_SKEW = timedelta(minutes=5)
+
+
+def _reject_future_taken_at(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None:
+        return value
+    # Naive datetimes from direct API calls are interpreted as UTC.
+    compare = value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+    if compare > datetime.now(timezone.utc) + _MEDICATION_FUTURE_SKEW:
+        raise ValueError("taken_at cannot be in the future")
+    return value
+
+
 class MedicationCreate(BaseModel):
     profile_id: int
     name: str = Field(..., min_length=1, max_length=120)
@@ -1122,6 +1138,11 @@ class MedicationCreate(BaseModel):
     taken_at: datetime
     notes: Optional[str] = Field(None, max_length=500)
 
+    @field_validator("taken_at")
+    @classmethod
+    def _taken_at_not_future(cls, v):
+        return _reject_future_taken_at(v)
+
 
 class MedicationUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=120)
@@ -1129,6 +1150,11 @@ class MedicationUpdate(BaseModel):
     frequency: Optional[str] = Field(None, max_length=120)
     taken_at: Optional[datetime] = None
     notes: Optional[str] = Field(None, max_length=500)
+
+    @field_validator("taken_at")
+    @classmethod
+    def _taken_at_not_future(cls, v):
+        return _reject_future_taken_at(v)
 
 
 class MedicationResponse(BaseModel):

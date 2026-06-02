@@ -152,6 +152,7 @@
   "oneYear": "1 ವರ್ಷ",
   "glucoseTrend": "ಗ್ಲೂಕೋಸ್ ಪ್ರವೃತ್ತಿ",
   "bpTrend": "ರಕ್ತದೊತ್ತಡದ ಪ್ರವೃತ್ತಿ",
+  "pulseTrend": "ನಾಡಿಮಿಡಿತದ ಪ್ರವೃತ್ತಿ",
   "avgLabel": "ಸರಾಸರಿ",
   "avgDaysFormat": "{count} ದಿನ ಸರಾಸರಿ",
   "@avgDaysFormat": {
@@ -190,6 +191,16 @@
   "noReadingsInWindowWeight": "ಕಳೆದ {days} ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ತೂಕದ ರೀಡಿంగ్‌ಗಳಿಲ್ಲ.",
   "@noReadingsInWindowWeight": {
     "description": "Empty state for weight chart when there are no weight readings in the selected window.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "noReadingsInWindowPulse": "ಕಳೆದ {days} ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ನಾಡಿಮಿಡಿತದ ರೀಡಿಂಗ್‌ಗಳಿಲ್ಲ.",
+  "@noReadingsInWindowPulse": {
+    "description": "Empty state for pulse chart when there are no pulse readings in the selected window.",
     "placeholders": {
       "days": {
         "type": "int",
@@ -1146,10 +1157,13 @@
     "description": "Display label for daily step-count reading type"
   },
   "stepsChartTitle": "Steps · {days} days",
+  "pulseChartTitle": "ಹೃದಯ ಬಡಿತ · {days} ದಿನಗಳು",
   "stepsChartSummary": "{total} · avg {avg}",
   "stepsChartSummaryWithGoal": "{total} · avg {avg} · {hits}/{days} ≥ goal",
   "stepsChartLoadError": "Could not load steps",
   "stepsChartEmpty": "No step data yet. Walk a bit and check back tomorrow.",
+  "stepsTotalLabel": "ಒಟ್ಟು",
+  "stepsGoalLabel": "ಗುರಿ",
   "vegan": "ವೀಗನ್",
   "@vegan": {
     "description": "Diet flag label indicating the meal is vegan"

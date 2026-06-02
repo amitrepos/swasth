@@ -65,6 +65,22 @@ def test_create_medication_rejects_empty_name(client, db, test_user, auth_header
     assert r.status_code == 422
 
 
+def test_create_medication_rejects_future_taken_at(client, db, test_user, auth_headers):
+    """taken_at well in the future would never appear in the report window."""
+    pid = _profile_id_for(test_user, db)
+    future = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+    r = _post_medication(client, auth_headers, pid, taken_at=future)
+    assert r.status_code == 422
+
+
+def test_create_medication_allows_small_clock_skew(client, db, test_user, auth_headers):
+    """A minute of client clock-skew is tolerated (not rejected)."""
+    pid = _profile_id_for(test_user, db)
+    near = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
+    r = _post_medication(client, auth_headers, pid, taken_at=near)
+    assert r.status_code == 201, r.text
+
+
 def test_create_medication_strips_whitespace(client, db, test_user, auth_headers):
     pid = _profile_id_for(test_user, db)
     r = _post_medication(client, auth_headers, pid, name="  Aspirin  ", dose="  ")

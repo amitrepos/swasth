@@ -588,8 +588,13 @@ async def require_india_writer(request: Request) -> dict:
 
     The master switch is off by default (`GEO_RESTRICT_ENABLED`); local
     dev and CI therefore never get blocked.
+
+    The client IP is resolved by the XFF-spoof-resistant `_get_client_ip`
+    (XFF only honoured behind a trusted proxy) and passed into the geo
+    decision — `utils.geo` does NOT parse `X-Forwarded-For` itself.
     """
-    allowed, country, source = await is_india_writer_allowed(request)
+    client_ip = _get_client_ip(request)
+    allowed, country, source = await is_india_writer_allowed(request, client_ip)
     if allowed:
         return {"country": country, "source": source}
     raise HTTPException(

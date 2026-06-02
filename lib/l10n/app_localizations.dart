@@ -782,6 +782,12 @@ abstract class AppLocalizations {
   /// **'Blood Pressure Trend'**
   String get bpTrend;
 
+  /// No description provided for @pulseTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulse Trend'**
+  String get pulseTrend;
+
   /// No description provided for @avgLabel.
   ///
   /// In en, this message translates to:
@@ -859,6 +865,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No weight readings in the last {days} days.'**
   String noReadingsInWindowWeight(int days);
+
+  /// Empty state for pulse chart when there are no pulse readings in the selected window.
+  ///
+  /// In en, this message translates to:
+  /// **'No pulse readings in the last {days} days.'**
+  String noReadingsInWindowPulse(int days);
 
   /// No description provided for @logFromHomeHint.
   ///
@@ -4046,7 +4058,7 @@ abstract class AppLocalizations {
   /// **'Sample type'**
   String get sampleTypeLabel;
 
-  /// Label for daily steps goal in the reading details sheet
+  /// Stat label for goal-hit days in the steps chart card
   ///
   /// In en, this message translates to:
   /// **'Goal'**
@@ -4094,6 +4106,12 @@ abstract class AppLocalizations {
   /// **'Steps · {days} days'**
   String stepsChartTitle(int days);
 
+  /// Header for the daily heart-rate line chart on the Insights tab
+  ///
+  /// In en, this message translates to:
+  /// **'Heart Rate · {days} days'**
+  String pulseChartTitle(int days);
+
   /// Steps chart footer when no daily goal is set
   ///
   /// In en, this message translates to:
@@ -4122,6 +4140,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No step data yet. Walk a bit and check back tomorrow.'**
   String get stepsChartEmpty;
+
+  /// Stat label for total steps in the steps chart card
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get stepsTotalLabel;
 
   /// Diet flag label indicating the meal is vegan
   ///

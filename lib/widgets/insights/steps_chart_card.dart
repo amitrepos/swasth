@@ -1,8 +1,10 @@
-// 7-day steps bar chart (C6 / NUO-22) — Insights tab.
+// 7-day steps line chart (C6 / NUO-22) — Insights tab.
 //
 // Aggregates step readings already loaded by TrendChartScreen (MAX per
 // calendar day — same semantics as GET /readings/steps/daily). Avoids a
 // second network round-trip that could hang or race with tab refresh.
+// Rendered as a line (with per-day dots) so the daily trend reads at a
+// glance, consistent with the glucose/BP/weight/pulse charts.
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -28,30 +30,46 @@ class StepsChartCard extends StatelessWidget {
     final aggregate = _aggregateDailySteps(readings, days);
     final hasData = aggregate.bars.any((b) => b.steps > 0);
 
+    // Styled to match the Glucose/BP detail cards in TrendChartScreen:
+    // uppercase icon header + unit, 200px line chart, stats row underneath.
     return GlassCard(
       key: const Key('insights_steps_chart_card'),
       borderRadius: 20,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Header(
-            l10n: l10n,
-            days: days,
-            total: aggregate.total,
-            avg: aggregate.avg,
-            goal: aggregate.goal,
-            hits: aggregate.goalHitDays,
-            hasData: hasData,
+          Row(
+            children: [
+              const Icon(
+                Icons.directions_walk,
+                size: 16,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                l10n.stepsChartTitle(days).toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           SizedBox(
-            height: 140,
+            height: 200,
             width: double.infinity,
             child: !hasData
                 ? _EmptyState(message: l10n.stepsChartEmpty)
                 : _Chart(bars: aggregate.bars, goal: aggregate.goal),
           ),
+          if (hasData) ...[
+            const SizedBox(height: 8),
+            _StatsRow(l10n: l10n, aggregate: aggregate),
+          ],
         ],
       ),
     );
@@ -127,58 +145,64 @@ class _DayBar {
   _DayBar({required this.date, required this.steps, this.goal});
 }
 
-class _Header extends StatelessWidget {
+class _StatsRow extends StatelessWidget {
   final AppLocalizations l10n;
-  final int days;
-  final int total;
-  final int avg;
-  final int? goal;
-  final int hits;
-  final bool hasData;
+  final _DailyStepsAggregate aggregate;
 
-  const _Header({
-    required this.l10n,
-    required this.days,
-    required this.total,
-    required this.avg,
-    required this.goal,
-    required this.hits,
-    required this.hasData,
-  });
+  const _StatsRow({required this.l10n, required this.aggregate});
 
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat.decimalPattern();
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        const Icon(Icons.directions_walk, size: 20, color: AppColors.primary),
-        const SizedBox(width: 8),
+        _StatCell(
+          label: l10n.stepsTotalLabel,
+          value: fmt.format(aggregate.total),
+          color: AppColors.primary,
+        ),
+        _StatCell(
+          label: l10n.avgLabel,
+          value: fmt.format(aggregate.avg),
+        ),
+        if (aggregate.goal != null)
+          _StatCell(
+            label: l10n.stepsGoalLabel,
+            value: '${aggregate.goalHitDays}/${aggregate.bars.length}',
+            color: AppColors.scoreHealthy,
+          ),
+      ],
+    );
+  }
+}
+
+class _StatCell extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? color;
+
+  const _StatCell({required this.label, required this.value, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
         Text(
-          l10n.stepsChartTitle(days),
-          style: const TextStyle(
-            fontSize: 14,
+          value,
+          style: TextStyle(
+            fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: color ?? AppColors.textPrimary,
           ),
         ),
-        const Spacer(),
-        if (hasData)
-          Text(
-            goal != null
-                ? l10n.stepsChartSummaryWithGoal(
-                    fmt.format(total),
-                    fmt.format(avg),
-                    hits,
-                    days,
-                  )
-                : l10n.stepsChartSummary(fmt.format(total), fmt.format(avg)),
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
-            ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppColors.textSecondary,
           ),
+        ),
       ],
     );
   }
@@ -210,16 +234,29 @@ class _Chart extends StatelessWidget {
   Widget build(BuildContext context) {
     final fmt = NumberFormat.decimalPattern();
     final peak = bars.map((b) => b.steps).fold(0, (a, b) => a > b ? a : b);
-    // Scale to actual step counts so bars stay visible when peak << goal.
+    // Scale to actual step counts so the line stays visible when peak << goal.
     final yMax = (peak * 1.2).ceilToDouble().clamp(50.0, double.infinity);
-    final showGoalLine =
-        goal != null && goal! > 0 && goal! <= yMax;
+    final showGoalLine = goal != null && goal! > 0 && goal! <= yMax;
 
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: yMax,
+    final spots = <FlSpot>[
+      for (var i = 0; i < bars.length; i++)
+        FlSpot(i.toDouble(), bars[i].steps.toDouble()),
+    ];
+
+    Color dotColorFor(int steps) {
+      if (steps == 0) return AppColors.textTertiary.withValues(alpha: 0.5);
+      if (goal != null && goal! > 0 && steps >= goal!) {
+        return AppColors.scoreHealthy;
+      }
+      return AppColors.primary;
+    }
+
+    return LineChart(
+      LineChartData(
+        minX: 0,
+        maxX: (bars.length - 1).toDouble(),
         minY: 0,
+        maxY: yMax,
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
@@ -241,7 +278,7 @@ class _Chart extends StatelessWidget {
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final i = value.round();
-                if (i < 0 || i >= bars.length) {
+                if (i < 0 || i >= bars.length || (value - i).abs() > 0.01) {
                   return const SizedBox.shrink();
                 }
                 return SideTitleWidget(
@@ -271,38 +308,50 @@ class _Chart extends StatelessWidget {
                 ],
               )
             : const ExtraLinesData(),
-        barGroups: [
-          for (var i = 0; i < bars.length; i++)
-            BarChartGroupData(
-              x: i,
-              barRods: [
-                BarChartRodData(
-                  toY: bars[i].steps.toDouble(),
-                  width: 14,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(4),
-                  ),
-                  color: bars[i].steps == 0
-                      ? AppColors.textTertiary.withValues(alpha: 0.35)
-                      : (goal != null &&
-                              goal! > 0 &&
-                              bars[i].steps >= goal!)
-                          ? AppColors.scoreHealthy
-                          : AppColors.primary,
-                ),
-              ],
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            curveSmoothness: 0.3,
+            color: AppColors.primary,
+            barWidth: 2.5,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, _, __, ___) { // ignore: unnecessary_underscores
+                final i = spot.x.round();
+                final steps =
+                    (i >= 0 && i < bars.length) ? bars[i].steps : 0;
+                return FlDotCirclePainter(
+                  radius: 3.5,
+                  color: dotColorFor(steps),
+                  strokeWidth: 1.5,
+                  strokeColor: AppColors.surface,
+                );
+              },
             ),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.15),
+                  AppColors.primary.withValues(alpha: 0.0),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
         ],
-        barTouchData: BarTouchData(
-          touchTooltipData: BarTouchTooltipData(
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
             tooltipMargin: 4,
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              final b = bars[group.x];
-              return BarTooltipItem(
+            getTooltipItems: (touched) => touched.map((s) {
+              final b = bars[s.x.round().clamp(0, bars.length - 1)];
+              return LineTooltipItem(
                 '${DateFormat.MMMd().format(b.date)}\n${fmt.format(b.steps)}',
                 const TextStyle(color: AppColors.onPrimary, fontSize: 11),
               );
-            },
+            }).toList(),
           ),
         ),
       ),

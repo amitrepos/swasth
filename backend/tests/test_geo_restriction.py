@@ -7,6 +7,7 @@ import pytest
 from fastapi import Request
 
 import models
+from dependencies import _get_client_ip
 from utils import geo
 
 
@@ -19,8 +20,10 @@ def _clear_geo_cache():
 
 
 def _decide(req):
-    """Run the now-async decision function from a sync test body."""
-    return asyncio.run(geo.is_india_writer_allowed(req))
+    """Resolve the client IP the same way production does (spoof-resistant)
+    then run the async decision function from a sync test body."""
+    ip = _get_client_ip(req)
+    return asyncio.run(geo.is_india_writer_allowed(req, ip))
 
 
 def _async_country(value):
@@ -108,20 +111,41 @@ def test_lookup_unknown_with_in_locale_allows(monkeypatch):
     assert source == "locale"
 
 
-def test_no_client_no_headers_is_error(monkeypatch):
+def test_unresolvable_ip_is_error(monkeypatch):
+    """When the caller cannot resolve a client IP at all (ip=None), the
+    decision is a blocked 'error' — never a silent allow."""
     monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
-    scope = {
-        "type": "http",
-        "headers": [],
-        "client": None,
-        "method": "GET",
-        "path": "/x",
-        "query_string": b"",
-    }
-    req = Request(scope)
+    req = _fake_request()
+    allowed, country, source = asyncio.run(geo.is_india_writer_allowed(req, None))
+    assert allowed is False
+    assert country == "UNKNOWN"
+    assert source == "error"
+
+
+def test_spoofed_xff_from_untrusted_peer_is_blocked(monkeypatch):
+    """SECURITY (NUO-135): a non-India client cannot bypass the gate by
+    sending `X-Forwarded-For: <Indian IP>`. The peer is not a trusted
+    proxy, so XFF is ignored and the real (US) peer IP is looked up."""
+    monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
+
+    looked_up = {}
+
+    async def _record_lookup(ip):
+        looked_up["ip"] = ip
+        # The real peer (1.2.3.4) is a US IP in this scenario.
+        return "US"
+
+    monkeypatch.setattr(geo, "_lookup_country", _record_lookup)
+    # Attacker connects directly (untrusted peer) but spoofs an Indian XFF.
+    req = _fake_request(
+        headers={"X-Forwarded-For": "106.51.0.1", "Accept-Language": "en-US"},
+        client_host="1.2.3.4",
+    )
     allowed, country, source = _decide(req)
     assert allowed is False
-    assert source == "error"
+    assert country == "US"
+    # The spoofed Indian IP must NOT have reached the geo lookup.
+    assert looked_up["ip"] == "1.2.3.4"
 
 
 # ---------------------------------------------------------------------------

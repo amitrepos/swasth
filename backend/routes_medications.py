@@ -76,6 +76,11 @@ async def list_medications(
             models.Medication.taken_at >= since,
         )
         .order_by(models.Medication.taken_at.desc())
+        # Safety cap: days can reach 365 and a daily-logging patient
+        # accumulates 1000+ rows/year, each decrypted via the AES-GCM ORM
+        # getter. Bound the response (doctor route already caps at 200).
+        # Switch to cursor pagination if demand grows past this.
+        .limit(500)
         .all()
     )
     return [schemas.MedicationResponse.model_validate(m) for m in meds]

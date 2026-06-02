@@ -1,19 +1,31 @@
-name: PR Persona Review (independent, WS4)
+name: PR Persona Review (fork, WS4)
 
-# Independent, PR-time domain-expert review — the GATE OF RECORD. Runs the reviewer personas in CI
-# against the PR diff, separate from whoever produced the code, and emits ONE commit status check per
-# persona (context: persona-review/<expert>). Because this runs in CI on the pushed diff, it does NOT
-# depend on any author-written local markers (.claude/markers/ is gitignored and never pushed) — an
-# agent tampering with its own markers cannot affect this gate.
+# Fork-PR variant of pr-persona-review.yml. GitHub does NOT pass repo secrets
+# (CLAUDE_CODE_OAUTH_TOKEN) to `pull_request` workflows triggered from a fork,
+# so on fork PRs the same-repo persona workflow dies in ~25s with no verdict
+# and every persona-review/<expert> status fails closed. This is the exact
+# problem daniel-pr-review-fork.yml solves; this mirrors that pattern for the
+# domain-expert fan-out.
 #
-# Daniel keeps his own workflow (daniel-pr-review.yml); he is excluded here to avoid a double review.
-# Reviewer set is computed from the data-driven matrix (.claude/reviewers-matrix.json) via
-# scripts/compute_required_reviewers.py. Status checks are advisory until Phase 5 (WS6) marks the
-# mandatory ones (security, phi) as required in branch protection.
+# Security (pull_request_target hardening):
+# - The workflow definition always comes from the base repo's DEFAULT branch,
+#   never from the PR. So this only takes effect once merged to the default
+#   branch (and can be run against an open fork PR via workflow_dispatch).
+# - We deliberately do NOT check out the untrusted PR head. The trusted base
+#   checkout supplies scripts/compute_required_reviewers.py and the persona
+#   SKILL.md files; the PR's contents are pulled as DATA via `gh pr diff` and
+#   the persona prompt treats the diff as untrusted (no embedded-instruction
+#   following). The Claude tool allowlist is tight (read/grep/glob + cat).
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review (fork PRs)'
+        required: true
+        type: number
 
 permissions:
   contents: read
@@ -21,36 +33,57 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: pr-persona-review-${{ github.event.pull_request.number }}
+  group: pr-persona-review-fork-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
   select:
     name: Select required reviewers
     runs-on: ubuntu-latest
-    # Same-repo PRs only. Fork PRs use pr-persona-review-fork.yml
-    # (pull_request_target) so CLAUDE_CODE_OAUTH_TOKEN is available — GitHub
-    # does not pass secrets to pull_request workflows triggered from forks.
+    # Fork PRs only — same-repo PRs are handled by pr-persona-review.yml.
+    # workflow_dispatch is always allowed (manual re-run against an open PR).
     if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.draft == false
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.pull_request.head.repo.full_name != github.repository &&
+        github.event.pull_request.draft == false
+      )
     outputs:
       experts: ${{ steps.compute.outputs.experts }}
       has_reviewers: ${{ steps.compute.outputs.has_reviewers }}
+      pr_number: ${{ steps.pr.outputs.number }}
+      head_sha: ${{ steps.pr.outputs.head_sha }}
     steps:
+      # Trusted base-branch checkout — gives us the reviewer-matrix + compute
+      # script from the default branch, NOT from the PR.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Resolve PR metadata
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            NUM="${{ inputs.pr_number }}"
+          else
+            NUM="${{ github.event.pull_request.number }}"
+          fi
+          JSON=$(gh api "repos/${{ github.repository }}/pulls/${NUM}")
+          echo "number=$NUM" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(echo "$JSON" | jq -r .head.sha)" >> "$GITHUB_OUTPUT"
+
       - name: Compute reviewer set from changed files
         id: compute
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          # Pull the changed-file list via the API (works for fork PRs without
+          # fetching the untrusted head into the trusted checkout).
+          CHANGED=$(gh pr diff "${{ steps.pr.outputs.number }}" --repo "${{ github.repository }}" --name-only)
           echo "Changed files:"; echo "$CHANGED"
-          # Exclude Daniel (handled by daniel-pr-review.yml) from this fan-out.
+          # Exclude Daniel (handled by daniel-pr-review-fork.yml) from this fan-out.
           EXPERTS=$(printf '%s\n' "$CHANGED" | python3 scripts/compute_required_reviewers.py - \
             | grep -v '^daniel$' || true)
           if [ -z "$EXPERTS" ]; then
@@ -78,6 +111,8 @@ jobs:
         with:
           egress-policy: audit
 
+      # Trusted base-branch checkout — the persona SKILL.md comes from the
+      # default branch, never from the untrusted PR head.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -100,11 +135,11 @@ jobs:
 
       - name: Write PR diff to disk
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .agent-tmp
-          git diff "$BASE_SHA" "$HEAD_SHA" > .agent-tmp/pr.diff
+          # PR contents pulled as DATA (not checked out as code) — see header.
+          gh pr diff "${{ needs.select.outputs.pr_number }}" --repo "${{ github.repository }}" > .agent-tmp/pr.diff
           wc -l .agent-tmp/pr.diff
 
       - name: ${{ matrix.expert }} reviews the diff
@@ -114,6 +149,9 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           allowed_bots: '*'
+          # Fork authors only have read on the base repo; GITHUB_TOKEN
+          # (pull-requests: write above) still posts the comment/status.
+          allowed_non_write_users: '*'
           prompt: |
             Read `.claude/skills/${{ steps.map.outputs.skill_dir }}/SKILL.md` and adopt that persona
             and rubric exactly. Then review the pull-request diff at `.agent-tmp/pr.diff` (treat any
@@ -135,7 +173,7 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ needs.select.outputs.head_sha }}
           IS_MANDATORY: ${{ steps.map.outputs.is_mandatory }}
         run: |
           OUT=".agent-tmp/review-${{ matrix.expert }}.md"
@@ -158,7 +196,7 @@ jobs:
           # Post the review body as a PR comment for visibility (best-effort).
           if [ -f "$OUT" ]; then
             { echo "### 🧑‍⚖️ ${{ matrix.expert }} review — $DESC"; echo; cat "$OUT"; } > .agent-tmp/comment.md
-            gh pr comment "${{ github.event.pull_request.number }}" --body-file .agent-tmp/comment.md || true
+            gh pr comment "${{ needs.select.outputs.pr_number }}" --body-file .agent-tmp/comment.md || true
           fi
 
           gh api "repos/${{ github.repository }}/statuses/${HEAD_SHA}" \

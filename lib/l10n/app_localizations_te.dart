@@ -364,6 +364,9 @@ class AppLocalizationsTe extends AppLocalizations {
   String get bpTrend => 'రక్తపోటు ధోరణి';
 
   @override
+  String get pulseTrend => 'నాడి ధోరణి';
+
+  @override
   String get avgLabel => 'సగటు';
 
   @override
@@ -408,6 +411,11 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String noReadingsInWindowWeight(int days) {
     return 'గత $days రోజులలో బరువు రీడింగ్‌లు లేవు.';
+  }
+
+  @override
+  String noReadingsInWindowPulse(int days) {
+    return 'గత $days రోజులలో నాడి రీడింగ్‌లు లేవు.';
   }
 
   @override
@@ -2199,6 +2207,11 @@ class AppLocalizationsTe extends AppLocalizations {
   }
 
   @override
+  String pulseChartTitle(int days) {
+    return 'హృదయ స్పందన · $days రోజులు';
+  }
+
+  @override
   String stepsChartSummary(String total, String avg) {
     return '$total · avg $avg';
   }
@@ -2219,6 +2232,9 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get stepsChartEmpty =>
       'No step data yet. Walk a bit and check back tomorrow.';
+
+  @override
+  String get stepsTotalLabel => 'మొత్తం';
 
   @override
   String get vegan => 'వేగన్';

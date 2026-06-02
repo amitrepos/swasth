@@ -14,9 +14,16 @@ Design choices:
   containing `en-IN`/`hi-IN` etc. — diaspora caregivers' phones usually
   carry their host-country locale.
 
+- **No IP extraction here**: this module is deliberately free of any
+  `X-Forwarded-For` parsing. The caller resolves the real client IP with
+  the spoof-resistant `dependencies._get_client_ip` (which only honours
+  XFF behind a trusted proxy) and passes it in. Parsing XFF here without
+  the trusted-proxy chain would let any client send
+  `X-Forwarded-For: <Indian IP>` and walk through the NUO-135 gate.
+
 Public API:
-    `get_request_country(request) -> (country_code, source)`
-    `is_india_writer_allowed(request) -> bool`
+    `get_request_country(request, ip) -> (country_code, source)`
+    `is_india_writer_allowed(request, ip) -> (allowed, country_code, source)`
 """
 from __future__ import annotations
 
@@ -67,20 +74,6 @@ def _is_geo_enabled() -> bool:
     return os.getenv("GEO_RESTRICT_ENABLED", "").strip().lower() in ("1", "true", "yes")
 
 
-def _client_ip(request: Request) -> Optional[str]:
-    """Best-effort client IP: trust X-Forwarded-For first hop, fall back to socket."""
-    fwd = request.headers.get("x-forwarded-for", "")
-    if fwd:
-        # First entry is the original client per RFC 7239 conventions.
-        return fwd.split(",")[0].strip() or None
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip:
-        return real_ip.strip()
-    if request.client and request.client.host:
-        return request.client.host
-    return None
-
-
 def _is_private_ip(ip: str) -> bool:
     return ip.startswith(_PRIVATE_PREFIXES)
 
@@ -121,8 +114,13 @@ def _locale_suggests_india(request: Request) -> bool:
     return bool(re.search(r"\b(en|hi|bn|ta|te|kn|ml|mr|gu|pa|or|as|ur)[-_]IN\b", al, re.I))
 
 
-async def get_request_country(request: Request) -> Tuple[str, str]:
+async def get_request_country(request: Request, ip: Optional[str]) -> Tuple[str, str]:
     """Return (country_code, source).
+
+    `ip` MUST be the spoof-resistant client IP resolved by the caller via
+    `dependencies._get_client_ip`. We never read `X-Forwarded-For` here —
+    doing so without the trusted-proxy chain is the NUO-135 bypass Daniel
+    flagged. `request` is still used for the locale fallback headers.
 
     `source` is one of: 'ip', 'private', 'locale', 'disabled', 'error'.
     Country code is ISO-2 ('IN', 'US', ...) or 'UNKNOWN'.
@@ -130,7 +128,6 @@ async def get_request_country(request: Request) -> Tuple[str, str]:
     if not _is_geo_enabled():
         return "IN", "disabled"
 
-    ip = _client_ip(request)
     if not ip:
         return "UNKNOWN", "error"
 
@@ -144,14 +141,16 @@ async def get_request_country(request: Request) -> Tuple[str, str]:
     return country, "ip"
 
 
-async def is_india_writer_allowed(request: Request) -> Tuple[bool, str, str]:
+async def is_india_writer_allowed(request: Request, ip: Optional[str]) -> Tuple[bool, str, str]:
     """Decision function used by the dependency.
 
-    Returns (allowed, country_code, source) — letting the caller log
-    or surface the reason. India = allowed. Anything else = blocked.
-    When the master switch is off, we treat every caller as India.
+    `ip` is the spoof-resistant client IP resolved by the caller (see
+    `dependencies._get_client_ip`). Returns (allowed, country_code,
+    source) — letting the caller log or surface the reason. India =
+    allowed. Anything else = blocked. When the master switch is off, we
+    treat every caller as India.
     """
-    country, source = await get_request_country(request)
+    country, source = await get_request_country(request, ip)
     if country == "IN":
         return True, "IN", source
     return False, country, source
