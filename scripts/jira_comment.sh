@@ -45,6 +45,7 @@ if [[ -n "$PERSONA" ]]; then
   P_UPPER=$(printf '%s' "$PERSONA" | tr '[:lower:]' '[:upper:]')
   case "$(printf '%s' "$PERSONA" | tr '[:upper:]' '[:lower:]')" in
     priya)    LABEL="Priya — ticket-quality / QA gate" ;;
+    anya)     LABEL="Anya — backlog grooming" ;;
     matt)     LABEL="Matt — builder" ;;
     daniel)   LABEL="Daniel — code review" ;;
     aditya)   LABEL="Aditya — UX review" ;;

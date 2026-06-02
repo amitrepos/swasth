@@ -84,7 +84,7 @@ def fetch_ticket(key: str) -> dict[str, Any]:
     token = os.environ["JIRA_API_TOKEN"]
     endpoint = f"{url}/rest/api/3/issue/{key}"
     params = {
-        "fields": "summary,description,labels,priority,issuetype,status,parent,comment",
+        "fields": "summary,description,labels,priority,issuetype,status,parent,comment,reporter",
     }
     r = requests.get(endpoint, auth=HTTPBasicAuth(email, token), params=params, timeout=30)
     r.raise_for_status()
@@ -99,6 +99,9 @@ def render_brief(issue: dict[str, Any]) -> str:
     priority = (f.get("priority") or {}).get("name", "?")
     issue_type = (f.get("issuetype") or {}).get("name", "?")
     labels = f.get("labels") or []
+    reporter = f.get("reporter") or {}
+    reporter_name = reporter.get("displayName", "?")
+    reporter_id = reporter.get("accountId", "")
     parent = f.get("parent")
     parent_str = ""
     if parent:
@@ -113,6 +116,8 @@ def render_brief(issue: dict[str, Any]) -> str:
     lines.append(f"- **Priority:** {priority}")
     lines.append(f"- **Issue Type:** {issue_type}")
     lines.append(f"- **Labels:** {', '.join(labels) if labels else '(none)'}")
+    # Machine-readable line so the grooming workflow can hand the ticket back to its reporter.
+    lines.append(f"- **Reporter accountId:** {reporter_id or '(unknown)'}  ({reporter_name})")
     if parent_str:
         lines.append(f"- **Parent / Epic:** {parent_str}")
     lines.append("")

@@ -183,6 +183,17 @@ r=[]; ok=m.baseline_diff(r); print("FAIL" if not ok and any("COLLECTION error" i
   [ $? -eq 0 ] && { PASS=$((PASS+1)); echo "  ok   unit-only gate passes; flow advisory (not blocking)"; } || { FAIL=$((FAIL+1)); echo "  FAIL unit-only gate blocks on flow"; }
 fi
 
+echo "== grooming (Anya) =="
+# jira_add_label.sh requires at least one label
+(cd "$ROOT" && JIRA_URL=x JIRA_EMAIL=x JIRA_API_TOKEN=x bash scripts/jira_add_label.sh NUO-1 >/dev/null 2>&1)
+[ $? -ne 0 ] && { PASS=$((PASS+1)); echo "  ok   jira_add_label rejects missing label"; } || { FAIL=$((FAIL+1)); echo "  FAIL jira_add_label missing-label"; }
+bash -n "$ROOT/scripts/jira_add_label.sh" && { PASS=$((PASS+1)); echo "  ok   jira_add_label syntax"; } || { FAIL=$((FAIL+1)); echo "  FAIL jira_add_label syntax"; }
+# groomer skill has the verdict contract + the parseable Affected Surfaces format
+G="$ROOT/.claude/skills/groomer/SKILL.md"
+grep -q "GROOM_VERDICT: ai-ready" "$G" && grep -q "GROOM_VERDICT: needs-split" "$G" && { PASS=$((PASS+1)); echo "  ok   groomer emits GROOM_VERDICT contract"; } || { FAIL=$((FAIL+1)); echo "  FAIL groomer verdict contract"; }
+grep -q "h2. Affected Surfaces" "$G" && grep -q '{{' "$G" && { PASS=$((PASS+1)); echo "  ok   groomer documents Affected Surfaces format"; } || { FAIL=$((FAIL+1)); echo "  FAIL groomer Affected Surfaces format"; }
+grep -q 'anya)' "$ROOT/scripts/jira_comment.sh" && { PASS=$((PASS+1)); echo "  ok   jira_comment knows the anya persona"; } || { FAIL=$((FAIL+1)); echo "  FAIL anya persona missing"; }
+
 echo
 echo "RESULT: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
