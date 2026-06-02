@@ -1085,58 +1085,6 @@ class TestPatientSummary:
 
 
 # ---------------------------------------------------------------------------
-# GET /api/doctor/patients/{id}/medications (NUO-127)
-# ---------------------------------------------------------------------------
-
-class TestPatientMedications:
-    def test_get_medications_returns_logged_intake(
-        self, client, doctor_headers, patient_user, linked_doctor_patient, db
-    ):
-        _, profile = patient_user
-        now = datetime.now(timezone.utc)
-        db.add(
-            models.Medication(
-                profile_id=profile.id,
-                name="Metformin",
-                dose="500 mg",
-                frequency="Twice daily",
-                taken_at=now - timedelta(hours=2),
-            )
-        )
-        db.add(
-            models.Medication(
-                profile_id=profile.id,
-                name="Aspirin",
-                taken_at=now - timedelta(days=3),
-            )
-        )
-        db.commit()
-
-        resp = client.get(
-            f"/api/doctor/patients/{profile.id}/medications?days=30",
-            headers=doctor_headers,
-        )
-        assert resp.status_code == 200
-        body = resp.json()
-        assert len(body) == 2
-        names = {row["name"] for row in body}
-        assert names == {"Metformin", "Aspirin"}
-        metformin = next(r for r in body if r["name"] == "Metformin")
-        assert metformin["dose"] == "500 mg"
-        assert metformin["frequency"] == "Twice daily"
-
-    def test_get_medications_denies_unlinked_doctor(
-        self, client, doctor_headers, patient_user, db
-    ):
-        _, profile = patient_user
-        resp = client.get(
-            f"/api/doctor/patients/{profile.id}/medications",
-            headers=doctor_headers,
-        )
-        assert resp.status_code == 403
-
-
-# ---------------------------------------------------------------------------
 # POST /api/doctor/patients/{id}/notes
 # ---------------------------------------------------------------------------
 

@@ -46,7 +46,13 @@ logger = logging.getLogger(__name__)
 # i.e. we FAIL OPEN (genuine India users are never locked out by a quota error).
 # Operators should therefore treat occasional 429s from ipapi.co as expected,
 # not an incident.
-GEO_LOOKUP_URL = "https://ipapi.co/{ip}/country/"
+#
+# `GEO_LOOKUP_URL` is overridable via env so an operator can point at a paid or
+# self-hosted endpoint (e.g. a MaxMind/GeoIP proxy) without a code deploy when
+# the free-tier quota becomes a bottleneck. The override MUST contain the
+# literal `{ip}` placeholder — it's `.format(ip=...)`-substituted per request —
+# and MUST return the bare ISO-2 country code as plain text (as ipapi.co does).
+GEO_LOOKUP_URL = os.getenv("GEO_LOOKUP_URL", "https://ipapi.co/{ip}/country/").strip() or "https://ipapi.co/{ip}/country/"
 GEO_LOOKUP_TIMEOUT = 1.5  # seconds — must be tight; we're on the request path
 
 # In-memory TTL cache: {ip: (expires_at_monotonic, country_code)}. The previous

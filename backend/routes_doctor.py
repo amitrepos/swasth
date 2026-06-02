@@ -1305,6 +1305,9 @@ def get_patient_medications(
         .limit(200)
         .all()
     )
+    # Persist the _log_doctor_access row added above: get_db() rolls back on
+    # close (autocommit=False), so without this commit the DPDPA audit-trail
+    # entry would be lost. Mirrors every sibling doctor-portal GET.
     db.commit()
 
     return [schemas.MedicationResponse.model_validate(m) for m in meds]

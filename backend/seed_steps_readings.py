@@ -3,8 +3,9 @@
 Run:
   cd backend && source venv/bin/activate && python seed_steps_readings.py
 
-Idempotent: skips days that already have a non-zero step reading.
-Replaces same-day readings with 0 steps (e.g. failed pedometer sync).
+Idempotent: skips days that already have a non-zero step reading. If a day
+already has a zero-step row (e.g. a failed pedometer sync), that row is
+deleted and replaced with the sample non-zero reading.
 """
 from datetime import datetime, timedelta, timezone
 

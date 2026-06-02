@@ -311,7 +311,7 @@ def get_readings(
 
 @router.get("/readings/steps/daily")
 def get_daily_steps(
-    profile_id: int,
+    profile_id: int = Query(...),
     days: int = Query(default=7, ge=1, le=30),
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
