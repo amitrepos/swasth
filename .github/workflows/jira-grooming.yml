@@ -3,7 +3,9 @@ name: JIRA Grooming — Anya (backlog refinement)
 # Per-ticket grooming. A human assigns a ticket to Anya in JIRA; the "assignee → Anya" Automation
 # rule fires repository_dispatch (jira-ticket-groom). Anya reads the ticket + repo and either marks
 # it ai-ready (rewriting into AI-ready form if needed), proposes a split, or asks product questions —
-# then hands the ticket BACK to its reporter. She never starts a build; a human still assigns
+# labels the result (the label is the "Anya is done" signal); the ticket stays on Anya. The JIRA rule
+# is guarded with `labels NOT IN (ai-ready, needs-split, needs-human)` so a labelled ticket never
+# re-triggers grooming. She never starts a build; a human still assigns
 # ai-ready tickets to Priya.
 #
 # Feature-flagged: repo var SWASTH_GROOMING_ENABLED. Until 'on', runs DRY-RUN (classify + log, no
@@ -37,7 +39,6 @@ jobs:
       JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
       TICKET_KEY: ${{ github.event.client_payload.ticket_key || inputs.ticket_key }}
-      REPORTER_ID: ${{ github.event.client_payload.reporter_account_id }}
       GROOMING_ENABLED: ${{ vars.SWASTH_GROOMING_ENABLED || 'off' }}
     steps:
       - name: Harden runner (egress audit)
@@ -63,11 +64,6 @@ jobs:
           mkdir -p .agent-tmp
           python3 scripts/jira_fetch_ticket.py "$TICKET_KEY" --out .agent-tmp/ticket.md
           test -s .agent-tmp/ticket.md
-          # Resolve reporter accountId (payload first, else parse the brief) for hand-back.
-          if [ -z "${REPORTER_ID:-}" ]; then
-            REPORTER_ID=$(grep -E '^- \*\*Reporter accountId:\*\*' .agent-tmp/ticket.md | sed -E 's/.*: +([^ ]+).*/\1/' | head -1)
-          fi
-          echo "REPORTER_ID=$REPORTER_ID" >> "$GITHUB_ENV"
 
       - name: Anya grooms the ticket
         if: ${{ env.TICKET_KEY != '' }}
@@ -133,12 +129,11 @@ jobs:
               bash scripts/jira_comment.sh --as anya "$TICKET_KEY" @.agent-tmp/groom-questions.md || true
               bash scripts/jira_add_label.sh "$TICKET_KEY" needs-human || true ;;
           esac
-          # Hand control back to the reporter (control always returns to the human).
-          if [ -n "${REPORTER_ID:-}" ] && [ "${REPORTER_ID}" != "(unknown)" ]; then
-            bash scripts/jira_assign.sh "$TICKET_KEY" "$REPORTER_ID" || echo "::warning::could not reassign to reporter"
-          else
-            echo "::warning::no reporter accountId; leaving assignee unchanged"
-          fi
+          # The ticket STAYS assigned to Anya — the label (ai-ready / needs-split / needs-human) is
+          # the "Anya is done" signal. The JIRA rule must be guarded with
+          # `labels NOT IN (ai-ready, needs-split, needs-human)` so a labelled ticket never re-triggers
+          # grooming. (No reassignment here → no assignee-change event → no loop.)
+          echo "Grooming complete; ticket remains assigned to Anya and is labelled per the verdict."
 
       - name: Dry-run note
         if: ${{ env.GROOMING_ENABLED != 'on' }}
@@ -153,5 +148,5 @@ jobs:
             echo "- Ticket: \`${TICKET_KEY:-none}\`"
             echo "- Verdict: \`${{ steps.verdict.outputs.verdict || 'n/a' }}\`"
             echo "- Grooming enabled: \`${GROOMING_ENABLED}\`"
-            echo "- Handed back to: \`${REPORTER_ID:-unchanged}\`"
+            echo "- Ticket stays assigned to Anya; label is the done-signal."
           } >> "$GITHUB_STEP_SUMMARY"
