@@ -95,6 +95,10 @@ abstract final class AppColors {
 
   // ── Utility ──────────────────────────────────────────────────────────────
   static const Color transparent = Color(0x00000000);
+  static const Color surface = Color(0xFFFFFFFF); // opaque sheet/card fill
+  static const Color onPrimary = Color(0xFFFFFFFF); // text/icons on primary buttons
+  static const Color successMuted = Color(0xFFE8F5E9); // light success banner bg
+  static const Color successBorder = Color(0xFF81C784); // success banner border
 
   // ── Camera screen colors ─────────────────────────────────────────────────
   static const Color cameraBackground = Color(0xFF000000); // black

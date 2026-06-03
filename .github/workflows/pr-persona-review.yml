@@ -28,7 +28,12 @@ jobs:
   select:
     name: Select required reviewers
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    # Same-repo PRs only. Fork PRs use pr-persona-review-fork.yml
+    # (pull_request_target) so CLAUDE_CODE_OAUTH_TOKEN is available — GitHub
+    # does not pass secrets to pull_request workflows triggered from forks.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.draft == false
     outputs:
       experts: ${{ steps.compute.outputs.experts }}
       has_reviewers: ${{ steps.compute.outputs.has_reviewers }}

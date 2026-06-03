@@ -185,6 +185,7 @@
   "oneYear": "1 ஆண்டு",
   "glucoseTrend": "குளுக்கோஸ் போக்கு",
   "bpTrend": "இரத்த அழுத்த போக்கு",
+  "pulseTrend": "துடிப்பு போக்கு",
   "avgLabel": "சராசரி",
   "avgDaysFormat": "{count} நாள் சராசரி",
   "@avgDaysFormat": {
@@ -223,6 +224,16 @@
   "noReadingsInWindowWeight": "கடந்த {days} நாட்களில் எடை ரீடிங்குகள் இல்லை.",
   "@noReadingsInWindowWeight": {
     "description": "Empty state for weight chart when there are no weight readings in the selected window.",
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "7"
+      }
+    }
+  },
+  "noReadingsInWindowPulse": "கடந்த {days} நாட்களில் துடிப்பு ரீடிங்குகள் இல்லை.",
+  "@noReadingsInWindowPulse": {
+    "description": "Empty state for pulse chart when there are no pulse readings in the selected window.",
     "placeholders": {
       "days": {
         "type": "int",
@@ -1162,6 +1173,14 @@
   "@stepsLabel": {
     "description": "Display label for daily step-count reading type"
   },
+  "stepsChartTitle": "Steps · {days} days",
+  "pulseChartTitle": "இதய துடிப்பு · {days} நாட்கள்",
+  "stepsChartSummary": "{total} · avg {avg}",
+  "stepsChartSummaryWithGoal": "{total} · avg {avg} · {hits}/{days} ≥ goal",
+  "stepsChartLoadError": "Could not load steps",
+  "stepsChartEmpty": "No step data yet. Walk a bit and check back tomorrow.",
+  "stepsTotalLabel": "மொத்தம்",
+  "stepsGoalLabel": "இலக்கு",
   "vegan": "வீகன்",
   "@vegan": {
     "description": "Diet flag label indicating the meal is vegan"
@@ -1309,5 +1328,26 @@
   },
   "healthScoreTitle": "ஆரோக்கிய மதிப்பெண்",
   "saveSuccessful": "வெற்றிகரமாக சேமிக்கப்பட்டது",
-  "deleteSuccessful": "வெற்றிகரமாக அழிக்கப்பட்டது"
+  "deleteSuccessful": "வெற்றிகரமாக அழிக்கப்பட்டது",
+  "regionBannerTitle": "படிக்க மட்டுமே பயன்முறை",
+  "regionBannerBody": "நீங்கள் ஒரு குடும்ப உறுப்பினராக பார்க்கிறீர்கள். பதிவுசெய்தல் இந்தியாவில் மட்டுமே இயக்கப்பட்டுள்ளது.",
+  "regionErrorWriteBlocked": "பதிவுசெய்தல் இந்தியாவில் மட்டுமே கிடைக்கிறது. நீங்கள் ஒரு குடும்ப உறுப்பினராக உள்நுழைந்துள்ளீர்கள் — அளவீடுகளைப் பார்க்கலாம், ஆனால் புதியதை பதிவுசெய்ய முடியாது.",
+  "medicationsScreenTitle": "நான் உட்கொண்ட மருந்துகள்",
+  "medicationsLogFab": "மருந்து பதிவு செய்",
+  "medicationsLogFirst": "முதல் மருந்தை பதிவு செய்",
+  "medicationsColDateTime": "தேதி & நேரம்",
+  "medicationsColMedicine": "மருந்து",
+  "medicationsColDose": "அளவு",
+  "medicationsColFrequency": "அதிர்வெண்",
+  "medicationsColNotes": "குறிப்புகள்",
+  "medicationsColActions": "செயல்கள்",
+  "medicationsEmptyTitle": "இன்னும் மருந்துகள் பதிவு செய்யப்படவில்லை",
+  "medicationsEmptyBody": "நீங்கள் உட்கொண்ட மருந்துகளை பதிவு செய்தால் அடுத்த அறிக்கையில் மருத்துவருக்குத் தெரியும்.",
+  "medicationsDeleteTitle": "மருந்து பதிவை நீக்கவா?",
+  "medicationsDeleteBody": "{dateTime} இல் \"{name}\" பதிவை நீக்கவா?",
+  "medicationsDeleteSemantics": "{name} நீக்கு",
+  "medicationsEditTitle": "மருந்தை திருத்து",
+  "medicationsSaveChanges": "மாற்றங்களை சேமி",
+  "medicationsEditSemantics": "{name} திருத்து",
+  "medicationsCellEmpty": "-"
 }

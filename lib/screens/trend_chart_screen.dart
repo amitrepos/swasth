@@ -6,6 +6,8 @@ import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/insights/steps_chart_card.dart';
+import '../widgets/insights/pulse_chart_card.dart';
 import 'shell_screen.dart';
 
 // ── Semantic chart colors (distinct from UI palette) ──────────────────────────
@@ -13,6 +15,7 @@ const _kGlucoseColor = Color(0xFF10B981); // emerald-500
 const _kSysColor = Color(0xFFF43F5E); // rose-500  (systolic)
 const _kDiaColor = Color(0xFFFDA4AF); // rose-300  (diastolic, lighter)
 const _kWeightColor = Color(0xFF6366F1); // indigo-500
+const _kPulseColor = Color(0xFFDC2626); // red-600  (heart rate / pulse)
 const _kGridColor = Color(0x1A64748B); // slate-500 @ 10%
 
 class TrendChartScreen extends StatefulWidget {
@@ -37,7 +40,6 @@ class TrendChartScreenState extends State<TrendChartScreen>
   final Map<String, String> _summaries = {};
   final Map<String, bool> _summaryLoading = {};
   String _lastLangCode = 'en';
-
   @override
   void initState() {
     super.initState();
@@ -245,8 +247,14 @@ class _TrendView extends StatelessWidget {
     final weight = filtered
         .where((r) => r.readingType == 'weight' && r.weightValue != null)
         .toList();
+    // Pulse (heart rate) is captured alongside blood-pressure readings.
+    final pulse = filtered
+        .where((r) => r.readingType == 'blood_pressure' && r.pulseRate != null)
+        .toList();
 
-    if (glucose.isEmpty && bp.isEmpty && weight.isEmpty) {
+    // C6: 7-day steps chart lives here even when BP/glucose/weight are empty.
+    final showStepsChart = days == 7;
+    if (glucose.isEmpty && bp.isEmpty && weight.isEmpty && !showStepsChart) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -390,6 +398,23 @@ class _TrendView extends StatelessWidget {
             if (summary != null && summary!.isNotEmpty || summaryLoading)
               const SizedBox(height: 16),
 
+            // ── 7-day steps (C6) — aggregated from loaded readings ───────
+            if (showStepsChart) ...[
+              StepsChartCard(
+                key: ValueKey('insights_steps_$profileId'),
+                readings: readings,
+                days: 7,
+              ),
+              const SizedBox(height: 16),
+              // 7-day heart rate — same daily-aggregated line-chart style.
+              PulseChartCard(
+                key: ValueKey('insights_pulse_$profileId'),
+                readings: readings,
+                days: 7,
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // ── Correlation overview (always shown if any data) ──────────
             if (glucose.isNotEmpty || bp.isNotEmpty) ...[
               _CorrelationCard(
@@ -483,6 +508,40 @@ class _TrendView extends StatelessWidget {
                     ),
             ),
             const SizedBox(height: 16),
+
+            // ── Pulse detail (heart rate, logged with BP) ────────────────
+            // 7-day pulse uses the dedicated daily-aggregated PulseChartCard
+            // above; longer windows keep the time-axis detail chart.
+            if (!showStepsChart) ...[
+              _DetailChartCard(
+                key: const Key('trend_card_pulse'),
+                icon: Icons.monitor_heart_outlined,
+                color: _kPulseColor,
+                title: l10n.pulseTrend,
+                unit: 'bpm',
+                child: pulse.isNotEmpty
+                    ? Column(
+                        children: [
+                          _PulseChart(
+                            readings: pulse,
+                            days: days,
+                            dotRadius: dotRadius,
+                          ),
+                          const SizedBox(height: 8),
+                          _PulseStatsRow(
+                            values: pulse.map((r) => r.pulseRate!).toList(),
+                            l10n: l10n,
+                          ),
+                        ],
+                      )
+                    : _EmptyReadingState(
+                        key: const Key('trend_empty_pulse'),
+                        icon: Icons.monitor_heart_outlined,
+                        message: l10n.noReadingsInWindowPulse(days),
+                      ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // ── Weight detail ───────────────────────────────────────────
             _DetailChartCard(
@@ -1745,6 +1804,142 @@ class _WeightStatsRow extends StatelessWidget {
         ),
         _StatCell(label: l10n.minLabel, value: min.toStringAsFixed(1)),
         _StatCell(label: l10n.maxLabel, value: max.toStringAsFixed(1)),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Full-size Pulse (heart rate) chart (200px)
+// ---------------------------------------------------------------------------
+
+class _PulseChart extends StatelessWidget {
+  final List<HealthReading> readings;
+  final int days;
+  final double dotRadius;
+
+  const _PulseChart({
+    required this.readings,
+    required this.days,
+    required this.dotRadius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final windowStart = DateTime.now().subtract(Duration(days: days));
+    final spots = readings.map((r) {
+      final x = r.readingTimestamp.difference(windowStart).inHours.toDouble();
+      return FlSpot(x, r.pulseRate!);
+    }).toList();
+
+    final values = readings.map((r) => r.pulseRate!).toList();
+    final minY = (values.reduce((a, b) => a < b ? a : b) - 10).clamp(
+      0.0,
+      double.infinity,
+    );
+    final maxY = values.reduce((a, b) => a > b ? a : b) + 15;
+    final maxX = (days * 24).toDouble();
+
+    return SizedBox(
+      height: 200,
+      child: LineChart(
+        LineChartData(
+          // Resting heart rate normal band (60–100 bpm).
+          rangeAnnotations: RangeAnnotations(
+            horizontalRangeAnnotations: [
+              HorizontalRangeAnnotation(
+                y1: 60,
+                y2: 100,
+                color: AppColors.statusNormal.withValues(alpha: 0.08),
+              ),
+            ],
+          ),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              curveSmoothness: 0.3,
+              color: _kPulseColor,
+              barWidth: 2.5,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
+                  radius: dotRadius,
+                  color: _kPulseColor,
+                  strokeWidth: 1.5,
+                  strokeColor: AppColors.surface,
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [
+                    _kPulseColor.withValues(alpha: 0.12),
+                    _kPulseColor.withValues(alpha: 0.0),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ],
+          minY: minY,
+          maxY: maxY,
+          minX: 0,
+          maxX: maxX,
+          titlesData: _titlesData(days, maxY, minY),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: 20,
+            getDrawingHorizontalLine: (_) =>
+                const FlLine(color: _kGridColor, strokeWidth: 1),
+          ),
+          borderData: FlBorderData(show: false),
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipItems: (spots) => spots.map((s) {
+                final dt = windowStart.add(Duration(hours: s.x.toInt()));
+                return LineTooltipItem(
+                  '${s.y.toStringAsFixed(0)} bpm\n${DateFormat('d MMM').format(dt)}',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PulseStatsRow extends StatelessWidget {
+  final List<double> values;
+  final AppLocalizations l10n;
+
+  const _PulseStatsRow({required this.values, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) return const SizedBox.shrink();
+    final avg = values.reduce((a, b) => a + b) / values.length;
+    final min = values.reduce((a, b) => a < b ? a : b);
+    final max = values.reduce((a, b) => a > b ? a : b);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _StatCell(
+          label: l10n.avgLabel,
+          value: avg.toStringAsFixed(0),
+          color: _kPulseColor,
+        ),
+        _StatCell(label: l10n.minLabel, value: min.toStringAsFixed(0)),
+        _StatCell(label: l10n.maxLabel, value: max.toStringAsFixed(0)),
       ],
     );
   }

@@ -182,6 +182,27 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
     }
 
     if (path.endsWith('/readings') && method == 'GET') {
+      final now = DateTime.now().toUtc();
+      final today = DateTime.utc(now.year, now.month, now.day);
+      const dailySteps = [3200, 5100, 6800, 7500, 4200, 8900, 6100];
+      final stepReadings = [
+        for (var i = 0; i < dailySteps.length; i++)
+          {
+            'id': 10 + i,
+            'profile_id': 1,
+            'reading_type': 'steps',
+            'steps_count': dailySteps[i],
+            'steps_goal': 7500,
+            'value_numeric': dailySteps[i].toDouble(),
+            'unit_display': 'steps',
+            'status_flag': 'NORMAL',
+            'reading_timestamp': today
+                .subtract(Duration(days: dailySteps.length - 1 - i))
+                .add(const Duration(hours: 21))
+                .toIso8601String(),
+            'created_at': DateTime.now().toIso8601String(),
+          },
+      ];
       return http.Response(
         jsonEncode([
           {
@@ -209,6 +230,7 @@ MockClient createMockClient({ApiCallTracker? tracker}) {
             'reading_timestamp': DateTime.now().toIso8601String(),
             'created_at': DateTime.now().toIso8601String(),
           },
+          ...stepReadings,
         ]),
         200,
       );

@@ -13,6 +13,7 @@ import geoip2.database
 import geoip2.errors
 from database import get_db
 from encryption_service import hash_email
+from utils.geo import is_india_writer_allowed
 
 logger = logging.getLogger(__name__)
 
@@ -567,3 +568,45 @@ def get_profile_owner_or_403(
             detail="Only the profile owner can perform this action",
         )
     return access
+
+
+# ---------------------------------------------------------------------------
+# Region gate (NUO-135) — clinical writes must originate from India.
+# Caregivers abroad can still read; only logging is blocked.
+# ---------------------------------------------------------------------------
+
+async def require_india_writer(request: Request) -> dict:
+    """Block write endpoints when the caller is outside India.
+
+    Returns a small region-info dict on success so the route handler can
+    log it or include it in audit trails. Raises 451 (Unavailable For
+    Legal Reasons) with a structured detail otherwise — the Flutter
+    client special-cases this code to surface the family-member banner.
+
+    Async so the underlying ipapi.co lookup awaits on the event loop
+    instead of holding a thread-pool worker for up to 1.5s per cache-miss.
+
+    The master switch is off by default (`GEO_RESTRICT_ENABLED`); local
+    dev and CI therefore never get blocked.
+
+    The client IP is resolved by the XFF-spoof-resistant `_get_client_ip`
+    (XFF only honoured behind a trusted proxy) and passed into the geo
+    decision — `utils.geo` does NOT parse `X-Forwarded-For` itself.
+    """
+    client_ip = _get_client_ip(request)
+    allowed, country, source = await is_india_writer_allowed(request, client_ip)
+    if allowed:
+        return {"country": country, "source": source}
+    raise HTTPException(
+        status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,
+        detail={
+            "code": "REGION_NOT_ALLOWED",
+            "message": (
+                "Logging health data is only available from India. "
+                "You can still view this profile as a family member."
+            ),
+            "country": country,
+            "source": source,
+        },
+    )
+

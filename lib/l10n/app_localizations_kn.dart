@@ -366,6 +366,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get bpTrend => 'ರಕ್ತದೊತ್ತಡದ ಪ್ರವೃತ್ತಿ';
 
   @override
+  String get pulseTrend => 'ನಾಡಿಮಿಡಿತದ ಪ್ರವೃತ್ತಿ';
+
+  @override
   String get avgLabel => 'ಸರಾಸರಿ';
 
   @override
@@ -410,6 +413,11 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String noReadingsInWindowWeight(int days) {
     return 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ತೂಕದ ರೀಡಿంగ్‌ಗಳಿಲ್ಲ.';
+  }
+
+  @override
+  String noReadingsInWindowPulse(int days) {
+    return 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ನಾಡಿಮಿಡಿತದ ರೀಡಿಂಗ್‌ಗಳಿಲ್ಲ.';
   }
 
   @override
@@ -1545,6 +1553,18 @@ class AppLocalizationsKn extends AppLocalizations {
   String get sectionMeals => 'ಇತ್ತೀಚಿನ ಊಟಗಳು';
 
   @override
+  String get sectionMedicationsTaken => 'Medicines taken (patient log)';
+
+  @override
+  String get doctorNoMedicationsLogged =>
+      'No medicines logged in the last 30 days';
+
+  @override
+  String doctorMedicationLogSubtitle(String dose, String frequency) {
+    return '$dose · $frequency';
+  }
+
+  @override
   String get noMealsLast7Days => 'ಕಳೆದ 7 ದಿನಗಳಲ್ಲಿ ಯಾವುದೇ ಊಟಗಳನ್ನು ದಾಖಲಿಸಿಲ್ಲ';
 
   @override
@@ -2194,6 +2214,41 @@ class AppLocalizationsKn extends AppLocalizations {
   String get stepsLabel => 'ಹೆಜ್ಜೆಗಳು';
 
   @override
+  String stepsChartTitle(int days) {
+    return 'Steps · $days days';
+  }
+
+  @override
+  String pulseChartTitle(int days) {
+    return 'ಹೃದಯ ಬಡಿತ · $days ದಿನಗಳು';
+  }
+
+  @override
+  String stepsChartSummary(String total, String avg) {
+    return '$total · avg $avg';
+  }
+
+  @override
+  String stepsChartSummaryWithGoal(
+    String total,
+    String avg,
+    int hits,
+    int days,
+  ) {
+    return '$total · avg $avg · $hits/$days ≥ goal';
+  }
+
+  @override
+  String get stepsChartLoadError => 'Could not load steps';
+
+  @override
+  String get stepsChartEmpty =>
+      'No step data yet. Walk a bit and check back tomorrow.';
+
+  @override
+  String get stepsTotalLabel => 'ಒಟ್ಟು';
+
+  @override
   String get vegan => 'ವೀಗನ್';
 
   @override
@@ -2348,4 +2403,130 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get noSummaryAvailable => 'ಯಾವುದೇ ಸಾರಾಂಶ ಲಭ್ಯವಿಲ್ಲ';
+
+  @override
+  String get regionBannerTitle => 'ಕೇವಲ ವೀಕ್ಷಣಾ ಮೋಡ್';
+
+  @override
+  String get regionBannerBody =>
+      'ನೀವು ಕುಟುಂಬ ಸದಸ್ಯರಾಗಿ ವೀಕ್ಷಿಸುತ್ತಿದ್ದೀರಿ. ಲಾಗಿಂಗ್ ಭಾರತದಲ್ಲಿ ಮಾತ್ರ ಲಭ್ಯವಿದೆ.';
+
+  @override
+  String get regionErrorWriteBlocked =>
+      'ಲಾಗಿಂಗ್ ಭಾರತದಲ್ಲಿ ಮಾತ್ರ ಲಭ್ಯವಿದೆ. ನೀವು ಕುಟುಂಬ ಸದಸ್ಯರಾಗಿ ಸೈನ್ ಇನ್ ಆಗಿದ್ದೀರಿ — ನೀವು ರೀಡಿಂಗ್‌ಗಳನ್ನು ನೋಡಬಹುದು, ಆದರೆ ಹೊಸದನ್ನು ದಾಖಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.';
+
+  @override
+  String get medicationsScreenTitle => 'ನಾನು ತೆಗೆದುಕೊಂಡ ಔಷಧಿಗಳು';
+
+  @override
+  String get medicationsLogFab => 'ಔಷಧಿ ದಾಖಲಿಸಿ';
+
+  @override
+  String get medicationsLogFirst => 'ಮೊದಲ ಔಷಧಿ ದಾಖಲಿಸಿ';
+
+  @override
+  String get medicationsColDateTime => 'ದಿನಾಂಕ & ಸಮಯ';
+
+  @override
+  String get medicationsColMedicine => 'ಔಷಧಿ';
+
+  @override
+  String get medicationsColDose => 'ಮೊತ್ತ';
+
+  @override
+  String get medicationsColFrequency => 'ಆವರ್ತನೆ';
+
+  @override
+  String get medicationsColNotes => 'ಟಿಪ್ಪಣಿಗಳು';
+
+  @override
+  String get medicationsColActions => 'ಕ್ರಿಯೆಗಳು';
+
+  @override
+  String get medicationsEmptyTitle => 'ಇನ್ನೂ ಯಾವುದೇ ಔಷಧಿ ದಾಖಲಾಗಿಲ್ಲ';
+
+  @override
+  String get medicationsEmptyBody =>
+      'ನೀವು ತೆಗೆದುಕೊಂಡ ಔಷಧಿಗಳನ್ನು ದಾಖಲಿಸಿ — ಮುಂದಿನ ವರದಿಯಲ್ಲಿ ನಿಮ್ಮ ವೈದ್ಯರಿಗೆ ಕಾಣಿಸುತ್ತದೆ.';
+
+  @override
+  String get medicationsDeleteTitle => 'ಔಷಧಿ ನಮೂದನ್ನು ಅಳಿಸಬೇಕೇ?';
+
+  @override
+  String medicationsDeleteBody(String name, String dateTime) {
+    return '$dateTime ನಲ್ಲಿ \"$name\" ನಮೂದನ್ನು ಅಳಿಸಬೇಕೇ?';
+  }
+
+  @override
+  String medicationsDeleteSemantics(String name) {
+    return '$name ಅಳಿಸಿ';
+  }
+
+  @override
+  String get medicationsEditTitle => 'ಔಷಧಿ ಸಂಪಾದಿಸಿ';
+
+  @override
+  String get medicationsSaveChanges => 'ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ';
+
+  @override
+  String medicationsEditSemantics(String name) {
+    return '$name ಸಂಪಾದಿಸಿ';
+  }
+
+  @override
+  String get medicationsCellEmpty => '-';
+
+  @override
+  String get medicationsFormNameLabel => 'Medicine name *';
+
+  @override
+  String get medicationsFormNameHint => 'e.g. Metformin';
+
+  @override
+  String get medicationsFormNameRequired => 'Name required';
+
+  @override
+  String get medicationsFormDoseLabel => 'Dose (optional)';
+
+  @override
+  String get medicationsFormDoseHint => 'e.g. 500 mg, 1 tablet';
+
+  @override
+  String get medicationsFormFrequencyLabel => 'Frequency (optional)';
+
+  @override
+  String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
+
+  @override
+  String get medicationsFormTakenAtLabel => 'Taken at';
+
+  @override
+  String get medicationsFormNotesLabel => 'Notes (optional)';
+
+  @override
+  String get medicationsFormNotesHint => 'e.g. Felt nauseous after';
+
+  @override
+  String get medicationsFormSave => 'Save';
+
+  @override
+  String get medicationsFormSaveAndMore => 'Save & add more';
+
+  @override
+  String get medicationsFormDone => 'Done';
+
+  @override
+  String medicationsFormDoneLogged(int count) {
+    return 'Done ($count logged)';
+  }
+
+  @override
+  String medicationsFormSavedBanner(String name) {
+    return '\"$name\" saved';
+  }
+
+  @override
+  String medicationsFormSavedBannerMulti(String name, int count) {
+    return '\"$name\" saved  ·  $count logged';
+  }
 }

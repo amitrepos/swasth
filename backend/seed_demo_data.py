@@ -237,6 +237,25 @@ def create_user_with_data(u):
             db.add(reading_bp)
             readings_count += 1
 
+        # ── Steps (end-of-day snapshot, ~8-10 PM) ────────────────────
+        if random.random() < 0.85:
+            hour_steps = random.randint(20, 22)
+            ts_steps = day.replace(hour=hour_steps, minute=random.randint(0, 59))
+            steps_val = random.randint(2500, 9500)
+            reading_steps = models.HealthReading(
+                profile_id=profile.id,
+                logged_by=user.id,
+                reading_type="steps",
+                steps_count=steps_val,
+                steps_goal=7500,
+                value_numeric=float(steps_val),
+                unit_display="steps",
+                status_flag="NORMAL",
+                reading_timestamp=ts_steps,
+            )
+            db.add(reading_steps)
+            readings_count += 1
+
     db.commit()
     print(f"    → {readings_count} readings over {DAYS} days")
 

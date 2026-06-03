@@ -14,7 +14,7 @@ import ai_service
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, verify_india_location
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, require_india_writer, verify_india_location
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -117,15 +117,19 @@ Respond ONLY in this exact JSON format, nothing else:
 # POST /meals — save a meal log
 # ---------------------------------------------------------------------------
 
-@router.post("/meals", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_india_location)])
+@router.post("/meals", status_code=status.HTTP_201_CREATED)
 @limiter.limit("20/minute")
 async def create_meal(
     request: Request,
     meal_data: schemas.MealLogCreate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    _region: dict = Depends(require_india_writer),
 ):
-    """Save a meal log from photo classification or quick select."""
+    """Save a meal log from photo classification or quick select.
+
+    NUO-135: non-India callers are blocked at the dependency layer.
+    """
     get_profile_access_or_403(meal_data.profile_id, user, db)
 
     meal = models.MealLog(

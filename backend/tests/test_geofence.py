@@ -256,12 +256,11 @@ def _profile_id_for(user) -> int:
     return access.profile_id
 
 
-def test_route_wired_post_readings_blocks_us(client, auth_headers, test_user):
-    """POST /readings must surface 403 REGION_RESTRICTED when the
-    geofence is wired AND the caller is outside India. If this fails
-    with 201/422 the dependency has been dropped from the route."""
+def test_route_wired_post_readings_blocks_us_nuo135(client, auth_headers, test_user, monkeypatch):
+    """POST /readings uses require_india_writer (451), not verify_india_location (403)."""
     from datetime import datetime, timezone
 
+    monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
     profile_id = _profile_id_for(test_user)
     body = {
         "profile_id": profile_id,
@@ -272,19 +271,23 @@ def test_route_wired_post_readings_blocks_us(client, auth_headers, test_user):
         "unit_display": "mg/dL",
         "reading_timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
-        r = client.post("/api/readings", json=body, headers=auth_headers)
-    assert r.status_code == 403, (
-        f"Expected 403 from geofence, got {r.status_code}: {r.text}. "
-        "Likely cause: verify_india_location was dropped from POST /readings."
+    r = client.post(
+        "/api/readings",
+        json=body,
+        headers={**auth_headers, "Accept-Language": "en-US"},
     )
-    assert r.json().get("detail") == "REGION_RESTRICTED"
+    assert r.status_code == 451, (
+        f"Expected 451 from require_india_writer, got {r.status_code}: {r.text}. "
+        "POST /readings must not stack verify_india_location with require_india_writer."
+    )
+    assert r.json()["detail"]["code"] == "REGION_NOT_ALLOWED"
 
 
-def test_route_wired_post_meals_blocks_us(client, auth_headers, test_user):
-    """POST /meals must also be geofenced."""
+def test_route_wired_post_meals_blocks_us_nuo135(client, auth_headers, test_user, monkeypatch):
+    """POST /meals uses require_india_writer (451), not verify_india_location (403)."""
     from datetime import datetime, timezone
 
+    monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
     profile_id = _profile_id_for(test_user)
     body = {
         "profile_id": profile_id,
@@ -293,13 +296,16 @@ def test_route_wired_post_meals_blocks_us(client, auth_headers, test_user):
         "input_method": "quick_select",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
-        r = client.post("/api/meals", json=body, headers=auth_headers)
-    assert r.status_code == 403, (
-        f"Expected 403 from geofence, got {r.status_code}: {r.text}. "
-        "Likely cause: verify_india_location was dropped from POST /meals."
+    r = client.post(
+        "/api/meals",
+        json=body,
+        headers={**auth_headers, "Accept-Language": "en-US"},
     )
-    assert r.json().get("detail") == "REGION_RESTRICTED"
+    assert r.status_code == 451, (
+        f"Expected 451 from require_india_writer, got {r.status_code}: {r.text}. "
+        "POST /meals must not stack verify_india_location with require_india_writer."
+    )
+    assert r.json()["detail"]["code"] == "REGION_NOT_ALLOWED"
 
 
 def test_route_wired_delete_meal_blocks_us(client, auth_headers, test_user):

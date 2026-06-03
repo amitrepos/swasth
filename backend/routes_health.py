@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 import models
 import schemas
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, verify_india_location
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, require_india_writer, verify_india_location
 from config import settings
 from health_utils import generate_meal_insights
 from report_service import trigger_single_profile_report, send_weekly_reports
@@ -97,13 +97,15 @@ def _refresh_doctor_triage_for_profile(db: Session, profile_id: int) -> None:
 _insight_cache: dict[tuple[int, str], str] = {}
 
 
-@router.post("/readings", status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_india_location)])
+@router.post("/readings", status_code=status.HTTP_201_CREATED)
 def save_reading(
     reading: schemas.HealthReadingCreate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    _region: dict = Depends(require_india_writer),
 ):
     """Save a new health reading (glucose, blood pressure, SpO2, or steps) for a specific profile."""
+    # Region gate (NUO-135): non-India callers are blocked upstream by `require_india_writer`.
     # Verify editor/owner access (viewers cannot create readings)
     get_profile_editor_or_403(reading.profile_id, user, db)
 
@@ -295,6 +297,98 @@ def get_readings(
         query = query.filter(models.HealthReading.reading_type == reading_type)
 
     return query.order_by(models.HealthReading.reading_timestamp.desc()).offset(offset).limit(limit).all()
+
+
+# ---------------------------------------------------------------------------
+# Daily-aggregated steps for the dashboard chart (NUO-22).
+#
+# Pedometer pushes cumulative counts throughout the day, so a row's
+# `steps_count` represents "steps so far today" at that timestamp — not
+# an increment. We take the MAX per local day to get the end-of-day
+# total. Days with no readings come back as 0, so the client can render
+# a continuous N-day bar chart without gap-filling logic.
+# ---------------------------------------------------------------------------
+
+@router.get("/readings/steps/daily")
+def get_daily_steps(
+    profile_id: int = Query(...),
+    days: int = Query(default=7, ge=1, le=30),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    """Return per-day max steps for the last N days (default 7).
+
+    Response shape:
+        {
+          "days": [
+            {"date": "2026-05-15", "steps": 6843, "goal": 8000},
+            ...   # always exactly `days` entries, oldest-first
+          ],
+          "total": 47221,
+          "avg": 6746,
+          "goal": 8000,     # most-recent non-null goal across the window
+          "goal_hit_days": 3
+        }
+    """
+    get_profile_access_or_403(profile_id, user, db)
+
+    # UTC date: the server runs IST (UTC+5:30); date.today() would roll to the
+    # next calendar day at 00:00 IST while the timestamp filter below is UTC,
+    # emptying the "today" bucket for the 5.5h after local midnight.
+    today = datetime.now(timezone.utc).date()
+    start_date = today - timedelta(days=days - 1)
+    start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc)
+
+    rows = (
+        db.query(models.HealthReading)
+        .filter(
+            models.HealthReading.profile_id == profile_id,
+            models.HealthReading.reading_type == "steps",
+            models.HealthReading.reading_timestamp >= start_dt,
+            models.HealthReading.steps_count.isnot(None),
+        )
+        .order_by(models.HealthReading.reading_timestamp.asc())
+        .all()
+    )
+
+    # Max per local UTC day (cheap server-side; client doesn't need timezone math)
+    by_day: dict = {}
+    latest_goal: Optional[int] = None
+    for r in rows:
+        d = r.reading_timestamp.date() if r.reading_timestamp else None
+        if d is None:
+            continue
+        steps_val = int(r.steps_count or 0)
+        if r.value_numeric and r.value_numeric > steps_val:
+            steps_val = int(r.value_numeric)
+        prev = by_day.get(d, 0)
+        if steps_val > prev:
+            by_day[d] = steps_val
+        if r.steps_goal:
+            latest_goal = r.steps_goal
+
+    out = []
+    total = 0
+    goal_hit_days = 0
+    for i in range(days):
+        d = start_date + timedelta(days=i)
+        steps_val = by_day.get(d, 0)
+        total += steps_val
+        if latest_goal and steps_val >= latest_goal:
+            goal_hit_days += 1
+        out.append({
+            "date": d.isoformat(),
+            "steps": steps_val,
+            "goal": latest_goal,
+        })
+
+    return {
+        "days": out,
+        "total": total,
+        "avg": round(total / days) if days > 0 else 0,
+        "goal": latest_goal,
+        "goal_hit_days": goal_hit_days,
+    }
 
 
 

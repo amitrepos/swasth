@@ -1275,6 +1275,45 @@ def get_patient_meals(
 
 
 # ---------------------------------------------------------------------------
+# Patient Medications (NUO-127) — what the patient has actually been taking.
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/patients/{profile_id}/medications",
+    response_model=list[schemas.MedicationResponse],
+)
+def get_patient_medications(
+    profile_id: int,
+    days: int = Query(30, ge=1, le=90),
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Patient-logged medication intake. Max 90 days. Audit-logged."""
+    link = get_doctor_patient_access(profile_id, user, db)
+    _log_doctor_access(db, user.id, profile_id, "viewed_medications", f"/api/doctor/patients/{profile_id}/medications")
+
+    days = min(days, 90)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    meds = (
+        db.query(models.Medication)
+        .filter(
+            models.Medication.profile_id == profile_id,
+            models.Medication.taken_at >= since,
+        )
+        .order_by(models.Medication.taken_at.desc())
+        .limit(200)
+        .all()
+    )
+    # Persist the _log_doctor_access row added above: get_db() rolls back on
+    # close (autocommit=False), so without this commit the DPDPA audit-trail
+    # entry would be lost. Mirrors every sibling doctor-portal GET.
+    db.commit()
+
+    return [schemas.MedicationResponse.model_validate(m) for m in meds]
+
+
+# ---------------------------------------------------------------------------
 # Triage Refresh (called when a new reading is saved)
 # ---------------------------------------------------------------------------
 

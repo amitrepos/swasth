@@ -15,6 +15,7 @@ import '../services/sync_service.dart';
 import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/offline_banner.dart';
+import '../widgets/non_india_banner.dart';
 import 'home_screen.dart';
 import 'history_screen.dart';
 import 'streaks_screen.dart';
@@ -246,6 +247,7 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
         body: Column(
           children: [
             if (_isOffline) const OfflineBanner(),
+            const NonIndiaBanner(),
             Expanded(
               child: IndexedStack(
                 index: _currentIndex,

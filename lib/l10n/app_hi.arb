@@ -120,6 +120,7 @@
   "oneYear": "1 वर्ष",
   "glucoseTrend": "ग्लूकोज ट्रेंड",
   "bpTrend": "रक्तचाप ट्रेंड",
+  "pulseTrend": "नाड़ी ट्रेंड",
   "avgLabel": "औसत",
   "avgDaysFormat": "{count} दिन औसत",
   "@avgDaysFormat": {
@@ -145,6 +146,10 @@
   },
   "noReadingsInWindowWeight": "पिछले {days} दिनों में कोई वज़न रीडिंग नहीं।",
   "@noReadingsInWindowWeight": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "noReadingsInWindowPulse": "पिछले {days} दिनों में कोई नाड़ी रीडिंग नहीं।",
+  "@noReadingsInWindowPulse": {
     "placeholders": { "days": { "type": "int" } }
   },
   "logFromHomeHint": "होम से रीडिंग डालें और यहाँ देखें।",
@@ -533,6 +538,9 @@
   "mealTypeLunch": "दोपहर का खाना",
   "mealTypeSnack": "नाश्ता",
   "mealTypeDinner": "रात का खाना",
+  "sectionMedicationsTaken": "ली गई दवाइयाँ (रोगी दर्ज)",
+  "doctorNoMedicationsLogged": "पिछले 30 दिनों में कोई दवा दर्ज नहीं",
+  "doctorMedicationLogSubtitle": "{dose} · {frequency}",
   "sectionMeals": "हाल के भोजन",
   "@sectionMeals": {
     "description": "डॉक्टर पेजेंट डिटेल स्क्रीन में हाल के भोजन का सेक्शन हेडर"
@@ -816,6 +824,14 @@
   "notesLabel": "नोट्स",
   "spo2Label": "SpO₂",
   "stepsLabel": "कदम",
+  "stepsChartTitle": "कदम · {days} दिन",
+  "pulseChartTitle": "हृदय गति · {days} दिन",
+  "stepsChartSummary": "{total} · औसत {avg}",
+  "stepsChartSummaryWithGoal": "{total} · औसत {avg} · {hits}/{days} ≥ लक्ष्य",
+  "stepsChartLoadError": "कदम लोड नहीं हो सके",
+  "stepsChartEmpty": "अभी कदम का डेटा नहीं है। थोड़ा चलें, कल देखें।",
+  "stepsTotalLabel": "कुल",
+  "stepsGoalLabel": "लक्ष्य",
   "vegan": "वेगन",
   "vegetarian": "शाकाहारी",
   "glutenFree": "ग्लूटेन मुक्त",
@@ -916,5 +932,42 @@
       "amount": { "type": "String" }
     }
   },
-  "noSummaryAvailable": "कोई सारांश उपलब्ध नहीं है"
+  "noSummaryAvailable": "कोई सारांश उपलब्ध नहीं है",
+  "regionBannerTitle": "केवल देखने के लिए मोड",
+  "regionBannerBody": "आप एक परिवार के सदस्य के रूप में देख रहे हैं। लॉगिंग केवल भारत में उपलब्ध है।",
+  "regionErrorWriteBlocked": "लॉगिंग केवल भारत में उपलब्ध है। आप एक परिवार के सदस्य के रूप में साइन इन हैं — आप रीडिंग देख सकते हैं, लेकिन नई रीडिंग दर्ज नहीं कर सकते।",
+  "medicationsScreenTitle": "मैंने ली दवाइयाँ",
+  "medicationsLogFab": "दवा दर्ज करें",
+  "medicationsLogFirst": "पहली दवा दर्ज करें",
+  "medicationsColDateTime": "तारीख और समय",
+  "medicationsColMedicine": "दवा",
+  "medicationsColDose": "खुराक",
+  "medicationsColFrequency": "आवृत्ति",
+  "medicationsColNotes": "नोट्स",
+  "medicationsColActions": "कार्रवाई",
+  "medicationsEmptyTitle": "अभी कोई दवा दर्ज नहीं",
+  "medicationsEmptyBody": "आपने जो दवाइयाँ ली हैं उन्हें दर्ज करें ताकि आपके डॉक्टर को अगली रिपोर्ट में दिखे।",
+  "medicationsDeleteTitle": "दवा प्रविष्टि हटाएं?",
+  "medicationsDeleteBody": "\"{name}\" की {dateTime} वाली प्रविष्टि हटाएं?",
+  "medicationsDeleteSemantics": "{name} हटाएं",
+  "medicationsEditTitle": "दवा संपादित करें",
+  "medicationsSaveChanges": "बदलाव सहेजें",
+  "medicationsEditSemantics": "{name} संपादित करें",
+  "medicationsCellEmpty": "-",
+  "medicationsFormNameLabel": "दवा का नाम *",
+  "medicationsFormNameHint": "जैसे मेटफॉर्मिन",
+  "medicationsFormNameRequired": "नाम ज़रूरी है",
+  "medicationsFormDoseLabel": "खुराक (वैकल्पिक)",
+  "medicationsFormDoseHint": "जैसे 500 mg, 1 गोली",
+  "medicationsFormFrequencyLabel": "आवृत्ति (वैकल्पिक)",
+  "medicationsFormFrequencyHint": "जैसे दिन में दो बार खाने के बाद",
+  "medicationsFormTakenAtLabel": "कब ली",
+  "medicationsFormNotesLabel": "नोट्स (वैकल्पिक)",
+  "medicationsFormNotesHint": "जैसे दवा के बाद मतली",
+  "medicationsFormSave": "सहेजें",
+  "medicationsFormSaveAndMore": "सहेजें और और जोड़ें",
+  "medicationsFormDone": "हो गया",
+  "medicationsFormDoneLogged": "हो गया ({count} दर्ज)",
+  "medicationsFormSavedBanner": "\"{name}\" सहेजी गई",
+  "medicationsFormSavedBannerMulti": "\"{name}\" सहेजी गई  ·  {count} दर्ज"
 }

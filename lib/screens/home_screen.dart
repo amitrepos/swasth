@@ -22,6 +22,8 @@ import '../services/meal_service.dart';
 import '../services/sync_service.dart';
 import '../models/meal_log.dart';
 import 'link_doctor_screen.dart';
+import 'medications_screen.dart';
+import '../services/region_service.dart';
 import '../models/profile_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
@@ -80,6 +82,7 @@ class HomeScreenState extends State<HomeScreen>
   int _pts = 0;
   bool _insightSaved = false;
   String? _lastLangCode;
+  bool _canWriteRegion = true; // NUO-135: false when caller is outside India
 
   // Caregiver dashboard state
   List<HealthReading> _activityReadings = [];
@@ -108,6 +111,12 @@ class HomeScreenState extends State<HomeScreen>
     _loadProfileInfo();
     SyncService().syncPendingReadings();
     _initializePedometer();
+    _loadRegion();
+  }
+
+  Future<void> _loadRegion() async {
+    final r = await RegionService.getRegion();
+    if (mounted) setState(() => _canWriteRegion = r.writeAllowed);
   }
 
   /// Called by ShellScreen when the Home tab becomes active. Re-fetches
@@ -154,7 +163,9 @@ class HomeScreenState extends State<HomeScreen>
     super.didChangeDependencies();
     routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
     final langCode = Localizations.localeOf(context).languageCode;
-    if (_lastLangCode != null && _lastLangCode != langCode && _activeProfileId != null) {
+    if (_lastLangCode != null &&
+        _lastLangCode != langCode &&
+        _activeProfileId != null) {
       _refreshHealthScore(_activeProfileId!);
     }
     _lastLangCode = langCode;
@@ -202,7 +213,11 @@ class HomeScreenState extends State<HomeScreen>
     final future = _readingService.getHealthScore(token, profileId, langCode);
     setState(() {
       _healthScoreFuture = future;
-      _aiInsightFuture = _readingService.getAiInsight(token, profileId, langCode);
+      _aiInsightFuture = _readingService.getAiInsight(
+        token,
+        profileId,
+        langCode,
+      );
     });
     try {
       final data = await future;
@@ -415,6 +430,9 @@ class HomeScreenState extends State<HomeScreen>
       ).showSnackBar(SnackBar(content: Text(l10n.selectProfileFirst)));
       return;
     }
+    // NUO-135: defense-in-depth — even if the FAB or slot taps slip through,
+    // do not open the meal logger from outside India.
+    if (!_canWriteRegion || _accessLevel == 'viewer') return;
     showMealInputModal(
       context,
       profileId: _activeProfileId!,
@@ -690,7 +708,8 @@ class HomeScreenState extends State<HomeScreen>
                             key: const Key('dashboard_metrics_grid'),
                             data: data,
                             profileId: _activeProfileId,
-                            canEdit: _accessLevel != 'viewer',
+                            canEdit:
+                                _accessLevel != 'viewer' && _canWriteRegion,
                             onAddReading: _handleAddReading,
                             bmi: (data?['bmi'] as num?)?.toDouble(),
                             bmiCategory: data?['bmi_category'] as String?,
@@ -713,7 +732,13 @@ class HomeScreenState extends State<HomeScreen>
                               child: MealSummaryCard(
                                 key: _mealSummaryKey,
                                 profileId: _activeProfileId!,
-                                onTapLogMeal: _handleAddMeal,
+                                // NUO-135: null callback disables the meal
+                                // log CTAs inside the card for non-India.
+                                onTapLogMeal:
+                                    (_accessLevel != 'viewer' &&
+                                        _canWriteRegion)
+                                    ? _handleAddMeal
+                                    : null,
                               ),
                             ),
                           if (_activeProfileId != null)
@@ -1123,6 +1148,43 @@ class HomeScreenState extends State<HomeScreen>
           ),
         ),
         const SizedBox(width: 10),
+        // Medicines log (NUO-127) — patient logs taken meds, doctor sees in report
+        // NUO-135: hidden when caller is outside India (read-only mode)
+        if (_canWriteRegion)
+          Expanded(
+            child: GestureDetector(
+              key: const Key('quick_action_medicines'),
+              onTap: () {
+                if (_activeProfileId == null) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        MedicationsScreen(profileId: _activeProfileId!),
+                  ),
+                );
+              },
+              child: GlassCard(
+                borderRadius: 16,
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    Icon(Icons.medication, size: 18, color: AppColors.primary),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Medicines',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(width: 10),
         // Pair Device
         Expanded(
           child: GestureDetector(
@@ -1169,9 +1231,7 @@ class HomeScreenState extends State<HomeScreen>
     final time = await showTimePicker(
       context: ctx,
       initialTime: TimeOfDay(hour: hour, minute: minute),
-      helpText: enabled
-          ? l10n.reminderChangeTime
-          : l10n.reminderSetTime,
+      helpText: enabled ? l10n.reminderChangeTime : l10n.reminderSetTime,
     );
 
     if (time != null) {

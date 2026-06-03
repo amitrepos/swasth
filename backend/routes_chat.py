@@ -14,7 +14,7 @@ import os
 import models
 import ai_service
 from database import get_db
-from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403
+from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, require_india_writer
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -223,8 +223,12 @@ def send_chat_message(
     data: dict,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
+    _region: dict = Depends(require_india_writer),
 ):
-    """Send a chat message and get an AI response."""
+    """Send a chat message and get an AI response.
+
+    NUO-135: blocked outside India to keep clinical context tied to the patient.
+    """
     profile_id = data.get("profile_id")
     message = data.get("message", "").strip()
     _SUPPORTED_LANGS = {"en", "hi", "kn", "te", "ta"}

@@ -171,6 +171,7 @@
   "oneYear": "1 Year",
   "glucoseTrend": "Glucose Trend",
   "bpTrend": "Blood Pressure Trend",
+  "pulseTrend": "Pulse Trend",
   "avgLabel": "Avg",
   "avgDaysFormat": "{count} day avg",
   "@avgDaysFormat": {
@@ -203,6 +204,13 @@
   "noReadingsInWindowWeight": "No weight readings in the last {days} days.",
   "@noReadingsInWindowWeight": {
     "description": "Empty state for weight chart when there are no weight readings in the selected window.",
+    "placeholders": {
+      "days": { "type": "int", "example": "7" }
+    }
+  },
+  "noReadingsInWindowPulse": "No pulse readings in the last {days} days.",
+  "@noReadingsInWindowPulse": {
+    "description": "Empty state for pulse chart when there are no pulse readings in the selected window.",
     "placeholders": {
       "days": { "type": "int", "example": "7" }
     }
@@ -694,6 +702,21 @@
   "@sectionMeals": {
     "description": "Section header for recent meals in doctor patient detail screen"
   },
+  "sectionMedicationsTaken": "Medicines taken (patient log)",
+  "@sectionMedicationsTaken": {
+    "description": "Doctor portal: NUO-127 intake log section header"
+  },
+  "doctorNoMedicationsLogged": "No medicines logged in the last 30 days",
+  "@doctorNoMedicationsLogged": {
+    "description": "Doctor portal empty state when patient has not logged any meds"
+  },
+  "doctorMedicationLogSubtitle": "{dose} · {frequency}",
+  "@doctorMedicationLogSubtitle": {
+    "placeholders": {
+      "dose": { "type": "String" },
+      "frequency": { "type": "String" }
+    }
+  },
   "noMealsLast7Days": "No meals logged in the last 7 days",
   "@noMealsLast7Days": {
     "description": "Empty state when no meals found in last 7 days"
@@ -1165,6 +1188,54 @@
   "@stepsLabel": {
     "description": "Display label for daily step-count reading type"
   },
+  "stepsChartTitle": "Steps · {days} days",
+  "@stepsChartTitle": {
+    "description": "Header for the daily steps bar chart on the Insights tab",
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "pulseChartTitle": "Heart Rate · {days} days",
+  "@pulseChartTitle": {
+    "description": "Header for the daily heart-rate line chart on the Insights tab",
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "stepsChartSummary": "{total} · avg {avg}",
+  "@stepsChartSummary": {
+    "description": "Steps chart footer when no daily goal is set",
+    "placeholders": {
+      "total": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "stepsChartSummaryWithGoal": "{total} · avg {avg} · {hits}/{days} ≥ goal",
+  "@stepsChartSummaryWithGoal": {
+    "description": "Steps chart footer showing goal-hit days",
+    "placeholders": {
+      "total": { "type": "String" },
+      "avg": { "type": "String" },
+      "hits": { "type": "int" },
+      "days": { "type": "int" }
+    }
+  },
+  "stepsChartLoadError": "Could not load steps",
+  "@stepsChartLoadError": {
+    "description": "Error message when the steps daily API fails"
+  },
+  "stepsChartEmpty": "No step data yet. Walk a bit and check back tomorrow.",
+  "@stepsChartEmpty": {
+    "description": "Empty state for the 7-day steps chart on Insights"
+  },
+  "stepsTotalLabel": "Total",
+  "@stepsTotalLabel": {
+    "description": "Stat label for total steps in the steps chart card"
+  },
+  "stepsGoalLabel": "Goal",
+  "@stepsGoalLabel": {
+    "description": "Stat label for goal-hit days in the steps chart card"
+  },
   "vegan": "Vegan",
   "@vegan": {
     "description": "Diet flag label indicating the meal is vegan"
@@ -1322,5 +1393,83 @@
       "amount": { "type": "String" }
     }
   },
-  "noSummaryAvailable": "No summary available"
+  "noSummaryAvailable": "No summary available",
+  "regionBannerTitle": "Read-only mode",
+  "@regionBannerTitle": {
+    "description": "NUO-135: short title on the amber banner shown when caller is outside India and cannot log clinical data."
+  },
+  "regionBannerBody": "You're viewing as a family member. Logging is enabled only in India.",
+  "@regionBannerBody": {
+    "description": "NUO-135: full banner body explaining read-only mode for diaspora caregivers."
+  },
+  "regionErrorWriteBlocked": "Logging is only available in India. You're signed in as a family member and can view, but not log, new readings.",
+  "@regionErrorWriteBlocked": {
+    "description": "NUO-135: shown when a write request slips through and the server returns HTTP 451 REGION_NOT_ALLOWED."
+  },
+  "medicationsScreenTitle": "Medicines I took",
+  "medicationsLogFab": "Log medicine",
+  "medicationsLogFirst": "Log first medicine",
+  "medicationsColDateTime": "Date & Time",
+  "medicationsColMedicine": "Medicine",
+  "medicationsColDose": "Dose",
+  "medicationsColFrequency": "Frequency",
+  "medicationsColNotes": "Notes",
+  "medicationsColActions": "Actions",
+  "medicationsEmptyTitle": "No medicines logged yet",
+  "medicationsEmptyBody": "Log medicines you have taken so your doctor can see them in your next report.",
+  "medicationsDeleteTitle": "Delete medication entry?",
+  "medicationsDeleteBody": "Remove \"{name}\" log from {dateTime}?",
+  "@medicationsDeleteBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "dateTime": { "type": "String" }
+    }
+  },
+  "medicationsDeleteSemantics": "Delete {name}",
+  "@medicationsDeleteSemantics": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "medicationsEditTitle": "Edit medicine",
+  "medicationsSaveChanges": "Save changes",
+  "medicationsEditSemantics": "Edit {name}",
+  "@medicationsEditSemantics": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "medicationsCellEmpty": "-",
+  "medicationsFormNameLabel": "Medicine name *",
+  "medicationsFormNameHint": "e.g. Metformin",
+  "medicationsFormNameRequired": "Name required",
+  "medicationsFormDoseLabel": "Dose (optional)",
+  "medicationsFormDoseHint": "e.g. 500 mg, 1 tablet",
+  "medicationsFormFrequencyLabel": "Frequency (optional)",
+  "medicationsFormFrequencyHint": "e.g. Twice daily after food",
+  "medicationsFormTakenAtLabel": "Taken at",
+  "medicationsFormNotesLabel": "Notes (optional)",
+  "medicationsFormNotesHint": "e.g. Felt nauseous after",
+  "medicationsFormSave": "Save",
+  "medicationsFormSaveAndMore": "Save & add more",
+  "medicationsFormDone": "Done",
+  "medicationsFormDoneLogged": "Done ({count} logged)",
+  "@medicationsFormDoneLogged": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "medicationsFormSavedBanner": "\"{name}\" saved",
+  "@medicationsFormSavedBanner": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "medicationsFormSavedBannerMulti": "\"{name}\" saved  ·  {count} logged",
+  "@medicationsFormSavedBannerMulti": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  }
 }

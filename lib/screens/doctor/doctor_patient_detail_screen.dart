@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../../services/api_exception.dart';
 import '../../services/doctor_service.dart';
@@ -32,6 +33,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
   Map<String, dynamic>? _summary;
   List<Map<String, dynamic>> _readings = [];
   List<Map<String, dynamic>> _meals = [];
+  List<Map<String, dynamic>> _medications = [];
   List<Map<String, dynamic>> _notes = [];
   bool _loading = true;
   String? _error;
@@ -64,6 +66,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
         _doctorService.getPatientSummary(token, widget.profileId),
         _doctorService.getPatientReadings(token, widget.profileId),
         _doctorService.getPatientMeals(token, widget.profileId),
+        _doctorService.getPatientMedications(token, widget.profileId),
         _doctorService.getNotes(token, widget.profileId),
       ]);
 
@@ -73,7 +76,8 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
         _summary = results[1] as Map<String, dynamic>;
         _readings = (results[2] as List).cast<Map<String, dynamic>>();
         _meals = (results[3] as List).cast<Map<String, dynamic>>();
-        _notes = (results[4] as List).cast<Map<String, dynamic>>();
+        _medications = (results[4] as List).cast<Map<String, dynamic>>();
+        _notes = (results[5] as List).cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
@@ -210,6 +214,10 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
 
         // Recent meals
         _buildMealsSection(),
+        const SizedBox(height: 16),
+
+        // Patient-logged medicines (NUO-127)
+        _buildMedicationsSection(),
         const SizedBox(height: 16),
 
         // Doctor notes
@@ -543,6 +551,116 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
             child: Text(l10n.showAllMeals(_meals.length)),
           ),
       ],
+    );
+  }
+
+  Widget _buildMedicationsSection() {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      key: const Key('doctor-medications-section'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.sectionMedicationsTaken,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (_medications.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              l10n.doctorNoMedicationsLogged,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          )
+        else
+          ..._medications.take(15).map(_buildMedicationRow),
+      ],
+    );
+  }
+
+  Widget _buildMedicationRow(Map<String, dynamic> med) {
+    final name = med['name'] as String? ?? '';
+    final dose = (med['dose'] as String?)?.trim() ?? '';
+    final frequency = (med['frequency'] as String?)?.trim() ?? '';
+    final notes = (med['notes'] as String?)?.trim() ?? '';
+    final takenAtRaw = med['taken_at'] as String?;
+    DateTime? takenAt;
+    if (takenAtRaw != null) {
+      takenAt = DateTime.tryParse(takenAtRaw)?.toLocal();
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    String? subtitle;
+    if (dose.isNotEmpty && frequency.isNotEmpty) {
+      subtitle = l10n.doctorMedicationLogSubtitle(dose, frequency);
+    } else if (dose.isNotEmpty) {
+      subtitle = dose;
+    } else if (frequency.isNotEmpty) {
+      subtitle = frequency;
+    }
+
+    return GlassCard(
+      key: Key('doctor-medication-${med['id']}'),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.medication_liquid,
+            size: 16,
+            color: AppColors.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                if (notes.isNotEmpty)
+                  Text(
+                    notes,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                if (takenAt != null)
+                  Text(
+                    DateFormat.yMMMd().add_jm().format(takenAt),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

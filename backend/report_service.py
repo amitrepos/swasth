@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from sqlalchemy import func
 from models import (
-    User, UserRole, Profile, HealthReading, ProfileAccess,
+    User, UserRole, Profile, HealthReading, ProfileAccess, Medication,
     ReportGenerationLog, WhatsAppMessageLog,
     ReportTriggerType, WhatsAppMessageStatus, ReportGenerationStatus,
     DoctorPatientLink, DoctorReportGenerationLog, DoctorProfile
@@ -694,10 +694,41 @@ def trigger_single_profile_report(
             insight_clean = re.sub(r"\s+", " ", insight).strip()
             insight_line = f"✨ AI: {insight_clean}"
 
+        # NUO-127: surface medications the patient has logged in the last 7 days
+        # so the doctor reading the report sees what's actually being taken.
+        med_line = None
+        recent_meds = (
+            db.query(Medication)
+            .filter(
+                Medication.profile_id == profile.id,
+                Medication.taken_at >= last_7d,
+            )
+            .order_by(Medication.taken_at.desc())
+            .limit(5)
+            .all()
+        )
+        if recent_meds:
+            # Deduplicate by name (case-insensitive), preserve most-recent first
+            seen, unique = set(), []
+            for m in recent_meds:
+                # Materialise once: each .name/.dose access runs an AES-GCM
+                # decrypt through the ORM property getter.
+                name = m.name
+                dose = m.dose
+                key = name.lower().strip()
+                if key in seen:
+                    continue
+                seen.add(key)
+                dose_suffix = f" {dose}" if dose else ""
+                unique.append(f"{name}{dose_suffix}")
+            med_line = "💊 Meds: " + ", ".join(unique)
+
         # {{3}}: profile name + all metrics pipe-separated, no \n
         parts = [f"👤 *{profile.name}*", glucose_line, bp_line]
         if weight_line:
             parts.append(weight_line)
+        if med_line:
+            parts.append(med_line)
         if insight_line:
             parts.append(insight_line)
         snippet = " | ".join(parts)

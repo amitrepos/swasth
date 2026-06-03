@@ -1108,3 +1108,65 @@ class AdminSendWhatsAppIndividual(BaseModel):
 class AdminSendWhatsAppBulk(BaseModel):
     """Admin sends WhatsApp reminders to all inactive users using pre-approved template."""
     pass  # No payload needed — uses predefined template from WHATSAPP_REMAINDER_CONTENT_SID
+
+
+# ---------------------------------------------------------------------------
+# Medications (NUO-127) — patient-logged intake, surfaced to doctor.
+# ---------------------------------------------------------------------------
+
+# Allow a little client clock-skew, but reject clearly future-dated entries:
+# a future taken_at would silently fall outside the report/list windows and
+# never surface to the doctor (Daniel review m2).
+_MEDICATION_FUTURE_SKEW = timedelta(minutes=5)
+
+
+def _reject_future_taken_at(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None:
+        return value
+    # Naive datetimes from direct API calls are interpreted as UTC.
+    compare = value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+    if compare > datetime.now(timezone.utc) + _MEDICATION_FUTURE_SKEW:
+        raise ValueError("taken_at cannot be in the future")
+    return value
+
+
+class MedicationCreate(BaseModel):
+    profile_id: int
+    name: str = Field(..., min_length=1, max_length=120)
+    dose: Optional[str] = Field(None, max_length=60)
+    frequency: Optional[str] = Field(None, max_length=120)
+    taken_at: datetime
+    notes: Optional[str] = Field(None, max_length=500)
+
+    @field_validator("taken_at")
+    @classmethod
+    def _taken_at_not_future(cls, v):
+        return _reject_future_taken_at(v)
+
+
+class MedicationUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=120)
+    dose: Optional[str] = Field(None, max_length=60)
+    frequency: Optional[str] = Field(None, max_length=120)
+    taken_at: Optional[datetime] = None
+    notes: Optional[str] = Field(None, max_length=500)
+
+    @field_validator("taken_at")
+    @classmethod
+    def _taken_at_not_future(cls, v):
+        return _reject_future_taken_at(v)
+
+
+class MedicationResponse(BaseModel):
+    id: int
+    profile_id: int
+    logged_by: Optional[int] = None
+    name: str
+    dose: Optional[str] = None
+    frequency: Optional[str] = None
+    taken_at: datetime
+    notes: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

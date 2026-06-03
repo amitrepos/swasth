@@ -782,6 +782,12 @@ abstract class AppLocalizations {
   /// **'Blood Pressure Trend'**
   String get bpTrend;
 
+  /// No description provided for @pulseTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulse Trend'**
+  String get pulseTrend;
+
   /// No description provided for @avgLabel.
   ///
   /// In en, this message translates to:
@@ -859,6 +865,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No weight readings in the last {days} days.'**
   String noReadingsInWindowWeight(int days);
+
+  /// Empty state for pulse chart when there are no pulse readings in the selected window.
+  ///
+  /// In en, this message translates to:
+  /// **'No pulse readings in the last {days} days.'**
+  String noReadingsInWindowPulse(int days);
 
   /// No description provided for @logFromHomeHint.
   ///
@@ -2912,6 +2924,24 @@ abstract class AppLocalizations {
   /// **'Recent Meals'**
   String get sectionMeals;
 
+  /// Doctor portal: NUO-127 intake log section header
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines taken (patient log)'**
+  String get sectionMedicationsTaken;
+
+  /// Doctor portal empty state when patient has not logged any meds
+  ///
+  /// In en, this message translates to:
+  /// **'No medicines logged in the last 30 days'**
+  String get doctorNoMedicationsLogged;
+
+  /// No description provided for @doctorMedicationLogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{dose} · {frequency}'**
+  String doctorMedicationLogSubtitle(String dose, String frequency);
+
   /// Empty state when no meals found in last 7 days
   ///
   /// In en, this message translates to:
@@ -4028,7 +4058,7 @@ abstract class AppLocalizations {
   /// **'Sample type'**
   String get sampleTypeLabel;
 
-  /// Label for daily steps goal in the reading details sheet
+  /// Stat label for goal-hit days in the steps chart card
   ///
   /// In en, this message translates to:
   /// **'Goal'**
@@ -4069,6 +4099,53 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Steps'**
   String get stepsLabel;
+
+  /// Header for the daily steps bar chart on the Insights tab
+  ///
+  /// In en, this message translates to:
+  /// **'Steps · {days} days'**
+  String stepsChartTitle(int days);
+
+  /// Header for the daily heart-rate line chart on the Insights tab
+  ///
+  /// In en, this message translates to:
+  /// **'Heart Rate · {days} days'**
+  String pulseChartTitle(int days);
+
+  /// Steps chart footer when no daily goal is set
+  ///
+  /// In en, this message translates to:
+  /// **'{total} · avg {avg}'**
+  String stepsChartSummary(String total, String avg);
+
+  /// Steps chart footer showing goal-hit days
+  ///
+  /// In en, this message translates to:
+  /// **'{total} · avg {avg} · {hits}/{days} ≥ goal'**
+  String stepsChartSummaryWithGoal(
+    String total,
+    String avg,
+    int hits,
+    int days,
+  );
+
+  /// Error message when the steps daily API fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load steps'**
+  String get stepsChartLoadError;
+
+  /// Empty state for the 7-day steps chart on Insights
+  ///
+  /// In en, this message translates to:
+  /// **'No step data yet. Walk a bit and check back tomorrow.'**
+  String get stepsChartEmpty;
+
+  /// Stat label for total steps in the steps chart card
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get stepsTotalLabel;
 
   /// Diet flag label indicating the meal is vegan
   ///
@@ -4357,6 +4434,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No summary available'**
   String get noSummaryAvailable;
+
+  /// NUO-135: short title on the amber banner shown when caller is outside India and cannot log clinical data.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only mode'**
+  String get regionBannerTitle;
+
+  /// NUO-135: full banner body explaining read-only mode for diaspora caregivers.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re viewing as a family member. Logging is enabled only in India.'**
+  String get regionBannerBody;
+
+  /// NUO-135: shown when a write request slips through and the server returns HTTP 451 REGION_NOT_ALLOWED.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging is only available in India. You\'re signed in as a family member and can view, but not log, new readings.'**
+  String get regionErrorWriteBlocked;
+
+  /// No description provided for @medicationsScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines I took'**
+  String get medicationsScreenTitle;
+
+  /// No description provided for @medicationsLogFab.
+  ///
+  /// In en, this message translates to:
+  /// **'Log medicine'**
+  String get medicationsLogFab;
+
+  /// No description provided for @medicationsLogFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Log first medicine'**
+  String get medicationsLogFirst;
+
+  /// No description provided for @medicationsColDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & Time'**
+  String get medicationsColDateTime;
+
+  /// No description provided for @medicationsColMedicine.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine'**
+  String get medicationsColMedicine;
+
+  /// No description provided for @medicationsColDose.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose'**
+  String get medicationsColDose;
+
+  /// No description provided for @medicationsColFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get medicationsColFrequency;
+
+  /// No description provided for @medicationsColNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get medicationsColNotes;
+
+  /// No description provided for @medicationsColActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get medicationsColActions;
+
+  /// No description provided for @medicationsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No medicines logged yet'**
+  String get medicationsEmptyTitle;
+
+  /// No description provided for @medicationsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Log medicines you have taken so your doctor can see them in your next report.'**
+  String get medicationsEmptyBody;
+
+  /// No description provided for @medicationsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete medication entry?'**
+  String get medicationsDeleteTitle;
+
+  /// No description provided for @medicationsDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{name}\" log from {dateTime}?'**
+  String medicationsDeleteBody(String name, String dateTime);
+
+  /// No description provided for @medicationsDeleteSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}'**
+  String medicationsDeleteSemantics(String name);
+
+  /// No description provided for @medicationsEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit medicine'**
+  String get medicationsEditTitle;
+
+  /// No description provided for @medicationsSaveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get medicationsSaveChanges;
+
+  /// No description provided for @medicationsEditSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String medicationsEditSemantics(String name);
+
+  /// No description provided for @medicationsCellEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'-'**
+  String get medicationsCellEmpty;
+
+  /// No description provided for @medicationsFormNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine name *'**
+  String get medicationsFormNameLabel;
+
+  /// No description provided for @medicationsFormNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Metformin'**
+  String get medicationsFormNameHint;
+
+  /// No description provided for @medicationsFormNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name required'**
+  String get medicationsFormNameRequired;
+
+  /// No description provided for @medicationsFormDoseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose (optional)'**
+  String get medicationsFormDoseLabel;
+
+  /// No description provided for @medicationsFormDoseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 500 mg, 1 tablet'**
+  String get medicationsFormDoseHint;
+
+  /// No description provided for @medicationsFormFrequencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency (optional)'**
+  String get medicationsFormFrequencyLabel;
+
+  /// No description provided for @medicationsFormFrequencyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Twice daily after food'**
+  String get medicationsFormFrequencyHint;
+
+  /// No description provided for @medicationsFormTakenAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken at'**
+  String get medicationsFormTakenAtLabel;
+
+  /// No description provided for @medicationsFormNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get medicationsFormNotesLabel;
+
+  /// No description provided for @medicationsFormNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Felt nauseous after'**
+  String get medicationsFormNotesHint;
+
+  /// No description provided for @medicationsFormSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get medicationsFormSave;
+
+  /// No description provided for @medicationsFormSaveAndMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & add more'**
+  String get medicationsFormSaveAndMore;
+
+  /// No description provided for @medicationsFormDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get medicationsFormDone;
+
+  /// No description provided for @medicationsFormDoneLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Done ({count} logged)'**
+  String medicationsFormDoneLogged(int count);
+
+  /// No description provided for @medicationsFormSavedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" saved'**
+  String medicationsFormSavedBanner(String name);
+
+  /// No description provided for @medicationsFormSavedBannerMulti.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" saved  ·  {count} logged'**
+  String medicationsFormSavedBannerMulti(String name, int count);
 }
 
 class _AppLocalizationsDelegate

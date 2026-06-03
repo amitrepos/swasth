@@ -22,6 +22,36 @@ const double _kWebMaxContentWidth = 1280;
 class SwasthApp extends ConsumerWidget {
   const SwasthApp({super.key});
 
+  static const List<String> _indicFallbackFonts = [
+    'NotoSansDevanagari',
+    'NotoSansKannada',
+    'NotoSansTamil',
+    'NotoSansTelugu',
+  ];
+
+  TextTheme _withFallback(TextTheme base) {
+    TextStyle? withFallback(TextStyle? s) =>
+        s?.copyWith(fontFamilyFallback: _indicFallbackFonts);
+
+    return base.copyWith(
+      displayLarge: withFallback(base.displayLarge),
+      displayMedium: withFallback(base.displayMedium),
+      displaySmall: withFallback(base.displaySmall),
+      headlineLarge: withFallback(base.headlineLarge),
+      headlineMedium: withFallback(base.headlineMedium),
+      headlineSmall: withFallback(base.headlineSmall),
+      titleLarge: withFallback(base.titleLarge),
+      titleMedium: withFallback(base.titleMedium),
+      titleSmall: withFallback(base.titleSmall),
+      bodyLarge: withFallback(base.bodyLarge),
+      bodyMedium: withFallback(base.bodyMedium),
+      bodySmall: withFallback(base.bodySmall),
+      labelLarge: withFallback(base.labelLarge),
+      labelMedium: withFallback(base.labelMedium),
+      labelSmall: withFallback(base.labelSmall),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(languageProvider);
@@ -41,22 +71,30 @@ class SwasthApp extends ConsumerWidget {
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.bgPage,
-      textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
-        displayLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        displayMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        displaySmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        headlineLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        headlineMedium: GoogleFonts.plusJakartaSans(
-          fontWeight: FontWeight.w700,
+      textTheme: _withFallback(
+        GoogleFonts.plusJakartaSansTextTheme().copyWith(
+          displayLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          displayMedium: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+          ),
+          displaySmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          headlineLarge: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+          ),
+          headlineMedium: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+          ),
+          headlineSmall: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+          ),
+          titleLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          titleMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          titleSmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          bodyLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
+          bodyMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
+          bodySmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
+          labelLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
         ),
-        headlineSmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        titleLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        titleMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        titleSmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        bodyLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
-        bodyMedium: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
-        bodySmall: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w400),
-        labelLarge: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
