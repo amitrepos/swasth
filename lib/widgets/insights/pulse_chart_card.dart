@@ -153,6 +153,21 @@ _PulseAggregate _aggregateDailyPulse(List<HealthReading> readings, int days) {
   );
 }
 
+/// Test seam for the UTC day-bucketing (the health-critical path: which date a
+/// reading lands on). Returns per-day average bpm over the [days] window —
+/// index 0 = oldest day (startDate), index days-1 = today (UTC); null = no
+/// reading that UTC day. Needed because axis labels render for every day
+/// regardless of data, so widget-tree assertions can't verify bucketing.
+@visibleForTesting
+List<double?> debugDailyPulseAverages(List<HealthReading> readings, int days) {
+  final agg = _aggregateDailyPulse(readings, days);
+  final out = List<double?>.filled(days, null);
+  for (final p in agg.points) {
+    if (p.dayIndex >= 0 && p.dayIndex < days) out[p.dayIndex] = p.avg;
+  }
+  return out;
+}
+
 class _EmptyState extends StatelessWidget {
   final String message;
   const _EmptyState({required this.message});

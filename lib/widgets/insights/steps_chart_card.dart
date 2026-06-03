@@ -138,6 +138,16 @@ _DailyStepsAggregate _aggregateDailySteps(List<HealthReading> readings, int days
   );
 }
 
+/// Test seam for the UTC day-bucketing (mirrors backend get_daily_steps).
+/// Returns steps per day over the [days] window — index 0 = oldest day
+/// (startDate), index days-1 = today (UTC); 0 = no reading that UTC day.
+/// Needed because axis labels render for every day regardless of data.
+@visibleForTesting
+List<int> debugDailySteps(List<HealthReading> readings, int days) {
+  final agg = _aggregateDailySteps(readings, days);
+  return [for (final b in agg.bars) b.steps];
+}
+
 class _DayBar {
   final DateTime date;
   final int steps;
