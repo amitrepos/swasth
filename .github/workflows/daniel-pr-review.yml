@@ -78,3 +78,33 @@ jobs:
             --model claude-sonnet-4-6
             --max-turns 60
             --allowedTools "Bash(gh pr review:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(cat -n:*),Read,Grep,Glob"
+
+      # GitHub keeps a reviewer's CHANGES_REQUESTED as the active blocking state until that SAME
+      # reviewer APPROVES or the review is dismissed — new commits do NOT clear it. Daniel never
+      # APPROVES from CI (only request-changes / comment), so a fixed PR would stay blocked on a stale
+      # request forever. This step clears that: if THIS run's review is no longer requesting changes
+      # (i.e. no CRITICAL remained), dismiss any earlier CHANGES_REQUESTED reviews by the bot.
+      - name: Clear stale Daniel CHANGES_REQUESTED when the latest review is clean
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          REVIEWS=$(gh api "repos/$REPO/pulls/$PR/reviews" --paginate \
+            --jq '[.[] | select(.user.login=="github-actions[bot]")]')
+          LATEST=$(printf '%s' "$REVIEWS" | jq -r '.[-1].state // ""')
+          echo "latest bot review state: ${LATEST:-none}"
+          if [ "$LATEST" = "CHANGES_REQUESTED" ]; then
+            echo "Current Daniel review still requests changes — leaving the block in place."
+            exit 0
+          fi
+          printf '%s' "$REVIEWS" | jq -r '.[] | select(.state=="CHANGES_REQUESTED") | .id' | while read -r ID; do
+            [ -n "$ID" ] || continue
+            gh api -X PUT "repos/$REPO/pulls/$PR/reviews/$ID/dismissals" \
+              -f message="Auto-dismissed: a later Daniel review found no CRITICAL issues, so this earlier change-request is stale." \
+              -f event="DISMISS" >/dev/null \
+              && echo "dismissed stale CHANGES_REQUESTED review $ID" \
+              || echo "::warning::could not dismiss review $ID (branch protection may restrict dismissals)"
+          done
