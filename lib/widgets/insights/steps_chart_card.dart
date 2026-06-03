@@ -138,6 +138,16 @@ _DailyStepsAggregate _aggregateDailySteps(List<HealthReading> readings, int days
   );
 }
 
+/// Test seam for the UTC day-bucketing (mirrors backend get_daily_steps).
+/// Returns steps per day over the [days] window — index 0 = oldest day
+/// (startDate), index days-1 = today (UTC); 0 = no reading that UTC day.
+/// Needed because axis labels render for every day regardless of data.
+@visibleForTesting
+List<int> debugDailySteps(List<HealthReading> readings, int days) {
+  final agg = _aggregateDailySteps(readings, days);
+  return [for (final b in agg.bars) b.steps];
+}
+
 class _DayBar {
   final DateTime date;
   final int steps;
@@ -232,7 +242,8 @@ class _Chart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.decimalPattern();
+    final locale = Localizations.localeOf(context).languageCode;
+    final fmt = NumberFormat.decimalPattern(locale);
     final peak = bars.map((b) => b.steps).fold(0, (a, b) => a > b ? a : b);
     // Scale to actual step counts so the line stays visible when peak << goal.
     final yMax = (peak * 1.2).ceilToDouble().clamp(50.0, double.infinity);
@@ -274,22 +285,38 @@ class _Chart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 24,
+              reservedSize: 40,
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final i = value.round();
                 if (i < 0 || i >= bars.length || (value - i).abs() > 0.01) {
                   return const SizedBox.shrink();
                 }
+                // Localised so Hindi/Tamil/etc. users see weekday + month in
+                // their own script (e.g. "सोम / 3 जून"), not English-only.
                 return SideTitleWidget(
                   meta: meta,
                   space: 4,
-                  child: Text(
-                    DateFormat('E').format(bars[i].date),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textSecondary,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat('E', locale).format(bars[i].date),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      // Date line ("d MMM") to match the Glucose & BP Overview
+                      // axis. >=11sp + textSecondary for elderly legibility.
+                      Text(
+                        DateFormat('d MMM', locale).format(bars[i].date),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -348,7 +375,7 @@ class _Chart extends StatelessWidget {
             getTooltipItems: (touched) => touched.map((s) {
               final b = bars[s.x.round().clamp(0, bars.length - 1)];
               return LineTooltipItem(
-                '${DateFormat.MMMd().format(b.date)}\n${fmt.format(b.steps)}',
+                '${DateFormat.MMMd(locale).format(b.date)}\n${fmt.format(b.steps)}',
                 const TextStyle(color: AppColors.onPrimary, fontSize: 11),
               );
             }).toList(),
