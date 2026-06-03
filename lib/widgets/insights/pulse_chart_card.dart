@@ -106,12 +106,16 @@ class _PulseAggregate {
   });
 }
 
-/// AVERAGE-per-local-day aggregation over the [days] window. Days without a
-/// pulse reading produce no point (a 0 bpm point would be clinically wrong),
-/// so the line simply spans the gap between recorded days.
+/// AVERAGE-per-UTC-day aggregation over the [days] window. Uses the same UTC
+/// day-boundary as StepsChartCard (which mirrors backend get_daily_steps) so
+/// both Insights cards bucket the same reading onto the same x-axis date — a
+/// local basis would drift one day vs steps near IST midnight (18:30 UTC).
+/// (App-wide move to local-day buckets is a separate backend+dashboard change.)
+/// Days without a pulse reading produce no point (a 0 bpm point would be
+/// clinically wrong), so the line simply spans the gap between recorded days.
 _PulseAggregate _aggregateDailyPulse(List<HealthReading> readings, int days) {
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
+  final now = DateTime.now().toUtc();
+  final today = DateTime.utc(now.year, now.month, now.day);
   final startDate = today.subtract(Duration(days: days - 1));
 
   final byDay = <int, List<double>>{};
@@ -119,8 +123,8 @@ _PulseAggregate _aggregateDailyPulse(List<HealthReading> readings, int days) {
 
   for (final r in readings) {
     if (r.readingType != 'blood_pressure' || r.pulseRate == null) continue;
-    final ts = r.readingTimestamp.toLocal();
-    final d = DateTime(ts.year, ts.month, ts.day);
+    final ts = r.readingTimestamp.toUtc();
+    final d = DateTime.utc(ts.year, ts.month, ts.day);
     final idx = d.difference(startDate).inDays;
     if (idx < 0 || idx >= days) continue;
     byDay.putIfAbsent(idx, () => []).add(r.pulseRate!);
@@ -172,6 +176,7 @@ class _Chart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
     final points = aggregate.points;
     final dataMin = points.map((p) => p.avg).reduce((a, b) => a < b ? a : b);
     final dataMax = points.map((p) => p.avg).reduce((a, b) => a > b ? a : b);
@@ -221,7 +226,7 @@ class _Chart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 34,
+              reservedSize: 40,
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final i = value.round();
@@ -231,6 +236,8 @@ class _Chart extends StatelessWidget {
                   return const SizedBox.shrink();
                 }
                 final d = aggregate.startDate.add(Duration(days: i));
+                // Localised so Hindi/Tamil/etc. users see weekday + month in
+                // their own script (e.g. "सोम / 3 जून"), not English-only.
                 return SideTitleWidget(
                   meta: meta,
                   space: 4,
@@ -238,18 +245,19 @@ class _Chart extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        DateFormat('E').format(d),
+                        DateFormat('E', locale).format(d),
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      // Date line ("d MMM") to match the Steps / Glucose & BP axis.
+                      // Date line ("d MMM") to match the Steps / Glucose & BP
+                      // axis. >=11sp + textSecondary for elderly legibility.
                       Text(
-                        DateFormat('d MMM').format(d),
+                        DateFormat('d MMM', locale).format(d),
                         style: const TextStyle(
-                          fontSize: 8,
-                          color: AppColors.textTertiary,
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -294,7 +302,7 @@ class _Chart extends StatelessWidget {
             getTooltipItems: (touched) => touched.map((s) {
               final d = aggregate.startDate.add(Duration(days: s.x.round()));
               return LineTooltipItem(
-                '${DateFormat.MMMd().format(d)}\n${s.y.toStringAsFixed(0)} bpm',
+                '${DateFormat.MMMd(locale).format(d)}\n${s.y.toStringAsFixed(0)} bpm',
                 const TextStyle(color: AppColors.onPrimary, fontSize: 11),
               );
             }).toList(),

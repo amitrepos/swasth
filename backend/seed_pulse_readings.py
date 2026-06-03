@@ -8,12 +8,17 @@ Idempotent: skips a day that already has a blood-pressure reading. If that
 existing same-day reading has no pulse_rate, the sample pulse is backfilled
 onto it (rather than inserting a duplicate) so the Heart Rate chart renders.
 """
+import logging
 from datetime import datetime, timedelta, timezone
 
 from database import SessionLocal
 import models
 
+logger = logging.getLogger(__name__)
+
 # Oldest → newest (7 calendar days including today): (pulse bpm, systolic, diastolic).
+# A spread of normal/elevated/stage-1 values so the demo data is clinically
+# plausible — bp_status() below derives the correct flag per row.
 DAILY_VITALS = [
     (72, 122, 80),
     (78, 128, 82),
@@ -23,6 +28,18 @@ DAILY_VITALS = [
     (70, 120, 78),
     (81, 130, 84),
 ]
+
+
+def bp_status(systolic: int, diastolic: int) -> str:
+    """Match the exact status vocabulary used by seed_demo_data.py / the app
+    (no AHA 'Elevated' tier — the UI's BP info sheet only maps these strings)."""
+    if systolic > 140 or diastolic > 90:
+        return "HIGH - STAGE 2"
+    if systolic > 131 or diastolic > 86:
+        return "HIGH - STAGE 1"
+    if systolic < 90 or diastolic < 60:
+        return "LOW"
+    return "NORMAL"
 
 
 def _day_bounds(day):
@@ -43,7 +60,12 @@ def seed_pulse_for_profile(db, profile_id):
         )
         .first()
     )
-    logged_by = access.user_id if access else None
+    if access is None:
+        # No owner → no user to attribute the reading to. Skip rather than
+        # stage rows with logged_by=None that would be orphaned.
+        logger.warning("profile %s: no owner found, skipping", profile_id)
+        return 0
+    logged_by = access.user_id
 
     added = 0
     for i, (pulse, systolic, diastolic) in enumerate(DAILY_VITALS):
@@ -65,6 +87,7 @@ def seed_pulse_for_profile(db, profile_id):
                 added += 1
             continue
 
+        status = bp_status(systolic, diastolic)
         ts = day_start.replace(hour=21, minute=0)
         db.add(
             models.HealthReading(
@@ -75,10 +98,10 @@ def seed_pulse_for_profile(db, profile_id):
                 diastolic=float(diastolic),
                 pulse_rate=float(pulse),
                 bp_unit="mmHg",
-                bp_status="NORMAL",
+                bp_status=status,
                 value_numeric=float(systolic),
                 unit_display="mmHg",
-                status_flag="NORMAL",
+                status_flag=status,
                 reading_timestamp=ts,
             )
         )
@@ -87,24 +110,25 @@ def seed_pulse_for_profile(db, profile_id):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     db = SessionLocal()
     try:
         profiles = db.query(models.Profile).all()
         if not profiles:
-            print("No profiles found — create a user first.")
+            logger.info("No profiles found — create a user first.")
             return
 
         total = 0
         for profile in profiles:
             n = seed_pulse_for_profile(db, profile.id)
             if n:
-                print(f"  ✓ profile {profile.id} ({profile.name}): +{n} pulse/BP readings")
+                logger.info("  ✓ profile %s (%s): +%s pulse/BP readings", profile.id, profile.name, n)
                 total += n
             else:
-                print(f"  ⏭  profile {profile.id} ({profile.name}): BP data already present")
+                logger.info("  ⏭  profile %s (%s): BP data already present", profile.id, profile.name)
 
         db.commit()
-        print(f"\nDone — {total} pulse/BP readings added.")
+        logger.info("\nDone — %s pulse/BP readings added.", total)
     finally:
         db.close()
 

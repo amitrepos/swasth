@@ -232,7 +232,8 @@ class _Chart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.decimalPattern();
+    final locale = Localizations.localeOf(context).languageCode;
+    final fmt = NumberFormat.decimalPattern(locale);
     final peak = bars.map((b) => b.steps).fold(0, (a, b) => a > b ? a : b);
     // Scale to actual step counts so the line stays visible when peak << goal.
     final yMax = (peak * 1.2).ceilToDouble().clamp(50.0, double.infinity);
@@ -274,13 +275,15 @@ class _Chart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 34,
+              reservedSize: 40,
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final i = value.round();
                 if (i < 0 || i >= bars.length || (value - i).abs() > 0.01) {
                   return const SizedBox.shrink();
                 }
+                // Localised so Hindi/Tamil/etc. users see weekday + month in
+                // their own script (e.g. "सोम / 3 जून"), not English-only.
                 return SideTitleWidget(
                   meta: meta,
                   space: 4,
@@ -288,18 +291,19 @@ class _Chart extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        DateFormat('E').format(bars[i].date),
+                        DateFormat('E', locale).format(bars[i].date),
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      // Date line ("d MMM") to match the Glucose & BP Overview axis.
+                      // Date line ("d MMM") to match the Glucose & BP Overview
+                      // axis. >=11sp + textSecondary for elderly legibility.
                       Text(
-                        DateFormat('d MMM').format(bars[i].date),
+                        DateFormat('d MMM', locale).format(bars[i].date),
                         style: const TextStyle(
-                          fontSize: 8,
-                          color: AppColors.textTertiary,
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -361,7 +365,7 @@ class _Chart extends StatelessWidget {
             getTooltipItems: (touched) => touched.map((s) {
               final b = bars[s.x.round().clamp(0, bars.length - 1)];
               return LineTooltipItem(
-                '${DateFormat.MMMd().format(b.date)}\n${fmt.format(b.steps)}',
+                '${DateFormat.MMMd(locale).format(b.date)}\n${fmt.format(b.steps)}',
                 const TextStyle(color: AppColors.onPrimary, fontSize: 11),
               );
             }).toList(),
