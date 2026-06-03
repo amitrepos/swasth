@@ -221,7 +221,7 @@ class _Chart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 24,
+              reservedSize: 34,
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final i = value.round();
@@ -234,12 +234,25 @@ class _Chart extends StatelessWidget {
                 return SideTitleWidget(
                   meta: meta,
                   space: 4,
-                  child: Text(
-                    DateFormat('E').format(d),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textSecondary,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat('E').format(d),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      // Date line ("d MMM") to match the Steps / Glucose & BP axis.
+                      Text(
+                        DateFormat('d MMM').format(d),
+                        style: const TextStyle(
+                          fontSize: 8,
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
