@@ -29,6 +29,7 @@ def _post_medication(client, headers, profile_id, **overrides):
         "name": "Metformin",
         "dose": "500 mg",
         "frequency": "Twice daily",
+        "intake_period": "MORNING",
         "taken_at": datetime.now(timezone.utc).isoformat(),
         "notes": None,
     }
@@ -48,6 +49,7 @@ def test_create_medication_returns_201_and_persists(client, db, test_user, auth_
     assert body["name"] == "Metformin"
     assert body["dose"] == "500 mg"
     assert body["notes"] == "Felt fine"
+    assert body["intake_period"] == "MORNING"
     assert body["profile_id"] == pid
 
     rows = db.query(models.Medication).filter(models.Medication.profile_id == pid).all()
@@ -62,6 +64,12 @@ def test_create_medication_returns_201_and_persists(client, db, test_user, auth_
 def test_create_medication_rejects_empty_name(client, db, test_user, auth_headers):
     pid = _profile_id_for(test_user, db)
     r = _post_medication(client, auth_headers, pid, name="")
+    assert r.status_code == 422
+
+
+def test_create_medication_rejects_invalid_intake_period(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period="NOON")
     assert r.status_code == 422
 
 
@@ -341,10 +349,10 @@ def test_report_service_includes_medications_in_snippet(db, test_user):
         unit_display="mg/dL",
         reading_timestamp=now - timedelta(hours=2),
     ))
-    db.add(models.Medication(profile_id=pid, name="Metformin", dose="500 mg", taken_at=now - timedelta(hours=1)))
-    db.add(models.Medication(profile_id=pid, name="Aspirin", taken_at=now - timedelta(days=2)))
+    db.add(models.Medication(profile_id=pid, name="Metformin", dose="500 mg", intake_period="MORNING", taken_at=now - timedelta(hours=1)))
+    db.add(models.Medication(profile_id=pid, name="Aspirin", intake_period="EVENING", taken_at=now - timedelta(days=2)))
     # Duplicate by name (case-insensitive) — should be deduped
-    db.add(models.Medication(profile_id=pid, name="metformin", dose="500 mg", taken_at=now - timedelta(hours=3)))
+    db.add(models.Medication(profile_id=pid, name="metformin", dose="500 mg", intake_period="AFTERNOON", taken_at=now - timedelta(hours=3)))
     db.commit()
 
     profile = db.query(models.Profile).filter(models.Profile.id == pid).first()
@@ -359,5 +367,7 @@ def test_report_service_includes_medications_in_snippet(db, test_user):
     assert "💊 Meds:" in snippet
     assert "Metformin" in snippet
     assert "Aspirin" in snippet
+    assert "(Morning)" in snippet
+    assert "(Evening)" in snippet
     # Dedup: 'Metformin' should appear once
     assert snippet.lower().count("metformin") == 1

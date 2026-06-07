@@ -2341,6 +2341,9 @@ class AppLocalizationsTe extends AppLocalizations {
   String get quickActionSummary => 'సారాంశం';
 
   @override
+  String get quickActionMedicines => 'మందులు';
+
+  @override
   String get reminderChangeTime =>
       'రిమైండర్ సమయాన్ని మార్చండి (లేదా నిలిపివేయడానికి రద్దు చేయండి)';
 
@@ -2354,6 +2357,49 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'రిమైండర్ నిలిపివేయబడింది';
+
+  @override
+  String get reminderSettingsTitle => 'రిమైండర్ సెట్టింగ్‌లు';
+
+  @override
+  String get dailyReminderSection => 'రోజువారీ ఆరోగ్య తనిఖీ';
+
+  @override
+  String get weeklyWeightReminderSection => 'వారపు బరువు';
+
+  @override
+  String get weightReminderEnableLabel => 'వారపు బరువు రిమైండర్ ప్రారంభించండి';
+
+  @override
+  String get weightReminderDayLabel => 'రోజు';
+
+  @override
+  String get weightReminderTimeLabel => 'సమయం';
+
+  @override
+  String get weightReminderSetTime => 'వారపు బరువు రిమైండర్ సమయం సెట్ చేయండి';
+
+  @override
+  String get weightReminderChangeTime => 'వారపు బరువు సమయం మార్చండి';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'బరువు రిమైండర్ $day న $time కు సెట్ చేయబడింది';
+  }
+
+  @override
+  String get weightReminderDisabled => 'వారపు బరువు రిమైండర్ నిలిపివేయబడింది';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ మీ బరువును నమోదు చేయండి';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'వారపు చెక్-ఇన్ — మీ బరువును నమోదు చేసి ఆరోగ్య ట్రెండ్‌లను ఖచ్చితంగా ఉంచండి.';
+
+  @override
+  String get notificationPermissionRequired =>
+      'రిమైండర్‌ల కోసం నోటిఫికేషన్ అనుమతి అవసరం';
 
   @override
   String get actionCall => 'కాల్ చేయండి';
@@ -2414,6 +2460,9 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get medicationsColDateTime => 'తేదీ & సమయం';
+
+  @override
+  String get medicationsColDateWhen => 'తేదీ & సమయం';
 
   @override
   String get medicationsColMedicine => 'మందు';
@@ -2484,6 +2533,24 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
+
+  @override
+  String get medicationsFormPeriodLabel => 'When taken *';
+
+  @override
+  String get medicationsFormDateLabel => 'Date';
+
+  @override
+  String get medicationsPeriodMorning => 'Morning';
+
+  @override
+  String get medicationsPeriodAfternoon => 'Afternoon';
+
+  @override
+  String get medicationsPeriodEvening => 'Evening';
+
+  @override
+  String get medicationsPeriodNight => 'Night';
 
   @override
   String get medicationsFormTakenAtLabel => 'Taken at';

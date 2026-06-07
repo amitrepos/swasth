@@ -51,6 +51,9 @@ class _StubClient extends http.BaseClient {
             : (sentBodies.last['name'] ?? 'Unknown'),
         'dose': sentBodies.isEmpty ? null : sentBodies.last['dose'],
         'frequency': sentBodies.isEmpty ? null : sentBodies.last['frequency'],
+        'intake_period': sentBodies.isEmpty
+            ? 'MORNING'
+            : (sentBodies.last['intake_period'] ?? 'MORNING'),
         'taken_at': now,
         'notes': sentBodies.isEmpty ? null : sentBodies.last['notes'],
         'created_at': now,
@@ -145,6 +148,7 @@ void main() {
         expect(stub.postCount, 1);
         expect(stub.sentBodies.first['name'], 'Metformin');
         expect(stub.sentBodies.first['dose'], '500 mg');
+        expect(stub.sentBodies.first['intake_period'], isNotNull);
 
         // Banner appears with last saved name.
         expect(

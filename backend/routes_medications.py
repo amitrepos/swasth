@@ -47,6 +47,7 @@ async def create_medication(
         name=data.name.strip(),
         dose=(data.dose or "").strip() or None,
         frequency=(data.frequency or "").strip() or None,
+        intake_period=data.intake_period,
         taken_at=data.taken_at,
         notes=(data.notes or "").strip() or None,
     )
@@ -120,6 +121,8 @@ async def update_medication(
         med.dose = data.dose.strip() or None
     if data.frequency is not None:
         med.frequency = data.frequency.strip() or None
+    if data.intake_period is not None:
+        med.intake_period = data.intake_period
     if data.taken_at is not None:
         med.taken_at = data.taken_at
     if data.notes is not None:

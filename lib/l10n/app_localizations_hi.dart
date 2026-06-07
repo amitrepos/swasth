@@ -2327,6 +2327,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get quickActionSummary => 'सारांश';
 
   @override
+  String get quickActionMedicines => 'दवाइयाँ';
+
+  @override
   String get reminderChangeTime =>
       'रिमाइंडर समय बदलें (या बंद करने के लिए रद्द करें)';
 
@@ -2340,6 +2343,49 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'रिमाइंडर बंद कर दिया गया';
+
+  @override
+  String get reminderSettingsTitle => 'रिमाइंडर सेटिंग्स';
+
+  @override
+  String get dailyReminderSection => 'दैनिक स्वास्थ्य जांच';
+
+  @override
+  String get weeklyWeightReminderSection => 'साप्ताहिक वज़न';
+
+  @override
+  String get weightReminderEnableLabel => 'साप्ताहिक वज़न रिमाइंडर चालू करें';
+
+  @override
+  String get weightReminderDayLabel => 'दिन';
+
+  @override
+  String get weightReminderTimeLabel => 'समय';
+
+  @override
+  String get weightReminderSetTime => 'साप्ताहिक वज़न रिमाइंडर समय सेट करें';
+
+  @override
+  String get weightReminderChangeTime => 'साप्ताहिक वज़न समय बदलें';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'वज़न रिमाइंडर $day को $time बजे सेट है';
+  }
+
+  @override
+  String get weightReminderDisabled => 'साप्ताहिक वज़न रिमाइंडर बंद';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ अपना वज़न दर्ज करें';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'साप्ताहिक जांच — अपना वज़न दर्ज करके स्वास्थ्य ट्रेंड सटीक रखें।';
+
+  @override
+  String get notificationPermissionRequired =>
+      'रिमाइंडर के लिए नोटिफिकेशन अनुमति आवश्यक है';
 
   @override
   String get actionCall => 'कॉल करें';
@@ -2400,6 +2446,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get medicationsColDateTime => 'तारीख और समय';
+
+  @override
+  String get medicationsColDateWhen => 'तारीख और समय';
 
   @override
   String get medicationsColMedicine => 'दवा';
@@ -2470,6 +2519,24 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get medicationsFormFrequencyHint => 'जैसे दिन में दो बार खाने के बाद';
+
+  @override
+  String get medicationsFormPeriodLabel => 'कब ली *';
+
+  @override
+  String get medicationsFormDateLabel => 'तारीख';
+
+  @override
+  String get medicationsPeriodMorning => 'सुबह';
+
+  @override
+  String get medicationsPeriodAfternoon => 'दोपहर';
+
+  @override
+  String get medicationsPeriodEvening => 'शाम';
+
+  @override
+  String get medicationsPeriodNight => 'रात';
 
   @override
   String get medicationsFormTakenAtLabel => 'कब ली';

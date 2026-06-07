@@ -1430,12 +1430,14 @@ class TestPatientMedications:
                 name="Metformin",
                 dose="500 mg",
                 frequency="Twice daily",
+                intake_period="MORNING",
                 taken_at=now - timedelta(hours=2),
             ),
             models.Medication(
                 profile_id=profile.id,
                 name="Amlodipine",
                 dose="5 mg",
+                intake_period="EVENING",
                 taken_at=now - timedelta(days=2),
             ),
         ]
@@ -1458,7 +1460,9 @@ class TestPatientMedications:
         assert body[0]["name"] == "Metformin"
         assert body[0]["dose"] == "500 mg"
         assert body[0]["frequency"] == "Twice daily"
+        assert body[0]["intake_period"] == "MORNING"
         assert body[1]["name"] == "Amlodipine"
+        assert body[1]["intake_period"] == "EVENING"
 
     def test_get_medications_unauthorized_doctor(
         self, client, doctor_headers, patient_user

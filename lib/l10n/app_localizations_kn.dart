@@ -2353,6 +2353,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get quickActionSummary => 'ಸಾರಾಂಶ';
 
   @override
+  String get quickActionMedicines => 'ಔಷಧಿಗಳು';
+
+  @override
   String get reminderChangeTime =>
       'ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಬದಲಾಯಿಸಿ (ಅಥವಾ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲು ರದ್ದುಮಾಡಿ)';
 
@@ -2366,6 +2369,51 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'ಜ್ಞಾಪನೆಯನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ';
+
+  @override
+  String get reminderSettingsTitle => 'ಜ್ಞಾಪನೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು';
+
+  @override
+  String get dailyReminderSection => 'ದೈನಂದಿನ ಆರೋಗ್ಯ ಪರಿಶೀಲನೆ';
+
+  @override
+  String get weeklyWeightReminderSection => 'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ';
+
+  @override
+  String get weightReminderEnableLabel =>
+      'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಜ್ಞಾಪನೆ ಸಕ್ರಿಯಗೊಳಿಸಿ';
+
+  @override
+  String get weightReminderDayLabel => 'ದಿನ';
+
+  @override
+  String get weightReminderTimeLabel => 'ಸಮಯ';
+
+  @override
+  String get weightReminderSetTime => 'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಜ್ಞಾಪನೆ ಸಮಯ ಹೊಂದಿಸಿ';
+
+  @override
+  String get weightReminderChangeTime => 'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಸಮಯ ಬದಲಾಯಿಸಿ';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'ತೂಕ ಜ್ಞಾಪನೆ $day ರಂದು $time ಗೆ ಹೊಂದಿಸಲಾಗಿದೆ';
+  }
+
+  @override
+  String get weightReminderDisabled =>
+      'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಜ್ಞಾಪನೆ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ ನಿಮ್ಮ ತೂಕವನ್ನು ದಾಖಲಿಸಿ';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'ವಾರಕ್ಕೊಮ್ಮೆ ಪರಿಶೀಲನೆ — ಆರೋಗ್ಯ ಪ್ರವೃತ್ತಿಗಳನ್ನು ನಿಖರವಾಗಿಡಲು ತೂಕ ದಾಖಲಿಸಿ.';
+
+  @override
+  String get notificationPermissionRequired =>
+      'ಜ್ಞಾಪನೆಗಳಿಗೆ ಅಧಿಸೂಚನೆ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ';
 
   @override
   String get actionCall => 'ಕರೆ ಮಾಡಿ';
@@ -2426,6 +2474,9 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get medicationsColDateTime => 'ದಿನಾಂಕ & ಸಮಯ';
+
+  @override
+  String get medicationsColDateWhen => 'ದಿನಾಂಕ & ಸಮಯ';
 
   @override
   String get medicationsColMedicine => 'ಔಷಧಿ';
@@ -2496,6 +2547,24 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
+
+  @override
+  String get medicationsFormPeriodLabel => 'When taken *';
+
+  @override
+  String get medicationsFormDateLabel => 'Date';
+
+  @override
+  String get medicationsPeriodMorning => 'Morning';
+
+  @override
+  String get medicationsPeriodAfternoon => 'Afternoon';
+
+  @override
+  String get medicationsPeriodEvening => 'Evening';
+
+  @override
+  String get medicationsPeriodNight => 'Night';
 
   @override
   String get medicationsFormTakenAtLabel => 'Taken at';

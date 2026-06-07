@@ -1290,6 +1290,7 @@
   },
   "quickActionReminder": "ಜ್ಞಾಪನೆ",
   "quickActionSummary": "ಸಾರಾಂಶ",
+  "quickActionMedicines": "ಔಷಧಿಗಳು",
   "reminderChangeTime": "ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಬದಲಾಯಿಸಿ (ಅಥವಾ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲು ರದ್ದುಮಾಡಿ)",
   "reminderSetTime": "ದೈನಂದಿನ ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಹೊಂದಿಸಿ",
   "reminderSetFor": "ಜ್ಞಾಪನೆಯನ್ನು ಪ್ರತಿದಿನ {time} ಗೆ ಹೊಂದಿಸಲಾಗಿದೆ",
@@ -1301,6 +1302,25 @@
     }
   },
   "reminderDisabled": "ಜ್ಞಾಪನೆಯನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ",
+  "reminderSettingsTitle": "ಜ್ಞಾಪನೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
+  "dailyReminderSection": "ದೈನಂದಿನ ಆರೋಗ್ಯ ಪರಿಶೀಲನೆ",
+  "weeklyWeightReminderSection": "ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ",
+  "weightReminderEnableLabel": "ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಜ್ಞಾಪನೆ ಸಕ್ರಿಯಗೊಳಿಸಿ",
+  "weightReminderDayLabel": "ದಿನ",
+  "weightReminderTimeLabel": "ಸಮಯ",
+  "weightReminderSetTime": "ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಜ್ಞಾಪನೆ ಸಮಯ ಹೊಂದಿಸಿ",
+  "weightReminderChangeTime": "ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಸಮಯ ಬದಲಾಯಿಸಿ",
+  "weightReminderSetFor": "ತೂಕ ಜ್ಞಾಪನೆ {day} ರಂದು {time} ಗೆ ಹೊಂದಿಸಲಾಗಿದೆ",
+  "@weightReminderSetFor": {
+    "placeholders": {
+      "day": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "weightReminderDisabled": "ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಜ್ಞಾಪನೆ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ",
+  "weightReminderNotificationTitle": "⚖️ ನಿಮ್ಮ ತೂಕವನ್ನು ದಾಖಲಿಸಿ",
+  "weightReminderNotificationBody": "ವಾರಕ್ಕೊಮ್ಮೆ ಪರಿಶೀಲನೆ — ಆರೋಗ್ಯ ಪ್ರವೃತ್ತಿಗಳನ್ನು ನಿಖರವಾಗಿಡಲು ತೂಕ ದಾಖಲಿಸಿ.",
+  "notificationPermissionRequired": "ಜ್ಞಾಪನೆಗಳಿಗೆ ಅಧಿಸೂಚನೆ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ",
   "actionCall": "ಕರೆ ಮಾಡಿ",
   "actionWhatsApp": "ವಾಟ್ಸಾಪ್",
   "actionEmail": "ಇಮೇಲ್ ಕಳುಹಿಸಿ",
@@ -1329,6 +1349,7 @@
   "medicationsLogFab": "ಔಷಧಿ ದಾಖಲಿಸಿ",
   "medicationsLogFirst": "ಮೊದಲ ಔಷಧಿ ದಾಖಲಿಸಿ",
   "medicationsColDateTime": "ದಿನಾಂಕ & ಸಮಯ",
+  "medicationsColDateWhen": "ದಿನಾಂಕ & ಸಮಯ",
   "medicationsColMedicine": "ಔಷಧಿ",
   "medicationsColDose": "ಮೊತ್ತ",
   "medicationsColFrequency": "ಆವರ್ತನೆ",
@@ -1342,5 +1363,11 @@
   "medicationsEditTitle": "ಔಷಧಿ ಸಂಪಾದಿಸಿ",
   "medicationsSaveChanges": "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
   "medicationsEditSemantics": "{name} ಸಂಪಾದಿಸಿ",
-  "medicationsCellEmpty": "-"
+  "medicationsCellEmpty": "-",
+  "medicationsFormPeriodLabel": "When taken *",
+  "medicationsFormDateLabel": "Date",
+  "medicationsPeriodMorning": "Morning",
+  "medicationsPeriodAfternoon": "Afternoon",
+  "medicationsPeriodEvening": "Evening",
+  "medicationsPeriodNight": "Night"
 }

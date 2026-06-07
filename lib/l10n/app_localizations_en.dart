@@ -2323,6 +2323,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickActionSummary => 'Summary';
 
   @override
+  String get quickActionMedicines => 'Medicines';
+
+  @override
   String get reminderChangeTime =>
       'Change reminder time (or cancel to disable)';
 
@@ -2336,6 +2339,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'Reminder disabled';
+
+  @override
+  String get reminderSettingsTitle => 'Reminder settings';
+
+  @override
+  String get dailyReminderSection => 'Daily health check';
+
+  @override
+  String get weeklyWeightReminderSection => 'Weekly weight';
+
+  @override
+  String get weightReminderEnableLabel => 'Enable weekly weight reminder';
+
+  @override
+  String get weightReminderDayLabel => 'Day';
+
+  @override
+  String get weightReminderTimeLabel => 'Time';
+
+  @override
+  String get weightReminderSetTime => 'Set weekly weight reminder time';
+
+  @override
+  String get weightReminderChangeTime => 'Change weekly weight time';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'Weight reminder set for $day at $time';
+  }
+
+  @override
+  String get weightReminderDisabled => 'Weekly weight reminder disabled';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ Time to log your weight';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'Weekly check-in — log your weight to keep your health trends accurate.';
+
+  @override
+  String get notificationPermissionRequired =>
+      'Notification permission is required for reminders';
 
   @override
   String get actionCall => 'Call';
@@ -2396,6 +2442,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get medicationsColDateTime => 'Date & Time';
+
+  @override
+  String get medicationsColDateWhen => 'Date & When';
 
   @override
   String get medicationsColMedicine => 'Medicine';
@@ -2466,6 +2515,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
+
+  @override
+  String get medicationsFormPeriodLabel => 'When taken *';
+
+  @override
+  String get medicationsFormDateLabel => 'Date';
+
+  @override
+  String get medicationsPeriodMorning => 'Morning';
+
+  @override
+  String get medicationsPeriodAfternoon => 'Afternoon';
+
+  @override
+  String get medicationsPeriodEvening => 'Evening';
+
+  @override
+  String get medicationsPeriodNight => 'Night';
 
   @override
   String get medicationsFormTakenAtLabel => 'Taken at';

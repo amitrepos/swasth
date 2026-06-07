@@ -1114,6 +1114,8 @@ class AdminSendWhatsAppBulk(BaseModel):
 # Medications (NUO-127) — patient-logged intake, surfaced to doctor.
 # ---------------------------------------------------------------------------
 
+MedicationIntakePeriod = Literal["MORNING", "AFTERNOON", "EVENING", "NIGHT"]
+
 # Allow a little client clock-skew, but reject clearly future-dated entries:
 # a future taken_at would silently fall outside the report/list windows and
 # never surface to the doctor (Daniel review m2).
@@ -1135,6 +1137,7 @@ class MedicationCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
     dose: Optional[str] = Field(None, max_length=60)
     frequency: Optional[str] = Field(None, max_length=120)
+    intake_period: MedicationIntakePeriod
     taken_at: datetime
     notes: Optional[str] = Field(None, max_length=500)
 
@@ -1148,6 +1151,7 @@ class MedicationUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=120)
     dose: Optional[str] = Field(None, max_length=60)
     frequency: Optional[str] = Field(None, max_length=120)
+    intake_period: Optional[MedicationIntakePeriod] = None
     taken_at: Optional[datetime] = None
     notes: Optional[str] = Field(None, max_length=500)
 
@@ -1164,6 +1168,7 @@ class MedicationResponse(BaseModel):
     name: str
     dose: Optional[str] = None
     frequency: Optional[str] = None
+    intake_period: MedicationIntakePeriod
     taken_at: datetime
     notes: Optional[str] = None
     created_at: datetime

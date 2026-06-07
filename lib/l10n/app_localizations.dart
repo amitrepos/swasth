@@ -4345,6 +4345,12 @@ abstract class AppLocalizations {
   /// **'Summary'**
   String get quickActionSummary;
 
+  /// No description provided for @quickActionMedicines.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines'**
+  String get quickActionMedicines;
+
   /// No description provided for @reminderChangeTime.
   ///
   /// In en, this message translates to:
@@ -4368,6 +4374,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reminder disabled'**
   String get reminderDisabled;
+
+  /// No description provided for @reminderSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder settings'**
+  String get reminderSettingsTitle;
+
+  /// No description provided for @dailyReminderSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily health check'**
+  String get dailyReminderSection;
+
+  /// No description provided for @weeklyWeightReminderSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly weight'**
+  String get weeklyWeightReminderSection;
+
+  /// No description provided for @weightReminderEnableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable weekly weight reminder'**
+  String get weightReminderEnableLabel;
+
+  /// No description provided for @weightReminderDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get weightReminderDayLabel;
+
+  /// No description provided for @weightReminderTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get weightReminderTimeLabel;
+
+  /// No description provided for @weightReminderSetTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Set weekly weight reminder time'**
+  String get weightReminderSetTime;
+
+  /// No description provided for @weightReminderChangeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Change weekly weight time'**
+  String get weightReminderChangeTime;
+
+  /// No description provided for @weightReminderSetFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight reminder set for {day} at {time}'**
+  String weightReminderSetFor(String day, String time);
+
+  /// No description provided for @weightReminderDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly weight reminder disabled'**
+  String get weightReminderDisabled;
+
+  /// No description provided for @weightReminderNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'⚖️ Time to log your weight'**
+  String get weightReminderNotificationTitle;
+
+  /// No description provided for @weightReminderNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly check-in — log your weight to keep your health trends accurate.'**
+  String get weightReminderNotificationBody;
+
+  /// No description provided for @notificationPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission is required for reminders'**
+  String get notificationPermissionRequired;
 
   /// No description provided for @actionCall.
   ///
@@ -4476,6 +4560,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Date & Time'**
   String get medicationsColDateTime;
+
+  /// No description provided for @medicationsColDateWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & When'**
+  String get medicationsColDateWhen;
 
   /// No description provided for @medicationsColMedicine.
   ///
@@ -4602,6 +4692,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'e.g. Twice daily after food'**
   String get medicationsFormFrequencyHint;
+
+  /// No description provided for @medicationsFormPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'When taken *'**
+  String get medicationsFormPeriodLabel;
+
+  /// No description provided for @medicationsFormDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get medicationsFormDateLabel;
+
+  /// No description provided for @medicationsPeriodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get medicationsPeriodMorning;
+
+  /// No description provided for @medicationsPeriodAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon'**
+  String get medicationsPeriodAfternoon;
+
+  /// No description provided for @medicationsPeriodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening'**
+  String get medicationsPeriodEvening;
+
+  /// No description provided for @medicationsPeriodNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Night'**
+  String get medicationsPeriodNight;
 
   /// No description provided for @medicationsFormTakenAtLabel.
   ///
