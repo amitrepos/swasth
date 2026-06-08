@@ -59,6 +59,17 @@ jobs:
             # promoting to error is a runbook step after first ticket lands.
           fi
 
+      - name: Fetch ticket brief for churn gate
+        if: steps.extract.outputs.ticket != ''
+        env:
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          mkdir -p .agent-tmp
+          python3 scripts/jira_fetch_ticket.py "${{ steps.extract.outputs.ticket }}" --out .agent-tmp/ticket.md
+          test -s .agent-tmp/ticket.md
+
       - name: Re-run regression check
         run: |
           if [ -f scripts/check_no_regression.sh ]; then
