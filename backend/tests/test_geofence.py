@@ -260,7 +260,6 @@ def test_route_wired_post_readings_blocks_us_nuo135(client, auth_headers, test_u
     """POST /readings uses require_india_writer (451), not verify_india_location (403)."""
     from datetime import datetime, timezone
 
-    monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
     profile_id = _profile_id_for(test_user)
     body = {
         "profile_id": profile_id,
@@ -271,11 +270,15 @@ def test_route_wired_post_readings_blocks_us_nuo135(client, auth_headers, test_u
         "unit_display": "mg/dL",
         "reading_timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    r = client.post(
-        "/api/readings",
-        json=body,
-        headers={**auth_headers, "Accept-Language": "en-US"},
-    )
+    # require_india_writer now resolves country via the mmdb (not the old
+    # GEO_RESTRICT_ENABLED/ipapi.co path). Mock the reader to claim US so
+    # the gate blocks; without this, CI has no mmdb → fail-open → 201.
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post(
+            "/api/readings",
+            json=body,
+            headers={**auth_headers, "Accept-Language": "en-US"},
+        )
     assert r.status_code == 451, (
         f"Expected 451 from require_india_writer, got {r.status_code}: {r.text}. "
         "POST /readings must not stack verify_india_location with require_india_writer."
@@ -287,7 +290,6 @@ def test_route_wired_post_meals_blocks_us_nuo135(client, auth_headers, test_user
     """POST /meals uses require_india_writer (451), not verify_india_location (403)."""
     from datetime import datetime, timezone
 
-    monkeypatch.setenv("GEO_RESTRICT_ENABLED", "true")
     profile_id = _profile_id_for(test_user)
     body = {
         "profile_id": profile_id,
@@ -296,11 +298,13 @@ def test_route_wired_post_meals_blocks_us_nuo135(client, auth_headers, test_user
         "input_method": "quick_select",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    r = client.post(
-        "/api/meals",
-        json=body,
-        headers={**auth_headers, "Accept-Language": "en-US"},
-    )
+    # See note in the readings test: gate is mmdb-backed now, so mock US.
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post(
+            "/api/meals",
+            json=body,
+            headers={**auth_headers, "Accept-Language": "en-US"},
+        )
     assert r.status_code == 451, (
         f"Expected 451 from require_india_writer, got {r.status_code}: {r.text}. "
         "POST /meals must not stack verify_india_location with require_india_writer."
@@ -769,3 +773,45 @@ def test_allowlist_cache_drops_none_hashes_and_warns(monkeypatch, caplog):
         and "hashed to None" in r.message
         for r in caplog.records
     ), "Dropped entries must surface as a WARNING for operator visibility"
+
+
+# ──────────────────────────────────────────────────────────────────
+# geofence_startup_check — boot-time visibility of the fail-open gate
+# ──────────────────────────────────────────────────────────────────
+
+def test_startup_check_active_logs_info(caplog):
+    """mmdb present → gate ACTIVE, returns True, logs an INFO line."""
+    from dependencies import geofence_startup_check
+    with mock.patch("dependencies._get_geoip_reader", return_value=mock.Mock()):
+        with caplog.at_level("INFO", logger="dependencies"):
+            result = geofence_startup_check()
+    assert result is True
+    assert any("ACTIVE" in r.message for r in caplog.records)
+
+
+def test_startup_check_fail_open_prod_logs_error(monkeypatch, caplog):
+    """mmdb missing + prod (REQUIRE_HTTPS=true) → returns False and logs
+    a loud ERROR. Ops alert is disabled here so the test doesn't try to
+    send mail; the alert dispatch is best-effort and wrapped anyway."""
+    from config import settings as _settings
+    from dependencies import geofence_startup_check
+    monkeypatch.setattr(_settings, "REQUIRE_HTTPS", True)
+    monkeypatch.setattr(_settings, "OPS_ALERTS_ENABLED", False)
+    with mock.patch("dependencies._get_geoip_reader", return_value=None):
+        with caplog.at_level("ERROR", logger="dependencies"):
+            result = geofence_startup_check()
+    assert result is False
+    assert any("GEOFENCE_FAIL_OPEN" in r.message for r in caplog.records)
+
+
+def test_startup_check_fail_open_dev_logs_info_only(monkeypatch, caplog):
+    """mmdb missing + dev (REQUIRE_HTTPS=false) → returns False, INFO
+    only, no ERROR and no alert attempt."""
+    from config import settings as _settings
+    from dependencies import geofence_startup_check
+    monkeypatch.setattr(_settings, "REQUIRE_HTTPS", False)
+    with mock.patch("dependencies._get_geoip_reader", return_value=None):
+        with caplog.at_level("INFO", logger="dependencies"):
+            result = geofence_startup_check()
+    assert result is False
+    assert not any(r.levelname == "ERROR" for r in caplog.records)

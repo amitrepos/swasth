@@ -4,14 +4,11 @@ Kept in its own router so it's obvious which routes do NOT require a token.
 Anything added here is visible to anyone on the public internet — review for
 PII / abuse vectors before adding new endpoints.
 """
-import os
-
 from fastapi import APIRouter, Request
 from limiter import limiter
 
 from config import settings
-from dependencies import _get_client_ip
-from utils.geo import get_request_country, is_india_writer_allowed
+from dependencies import india_write_decision
 
 router = APIRouter()
 
@@ -53,10 +50,13 @@ async def get_region(request: Request):
         country_code: ISO-2 (e.g. 'IN', 'US') or 'UNKNOWN' on lookup failure
         is_india:     true if the caller will pass `require_india_writer`
         write_allowed: alias for is_india (kept stable for client code)
-        source:       'ip' | 'locale' | 'private' | 'disabled' | 'error'
+        source:       'env_bypass' | 'email_allowlist' | 'mmdb'
                       — useful for client-side telemetry, never shown to users
+
+    Uses the SAME `india_write_decision` the write gate enforces with, so
+    this prediction can never disagree with the actual 451 the client gets.
     """
-    allowed, country, source = await is_india_writer_allowed(request, _get_client_ip(request))
+    allowed, country, source = india_write_decision(request)
     return {
         "country_code": country,
         "is_india": allowed,

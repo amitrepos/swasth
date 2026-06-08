@@ -634,14 +634,45 @@ def get_profile_owner_or_403(
 # Caregivers abroad can still read; only logging is blocked.
 # ---------------------------------------------------------------------------
 
+def india_write_decision(request: Request) -> Tuple[bool, str, str]:
+    """Side-effect-free India-write decision.
+
+    Single source of truth shared by the enforcing dependency
+    (require_india_writer) and the advisory GET /public/region endpoint,
+    so the client's pre-flight prediction always matches what the gate
+    actually does at write time. Never raises and never logs — callers
+    own their own audit logging (a mere /public/region poll must not
+    pollute the GEOFENCE_BLOCK_WRITE audit signal).
+
+    Order mirrors the edit/delete gate: env bypass -> email allowlist ->
+    mmdb country. Returns (allowed, country_code, source) where source is
+    'env_bypass' | 'email_allowlist' | 'mmdb'. A None country from the
+    mmdb (missing DB, private/unknown IP) fails OPEN — allowed, so a DB
+    gap never locks genuine India users out.
+    """
+    if os.environ.get("BYPASS_GEO_RESTRICTION", "").lower() == "true":
+        return True, "IN", "env_bypass"
+
+    allowlist_hashes = _get_geofence_allowlist_hashes()
+    if allowlist_hashes:
+        email_hash = _email_hash_from_bearer_token(request)
+        if email_hash is not None and email_hash in allowlist_hashes:
+            return True, "ALLOWLIST", "email_allowlist"
+
+    iso_code, _masked = _country_iso_or_none(request)
+    if iso_code is None:
+        return True, "UNKNOWN", "mmdb"
+    return iso_code == "IN", iso_code, "mmdb"
+
+
 async def require_india_writer(request: Request) -> dict:
     """Block write (create) endpoints when the caller is outside India.
 
     Unified onto the SAME MaxMind GeoLite2 mmdb as verify_india_location
-    (edit/delete) — previously this path used an ipapi.co network lookup,
-    which had a daily quota, a locale-fallback hole, and (the bug that
-    started this) did not honour the email allowlist. One resolver now
-    backs all three operations.
+    (edit/delete) via the shared `india_write_decision` — previously this
+    path used an ipapi.co network lookup, which had a daily quota, a
+    locale-fallback hole, and (the bug that started this) did not honour
+    the email allowlist. One resolver now backs all three operations.
 
     Returns a small region-info dict on success so the route handler can
     log it or include it in audit trails. Raises 451 (Unavailable For
@@ -657,38 +688,30 @@ async def require_india_writer(request: Request) -> dict:
     Kept `async` so the route `Depends(...)` signatures don't change; the
     mmdb lookup is a fast local read with no await.
     """
-    # 1. Emergency rollback — same env flag verify_india_location uses.
-    if os.environ.get("BYPASS_GEO_RESTRICTION", "").lower() == "true":
-        peer = request.client.host if request.client else "unknown"
-        logger.warning(
-            "GEOFENCE_BYPASS active — BYPASS_GEO_RESTRICTION=true. "
-            f"peer_masked={_mask_ip(peer)} path={request.url.path} "
-            f"method={request.method}. Flip off after the incident/test."
-        )
-        return {"country": "IN", "source": "env_bypass"}
+    allowed, country, source = india_write_decision(request)
 
-    # 2. Per-user email allowlist — shared with verify_india_location so an
-    # allowlisted account behaves identically on create, edit, and delete.
-    allowlist_hashes = _get_geofence_allowlist_hashes()
-    if allowlist_hashes:
-        email_hash = _email_hash_from_bearer_token(request)
-        if email_hash is not None and email_hash in allowlist_hashes:
+    if allowed:
+        # Audit logging for the two explicit-bypass paths only.
+        if source == "env_bypass":
+            peer = request.client.host if request.client else "unknown"
+            logger.warning(
+                "GEOFENCE_BYPASS active — BYPASS_GEO_RESTRICTION=true. "
+                f"peer_masked={_mask_ip(peer)} path={request.url.path} "
+                f"method={request.method}. Flip off after the incident/test."
+            )
+        elif source == "email_allowlist":
+            eh = _email_hash_from_bearer_token(request)
             logger.info(
                 "REGION_ALLOWLIST_HIT "
-                f"email_hash_prefix={email_hash[:12]} "
+                f"email_hash_prefix={(eh or '')[:12]} "
                 f"path={request.url.path} method={request.method}"
             )
-            return {"country": "ALLOWLIST", "source": "email_allowlist"}
-
-    # 3. Resolve country via the shared mmdb helper (fail open on gaps).
-    iso_code, masked = _country_iso_or_none(request)
-    if iso_code is None or iso_code == "IN":
-        return {"country": iso_code or "UNKNOWN", "source": "mmdb"}
+        return {"country": country, "source": source}
 
     logger.info(
-        f"GEOFENCE_BLOCK_WRITE country={iso_code} "
+        f"GEOFENCE_BLOCK_WRITE country={country} "
         f"path={request.url.path} method={request.method} "
-        f"ip_masked={masked}"
+        f"ip_masked={_mask_ip(_get_client_ip(request))}"
     )
     raise HTTPException(
         status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,
@@ -698,8 +721,8 @@ async def require_india_writer(request: Request) -> dict:
                 "Logging health data is only available from India. "
                 "You can still view this profile as a family member."
             ),
-            "country": iso_code,
-            "source": "mmdb",
+            "country": country,
+            "source": source,
         },
     )
 
