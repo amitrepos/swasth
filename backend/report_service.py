@@ -708,19 +708,28 @@ def trigger_single_profile_report(
             .all()
         )
         if recent_meds:
-            # Deduplicate by name (case-insensitive), preserve most-recent first
+            # Dedupe by name + period (case-insensitive name) so the same
+            # drug logged morning AND evening both appear in the snippet.
             seen, unique = set(), []
+            _period_labels = {
+                "MORNING": "Morning",
+                "AFTERNOON": "Afternoon",
+                "EVENING": "Evening",
+                "NIGHT": "Night",
+            }
             for m in recent_meds:
                 # Materialise once: each .name/.dose access runs an AES-GCM
                 # decrypt through the ORM property getter.
                 name = m.name
                 dose = m.dose
-                key = name.lower().strip()
+                key = f"{name.lower().strip()}|{m.intake_period or ''}"
                 if key in seen:
                     continue
                 seen.add(key)
                 dose_suffix = f" {dose}" if dose else ""
-                unique.append(f"{name}{dose_suffix}")
+                period_label = _period_labels.get(m.intake_period or "", "")
+                period_suffix = f" ({period_label})" if period_label else ""
+                unique.append(f"{name}{dose_suffix}{period_suffix}")
             med_line = "💊 Meds: " + ", ".join(unique)
 
         # {{3}}: profile name + all metrics pipe-separated, no \n

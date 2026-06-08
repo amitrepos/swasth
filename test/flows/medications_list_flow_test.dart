@@ -29,6 +29,7 @@ List<Map<String, dynamic>> _sampleMeds() {
       'name': 'Metformin',
       'dose': '500 mg',
       'frequency': 'Twice daily',
+      'intake_period': 'MORNING',
       'taken_at': now,
       'notes': null,
       'created_at': now,
@@ -40,6 +41,7 @@ List<Map<String, dynamic>> _sampleMeds() {
       'name': 'Amlodipine',
       'dose': '5 mg',
       'frequency': 'Once daily',
+      'intake_period': 'EVENING',
       'taken_at': now,
       'notes': 'After breakfast',
       'created_at': now,
@@ -143,7 +145,7 @@ void main() {
       await _bootstrap(tester, _MedicationsListStub());
 
       expect(find.byKey(const Key('medications-table')), findsOneWidget);
-      expect(find.text('Date & Time'), findsOneWidget);
+      expect(find.text('Date & When'), findsOneWidget);
       expect(find.text('Medicine'), findsOneWidget);
       expect(find.text('Dose'), findsOneWidget);
       expect(find.text('Frequency'), findsOneWidget);
@@ -155,6 +157,13 @@ void main() {
       expect(find.text('Amlodipine'), findsOneWidget);
       expect(find.text('After breakfast'), findsOneWidget);
       expect(find.byKey(const Key('medications-add-fab')), findsOneWidget);
+    });
+
+    testWidgets('medications list cell shows period label', (tester) async {
+      await _bootstrap(tester, _MedicationsListStub());
+
+      expect(find.textContaining('Morning'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Evening'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('delete removes row after confirmation', (tester) async {

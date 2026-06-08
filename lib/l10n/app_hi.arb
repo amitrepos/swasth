@@ -901,6 +901,7 @@
   },
   "quickActionReminder": "रिमाइंडर",
   "quickActionSummary": "सारांश",
+  "quickActionMedicines": "दवाइयाँ",
   "reminderChangeTime": "रिमाइंडर समय बदलें (या बंद करने के लिए रद्द करें)",
   "reminderSetTime": "दैनिक रिमाइंडर समय सेट करें",
   "reminderSetFor": "रिमाइंडर प्रतिदिन {time} के लिए सेट किया गया",
@@ -940,6 +941,7 @@
   "medicationsLogFab": "दवा दर्ज करें",
   "medicationsLogFirst": "पहली दवा दर्ज करें",
   "medicationsColDateTime": "तारीख और समय",
+  "medicationsColDateWhen": "तारीख और कब",
   "medicationsColMedicine": "दवा",
   "medicationsColDose": "खुराक",
   "medicationsColFrequency": "आवृत्ति",
@@ -961,6 +963,18 @@
   "medicationsFormDoseHint": "जैसे 500 mg, 1 गोली",
   "medicationsFormFrequencyLabel": "आवृत्ति (वैकल्पिक)",
   "medicationsFormFrequencyHint": "जैसे दिन में दो बार खाने के बाद",
+  "medicationsFormPeriodLabel": "कब ली",
+  "medicationsFormDateLabel": "तारीख",
+  "medicationsPeriodMorning": "सुबह",
+  "medicationsPeriodAfternoon": "दोपहर",
+  "medicationsPeriodEvening": "शाम",
+  "medicationsPeriodNight": "रात",
+  "medicationsFormRecordedTimeHint": "लगभग {time} पर दर्ज होगी",
+  "@medicationsFormRecordedTimeHint": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
   "medicationsFormTakenAtLabel": "कब ली",
   "medicationsFormNotesLabel": "नोट्स (वैकल्पिक)",
   "medicationsFormNotesHint": "जैसे दवा के बाद मतली",

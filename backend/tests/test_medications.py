@@ -29,6 +29,7 @@ def _post_medication(client, headers, profile_id, **overrides):
         "name": "Metformin",
         "dose": "500 mg",
         "frequency": "Twice daily",
+        "intake_period": "MORNING",
         "taken_at": datetime.now(timezone.utc).isoformat(),
         "notes": None,
     }
@@ -48,6 +49,7 @@ def test_create_medication_returns_201_and_persists(client, db, test_user, auth_
     assert body["name"] == "Metformin"
     assert body["dose"] == "500 mg"
     assert body["notes"] == "Felt fine"
+    assert body["intake_period"] == "MORNING"
     assert body["profile_id"] == pid
 
     rows = db.query(models.Medication).filter(models.Medication.profile_id == pid).all()
@@ -65,6 +67,83 @@ def test_create_medication_rejects_empty_name(client, db, test_user, auth_header
     assert r.status_code == 422
 
 
+def test_create_medication_rejects_invalid_intake_period(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period="NOON")
+    assert r.status_code == 422
+
+
+@pytest.mark.parametrize("period", ["MORNING", "AFTERNOON", "EVENING", "NIGHT"])
+def test_create_medication_all_intake_periods(
+    client, db, test_user, auth_headers, period
+):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period=period)
+    assert r.status_code == 201, r.text
+    assert r.json()["intake_period"] == period
+    row = (
+        db.query(models.Medication)
+        .filter(models.Medication.profile_id == pid)
+        .order_by(models.Medication.id.desc())
+        .first()
+    )
+    assert row.intake_period == period
+
+
+def test_update_medication_intake_period(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period="MORNING")
+    assert r.status_code == 201, r.text
+    med_id = r.json()["id"]
+
+    r2 = client.patch(
+        f"/api/medications/{med_id}",
+        json={"intake_period": "NIGHT"},
+        headers=auth_headers,
+    )
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["intake_period"] == "NIGHT"
+
+    row = db.query(models.Medication).filter_by(id=med_id).first()
+    assert row.intake_period == "NIGHT"
+
+
+def test_update_medication_rejects_invalid_intake_period(
+    client, db, test_user, auth_headers
+):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period="MORNING")
+    assert r.status_code == 201, r.text
+    med_id = r.json()["id"]
+
+    r2 = client.patch(
+        f"/api/medications/{med_id}",
+        json={"intake_period": "NOON"},
+        headers=auth_headers,
+    )
+    assert r2.status_code == 422
+
+
+def test_update_medication_preserves_period_when_omitted(
+    client, db, test_user, auth_headers
+):
+    """PATCHing only dose must not change an existing intake_period."""
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period="EVENING")
+    assert r.status_code == 201, r.text
+    med_id = r.json()["id"]
+
+    r2 = client.patch(
+        f"/api/medications/{med_id}",
+        json={"dose": "750 mg"},
+        headers=auth_headers,
+    )
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["intake_period"] == "EVENING"
+    row = db.query(models.Medication).filter_by(id=med_id).first()
+    assert row.intake_period == "EVENING"
+
+
 def test_create_medication_rejects_future_taken_at(client, db, test_user, auth_headers):
     """taken_at well in the future would never appear in the report window."""
     pid = _profile_id_for(test_user, db)
@@ -79,6 +158,39 @@ def test_create_medication_allows_small_clock_skew(client, db, test_user, auth_h
     near = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
     r = _post_medication(client, auth_headers, pid, taken_at=near)
     assert r.status_code == 201, r.text
+
+
+def test_create_medication_night_period_same_day_clamped_not_rejected(
+    client, db, test_user, auth_headers
+):
+    """Flutter clamps same-day future anchors to now — backend must accept NIGHT."""
+    pid = _profile_id_for(test_user, db)
+    now = datetime.now(timezone.utc)
+    r = _post_medication(
+        client,
+        auth_headers,
+        pid,
+        intake_period="NIGHT",
+        taken_at=now.isoformat(),
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["intake_period"] == "NIGHT"
+
+
+def test_create_medication_rejects_night_anchor_beyond_skew_window(
+    client, db, test_user, auth_headers
+):
+    """Unclamped 22:00 anchor sent 2h ahead of now exceeds the 5-minute skew window."""
+    pid = _profile_id_for(test_user, db)
+    future = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+    r = _post_medication(
+        client,
+        auth_headers,
+        pid,
+        intake_period="NIGHT",
+        taken_at=future,
+    )
+    assert r.status_code == 422
 
 
 def test_create_medication_strips_whitespace(client, db, test_user, auth_headers):
@@ -113,9 +225,9 @@ def test_list_medications_returns_recent_descending(client, db, test_user, auth_
     pid = _profile_id_for(test_user, db)
     now = datetime.now(timezone.utc)
 
-    db.add(models.Medication(profile_id=pid, name="A", taken_at=now - timedelta(days=2)))
-    db.add(models.Medication(profile_id=pid, name="B", taken_at=now - timedelta(hours=1)))
-    db.add(models.Medication(profile_id=pid, name="C", taken_at=now - timedelta(days=10)))
+    db.add(models.Medication(profile_id=pid, name="A", intake_period="MORNING", taken_at=now - timedelta(days=2)))
+    db.add(models.Medication(profile_id=pid, name="B", intake_period="MORNING", taken_at=now - timedelta(hours=1)))
+    db.add(models.Medication(profile_id=pid, name="C", intake_period="MORNING", taken_at=now - timedelta(days=10)))
     db.commit()
 
     r = client.get(f"/api/medications?profile_id={pid}&days=30", headers=auth_headers)
@@ -128,8 +240,8 @@ def test_list_medications_filters_by_days_window(client, db, test_user, auth_hea
     pid = _profile_id_for(test_user, db)
     now = datetime.now(timezone.utc)
 
-    db.add(models.Medication(profile_id=pid, name="Recent", taken_at=now - timedelta(days=1)))
-    db.add(models.Medication(profile_id=pid, name="OldOne", taken_at=now - timedelta(days=20)))
+    db.add(models.Medication(profile_id=pid, name="Recent", intake_period="MORNING", taken_at=now - timedelta(days=1)))
+    db.add(models.Medication(profile_id=pid, name="OldOne", intake_period="MORNING", taken_at=now - timedelta(days=20)))
     db.commit()
 
     r = client.get(f"/api/medications?profile_id={pid}&days=7", headers=auth_headers)
@@ -144,7 +256,7 @@ def test_list_medications_filters_by_days_window(client, db, test_user, auth_hea
 
 def test_update_medication_changes_fields(client, db, test_user, auth_headers):
     pid = _profile_id_for(test_user, db)
-    med = models.Medication(profile_id=pid, name="Old", dose="100", taken_at=datetime.now(timezone.utc))
+    med = models.Medication(profile_id=pid, name="Old", dose="100", intake_period="MORNING", taken_at=datetime.now(timezone.utc))
     db.add(med)
     db.commit()
     db.refresh(med)
@@ -163,7 +275,7 @@ def test_update_medication_changes_fields(client, db, test_user, auth_headers):
 
 def test_delete_medication_removes_row(client, db, test_user, auth_headers):
     pid = _profile_id_for(test_user, db)
-    med = models.Medication(profile_id=pid, name="X", taken_at=datetime.now(timezone.utc))
+    med = models.Medication(profile_id=pid, name="X", intake_period="MORNING", taken_at=datetime.now(timezone.utc))
     db.add(med)
     db.commit()
     db.refresh(med)
@@ -191,6 +303,7 @@ def test_patch_medication_updates_dose_frequency_taken_at(client, db, test_user,
         name="Aspirin",
         dose="75 mg",
         frequency="Once daily",
+        intake_period="MORNING",
         taken_at=datetime.now(timezone.utc) - timedelta(days=1),
     )
     db.add(med)
@@ -221,7 +334,7 @@ def test_patch_medication_denies_unrelated_profile(client, db, test_user, auth_h
     other = models.Profile(name="Stranger")
     db.add(other)
     db.flush()
-    med = models.Medication(profile_id=other.id, name="Z", taken_at=datetime.now(timezone.utc))
+    med = models.Medication(profile_id=other.id, name="Z", intake_period="MORNING", taken_at=datetime.now(timezone.utc))
     db.add(med)
     db.commit()
     db.refresh(med)
@@ -236,7 +349,7 @@ def test_delete_medication_denies_unrelated_profile(client, db, test_user, auth_
     other = models.Profile(name="Stranger2")
     db.add(other)
     db.flush()
-    med = models.Medication(profile_id=other.id, name="Q", taken_at=datetime.now(timezone.utc))
+    med = models.Medication(profile_id=other.id, name="Q", intake_period="MORNING", taken_at=datetime.now(timezone.utc))
     db.add(med)
     db.commit()
     db.refresh(med)
@@ -290,7 +403,7 @@ def test_viewer_cannot_create_medication(client, db, test_user):
 
 def test_viewer_cannot_update_medication(client, db, test_user):
     pid = _profile_id_for(test_user, db)
-    med = models.Medication(profile_id=pid, name="Old", taken_at=datetime.now(timezone.utc))
+    med = models.Medication(profile_id=pid, name="Old", intake_period="MORNING", taken_at=datetime.now(timezone.utc))
     db.add(med)
     db.commit()
     db.refresh(med)
@@ -303,7 +416,7 @@ def test_viewer_cannot_update_medication(client, db, test_user):
 
 def test_viewer_cannot_delete_medication(client, db, test_user):
     pid = _profile_id_for(test_user, db)
-    med = models.Medication(profile_id=pid, name="X", taken_at=datetime.now(timezone.utc))
+    med = models.Medication(profile_id=pid, name="X", intake_period="MORNING", taken_at=datetime.now(timezone.utc))
     db.add(med)
     db.commit()
     db.refresh(med)
@@ -314,7 +427,7 @@ def test_viewer_cannot_delete_medication(client, db, test_user):
 
 def test_viewer_can_list_medications(client, db, test_user):
     pid = _profile_id_for(test_user, db)
-    db.add(models.Medication(profile_id=pid, name="A", taken_at=datetime.now(timezone.utc)))
+    db.add(models.Medication(profile_id=pid, name="A", intake_period="MORNING", taken_at=datetime.now(timezone.utc)))
     db.commit()
     viewer_headers = _make_viewer(db, pid)
     r = client.get(f"/api/medications?profile_id={pid}&days=30", headers=viewer_headers)
@@ -341,10 +454,10 @@ def test_report_service_includes_medications_in_snippet(db, test_user):
         unit_display="mg/dL",
         reading_timestamp=now - timedelta(hours=2),
     ))
-    db.add(models.Medication(profile_id=pid, name="Metformin", dose="500 mg", taken_at=now - timedelta(hours=1)))
-    db.add(models.Medication(profile_id=pid, name="Aspirin", taken_at=now - timedelta(days=2)))
+    db.add(models.Medication(profile_id=pid, name="Metformin", dose="500 mg", intake_period="MORNING", taken_at=now - timedelta(hours=1)))
+    db.add(models.Medication(profile_id=pid, name="Aspirin", intake_period="EVENING", taken_at=now - timedelta(days=2)))
     # Duplicate by name (case-insensitive) — should be deduped
-    db.add(models.Medication(profile_id=pid, name="metformin", dose="500 mg", taken_at=now - timedelta(hours=3)))
+    db.add(models.Medication(profile_id=pid, name="metformin", dose="500 mg", intake_period="AFTERNOON", taken_at=now - timedelta(hours=3)))
     db.commit()
 
     profile = db.query(models.Profile).filter(models.Profile.id == pid).first()
@@ -359,5 +472,56 @@ def test_report_service_includes_medications_in_snippet(db, test_user):
     assert "💊 Meds:" in snippet
     assert "Metformin" in snippet
     assert "Aspirin" in snippet
-    # Dedup: 'Metformin' should appear once
-    assert snippet.lower().count("metformin") == 1
+    assert "(Morning)" in snippet
+    assert "(Evening)" in snippet
+    # Same name, different period — both appear; same name+period deduped
+    assert snippet.lower().count("metformin") == 2
+
+
+def test_report_snippet_keeps_same_drug_different_periods(db, test_user):
+    """Same drug logged morning + evening → both appear in WhatsApp snippet."""
+    pid = _profile_id_for(test_user, db)
+    now = datetime.now(timezone.utc)
+
+    db.add(
+        models.HealthReading(
+            profile_id=pid,
+            reading_type="glucose",
+            glucose_value=120,
+            glucose_unit="mg/dL",
+            value_numeric=120,
+            unit_display="mg/dL",
+            reading_timestamp=now - timedelta(hours=2),
+        )
+    )
+    db.add(
+        models.Medication(
+            profile_id=pid,
+            name="Metformin",
+            dose="500 mg",
+            intake_period="MORNING",
+            taken_at=now - timedelta(hours=4),
+        )
+    )
+    db.add(
+        models.Medication(
+            profile_id=pid,
+            name="Metformin",
+            dose="500 mg",
+            intake_period="EVENING",
+            taken_at=now - timedelta(hours=1),
+        )
+    )
+    db.commit()
+
+    profile = db.query(models.Profile).filter(models.Profile.id == pid).first()
+    profile.phone_number = test_user.phone_number
+    db.commit()
+
+    import report_service
+
+    out = report_service.trigger_single_profile_report(db, profile, owner=test_user)
+    snippet = out["snippet"]
+    assert "(Morning)" in snippet
+    assert "(Evening)" in snippet
+    assert snippet.count("Metformin") == 2

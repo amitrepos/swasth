@@ -19,6 +19,7 @@ import '../l10n/app_localizations.dart';
 import '../services/error_mapper.dart';
 import '../services/medication_service.dart';
 import '../services/storage_service.dart';
+import '../utils/medication_period_detector.dart';
 import '../theme/app_theme.dart';
 import 'add_medication_screen.dart';
 
@@ -105,15 +106,12 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
 
   Future<void> _confirmDelete(Medication med) async {
     final l10n = AppLocalizations.of(context)!;
-    final dateTime =
-        DateFormat.yMMMd().add_jm().format(med.takenAt.toLocal());
+    final dateTime = DateFormat.yMMMd().add_jm().format(med.takenAt.toLocal());
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.medicationsDeleteTitle),
-        content: Text(
-          l10n.medicationsDeleteBody(med.name, dateTime),
-        ),
+        content: Text(l10n.medicationsDeleteBody(med.name, dateTime)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -172,10 +170,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _meds.isEmpty
-          ? _EmptyState(
-              canEdit: showActions,
-              onAdd: _openAddScreen,
-            )
+          ? _EmptyState(canEdit: showActions, onAdd: _openAddScreen)
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
@@ -216,14 +211,10 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                 color: AppColors.bgPage,
                               ),
                               children: [
-                                _buildHeaderCell(
-                                  l10n.medicationsColDateTime,
-                                ),
+                                _buildHeaderCell(l10n.medicationsColDateWhen),
                                 _buildHeaderCell(l10n.medicationsColMedicine),
                                 _buildHeaderCell(l10n.medicationsColDose),
-                                _buildHeaderCell(
-                                  l10n.medicationsColFrequency,
-                                ),
+                                _buildHeaderCell(l10n.medicationsColFrequency),
                                 _buildHeaderCell(l10n.medicationsColNotes),
                                 if (showActions)
                                   _buildHeaderCell(l10n.medicationsColActions),
@@ -241,9 +232,7 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                 ),
                                 children: [
                                   _buildDataCell(
-                                    DateFormat.MMMd().add_jm().format(
-                                      m.takenAt.toLocal(),
-                                    ),
+                                    '${DateFormat.MMMd().format(m.takenAt.toLocal())} · ${medicationPeriodLabel(l10n, m.intakePeriod)}',
                                     color: AppColors.textSecondary,
                                   ),
                                   _buildDataCell(m.name, isBold: true),
@@ -266,8 +255,8 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                             Semantics(
                                               label: l10n
                                                   .medicationsEditSemantics(
-                                                m.name,
-                                              ),
+                                                    m.name,
+                                                  ),
                                               button: true,
                                               child: IconButton(
                                                 key: Key(
@@ -284,20 +273,21 @@ class _MedicationsScreenState extends State<MedicationsScreen> {
                                                 onPressed: () async {
                                                   final saved =
                                                       await showAddMedicationSheet(
-                                                    context,
-                                                    profileId: widget.profileId,
-                                                    initialMedication: m,
-                                                  );
+                                                        context,
+                                                        profileId:
+                                                            widget.profileId,
+                                                        initialMedication: m,
+                                                      );
                                                   if (saved == true) _load();
                                                 },
                                               ),
                                             ),
                                             const SizedBox(width: 8),
                                             Semantics(
-                                              label:
-                                                  l10n.medicationsDeleteSemantics(
-                                                m.name,
-                                              ),
+                                              label: l10n
+                                                  .medicationsDeleteSemantics(
+                                                    m.name,
+                                                  ),
                                               button: true,
                                               child: IconButton(
                                                 key: Key(

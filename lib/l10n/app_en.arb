@@ -1362,6 +1362,7 @@
   },
   "quickActionReminder": "Reminder",
   "quickActionSummary": "Summary",
+  "quickActionMedicines": "Medicines",
   "reminderChangeTime": "Change reminder time (or cancel to disable)",
   "reminderSetTime": "Set daily reminder time",
   "reminderSetFor": "Reminder set for {time} daily",
@@ -1410,6 +1411,7 @@
   "medicationsLogFab": "Log medicine",
   "medicationsLogFirst": "Log first medicine",
   "medicationsColDateTime": "Date & Time",
+  "medicationsColDateWhen": "Date & When",
   "medicationsColMedicine": "Medicine",
   "medicationsColDose": "Dose",
   "medicationsColFrequency": "Frequency",
@@ -1447,6 +1449,18 @@
   "medicationsFormDoseHint": "e.g. 500 mg, 1 tablet",
   "medicationsFormFrequencyLabel": "Frequency (optional)",
   "medicationsFormFrequencyHint": "e.g. Twice daily after food",
+  "medicationsFormPeriodLabel": "When taken",
+  "medicationsFormDateLabel": "Date",
+  "medicationsPeriodMorning": "Morning",
+  "medicationsPeriodAfternoon": "Afternoon",
+  "medicationsPeriodEvening": "Evening",
+  "medicationsPeriodNight": "Night",
+  "medicationsFormRecordedTimeHint": "Will be recorded as approx. {time}",
+  "@medicationsFormRecordedTimeHint": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
   "medicationsFormTakenAtLabel": "Taken at",
   "medicationsFormNotesLabel": "Notes (optional)",
   "medicationsFormNotesHint": "e.g. Felt nauseous after",

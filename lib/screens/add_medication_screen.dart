@@ -14,6 +14,7 @@ import '../services/api_exception.dart';
 import '../services/error_mapper.dart';
 import '../services/medication_service.dart';
 import '../services/storage_service.dart';
+import '../utils/medication_period_detector.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
@@ -59,7 +60,8 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
   final _freqCtl = TextEditingController();
   final _notesCtl = TextEditingController();
   final _nameFocus = FocusNode();
-  DateTime _takenAt = DateTime.now();
+  DateTime _selectedDate = DateTime.now();
+  String _intakePeriod = detectMedicationIntakePeriod();
   bool _saving = false;
   int _savedCount = 0;
   String? _lastSavedName;
@@ -75,7 +77,14 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
       _doseCtl.text = m.dose ?? '';
       _freqCtl.text = m.frequency ?? '';
       _notesCtl.text = m.notes ?? '';
-      _takenAt = m.takenAt.toLocal();
+      _selectedDate = DateTime(
+        m.takenAt.toLocal().year,
+        m.takenAt.toLocal().month,
+        m.takenAt.toLocal().day,
+      );
+      _intakePeriod = m.intakePeriod;
+    } else {
+      _intakePeriod = detectMedicationIntakePeriod();
     }
   }
 
@@ -89,24 +98,20 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
     super.dispose();
   }
 
-  Future<void> _pickDateTime() async {
+  Future<void> _pickDate() async {
     final d = await showDatePicker(
       context: context,
-      initialDate: _takenAt,
+      initialDate: _selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now(),
     );
     if (d == null) return;
     if (!mounted) return;
-    final t = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_takenAt),
-    );
-    if (t == null) return;
-    setState(
-      () => _takenAt = DateTime(d.year, d.month, d.day, t.hour, t.minute),
-    );
+    setState(() => _selectedDate = d);
   }
+
+  DateTime get _computedTakenAt =>
+      takenAtFromDateAndPeriod(_selectedDate, _intakePeriod);
 
   void _resetForm() {
     _nameCtl.clear();
@@ -115,7 +120,8 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
     _notesCtl.clear();
     _formKey.currentState?.reset();
     setState(() {
-      _takenAt = DateTime.now();
+      _selectedDate = DateTime.now();
+      _intakePeriod = detectMedicationIntakePeriod();
       _saving = false;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -138,7 +144,8 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
             name: savedName,
             dose: _doseCtl.text.trim(),
             frequency: _freqCtl.text.trim(),
-            takenAt: _takenAt,
+            intakePeriod: _intakePeriod,
+            takenAt: _computedTakenAt,
             notes: _notesCtl.text.trim(),
           ),
           token,
@@ -152,9 +159,11 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
             profileId: widget.profileId,
             name: savedName,
             dose: _doseCtl.text.trim().isEmpty ? null : _doseCtl.text.trim(),
-            frequency:
-                _freqCtl.text.trim().isEmpty ? null : _freqCtl.text.trim(),
-            takenAt: _takenAt,
+            frequency: _freqCtl.text.trim().isEmpty
+                ? null
+                : _freqCtl.text.trim(),
+            intakePeriod: _intakePeriod,
+            takenAt: _computedTakenAt,
             notes: _notesCtl.text.trim().isEmpty ? null : _notesCtl.text.trim(),
           ),
           token,
@@ -180,9 +189,9 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
       if (!mounted) return;
       setState(() => _saving = false);
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errGeneric)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.errGeneric)));
     }
   }
 
@@ -323,15 +332,77 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      Text(
+                        l10n.medicationsFormPeriodLabel,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        key: const Key('medication-period-chips'),
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: medicationIntakePeriods.map<Widget>((period) {
+                          final selected = _intakePeriod == period;
+                          return SizedBox(
+                            height: 48,
+                            child: ChoiceChip(
+                              key: Key('medication-period-$period'),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              avatar: selected
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    )
+                                  : null,
+                              label: Text(medicationPeriodLabel(l10n, period)),
+                              selected: selected,
+                              onSelected: _saving
+                                  ? null
+                                  : (_) =>
+                                        setState(() => _intakePeriod = period),
+                              selectedColor: AppColors.bgPill,
+                              labelStyle: TextStyle(
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
                       InkWell(
-                        onTap: _pickDateTime,
+                        onTap: _pickDate,
                         child: InputDecorator(
                           decoration: InputDecoration(
-                            labelText: l10n.medicationsFormTakenAtLabel,
+                            labelText: l10n.medicationsFormDateLabel,
                             border: const OutlineInputBorder(),
                           ),
-                          child: Text(
-                            DateFormat.yMMMd().add_jm().format(_takenAt),
+                          child: Text(DateFormat.yMMMd().format(_selectedDate)),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6, left: 4),
+                        child: Text(
+                          l10n.medicationsFormRecordedTimeHint(
+                            DateFormat.jm().format(
+                              localAnchorDateTime(_selectedDate, _intakePeriod),
+                            ),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -380,8 +451,8 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                         _isEditMode
                             ? l10n.medicationsSaveChanges
                             : (_savedCount == 0
-                                ? l10n.medicationsFormSave
-                                : l10n.medicationsFormSaveAndMore),
+                                  ? l10n.medicationsFormSave
+                                  : l10n.medicationsFormSaveAndMore),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
