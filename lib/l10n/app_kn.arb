@@ -1290,6 +1290,7 @@
   },
   "quickActionReminder": "ಜ್ಞಾಪನೆ",
   "quickActionSummary": "ಸಾರಾಂಶ",
+  "quickActionMedicines": "ಔಷಧಿಗಳು",
   "reminderChangeTime": "ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಬದಲಾಯಿಸಿ (ಅಥವಾ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲು ರದ್ದುಮಾಡಿ)",
   "reminderSetTime": "ದೈನಂದಿನ ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಹೊಂದಿಸಿ",
   "reminderSetFor": "ಜ್ಞಾಪನೆಯನ್ನು ಪ್ರತಿದಿನ {time} ಗೆ ಹೊಂದಿಸಲಾಗಿದೆ",
@@ -1329,6 +1330,7 @@
   "medicationsLogFab": "ಔಷಧಿ ದಾಖಲಿಸಿ",
   "medicationsLogFirst": "ಮೊದಲ ಔಷಧಿ ದಾಖಲಿಸಿ",
   "medicationsColDateTime": "ದಿನಾಂಕ & ಸಮಯ",
+  "medicationsColDateWhen": "ದಿನಾಂಕ & ಯಾವಾಗ",
   "medicationsColMedicine": "ಔಷಧಿ",
   "medicationsColDose": "ಮೊತ್ತ",
   "medicationsColFrequency": "ಆವರ್ತನೆ",
@@ -1342,5 +1344,17 @@
   "medicationsEditTitle": "ಔಷಧಿ ಸಂಪಾದಿಸಿ",
   "medicationsSaveChanges": "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
   "medicationsEditSemantics": "{name} ಸಂಪಾದಿಸಿ",
-  "medicationsCellEmpty": "-"
+  "medicationsCellEmpty": "-",
+  "medicationsFormPeriodLabel": "ಯಾವಾಗ ತೆಗೆದುಕೊಂಡಿರಿ",
+  "medicationsFormDateLabel": "ದಿನಾಂಕ",
+  "medicationsPeriodMorning": "ಬೆಳಿಗ್ಗೆ",
+  "medicationsPeriodAfternoon": "ಮಧ್ಯಾಹ್ನ",
+  "medicationsPeriodEvening": "ಸಂಜೆ",
+  "medicationsPeriodNight": "ರಾತ್ರಿ",
+  "medicationsFormRecordedTimeHint": "ಸುಮಾರು {time} ಗೆ ದಾಖಲಾಗುತ್ತದೆ",
+  "@medicationsFormRecordedTimeHint": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  }
 }

@@ -10,6 +10,7 @@ class Medication {
   final String name;
   final String? dose;
   final String? frequency;
+  final String intakePeriod;
   final DateTime takenAt;
   final String? notes;
   final DateTime createdAt;
@@ -21,6 +22,7 @@ class Medication {
     required this.name,
     this.dose,
     this.frequency,
+    required this.intakePeriod,
     required this.takenAt,
     this.notes,
     required this.createdAt,
@@ -34,6 +36,7 @@ class Medication {
       name: json['name'] as String,
       dose: json['dose'] as String?,
       frequency: json['frequency'] as String?,
+      intakePeriod: json['intake_period'] as String? ?? 'MORNING',
       takenAt: DateTimeUtils.parseUtc(json['taken_at']),
       notes: json['notes'] as String?,
       createdAt: DateTimeUtils.parseUtc(json['created_at']),
@@ -47,6 +50,7 @@ class MedicationCreate {
   final String name;
   final String? dose;
   final String? frequency;
+  final String intakePeriod;
   final DateTime takenAt;
   final String? notes;
 
@@ -55,18 +59,20 @@ class MedicationCreate {
     required this.name,
     this.dose,
     this.frequency,
+    required this.intakePeriod,
     required this.takenAt,
     this.notes,
   });
 
   Map<String, dynamic> toJson() => {
-        'profile_id': profileId,
-        'name': name,
-        if (dose != null && dose!.isNotEmpty) 'dose': dose,
-        if (frequency != null && frequency!.isNotEmpty) 'frequency': frequency,
-        'taken_at': takenAt.toUtc().toIso8601String(),
-        if (notes != null && notes!.isNotEmpty) 'notes': notes,
-      };
+    'profile_id': profileId,
+    'name': name,
+    if (dose != null && dose!.isNotEmpty) 'dose': dose,
+    if (frequency != null && frequency!.isNotEmpty) 'frequency': frequency,
+    'intake_period': intakePeriod,
+    'taken_at': takenAt.toUtc().toIso8601String(),
+    if (notes != null && notes!.isNotEmpty) 'notes': notes,
+  };
 }
 
 /// Payload for PATCH /api/medications/{id}.
@@ -76,6 +82,7 @@ class MedicationUpdate {
   final String? name;
   final String? dose;
   final String? frequency;
+  final String? intakePeriod;
   final DateTime? takenAt;
   final String? notes;
 
@@ -83,15 +90,17 @@ class MedicationUpdate {
     this.name,
     this.dose,
     this.frequency,
+    this.intakePeriod,
     this.takenAt,
     this.notes,
   });
 
   Map<String, dynamic> toJson() => {
-        if (name != null) 'name': name,
-        if (dose != null) 'dose': dose,
-        if (frequency != null) 'frequency': frequency,
-        if (takenAt != null) 'taken_at': takenAt!.toUtc().toIso8601String(),
-        if (notes != null) 'notes': notes,
-      };
+    if (name != null) 'name': name,
+    if (dose != null) 'dose': dose,
+    if (frequency != null) 'frequency': frequency,
+    if (intakePeriod != null) 'intake_period': intakePeriod,
+    if (takenAt != null) 'taken_at': takenAt!.toUtc().toIso8601String(),
+    if (notes != null) 'notes': notes,
+  };
 }

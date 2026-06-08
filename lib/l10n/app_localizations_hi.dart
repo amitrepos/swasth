@@ -2327,6 +2327,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get quickActionSummary => 'सारांश';
 
   @override
+  String get quickActionMedicines => 'दवाइयाँ';
+
+  @override
   String get reminderChangeTime =>
       'रिमाइंडर समय बदलें (या बंद करने के लिए रद्द करें)';
 
@@ -2402,6 +2405,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get medicationsColDateTime => 'तारीख और समय';
 
   @override
+  String get medicationsColDateWhen => 'तारीख और कब';
+
+  @override
   String get medicationsColMedicine => 'दवा';
 
   @override
@@ -2470,6 +2476,29 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get medicationsFormFrequencyHint => 'जैसे दिन में दो बार खाने के बाद';
+
+  @override
+  String get medicationsFormPeriodLabel => 'कब ली';
+
+  @override
+  String get medicationsFormDateLabel => 'तारीख';
+
+  @override
+  String get medicationsPeriodMorning => 'सुबह';
+
+  @override
+  String get medicationsPeriodAfternoon => 'दोपहर';
+
+  @override
+  String get medicationsPeriodEvening => 'शाम';
+
+  @override
+  String get medicationsPeriodNight => 'रात';
+
+  @override
+  String medicationsFormRecordedTimeHint(String time) {
+    return 'लगभग $time पर दर्ज होगी';
+  }
 
   @override
   String get medicationsFormTakenAtLabel => 'कब ली';

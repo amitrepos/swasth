@@ -2341,6 +2341,9 @@ class AppLocalizationsTe extends AppLocalizations {
   String get quickActionSummary => 'సారాంశం';
 
   @override
+  String get quickActionMedicines => 'మందులు';
+
+  @override
   String get reminderChangeTime =>
       'రిమైండర్ సమయాన్ని మార్చండి (లేదా నిలిపివేయడానికి రద్దు చేయండి)';
 
@@ -2416,6 +2419,9 @@ class AppLocalizationsTe extends AppLocalizations {
   String get medicationsColDateTime => 'తేదీ & సమయం';
 
   @override
+  String get medicationsColDateWhen => 'తేదీ & ఎప్పుడు';
+
+  @override
   String get medicationsColMedicine => 'మందు';
 
   @override
@@ -2484,6 +2490,29 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
+
+  @override
+  String get medicationsFormPeriodLabel => 'ఎప్పుడు తీసుకున్నారు';
+
+  @override
+  String get medicationsFormDateLabel => 'తేదీ';
+
+  @override
+  String get medicationsPeriodMorning => 'ఉదయం';
+
+  @override
+  String get medicationsPeriodAfternoon => 'మధ్యాహ్నం';
+
+  @override
+  String get medicationsPeriodEvening => 'సాయంత్రం';
+
+  @override
+  String get medicationsPeriodNight => 'రాత్రి';
+
+  @override
+  String medicationsFormRecordedTimeHint(String time) {
+    return 'సుమారు $time కు నమోదవుతుంది';
+  }
 
   @override
   String get medicationsFormTakenAtLabel => 'Taken at';

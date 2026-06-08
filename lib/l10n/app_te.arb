@@ -21,10 +21,30 @@
   "navChat": "చాట్",
   "quickActionReminder": "రిమైండర్",
   "quickActionSummary": "సారాంశం",
+  "quickActionMedicines": "మందులు",
   "reminderChangeTime": "రిమైండర్ సమయాన్ని మార్చండి (లేదా నిలిపివేయడానికి రద్దు చేయండి)",
   "reminderSetTime": "రోజువారీ రిమైండర్ సమయాన్ని సెట్ చేయండి",
   "reminderSetFor": "రిమైండర్ ప్రతిరోజూ {time} గంటలకు సెట్ చేయబడింది",
   "reminderDisabled": "రిమైండర్ నిలిపివేయబడింది",
+  "reminderSettingsTitle": "రిమైండర్ సెట్టింగ్‌లు",
+  "dailyReminderSection": "రోజువారీ ఆరోగ్య తనిఖీ",
+  "weeklyWeightReminderSection": "వారపు బరువు",
+  "weightReminderEnableLabel": "వారపు బరువు రిమైండర్ ప్రారంభించండి",
+  "weightReminderDayLabel": "రోజు",
+  "weightReminderTimeLabel": "సమయం",
+  "weightReminderSetTime": "వారపు బరువు రిమైండర్ సమయం సెట్ చేయండి",
+  "weightReminderChangeTime": "వారపు బరువు సమయం మార్చండి",
+  "weightReminderSetFor": "బరువు రిమైండర్ {day} న {time} కు సెట్ చేయబడింది",
+  "@weightReminderSetFor": {
+    "placeholders": {
+      "day": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "weightReminderDisabled": "వారపు బరువు రిమైండర్ నిలిపివేయబడింది",
+  "weightReminderNotificationTitle": "⚖️ మీ బరువును నమోదు చేయండి",
+  "weightReminderNotificationBody": "వారపు చెక్-ఇన్ — మీ బరువును నమోదు చేసి ఆరోగ్య ట్రెండ్‌లను ఖచ్చితంగా ఉంచండి.",
+  "notificationPermissionRequired": "రిమైండర్‌ల కోసం నోటిఫికేషన్ అనుమతి అవసరం",
   "actionCall": "కాల్ చేయండి",
   "actionWhatsApp": "వాట్సాప్",
   "actionEmail": "ఈమెయిల్ పంపండి",
@@ -1336,6 +1356,7 @@
   "medicationsLogFab": "మందు నమోదు చేయండి",
   "medicationsLogFirst": "మొదటి మందు నమోదు చేయండి",
   "medicationsColDateTime": "తేదీ & సమయం",
+  "medicationsColDateWhen": "తేదీ & ఎప్పుడు",
   "medicationsColMedicine": "మందు",
   "medicationsColDose": "మోతాదు",
   "medicationsColFrequency": "పౌనఃపున్యం",
@@ -1349,5 +1370,17 @@
   "medicationsEditTitle": "మందు సవరించండి",
   "medicationsSaveChanges": "మార్పులను సేవ్ చేయండి",
   "medicationsEditSemantics": "{name} సవరించండి",
-  "medicationsCellEmpty": "-"
+  "medicationsCellEmpty": "-",
+  "medicationsFormPeriodLabel": "ఎప్పుడు తీసుకున్నారు",
+  "medicationsFormDateLabel": "తేదీ",
+  "medicationsPeriodMorning": "ఉదయం",
+  "medicationsPeriodAfternoon": "మధ్యాహ్నం",
+  "medicationsPeriodEvening": "సాయంత్రం",
+  "medicationsPeriodNight": "రాత్రి",
+  "medicationsFormRecordedTimeHint": "సుమారు {time} కు నమోదవుతుంది",
+  "@medicationsFormRecordedTimeHint": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  }
 }

@@ -5,6 +5,7 @@ import '../../services/api_exception.dart';
 import '../../services/doctor_service.dart';
 import '../../services/error_mapper.dart';
 import '../../services/storage_service.dart';
+import '../../utils/medication_period_detector.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 
@@ -540,7 +541,10 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
               l10n.noMealsLast7Days,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
           )
         else
@@ -591,6 +595,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
     final dose = (med['dose'] as String?)?.trim() ?? '';
     final frequency = (med['frequency'] as String?)?.trim() ?? '';
     final notes = (med['notes'] as String?)?.trim() ?? '';
+    final intakePeriod = med['intake_period'] as String? ?? 'MORNING';
     final takenAtRaw = med['taken_at'] as String?;
     DateTime? takenAt;
     if (takenAtRaw != null) {
@@ -650,7 +655,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
                   ),
                 if (takenAt != null)
                   Text(
-                    DateFormat.yMMMd().add_jm().format(takenAt),
+                    '${DateFormat.yMMMd().format(takenAt)} · ${medicationPeriodLabel(l10n, intakePeriod)}',
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 11,
@@ -704,9 +709,9 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: _mealScoreColor(mealScore).withValues(
-                            alpha: 0.12,
-                          ),
+                          color: _mealScoreColor(
+                            mealScore,
+                          ).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

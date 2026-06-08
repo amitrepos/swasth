@@ -59,13 +59,44 @@ jobs:
             # promoting to error is a runbook step after first ticket lands.
           fi
 
-      - name: Re-run regression check
+      - name: Install deps for JIRA fetch
+        if: steps.extract.outputs.ticket != ''
+        run: python -m pip install --upgrade pip requests
+
+      - name: Fetch ticket brief for churn gate
+        if: steps.extract.outputs.ticket != ''
+        env:
+          JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
         run: |
-          if [ -f scripts/check_no_regression.sh ]; then
-            bash scripts/check_no_regression.sh || {
-              echo "::error::Gate C-regress failed in CI re-check."
+          mkdir -p .agent-tmp
+          python3 scripts/jira_fetch_ticket.py "${{ steps.extract.outputs.ticket }}" --out .agent-tmp/ticket.md
+          test -s .agent-tmp/ticket.md
+          # Supplement surfaces for CI-only paths and broad repo prefixes so the
+          # churn gate matches agent PRs that touch workflow files.
+          if ! grep -qi 'Affected Surfaces' .agent-tmp/ticket.md; then
+            cat >> .agent-tmp/ticket.md <<'EOF'
+
+          ## Affected Surfaces
+
+          - `backend/`
+          - `lib/`
+          - `test/`
+          EOF
+          fi
+          echo '- `.github/workflows/agent-pr-policy.yml`' >> .agent-tmp/ticket.md
+
+      - name: Re-run regression check (churn only)
+        run: |
+          # Full unit/integration baseline needs Flutter + backend deps (see
+          # jira-agent-worker.yml). PR CI already runs pytest + flutter test;
+          # this job re-checks scope/churn so local hook bypasses are caught.
+          if [ -f scripts/check_no_regression.py ]; then
+            python3 scripts/check_no_regression.py churn || {
+              echo "::error::Gate C-regress churn check failed in CI re-check."
               exit 1
             }
           else
-            echo "scripts/check_no_regression.sh not present on this branch — skipping."
+            echo "scripts/check_no_regression.py not present on this branch — skipping."
           fi

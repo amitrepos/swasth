@@ -132,7 +132,9 @@ class HomeScreenState extends State<HomeScreen>
       // Subscribe BEFORE initialize() so we don't miss the first sync
       // event fired by the 3-second initial-sync delay inside the service.
       _stepsSyncedSub = _pedometerService.onStepsSynced.listen((newSteps) {
-        debugPrint('HomeScreen: Pedometer synced $newSteps steps — refreshing dashboard');
+        debugPrint(
+          'HomeScreen: Pedometer synced $newSteps steps — refreshing dashboard',
+        );
         if (mounted && _activeProfileId != null) {
           _refreshHealthScore(_activeProfileId!);
         }
@@ -1171,9 +1173,9 @@ class HomeScreenState extends State<HomeScreen>
                   children: [
                     Icon(Icons.medication, size: 18, color: AppColors.primary),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Medicines',
-                      style: TextStyle(
+                    Text(
+                      l10n.quickActionMedicines,
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,

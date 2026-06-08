@@ -21,10 +21,30 @@
   "navChat": "அரட்டை",
   "quickActionReminder": "நினைவூட்டல்",
   "quickActionSummary": "சுருக்கம்",
+  "quickActionMedicines": "மருந்துகள்",
   "reminderChangeTime": "நினைவூட்டல் நேரத்தை மாற்றவும் (அல்லது முடக்க ரத்து செய்யவும்)",
   "reminderSetTime": "தினசரி நினைவூட்டல் நேரத்தை அமைக்கவும்",
   "reminderSetFor": "நினைவூட்டல் தினமும் {time} மணிக்கு அமைக்கப்பட்டுள்ளது",
   "reminderDisabled": "நினைவூட்டல் முடக்கப்பட்டது",
+  "reminderSettingsTitle": "நினைவூட்டல் அமைப்புகள்",
+  "dailyReminderSection": "தினசரி உடல்நலப் பரிசோதனை",
+  "weeklyWeightReminderSection": "வாராந்திர எடை",
+  "weightReminderEnableLabel": "வாராந்திர எடை நினைவூட்டலை இயக்கு",
+  "weightReminderDayLabel": "நாள்",
+  "weightReminderTimeLabel": "நேரம்",
+  "weightReminderSetTime": "வாராந்திர எடை நினைவூட்டல் நேரத்தை அமைக்கவும்",
+  "weightReminderChangeTime": "வாராந்திர எடை நேரத்தை மாற்றவும்",
+  "weightReminderSetFor": "எடை நினைவூட்டல் {day} அன்று {time} மணிக்கு அமைக்கப்பட்டது",
+  "@weightReminderSetFor": {
+    "placeholders": {
+      "day": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "weightReminderDisabled": "வாராந்திர எடை நினைவூட்டல் முடக்கப்பட்டது",
+  "weightReminderNotificationTitle": "⚖️ உங்கள் எடையை பதிவு செய்யுங்கள்",
+  "weightReminderNotificationBody": "வாராந்திர சரிபார்ப்பு — உங்கள் எடையை பதிவு செய்து ஆரோக்கிய போக்குகளை துல்லியமாக வைத்திருங்கள்.",
+  "notificationPermissionRequired": "நினைவூட்டல்களுக்கு அறிவிப்பு அனுமதி தேவை",
   "actionCall": "அழைக்கவும்",
   "actionWhatsApp": "வாட்ஸ்அப்",
   "actionEmail": "மின்னஞ்சல் அனுப்பவும்",
@@ -1336,6 +1356,7 @@
   "medicationsLogFab": "மருந்து பதிவு செய்",
   "medicationsLogFirst": "முதல் மருந்தை பதிவு செய்",
   "medicationsColDateTime": "தேதி & நேரம்",
+  "medicationsColDateWhen": "தேதி & எப்போது",
   "medicationsColMedicine": "மருந்து",
   "medicationsColDose": "அளவு",
   "medicationsColFrequency": "அதிர்வெண்",
@@ -1349,5 +1370,17 @@
   "medicationsEditTitle": "மருந்தை திருத்து",
   "medicationsSaveChanges": "மாற்றங்களை சேமி",
   "medicationsEditSemantics": "{name} திருத்து",
-  "medicationsCellEmpty": "-"
+  "medicationsCellEmpty": "-",
+  "medicationsFormPeriodLabel": "எப்போது எடுத்தீர்கள்",
+  "medicationsFormDateLabel": "தேதி",
+  "medicationsPeriodMorning": "காலை",
+  "medicationsPeriodAfternoon": "மதியம்",
+  "medicationsPeriodEvening": "மாலை",
+  "medicationsPeriodNight": "இரவு",
+  "medicationsFormRecordedTimeHint": "சுமார் {time} அன்று பதிவாகும்",
+  "@medicationsFormRecordedTimeHint": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  }
 }

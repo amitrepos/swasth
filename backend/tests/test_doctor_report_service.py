@@ -671,3 +671,56 @@ class TestDoctorReportService:
             f"readings logic is still in place — same bug PR 267 fixed "
             f"on the patient dashboard."
         )
+
+    def test_single_profile_report_includes_medication_intake_period(self, db):
+        """WhatsApp snippet should show dose + intake period for logged meds."""
+        import report_service
+
+        owner = models.User(
+            full_name="Patient One",
+            role=models.UserRole.patient,
+            password_hash="...",
+            phone_number="+919876543210",
+        )
+        db.add(owner)
+        db.flush()
+
+        profile = models.Profile(name="Ramesh", phone_number="+919876543210")
+        db.add(profile)
+        db.flush()
+        db.add(
+            models.ProfileAccess(
+                user_id=owner.id,
+                profile_id=profile.id,
+                access_level="owner",
+            )
+        )
+        db.flush()
+
+        now = datetime.now(timezone.utc)
+        db.add(
+            models.HealthReading(
+                profile_id=profile.id,
+                reading_type="glucose",
+                glucose_value=110,
+                glucose_unit="mg/dL",
+                value_numeric=110,
+                unit_display="mg/dL",
+                reading_timestamp=now - timedelta(hours=1),
+            )
+        )
+        db.add(
+            models.Medication(
+                profile_id=profile.id,
+                name="Metformin",
+                dose="500 mg",
+                intake_period="MORNING",
+                taken_at=now - timedelta(hours=2),
+            )
+        )
+        db.commit()
+
+        out = report_service.trigger_single_profile_report(db, profile, owner=owner)
+        assert out is not None
+        assert "💊 Meds:" in out["snippet"]
+        assert "Metformin 500 mg (Morning)" in out["snippet"]

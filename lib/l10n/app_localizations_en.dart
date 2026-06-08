@@ -2323,6 +2323,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickActionSummary => 'Summary';
 
   @override
+  String get quickActionMedicines => 'Medicines';
+
+  @override
   String get reminderChangeTime =>
       'Change reminder time (or cancel to disable)';
 
@@ -2398,6 +2401,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get medicationsColDateTime => 'Date & Time';
 
   @override
+  String get medicationsColDateWhen => 'Date & When';
+
+  @override
   String get medicationsColMedicine => 'Medicine';
 
   @override
@@ -2466,6 +2472,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
+
+  @override
+  String get medicationsFormPeriodLabel => 'When taken';
+
+  @override
+  String get medicationsFormDateLabel => 'Date';
+
+  @override
+  String get medicationsPeriodMorning => 'Morning';
+
+  @override
+  String get medicationsPeriodAfternoon => 'Afternoon';
+
+  @override
+  String get medicationsPeriodEvening => 'Evening';
+
+  @override
+  String get medicationsPeriodNight => 'Night';
+
+  @override
+  String medicationsFormRecordedTimeHint(String time) {
+    return 'Will be recorded as approx. $time';
+  }
 
   @override
   String get medicationsFormTakenAtLabel => 'Taken at';

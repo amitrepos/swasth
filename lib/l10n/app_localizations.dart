@@ -4345,6 +4345,12 @@ abstract class AppLocalizations {
   /// **'Summary'**
   String get quickActionSummary;
 
+  /// No description provided for @quickActionMedicines.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines'**
+  String get quickActionMedicines;
+
   /// No description provided for @reminderChangeTime.
   ///
   /// In en, this message translates to:
@@ -4477,6 +4483,12 @@ abstract class AppLocalizations {
   /// **'Date & Time'**
   String get medicationsColDateTime;
 
+  /// No description provided for @medicationsColDateWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & When'**
+  String get medicationsColDateWhen;
+
   /// No description provided for @medicationsColMedicine.
   ///
   /// In en, this message translates to:
@@ -4602,6 +4614,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'e.g. Twice daily after food'**
   String get medicationsFormFrequencyHint;
+
+  /// No description provided for @medicationsFormPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'When taken'**
+  String get medicationsFormPeriodLabel;
+
+  /// No description provided for @medicationsFormDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get medicationsFormDateLabel;
+
+  /// No description provided for @medicationsPeriodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get medicationsPeriodMorning;
+
+  /// No description provided for @medicationsPeriodAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon'**
+  String get medicationsPeriodAfternoon;
+
+  /// No description provided for @medicationsPeriodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening'**
+  String get medicationsPeriodEvening;
+
+  /// No description provided for @medicationsPeriodNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Night'**
+  String get medicationsPeriodNight;
+
+  /// No description provided for @medicationsFormRecordedTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Will be recorded as approx. {time}'**
+  String medicationsFormRecordedTimeHint(String time);
 
   /// No description provided for @medicationsFormTakenAtLabel.
   ///

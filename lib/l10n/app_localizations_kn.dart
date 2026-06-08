@@ -2353,6 +2353,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get quickActionSummary => 'ಸಾರಾಂಶ';
 
   @override
+  String get quickActionMedicines => 'ಔಷಧಿಗಳು';
+
+  @override
   String get reminderChangeTime =>
       'ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಬದಲಾಯಿಸಿ (ಅಥವಾ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲು ರದ್ದುಮಾಡಿ)';
 
@@ -2428,6 +2431,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get medicationsColDateTime => 'ದಿನಾಂಕ & ಸಮಯ';
 
   @override
+  String get medicationsColDateWhen => 'ದಿನಾಂಕ & ಯಾವಾಗ';
+
+  @override
   String get medicationsColMedicine => 'ಔಷಧಿ';
 
   @override
@@ -2496,6 +2502,29 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
+
+  @override
+  String get medicationsFormPeriodLabel => 'ಯಾವಾಗ ತೆಗೆದುಕೊಂಡಿರಿ';
+
+  @override
+  String get medicationsFormDateLabel => 'ದಿನಾಂಕ';
+
+  @override
+  String get medicationsPeriodMorning => 'ಬೆಳಿಗ್ಗೆ';
+
+  @override
+  String get medicationsPeriodAfternoon => 'ಮಧ್ಯಾಹ್ನ';
+
+  @override
+  String get medicationsPeriodEvening => 'ಸಂಜೆ';
+
+  @override
+  String get medicationsPeriodNight => 'ರಾತ್ರಿ';
+
+  @override
+  String medicationsFormRecordedTimeHint(String time) {
+    return 'ಸುಮಾರು $time ಗೆ ದಾಖಲಾಗುತ್ತದೆ';
+  }
 
   @override
   String get medicationsFormTakenAtLabel => 'Taken at';
