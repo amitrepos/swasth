@@ -1,0 +1,10 @@
+date_added,name_or_initials,source,owner,consented_YN,profile_created_YN,first_reading_date,status,last_followup,next_action,next_action_date,notes
+2026-06-08,G.R.,CHW,Amit,Y,Y,2026-06-08,activated,2026-06-08,Watch for week-1 adherence,2026-06-15,"EXAMPLE — logged 4 readings, good start"
+2026-06-08,Pinki,referral,Amit,Y,Y,2026-06-08,activated,2026-06-08,Nudge to log BP too (only glucose so far),2026-06-10,EXAMPLE
+2026-05-26,Test/A.M.,organic,Amit,Y,Y,2026-05-26,dormant,2026-06-01,WhatsApp — no reading 7d,2026-06-09,"EXAMPLE — was active (14 readings) then went dark; high priority"
+,,,,,,,new,,,,
+,,,,,,,new,,,,
+,,,,,,,new,,,,
+# source: CHW / doctor / referral / family / organic,,,,,,,,,,,
+# status: new -> activated -> adhering -> dormant -> churned (or reactivated),,,,,,,,,,,
+# Cross-check weekly against Admin > Users (Readings column) and Admin > Reading Reminders (dormant list).,,,,,,,,,,,
