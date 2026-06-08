@@ -272,6 +272,24 @@ void main() {
       }
     });
 
+    testWidgets('period chip preserved after empty-name validation error', (
+      tester,
+    ) async {
+      final stub = _StubClient();
+      await _bootstrap(tester, stub);
+
+      await tester.tap(find.byKey(const Key('medication-period-EVENING')));
+      await pumpN(tester);
+      await tester.tap(find.byKey(const Key('medication-save-btn')));
+      await pumpN(tester, frames: 10);
+
+      expect(stub.postCount, 0);
+      final chip = tester.widget<ChoiceChip>(
+        find.byKey(const Key('medication-period-EVENING')),
+      );
+      expect(chip.selected, isTrue);
+    });
+
     testWidgets('selecting EVENING chip sends EVENING to API', (tester) async {
       final stub = _StubClient();
       await _bootstrap(tester, stub);

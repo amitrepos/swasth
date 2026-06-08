@@ -401,7 +401,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                             ),
                           ),
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 14,
                             color: AppColors.textSecondary,
                           ),
                         ),

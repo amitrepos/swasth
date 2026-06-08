@@ -60,14 +60,22 @@ void main() {
   });
 
   group('medicationPeriodLabel', () {
+    test('all valid periods return localized labels', () {
+      final l10n = AppLocalizationsEn();
+      const expected = {
+        'MORNING': 'Morning',
+        'AFTERNOON': 'Afternoon',
+        'EVENING': 'Evening',
+        'NIGHT': 'Night',
+      };
+      for (final entry in expected.entries) {
+        expect(medicationPeriodLabel(l10n, entry.key), entry.value);
+      }
+    });
+
     test('unknown period returns raw value', () {
       final l10n = AppLocalizationsEn();
       expect(medicationPeriodLabel(l10n, 'UNKNOWN'), 'UNKNOWN');
-    });
-
-    test('known period returns localized label', () {
-      final l10n = AppLocalizationsEn();
-      expect(medicationPeriodLabel(l10n, 'MORNING'), 'Morning');
     });
   });
 }

@@ -2435,7 +2435,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get medicationsColDateTime => 'தேதி & நேரம்';
 
   @override
-  String get medicationsColDateWhen => 'தேதி & நேரம்';
+  String get medicationsColDateWhen => 'தேதி & எப்போது';
 
   @override
   String get medicationsColMedicine => 'மருந்து';

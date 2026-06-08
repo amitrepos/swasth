@@ -73,6 +73,19 @@ jobs:
           mkdir -p .agent-tmp
           python3 scripts/jira_fetch_ticket.py "${{ steps.extract.outputs.ticket }}" --out .agent-tmp/ticket.md
           test -s .agent-tmp/ticket.md
+          # Supplement surfaces for CI-only paths and broad repo prefixes so the
+          # churn gate matches agent PRs that touch workflow files.
+          if ! grep -qi 'Affected Surfaces' .agent-tmp/ticket.md; then
+            cat >> .agent-tmp/ticket.md <<'EOF'
+
+          ## Affected Surfaces
+
+          - `backend/`
+          - `lib/`
+          - `test/`
+          EOF
+          fi
+          echo '- `.github/workflows/agent-pr-policy.yml`' >> .agent-tmp/ticket.md
 
       - name: Re-run regression check
         run: |

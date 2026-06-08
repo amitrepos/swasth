@@ -2419,7 +2419,7 @@ class AppLocalizationsTe extends AppLocalizations {
   String get medicationsColDateTime => 'తేదీ & సమయం';
 
   @override
-  String get medicationsColDateWhen => 'తేదీ & సమయం';
+  String get medicationsColDateWhen => 'తేదీ & ఎప్పుడు';
 
   @override
   String get medicationsColMedicine => 'మందు';

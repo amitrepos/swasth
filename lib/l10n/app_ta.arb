@@ -1356,7 +1356,7 @@
   "medicationsLogFab": "மருந்து பதிவு செய்",
   "medicationsLogFirst": "முதல் மருந்தை பதிவு செய்",
   "medicationsColDateTime": "தேதி & நேரம்",
-  "medicationsColDateWhen": "தேதி & நேரம்",
+  "medicationsColDateWhen": "தேதி & எப்போது",
   "medicationsColMedicine": "மருந்து",
   "medicationsColDose": "அளவு",
   "medicationsColFrequency": "அதிர்வெண்",
