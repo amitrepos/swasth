@@ -88,3 +88,6 @@ docs/FOUNDER_KIT_CHECKLIST.md
 # Allow the committed example dotenv (no secrets). A real `.env` (root, used by
 # dotenv.load in lib/bootstrap.dart) stays gitignored via the `.env` rule above.
 !assets/.env.example
+
+# Flutter/backend build artifacts
+backend/build/
