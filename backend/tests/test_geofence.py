@@ -815,3 +815,243 @@ def test_startup_check_fail_open_dev_logs_info_only(monkeypatch, caplog):
             result = geofence_startup_check()
     assert result is False
     assert not any(r.levelname == "ERROR" for r in caplog.records)
+
+
+# ──────────────────────────────────────────────────────────────────
+# C1 — _country_iso_or_none: the shared mmdb resolver, all 4 paths
+# ──────────────────────────────────────────────────────────────────
+
+def test_country_iso_or_none_reader_missing():
+    """No mmdb (dev/CI) → (None, masked). None = caller fails open."""
+    req = _make_request(peer_ip="8.8.8.8")
+    with mock.patch("dependencies._get_geoip_reader", return_value=None):
+        iso, masked = dependencies._country_iso_or_none(req)
+    assert iso is None
+
+
+def test_country_iso_or_none_returns_in():
+    """Reader resolves an Indian IP → 'IN'."""
+    req = _make_request(peer_ip="14.139.1.1")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("IN")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        iso, _ = dependencies._country_iso_or_none(req)
+    assert iso == "IN"
+
+
+def test_country_iso_or_none_address_not_found():
+    """AddressNotFoundError (private/unknown IP) → None (fail open)."""
+    import geoip2.errors
+    req = _make_request(peer_ip="8.8.8.8")
+    reader = mock.Mock()
+    reader.country.side_effect = geoip2.errors.AddressNotFoundError("x")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        iso, _ = dependencies._country_iso_or_none(req)
+    assert iso is None
+
+
+def test_country_iso_or_none_none_iso_code():
+    """Satellite/anycast record with no country → None (fail open),
+    NOT a block — Bihar VSAT links must not be 403'd."""
+    req = _make_request(peer_ip="8.8.8.8")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse(None)
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        iso, _ = dependencies._country_iso_or_none(req)
+    assert iso is None
+
+
+# ──────────────────────────────────────────────────────────────────
+# C2 — india_write_decision: the side-effect-free decision shared by
+# require_india_writer (enforce) and GET /public/region (advise)
+# ──────────────────────────────────────────────────────────────────
+
+def test_india_write_decision_env_bypass(monkeypatch):
+    """BYPASS_GEO_RESTRICTION=true wins over a US IP."""
+    monkeypatch.setenv("BYPASS_GEO_RESTRICTION", "true")
+    req = _make_request(peer_ip="8.8.8.8")
+    allowed, country, source = dependencies.india_write_decision(req)
+    assert allowed is True
+    assert source == "env_bypass"
+
+
+def test_india_write_decision_email_allowlist(monkeypatch):
+    """Allowlisted bearer token bypasses even a US IP — and short-circuits
+    BEFORE the mmdb lookup."""
+    _set_allowlist(monkeypatch, "smoke@swasth.health")
+    req = _make_request(
+        peer_ip="8.8.8.8",
+        auth_token=_mint_bearer_token("smoke@swasth.health"),
+    )
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("US")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        allowed, country, source = dependencies.india_write_decision(req)
+    assert allowed is True
+    assert source == "email_allowlist"
+    assert reader.country.call_count == 0
+
+
+def test_india_write_decision_mmdb_in_allowed():
+    """India IP via mmdb → allowed."""
+    req = _make_request(peer_ip="14.139.1.1")
+    reader = mock.Mock()
+    reader.country.return_value = MockGeoIPResponse("IN")
+    with mock.patch("dependencies._get_geoip_reader", return_value=reader):
+        allowed, country, source = dependencies.india_write_decision(req)
+    assert allowed is True and country == "IN" and source == "mmdb"
+
+
+def test_india_write_decision_mmdb_us_blocked():
+    """US IP via mmdb → blocked."""
+    req = _make_request(peer_ip="8.8.8.8")
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        allowed, country, source = dependencies.india_write_decision(req)
+    assert allowed is False and country == "US" and source == "mmdb"
+
+
+def test_india_write_decision_mmdb_none_fails_open():
+    """No mmdb → fail open (allowed, country UNKNOWN)."""
+    req = _make_request(peer_ip="8.8.8.8")
+    with mock.patch("dependencies._get_geoip_reader", return_value=None):
+        allowed, country, source = dependencies.india_write_decision(req)
+    assert allowed is True and country == "UNKNOWN" and source == "mmdb"
+
+
+# ──────────────────────────────────────────────────────────────────
+# C3 — GET /public/region: prediction must match what the gate enforces
+# ──────────────────────────────────────────────────────────────────
+
+def test_public_region_no_mmdb_fails_open(client):
+    """No mmdb → advisory endpoint reports write-allowed (matches the
+    gate's fail-open). Unauthenticated by design."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=None):
+        r = client.get("/api/public/region")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_india"] is True
+    assert body["write_allowed"] is True
+    assert body["country_code"] == "UNKNOWN"
+    assert body["source"] == "mmdb"
+
+
+def test_public_region_us_blocked(client):
+    """US IP → advisory endpoint reports NOT-india, matching the 451 the
+    write gate would return for the same caller."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.get("/api/public/region")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_india"] is False
+    assert body["write_allowed"] is False
+    assert body["country_code"] == "US"
+
+
+# ──────────────────────────────────────────────────────────────────
+# C4 — XFF-spoof security regression (NUO-135): a non-India client
+# sending X-Forwarded-For: <Indian IP> must NOT bypass the gate
+# ──────────────────────────────────────────────────────────────────
+
+def test_spoofed_xff_does_not_bypass_gate(client, auth_headers, test_user):
+    """TestClient peer is 'testclient' — not a trusted proxy — so XFF is
+    ignored and the gate resolves on the real peer. The reader maps the
+    spoofed Indian IP to IN and everything else to US; if XFF were
+    (wrongly) honoured the request would be allowed, so a 451 proves the
+    spoof was discarded."""
+    from datetime import datetime, timezone
+
+    def _ip_aware_reader(india_ip):
+        reader = mock.Mock()
+        reader.country.side_effect = lambda ip: MockGeoIPResponse(
+            "IN" if ip == india_ip else "US"
+        )
+        return reader
+
+    profile_id = _profile_id_for(test_user)
+    body = {
+        "profile_id": profile_id,
+        "reading_type": "glucose",
+        "glucose_value": 110,
+        "glucose_unit": "mg/dL",
+        "value_numeric": 110,
+        "unit_display": "mg/dL",
+        "reading_timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    with mock.patch(
+        "dependencies._get_geoip_reader",
+        return_value=_ip_aware_reader("14.139.1.1"),
+    ):
+        r = client.post(
+            "/api/readings",
+            json=body,
+            headers={**auth_headers, "X-Forwarded-For": "14.139.1.1"},
+        )
+    assert r.status_code == 451, (
+        f"Spoofed Indian XFF from an untrusted peer must NOT bypass the "
+        f"geofence; expected 451, got {r.status_code}: {r.text}"
+    )
+    assert r.json()["detail"]["code"] == "REGION_NOT_ALLOWED"
+
+
+# ──────────────────────────────────────────────────────────────────
+# C5 — medication + chat write endpoints geofenced; chat read passes
+# ──────────────────────────────────────────────────────────────────
+
+def test_post_medication_blocked_us(client, auth_headers, test_user):
+    """POST /medications uses require_india_writer (451)."""
+    from datetime import datetime, timezone
+    profile_id = _profile_id_for(test_user)
+    body = {
+        "profile_id": profile_id,
+        "name": "Metformin",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+    }
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post("/api/medications", json=body, headers=auth_headers)
+    assert r.status_code == 451, f"got {r.status_code}: {r.text}"
+    assert r.json()["detail"]["code"] == "REGION_NOT_ALLOWED"
+
+
+def test_patch_medication_blocked_us(client, auth_headers):
+    """PATCH /medications/{id} is geofenced — the dep fires before the
+    404, so a non-existent id still surfaces the 451."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.patch(
+            "/api/medications/999999",
+            json={"dose": "5mg"},
+            headers=auth_headers,
+        )
+    assert r.status_code == 451, f"got {r.status_code}: {r.text}"
+
+
+def test_delete_medication_blocked_us(client, auth_headers):
+    """DELETE /medications/{id} is geofenced — destructive PHI op."""
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.delete("/api/medications/999999", headers=auth_headers)
+    assert r.status_code == 451, f"got {r.status_code}: {r.text}"
+
+
+def test_post_chat_blocked_us(client, auth_headers, test_user):
+    """POST /chat/messages uses require_india_writer (451)."""
+    profile_id = _profile_id_for(test_user)
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.post(
+            "/api/chat/messages",
+            json={"profile_id": profile_id, "message": "hello"},
+            headers=auth_headers,
+        )
+    assert r.status_code == 451, f"got {r.status_code}: {r.text}"
+
+
+def test_get_chat_not_blocked_us(client, auth_headers, test_user):
+    """GET /chat/messages is intentionally NOT geofenced — diaspora users
+    must keep read access to their clinical conversation."""
+    profile_id = _profile_id_for(test_user)
+    with mock.patch("dependencies._get_geoip_reader", return_value=_us_reader()):
+        r = client.get(
+            f"/api/chat/messages?profile_id={profile_id}", headers=auth_headers
+        )
+    assert r.status_code != 451, (
+        "GET /chat/messages must NOT be geofenced; got an unexpected 451."
+    )
