@@ -2,7 +2,7 @@
 import atexit
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
-from typing import Annotated, Optional, Union
+from typing import Annotated, Optional, Tuple, Union
 import ipaddress
 import models
 import auth
@@ -13,7 +13,6 @@ import geoip2.database
 import geoip2.errors
 from database import get_db
 from encryption_service import hash_email
-from utils.geo import is_india_writer_allowed
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +225,90 @@ def _reset_geoip_reader_cache() -> None:
                 pass
 
 
+def geofence_startup_check() -> bool:
+    """Boot-time health check for the India-only write gate.
+
+    Both write gates (verify_india_location, require_india_writer) fail
+    OPEN when the GeoLite2 mmdb is missing or corrupt — by design, so a
+    DB gap never locks genuine India users out of logging health data.
+    The cost of that posture is that the gate can silently disable itself:
+    delete/corrupt the file and every write from every country is allowed,
+    with no signal until someone audits the logs.
+
+    This check makes that state LOUD at boot. Returns True when the gate
+    is active (reader loaded), False when it has failed open. In
+    production (REQUIRE_HTTPS=true) a failed-open gate logs at ERROR and
+    fires a best-effort P0 ops alert; in dev/CI it's a single INFO line.
+
+    Called from the FastAPI startup event. Never raises — a geo lookup
+    problem must not crash the API and take reads down with it.
+    """
+    # Lazy import to avoid pulling config/email at module load (this file
+    # is imported very early in the FastAPI bootstrap).
+    from config import settings
+
+    if _get_geoip_reader() is not None:
+        logger.info("geofence: GeoLite2 mmdb loaded — India write gate ACTIVE.")
+        return True
+
+    is_prod = settings.REQUIRE_HTTPS
+    msg = (
+        "GEOFENCE_FAIL_OPEN: GeoLite2-Country.mmdb is missing or corrupt. "
+        "The India-only write gate is DISABLED — writes from ANY country "
+        "will be allowed. Restore backend/GeoLite2-Country.mmdb and restart."
+    )
+    if not is_prod:
+        logger.info("geofence: no mmdb (dev/CI) — write gate fail-open (allow all). This is expected locally.")
+        return False
+
+    logger.error(msg)
+    # Best-effort P0 ops alert. Wrapped so a mail outage can't crash boot.
+    try:
+        if settings.OPS_ALERTS_ENABLED and settings.OPS_P0_ALERTS_ENABLED:
+            from datetime import datetime, timezone
+            from email_service import EmailService
+            EmailService().send_ops_alert_email(
+                recipient_email=settings.OPS_ALERT_EMAIL,
+                tier="P0",
+                title="Geofence disabled — GeoLite2 mmdb missing/corrupt",
+                metrics={"gate_active": False, "write_gate": "fail_open"},
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            )
+    except Exception as e:  # pragma: no cover — alerting is best-effort
+        logger.error(f"geofence: failed to dispatch fail-open ops alert: {e}")
+    return False
+
+
+def _country_iso_or_none(request: Request) -> Tuple[Optional[str], str]:
+    """Resolve the caller's ISO-2 country from the MaxMind GeoLite2 mmdb.
+
+    Single source of truth for BOTH write gates (verify_india_location for
+    edit/delete, require_india_writer for create) — they used to resolve
+    country two different ways (mmdb vs ipapi.co), which is how the
+    allowlist ended up honoured on one path and not the other.
+
+    Returns (iso_code_or_None, masked_ip). A None iso means "fail open":
+    the mmdb is missing (dev/CI), the IP isn't in the DB (private/local),
+    the record carries no country (satellite/anycast), or the lookup
+    raised. Callers MUST treat None as ALLOW, never block — a DB gap must
+    not lock genuine India users out. IP resolution is XFF-spoof-resistant
+    via _get_client_ip.
+    """
+    client_ip = _get_client_ip(request)
+    masked = _mask_ip(client_ip)
+    reader = _get_geoip_reader()
+    if reader is None:
+        return None, masked
+    try:
+        iso_code = reader.country(client_ip).country.iso_code
+        return iso_code, masked  # iso_code may be None → caller fails open
+    except geoip2.errors.AddressNotFoundError:
+        return None, masked
+    except Exception as e:
+        logger.error(f"GeoIP lookup error: {e} ip_masked={masked}")
+        return None, masked
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Email allowlist (GEOFENCE_EMAIL_ALLOWLIST)
 #
@@ -387,52 +470,28 @@ def verify_india_location(request: Request) -> None:
             )
             return
 
-    # 2. Extract client IP (XFF only honoured behind trusted proxies)
-    client_ip = _get_client_ip(request)
-
-    # 3. Check location
-    reader = _get_geoip_reader()
-    if reader is None:
-        # Mock behavior: allow all if DB file is missing (dev environment)
+    # 2. Resolve country via the shared mmdb helper. None = fail open
+    # (DB missing, private/unknown IP, no country on record, lookup error).
+    # iso_code can be None for satellite/anycast IPs — None != "IN" would
+    # 403 Bihar VSAT links, so we treat unknown as allow.
+    iso_code, masked = _country_iso_or_none(request)
+    if iso_code is None:
         return
-
-    try:
-        response = reader.country(client_ip)
-        iso_code = response.country.iso_code
-        # iso_code can be None for satellite/anycast IPs or records
-        # without a country assignment. None != "IN" would evaluate True
-        # and 403 those users — Bihar pilot VSAT links would fail.
-        # Treat "no country known" the same as AddressNotFoundError:
-        # fail open. Spoofed/unknown traffic is still rate-limited and
-        # authenticated by other layers.
-        if iso_code is None:
-            return
-        if iso_code != "IN":
-            # DPDPA: IPs are personal data; do NOT log the full address at
-            # INFO. Log country + path + masked IP — enough to correlate
-            # with an ASN range during incident review, not enough to
-            # uniquely identify a subscriber.
-            logger.info(
-                f"GEOFENCE_BLOCK country={iso_code} "
-                f"path={request.url.path} method={request.method} "
-                f"ip_masked={_mask_ip(client_ip)}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="REGION_RESTRICTED"
-            )
-    except geoip2.errors.AddressNotFoundError:
-        # IP not in database (likely private/local IP). Allow it.
-        return
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Don't block users if the lookup service itself fails. Mask the
-        # IP in the error log too — same DPDPA reasoning as above.
-        logger.error(
-            f"GeoIP lookup error: {e} ip_masked={_mask_ip(client_ip)}"
+    if iso_code != "IN":
+        # DPDPA: IPs are personal data; do NOT log the full address at
+        # INFO. Log country + path + masked IP — enough to correlate with
+        # an ASN range during incident review, not enough to identify a
+        # subscriber.
+        logger.info(
+            f"GEOFENCE_BLOCK country={iso_code} "
+            f"path={request.url.path} method={request.method} "
+            f"ip_masked={masked}"
         )
-        return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="REGION_RESTRICTED",
+        )
+
 
 def get_current_user(
     token: Annotated[str, Depends(auth.oauth2_scheme)],
@@ -575,28 +634,85 @@ def get_profile_owner_or_403(
 # Caregivers abroad can still read; only logging is blocked.
 # ---------------------------------------------------------------------------
 
+def india_write_decision(request: Request) -> Tuple[bool, str, str]:
+    """Side-effect-free India-write decision.
+
+    Single source of truth shared by the enforcing dependency
+    (require_india_writer) and the advisory GET /public/region endpoint,
+    so the client's pre-flight prediction always matches what the gate
+    actually does at write time. Never raises and never logs — callers
+    own their own audit logging (a mere /public/region poll must not
+    pollute the GEOFENCE_BLOCK_WRITE audit signal).
+
+    Order mirrors the edit/delete gate: env bypass -> email allowlist ->
+    mmdb country. Returns (allowed, country_code, source) where source is
+    'env_bypass' | 'email_allowlist' | 'mmdb'. A None country from the
+    mmdb (missing DB, private/unknown IP) fails OPEN — allowed, so a DB
+    gap never locks genuine India users out.
+    """
+    if os.environ.get("BYPASS_GEO_RESTRICTION", "").lower() == "true":
+        return True, "IN", "env_bypass"
+
+    allowlist_hashes = _get_geofence_allowlist_hashes()
+    if allowlist_hashes:
+        email_hash = _email_hash_from_bearer_token(request)
+        if email_hash is not None and email_hash in allowlist_hashes:
+            return True, "ALLOWLIST", "email_allowlist"
+
+    iso_code, _masked = _country_iso_or_none(request)
+    if iso_code is None:
+        return True, "UNKNOWN", "mmdb"
+    return iso_code == "IN", iso_code, "mmdb"
+
+
 async def require_india_writer(request: Request) -> dict:
-    """Block write endpoints when the caller is outside India.
+    """Block write (create) endpoints when the caller is outside India.
+
+    Unified onto the SAME MaxMind GeoLite2 mmdb as verify_india_location
+    (edit/delete) via the shared `india_write_decision` — previously this
+    path used an ipapi.co network lookup, which had a daily quota, a
+    locale-fallback hole, and (the bug that started this) did not honour
+    the email allowlist. One resolver now backs all three operations.
 
     Returns a small region-info dict on success so the route handler can
     log it or include it in audit trails. Raises 451 (Unavailable For
     Legal Reasons) with a structured detail otherwise — the Flutter
     client special-cases this code to surface the family-member banner.
 
-    Async so the underlying ipapi.co lookup awaits on the event loop
-    instead of holding a thread-pool worker for up to 1.5s per cache-miss.
+    Enable/disable is now the same as the edit/delete gate:
+      - mmdb present  → gate active
+      - mmdb missing  → fail open (local dev / CI)
+      - BYPASS_GEO_RESTRICTION=true → emergency rollback (audit-logged)
+    The old `GEO_RESTRICT_ENABLED` flag no longer gates this path.
 
-    The master switch is off by default (`GEO_RESTRICT_ENABLED`); local
-    dev and CI therefore never get blocked.
-
-    The client IP is resolved by the XFF-spoof-resistant `_get_client_ip`
-    (XFF only honoured behind a trusted proxy) and passed into the geo
-    decision — `utils.geo` does NOT parse `X-Forwarded-For` itself.
+    Kept `async` so the route `Depends(...)` signatures don't change; the
+    mmdb lookup is a fast local read with no await.
     """
-    client_ip = _get_client_ip(request)
-    allowed, country, source = await is_india_writer_allowed(request, client_ip)
+    allowed, country, source = india_write_decision(request)
+
     if allowed:
+        # Audit logging for the two explicit-bypass paths only.
+        if source == "env_bypass":
+            peer = request.client.host if request.client else "unknown"
+            logger.warning(
+                "GEOFENCE_BYPASS active — BYPASS_GEO_RESTRICTION=true. "
+                f"peer_masked={_mask_ip(peer)} path={request.url.path} "
+                f"method={request.method}. Flip off after the incident/test."
+            )
+        elif source == "email_allowlist":
+            eh = _email_hash_from_bearer_token(request)
+            logger.info(
+                "REGION_ALLOWLIST_HIT "
+                f"email_hash_prefix={(eh or '')[:12]} "
+                f"path={request.url.path} method={request.method}"
+            )
         return {"country": country, "source": source}
+
+    logger.info(
+        f"GEOFENCE_BLOCK_WRITE country={country} "
+        f"path={request.url.path} method={request.method} "
+        f"ip_masked={_mask_ip(_get_client_ip(request))}"
+    )
     raise HTTPException(
         status_code=status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS,
         detail={
