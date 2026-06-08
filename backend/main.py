@@ -128,6 +128,11 @@ async def _unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 async def startup_event():
+    # Surface a disabled India write-gate at boot. Fail-open is by design
+    # (a missing mmdb must not lock India users out), but it must be LOUD
+    # so a deleted/corrupt mmdb in prod doesn't silently open writes.
+    from dependencies import geofence_startup_check
+    geofence_startup_check()
     start_scheduler()
 
 @app.on_event("shutdown")

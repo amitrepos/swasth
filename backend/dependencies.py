@@ -225,6 +225,60 @@ def _reset_geoip_reader_cache() -> None:
                 pass
 
 
+def geofence_startup_check() -> bool:
+    """Boot-time health check for the India-only write gate.
+
+    Both write gates (verify_india_location, require_india_writer) fail
+    OPEN when the GeoLite2 mmdb is missing or corrupt — by design, so a
+    DB gap never locks genuine India users out of logging health data.
+    The cost of that posture is that the gate can silently disable itself:
+    delete/corrupt the file and every write from every country is allowed,
+    with no signal until someone audits the logs.
+
+    This check makes that state LOUD at boot. Returns True when the gate
+    is active (reader loaded), False when it has failed open. In
+    production (REQUIRE_HTTPS=true) a failed-open gate logs at ERROR and
+    fires a best-effort P0 ops alert; in dev/CI it's a single INFO line.
+
+    Called from the FastAPI startup event. Never raises — a geo lookup
+    problem must not crash the API and take reads down with it.
+    """
+    # Lazy import to avoid pulling config/email at module load (this file
+    # is imported very early in the FastAPI bootstrap).
+    from config import settings
+
+    if _get_geoip_reader() is not None:
+        logger.info("geofence: GeoLite2 mmdb loaded — India write gate ACTIVE.")
+        return True
+
+    is_prod = settings.REQUIRE_HTTPS
+    msg = (
+        "GEOFENCE_FAIL_OPEN: GeoLite2-Country.mmdb is missing or corrupt. "
+        "The India-only write gate is DISABLED — writes from ANY country "
+        "will be allowed. Restore backend/GeoLite2-Country.mmdb and restart."
+    )
+    if not is_prod:
+        logger.info("geofence: no mmdb (dev/CI) — write gate fail-open (allow all). This is expected locally.")
+        return False
+
+    logger.error(msg)
+    # Best-effort P0 ops alert. Wrapped so a mail outage can't crash boot.
+    try:
+        if settings.OPS_ALERTS_ENABLED and settings.OPS_P0_ALERTS_ENABLED:
+            from datetime import datetime, timezone
+            from email_service import EmailService
+            EmailService().send_ops_alert_email(
+                recipient_email=settings.OPS_ALERT_EMAIL,
+                tier="P0",
+                title="Geofence disabled — GeoLite2 mmdb missing/corrupt",
+                metrics={"gate_active": False, "write_gate": "fail_open"},
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            )
+    except Exception as e:  # pragma: no cover — alerting is best-effort
+        logger.error(f"geofence: failed to dispatch fail-open ops alert: {e}")
+    return False
+
+
 def _country_iso_or_none(request: Request) -> Tuple[Optional[str], str]:
     """Resolve the caller's ISO-2 country from the MaxMind GeoLite2 mmdb.
 
