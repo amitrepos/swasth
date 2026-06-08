@@ -611,7 +611,7 @@ class Medication(Base):
     frequency_enc = Column(Text, nullable=True)
     notes_enc = Column(Text, nullable=True)
     # MORNING | AFTERNOON | EVENING | NIGHT — not PHI; plain enum for doctor UX.
-    intake_period = Column(String, nullable=False, default="MORNING")
+    intake_period = Column(String, nullable=False, server_default="MORNING")
     taken_at = Column(DateTime(timezone=True), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())

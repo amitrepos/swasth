@@ -1374,25 +1374,6 @@
     }
   },
   "reminderDisabled": "Reminder disabled",
-  "reminderSettingsTitle": "Reminder settings",
-  "dailyReminderSection": "Daily health check",
-  "weeklyWeightReminderSection": "Weekly weight",
-  "weightReminderEnableLabel": "Enable weekly weight reminder",
-  "weightReminderDayLabel": "Day",
-  "weightReminderTimeLabel": "Time",
-  "weightReminderSetTime": "Set weekly weight reminder time",
-  "weightReminderChangeTime": "Change weekly weight time",
-  "weightReminderSetFor": "Weight reminder set for {day} at {time}",
-  "@weightReminderSetFor": {
-    "placeholders": {
-      "day": { "type": "String" },
-      "time": { "type": "String" }
-    }
-  },
-  "weightReminderDisabled": "Weekly weight reminder disabled",
-  "weightReminderNotificationTitle": "⚖️ Time to log your weight",
-  "weightReminderNotificationBody": "Weekly check-in — log your weight to keep your health trends accurate.",
-  "notificationPermissionRequired": "Notification permission is required for reminders",
   "actionCall": "Call",
   "actionWhatsApp": "WhatsApp",
   "actionEmail": "Send Email",
@@ -1468,12 +1449,18 @@
   "medicationsFormDoseHint": "e.g. 500 mg, 1 tablet",
   "medicationsFormFrequencyLabel": "Frequency (optional)",
   "medicationsFormFrequencyHint": "e.g. Twice daily after food",
-  "medicationsFormPeriodLabel": "When taken *",
+  "medicationsFormPeriodLabel": "When taken",
   "medicationsFormDateLabel": "Date",
   "medicationsPeriodMorning": "Morning",
   "medicationsPeriodAfternoon": "Afternoon",
   "medicationsPeriodEvening": "Evening",
   "medicationsPeriodNight": "Night",
+  "medicationsFormRecordedTimeHint": "Will be recorded as approx. {time}",
+  "@medicationsFormRecordedTimeHint": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
   "medicationsFormTakenAtLabel": "Taken at",
   "medicationsFormNotesLabel": "Notes (optional)",
   "medicationsFormNotesHint": "e.g. Felt nauseous after",

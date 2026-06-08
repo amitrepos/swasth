@@ -1371,10 +1371,16 @@
   "medicationsSaveChanges": "மாற்றங்களை சேமி",
   "medicationsEditSemantics": "{name} திருத்து",
   "medicationsCellEmpty": "-",
-  "medicationsFormPeriodLabel": "When taken *",
-  "medicationsFormDateLabel": "Date",
-  "medicationsPeriodMorning": "Morning",
-  "medicationsPeriodAfternoon": "Afternoon",
-  "medicationsPeriodEvening": "Evening",
-  "medicationsPeriodNight": "Night"
+  "medicationsFormPeriodLabel": "எப்போது எடுத்தீர்கள்",
+  "medicationsFormDateLabel": "தேதி",
+  "medicationsPeriodMorning": "காலை",
+  "medicationsPeriodAfternoon": "மதியம்",
+  "medicationsPeriodEvening": "மாலை",
+  "medicationsPeriodNight": "இரவு",
+  "medicationsFormRecordedTimeHint": "சுமார் {time} அன்று பதிவாகும்",
+  "@medicationsFormRecordedTimeHint": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  }
 }

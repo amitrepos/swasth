@@ -2371,51 +2371,6 @@ class AppLocalizationsKn extends AppLocalizations {
   String get reminderDisabled => 'ಜ್ಞಾಪನೆಯನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ';
 
   @override
-  String get reminderSettingsTitle => 'ಜ್ಞಾಪನೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು';
-
-  @override
-  String get dailyReminderSection => 'ದೈನಂದಿನ ಆರೋಗ್ಯ ಪರಿಶೀಲನೆ';
-
-  @override
-  String get weeklyWeightReminderSection => 'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ';
-
-  @override
-  String get weightReminderEnableLabel =>
-      'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಜ್ಞಾಪನೆ ಸಕ್ರಿಯಗೊಳಿಸಿ';
-
-  @override
-  String get weightReminderDayLabel => 'ದಿನ';
-
-  @override
-  String get weightReminderTimeLabel => 'ಸಮಯ';
-
-  @override
-  String get weightReminderSetTime => 'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಜ್ಞಾಪನೆ ಸಮಯ ಹೊಂದಿಸಿ';
-
-  @override
-  String get weightReminderChangeTime => 'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಸಮಯ ಬದಲಾಯಿಸಿ';
-
-  @override
-  String weightReminderSetFor(String day, String time) {
-    return 'ತೂಕ ಜ್ಞಾಪನೆ $day ರಂದು $time ಗೆ ಹೊಂದಿಸಲಾಗಿದೆ';
-  }
-
-  @override
-  String get weightReminderDisabled =>
-      'ವಾರಕ್ಕೊಮ್ಮೆ ತೂಕ ಜ್ಞಾಪನೆ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ';
-
-  @override
-  String get weightReminderNotificationTitle => '⚖️ ನಿಮ್ಮ ತೂಕವನ್ನು ದಾಖಲಿಸಿ';
-
-  @override
-  String get weightReminderNotificationBody =>
-      'ವಾರಕ್ಕೊಮ್ಮೆ ಪರಿಶೀಲನೆ — ಆರೋಗ್ಯ ಪ್ರವೃತ್ತಿಗಳನ್ನು ನಿಖರವಾಗಿಡಲು ತೂಕ ದಾಖಲಿಸಿ.';
-
-  @override
-  String get notificationPermissionRequired =>
-      'ಜ್ಞಾಪನೆಗಳಿಗೆ ಅಧಿಸೂಚನೆ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ';
-
-  @override
   String get actionCall => 'ಕರೆ ಮಾಡಿ';
 
   @override
@@ -2476,7 +2431,7 @@ class AppLocalizationsKn extends AppLocalizations {
   String get medicationsColDateTime => 'ದಿನಾಂಕ & ಸಮಯ';
 
   @override
-  String get medicationsColDateWhen => 'ದಿನಾಂಕ & ಸಮಯ';
+  String get medicationsColDateWhen => 'ದಿನಾಂಕ ಮತ್ತು ಸಮಯ';
 
   @override
   String get medicationsColMedicine => 'ಔಷಧಿ';
@@ -2549,22 +2504,27 @@ class AppLocalizationsKn extends AppLocalizations {
   String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
 
   @override
-  String get medicationsFormPeriodLabel => 'When taken *';
+  String get medicationsFormPeriodLabel => 'ಯಾವಾಗ ತೆಗೆದುಕೊಂಡಿರಿ';
 
   @override
-  String get medicationsFormDateLabel => 'Date';
+  String get medicationsFormDateLabel => 'ದಿನಾಂಕ';
 
   @override
-  String get medicationsPeriodMorning => 'Morning';
+  String get medicationsPeriodMorning => 'ಬೆಳಿಗ್ಗೆ';
 
   @override
-  String get medicationsPeriodAfternoon => 'Afternoon';
+  String get medicationsPeriodAfternoon => 'ಮಧ್ಯಾಹ್ನ';
 
   @override
-  String get medicationsPeriodEvening => 'Evening';
+  String get medicationsPeriodEvening => 'ಸಂಜೆ';
 
   @override
-  String get medicationsPeriodNight => 'Night';
+  String get medicationsPeriodNight => 'ರಾತ್ರಿ';
+
+  @override
+  String medicationsFormRecordedTimeHint(String time) {
+    return 'ಸುಮಾರು $time ಗೆ ದಾಖಲಾಗುತ್ತದೆ';
+  }
 
   @override
   String get medicationsFormTakenAtLabel => 'Taken at';

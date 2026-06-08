@@ -913,25 +913,6 @@
     }
   },
   "reminderDisabled": "रिमाइंडर बंद कर दिया गया",
-  "reminderSettingsTitle": "रिमाइंडर सेटिंग्स",
-  "dailyReminderSection": "दैनिक स्वास्थ्य जांच",
-  "weeklyWeightReminderSection": "साप्ताहिक वज़न",
-  "weightReminderEnableLabel": "साप्ताहिक वज़न रिमाइंडर चालू करें",
-  "weightReminderDayLabel": "दिन",
-  "weightReminderTimeLabel": "समय",
-  "weightReminderSetTime": "साप्ताहिक वज़न रिमाइंडर समय सेट करें",
-  "weightReminderChangeTime": "साप्ताहिक वज़न समय बदलें",
-  "weightReminderSetFor": "वज़न रिमाइंडर {day} को {time} बजे सेट है",
-  "@weightReminderSetFor": {
-    "placeholders": {
-      "day": { "type": "String" },
-      "time": { "type": "String" }
-    }
-  },
-  "weightReminderDisabled": "साप्ताहिक वज़न रिमाइंडर बंद",
-  "weightReminderNotificationTitle": "⚖️ अपना वज़न दर्ज करें",
-  "weightReminderNotificationBody": "साप्ताहिक जांच — अपना वज़न दर्ज करके स्वास्थ्य ट्रेंड सटीक रखें।",
-  "notificationPermissionRequired": "रिमाइंडर के लिए नोटिफिकेशन अनुमति आवश्यक है",
   "actionCall": "कॉल करें",
   "actionWhatsApp": "व्हाट्सऐप",
   "actionEmail": "ईमेल भेजें",
@@ -960,7 +941,7 @@
   "medicationsLogFab": "दवा दर्ज करें",
   "medicationsLogFirst": "पहली दवा दर्ज करें",
   "medicationsColDateTime": "तारीख और समय",
-  "medicationsColDateWhen": "तारीख और समय",
+  "medicationsColDateWhen": "तारीख और कब",
   "medicationsColMedicine": "दवा",
   "medicationsColDose": "खुराक",
   "medicationsColFrequency": "आवृत्ति",
@@ -982,12 +963,18 @@
   "medicationsFormDoseHint": "जैसे 500 mg, 1 गोली",
   "medicationsFormFrequencyLabel": "आवृत्ति (वैकल्पिक)",
   "medicationsFormFrequencyHint": "जैसे दिन में दो बार खाने के बाद",
-  "medicationsFormPeriodLabel": "कब ली *",
+  "medicationsFormPeriodLabel": "कब ली",
   "medicationsFormDateLabel": "तारीख",
   "medicationsPeriodMorning": "सुबह",
   "medicationsPeriodAfternoon": "दोपहर",
   "medicationsPeriodEvening": "शाम",
   "medicationsPeriodNight": "रात",
+  "medicationsFormRecordedTimeHint": "लगभग {time} पर दर्ज होगी",
+  "@medicationsFormRecordedTimeHint": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
   "medicationsFormTakenAtLabel": "कब ली",
   "medicationsFormNotesLabel": "नोट्स (वैकल्पिक)",
   "medicationsFormNotesHint": "जैसे दवा के बाद मतली",

@@ -4375,84 +4375,6 @@ abstract class AppLocalizations {
   /// **'Reminder disabled'**
   String get reminderDisabled;
 
-  /// No description provided for @reminderSettingsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Reminder settings'**
-  String get reminderSettingsTitle;
-
-  /// No description provided for @dailyReminderSection.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily health check'**
-  String get dailyReminderSection;
-
-  /// No description provided for @weeklyWeightReminderSection.
-  ///
-  /// In en, this message translates to:
-  /// **'Weekly weight'**
-  String get weeklyWeightReminderSection;
-
-  /// No description provided for @weightReminderEnableLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable weekly weight reminder'**
-  String get weightReminderEnableLabel;
-
-  /// No description provided for @weightReminderDayLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Day'**
-  String get weightReminderDayLabel;
-
-  /// No description provided for @weightReminderTimeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Time'**
-  String get weightReminderTimeLabel;
-
-  /// No description provided for @weightReminderSetTime.
-  ///
-  /// In en, this message translates to:
-  /// **'Set weekly weight reminder time'**
-  String get weightReminderSetTime;
-
-  /// No description provided for @weightReminderChangeTime.
-  ///
-  /// In en, this message translates to:
-  /// **'Change weekly weight time'**
-  String get weightReminderChangeTime;
-
-  /// No description provided for @weightReminderSetFor.
-  ///
-  /// In en, this message translates to:
-  /// **'Weight reminder set for {day} at {time}'**
-  String weightReminderSetFor(String day, String time);
-
-  /// No description provided for @weightReminderDisabled.
-  ///
-  /// In en, this message translates to:
-  /// **'Weekly weight reminder disabled'**
-  String get weightReminderDisabled;
-
-  /// No description provided for @weightReminderNotificationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'⚖️ Time to log your weight'**
-  String get weightReminderNotificationTitle;
-
-  /// No description provided for @weightReminderNotificationBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Weekly check-in — log your weight to keep your health trends accurate.'**
-  String get weightReminderNotificationBody;
-
-  /// No description provided for @notificationPermissionRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Notification permission is required for reminders'**
-  String get notificationPermissionRequired;
-
   /// No description provided for @actionCall.
   ///
   /// In en, this message translates to:
@@ -4696,7 +4618,7 @@ abstract class AppLocalizations {
   /// No description provided for @medicationsFormPeriodLabel.
   ///
   /// In en, this message translates to:
-  /// **'When taken *'**
+  /// **'When taken'**
   String get medicationsFormPeriodLabel;
 
   /// No description provided for @medicationsFormDateLabel.
@@ -4728,6 +4650,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Night'**
   String get medicationsPeriodNight;
+
+  /// No description provided for @medicationsFormRecordedTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Will be recorded as approx. {time}'**
+  String medicationsFormRecordedTimeHint(String time);
 
   /// No description provided for @medicationsFormTakenAtLabel.
   ///

@@ -349,6 +349,13 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                           final selected = _intakePeriod == period;
                           return ChoiceChip(
                             key: Key('medication-period-$period'),
+                            avatar: selected
+                                ? const Icon(
+                                    Icons.check,
+                                    size: 16,
+                                    color: AppColors.primary,
+                                  )
+                                : null,
                             label: Text(medicationPeriodLabel(l10n, period)),
                             selected: selected,
                             onSelected: _saving
@@ -375,6 +382,20 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                             border: const OutlineInputBorder(),
                           ),
                           child: Text(DateFormat.yMMMd().format(_selectedDate)),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6, left: 4),
+                        child: Text(
+                          l10n.medicationsFormRecordedTimeHint(
+                            DateFormat.jm().format(
+                              localAnchorDateTime(_selectedDate, _intakePeriod),
+                            ),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),

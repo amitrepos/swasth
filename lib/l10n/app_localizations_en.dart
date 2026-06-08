@@ -2341,49 +2341,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reminderDisabled => 'Reminder disabled';
 
   @override
-  String get reminderSettingsTitle => 'Reminder settings';
-
-  @override
-  String get dailyReminderSection => 'Daily health check';
-
-  @override
-  String get weeklyWeightReminderSection => 'Weekly weight';
-
-  @override
-  String get weightReminderEnableLabel => 'Enable weekly weight reminder';
-
-  @override
-  String get weightReminderDayLabel => 'Day';
-
-  @override
-  String get weightReminderTimeLabel => 'Time';
-
-  @override
-  String get weightReminderSetTime => 'Set weekly weight reminder time';
-
-  @override
-  String get weightReminderChangeTime => 'Change weekly weight time';
-
-  @override
-  String weightReminderSetFor(String day, String time) {
-    return 'Weight reminder set for $day at $time';
-  }
-
-  @override
-  String get weightReminderDisabled => 'Weekly weight reminder disabled';
-
-  @override
-  String get weightReminderNotificationTitle => '⚖️ Time to log your weight';
-
-  @override
-  String get weightReminderNotificationBody =>
-      'Weekly check-in — log your weight to keep your health trends accurate.';
-
-  @override
-  String get notificationPermissionRequired =>
-      'Notification permission is required for reminders';
-
-  @override
   String get actionCall => 'Call';
 
   @override
@@ -2517,7 +2474,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get medicationsFormFrequencyHint => 'e.g. Twice daily after food';
 
   @override
-  String get medicationsFormPeriodLabel => 'When taken *';
+  String get medicationsFormPeriodLabel => 'When taken';
 
   @override
   String get medicationsFormDateLabel => 'Date';
@@ -2533,6 +2490,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get medicationsPeriodNight => 'Night';
+
+  @override
+  String medicationsFormRecordedTimeHint(String time) {
+    return 'Will be recorded as approx. $time';
+  }
 
   @override
   String get medicationsFormTakenAtLabel => 'Taken at';

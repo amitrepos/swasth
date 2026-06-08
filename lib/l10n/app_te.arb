@@ -1371,10 +1371,16 @@
   "medicationsSaveChanges": "మార్పులను సేవ్ చేయండి",
   "medicationsEditSemantics": "{name} సవరించండి",
   "medicationsCellEmpty": "-",
-  "medicationsFormPeriodLabel": "When taken *",
-  "medicationsFormDateLabel": "Date",
-  "medicationsPeriodMorning": "Morning",
-  "medicationsPeriodAfternoon": "Afternoon",
-  "medicationsPeriodEvening": "Evening",
-  "medicationsPeriodNight": "Night"
+  "medicationsFormPeriodLabel": "ఎప్పుడు తీసుకున్నారు",
+  "medicationsFormDateLabel": "తేదీ",
+  "medicationsPeriodMorning": "ఉదయం",
+  "medicationsPeriodAfternoon": "మధ్యాహ్నం",
+  "medicationsPeriodEvening": "సాయంత్రం",
+  "medicationsPeriodNight": "రాత్రి",
+  "medicationsFormRecordedTimeHint": "సుమారు {time} కు నమోదవుతుంది",
+  "@medicationsFormRecordedTimeHint": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  }
 }

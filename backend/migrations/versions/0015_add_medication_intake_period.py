@@ -19,6 +19,7 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 _VALID_PERIODS = ("MORNING", "AFTERNOON", "EVENING", "NIGHT")
+_CHECK = "intake_period IN ('MORNING', 'AFTERNOON', 'EVENING', 'NIGHT')"
 
 
 def upgrade() -> None:
@@ -31,6 +32,11 @@ def upgrade() -> None:
             server_default="MORNING",
         ),
     )
+    op.create_check_constraint(
+        "ck_medications_intake_period",
+        "medications",
+        _CHECK,
+    )
     # PG: drop default so new rows must supply intake_period from the API.
     # SQLite lacks ALTER COLUMN … DROP DEFAULT — skip (tests use create_all).
     bind = op.get_bind()
@@ -39,4 +45,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_constraint("ck_medications_intake_period", "medications", type_="check")
     op.drop_column("medications", "intake_period")

@@ -42,6 +42,12 @@ DateTime takenAtFromDateAndPeriod(DateTime date, String period) {
   return local.toUtc();
 }
 
+/// Local anchor datetime for display (approximate recorded time hint).
+DateTime localAnchorDateTime(DateTime date, String period) {
+  final hour = medicationPeriodAnchorHours[period] ?? 8;
+  return DateTime(date.year, date.month, date.day, hour);
+}
+
 String medicationPeriodLabel(AppLocalizations l10n, String period) {
   switch (period) {
     case 'MORNING':

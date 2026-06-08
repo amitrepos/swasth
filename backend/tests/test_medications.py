@@ -73,6 +73,47 @@ def test_create_medication_rejects_invalid_intake_period(client, db, test_user, 
     assert r.status_code == 422
 
 
+def test_create_medication_rejects_invalid_intake_period(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period="NOON")
+    assert r.status_code == 422
+
+
+@pytest.mark.parametrize("period", ["MORNING", "AFTERNOON", "EVENING", "NIGHT"])
+def test_create_medication_all_intake_periods(
+    client, db, test_user, auth_headers, period
+):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period=period)
+    assert r.status_code == 201, r.text
+    assert r.json()["intake_period"] == period
+    row = (
+        db.query(models.Medication)
+        .filter(models.Medication.profile_id == pid)
+        .order_by(models.Medication.id.desc())
+        .first()
+    )
+    assert row.intake_period == period
+
+
+def test_update_medication_intake_period(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period="MORNING")
+    assert r.status_code == 201, r.text
+    med_id = r.json()["id"]
+
+    r2 = client.patch(
+        f"/api/medications/{med_id}",
+        json={"intake_period": "NIGHT"},
+        headers=auth_headers,
+    )
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["intake_period"] == "NIGHT"
+
+    row = db.query(models.Medication).filter_by(id=med_id).first()
+    assert row.intake_period == "NIGHT"
+
+
 def test_create_medication_rejects_future_taken_at(client, db, test_user, auth_headers):
     """taken_at well in the future would never appear in the report window."""
     pid = _profile_id_for(test_user, db)
@@ -369,5 +410,54 @@ def test_report_service_includes_medications_in_snippet(db, test_user):
     assert "Aspirin" in snippet
     assert "(Morning)" in snippet
     assert "(Evening)" in snippet
-    # Dedup: 'Metformin' should appear once
-    assert snippet.lower().count("metformin") == 1
+    # Same name, different period — both appear; same name+period deduped
+    assert snippet.lower().count("metformin") == 2
+
+
+def test_report_snippet_keeps_same_drug_different_periods(db, test_user):
+    """Same drug logged morning + evening → both appear in WhatsApp snippet."""
+    pid = _profile_id_for(test_user, db)
+    now = datetime.now(timezone.utc)
+
+    db.add(
+        models.HealthReading(
+            profile_id=pid,
+            reading_type="glucose",
+            glucose_value=120,
+            glucose_unit="mg/dL",
+            value_numeric=120,
+            unit_display="mg/dL",
+            reading_timestamp=now - timedelta(hours=2),
+        )
+    )
+    db.add(
+        models.Medication(
+            profile_id=pid,
+            name="Metformin",
+            dose="500 mg",
+            intake_period="MORNING",
+            taken_at=now - timedelta(hours=4),
+        )
+    )
+    db.add(
+        models.Medication(
+            profile_id=pid,
+            name="Metformin",
+            dose="500 mg",
+            intake_period="EVENING",
+            taken_at=now - timedelta(hours=1),
+        )
+    )
+    db.commit()
+
+    profile = db.query(models.Profile).filter(models.Profile.id == pid).first()
+    profile.phone_number = test_user.phone_number
+    db.commit()
+
+    import report_service
+
+    out = report_service.trigger_single_profile_report(db, profile, owner=test_user)
+    snippet = out["snippet"]
+    assert "(Morning)" in snippet
+    assert "(Evening)" in snippet
+    assert snippet.count("Metformin") == 2
