@@ -73,12 +73,6 @@ def test_create_medication_rejects_invalid_intake_period(client, db, test_user, 
     assert r.status_code == 422
 
 
-def test_create_medication_rejects_invalid_intake_period(client, db, test_user, auth_headers):
-    pid = _profile_id_for(test_user, db)
-    r = _post_medication(client, auth_headers, pid, intake_period="NOON")
-    assert r.status_code == 422
-
-
 @pytest.mark.parametrize("period", ["MORNING", "AFTERNOON", "EVENING", "NIGHT"])
 def test_create_medication_all_intake_periods(
     client, db, test_user, auth_headers, period
@@ -112,6 +106,22 @@ def test_update_medication_intake_period(client, db, test_user, auth_headers):
 
     row = db.query(models.Medication).filter_by(id=med_id).first()
     assert row.intake_period == "NIGHT"
+
+
+def test_update_medication_rejects_invalid_intake_period(
+    client, db, test_user, auth_headers
+):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication(client, auth_headers, pid, intake_period="MORNING")
+    assert r.status_code == 201, r.text
+    med_id = r.json()["id"]
+
+    r2 = client.patch(
+        f"/api/medications/{med_id}",
+        json={"intake_period": "NOON"},
+        headers=auth_headers,
+    )
+    assert r2.status_code == 422
 
 
 def test_create_medication_rejects_future_taken_at(client, db, test_user, auth_headers):

@@ -1330,7 +1330,7 @@
   "medicationsLogFab": "ಔಷಧಿ ದಾಖಲಿಸಿ",
   "medicationsLogFirst": "ಮೊದಲ ಔಷಧಿ ದಾಖಲಿಸಿ",
   "medicationsColDateTime": "ದಿನಾಂಕ & ಸಮಯ",
-  "medicationsColDateWhen": "ದಿನಾಂಕ ಮತ್ತು ಸಮಯ",
+  "medicationsColDateWhen": "ದಿನಾಂಕ & ಯಾವಾಗ",
   "medicationsColMedicine": "ಔಷಧಿ",
   "medicationsColDose": "ಮೊತ್ತ",
   "medicationsColFrequency": "ಆವರ್ತನೆ",

@@ -197,6 +197,7 @@ def test_post_medication_blocked_when_geo_enabled_non_india(client, db, test_use
         json={
             "profile_id": pid,
             "name": "Aspirin",
+            "intake_period": "MORNING",
             "taken_at": datetime.now(timezone.utc).isoformat(),
         },
         headers={**auth_headers, "Accept-Language": "en-US"},
@@ -214,6 +215,7 @@ def test_post_medication_allowed_when_locale_in(client, db, test_user, auth_head
         json={
             "profile_id": pid,
             "name": "Aspirin",
+            "intake_period": "MORNING",
             "taken_at": datetime.now(timezone.utc).isoformat(),
         },
         headers={**auth_headers, "Accept-Language": "en-IN"},
@@ -241,6 +243,7 @@ def _create_medication_for_geo_tests(client, db, test_user, auth_headers, monkey
         json={
             "profile_id": pid,
             "name": "Aspirin",
+            "intake_period": "MORNING",
             "taken_at": datetime.now(timezone.utc).isoformat(),
         },
         headers=auth_headers,

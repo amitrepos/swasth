@@ -259,6 +259,19 @@ void main() {
       expect(nameField.controller?.text ?? '', 'Aspirin');
     });
 
+    testWidgets('all 4 period chips are visible in add form', (tester) async {
+      final stub = _StubClient();
+      await _bootstrap(tester, stub);
+
+      for (final period in ['MORNING', 'AFTERNOON', 'EVENING', 'NIGHT']) {
+        expect(
+          find.byKey(Key('medication-period-$period')),
+          findsOneWidget,
+          reason: '$period chip missing',
+        );
+      }
+    });
+
     testWidgets('selecting EVENING chip sends EVENING to API', (tester) async {
       final stub = _StubClient();
       await _bootstrap(tester, stub);

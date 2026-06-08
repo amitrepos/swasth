@@ -5,6 +5,8 @@ import 'package:swasth_app/utils/medication_period_detector.dart';
 void main() {
   group('detectMedicationIntakePeriod', () {
     test('boundary hours map to correct period', () {
+      expect(detectMedicationIntakePeriod(DateTime(2024, 1, 1, 0)), 'NIGHT');
+      expect(detectMedicationIntakePeriod(DateTime(2024, 1, 1, 2)), 'NIGHT');
       expect(detectMedicationIntakePeriod(DateTime(2024, 1, 1, 4)), 'NIGHT');
       expect(detectMedicationIntakePeriod(DateTime(2024, 1, 1, 5)), 'MORNING');
       expect(

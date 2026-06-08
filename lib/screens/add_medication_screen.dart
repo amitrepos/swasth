@@ -335,7 +335,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                       Text(
                         l10n.medicationsFormPeriodLabel,
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary,
                         ),
@@ -345,30 +345,38 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                         key: const Key('medication-period-chips'),
                         spacing: 8,
                         runSpacing: 8,
-                        children: medicationIntakePeriods.map((period) {
+                        children: medicationIntakePeriods.map<Widget>((period) {
                           final selected = _intakePeriod == period;
-                          return ChoiceChip(
-                            key: Key('medication-period-$period'),
-                            avatar: selected
-                                ? const Icon(
-                                    Icons.check,
-                                    size: 16,
-                                    color: AppColors.primary,
-                                  )
-                                : null,
-                            label: Text(medicationPeriodLabel(l10n, period)),
-                            selected: selected,
-                            onSelected: _saving
-                                ? null
-                                : (_) => setState(() => _intakePeriod = period),
-                            selectedColor: AppColors.bgPill,
-                            labelStyle: TextStyle(
-                              color: selected
-                                  ? AppColors.primary
-                                  : AppColors.textPrimary,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                          return SizedBox(
+                            height: 48,
+                            child: ChoiceChip(
+                              key: Key('medication-period-$period'),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              avatar: selected
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    )
+                                  : null,
+                              label: Text(medicationPeriodLabel(l10n, period)),
+                              selected: selected,
+                              onSelected: _saving
+                                  ? null
+                                  : (_) =>
+                                        setState(() => _intakePeriod = period),
+                              selectedColor: AppColors.bgPill,
+                              labelStyle: TextStyle(
+                                color: selected
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
                             ),
                           );
                         }).toList(),
@@ -393,7 +401,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                             ),
                           ),
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 13,
                             color: AppColors.textSecondary,
                           ),
                         ),

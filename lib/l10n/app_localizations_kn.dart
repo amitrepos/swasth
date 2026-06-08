@@ -2431,7 +2431,7 @@ class AppLocalizationsKn extends AppLocalizations {
   String get medicationsColDateTime => 'ದಿನಾಂಕ & ಸಮಯ';
 
   @override
-  String get medicationsColDateWhen => 'ದಿನಾಂಕ ಮತ್ತು ಸಮಯ';
+  String get medicationsColDateWhen => 'ದಿನಾಂಕ & ಯಾವಾಗ';
 
   @override
   String get medicationsColMedicine => 'ಔಷಧಿ';

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index, Enum, JSON
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Date, Boolean, ForeignKey, UniqueConstraint, Index, Enum, JSON, CheckConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from database import Base
@@ -610,14 +610,18 @@ class Medication(Base):
     dose_enc = Column(Text, nullable=True)
     frequency_enc = Column(Text, nullable=True)
     notes_enc = Column(Text, nullable=True)
-    # MORNING | AFTERNOON | EVENING | NIGHT — not PHI; plain enum for doctor UX.
-    intake_period = Column(String, nullable=False, server_default="MORNING")
+    # MORNING | AFTERNOON | EVENING | NIGHT — low-entropy enum; plaintext for pilot UX.
+    intake_period = Column(String, nullable=False)
     taken_at = Column(DateTime(timezone=True), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
         Index("ix_medications_profile_time", "profile_id", "taken_at"),
+        CheckConstraint(
+            "intake_period IN ('MORNING', 'AFTERNOON', 'EVENING', 'NIGHT')",
+            name="ck_medications_intake_period",
+        ),
     )
 
     @property
