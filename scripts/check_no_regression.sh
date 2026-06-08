@@ -43,7 +43,7 @@ _pytest_summary() {                          # $1 = pytest marker expr, $2 = out
     return
   fi
   local line p f s
-  line=$(grep -E "[0-9]+ (passed|failed|error)" "$log" | tail -1)
+  line=$(grep -E "[0-9]+ (passed|failed|error)" "$log" | tail -1 || true)
   p=$(printf '%s' "$line" | grep -oE "[0-9]+ passed"  | grep -oE "[0-9]+" || true)
   f=$(printf '%s' "$line" | grep -oE "[0-9]+ (failed|error)" | grep -oE "[0-9]+" | paste -sd+ - | bc 2>/dev/null || true)
   s=$(printf '%s' "$line" | grep -oE "[0-9]+ skipped" | grep -oE "[0-9]+" || true)

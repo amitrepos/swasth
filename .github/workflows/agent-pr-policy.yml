@@ -87,13 +87,16 @@ jobs:
           fi
           echo '- `.github/workflows/agent-pr-policy.yml`' >> .agent-tmp/ticket.md
 
-      - name: Re-run regression check
+      - name: Re-run regression check (churn only)
         run: |
-          if [ -f scripts/check_no_regression.sh ]; then
-            bash scripts/check_no_regression.sh || {
-              echo "::error::Gate C-regress failed in CI re-check."
+          # Full unit/integration baseline needs Flutter + backend deps (see
+          # jira-agent-worker.yml). PR CI already runs pytest + flutter test;
+          # this job re-checks scope/churn so local hook bypasses are caught.
+          if [ -f scripts/check_no_regression.py ]; then
+            python3 scripts/check_no_regression.py churn || {
+              echo "::error::Gate C-regress churn check failed in CI re-check."
               exit 1
             }
           else
-            echo "scripts/check_no_regression.sh not present on this branch — skipping."
+            echo "scripts/check_no_regression.py not present on this branch — skipping."
           fi
