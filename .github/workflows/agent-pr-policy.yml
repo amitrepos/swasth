@@ -59,6 +59,10 @@ jobs:
             # promoting to error is a runbook step after first ticket lands.
           fi
 
+      - name: Install deps for JIRA fetch
+        if: steps.extract.outputs.ticket != ''
+        run: python -m pip install --upgrade pip requests
+
       - name: Fetch ticket brief for churn gate
         if: steps.extract.outputs.ticket != ''
         env:
