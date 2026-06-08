@@ -129,6 +129,7 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:8080",
         "https://app.swasth.health",
+        "https://staging-app.swasth.health",
         "https://swasth.health",
         "https://www.swasth.health",
     ]
