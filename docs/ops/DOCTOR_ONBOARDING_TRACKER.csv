@@ -1,0 +1,8 @@
+date_contacted,doctor_name,specialty,city,owner,status,nmc_submitted_YN,verified_date,patients_linked,last_touch,next_action,next_action_date,notes
+2026-05-18,Dr Kavitha,Endocrinologist,—,Amit,verified,Y,2026-05-18,0,2026-05-18,Activate — link first patient within 14d,2026-06-01,"EXAMPLE — verified but 0 patients = not activated yet"
+2026-05-28,Dr Arun,General Physician,—,Amit,verified,Y,2026-05-28,0,2026-05-28,Activate — send onboarding patient,2026-06-05,EXAMPLE
+2026-06-06,Dr (Google),—,—,Amit,registered,N,,0,2026-06-06,Chase NMC number; verify same day,2026-06-09,"EXAMPLE — registered, pending verification"
+,,,,,lead,,,,,,,
+,,,,,lead,,,,,,,
+# status: lead -> registered -> verified -> activated (>=1 patient linked),,,,,,,,,,,,
+# Mirror Admin > Doctors (is_verified, time_in_queue_hours, patient_count). Verify within 24h SLA.,,,,,,,,,,,,

@@ -1,0 +1,6 @@
+week_start,owner,new_patients,new_doctors,activation_pct,median_hrs_to_first_reading,weekly_adherence_pct,active_users,dormant_count,dormant_pct,d30_retention_pct,dau,mau,stickiness_pct,doctors_pending_verify,doctor_verify_sla_breaches,doctor_activation_pct,critical_unanswered,notes_actions
+TARGET,,15,2,60,48,50,,,30,30,,,20,0,0,50,0,"Targets row — keep at top; colour each weekly cell red/green vs this."
+2026-06-08,Amit,5,1,40,72,35,28,9,32,25,4,30,13,2,1,40,0,"EXAMPLE row — replace with real Monday pull. Reds: activation, adherence, dormant, retention, stickiness, doctors_pending. Actions: WhatsApp 3 zero-reading signups; verify 2 doctors today; work Reading Reminders top-5."
+,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,
