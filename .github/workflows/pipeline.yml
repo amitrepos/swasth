@@ -4,14 +4,18 @@ name: CI/CD Pipeline
 #
 # Flow:
 #   unit-tests
-#     ├── deploy-staging-backend  (parallel)
-#     └── deploy-staging-web      (parallel)
-#           └── playwright-e2e    (GATE — must pass before prod)
-#                 ├── deploy-prod-backend  (parallel)
-#                 └── deploy-prod-web      (parallel)
-#                       └── smoke-prod
+#     ├── deploy-staging-backend  (parallel, AUTO)
+#     └── deploy-staging-web      (parallel, AUTO)
+#           └── playwright-e2e    (GATE 1 — auto, must pass before prod)
+#                 └── ⏸ MANUAL APPROVAL  (GATE 2 — GitHub `production` environment)
+#                       ├── deploy-prod-backend  (parallel)
+#                       └── deploy-prod-web      (parallel)
+#                             └── smoke-prod
 #
-# Prod deploy is BLOCKED until Playwright E2E passes against staging.
+# Staging is fully automatic. Prod is BLOCKED until BOTH:
+#   (1) Playwright E2E passes against staging, AND
+#   (2) a required reviewer clicks "Approve" on the `production` environment
+#       (Settings → Environments → production → Required reviewers).
 # On push to master AND manually triggerable (for rollbacks / re-runs).
 
 on:
@@ -187,6 +191,7 @@ jobs:
   deploy-prod-backend:
     name: Deploy Backend → Production
     needs: [playwright-e2e]
+    environment: production      # ⏸ pauses for manual approval (required reviewer)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -221,6 +226,7 @@ jobs:
   deploy-prod-web:
     name: Build & Deploy Flutter Web → Production
     needs: [playwright-e2e]
+    environment: production      # ⏸ pauses for manual approval (required reviewer)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
