@@ -48,7 +48,10 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          # Three-dot: diff from the merge-base, so commits the base branch gained
+          # after this PR forked don't leak in as phantom changes (matches GitHub's
+          # own "Files changed" view). Two-dot would pollute the set on a stale branch.
+          CHANGED=$(git diff --name-only "$BASE_SHA"..."$HEAD_SHA")
           echo "Changed files:"; echo "$CHANGED"
           # Exclude Daniel (handled by daniel-pr-review.yml) from this fan-out.
           EXPERTS=$(printf '%s\n' "$CHANGED" | python3 scripts/compute_required_reviewers.py - \
@@ -104,7 +107,8 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           mkdir -p .agent-tmp
-          git diff "$BASE_SHA" "$HEAD_SHA" > .agent-tmp/pr.diff
+          # Three-dot (merge-base) — see the reviewer-set step above for rationale.
+          git diff "$BASE_SHA"..."$HEAD_SHA" > .agent-tmp/pr.diff
           wc -l .agent-tmp/pr.diff
 
       - name: ${{ matrix.expert }} reviews the diff
