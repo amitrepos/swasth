@@ -57,6 +57,21 @@ void main() {
       final result = takenAtFromDateAndPeriod(DateTime(2024, 1, 1), 'MORNING');
       expect(result.isUtc, isTrue);
     });
+
+    test('NIGHT anchor on today clamps to now when anchor is ahead', () {
+      final now = DateTime(2024, 6, 15, 20, 0);
+      final takenAt = takenAtFromDateAndPeriod(
+        DateTime(2024, 6, 15),
+        'NIGHT',
+        now,
+      );
+      final local = takenAt.toLocal();
+      expect(local.year, 2024);
+      expect(local.month, 6);
+      expect(local.day, 15);
+      expect(local.hour, 20);
+      expect(local.minute, 0);
+    });
   });
 
   group('medicationPeriodLabel', () {

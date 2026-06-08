@@ -36,11 +36,26 @@ String detectMedicationIntakePeriod([DateTime? now]) {
 }
 
 /// Combines a calendar date (local) with a period anchor hour → UTC for API.
-DateTime takenAtFromDateAndPeriod(DateTime date, String period) {
+///
+/// When the selected date is today and the anchor hour is still ahead of
+/// [now], clamps to [now] so the backend future-date validator (5 min skew)
+/// does not reject evening NIGHT logs before 22:00.
+DateTime takenAtFromDateAndPeriod(
+  DateTime date,
+  String period, [
+  DateTime? now,
+]) {
   final hour = medicationPeriodAnchorHours[period] ?? 8;
-  final local = DateTime(date.year, date.month, date.day, hour);
+  var local = DateTime(date.year, date.month, date.day, hour);
+  final reference = now ?? DateTime.now();
+  if (_sameCalendarDay(local, reference) && local.isAfter(reference)) {
+    local = reference;
+  }
   return local.toUtc();
 }
+
+bool _sameCalendarDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
 
 /// Local anchor datetime for display (approximate recorded time hint).
 DateTime localAnchorDateTime(DateTime date, String period) {

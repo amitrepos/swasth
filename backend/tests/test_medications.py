@@ -160,6 +160,39 @@ def test_create_medication_allows_small_clock_skew(client, db, test_user, auth_h
     assert r.status_code == 201, r.text
 
 
+def test_create_medication_night_period_same_day_clamped_not_rejected(
+    client, db, test_user, auth_headers
+):
+    """Flutter clamps same-day future anchors to now — backend must accept NIGHT."""
+    pid = _profile_id_for(test_user, db)
+    now = datetime.now(timezone.utc)
+    r = _post_medication(
+        client,
+        auth_headers,
+        pid,
+        intake_period="NIGHT",
+        taken_at=now.isoformat(),
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["intake_period"] == "NIGHT"
+
+
+def test_create_medication_rejects_night_anchor_beyond_skew_window(
+    client, db, test_user, auth_headers
+):
+    """Unclamped 22:00 anchor sent 2h ahead of now exceeds the 5-minute skew window."""
+    pid = _profile_id_for(test_user, db)
+    future = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+    r = _post_medication(
+        client,
+        auth_headers,
+        pid,
+        intake_period="NIGHT",
+        taken_at=future,
+    )
+    assert r.status_code == 422
+
+
 def test_create_medication_strips_whitespace(client, db, test_user, auth_headers):
     pid = _profile_id_for(test_user, db)
     r = _post_medication(client, auth_headers, pid, name="  Aspirin  ", dose="  ")

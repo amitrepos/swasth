@@ -159,6 +159,13 @@ void main() {
       expect(find.byKey(const Key('medications-add-fab')), findsOneWidget);
     });
 
+    testWidgets('medications list cell shows period label', (tester) async {
+      await _bootstrap(tester, _MedicationsListStub());
+
+      expect(find.textContaining('Morning'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Evening'), findsAtLeastNWidgets(1));
+    });
+
     testWidgets('delete removes row after confirmation', (tester) async {
       final stub = _MedicationsListStub();
       await _bootstrap(tester, stub);
