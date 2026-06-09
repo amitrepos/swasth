@@ -92,7 +92,7 @@ class RegionService {
       // a non-India IP always returns write_allowed: false, hiding the + icon
       // even for explicitly allowed users.
       final token = await StorageService().getToken();
-      final authHeaders = token != null
+      final authHeaders = token != null && token.isNotEmpty
           ? {'Authorization': 'Bearer $token'}
           : <String, String>{};
       final body = await ApiClient.sendJsonObject(

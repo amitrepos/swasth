@@ -205,7 +205,7 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
           // fire. The unauthenticated pre-login check can't see the token,
           // so a VPN user on the allowlist would stay stuck in read-only mode
           // without this refresh.
-          RegionService.refresh();
+          await RegionService.refresh();
 
           if (_rememberMe) {
             await StorageService().saveCredentials(
