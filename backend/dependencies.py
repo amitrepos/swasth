@@ -249,6 +249,16 @@ def geofence_startup_check() -> bool:
 
     if _get_geoip_reader() is not None:
         logger.info("geofence: GeoLite2 mmdb loaded — India write gate ACTIVE.")
+        # Log allowlist state so operators can confirm the emails were loaded.
+        raw = settings.GEOFENCE_EMAIL_ALLOWLIST or ""
+        emails = [e.strip() for e in raw.split(",") if e.strip()]
+        if emails:
+            logger.info(
+                f"geofence: ALLOWLIST active — {len(emails)} email(s) will bypass IP check: "
+                + ", ".join(emails)
+            )
+        else:
+            logger.info("geofence: ALLOWLIST empty — no per-email bypasses configured.")
         return True
 
     is_prod = settings.REQUIRE_HTTPS
