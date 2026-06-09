@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -28,7 +29,46 @@ class _MultipartFailClient extends http.BaseClient {
   }
 }
 
-Future<void> _bootstrap(WidgetTester tester, http.Client client) async {
+class _SlowMultipartClient extends http.BaseClient {
+  final _gate = Completer<void>();
+
+  void completeUpload() {
+    if (!_gate.isCompleted) {
+      _gate.complete();
+    }
+  }
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.method == 'POST' &&
+        request.url.path.endsWith('/api/medications')) {
+      await _gate.future;
+      final now = DateTime.now().toUtc().toIso8601String();
+      final body = jsonEncode({
+        'id': 1,
+        'profile_id': 1,
+        'logged_by': 1,
+        'name': 'Metformin',
+        'intake_period': 'MORNING',
+        'taken_at': now,
+        'has_photo': true,
+        'created_at': now,
+      });
+      return http.StreamedResponse(
+        Stream.value(utf8.encode(body)),
+        201,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    return http.StreamedResponse(Stream.value(utf8.encode('{}')), 404);
+  }
+}
+
+Future<void> _bootstrap(
+  WidgetTester tester,
+  http.Client client, {
+  PlatformFile? initialPhoto,
+}) async {
   StorageService.useInMemoryStorage();
   await StorageService().saveToken('test-token');
   ApiClient.httpClientOverride = client;
@@ -43,19 +83,18 @@ Future<void> _bootstrap(WidgetTester tester, http.Client client) async {
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
       ),
       home: Scaffold(
-        body: AddMedicationSheet(
-          profileId: 1,
-          initialPhoto: PlatformFile(
-            name: 'pack.jpg',
-            size: 6,
-            bytes: Uint8List.fromList([0xff, 0xd8, 0xff, 0x01, 0x02, 0x03]),
-          ),
-        ),
+        body: AddMedicationSheet(profileId: 1, initialPhoto: initialPhoto),
       ),
     ),
   );
   await pumpN(tester, frames: 5);
 }
+
+PlatformFile _samplePhoto() => PlatformFile(
+  name: 'pack.jpg',
+  size: 6,
+  bytes: Uint8List.fromList([0xff, 0xd8, 0xff, 0x01, 0x02, 0x03]),
+);
 
 void main() {
   tearDown(() {
@@ -66,7 +105,11 @@ void main() {
   testWidgets('photo upload failure re-enables save and shows snackbar', (
     tester,
   ) async {
-    await _bootstrap(tester, _MultipartFailClient());
+    await _bootstrap(
+      tester,
+      _MultipartFailClient(),
+      initialPhoto: _samplePhoto(),
+    );
 
     await tester.enterText(
       find.byKey(const Key('medication-name-field')),
@@ -81,5 +124,44 @@ void main() {
     expect(saveButton.onPressed, isNotNull);
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.textContaining('Photo upload failed'), findsOneWidget);
+  });
+
+  testWidgets('shows upload progress while photo save is in flight', (
+    tester,
+  ) async {
+    final client = _SlowMultipartClient();
+    await _bootstrap(tester, client, initialPhoto: _samplePhoto());
+
+    await tester.enterText(
+      find.byKey(const Key('medication-name-field')),
+      'Metformin',
+    );
+    await tester.tap(find.byKey(const Key('medication-save-btn')));
+    await tester.pump();
+
+    expect(
+      find.byKey(const Key('medication-photo-upload-progress')),
+      findsOneWidget,
+    );
+
+    client.completeUpload();
+    await pumpN(tester, frames: 10);
+  });
+
+  testWidgets('remove photo clears thumbnail and reverts label', (
+    tester,
+  ) async {
+    await _bootstrap(
+      tester,
+      _MultipartFailClient(),
+      initialPhoto: _samplePhoto(),
+    );
+
+    expect(find.text('Remove photo'), findsOneWidget);
+    await tester.tap(find.text('Remove photo'));
+    await tester.pump();
+
+    expect(find.text('Add photo'), findsOneWidget);
+    expect(find.text('Remove photo'), findsNothing);
   });
 }

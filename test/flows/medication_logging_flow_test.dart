@@ -7,6 +7,7 @@
 // Backend route correctness lives in backend/tests/test_medications.py.
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;

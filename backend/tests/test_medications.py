@@ -27,9 +27,10 @@ def _abs_photo_path(relative_path: str) -> Path:
 
 @pytest.fixture(autouse=True)
 def isolated_medication_photo_uploads(tmp_path, monkeypatch):
-  """Keep encrypted photo files off the shared backend/uploads tree in CI."""
-  upload_root = tmp_path / "medication_photos"
-  monkeypatch.setattr("medication_photo_storage._UPLOAD_ROOT", upload_root)
+    """Keep encrypted photo files off the shared backend/uploads tree in CI."""
+    upload_root = tmp_path / "medication_photos"
+    monkeypatch.setattr("medication_photo_storage._UPLOAD_ROOT", upload_root)
+    yield
 
 
 # ---------------------------------------------------------------------------
@@ -459,6 +460,41 @@ def test_get_medication_photo_500_on_corrupt_file(client, db, test_user, auth_he
 
     photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
     assert photo.status_code == 500
+
+
+def test_create_medication_photo_cleaned_up_on_commit_failure(
+    client, db, test_user, auth_headers, monkeypatch
+):
+    pid = _profile_id_for(test_user, db)
+
+    def boom():
+        raise Exception("simulated DB error")
+
+    monkeypatch.setattr(db, "commit", boom)
+
+    with pytest.raises(Exception, match="simulated DB error"):
+        _post_medication_with_photo(client, auth_headers, pid)
+
+    from medication_photo_storage import _UPLOAD_ROOT
+
+    profile_dir = _UPLOAD_ROOT / str(pid)
+    if profile_dir.exists():
+        assert list(profile_dir.glob("*.enc")) == []
+
+
+def test_get_medication_photo_404_when_has_photo_true_but_path_none(
+    client, db, test_user, auth_headers
+):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication(client, auth_headers, pid)
+    med_id = created.json()["id"]
+    row = db.query(models.Medication).filter_by(id=med_id).first()
+    row.has_photo = True
+    row.photo_path = None
+    db.commit()
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
+    assert photo.status_code == 404
 
 
 def test_create_medication_with_photo_denies_unrelated_profile(

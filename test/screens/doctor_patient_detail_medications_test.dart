@@ -116,4 +116,58 @@ void main() {
     expect(find.textContaining('Morning'), findsAtLeastNWidgets(1));
     expect(find.textContaining('Evening'), findsAtLeastNWidgets(1));
   });
+
+  testWidgets('medication rows render when photo fetch returns 403', (
+    tester,
+  ) async {
+    ApiClient.httpClientOverride = MockClient((request) async {
+      final path = request.url.path;
+      if (path.endsWith('/api/doctor/patients/$_profileId/profile')) {
+        return http.Response(
+          jsonEncode({'name': 'Sunita Devi', 'age': 55}),
+          200,
+        );
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/summary')) {
+        return http.Response(jsonEncode({'latest_bp': null}), 200);
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/readings')) {
+        return http.Response(jsonEncode([]), 200);
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/meals')) {
+        return http.Response(jsonEncode([]), 200);
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/medications')) {
+        return http.Response(jsonEncode(_medications), 200);
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/notes')) {
+        return http.Response(jsonEncode([]), 200);
+      }
+      if (path.endsWith('/api/medications/1/photo')) {
+        return http.Response('{"detail":"forbidden"}', 403);
+      }
+      return http.Response('{"detail":"not found"}', 404);
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const DoctorPatientDetailScreen(
+          profileId: _profileId,
+          profileName: 'Sunita Devi',
+        ),
+      ),
+    );
+    await pumpN(tester, times: 12);
+
+    expect(find.byKey(const Key('doctor-medications-section')), findsOneWidget);
+    expect(find.textContaining('Metformin'), findsOneWidget);
+  });
 }
