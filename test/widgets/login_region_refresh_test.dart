@@ -13,6 +13,7 @@ import 'package:swasth_app/services/region_service.dart';
 
 import '../helpers/mock_http.dart';
 import '../helpers/test_app.dart';
+import '../helpers/test_constants.dart';
 
 void main() {
   tearDown(() => RegionService.setCacheForTest(null));
@@ -91,7 +92,7 @@ void main() {
           .value;
       expect(
         authValue,
-        equals('Bearer mock_token_123'),
+        equals('Bearer ${TestConstants.mockToken}'),
         reason: 'region re-fetch must include saved auth token',
       );
 
