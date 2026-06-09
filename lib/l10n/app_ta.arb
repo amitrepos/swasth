@@ -1380,6 +1380,12 @@
   "medicationsPhotoUploadFailed": "புகைப்படம் அனுப்ப முடியவில்லை. உங்கள் மருந்து சேமிக்கப்படவில்லை — மீண்டும் முயற்சிக்கவும்.",
   "medicationsPhotoUploadNetworkFailed": "இணையம் இல்லை — புகைப்படம் அனுப்பப்படவில்லை. உங்கள் மருந்து சேமிக்கப்படவில்லை. இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
   "medicationsPhotoCannotChangeHint": "அடுத்த முறை இந்த மருந்தை பதிவு செய்யும்போது புகைப்படம் சேர்க்கலாம்.",
+  "doctorMedicationPhotoViewLabel": "{name} பேக்கேஜிங் புகைப்படத்தைப் பார்க்கவும்",
+  "@doctorMedicationPhotoViewLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "medicationsPhotoClose": "மூடு",
   "medicationsPhotoCannotChangeAfterSave": "சேமித்த பிறகு புகைப்படத்தை மாற்ற முடியாது.",
   "medicationsFormPeriodLabel": "எப்போது எடுத்தீர்கள்",

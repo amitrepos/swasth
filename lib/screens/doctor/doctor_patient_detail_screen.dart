@@ -104,7 +104,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
   }
 
   Future<void> _loadMedicationThumbnails(String token) async {
-    const batchSize = 3;
+    const batchSize = 3; // Cap parallel fetches on slow clinic Wi-Fi / JioFi.
     final medsWithPhoto = _medications
         .where((m) => m['has_photo'] == true)
         .toList();
@@ -697,7 +697,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
             hasPhoto: hasPhoto,
             bytes: medId == null ? null : _medicationPhotos[medId],
             loading: medId != null && _loadingMedicationPhotos.contains(medId),
-            size: 48,
+            size: 60,
             onTap: hasPhoto && medId != null && _medicationPhotos[medId] != null
                 ? () => _showFullScreenPhoto(context, _medicationPhotos[medId]!)
                 : null,

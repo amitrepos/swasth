@@ -1566,7 +1566,7 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String doctorMedicationPhotoViewLabel(String name) {
-    return 'View $name packaging photo';
+    return '$name ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋ ನೋಡಿ';
   }
 
   @override

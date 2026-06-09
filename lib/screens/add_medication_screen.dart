@@ -381,7 +381,10 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                                   : l10n.medicationsChangePhoto,
                             ),
                             const SizedBox(width: 10),
-                            TextButton(
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(48, 48),
+                              ),
                               onPressed: _saving ? null : _pickPhoto,
                               child: Text(
                                 _selectedPhoto == null
@@ -391,6 +394,10 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                             ),
                             if (_selectedPhoto != null)
                               TextButton(
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  foregroundColor: AppColors.danger,
+                                ),
                                 onPressed: _saving
                                     ? null
                                     : () =>
@@ -402,21 +409,51 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                         const SizedBox(height: 12),
                       ],
                       if (_isEditMode) ...[
-                        Text(
-                          l10n.medicationsPhotoCannotChangeAfterSave,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            l10n.medicationsPhotoCannotChangeHint,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.amber.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.amber.withValues(alpha: 0.35),
                             ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.info_outline,
+                                size: 20,
+                                color: AppColors.warning,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.medicationsPhotoCannotChangeAfterSave,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        l10n.medicationsPhotoCannotChangeHint,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 12),

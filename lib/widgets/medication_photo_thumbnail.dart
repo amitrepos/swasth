@@ -66,7 +66,7 @@ class MedicationPhotoThumbnail extends StatelessWidget {
     return Container(
       color: AppColors.bgGrouped,
       child: const Icon(
-        Icons.add_a_photo_outlined,
+        Icons.camera_alt_outlined,
         color: AppColors.textSecondary,
         size: 18,
       ),

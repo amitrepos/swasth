@@ -47,7 +47,7 @@ void main() {
         home: Scaffold(body: MedicationPhotoThumbnail(hasPhoto: false)),
       ),
     );
-    expect(find.byIcon(Icons.add_a_photo_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);
   });
 
   testWidgets('exposes semantics label when provided', (tester) async {

@@ -1354,6 +1354,12 @@
   "medicationsPhotoUploadFailed": "ಫೋಟೋ ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ. ನಿಮ್ಮ ಔಷಧಿ ಉಳಿಸಲಾಗಿಲ್ಲ — ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "medicationsPhotoUploadNetworkFailed": "ಇಂಟರ್ನೆಟ್ ಇಲ್ಲ — ಫೋಟೋ ಕಳುಹಿಸಲಾಗಿಲ್ಲ. ನಿಮ್ಮ ಔಷಧಿ ಉಳಿಸಲಾಗಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "medicationsPhotoCannotChangeHint": "ಮುಂದಿನ ಬಾರಿ ಈ ಔಷಧಿ ದಾಖಲಿಸುವಾಗ ಫೋಟೋ ಸೇರಿಸಬಹುದು.",
+  "doctorMedicationPhotoViewLabel": "{name} ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋ ನೋಡಿ",
+  "@doctorMedicationPhotoViewLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "medicationsPhotoClose": "ಮುಚ್ಚಿ",
   "medicationsPhotoCannotChangeAfterSave": "ಉಳಿಸಿದ ನಂತರ ಫೋಟೋ ಬದಲಾಯಿಸಲಾಗುವುದಿಲ್ಲ.",
   "medicationsFormPeriodLabel": "ಯಾವಾಗ ತೆಗೆದುಕೊಂಡಿರಿ",

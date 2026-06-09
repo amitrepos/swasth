@@ -1556,7 +1556,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String doctorMedicationPhotoViewLabel(String name) {
-    return 'View $name packaging photo';
+    return '$name ప్యాకేజింగ్ ఫోటో చూడండి';
   }
 
   @override

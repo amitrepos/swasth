@@ -1380,6 +1380,12 @@
   "medicationsPhotoUploadFailed": "ఫోటో పంపలేకపోయాం. మీ మందు సేవ్ కాలేదు — దయచేసి మళ్లీ ప్రయత్నించండి.",
   "medicationsPhotoUploadNetworkFailed": "ఇంటర్నెట్ లేదు — ఫోటో పంపలేదు. మీ మందు సేవ్ కాలేదు. కనెక్షన్ చెక్ చేసి మళ్లీ ప్రయత్నించండి.",
   "medicationsPhotoCannotChangeHint": "తదుపరి సారి ఈ మందు లాగ్ చేసేటప్పుడు ఫోటో జోడించవచ్చు.",
+  "doctorMedicationPhotoViewLabel": "{name} ప్యాకేజింగ్ ఫోటో చూడండి",
+  "@doctorMedicationPhotoViewLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "medicationsPhotoClose": "మూసివేయి",
   "medicationsPhotoCannotChangeAfterSave": "సేవ్ చేసిన తర్వాత ఫోటో మార్చలేరు.",
   "medicationsFormPeriodLabel": "ఎప్పుడు తీసుకున్నారు",
