@@ -1376,6 +1376,7 @@
   "medicationsAddPhoto": "ఫోటో జోడించండి",
   "medicationsChangePhoto": "ఫోటో మార్చండి",
   "medicationsRemovePhoto": "ఫోటో తీసివేయండి",
+  "medicationsUploadingPhoto": "ఫోటో అప్‌లోడ్ అవుతోంది…",
   "medicationsFormPeriodLabel": "ఎప్పుడు తీసుకున్నారు",
   "medicationsFormDateLabel": "తేదీ",
   "medicationsPeriodMorning": "ఉదయం",

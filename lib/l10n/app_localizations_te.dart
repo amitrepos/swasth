@@ -2514,6 +2514,9 @@ class AppLocalizationsTe extends AppLocalizations {
   String get medicationsRemovePhoto => 'ఫోటో తీసివేయండి';
 
   @override
+  String get medicationsUploadingPhoto => 'ఫోటో అప్‌లోడ్ అవుతోంది…';
+
+  @override
   String get medicationsPeriodMorning => 'ఉదయం';
 
   @override

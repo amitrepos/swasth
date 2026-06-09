@@ -4657,6 +4657,12 @@ abstract class AppLocalizations {
   /// **'Remove photo'**
   String get medicationsRemovePhoto;
 
+  /// No description provided for @medicationsUploadingPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo…'**
+  String get medicationsUploadingPhoto;
+
   /// No description provided for @medicationsPeriodMorning.
   ///
   /// In en, this message translates to:

@@ -10,6 +10,7 @@ class MedicationPhotoThumbnail extends StatelessWidget {
   final bool loading;
   final double size;
   final VoidCallback? onTap;
+  final String? semanticsLabel;
 
   const MedicationPhotoThumbnail({
     super.key,
@@ -18,6 +19,7 @@ class MedicationPhotoThumbnail extends StatelessWidget {
     this.loading = false,
     this.size = 52,
     this.onTap,
+    this.semanticsLabel,
   });
 
   @override
@@ -26,11 +28,14 @@ class MedicationPhotoThumbnail extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(width: size, height: size, child: _buildInner()),
     );
-    if (onTap == null) return child;
+    final labeled = semanticsLabel == null
+        ? child
+        : Semantics(label: semanticsLabel, button: onTap != null, child: child);
+    if (onTap == null) return labeled;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
-      child: child,
+      child: labeled,
     );
   }
 

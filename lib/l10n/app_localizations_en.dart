@@ -2496,6 +2496,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get medicationsRemovePhoto => 'Remove photo';
 
   @override
+  String get medicationsUploadingPhoto => 'Uploading photo…';
+
+  @override
   String get medicationsPeriodMorning => 'Morning';
 
   @override

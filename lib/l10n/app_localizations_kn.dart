@@ -2526,6 +2526,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get medicationsRemovePhoto => 'ಫೋಟೋ ತೆಗೆದುಹಾಕಿ';
 
   @override
+  String get medicationsUploadingPhoto => 'ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ…';
+
+  @override
   String get medicationsPeriodMorning => 'ಬೆಳಿಗ್ಗೆ';
 
   @override

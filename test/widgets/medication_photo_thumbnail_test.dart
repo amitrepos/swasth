@@ -49,4 +49,18 @@ void main() {
     );
     expect(find.byIcon(Icons.add_a_photo_outlined), findsOneWidget);
   });
+
+  testWidgets('exposes semantics label when provided', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: MedicationPhotoThumbnail(
+            hasPhoto: false,
+            semanticsLabel: 'Add medicine package photo',
+          ),
+        ),
+      ),
+    );
+    expect(find.bySemanticsLabel('Add medicine package photo'), findsOneWidget);
+  });
 }

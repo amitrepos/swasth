@@ -970,6 +970,7 @@
   "medicationsAddPhoto": "फोटो जोड़ें",
   "medicationsChangePhoto": "फोटो बदलें",
   "medicationsRemovePhoto": "फोटो हटाएँ",
+  "medicationsUploadingPhoto": "फोटो अपलोड हो रही है…",
   "medicationsPeriodMorning": "सुबह",
   "medicationsPeriodAfternoon": "दोपहर",
   "medicationsPeriodEvening": "शाम",

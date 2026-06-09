@@ -2500,6 +2500,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get medicationsRemovePhoto => 'फोटो हटाएँ';
 
   @override
+  String get medicationsUploadingPhoto => 'फोटो अपलोड हो रही है…';
+
+  @override
   String get medicationsPeriodMorning => 'सुबह';
 
   @override

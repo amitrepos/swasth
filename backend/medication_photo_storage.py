@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from config import settings
 
 _NONCE_SIZE = 12
+_MAX_PHOTOS_PER_PROFILE = 50
 _UPLOAD_ROOT = Path(__file__).resolve().parent / "uploads" / "medication_photos"
 
 
@@ -60,6 +61,11 @@ def save_medication_photo(
     """Encrypt and persist a medication photo; return relative path."""
     profile_dir = _UPLOAD_ROOT / str(profile_id)
     profile_dir.mkdir(parents=True, exist_ok=True)
+    existing = list(profile_dir.glob("*.enc"))
+    if len(existing) >= _MAX_PHOTOS_PER_PROFILE:
+        raise ValueError(
+            f"Profile {profile_id} exceeds medication photo limit ({_MAX_PHOTOS_PER_PROFILE})"
+        )
 
     file_name = f"{medication_id}_{base64.urlsafe_b64encode(os.urandom(12)).decode('ascii').rstrip('=')}.enc"
     absolute_path = profile_dir / file_name
@@ -74,7 +80,7 @@ def save_medication_photo(
 def _resolve_upload_path(relative_path: str) -> Path:
     absolute_path = (Path(__file__).resolve().parent / relative_path).resolve()
     upload_root = _UPLOAD_ROOT.resolve()
-    if not str(absolute_path).startswith(str(upload_root)):
+    if absolute_path != upload_root and upload_root not in absolute_path.parents:
         raise ValueError("Invalid medication photo path")
     return absolute_path
 

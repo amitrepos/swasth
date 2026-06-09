@@ -1350,6 +1350,7 @@
   "medicationsAddPhoto": "ಫೋಟೋ ಸೇರಿಸಿ",
   "medicationsChangePhoto": "ಫೋಟೋ ಬದಲಾಯಿಸಿ",
   "medicationsRemovePhoto": "ಫೋಟೋ ತೆಗೆದುಹಾಕಿ",
+  "medicationsUploadingPhoto": "ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
   "medicationsFormPeriodLabel": "ಯಾವಾಗ ತೆಗೆದುಕೊಂಡಿರಿ",
   "medicationsFormDateLabel": "ದಿನಾಂಕ",
   "medicationsPeriodMorning": "ಬೆಳಿಗ್ಗೆ",

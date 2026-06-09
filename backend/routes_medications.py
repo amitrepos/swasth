@@ -52,6 +52,20 @@ def _assert_photo_read_access(med: models.Medication, user: models.User, db: Ses
     get_profile_access_or_403(med.profile_id, user, db)
 
 
+_IMAGE_MAGIC = {
+    "image/jpeg": (b"\xff\xd8\xff",),
+    "image/png": (b"\x89PNG\r\n\x1a\n",),
+    "image/webp": (b"RIFF",),
+}
+
+
+def _content_matches_mime(content: bytes, mime: str) -> bool:
+    prefixes = _IMAGE_MAGIC.get(mime)
+    if not prefixes:
+        return False
+    return any(content.startswith(prefix) for prefix in prefixes)
+
+
 async def _read_valid_photo_or_422(photo: UploadFile) -> tuple[bytes, str]:
     mime = photo.content_type or ""
     if mime not in settings.ALLOWED_IMAGE_MIME_TYPES:
@@ -59,12 +73,26 @@ async def _read_valid_photo_or_422(photo: UploadFile) -> tuple[bytes, str]:
             status_code=422,
             detail=f"Unsupported image type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}",
         )
-    content = await photo.read()
-    if not content:
-        raise HTTPException(status_code=422, detail="Medication photo is empty")
-    if len(content) > settings.MAX_UPLOAD_SIZE_BYTES:
+    if photo.size is not None and photo.size > settings.MAX_UPLOAD_SIZE_BYTES:
         max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
         raise HTTPException(status_code=422, detail=f"Medication photo exceeds {max_mb} MB")
+
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await photo.read(64 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > settings.MAX_UPLOAD_SIZE_BYTES:
+            max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
+            raise HTTPException(status_code=422, detail=f"Medication photo exceeds {max_mb} MB")
+        chunks.append(chunk)
+    content = b"".join(chunks)
+    if not content:
+        raise HTTPException(status_code=422, detail="Medication photo is empty")
+    if not _content_matches_mime(content, mime):
+        raise HTTPException(status_code=422, detail="File contents do not match declared type")
     return content, mime
 
 
@@ -117,14 +145,19 @@ async def create_medication(
     db.add(med)
     db.flush()
 
+    photo_path_saved: str | None = None
     if photo is not None:
         image_bytes, mime_type = await _read_valid_photo_or_422(photo)
-        med.photo_path = save_medication_photo(
-            profile_id=med.profile_id,
-            medication_id=med.id,
-            image_bytes=image_bytes,
-            mime_type=mime_type,
-        )
+        try:
+            med.photo_path = save_medication_photo(
+                profile_id=med.profile_id,
+                medication_id=med.id,
+                image_bytes=image_bytes,
+                mime_type=mime_type,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        photo_path_saved = med.photo_path
         med.has_photo = True
         logger.info(
             "medication_photo_upload user_id=%s profile_id=%s medication_id=%s",
@@ -133,7 +166,12 @@ async def create_medication(
             med.id,
         )
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        if photo_path_saved:
+            delete_medication_photo(photo_path_saved)
+        raise
     db.refresh(med)
     return schemas.MedicationResponse.model_validate(med)
 
@@ -199,7 +237,11 @@ async def get_medication_photo(
         med.profile_id,
         med_id,
     )
-    return Response(content=image_bytes, media_type=mime_type)
+    return Response(
+        content=image_bytes,
+        media_type=mime_type,
+        headers={"Content-Disposition": "attachment; filename=medication-photo"},
+    )
 
 
 @router.patch("/medications/{med_id}", response_model=schemas.MedicationResponse)

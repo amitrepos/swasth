@@ -1456,6 +1456,7 @@
   "medicationsAddPhoto": "Add photo",
   "medicationsChangePhoto": "Change photo",
   "medicationsRemovePhoto": "Remove photo",
+  "medicationsUploadingPhoto": "Uploading photo…",
   "medicationsPeriodMorning": "Morning",
   "medicationsPeriodAfternoon": "Afternoon",
   "medicationsPeriodEvening": "Evening",

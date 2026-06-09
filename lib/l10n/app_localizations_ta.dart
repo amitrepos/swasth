@@ -2532,6 +2532,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get medicationsRemovePhoto => 'புகைப்படம் நீக்கு';
 
   @override
+  String get medicationsUploadingPhoto => 'புகைப்படம் பதிவேற்றப்படுகிறது…';
+
+  @override
   String get medicationsPeriodMorning => 'காலை';
 
   @override

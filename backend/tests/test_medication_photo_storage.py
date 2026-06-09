@@ -30,6 +30,7 @@ def test_save_and_load_round_trip():
     [
         "../../../etc/passwd",
         "uploads/medication_photos/../../config.py",
+        "uploads/medication_photos_backup/evil.enc",
         "/etc/passwd",
     ],
 )

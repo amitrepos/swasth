@@ -13,6 +13,8 @@ import models
 from auth import create_access_token, get_password_hash
 from models import UserRole
 
+_FAKE_JPEG = b"\xff\xd8\xff" + b"fake-jpeg-bytes"
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -52,7 +54,7 @@ def _post_medication_with_photo(client, headers, profile_id, **overrides):
         "notes": "",
     }
     fields.update({k: str(v) for k, v in overrides.items() if v is not None})
-    files = {"photo": ("strip.jpg", BytesIO(b"fake-jpeg-bytes"), "image/jpeg")}
+    files = {"photo": ("strip.jpg", BytesIO(_FAKE_JPEG), "image/jpeg")}
     return client.post("/api/medications", data=fields, files=files, headers=headers)
 
 
@@ -248,7 +250,7 @@ def test_get_medication_photo_returns_bytes(client, db, test_user, auth_headers)
 
     photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
     assert photo.status_code == 200
-    assert photo.content == b"fake-jpeg-bytes"
+    assert photo.content == _FAKE_JPEG
     assert photo.headers["content-type"].startswith("image/jpeg")
 
 
@@ -388,7 +390,7 @@ def test_get_medication_photo_allows_linked_doctor(client, db, test_user, auth_h
 
     photo = client.get(f"/api/medications/{med_id}/photo", headers=doctor_headers)
     assert photo.status_code == 200
-    assert photo.content == b"fake-jpeg-bytes"
+    assert photo.content == _FAKE_JPEG
 
 
 def test_create_medication_rejects_invalid_photo_mime(client, db, test_user, auth_headers):
@@ -412,7 +414,7 @@ def test_create_medication_rejects_oversized_photo(client, db, test_user, auth_h
         "intake_period": "MORNING",
         "taken_at": datetime.now(timezone.utc).isoformat(),
     }
-    files = {"photo": ("big.jpg", BytesIO(b"x" * 200), "image/jpeg")}
+    files = {"photo": ("big.jpg", BytesIO(b"\xff\xd8\xff" + b"x" * 200), "image/jpeg")}
     with patch("routes_medications.settings.MAX_UPLOAD_SIZE_BYTES", 50):
         r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
     assert r.status_code == 422
@@ -441,6 +443,59 @@ def test_get_medication_photo_500_on_corrupt_file(client, db, test_user, auth_he
 
     photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
     assert photo.status_code == 500
+
+
+def test_create_medication_with_photo_denies_unrelated_profile(
+    client, db, test_user, auth_headers
+):
+    other = models.Profile(name="Stranger")
+    db.add(other)
+    db.flush()
+    r = _post_medication_with_photo(client, auth_headers, other.id)
+    assert r.status_code == 403
+
+
+def test_create_medication_rejects_photo_with_spoofed_mime(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    fields = {
+        "profile_id": str(pid),
+        "name": "Metformin",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+    }
+    files = {"photo": ("fake.jpg", BytesIO(b"not-a-jpeg"), "image/jpeg")}
+    r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
+    assert r.status_code == 422
+
+
+def test_create_medication_rejects_photo_unsupported_content_type(
+    client, db, test_user, auth_headers
+):
+    pid = _profile_id_for(test_user, db)
+    fields = {
+        "profile_id": str(pid),
+        "name": "Metformin",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+    }
+    files = {
+        "photo": ("strip.bin", BytesIO(_FAKE_JPEG), "application/octet-stream"),
+    }
+    r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
+    assert r.status_code == 422
+
+
+def test_patch_medication_preserves_has_photo(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication_with_photo(client, auth_headers, pid)
+    med_id = created.json()["id"]
+    patched = client.patch(
+        f"/api/medications/{med_id}",
+        json={"dose": "250 mg"},
+        headers=auth_headers,
+    )
+    assert patched.status_code == 200
+    assert patched.json()["has_photo"] is True
 
 
 def test_create_medication_denies_unrelated_profile(client, db, test_user, auth_headers):

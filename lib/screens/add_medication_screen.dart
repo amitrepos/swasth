@@ -361,7 +361,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                           child: Text(
                             l10n.medicationsPhotoWhy,
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 15,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -373,6 +373,9 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                               bytes: _selectedPhoto?.bytes,
                               size: 56,
                               onTap: _saving ? null : _pickPhoto,
+                              semanticsLabel: _selectedPhoto == null
+                                  ? l10n.medicationsAddPhoto
+                                  : l10n.medicationsChangePhoto,
                             ),
                             const SizedBox(width: 10),
                             TextButton(
@@ -493,6 +496,22 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
               ),
               child: Column(
                 children: [
+                  if (_saving && _selectedPhoto != null) ...[
+                    LinearProgressIndicator(
+                      key: const Key('medication-photo-upload-progress'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                      child: Text(
+                        l10n.medicationsUploadingPhoto,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
