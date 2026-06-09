@@ -331,5 +331,21 @@ void main() {
       expect(stub.patchCount, 1);
       expect(stub.patchBodies.last['intake_period'], 'NIGHT');
     });
+
+    testWidgets('photo section is hidden in edit mode', (tester) async {
+      final stub = _StubClient();
+      final med = Medication(
+        id: 99,
+        profileId: 1,
+        name: 'Metformin',
+        intakePeriod: 'MORNING',
+        takenAt: DateTime(2024, 6, 15, 8),
+        createdAt: DateTime(2024, 6, 15, 8),
+      );
+      await _bootstrap(tester, stub, initialMedication: med);
+
+      expect(find.text('Medicine package photo (optional)'), findsNothing);
+      expect(find.text('Add photo'), findsNothing);
+    });
   });
 }

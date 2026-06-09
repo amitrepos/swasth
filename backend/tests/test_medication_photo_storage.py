@@ -6,6 +6,8 @@ import pytest
 
 from medication_photo_storage import (
     _UPLOAD_ROOT,
+    _encryption_key,
+    _sanitize_mime_type,
     delete_medication_photo,
     load_medication_photo,
     save_medication_photo,
@@ -82,3 +84,45 @@ def test_saved_file_lives_under_upload_root():
     absolute = (Path(__file__).resolve().parent.parent / rel).resolve()
     assert str(absolute).startswith(str(_UPLOAD_ROOT.resolve()))
     delete_medication_photo(rel)
+
+
+@pytest.mark.parametrize(
+    "bad_key,match",
+    [
+        ("", "required"),
+        ("zzzz", "not valid hex"),
+        ("aa" * 8, "32 bytes"),
+    ],
+)
+def test_encryption_key_validation(monkeypatch, bad_key, match):
+    monkeypatch.setattr("medication_photo_storage.settings.ENCRYPTION_KEY", bad_key)
+    with pytest.raises(ValueError, match=match):
+        _encryption_key()
+
+
+def test_sanitize_mime_type_unknown_falls_back_to_octet_stream():
+    assert _sanitize_mime_type("image/gif") == "application/octet-stream"
+    assert _sanitize_mime_type("image/jpeg") == "image/jpeg"
+
+
+def test_concurrent_save_respects_limit(tmp_path, monkeypatch):
+    monkeypatch.setattr("medication_photo_storage._UPLOAD_ROOT", tmp_path)
+    monkeypatch.setattr("medication_photo_storage._MAX_PHOTOS_PER_PROFILE", 2)
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _save(medication_id: int) -> str | None:
+        try:
+            return save_medication_photo(
+                profile_id=1,
+                medication_id=medication_id,
+                image_bytes=b"x",
+                mime_type="image/jpeg",
+            )
+        except ValueError:
+            return None
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        list(pool.map(_save, range(3), timeout=5))
+
+    saved = list((tmp_path / "1").glob("*.enc"))
+    assert len(saved) <= 2

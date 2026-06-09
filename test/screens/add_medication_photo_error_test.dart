@@ -29,6 +29,18 @@ class _MultipartFailClient extends http.BaseClient {
   }
 }
 
+/// Never completes — triggers [ApiClient.defaultTimeout] (20s).
+class _HangingMultipartClient extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.method == 'POST' &&
+        request.url.path.endsWith('/api/medications')) {
+      return Completer<http.StreamedResponse>().future;
+    }
+    return http.StreamedResponse(Stream.value(utf8.encode('{}')), 404);
+  }
+}
+
 class _SlowMultipartClient extends http.BaseClient {
   final _gate = Completer<void>();
 
@@ -146,6 +158,38 @@ void main() {
 
     client.completeUpload();
     await pumpN(tester, frames: 10);
+  });
+
+  testWidgets('network stall during upload recovers after timeout', (
+    tester,
+  ) async {
+    await _bootstrap(
+      tester,
+      _HangingMultipartClient(),
+      initialPhoto: _samplePhoto(),
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('medication-name-field')),
+      'Metformin',
+    );
+    await tester.tap(find.byKey(const Key('medication-save-btn')));
+    await tester.pump();
+
+    expect(
+      find.byKey(const Key('medication-photo-upload-progress')),
+      findsOneWidget,
+    );
+
+    await tester.pump(const Duration(seconds: 21));
+    await pumpN(tester, frames: 5);
+
+    final saveButton = tester.widget<ElevatedButton>(
+      find.byKey(const Key('medication-save-btn')),
+    );
+    expect(saveButton.onPressed, isNotNull);
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.textContaining('No internet'), findsOneWidget);
   });
 
   testWidgets('remove photo clears thumbnail and reverts label', (

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import os
+import threading
 from pathlib import Path
 from typing import Tuple
 
@@ -14,6 +15,17 @@ from config import settings
 _NONCE_SIZE = 12
 _MAX_PHOTOS_PER_PROFILE = 50
 _UPLOAD_ROOT = Path(__file__).resolve().parent / "uploads" / "medication_photos"
+_profile_locks_guard = threading.Lock()
+_profile_locks: dict[int, threading.Lock] = {}
+
+
+def _profile_lock(profile_id: int) -> threading.Lock:
+    with _profile_locks_guard:
+        lock = _profile_locks.get(profile_id)
+        if lock is None:
+            lock = threading.Lock()
+            _profile_locks[profile_id] = lock
+        return lock
 
 
 def _encryption_key() -> bytes:
@@ -59,22 +71,23 @@ def save_medication_photo(
     mime_type: str,
 ) -> str:
     """Encrypt and persist a medication photo; return relative path."""
-    profile_dir = _UPLOAD_ROOT / str(profile_id)
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    existing = list(profile_dir.glob("*.enc"))
-    if len(existing) >= _MAX_PHOTOS_PER_PROFILE:
-        raise ValueError(
-            f"Profile {profile_id} exceeds medication photo limit ({_MAX_PHOTOS_PER_PROFILE})"
-        )
+    with _profile_lock(profile_id):
+        profile_dir = _UPLOAD_ROOT / str(profile_id)
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        existing = list(profile_dir.glob("*.enc"))
+        if len(existing) >= _MAX_PHOTOS_PER_PROFILE:
+            raise ValueError(
+                f"Profile {profile_id} exceeds medication photo limit ({_MAX_PHOTOS_PER_PROFILE})"
+            )
 
-    file_name = f"{medication_id}_{base64.urlsafe_b64encode(os.urandom(12)).decode('ascii').rstrip('=')}.enc"
-    absolute_path = profile_dir / file_name
+        file_name = f"{medication_id}_{base64.urlsafe_b64encode(os.urandom(12)).decode('ascii').rstrip('=')}.enc"
+        absolute_path = profile_dir / file_name
 
-    safe_mime = _sanitize_mime_type(mime_type)
-    payload = safe_mime.encode("utf-8") + b"\n" + image_bytes
-    absolute_path.write_bytes(_encrypt_bytes(payload))
+        safe_mime = _sanitize_mime_type(mime_type)
+        payload = safe_mime.encode("utf-8") + b"\n" + image_bytes
+        absolute_path.write_bytes(_encrypt_bytes(payload))
 
-    return str(Path("uploads") / "medication_photos" / str(profile_id) / file_name)
+        return str(Path("uploads") / "medication_photos" / str(profile_id) / file_name)
 
 
 def _resolve_upload_path(relative_path: str) -> Path:
