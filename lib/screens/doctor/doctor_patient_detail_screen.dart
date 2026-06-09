@@ -107,24 +107,29 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
     final medsWithPhoto = _medications
         .where((m) => m['has_photo'] == true)
         .toList();
+    final futures = <Future<void>>[];
     for (final med in medsWithPhoto) {
       final medId = med['id'] as int?;
       if (medId == null || _medicationPhotos.containsKey(medId)) continue;
       if (!mounted) return;
       setState(() => _loadingMedicationPhotos.add(medId));
-      try {
-        final bytes = await _medicationService.fetchMedicationPhoto(
-          medId,
-          token,
-        );
-        if (!mounted) return;
-        setState(() => _medicationPhotos[medId] = bytes);
-      } catch (_) {
-        // Keep rendering without image if fetch fails.
-      } finally {
-        if (mounted) {
-          setState(() => _loadingMedicationPhotos.remove(medId));
-        }
+      futures.add(_fetchMedicationThumbnail(medId, token));
+    }
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+  }
+
+  Future<void> _fetchMedicationThumbnail(int medId, String token) async {
+    try {
+      final bytes = await _medicationService.fetchMedicationPhoto(medId, token);
+      if (!mounted) return;
+      setState(() => _medicationPhotos[medId] = bytes);
+    } catch (_) {
+      // Keep rendering without image if fetch fails.
+    } finally {
+      if (mounted) {
+        setState(() => _loadingMedicationPhotos.remove(medId));
       }
     }
   }
@@ -660,7 +665,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
             hasPhoto: hasPhoto,
             bytes: medId == null ? null : _medicationPhotos[medId],
             loading: medId != null && _loadingMedicationPhotos.contains(medId),
-            size: 38,
+            size: 48,
           ),
           const SizedBox(width: 8),
           Expanded(

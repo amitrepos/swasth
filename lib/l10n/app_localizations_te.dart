@@ -1294,7 +1294,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'Swasth సేకరిస్తుంది: రక్తంలో గ్లూకోజ్ రీడింగ్‌లు, రక్తపోటు రీడింగ్‌లు, పల్స్ రేట్, భోజన గమనికలు, ప్రొఫైల్ సమాచారం (పేరు, వయస్సు, లింగం, వైద్య పరిస్థితులు, మందులు), మరియు స్వయంచాలక రీడింగ్ క్యాప్చర్ కోసం వైద్య పరికరాల ఫోటోలు.';
+      'స్వస్థ సేకరిస్తుంది: రక్తంలో గ్లూకోజ్ రీడింగ్‌లు, రక్తపోటు రీడింగ్‌లు, పల్స్ రేట్, భోజన గమనికలు, ప్రొఫైల్ సమాచారం (పేరు, వయస్సు, లింగం, వైద్య పరిస్థితులు, మందులు), స్వయంచాలక రీడింగ్ క్యాప్చర్ కోసం వైద్య పరికరాల ఫోటోలు, మరియు మందు తీసుకోవడం లాగ్‌లకు జోడించిన ఐచ్ఛిక మందు ప్యాకేజింగ్ ఫోటోలు.';
 
   @override
   String get ppPurposeTitle => 'సేకరణ ప్రయోజనం';
@@ -2498,16 +2498,20 @@ class AppLocalizationsTe extends AppLocalizations {
   String get medicationsFormDateLabel => 'తేదీ';
 
   @override
-  String get medicationsAddPhotoLabel => 'Medicine package photo (optional)';
+  String get medicationsAddPhotoLabel => 'మందు ప్యాకేజింగ్ ఫోటో (ఐచ్ఛికం)';
 
   @override
-  String get medicationsAddPhoto => 'Add photo';
+  String get medicationsPhotoWhy =>
+      'సరైన మందు తనిఖీ చేయడానికి మీ డాక్టర్ ప్యాకేజింగ్ చూడవచ్చు.';
 
   @override
-  String get medicationsChangePhoto => 'Change photo';
+  String get medicationsAddPhoto => 'ఫోటో జోడించండి';
 
   @override
-  String get medicationsRemovePhoto => 'Remove';
+  String get medicationsChangePhoto => 'ఫోటో మార్చండి';
+
+  @override
+  String get medicationsRemovePhoto => 'ఫోటో తీసివేయండి';
 
   @override
   String get medicationsPeriodMorning => 'ఉదయం';

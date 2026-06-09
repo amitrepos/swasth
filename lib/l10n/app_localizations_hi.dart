@@ -2484,7 +2484,11 @@ class AppLocalizationsHi extends AppLocalizations {
   String get medicationsFormDateLabel => 'तारीख';
 
   @override
-  String get medicationsAddPhotoLabel => 'दवा पैक की फोटो (वैकल्पिक)';
+  String get medicationsAddPhotoLabel => 'दवा की पैकिंग की फोटो (ज़रूरी नहीं)';
+
+  @override
+  String get medicationsPhotoWhy =>
+      'आपका डॉक्टर सही दवा जांचने के लिए पैकिंग देख सकते हैं।';
 
   @override
   String get medicationsAddPhoto => 'फोटो जोड़ें';
@@ -2493,7 +2497,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get medicationsChangePhoto => 'फोटो बदलें';
 
   @override
-  String get medicationsRemovePhoto => 'हटाएँ';
+  String get medicationsRemovePhoto => 'फोटो हटाएँ';
 
   @override
   String get medicationsPeriodMorning => 'सुबह';

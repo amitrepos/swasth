@@ -4633,6 +4633,12 @@ abstract class AppLocalizations {
   /// **'Medicine package photo (optional)'**
   String get medicationsAddPhotoLabel;
 
+  /// No description provided for @medicationsPhotoWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Your doctor can see the packaging to check the right medicine.'**
+  String get medicationsPhotoWhy;
+
   /// No description provided for @medicationsAddPhoto.
   ///
   /// In en, this message translates to:
@@ -4648,7 +4654,7 @@ abstract class AppLocalizations {
   /// No description provided for @medicationsRemovePhoto.
   ///
   /// In en, this message translates to:
-  /// **'Remove'**
+  /// **'Remove photo'**
   String get medicationsRemovePhoto;
 
   /// No description provided for @medicationsPeriodMorning.

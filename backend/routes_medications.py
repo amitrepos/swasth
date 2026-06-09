@@ -9,6 +9,8 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, UploadFile, status
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
@@ -96,7 +98,10 @@ async def create_medication(
             photo = maybe_photo
     else:
         raw = await request.json()
-    payload = schemas.MedicationCreate.model_validate(raw)
+    try:
+        payload = schemas.MedicationCreate.model_validate(raw)
+    except ValidationError as exc:
+        raise RequestValidationError(exc.errors()) from exc
     get_profile_editor_or_403(payload.profile_id, user, db)
 
     med = models.Medication(
@@ -121,6 +126,12 @@ async def create_medication(
             mime_type=mime_type,
         )
         med.has_photo = True
+        logger.info(
+            "medication_photo_upload user_id=%s profile_id=%s medication_id=%s",
+            user.id,
+            med.profile_id,
+            med.id,
+        )
 
     db.commit()
     db.refresh(med)
@@ -176,7 +187,18 @@ async def get_medication_photo(
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Medication photo not found")
     except Exception:
+        logger.exception(
+            "medication_photo_decrypt_failed user_id=%s medication_id=%s",
+            user.id,
+            med_id,
+        )
         raise HTTPException(status_code=500, detail="Unable to load medication photo")
+    logger.info(
+        "medication_photo_fetch user_id=%s profile_id=%s medication_id=%s",
+        user.id,
+        med.profile_id,
+        med_id,
+    )
     return Response(content=image_bytes, media_type=mime_type)
 
 
@@ -253,7 +275,15 @@ async def delete_medication(
             raise HTTPException(status_code=404, detail="Medication not found")
         raise
 
+    photo_path = med.photo_path
     db.delete(med)
     db.commit()
-    delete_medication_photo(med.photo_path)
+    if photo_path:
+        delete_medication_photo(photo_path)
+        logger.info(
+            "medication_photo_delete user_id=%s profile_id=%s medication_id=%s",
+            user.id,
+            med.profile_id,
+            med_id,
+        )
     return None

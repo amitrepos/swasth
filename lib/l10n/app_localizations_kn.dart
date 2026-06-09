@@ -1302,7 +1302,7 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'ಸ್ವಸ್ಥ ಸಂಗ್ರಹಿಸುವ ಮಾಹಿತಿಗಳು: ರಕ್ತದ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳು, ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳು, ನಾಡಿಮಿಡಿತ, ಊಟದ ಟಿಪ್ಪಣಿಗಳು, ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಲಿಂಗ, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು), ಮತ್ತು ಸ್ವಯಂಚಾಲಿತ ರೀಡಿಂಗ್ ಕ್ಯಾಪ್ಚರ್‌ಗಾಗಿ ವೈದ್ಯಕೀಯ ಸಾಧನಗಳ ಫೋಟೋಗಳು.';
+      'ಸ್ವಸ್ಥ ಸಂಗ್ರಹಿಸುವ ಮಾಹಿತಿಗಳು: ರಕ್ತದ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳು, ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳು, ನಾಡಿಮಿಡಿತ, ಊಟದ ಟಿಪ್ಪಣಿಗಳು, ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಲಿಂಗ, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು), ಸ್ವಯಂಚಾಲಿತ ರೀಡಿಂಗ್ ಕ್ಯಾಪ್ಚರ್‌ಗಾಗಿ ವೈದ್ಯಕೀಯ ಸಾಧನಗಳ ಫೋಟೋಗಳು, ಮತ್ತು ಔಷಧಿ ಸೇವನೆ ದಾಖಲೆಗಳಿಗೆ ಲಗತ್ತಿಸಿದ ಐಚ್ಛಿಕ ಔಷಧಿ ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋಗಳು.';
 
   @override
   String get ppPurposeTitle => 'ಸಂಗ್ರಹಣೆಯ ಉದ್ದೇಶ';
@@ -2510,16 +2510,20 @@ class AppLocalizationsKn extends AppLocalizations {
   String get medicationsFormDateLabel => 'ದಿನಾಂಕ';
 
   @override
-  String get medicationsAddPhotoLabel => 'Medicine package photo (optional)';
+  String get medicationsAddPhotoLabel => 'ಔಷಧಿ ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋ (ಐಚ್ಛಿಕ)';
 
   @override
-  String get medicationsAddPhoto => 'Add photo';
+  String get medicationsPhotoWhy =>
+      'ಸರಿಯಾದ ಔಷಧಿ ಪರಿಶೀಲಿಸಲು ನಿಮ್ಮ ವೈದ್ಯರು ಪ್ಯಾಕೇಜಿಂಗ್ ನೋಡಬಹುದು.';
 
   @override
-  String get medicationsChangePhoto => 'Change photo';
+  String get medicationsAddPhoto => 'ಫೋಟೋ ಸೇರಿಸಿ';
 
   @override
-  String get medicationsRemovePhoto => 'Remove';
+  String get medicationsChangePhoto => 'ಫೋಟೋ ಬದಲಾಯಿಸಿ';
+
+  @override
+  String get medicationsRemovePhoto => 'ಫೋಟೋ ತೆಗೆದುಹಾಕಿ';
 
   @override
   String get medicationsPeriodMorning => 'ಬೆಳಿಗ್ಗೆ';

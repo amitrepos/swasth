@@ -71,12 +71,17 @@ def save_medication_photo(
     return str(Path("uploads") / "medication_photos" / str(profile_id) / file_name)
 
 
+def _resolve_upload_path(relative_path: str) -> Path:
+    absolute_path = (Path(__file__).resolve().parent / relative_path).resolve()
+    upload_root = _UPLOAD_ROOT.resolve()
+    if not str(absolute_path).startswith(str(upload_root)):
+        raise ValueError("Invalid medication photo path")
+    return absolute_path
+
+
 def load_medication_photo(relative_path: str) -> Tuple[bytes, str]:
     """Load + decrypt medication photo bytes from a relative upload path."""
-    absolute_path = (Path(__file__).resolve().parent / relative_path).resolve()
-    base_root = Path(__file__).resolve().parent.resolve()
-    if not str(absolute_path).startswith(str(base_root)):
-        raise ValueError("Invalid medication photo path")
+    absolute_path = _resolve_upload_path(relative_path)
     if not absolute_path.exists() or not absolute_path.is_file():
         raise FileNotFoundError("Medication photo not found")
 
@@ -91,9 +96,9 @@ def load_medication_photo(relative_path: str) -> Tuple[bytes, str]:
 def delete_medication_photo(relative_path: str | None) -> None:
     if not relative_path:
         return
-    absolute_path = (Path(__file__).resolve().parent / relative_path).resolve()
-    base_root = Path(__file__).resolve().parent.resolve()
-    if not str(absolute_path).startswith(str(base_root)):
+    try:
+        absolute_path = _resolve_upload_path(relative_path)
+    except ValueError:
         return
     if absolute_path.exists() and absolute_path.is_file():
         absolute_path.unlink()

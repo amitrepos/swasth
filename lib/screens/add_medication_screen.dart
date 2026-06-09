@@ -356,13 +356,23 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, bottom: 8),
+                          child: Text(
+                            l10n.medicationsPhotoWhy,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
                         Row(
                           children: [
                             MedicationPhotoThumbnail(
                               hasPhoto: _selectedPhoto != null,
                               bytes: _selectedPhoto?.bytes,
                               size: 56,
+                              onTap: _saving ? null : _pickPhoto,
                             ),
                             const SizedBox(width: 10),
                             TextButton(

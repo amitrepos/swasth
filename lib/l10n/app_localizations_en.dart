@@ -2483,13 +2483,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get medicationsAddPhotoLabel => 'Medicine package photo (optional)';
 
   @override
+  String get medicationsPhotoWhy =>
+      'Your doctor can see the packaging to check the right medicine.';
+
+  @override
   String get medicationsAddPhoto => 'Add photo';
 
   @override
   String get medicationsChangePhoto => 'Change photo';
 
   @override
-  String get medicationsRemovePhoto => 'Remove';
+  String get medicationsRemovePhoto => 'Remove photo';
 
   @override
   String get medicationsPeriodMorning => 'Morning';
