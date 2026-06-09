@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_service.dart';
 import '../services/error_mapper.dart';
+import '../services/region_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_form_scroll_body.dart';
@@ -81,6 +82,9 @@ class _PhoneOTPVerificationScreenState extends State<PhoneOTPVerificationScreen>
 
         if (token != null) {
           await StorageService().saveToken(token);
+          // Mirror email-login: re-check region with auth token so the
+          // email allowlist fires for OTP users on VPN (NUO-135).
+          await RegionService.refresh();
 
           try {
             final userData = await _apiService.getCurrentUser(token);
