@@ -459,7 +459,7 @@
   "consentDeclineConfirm": "वापस जाएँ",
   "consentScrollToAccept": "पूरी सूचना पढ़ने के लिए नीचे स्क्रॉल करें",
   "ppDataCollectionTitle": "हम कौन सा डेटा एकत्र करते हैं",
-  "ppDataCollection": "स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), और स्वचालित रीडिंग कैप्चर के लिए चिकित्सा उपकरणों की तस्वीरें।",
+  "ppDataCollection": "स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी, चिकित्सा उपकरणों की तस्वीरें, और वैकल्पिक साप्ताहिक वज़न रिमाइंडर (केवल आपके डिवाइस पर संग्रहीत)।",
   "ppPurposeTitle": "संग्रह का उद्देश्य",
   "ppPurpose": "आपके स्वास्थ्य डेटा का उपयोग किया जाता है: रुझान और स्वास्थ्य स्कोर दिखाने, व्यक्तिगत स्वास्थ्य सुझाव तैयार करने, आपके निर्दिष्ट परिवार के सदस्यों के साथ साझा करने, और उपचार के लिए आपके डॉक्टर को जानकारी प्रदान करने के लिए।",
   "ppAiTitle": "AI प्रसंस्करण",
@@ -913,6 +913,29 @@
     }
   },
   "reminderDisabled": "रिमाइंडर बंद कर दिया गया",
+  "reminderSettingsTitle": "रिमाइंडर सेटिंग्स",
+  "dailyReminderSection": "दैनिक स्वास्थ्य जाँच",
+  "weeklyWeightReminderSection": "साप्ताहिक वजन रिमाइंडर",
+  "weightReminderEnableLabel": "साप्ताहिक वजन रिमाइंडर चालू करें",
+  "weightReminderDayLabel": "दिन",
+  "weightReminderTimeLabel": "समय",
+  "weightReminderSetTime": "साप्ताहिक वजन रिमाइंडर समय सेट करें",
+  "weightReminderChangeTime": "साप्ताहिक वजन रिमाइंडर समय बदलें",
+  "weightReminderSetFor": "वजन रिमाइंडर {day} को {time} पर सेट किया गया",
+  "@weightReminderSetFor": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "weightReminderDisabled": "साप्ताहिक वजन रिमाइंडर बंद कर दिया गया",
+  "weightReminderNotificationTitle": "⚖️ अपना वजन दर्ज करें",
+  "weightReminderNotificationBody": "साप्ताहिक जाँच — अपना वजन दर्ज करें ताकि स्वास्थ्य रुझान सही रहें।",
+  "notificationPermissionRequired": "रिमाइंडर के लिए नोटिफिकेशन अनुमति आवश्यक है",
   "actionCall": "कॉल करें",
   "actionWhatsApp": "व्हाट्सऐप",
   "actionEmail": "ईमेल भेजें",

@@ -1287,7 +1287,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), and photos of medical devices for automated reading capture.';
+      'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, and optional local reminders for weekly weight logging (stored on your device only).';
 
   @override
   String get ppPurposeTitle => 'Purpose of Collection';
@@ -2339,6 +2339,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'Reminder disabled';
+
+  @override
+  String get reminderSettingsTitle => 'Reminder Settings';
+
+  @override
+  String get dailyReminderSection => 'Daily Health Check';
+
+  @override
+  String get weeklyWeightReminderSection => 'Weekly Weight Reminder';
+
+  @override
+  String get weightReminderEnableLabel => 'Enable weekly weight reminder';
+
+  @override
+  String get weightReminderDayLabel => 'Day';
+
+  @override
+  String get weightReminderTimeLabel => 'Time';
+
+  @override
+  String get weightReminderSetTime => 'Set weekly weight reminder time';
+
+  @override
+  String get weightReminderChangeTime => 'Change weekly weight reminder time';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'Weight reminder set for $day at $time';
+  }
+
+  @override
+  String get weightReminderDisabled => 'Weekly weight reminder disabled';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ Time to log your weight';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'Weekly check-in: log your weight to keep health trends accurate.';
+
+  @override
+  String get notificationPermissionRequired =>
+      'Notification permission is required for reminders';
 
   @override
   String get actionCall => 'Call';

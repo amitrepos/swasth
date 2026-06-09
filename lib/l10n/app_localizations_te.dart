@@ -1294,7 +1294,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'Swasth సేకరిస్తుంది: రక్తంలో గ్లూకోజ్ రీడింగ్‌లు, రక్తపోటు రీడింగ్‌లు, పల్స్ రేట్, భోజన గమనికలు, ప్రొఫైల్ సమాచారం (పేరు, వయస్సు, లింగం, వైద్య పరిస్థితులు, మందులు), మరియు స్వయంచాలక రీడింగ్ క్యాప్చర్ కోసం వైద్య పరికరాల ఫోటోలు.';
+      'Swasth సేకరిస్తుంది: రక్తంలో గ్లూకోజ్ రీడింగ్‌లు, రక్తపోటు రీడింగ్‌లు, పల్స్ రేట్, భోజన గమనికలు, ప్రొఫైల్ సమాచారం (పేరు, వయస్సు, లింగం, వైద్య పరిస్థితులు, మందులు), స్వయంచాలక రీడింగ్ క్యాప్చర్ కోసం వైద్య పరికరాల ఫోటోలు, మరియు వారపు బరువు రిమైండర్ అభిరుచులు (రోజు/సమయం) — ఇవి మీ పరికరంలో మాత్రమే నిల్వ చేయబడతాయి.';
 
   @override
   String get ppPurposeTitle => 'సేకరణ ప్రయోజనం';
@@ -2357,6 +2357,49 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'రిమైండర్ నిలిపివేయబడింది';
+
+  @override
+  String get reminderSettingsTitle => 'రిమైండర్ సెట్టింగ్‌లు';
+
+  @override
+  String get dailyReminderSection => 'రోజువారీ ఆరోగ్య తనిఖీ';
+
+  @override
+  String get weeklyWeightReminderSection => 'వారపు బరువు';
+
+  @override
+  String get weightReminderEnableLabel => 'వారపు బరువు రిమైండర్ ప్రారంభించండి';
+
+  @override
+  String get weightReminderDayLabel => 'రోజు';
+
+  @override
+  String get weightReminderTimeLabel => 'సమయం';
+
+  @override
+  String get weightReminderSetTime => 'వారపు బరువు రిమైండర్ సమయం సెట్ చేయండి';
+
+  @override
+  String get weightReminderChangeTime => 'వారపు బరువు సమయం మార్చండి';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'బరువు రిమైండర్ $day న $time కు సెట్ చేయబడింది';
+  }
+
+  @override
+  String get weightReminderDisabled => 'వారపు బరువు రిమైండర్ నిలిపివేయబడింది';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ మీ బరువును నమోదు చేయండి';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'వారపు చెక్-ఇన్ — మీ బరువును నమోదు చేసి ఆరోగ్య ట్రెండ్‌లను ఖచ్చితంగా ఉంచండి.';
+
+  @override
+  String get notificationPermissionRequired =>
+      'రిమైండర్‌ల కోసం నోటిఫికేషన్ అనుమతి అవసరం';
 
   @override
   String get actionCall => 'కాల్ చేయండి';

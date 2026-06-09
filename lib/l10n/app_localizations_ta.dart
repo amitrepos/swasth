@@ -1303,7 +1303,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'ஸ்வஸ்த் சேகரிக்கிறது: இரத்த குளுக்கோஸ் ரீடிங்குகள், இரத்த அழுத்த ரீடிங்குகள், நாடி வீதம், உணவு குறிப்புகள், சுயவிவர தகவல்கள் மற்றும் மருத்துவ சாதனங்களின் புகைப்படங்கள்.';
+      'ஸ்வஸ்த் சேகரிக்கிறது: இரத்த குளுக்கோஸ் ரீடிங்குகள், இரத்த அழுத்த ரீடிங்குகள், நாடி வீதம், உணவு குறிப்புகள், சுயவிவர தகவல்கள் மற்றும் மருத்துவ சாதனங்களின் புகைப்படங்கள், மேலும் வாராந்திர எடை நினைவூட்டல் விருப்பங்கள் (நாள்/நேரம்) — இவை உங்கள் சாதனத்தில் மட்டும் சேமிக்கப்படும்.';
 
   @override
   String get ppPurposeTitle => 'சேகரிப்பு நோக்கம்';
@@ -2373,6 +2373,52 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'நினைவூட்டல் முடக்கப்பட்டது';
+
+  @override
+  String get reminderSettingsTitle => 'நினைவூட்டல் அமைப்புகள்';
+
+  @override
+  String get dailyReminderSection => 'தினசரி உடல்நலப் பரிசோதனை';
+
+  @override
+  String get weeklyWeightReminderSection => 'வாராந்திர எடை';
+
+  @override
+  String get weightReminderEnableLabel => 'வாராந்திர எடை நினைவூட்டலை இயக்கு';
+
+  @override
+  String get weightReminderDayLabel => 'நாள்';
+
+  @override
+  String get weightReminderTimeLabel => 'நேரம்';
+
+  @override
+  String get weightReminderSetTime =>
+      'வாராந்திர எடை நினைவூட்டல் நேரத்தை அமைக்கவும்';
+
+  @override
+  String get weightReminderChangeTime => 'வாராந்திர எடை நேரத்தை மாற்றவும்';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'எடை நினைவூட்டல் $day அன்று $time மணிக்கு அமைக்கப்பட்டது';
+  }
+
+  @override
+  String get weightReminderDisabled =>
+      'வாராந்திர எடை நினைவூட்டல் முடக்கப்பட்டது';
+
+  @override
+  String get weightReminderNotificationTitle =>
+      '⚖️ உங்கள் எடையை பதிவு செய்யுங்கள்';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'வாராந்திர சரிபார்ப்பு — உங்கள் எடையை பதிவு செய்து ஆரோக்கிய போக்குகளை துல்லியமாக வைத்திருங்கள்.';
+
+  @override
+  String get notificationPermissionRequired =>
+      'நினைவூட்டல்களுக்கு அறிவிப்பு அனுமதி தேவை';
 
   @override
   String get actionCall => 'அழைக்கவும்';

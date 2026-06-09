@@ -1287,7 +1287,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), और स्वचालित रीडिंग कैप्चर के लिए चिकित्सा उपकरणों की तस्वीरें।';
+      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी, चिकित्सा उपकरणों की तस्वीरें, और वैकल्पिक साप्ताहिक वज़न रिमाइंडर (केवल आपके डिवाइस पर संग्रहीत)।';
 
   @override
   String get ppPurposeTitle => 'संग्रह का उद्देश्य';
@@ -2343,6 +2343,49 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'रिमाइंडर बंद कर दिया गया';
+
+  @override
+  String get reminderSettingsTitle => 'रिमाइंडर सेटिंग्स';
+
+  @override
+  String get dailyReminderSection => 'दैनिक स्वास्थ्य जाँच';
+
+  @override
+  String get weeklyWeightReminderSection => 'साप्ताहिक वजन रिमाइंडर';
+
+  @override
+  String get weightReminderEnableLabel => 'साप्ताहिक वजन रिमाइंडर चालू करें';
+
+  @override
+  String get weightReminderDayLabel => 'दिन';
+
+  @override
+  String get weightReminderTimeLabel => 'समय';
+
+  @override
+  String get weightReminderSetTime => 'साप्ताहिक वजन रिमाइंडर समय सेट करें';
+
+  @override
+  String get weightReminderChangeTime => 'साप्ताहिक वजन रिमाइंडर समय बदलें';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'वजन रिमाइंडर $day को $time पर सेट किया गया';
+  }
+
+  @override
+  String get weightReminderDisabled => 'साप्ताहिक वजन रिमाइंडर बंद कर दिया गया';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ अपना वजन दर्ज करें';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'साप्ताहिक जाँच — अपना वजन दर्ज करें ताकि स्वास्थ्य रुझान सही रहें।';
+
+  @override
+  String get notificationPermissionRequired =>
+      'रिमाइंडर के लिए नोटिफिकेशन अनुमति आवश्यक है';
 
   @override
   String get actionCall => 'कॉल करें';
