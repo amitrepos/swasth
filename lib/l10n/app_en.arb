@@ -1380,6 +1380,7 @@
   "weeklyWeightReminderSection": "Weekly Weight Reminder",
   "weightReminderEnableLabel": "Enable weekly weight reminder",
   "weightReminderDayLabel": "Day",
+  "weightReminderPickDayTitle": "Which day for the reminder?",
   "weightReminderTimeLabel": "Time",
   "weightReminderSetTime": "Set weekly weight reminder time",
   "weightReminderChangeTime": "Change weekly weight reminder time",

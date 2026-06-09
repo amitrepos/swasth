@@ -32,6 +32,7 @@
   "dailyReminderEnableLabel": "రోజువారీ ఆరోగ్య రిమైండర్ ప్రారంభించండి",
   "weightReminderEnableLabel": "వారపు బరువు రిమైండర్ ప్రారంభించండి",
   "weightReminderDayLabel": "రోజు",
+  "weightReminderPickDayTitle": "ఏ రోజు రిమైండర్ కావాలి?",
   "weightReminderTimeLabel": "సమయం",
   "weightReminderSetTime": "వారపు బరువు రిమైండర్ సమయం సెట్ చేయండి",
   "weightReminderChangeTime": "వారపు బరువు సమయం మార్చండి",

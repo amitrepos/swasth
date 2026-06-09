@@ -5,7 +5,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import 'package:swasth_app/widgets/reminder_settings_sheet.dart';
 
 void main() {
-  testWidgets('Sunday label is non-empty for supported locales', (
+  testWidgets('weekday labels are non-empty for days 0–6 in all locales', (
     tester,
   ) async {
     for (final locale in const [
@@ -15,26 +15,32 @@ void main() {
       Locale('ta'),
       Locale('te'),
     ]) {
-      late String label;
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: locale,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Builder(
-            builder: (context) {
-              label = reminderWeekdayLabel(context, 0);
-              return const SizedBox.shrink();
-            },
+      for (var day = 0; day <= 6; day++) {
+        late String label;
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) {
+                label = reminderWeekdayLabel(context, day);
+                return const SizedBox.shrink();
+              },
+            ),
           ),
-        ),
-      );
-      expect(label.trim().isNotEmpty, isTrue, reason: locale.toString());
+        );
+        expect(
+          label.trim().isNotEmpty,
+          isTrue,
+          reason: '${locale.toString()} day=$day',
+        );
+      }
     }
   });
 }

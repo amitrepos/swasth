@@ -2390,6 +2390,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get weightReminderDayLabel => 'ದಿನ';
 
   @override
+  String get weightReminderPickDayTitle => 'ಯಾವ ದಿನ ಜ್ಞಾಪನೆ ಬೇಕು?';
+
+  @override
   String get weightReminderTimeLabel => 'ಸಮಯ';
 
   @override

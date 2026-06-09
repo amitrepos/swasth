@@ -134,6 +134,20 @@ void main() {
       expect(next.day, 17);
       expect(next.hour, 9);
     });
+
+    test('Thursday 00:30 schedules next day when now is Wednesday 23:45', () {
+      final now = ist(2026, 6, 10, 23, 45);
+      final next = ReminderService.nextInstanceOfWeekdayTime(
+        4,
+        0,
+        30,
+        now: now,
+      );
+      expect(next.day, 11);
+      expect(next.weekday, DateTime.thursday);
+      expect(next.hour, 0);
+      expect(next.minute, 30);
+    });
   });
 
   group('nextInstanceOfTime', () {
@@ -163,6 +177,21 @@ void main() {
     });
   });
 
+  test(
+    'enableReminder returns false and writes nothing when permission denied',
+    () async {
+      final svc = ReminderService();
+      svc.permissionCheckOverride = () async => false;
+
+      final result = await svc.enableReminder(8, 0);
+
+      expect(result, isFalse);
+      expect(await svc.isEnabled(), isFalse);
+      expect(await StorageService().getString('reminder_hour'), isNull);
+      expect(await StorageService().getString('reminder_enabled'), isNull);
+    },
+  );
+
   test('enableWeightReminder persists all prefs on success', () async {
     final svc = ReminderService();
     svc.permissionCheckOverride = () async => true;
@@ -182,6 +211,26 @@ void main() {
     expect(await svc.weightReminderDay(), 3);
     expect(await svc.weightReminderHour(), 10);
     expect(await svc.weightReminderMinute(), 30);
+  });
+
+  test('disableWeightReminder after enable clears enabled flag only', () async {
+    final svc = ReminderService();
+    svc.permissionCheckOverride = () async => true;
+    svc.scheduleWeightReminderOverride =
+        (day, hour, minute, {required title, required body}) async {};
+
+    await svc.enableWeightReminder(
+      3,
+      10,
+      0,
+      notificationTitle: 'T',
+      notificationBody: 'B',
+    );
+    await svc.disableWeightReminder();
+
+    expect(await svc.weightReminderEnabled(), isFalse);
+    expect(await svc.weightReminderDay(), 3);
+    expect(await svc.weightReminderHour(), 10);
   });
 
   test('enableWeightReminder clamps out-of-range inputs', () async {

@@ -32,6 +32,7 @@
   "dailyReminderEnableLabel": "தினசரி உடல்நல நினைவூட்டலை இயக்கு",
   "weightReminderEnableLabel": "வாராந்திர எடை நினைவூட்டலை இயக்கு",
   "weightReminderDayLabel": "நாள்",
+  "weightReminderPickDayTitle": "எந்த நாளில் நினைவூட்டல் வேண்டும்?",
   "weightReminderTimeLabel": "நேரம்",
   "weightReminderSetTime": "வாராந்திர எடை நினைவூட்டல் நேரத்தை அமைக்கவும்",
   "weightReminderChangeTime": "வாராந்திர எடை நேரத்தை மாற்றவும்",

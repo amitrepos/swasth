@@ -4411,6 +4411,12 @@ abstract class AppLocalizations {
   /// **'Day'**
   String get weightReminderDayLabel;
 
+  /// No description provided for @weightReminderPickDayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Which day for the reminder?'**
+  String get weightReminderPickDayTitle;
+
   /// No description provided for @weightReminderTimeLabel.
   ///
   /// In en, this message translates to:

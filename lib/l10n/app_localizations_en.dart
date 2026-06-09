@@ -2359,6 +2359,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weightReminderDayLabel => 'Day';
 
   @override
+  String get weightReminderPickDayTitle => 'Which day for the reminder?';
+
+  @override
   String get weightReminderTimeLabel => 'Time';
 
   @override

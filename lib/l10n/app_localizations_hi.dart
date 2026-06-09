@@ -2363,6 +2363,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get weightReminderDayLabel => 'दिन';
 
   @override
+  String get weightReminderPickDayTitle => 'कौन से दिन रिमाइंडर चाहिए?';
+
+  @override
   String get weightReminderTimeLabel => 'समय';
 
   @override

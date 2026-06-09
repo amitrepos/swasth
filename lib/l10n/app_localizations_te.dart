@@ -2378,6 +2378,9 @@ class AppLocalizationsTe extends AppLocalizations {
   String get weightReminderDayLabel => 'రోజు';
 
   @override
+  String get weightReminderPickDayTitle => 'ఏ రోజు రిమైండర్ కావాలి?';
+
+  @override
   String get weightReminderTimeLabel => 'సమయం';
 
   @override

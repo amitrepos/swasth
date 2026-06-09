@@ -918,6 +918,7 @@
   "weeklyWeightReminderSection": "साप्ताहिक वजन रिमाइंडर",
   "weightReminderEnableLabel": "साप्ताहिक वजन रिमाइंडर चालू करें",
   "weightReminderDayLabel": "दिन",
+  "weightReminderPickDayTitle": "कौन से दिन रिमाइंडर चाहिए?",
   "weightReminderTimeLabel": "समय",
   "weightReminderSetTime": "साप्ताहिक वजन रिमाइंडर समय सेट करें",
   "weightReminderChangeTime": "साप्ताहिक वजन रिमाइंडर समय बदलें",

@@ -2393,6 +2393,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get weightReminderDayLabel => 'நாள்';
 
   @override
+  String get weightReminderPickDayTitle => 'எந்த நாளில் நினைவூட்டல் வேண்டும்?';
+
+  @override
   String get weightReminderTimeLabel => 'நேரம்';
 
   @override
