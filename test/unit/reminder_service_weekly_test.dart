@@ -136,6 +136,33 @@ void main() {
     });
   });
 
+  group('nextInstanceOfTime', () {
+    tz.TZDateTime ist(int y, int m, int d, int h, int min) =>
+        tz.TZDateTime(tz.local, y, m, d, h, min);
+
+    test('time in future schedules today', () {
+      final now = ist(2026, 6, 10, 6, 0);
+      final next = ReminderService.nextInstanceOfTime(8, 0, now: now);
+      expect(next.day, 10);
+      expect(next.hour, 8);
+    });
+
+    test('exact same moment schedules tomorrow, not now', () {
+      final now = ist(2026, 6, 10, 8, 0);
+      final next = ReminderService.nextInstanceOfTime(8, 0, now: now);
+      expect(next.day, 11);
+      expect(next.hour, 8);
+      expect(next.isAfter(now), isTrue);
+    });
+
+    test('midnight boundary rolls to next day when now is midnight', () {
+      final now = ist(2026, 6, 10, 0, 0);
+      final next = ReminderService.nextInstanceOfTime(0, 0, now: now);
+      expect(next.day, 11);
+      expect(next.hour, 0);
+    });
+  });
+
   test('enableWeightReminder persists all prefs on success', () async {
     final svc = ReminderService();
     svc.permissionCheckOverride = () async => true;
@@ -174,5 +201,36 @@ void main() {
     expect(await svc.weightReminderDay(), 6);
     expect(await svc.weightReminderHour(), 23);
     expect(await svc.weightReminderMinute(), 59);
+  });
+
+  test('enableWeightReminder updates existing reminder prefs', () async {
+    final svc = ReminderService();
+    svc.permissionCheckOverride = () async => true;
+    final calls = <(int, int, int)>[];
+    svc.scheduleWeightReminderOverride =
+        (day, hour, minute, {required title, required body}) async {
+          calls.add((day, hour, minute));
+        };
+
+    await svc.enableWeightReminder(
+      1,
+      9,
+      0,
+      notificationTitle: 'T',
+      notificationBody: 'B',
+    );
+    await svc.enableWeightReminder(
+      3,
+      14,
+      30,
+      notificationTitle: 'T',
+      notificationBody: 'B',
+    );
+
+    expect(calls.length, 2);
+    expect(calls.last, (3, 14, 30));
+    expect(await svc.weightReminderDay(), 3);
+    expect(await svc.weightReminderHour(), 14);
+    expect(await svc.weightReminderMinute(), 30);
   });
 }

@@ -180,7 +180,7 @@ class ReminderService {
       _morningId,
       '🩺 Time to check your health!',
       'Log your glucose or BP reading to keep your streak alive.',
-      _nextInstanceOfTime(hour, minute),
+      nextInstanceOfTime(hour, minute, now: tz.TZDateTime.now(tz.local)),
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'health_reminders',
@@ -203,7 +203,7 @@ class ReminderService {
       _eveningId,
       '⚠️ Don\'t break your streak!',
       'You haven\'t logged a reading today. Your streak ends at midnight!',
-      _nextInstanceOfTime(19, 0),
+      nextInstanceOfTime(19, 0, now: tz.TZDateTime.now(tz.local)),
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'streak_reminders',
@@ -260,8 +260,13 @@ class ReminderService {
     );
   }
 
-  tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final now = tz.TZDateTime.now(tz.local);
+  /// Next daily reminder fire time (today if still ahead, else tomorrow).
+  @visibleForTesting
+  static tz.TZDateTime nextInstanceOfTime(
+    int hour,
+    int minute, {
+    required tz.TZDateTime now,
+  }) {
     var scheduled = tz.TZDateTime(
       tz.local,
       now.year,
