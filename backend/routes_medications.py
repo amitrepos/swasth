@@ -60,10 +60,24 @@ _IMAGE_MAGIC = {
 
 
 def _content_matches_mime(content: bytes, mime: str) -> bool:
+    if mime == "image/webp":
+        return (
+            len(content) >= 12
+            and content[:4] == b"RIFF"
+            and content[8:12] == b"WEBP"
+        )
     prefixes = _IMAGE_MAGIC.get(mime)
     if not prefixes:
         return False
     return any(content.startswith(prefix) for prefix in prefixes)
+
+
+def _storage_value_error_to_http(exc: ValueError) -> HTTPException:
+    msg = str(exc)
+    if "ENCRYPTION_KEY" in msg:
+        logger.exception("medication_photo_encrypt_config_error")
+        return HTTPException(status_code=500, detail="Unable to save medication photo")
+    return HTTPException(status_code=422, detail=msg)
 
 
 async def _read_valid_photo_or_422(photo: UploadFile) -> tuple[bytes, str]:
@@ -156,7 +170,7 @@ async def create_medication(
                 mime_type=mime_type,
             )
         except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
+            raise _storage_value_error_to_http(exc) from exc
         photo_path_saved = med.photo_path
         med.has_photo = True
         logger.info(

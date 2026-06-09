@@ -88,7 +88,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
         _notes = (results[5] as List).cast<Map<String, dynamic>>();
         _loading = false;
       });
-      await _loadMedicationThumbnails(token);
+      _loadMedicationThumbnails(token);
     } catch (e) {
       if (!mounted) return;
       if (e is UnauthorizedException) {

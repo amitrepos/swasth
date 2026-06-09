@@ -14,8 +14,8 @@ void main() {
         bytes: null,
       );
       final service = MedicationService();
-      expect(
-        () => service.saveMedicationWithPhoto(
+      await expectLater(
+        service.saveMedicationWithPhoto(
           MedicationCreate(
             profileId: 1,
             name: 'Metformin',

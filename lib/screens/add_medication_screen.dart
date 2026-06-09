@@ -45,10 +45,12 @@ Future<bool?> showAddMedicationSheet(
 class AddMedicationSheet extends StatefulWidget {
   final int profileId;
   final Medication? initialMedication;
+  final PlatformFile? initialPhoto;
   const AddMedicationSheet({
     super.key,
     required this.profileId,
     this.initialMedication,
+    this.initialPhoto,
   });
 
   @override
@@ -74,6 +76,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
   @override
   void initState() {
     super.initState();
+    _selectedPhoto = widget.initialPhoto;
     final m = widget.initialMedication;
     if (m != null) {
       _nameCtl.text = m.name;

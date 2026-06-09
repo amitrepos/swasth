@@ -102,6 +102,7 @@ Future<void> _bootstrap(
   WidgetTester tester,
   http.Client client, {
   Medication? initialMedication,
+  PlatformFile? initialPhoto,
 }) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 2.625;
@@ -131,6 +132,7 @@ Future<void> _bootstrap(
         body: AddMedicationSheet(
           profileId: 1,
           initialMedication: initialMedication,
+          initialPhoto: initialPhoto,
         ),
       ),
     ),

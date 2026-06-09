@@ -16,6 +16,22 @@ from models import UserRole
 _FAKE_JPEG = b"\xff\xd8\xff" + b"fake-jpeg-bytes"
 
 
+def _abs_photo_path(relative_path: str) -> Path:
+    from medication_photo_storage import _UPLOAD_ROOT
+
+    rel = Path(relative_path)
+    parts = rel.parts
+    suffix = Path(*parts[parts.index("medication_photos") + 1 :])
+    return _UPLOAD_ROOT / suffix
+
+
+@pytest.fixture(autouse=True)
+def isolated_medication_photo_uploads(tmp_path, monkeypatch):
+  """Keep encrypted photo files off the shared backend/uploads tree in CI."""
+  upload_root = tmp_path / "medication_photos"
+  monkeypatch.setattr("medication_photo_storage._UPLOAD_ROOT", upload_root)
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -425,7 +441,7 @@ def test_delete_medication_removes_photo_file(client, db, test_user, auth_header
     created = _post_medication_with_photo(client, auth_headers, pid)
     med_id = created.json()["id"]
     row = db.query(models.Medication).filter_by(id=med_id).first()
-    abs_path = Path(__file__).resolve().parent.parent / row.photo_path
+    abs_path = _abs_photo_path(row.photo_path)
     assert abs_path.is_file()
 
     deleted = client.delete(f"/api/medications/{med_id}", headers=auth_headers)
@@ -438,7 +454,7 @@ def test_get_medication_photo_500_on_corrupt_file(client, db, test_user, auth_he
     created = _post_medication_with_photo(client, auth_headers, pid)
     med_id = created.json()["id"]
     row = db.query(models.Medication).filter_by(id=med_id).first()
-    abs_path = Path(__file__).resolve().parent.parent / row.photo_path
+    abs_path = _abs_photo_path(row.photo_path)
     abs_path.write_bytes(b"corrupt")
 
     photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
@@ -481,6 +497,45 @@ def test_create_medication_rejects_photo_unsupported_content_type(
     files = {
         "photo": ("strip.bin", BytesIO(_FAKE_JPEG), "application/octet-stream"),
     }
+    r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
+    assert r.status_code == 422
+
+
+def test_create_medication_with_photo_rejects_profile_limit(
+    client, db, test_user, auth_headers, monkeypatch
+):
+    monkeypatch.setattr("medication_photo_storage._MAX_PHOTOS_PER_PROFILE", 1)
+    pid = _profile_id_for(test_user, db)
+    first = _post_medication_with_photo(client, auth_headers, pid, name="First")
+    assert first.status_code == 201, first.text
+    second = _post_medication_with_photo(client, auth_headers, pid, name="Second")
+    assert second.status_code == 422
+
+
+def test_create_medication_hides_encryption_config_errors(
+    client, db, test_user, auth_headers, monkeypatch
+):
+    pid = _profile_id_for(test_user, db)
+
+    def _boom(**_kwargs):
+        raise ValueError("ENCRYPTION_KEY is required for medication photo encryption")
+
+    monkeypatch.setattr("routes_medications.save_medication_photo", _boom)
+    r = _post_medication_with_photo(client, auth_headers, pid)
+    assert r.status_code == 500
+    assert "ENCRYPTION_KEY" not in r.text
+
+
+def test_create_medication_rejects_riff_non_webp(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    fields = {
+        "profile_id": str(pid),
+        "name": "Metformin",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+    }
+    riff_avi = b"RIFF" + b"\x00\x00\x00\x00" + b"AVI " + b"data"
+    files = {"photo": ("clip.webp", BytesIO(riff_avi), "image/webp")}
     r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
     assert r.status_code == 422
 

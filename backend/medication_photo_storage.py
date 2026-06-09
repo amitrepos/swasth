@@ -78,7 +78,12 @@ def save_medication_photo(
 
 
 def _resolve_upload_path(relative_path: str) -> Path:
-    absolute_path = (Path(__file__).resolve().parent / relative_path).resolve()
+    rel = Path(relative_path)
+    parts = rel.parts
+    if "medication_photos" not in parts:
+        raise ValueError("Invalid medication photo path")
+    suffix = Path(*parts[parts.index("medication_photos") + 1 :])
+    absolute_path = (_UPLOAD_ROOT / suffix).resolve()
     upload_root = _UPLOAD_ROOT.resolve()
     if absolute_path != upload_root and upload_root not in absolute_path.parents:
         raise ValueError("Invalid medication photo path")

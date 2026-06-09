@@ -48,6 +48,30 @@ def test_load_missing_file_raises():
         load_medication_photo("uploads/medication_photos/99999/missing.enc")
 
 
+def test_save_photo_rejects_at_profile_limit(tmp_path, monkeypatch):
+    monkeypatch.setattr("medication_photo_storage._UPLOAD_ROOT", tmp_path)
+    monkeypatch.setattr("medication_photo_storage._MAX_PHOTOS_PER_PROFILE", 2)
+    save_medication_photo(
+        profile_id=1,
+        medication_id=1,
+        image_bytes=b"a",
+        mime_type="image/jpeg",
+    )
+    save_medication_photo(
+        profile_id=1,
+        medication_id=2,
+        image_bytes=b"b",
+        mime_type="image/jpeg",
+    )
+    with pytest.raises(ValueError, match="exceeds medication photo limit"):
+        save_medication_photo(
+            profile_id=1,
+            medication_id=3,
+            image_bytes=b"c",
+            mime_type="image/jpeg",
+        )
+
+
 def test_saved_file_lives_under_upload_root():
     rel = save_medication_photo(
         profile_id=77,
