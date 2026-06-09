@@ -31,6 +31,7 @@ final _medications = [
     'intake_period': 'MORNING',
     'taken_at': _takenAt,
     'notes': null,
+    'has_photo': true,
   },
   {
     'id': 2,
@@ -41,6 +42,7 @@ final _medications = [
     'intake_period': 'EVENING',
     'taken_at': _takenAt,
     'notes': null,
+    'has_photo': false,
   },
 ];
 
@@ -81,6 +83,13 @@ void main() {
       if (path.endsWith('/api/doctor/patients/$_profileId/notes')) {
         return http.Response(jsonEncode([]), 200);
       }
+      if (path.endsWith('/api/medications/1/photo')) {
+        return http.Response.bytes(
+          const [1, 2, 3],
+          200,
+          headers: {'content-type': 'image/jpeg'},
+        );
+      }
       return http.Response('{"detail":"not found"}', 404);
     });
 
@@ -103,6 +112,7 @@ void main() {
     await pumpN(tester, times: 12);
 
     expect(find.byKey(const Key('doctor-medications-section')), findsOneWidget);
+    expect(find.byKey(const Key('doctor-medication-thumb-1')), findsOneWidget);
     expect(find.textContaining('Morning'), findsAtLeastNWidgets(1));
     expect(find.textContaining('Evening'), findsAtLeastNWidgets(1));
   });

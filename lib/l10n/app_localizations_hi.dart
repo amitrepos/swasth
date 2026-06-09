@@ -1287,7 +1287,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), और स्वचालित रीडिंग कैप्चर के लिए चिकित्सा उपकरणों की तस्वीरें।';
+      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), स्वचालित रीडिंग कैप्चर के लिए चिकित्सा उपकरणों की तस्वीरें, और दवा सेवन लॉग के साथ जोड़ी गई वैकल्पिक दवा पैकेजिंग तस्वीरें।';
 
   @override
   String get ppPurposeTitle => 'संग्रह का उद्देश्य';
@@ -2482,6 +2482,18 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get medicationsFormDateLabel => 'तारीख';
+
+  @override
+  String get medicationsAddPhotoLabel => 'दवा पैक की फोटो (वैकल्पिक)';
+
+  @override
+  String get medicationsAddPhoto => 'फोटो जोड़ें';
+
+  @override
+  String get medicationsChangePhoto => 'फोटो बदलें';
+
+  @override
+  String get medicationsRemovePhoto => 'हटाएँ';
 
   @override
   String get medicationsPeriodMorning => 'सुबह';

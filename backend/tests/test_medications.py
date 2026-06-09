@@ -3,6 +3,7 @@
 Covers: create, list, update, delete, access control, doctor view.
 """
 from datetime import datetime, timezone, timedelta
+from io import BytesIO
 
 import pytest
 
@@ -35,6 +36,21 @@ def _post_medication(client, headers, profile_id, **overrides):
     }
     payload.update(overrides)
     return client.post("/api/medications", json=payload, headers=headers)
+
+
+def _post_medication_with_photo(client, headers, profile_id, **overrides):
+    fields = {
+        "profile_id": str(profile_id),
+        "name": "Metformin",
+        "dose": "500 mg",
+        "frequency": "Twice daily",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+        "notes": "",
+    }
+    fields.update({k: str(v) for k, v in overrides.items() if v is not None})
+    files = {"photo": ("strip.jpg", BytesIO(b"fake-jpeg-bytes"), "image/jpeg")}
+    return client.post("/api/medications", data=fields, files=files, headers=headers)
 
 
 # ---------------------------------------------------------------------------
@@ -206,6 +222,41 @@ def test_create_medication_requires_auth(client, test_user, db):
     pid = _profile_id_for(test_user, db)
     r = _post_medication(client, headers={}, profile_id=pid)
     assert r.status_code == 401
+
+
+def test_create_medication_with_photo_sets_has_photo(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication_with_photo(client, auth_headers, pid)
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["has_photo"] is True
+
+    row = db.query(models.Medication).filter_by(id=body["id"]).first()
+    assert row is not None
+    assert row.has_photo is True
+    assert row.photo_path is not None
+
+
+def test_get_medication_photo_returns_bytes(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    create = _post_medication_with_photo(client, auth_headers, pid)
+    assert create.status_code == 201, create.text
+    med_id = create.json()["id"]
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
+    assert photo.status_code == 200
+    assert photo.content == b"fake-jpeg-bytes"
+    assert photo.headers["content-type"].startswith("image/jpeg")
+
+
+def test_get_medication_photo_404_when_missing(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication(client, auth_headers, pid)
+    assert created.status_code == 201, created.text
+    med_id = created.json()["id"]
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
+    assert photo.status_code == 404
 
 
 def test_create_medication_denies_unrelated_profile(client, db, test_user, auth_headers):

@@ -2515,6 +2515,18 @@ class AppLocalizationsTa extends AppLocalizations {
   String get medicationsFormDateLabel => 'தேதி';
 
   @override
+  String get medicationsAddPhotoLabel => 'Medicine package photo (optional)';
+
+  @override
+  String get medicationsAddPhoto => 'Add photo';
+
+  @override
+  String get medicationsChangePhoto => 'Change photo';
+
+  @override
+  String get medicationsRemovePhoto => 'Remove';
+
+  @override
   String get medicationsPeriodMorning => 'காலை';
 
   @override

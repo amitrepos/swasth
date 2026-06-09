@@ -1287,7 +1287,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), and photos of medical devices for automated reading capture.';
+      'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, and optional medicine packaging photos attached to intake logs.';
 
   @override
   String get ppPurposeTitle => 'Purpose of Collection';
@@ -2478,6 +2478,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get medicationsFormDateLabel => 'Date';
+
+  @override
+  String get medicationsAddPhotoLabel => 'Medicine package photo (optional)';
+
+  @override
+  String get medicationsAddPhoto => 'Add photo';
+
+  @override
+  String get medicationsChangePhoto => 'Change photo';
+
+  @override
+  String get medicationsRemovePhoto => 'Remove';
 
   @override
   String get medicationsPeriodMorning => 'Morning';

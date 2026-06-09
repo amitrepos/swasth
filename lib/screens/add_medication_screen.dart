@@ -7,6 +7,7 @@
 // name. The user keeps logging until they tap "Done", which pops the sheet
 // and the parent list refreshes.
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../models/medication_model.dart';
@@ -17,6 +18,7 @@ import '../services/storage_service.dart';
 import '../utils/medication_period_detector.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../widgets/medication_photo_thumbnail.dart';
 
 /// Show the medication-add sheet. Resolves to `true` if at least one medicine
 /// was successfully logged (so the caller can refresh the list), `false` /
@@ -65,6 +67,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
   bool _saving = false;
   int _savedCount = 0;
   String? _lastSavedName;
+  PlatformFile? _selectedPhoto;
 
   bool get _isEditMode => widget.initialMedication != null;
 
@@ -123,6 +126,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
       _selectedDate = DateTime.now();
       _intakePeriod = detectMedicationIntakePeriod();
       _saving = false;
+      _selectedPhoto = null;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _nameFocus.requestFocus();
@@ -154,7 +158,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
         Navigator.pop(context, true);
         return;
       } else {
-        await MedicationService().saveMedication(
+        await MedicationService().saveMedicationWithPhoto(
           MedicationCreate(
             profileId: widget.profileId,
             name: savedName,
@@ -167,6 +171,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
             notes: _notesCtl.text.trim().isEmpty ? null : _notesCtl.text.trim(),
           ),
           token,
+          photo: _selectedPhoto,
         );
         if (!mounted) return;
         setState(() {
@@ -193,6 +198,16 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.errGeneric)));
     }
+  }
+
+  Future<void> _pickPhoto() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    if (!mounted) return;
+    setState(() => _selectedPhoto = result.files.first);
   }
 
   void _done() {
@@ -332,6 +347,44 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      if (!_isEditMode) ...[
+                        Text(
+                          l10n.medicationsAddPhotoLabel,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            MedicationPhotoThumbnail(
+                              hasPhoto: _selectedPhoto != null,
+                              bytes: _selectedPhoto?.bytes,
+                              size: 56,
+                            ),
+                            const SizedBox(width: 10),
+                            TextButton(
+                              onPressed: _saving ? null : _pickPhoto,
+                              child: Text(
+                                _selectedPhoto == null
+                                    ? l10n.medicationsAddPhoto
+                                    : l10n.medicationsChangePhoto,
+                              ),
+                            ),
+                            if (_selectedPhoto != null)
+                              TextButton(
+                                onPressed: _saving
+                                    ? null
+                                    : () =>
+                                          setState(() => _selectedPhoto = null),
+                                child: Text(l10n.medicationsRemovePhoto),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       Text(
                         l10n.medicationsFormPeriodLabel,
                         style: const TextStyle(

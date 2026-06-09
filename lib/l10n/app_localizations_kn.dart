@@ -2510,6 +2510,18 @@ class AppLocalizationsKn extends AppLocalizations {
   String get medicationsFormDateLabel => 'ದಿನಾಂಕ';
 
   @override
+  String get medicationsAddPhotoLabel => 'Medicine package photo (optional)';
+
+  @override
+  String get medicationsAddPhoto => 'Add photo';
+
+  @override
+  String get medicationsChangePhoto => 'Change photo';
+
+  @override
+  String get medicationsRemovePhoto => 'Remove';
+
+  @override
   String get medicationsPeriodMorning => 'ಬೆಳಿಗ್ಗೆ';
 
   @override

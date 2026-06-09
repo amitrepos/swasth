@@ -2483,7 +2483,7 @@ abstract class AppLocalizations {
   /// No description provided for @ppDataCollection.
   ///
   /// In en, this message translates to:
-  /// **'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), and photos of medical devices for automated reading capture.'**
+  /// **'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, and optional medicine packaging photos attached to intake logs.'**
   String get ppDataCollection;
 
   /// No description provided for @ppPurposeTitle.
@@ -4626,6 +4626,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Date'**
   String get medicationsFormDateLabel;
+
+  /// No description provided for @medicationsAddPhotoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine package photo (optional)'**
+  String get medicationsAddPhotoLabel;
+
+  /// No description provided for @medicationsAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get medicationsAddPhoto;
+
+  /// No description provided for @medicationsChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get medicationsChangePhoto;
+
+  /// No description provided for @medicationsRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get medicationsRemovePhoto;
 
   /// No description provided for @medicationsPeriodMorning.
   ///

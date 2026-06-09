@@ -2498,6 +2498,18 @@ class AppLocalizationsTe extends AppLocalizations {
   String get medicationsFormDateLabel => 'తేదీ';
 
   @override
+  String get medicationsAddPhotoLabel => 'Medicine package photo (optional)';
+
+  @override
+  String get medicationsAddPhoto => 'Add photo';
+
+  @override
+  String get medicationsChangePhoto => 'Change photo';
+
+  @override
+  String get medicationsRemovePhoto => 'Remove';
+
+  @override
   String get medicationsPeriodMorning => 'ఉదయం';
 
   @override
