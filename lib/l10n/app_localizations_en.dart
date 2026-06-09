@@ -2347,6 +2347,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyReminderSection => 'Daily Health Check';
 
   @override
+  String get dailyReminderEnableLabel => 'Enable daily health reminder';
+
+  @override
   String get weeklyWeightReminderSection => 'Weekly Weight Reminder';
 
   @override
@@ -2381,7 +2384,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationPermissionRequired =>
-      'Notification permission is required for reminders';
+      'Notification permission is required for reminders. Open your phone Settings and allow notifications for Swasth.';
 
   @override
   String get actionCall => 'Call';

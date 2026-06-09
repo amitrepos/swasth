@@ -2365,7 +2365,11 @@ class AppLocalizationsTe extends AppLocalizations {
   String get dailyReminderSection => 'రోజువారీ ఆరోగ్య తనిఖీ';
 
   @override
-  String get weeklyWeightReminderSection => 'వారపు బరువు';
+  String get dailyReminderEnableLabel =>
+      'రోజువారీ ఆరోగ్య రిమైండర్ ప్రారంభించండి';
+
+  @override
+  String get weeklyWeightReminderSection => 'వారపు బరువు రిమైండర్';
 
   @override
   String get weightReminderEnableLabel => 'వారపు బరువు రిమైండర్ ప్రారంభించండి';
@@ -2399,7 +2403,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get notificationPermissionRequired =>
-      'రిమైండర్‌ల కోసం నోటిఫికేషన్ అనుమతి అవసరం';
+      'రిమైండర్‌ల కోసం నోటిఫికేషన్ అనుమతి అవసరం. ఫోన్ Settingsలోకి వెళ్లి Swasthకు అనుమతి ఇవ్వండి.';
 
   @override
   String get actionCall => 'కాల్ చేయండి';

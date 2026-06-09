@@ -1303,7 +1303,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'ஸ்வஸ்த் சேகரிக்கிறது: இரத்த குளுக்கோஸ் ரீடிங்குகள், இரத்த அழுத்த ரீடிங்குகள், நாடி வீதம், உணவு குறிப்புகள், சுயவிவர தகவல்கள் மற்றும் மருத்துவ சாதனங்களின் புகைப்படங்கள், மேலும் வாராந்திர எடை நினைவூட்டல் விருப்பங்கள் (நாள்/நேரம்) — இவை உங்கள் சாதனத்தில் மட்டும் சேமிக்கப்படும்.';
+      'ஸ்வஸ்த் சேகரிக்கிறது: இரத்த குளுக்கோஸ் ரீடிங்குகள், இரத்த அழுத்த ரீடிங்குகள், நாடி வீதம், உணவு குறிப்புகள், சுயவிவர தகவல்கள் (பெயர், வயது, பாலினம், மருத்துவ நிலைகள், மருந்துகள்), தானியங்கி ரீடிங் பிடிப்புக்கான மருத்துவ சாதன புகைப்படங்கள், மேலும் வாராந்திர எடை நினைவூட்டல் விருப்பங்கள் (நாள்/நேரம்) — இவை உங்கள் சாதனத்தில் மட்டும் சேமிக்கப்படும்.';
 
   @override
   String get ppPurposeTitle => 'சேகரிப்பு நோக்கம்';
@@ -2381,7 +2381,10 @@ class AppLocalizationsTa extends AppLocalizations {
   String get dailyReminderSection => 'தினசரி உடல்நலப் பரிசோதனை';
 
   @override
-  String get weeklyWeightReminderSection => 'வாராந்திர எடை';
+  String get dailyReminderEnableLabel => 'தினசரி உடல்நல நினைவூட்டலை இயக்கு';
+
+  @override
+  String get weeklyWeightReminderSection => 'வாராந்திர எடை நினைவூட்டல்';
 
   @override
   String get weightReminderEnableLabel => 'வாராந்திர எடை நினைவூட்டலை இயக்கு';
@@ -2418,7 +2421,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get notificationPermissionRequired =>
-      'நினைவூட்டல்களுக்கு அறிவிப்பு அனுமதி தேவை';
+      'நினைவூட்டல்களுக்கு அறிவிப்பு அனுமதி தேவை. தொலைபேசி Settings-இல் சென்று Swasth-க்கு அனுமதி வழங்கவும்.';
 
   @override
   String get actionCall => 'அழைக்கவும்';

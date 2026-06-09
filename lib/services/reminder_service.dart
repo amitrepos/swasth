@@ -97,8 +97,15 @@ class ReminderService {
       ) ??
       0;
 
+  Future<bool> _checkNotificationPermission() async {
+    if (permissionCheckOverride != null) {
+      return permissionCheckOverride!();
+    }
+    return _ensureNotificationPermission();
+  }
+
   Future<bool> enableReminder(int hour, int minute) async {
-    if (!await _ensureNotificationPermission()) return false;
+    if (!await _checkNotificationPermission()) return false;
     await StorageService().setString(_reminderEnabledKey, 'true');
     await StorageService().setString(_reminderHourKey, hour.toString());
     await StorageService().setString(_reminderMinuteKey, minute.toString());
@@ -113,6 +120,12 @@ class ReminderService {
     await _notifications.cancel(_eveningId);
   }
 
+  @visibleForTesting
+  Future<bool> Function()? permissionCheckOverride;
+
+  @visibleForTesting
+  bool skipNotificationCancelForTest = false;
+
   Future<bool> enableWeightReminder(
     int day0Sunday,
     int hour,
@@ -120,19 +133,24 @@ class ReminderService {
     required String notificationTitle,
     required String notificationBody,
   }) async {
-    if (!await _ensureNotificationPermission()) return false;
+    if (!await _checkNotificationPermission()) return false;
     final day = day0Sunday.clamp(0, 6);
+    final clampedHour = hour.clamp(0, 23);
+    final clampedMinute = minute.clamp(0, 59);
     await StorageService().setString(_weightReminderEnabledKey, 'true');
     await StorageService().setString(_weightReminderDayKey, day.toString());
-    await StorageService().setString(_weightReminderHourKey, hour.toString());
+    await StorageService().setString(
+      _weightReminderHourKey,
+      clampedHour.toString(),
+    );
     await StorageService().setString(
       _weightReminderMinuteKey,
-      minute.toString(),
+      clampedMinute.toString(),
     );
     await _scheduleWeightReminder(
       day,
-      hour,
-      minute,
+      clampedHour,
+      clampedMinute,
       title: notificationTitle,
       body: notificationBody,
     );
@@ -141,7 +159,9 @@ class ReminderService {
 
   Future<void> disableWeightReminder() async {
     await StorageService().setString(_weightReminderEnabledKey, 'false');
-    await _notifications.cancel(_weightId);
+    if (!skipNotificationCancelForTest) {
+      await _notifications.cancel(_weightId);
+    }
   }
 
   Future<void> _scheduleMorningReminder(int hour, int minute) async {
@@ -245,7 +265,21 @@ class ReminderService {
     int hour,
     int minute,
   ) {
-    final now = tz.TZDateTime.now(tz.local);
+    return nextInstanceOfWeekdayTime(
+      day0Sunday,
+      hour,
+      minute,
+      now: tz.TZDateTime.now(tz.local),
+    );
+  }
+
+  @visibleForTesting
+  static tz.TZDateTime nextInstanceOfWeekdayTime(
+    int day0Sunday,
+    int hour,
+    int minute, {
+    required tz.TZDateTime now,
+  }) {
     final targetWeekday = dartWeekdayFromDay0Sunday(day0Sunday);
     var scheduled = tz.TZDateTime(
       tz.local,

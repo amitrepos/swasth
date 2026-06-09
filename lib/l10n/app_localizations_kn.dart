@@ -2377,6 +2377,10 @@ class AppLocalizationsKn extends AppLocalizations {
   String get dailyReminderSection => 'ದೈನಂದಿನ ಆರೋಗ್ಯ ಪರಿಶೀಲನೆ';
 
   @override
+  String get dailyReminderEnableLabel =>
+      'ದೈನಂದಿನ ಆರೋಗ್ಯ ಜ್ಞಾಪನೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ';
+
+  @override
   String get weeklyWeightReminderSection => 'ವಾರದ ತೂಕ ಜ್ಞಾಪನೆ';
 
   @override
@@ -2411,7 +2415,7 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get notificationPermissionRequired =>
-      'ಜ್ಞಾಪನೆಗಳಿಗೆ ಅಧಿಸೂಚನೆ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ';
+      'ಜ್ಞಾಪನೆಗಳಿಗೆ ಅಧಿಸೂಚನೆ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ. ಫೋನ್ Settings ನಲ್ಲಿ ಹೋಗಿ Swasth ಗೆ ಅನುಮತಿ ನೀಡಿ.';
 
   @override
   String get actionCall => 'ಕರೆ ಮಾಡಿ';

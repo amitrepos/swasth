@@ -4387,6 +4387,12 @@ abstract class AppLocalizations {
   /// **'Daily Health Check'**
   String get dailyReminderSection;
 
+  /// No description provided for @dailyReminderEnableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable daily health reminder'**
+  String get dailyReminderEnableLabel;
+
   /// No description provided for @weeklyWeightReminderSection.
   ///
   /// In en, this message translates to:
@@ -4450,7 +4456,7 @@ abstract class AppLocalizations {
   /// No description provided for @notificationPermissionRequired.
   ///
   /// In en, this message translates to:
-  /// **'Notification permission is required for reminders'**
+  /// **'Notification permission is required for reminders. Open your phone Settings and allow notifications for Swasth.'**
   String get notificationPermissionRequired;
 
   /// No description provided for @actionCall.

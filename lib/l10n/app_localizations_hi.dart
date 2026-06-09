@@ -1287,7 +1287,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी, चिकित्सा उपकरणों की तस्वीरें, और वैकल्पिक साप्ताहिक वज़न रिमाइंडर (केवल आपके डिवाइस पर संग्रहीत)।';
+      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), चिकित्सा उपकरणों की तस्वीरें, और वैकल्पिक साप्ताहिक वज़न रिमाइंडर (केवल आपके डिवाइस पर संग्रहीत)।';
 
   @override
   String get ppPurposeTitle => 'संग्रह का उद्देश्य';
@@ -2351,6 +2351,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get dailyReminderSection => 'दैनिक स्वास्थ्य जाँच';
 
   @override
+  String get dailyReminderEnableLabel => 'दैनिक स्वास्थ्य रिमाइंडर चालू करें';
+
+  @override
   String get weeklyWeightReminderSection => 'साप्ताहिक वजन रिमाइंडर';
 
   @override
@@ -2381,11 +2384,11 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get weightReminderNotificationBody =>
-      'साप्ताहिक जाँच — अपना वजन दर्ज करें ताकि स्वास्थ्य रुझान सही रहें।';
+      'साप्ताहिक जाँच — अपना वजन दर्ज करें ताकि डॉक्टर को सही जानकारी मिले।';
 
   @override
   String get notificationPermissionRequired =>
-      'रिमाइंडर के लिए नोटिफिकेशन अनुमति आवश्यक है';
+      'रिमाइंडर के लिए नोटिफिकेशन अनुमति आवश्यक है। फ़ोन की Settings में जाएँ और Swasth को अनुमति दें।';
 
   @override
   String get actionCall => 'कॉल करें';

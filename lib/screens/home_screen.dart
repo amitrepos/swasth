@@ -1225,6 +1225,7 @@ class HomeScreenState extends State<HomeScreen>
 
   String _weekdayLabel(BuildContext ctx, int day0Sunday) {
     final locale = Localizations.localeOf(ctx).toString();
+    // Jan 7 2024 = Sunday; +day0Sunday offsets to correct weekday for locale name lookup.
     return DateFormat.EEEE(locale).format(DateTime(2024, 1, 7 + day0Sunday));
   }
 
@@ -1272,195 +1273,138 @@ class HomeScreenState extends State<HomeScreen>
                   20,
                   16 + MediaQuery.of(sheetCtx).viewInsets.bottom,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      l10n.reminderSettingsTitle,
-                      style: Theme.of(sheetCtx).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        l10n.reminderSettingsTitle,
+                        style: Theme.of(sheetCtx).textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
-                    // ── Daily reading reminder ──────────────────────────
-                    Text(
-                      l10n.dailyReminderSection,
-                      style: Theme.of(sheetCtx).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
+                      // ── Daily reading reminder ──────────────────────────
+                      Text(
+                        l10n.dailyReminderSection,
+                        style: Theme.of(sheetCtx).textTheme.titleSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
+                            ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.reminderSetTime),
-                      value: dailyEnabled,
-                      onChanged: (on) async {
-                        if (on) {
-                          final time = await showTimePicker(
-                            context: sheetCtx,
-                            initialTime: dailyTime,
-                            helpText: l10n.reminderSetTime,
-                          );
-                          if (time == null) return;
-                          final ok = await reminder.enableReminder(
-                            time.hour,
-                            time.minute,
-                          );
-                          if (!ok) {
-                            await showPermissionSnack();
-                            return;
-                          }
-                          setSheetState(() {
-                            dailyEnabled = true;
-                            dailyHour = time.hour;
-                            dailyMinute = time.minute;
-                          });
-                          if (mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.reminderSetFor(time.format(ctx)),
-                                ),
-                              ),
-                            );
-                          }
-                        } else {
-                          await reminder.disableReminder();
-                          setSheetState(() => dailyEnabled = false);
-                          if (mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(content: Text(l10n.reminderDisabled)),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                    if (dailyEnabled)
-                      ListTile(
+                      const SizedBox(height: 8),
+                      SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(l10n.reminderChangeTime),
-                        trailing: Text(dailyTime.format(sheetCtx)),
-                        onTap: () async {
-                          final time = await showTimePicker(
-                            context: sheetCtx,
-                            initialTime: dailyTime,
-                            helpText: l10n.reminderChangeTime,
-                          );
-                          if (time == null) return;
-                          final ok = await reminder.enableReminder(
-                            time.hour,
-                            time.minute,
-                          );
-                          if (!ok) {
-                            await showPermissionSnack();
-                            return;
-                          }
-                          setSheetState(() {
-                            dailyHour = time.hour;
-                            dailyMinute = time.minute;
-                          });
-                          if (mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.reminderSetFor(time.format(ctx)),
-                                ),
-                              ),
+                        title: Text(l10n.dailyReminderEnableLabel),
+                        value: dailyEnabled,
+                        onChanged: (on) async {
+                          if (on) {
+                            final time = await showTimePicker(
+                              context: sheetCtx,
+                              initialTime: dailyTime,
+                              helpText: l10n.reminderSetTime,
                             );
+                            if (time == null) return;
+                            final ok = await reminder.enableReminder(
+                              time.hour,
+                              time.minute,
+                            );
+                            if (!ok) {
+                              await showPermissionSnack();
+                              return;
+                            }
+                            setSheetState(() {
+                              dailyEnabled = true;
+                              dailyHour = time.hour;
+                              dailyMinute = time.minute;
+                            });
+                            if (mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    l10n.reminderSetFor(time.format(ctx)),
+                                  ),
+                                ),
+                              );
+                            }
+                          } else {
+                            await reminder.disableReminder();
+                            setSheetState(() => dailyEnabled = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(content: Text(l10n.reminderDisabled)),
+                              );
+                            }
                           }
                         },
                       ),
-
-                    const Divider(height: 32),
-
-                    // ── Weekly weight reminder ──────────────────────────
-                    Text(
-                      l10n.weeklyWeightReminderSection,
-                      style: Theme.of(sheetCtx).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.weightReminderEnableLabel),
-                      value: weightEnabled,
-                      onChanged: (on) async {
-                        if (on) {
-                          final time = await showTimePicker(
-                            context: sheetCtx,
-                            initialTime: weightTime,
-                            helpText: l10n.weightReminderSetTime,
-                          );
-                          if (time == null) return;
-                          final ok = await reminder.enableWeightReminder(
-                            weightDay,
-                            time.hour,
-                            time.minute,
-                            notificationTitle:
-                                l10n.weightReminderNotificationTitle,
-                            notificationBody:
-                                l10n.weightReminderNotificationBody,
-                          );
-                          if (!ok) {
-                            await showPermissionSnack();
-                            return;
-                          }
-                          setSheetState(() {
-                            weightEnabled = true;
-                            weightHour = time.hour;
-                            weightMinute = time.minute;
-                          });
-                          if (mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.weightReminderSetFor(
-                                    _weekdayLabel(ctx, weightDay),
-                                    time.format(ctx),
+                      if (dailyEnabled)
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l10n.reminderChangeTime),
+                          trailing: Text(dailyTime.format(sheetCtx)),
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: sheetCtx,
+                              initialTime: dailyTime,
+                              helpText: l10n.reminderChangeTime,
+                            );
+                            if (time == null) return;
+                            final ok = await reminder.enableReminder(
+                              time.hour,
+                              time.minute,
+                            );
+                            if (!ok) {
+                              await showPermissionSnack();
+                              return;
+                            }
+                            setSheetState(() {
+                              dailyHour = time.hour;
+                              dailyMinute = time.minute;
+                            });
+                            if (mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    l10n.reminderSetFor(time.format(ctx)),
                                   ),
                                 ),
-                              ),
-                            );
-                          }
-                        } else {
-                          await reminder.disableWeightReminder();
-                          setSheetState(() => weightEnabled = false);
-                          if (mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.weightReminderDisabled),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                    if (weightEnabled) ...[
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(l10n.weightReminderDayLabel),
-                        trailing: DropdownButton<int>(
-                          value: weightDay,
-                          underline: const SizedBox.shrink(),
-                          items: List.generate(
-                            7,
-                            (i) => DropdownMenuItem(
-                              value: i,
-                              child: Text(_weekdayLabel(sheetCtx, i)),
+                              );
+                            }
+                          },
+                        ),
+
+                      const Divider(height: 32),
+
+                      // ── Weekly weight reminder ──────────────────────────
+                      Text(
+                        l10n.weeklyWeightReminderSection,
+                        style: Theme.of(sheetCtx).textTheme.titleSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
                             ),
-                          ),
-                          onChanged: (day) async {
-                            if (day == null) return;
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.weightReminderEnableLabel),
+                        value: weightEnabled,
+                        onChanged: (on) async {
+                          if (on) {
+                            final time = await showTimePicker(
+                              context: sheetCtx,
+                              initialTime: weightTime,
+                              helpText: l10n.weightReminderSetTime,
+                            );
+                            if (time == null) return;
                             final ok = await reminder.enableWeightReminder(
-                              day,
-                              weightHour,
-                              weightMinute,
+                              weightDay,
+                              time.hour,
+                              time.minute,
                               notificationTitle:
                                   l10n.weightReminderNotificationTitle,
                               notificationBody:
@@ -1470,14 +1414,116 @@ class HomeScreenState extends State<HomeScreen>
                               await showPermissionSnack();
                               return;
                             }
-                            setSheetState(() => weightDay = day);
+                            setSheetState(() {
+                              weightEnabled = true;
+                              weightHour = time.hour;
+                              weightMinute = time.minute;
+                            });
                             if (mounted) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     l10n.weightReminderSetFor(
-                                      _weekdayLabel(ctx, day),
-                                      weightTime.format(ctx),
+                                      _weekdayLabel(ctx, weightDay),
+                                      time.format(ctx),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                          } else {
+                            await reminder.disableWeightReminder();
+                            setSheetState(() => weightEnabled = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text(l10n.weightReminderDisabled),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                      if (weightEnabled) ...[
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l10n.weightReminderDayLabel),
+                          trailing: DropdownButton<int>(
+                            value: weightDay,
+                            underline: const SizedBox.shrink(),
+                            items: List.generate(
+                              7,
+                              (i) => DropdownMenuItem(
+                                value: i,
+                                child: Text(_weekdayLabel(sheetCtx, i)),
+                              ),
+                            ),
+                            onChanged: (day) async {
+                              if (day == null) return;
+                              final ok = await reminder.enableWeightReminder(
+                                day,
+                                weightHour,
+                                weightMinute,
+                                notificationTitle:
+                                    l10n.weightReminderNotificationTitle,
+                                notificationBody:
+                                    l10n.weightReminderNotificationBody,
+                              );
+                              if (!ok) {
+                                await showPermissionSnack();
+                                return;
+                              }
+                              setSheetState(() => weightDay = day);
+                              if (mounted) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      l10n.weightReminderSetFor(
+                                        _weekdayLabel(ctx, day),
+                                        weightTime.format(ctx),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l10n.weightReminderTimeLabel),
+                          trailing: Text(weightTime.format(sheetCtx)),
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: sheetCtx,
+                              initialTime: weightTime,
+                              helpText: l10n.weightReminderChangeTime,
+                            );
+                            if (time == null) return;
+                            final ok = await reminder.enableWeightReminder(
+                              weightDay,
+                              time.hour,
+                              time.minute,
+                              notificationTitle:
+                                  l10n.weightReminderNotificationTitle,
+                              notificationBody:
+                                  l10n.weightReminderNotificationBody,
+                            );
+                            if (!ok) {
+                              await showPermissionSnack();
+                              return;
+                            }
+                            setSheetState(() {
+                              weightHour = time.hour;
+                              weightMinute = time.minute;
+                            });
+                            if (mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    l10n.weightReminderSetFor(
+                                      _weekdayLabel(ctx, weightDay),
+                                      time.format(ctx),
                                     ),
                                   ),
                                 ),
@@ -1485,52 +1531,10 @@ class HomeScreenState extends State<HomeScreen>
                             }
                           },
                         ),
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(l10n.weightReminderTimeLabel),
-                        trailing: Text(weightTime.format(sheetCtx)),
-                        onTap: () async {
-                          final time = await showTimePicker(
-                            context: sheetCtx,
-                            initialTime: weightTime,
-                            helpText: l10n.weightReminderChangeTime,
-                          );
-                          if (time == null) return;
-                          final ok = await reminder.enableWeightReminder(
-                            weightDay,
-                            time.hour,
-                            time.minute,
-                            notificationTitle:
-                                l10n.weightReminderNotificationTitle,
-                            notificationBody:
-                                l10n.weightReminderNotificationBody,
-                          );
-                          if (!ok) {
-                            await showPermissionSnack();
-                            return;
-                          }
-                          setSheetState(() {
-                            weightHour = time.hour;
-                            weightMinute = time.minute;
-                          });
-                          if (mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.weightReminderSetFor(
-                                    _weekdayLabel(ctx, weightDay),
-                                    time.format(ctx),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
+                      ],
+                      const SizedBox(height: 8),
                     ],
-                    const SizedBox(height: 8),
-                  ],
+                  ),
                 ),
               ),
             );
@@ -1538,6 +1542,7 @@ class HomeScreenState extends State<HomeScreen>
         );
       },
     );
+  }
 
   Future<void> _shareWeeklySummary() async {
     if (_activeProfileId == null) return;
