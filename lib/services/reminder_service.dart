@@ -126,6 +126,17 @@ class ReminderService {
   @visibleForTesting
   bool skipNotificationCancelForTest = false;
 
+  /// When set in tests, skips the real notification plugin schedule call.
+  @visibleForTesting
+  Future<void> Function(
+    int day0Sunday,
+    int hour,
+    int minute, {
+    required String title,
+    required String body,
+  })?
+  scheduleWeightReminderOverride;
+
   Future<bool> enableWeightReminder(
     int day0Sunday,
     int hour,
@@ -217,6 +228,16 @@ class ReminderService {
     required String title,
     required String body,
   }) async {
+    if (scheduleWeightReminderOverride != null) {
+      await scheduleWeightReminderOverride!(
+        day0Sunday,
+        hour,
+        minute,
+        title: title,
+        body: body,
+      );
+      return;
+    }
     await _notifications.zonedSchedule(
       _weightId,
       title,
@@ -249,7 +270,7 @@ class ReminderService {
       hour,
       minute,
     );
-    if (scheduled.isBefore(now)) {
+    if (!scheduled.isAfter(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     return scheduled;
@@ -290,7 +311,7 @@ class ReminderService {
       minute,
     );
     var daysUntil = (targetWeekday - scheduled.weekday) % 7;
-    if (daysUntil == 0 && scheduled.isBefore(now)) {
+    if (daysUntil == 0 && !scheduled.isAfter(now)) {
       daysUntil = 7;
     }
     return scheduled.add(Duration(days: daysUntil));

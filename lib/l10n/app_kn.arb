@@ -1325,6 +1325,8 @@
   "weightReminderDisabled": "ವಾರದ ತೂಕ ಜ್ಞಾಪನೆ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದೆ",
   "weightReminderNotificationTitle": "⚖️ ನಿಮ್ಮ ತೂಕವನ್ನು ದಾಖಲಿಸಿ",
   "weightReminderNotificationBody": "ವಾರದ ಚೆಕ್-ಇನ್ — ಆರೋಗ್ಯ ಪ್ರವೃತ್ತಿಗಳನ್ನು ಖಚಿತವಾಗಿಡಲು ನಿಮ್ಮ ತೂಕವನ್ನು ದಾಖಲಿಸಿ.",
+  "reminderOpenSettings": "ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ತೆರೆಯಿ",
+  "reminderSheetDone": "ಮುಗಿದಿದೆ",
   "notificationPermissionRequired": "ಜ್ಞಾಪನೆಗಳಿಗೆ ಅಧಿಸೂಚನೆ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ. ಫೋನ್ Settings ನಲ್ಲಿ ಹೋಗಿ Swasth ಗೆ ಅನುಮತಿ ನೀಡಿ.",
   "actionCall": "ಕರೆ ಮಾಡಿ",
   "actionWhatsApp": "ವಾಟ್ಸಾಪ್",

@@ -935,6 +935,8 @@
   "weightReminderDisabled": "साप्ताहिक वजन रिमाइंडर बंद कर दिया गया",
   "weightReminderNotificationTitle": "⚖️ अपना वजन दर्ज करें",
   "weightReminderNotificationBody": "साप्ताहिक जाँच — अपना वजन दर्ज करें ताकि डॉक्टर को सही जानकारी मिले।",
+  "reminderOpenSettings": "सेटिंग्स खोलें",
+  "reminderSheetDone": "हो गया",
   "dailyReminderEnableLabel": "दैनिक स्वास्थ्य रिमाइंडर चालू करें",
   "notificationPermissionRequired": "रिमाइंडर के लिए नोटिफिकेशन अनुमति आवश्यक है। फ़ोन की Settings में जाएँ और Swasth को अनुमति दें।",
   "actionCall": "कॉल करें",

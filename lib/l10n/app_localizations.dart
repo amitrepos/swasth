@@ -4450,8 +4450,20 @@ abstract class AppLocalizations {
   /// No description provided for @weightReminderNotificationBody.
   ///
   /// In en, this message translates to:
-  /// **'Weekly check-in: log your weight to keep health trends accurate.'**
+  /// **'Weekly check-in — log your weight so your doctor has the latest information.'**
   String get weightReminderNotificationBody;
+
+  /// No description provided for @reminderOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get reminderOpenSettings;
+
+  /// No description provided for @reminderSheetDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get reminderSheetDone;
 
   /// No description provided for @notificationPermissionRequired.
   ///

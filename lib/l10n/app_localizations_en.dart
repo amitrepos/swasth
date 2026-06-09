@@ -2380,7 +2380,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weightReminderNotificationBody =>
-      'Weekly check-in: log your weight to keep health trends accurate.';
+      'Weekly check-in — log your weight so your doctor has the latest information.';
+
+  @override
+  String get reminderOpenSettings => 'Open Settings';
+
+  @override
+  String get reminderSheetDone => 'Done';
 
   @override
   String get notificationPermissionRequired =>

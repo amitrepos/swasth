@@ -2402,6 +2402,12 @@ class AppLocalizationsTe extends AppLocalizations {
       'వారపు చెక్-ఇన్ — మీ బరువును నమోదు చేసి ఆరోగ్య ట్రెండ్‌లను ఖచ్చితంగా ఉంచండి.';
 
   @override
+  String get reminderOpenSettings => 'సెట్టింగ్‌లు తెరవండి';
+
+  @override
+  String get reminderSheetDone => 'పూర్తి';
+
+  @override
   String get notificationPermissionRequired =>
       'రిమైండర్‌ల కోసం నోటిఫికేషన్ అనుమతి అవసరం. ఫోన్ Settingsలోకి వెళ్లి Swasthకు అనుమతి ఇవ్వండి.';
 

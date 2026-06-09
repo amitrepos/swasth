@@ -16,6 +16,7 @@ void main() {
   });
   tearDown(() {
     ReminderService().permissionCheckOverride = null;
+    ReminderService().scheduleWeightReminderOverride = null;
     ReminderService().skipNotificationCancelForTest = false;
     StorageService.useRealStorage();
   });
@@ -126,5 +127,52 @@ void main() {
       expect(next.day, 8);
       expect(next.weekday, DateTime.monday);
     });
+
+    test('exact same moment schedules 7 days ahead, not now', () {
+      final now = ist(2026, 6, 10, 9, 0);
+      final next = ReminderService.nextInstanceOfWeekdayTime(3, 9, 0, now: now);
+      expect(next.day, 17);
+      expect(next.hour, 9);
+    });
+  });
+
+  test('enableWeightReminder persists all prefs on success', () async {
+    final svc = ReminderService();
+    svc.permissionCheckOverride = () async => true;
+    svc.scheduleWeightReminderOverride =
+        (day, hour, minute, {required title, required body}) async {};
+
+    final ok = await svc.enableWeightReminder(
+      3,
+      10,
+      30,
+      notificationTitle: 'T',
+      notificationBody: 'B',
+    );
+
+    expect(ok, isTrue);
+    expect(await svc.weightReminderEnabled(), isTrue);
+    expect(await svc.weightReminderDay(), 3);
+    expect(await svc.weightReminderHour(), 10);
+    expect(await svc.weightReminderMinute(), 30);
+  });
+
+  test('enableWeightReminder clamps out-of-range inputs', () async {
+    final svc = ReminderService();
+    svc.permissionCheckOverride = () async => true;
+    svc.scheduleWeightReminderOverride =
+        (day, hour, minute, {required title, required body}) async {};
+
+    await svc.enableWeightReminder(
+      7,
+      24,
+      60,
+      notificationTitle: 'T',
+      notificationBody: 'B',
+    );
+
+    expect(await svc.weightReminderDay(), 6);
+    expect(await svc.weightReminderHour(), 23);
+    expect(await svc.weightReminderMinute(), 59);
   });
 }

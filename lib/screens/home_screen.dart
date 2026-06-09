@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'unified_login_screen.dart';
 import 'profile_screen.dart';
@@ -1258,10 +1259,26 @@ class HomeScreenState extends State<HomeScreen>
               minute: weightMinute,
             );
 
-            Future<void> showPermissionSnack() async {
+            Future<void> showPermissionDialog() async {
               if (!mounted) return;
-              ScaffoldMessenger.of(ctx).showSnackBar(
-                SnackBar(content: Text(l10n.notificationPermissionRequired)),
+              await showDialog<void>(
+                context: sheetCtx,
+                builder: (dialogCtx) => AlertDialog(
+                  content: Text(l10n.notificationPermissionRequired),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogCtx).pop(),
+                      child: Text(l10n.cancel),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(dialogCtx).pop();
+                        await openAppSettings();
+                      },
+                      child: Text(l10n.reminderOpenSettings),
+                    ),
+                  ],
+                ),
               );
             }
 
@@ -1278,11 +1295,35 @@ class HomeScreenState extends State<HomeScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        l10n.reminderSettingsTitle,
-                        style: Theme.of(sheetCtx).textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                        textAlign: TextAlign.center,
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.35,
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          const SizedBox(width: 56),
+                          Expanded(
+                            child: Text(
+                              l10n.reminderSettingsTitle,
+                              style: Theme.of(sheetCtx).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(sheetCtx).pop(),
+                            child: Text(l10n.reminderSheetDone),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
 
@@ -1307,13 +1348,17 @@ class HomeScreenState extends State<HomeScreen>
                               initialTime: dailyTime,
                               helpText: l10n.reminderSetTime,
                             );
-                            if (time == null) return;
+                            if (time == null) {
+                              setSheetState(() {});
+                              return;
+                            }
                             final ok = await reminder.enableReminder(
                               time.hour,
                               time.minute,
                             );
                             if (!ok) {
-                              await showPermissionSnack();
+                              await showPermissionDialog();
+                              setSheetState(() {});
                               return;
                             }
                             setSheetState(() {
@@ -1352,13 +1397,17 @@ class HomeScreenState extends State<HomeScreen>
                               initialTime: dailyTime,
                               helpText: l10n.reminderChangeTime,
                             );
-                            if (time == null) return;
+                            if (time == null) {
+                              setSheetState(() {});
+                              return;
+                            }
                             final ok = await reminder.enableReminder(
                               time.hour,
                               time.minute,
                             );
                             if (!ok) {
-                              await showPermissionSnack();
+                              await showPermissionDialog();
+                              setSheetState(() {});
                               return;
                             }
                             setSheetState(() {
@@ -1400,7 +1449,10 @@ class HomeScreenState extends State<HomeScreen>
                               initialTime: weightTime,
                               helpText: l10n.weightReminderSetTime,
                             );
-                            if (time == null) return;
+                            if (time == null) {
+                              setSheetState(() {});
+                              return;
+                            }
                             final ok = await reminder.enableWeightReminder(
                               weightDay,
                               time.hour,
@@ -1411,7 +1463,8 @@ class HomeScreenState extends State<HomeScreen>
                                   l10n.weightReminderNotificationBody,
                             );
                             if (!ok) {
-                              await showPermissionSnack();
+                              await showPermissionDialog();
+                              setSheetState(() {});
                               return;
                             }
                             setSheetState(() {
@@ -1448,46 +1501,65 @@ class HomeScreenState extends State<HomeScreen>
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(l10n.weightReminderDayLabel),
-                          trailing: DropdownButton<int>(
-                            value: weightDay,
-                            underline: const SizedBox.shrink(),
-                            items: List.generate(
-                              7,
-                              (i) => DropdownMenuItem(
-                                value: i,
-                                child: Text(_weekdayLabel(sheetCtx, i)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_weekdayLabel(sheetCtx, weightDay)),
+                              const Icon(
+                                Icons.chevron_right,
+                                color: AppColors.textSecondary,
                               ),
-                            ),
-                            onChanged: (day) async {
-                              if (day == null) return;
-                              final ok = await reminder.enableWeightReminder(
-                                day,
-                                weightHour,
-                                weightMinute,
-                                notificationTitle:
-                                    l10n.weightReminderNotificationTitle,
-                                notificationBody:
-                                    l10n.weightReminderNotificationBody,
-                              );
-                              if (!ok) {
-                                await showPermissionSnack();
-                                return;
-                              }
-                              setSheetState(() => weightDay = day);
-                              if (mounted) {
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      l10n.weightReminderSetFor(
-                                        _weekdayLabel(ctx, day),
-                                        weightTime.format(ctx),
+                            ],
+                          ),
+                          onTap: () async {
+                            final day = await showModalBottomSheet<int>(
+                              context: sheetCtx,
+                              builder: (pickerCtx) {
+                                return SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: List.generate(
+                                      7,
+                                      (i) => ListTile(
+                                        title: Text(
+                                          _weekdayLabel(pickerCtx, i),
+                                        ),
+                                        onTap: () =>
+                                            Navigator.of(pickerCtx).pop(i),
                                       ),
                                     ),
                                   ),
                                 );
-                              }
-                            },
-                          ),
+                              },
+                            );
+                            if (day == null) return;
+                            final ok = await reminder.enableWeightReminder(
+                              day,
+                              weightHour,
+                              weightMinute,
+                              notificationTitle:
+                                  l10n.weightReminderNotificationTitle,
+                              notificationBody:
+                                  l10n.weightReminderNotificationBody,
+                            );
+                            if (!ok) {
+                              await showPermissionDialog();
+                              return;
+                            }
+                            setSheetState(() => weightDay = day);
+                            if (mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    l10n.weightReminderSetFor(
+                                      _weekdayLabel(ctx, day),
+                                      weightTime.format(ctx),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                         ),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
@@ -1499,7 +1571,10 @@ class HomeScreenState extends State<HomeScreen>
                               initialTime: weightTime,
                               helpText: l10n.weightReminderChangeTime,
                             );
-                            if (time == null) return;
+                            if (time == null) {
+                              setSheetState(() {});
+                              return;
+                            }
                             final ok = await reminder.enableWeightReminder(
                               weightDay,
                               time.hour,
@@ -1510,7 +1585,8 @@ class HomeScreenState extends State<HomeScreen>
                                   l10n.weightReminderNotificationBody,
                             );
                             if (!ok) {
-                              await showPermissionSnack();
+                              await showPermissionDialog();
+                              setSheetState(() {});
                               return;
                             }
                             setSheetState(() {

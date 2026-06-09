@@ -2387,6 +2387,12 @@ class AppLocalizationsHi extends AppLocalizations {
       'साप्ताहिक जाँच — अपना वजन दर्ज करें ताकि डॉक्टर को सही जानकारी मिले।';
 
   @override
+  String get reminderOpenSettings => 'सेटिंग्स खोलें';
+
+  @override
+  String get reminderSheetDone => 'हो गया';
+
+  @override
   String get notificationPermissionRequired =>
       'रिमाइंडर के लिए नोटिफिकेशन अनुमति आवश्यक है। फ़ोन की Settings में जाएँ और Swasth को अनुमति दें।';
 

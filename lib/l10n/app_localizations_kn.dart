@@ -2414,6 +2414,12 @@ class AppLocalizationsKn extends AppLocalizations {
       'ವಾರದ ಚೆಕ್-ಇನ್ — ಆರೋಗ್ಯ ಪ್ರವೃತ್ತಿಗಳನ್ನು ಖಚಿತವಾಗಿಡಲು ನಿಮ್ಮ ತೂಕವನ್ನು ದಾಖಲಿಸಿ.';
 
   @override
+  String get reminderOpenSettings => 'ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ತೆರೆಯಿ';
+
+  @override
+  String get reminderSheetDone => 'ಮುಗಿದಿದೆ';
+
+  @override
   String get notificationPermissionRequired =>
       'ಜ್ಞಾಪನೆಗಳಿಗೆ ಅಧಿಸೂಚನೆ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ. ಫೋನ್ Settings ನಲ್ಲಿ ಹೋಗಿ Swasth ಗೆ ಅನುಮತಿ ನೀಡಿ.';
 

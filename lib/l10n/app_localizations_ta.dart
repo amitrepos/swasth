@@ -2420,6 +2420,12 @@ class AppLocalizationsTa extends AppLocalizations {
       'வாராந்திர சரிபார்ப்பு — உங்கள் எடையை பதிவு செய்து ஆரோக்கிய போக்குகளை துல்லியமாக வைத்திருங்கள்.';
 
   @override
+  String get reminderOpenSettings => 'அமைப்புகளைத் திற';
+
+  @override
+  String get reminderSheetDone => 'முடிந்தது';
+
+  @override
   String get notificationPermissionRequired =>
       'நினைவூட்டல்களுக்கு அறிவிப்பு அனுமதி தேவை. தொலைபேசி Settings-இல் சென்று Swasth-க்கு அனுமதி வழங்கவும்.';
 
