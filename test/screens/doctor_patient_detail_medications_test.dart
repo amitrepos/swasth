@@ -1,6 +1,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -115,6 +116,78 @@ void main() {
     expect(find.byKey(const Key('doctor-medication-thumb-1')), findsOneWidget);
     expect(find.textContaining('Morning'), findsAtLeastNWidgets(1));
     expect(find.textContaining('Evening'), findsAtLeastNWidgets(1));
+  });
+
+  testWidgets('tapping medication thumbnail opens fullscreen viewer', (
+    tester,
+  ) async {
+    ApiClient.httpClientOverride = MockClient((request) async {
+      final path = request.url.path;
+      if (path.endsWith('/api/doctor/patients/$_profileId/profile')) {
+        return http.Response(
+          jsonEncode({'name': 'Sunita Devi', 'age': 55}),
+          200,
+        );
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/summary')) {
+        return http.Response(jsonEncode({'latest_bp': null}), 200);
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/readings')) {
+        return http.Response(jsonEncode([]), 200);
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/meals')) {
+        return http.Response(jsonEncode([]), 200);
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/medications')) {
+        return http.Response(jsonEncode(_medications), 200);
+      }
+      if (path.endsWith('/api/doctor/patients/$_profileId/notes')) {
+        return http.Response(jsonEncode([]), 200);
+      }
+      if (path.endsWith('/api/medications/1/photo')) {
+        return http.Response.bytes(
+          Uint8List.fromList([
+            0xFF,
+            0xD8,
+            0xFF,
+            0xE0,
+            0x00,
+            0x10,
+            0x4A,
+            0x46,
+            0x49,
+            0x46,
+          ]),
+          200,
+          headers: {'content-type': 'image/jpeg'},
+        );
+      }
+      return http.Response('{"detail":"not found"}', 404);
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const DoctorPatientDetailScreen(
+          profileId: _profileId,
+          profileName: 'Sunita Devi',
+        ),
+      ),
+    );
+    await pumpN(tester, times: 12);
+
+    await tester.tap(find.byKey(const Key('doctor-medication-thumb-1')));
+    await pumpN(tester, times: 4);
+
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(find.byIcon(Icons.close), findsOneWidget);
   });
 
   testWidgets('medication rows render when photo fetch returns 403', (

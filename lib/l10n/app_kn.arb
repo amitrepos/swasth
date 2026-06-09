@@ -1351,6 +1351,8 @@
   "medicationsChangePhoto": "ಫೋಟೋ ಬದಲಾಯಿಸಿ",
   "medicationsRemovePhoto": "ಫೋಟೋ ತೆಗೆದುಹಾಕಿ",
   "medicationsUploadingPhoto": "ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
+  "medicationsPhotoClose": "ಮುಚ್ಚಿ",
+  "medicationsPhotoCannotChangeAfterSave": "ಉಳಿಸಿದ ನಂತರ ಫೋಟೋ ಬದಲಾಯಿಸಲಾಗುವುದಿಲ್ಲ.",
   "medicationsFormPeriodLabel": "ಯಾವಾಗ ತೆಗೆದುಕೊಂಡಿರಿ",
   "medicationsFormDateLabel": "ದಿನಾಂಕ",
   "medicationsPeriodMorning": "ಬೆಳಿಗ್ಗೆ",

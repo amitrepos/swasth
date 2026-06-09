@@ -2942,6 +2942,12 @@ abstract class AppLocalizations {
   /// **'{dose} · {frequency}'**
   String doctorMedicationLogSubtitle(String dose, String frequency);
 
+  /// No description provided for @doctorMedicationPhotoViewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View {name} packaging photo'**
+  String doctorMedicationPhotoViewLabel(String name);
+
   /// Empty state when no meals found in last 7 days
   ///
   /// In en, this message translates to:
@@ -4662,6 +4668,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uploading photo…'**
   String get medicationsUploadingPhoto;
+
+  /// No description provided for @medicationsPhotoClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get medicationsPhotoClose;
+
+  /// No description provided for @medicationsPhotoCannotChangeAfterSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo cannot be changed after saving.'**
+  String get medicationsPhotoCannotChangeAfterSave;
 
   /// No description provided for @medicationsPeriodMorning.
   ///

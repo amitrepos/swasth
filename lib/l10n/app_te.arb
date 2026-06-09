@@ -1377,6 +1377,8 @@
   "medicationsChangePhoto": "ఫోటో మార్చండి",
   "medicationsRemovePhoto": "ఫోటో తీసివేయండి",
   "medicationsUploadingPhoto": "ఫోటో అప్‌లోడ్ అవుతోంది…",
+  "medicationsPhotoClose": "మూసివేయి",
+  "medicationsPhotoCannotChangeAfterSave": "సేవ్ చేసిన తర్వాత ఫోటో మార్చలేరు.",
   "medicationsFormPeriodLabel": "ఎప్పుడు తీసుకున్నారు",
   "medicationsFormDateLabel": "తేదీ",
   "medicationsPeriodMorning": "ఉదయం",

@@ -104,20 +104,52 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
   }
 
   Future<void> _loadMedicationThumbnails(String token) async {
+    const batchSize = 3;
     final medsWithPhoto = _medications
         .where((m) => m['has_photo'] == true)
         .toList();
-    final futures = <Future<void>>[];
-    for (final med in medsWithPhoto) {
-      final medId = med['id'] as int?;
-      if (medId == null || _medicationPhotos.containsKey(medId)) continue;
+    for (var i = 0; i < medsWithPhoto.length; i += batchSize) {
       if (!mounted) return;
-      setState(() => _loadingMedicationPhotos.add(medId));
-      futures.add(_fetchMedicationThumbnail(medId, token));
+      final batch = medsWithPhoto.skip(i).take(batchSize);
+      final futures = <Future<void>>[];
+      for (final med in batch) {
+        final medId = med['id'] as int?;
+        if (medId == null || _medicationPhotos.containsKey(medId)) continue;
+        setState(() => _loadingMedicationPhotos.add(medId));
+        futures.add(_fetchMedicationThumbnail(medId, token));
+      }
+      if (futures.isNotEmpty) {
+        await Future.wait(futures);
+      }
     }
-    if (futures.isNotEmpty) {
-      await Future.wait(futures);
-    }
+  }
+
+  void _showFullScreenPhoto(BuildContext context, Uint8List bytes) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => Dialog.fullscreen(
+        backgroundColor: AppColors.bgPageDark,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            InteractiveViewer(child: Image.memory(bytes, fit: BoxFit.contain)),
+            Positioned(
+              top: MediaQuery.of(dialogCtx).padding.top + 8,
+              right: 8,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.close,
+                  color: AppColors.cameraForeground,
+                ),
+                tooltip: l10n.medicationsPhotoClose,
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _fetchMedicationThumbnail(int medId, String token) async {
@@ -666,6 +698,12 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
             bytes: medId == null ? null : _medicationPhotos[medId],
             loading: medId != null && _loadingMedicationPhotos.contains(medId),
             size: 48,
+            onTap: hasPhoto && medId != null && _medicationPhotos[medId] != null
+                ? () => _showFullScreenPhoto(context, _medicationPhotos[medId]!)
+                : null,
+            semanticsLabel: hasPhoto
+                ? l10n.doctorMedicationPhotoViewLabel(name)
+                : null,
           ),
           const SizedBox(width: 8),
           Expanded(

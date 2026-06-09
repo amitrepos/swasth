@@ -1563,6 +1563,11 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
+  String doctorMedicationPhotoViewLabel(String name) {
+    return 'View $name packaging photo';
+  }
+
+  @override
   String get noMealsLast7Days =>
       'கடந்த 7 நாட்களில் உணவுகள் பதிவு செய்யப்படவில்லை';
 
@@ -2533,6 +2538,13 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get medicationsUploadingPhoto => 'புகைப்படம் பதிவேற்றப்படுகிறது…';
+
+  @override
+  String get medicationsPhotoClose => 'மூடு';
+
+  @override
+  String get medicationsPhotoCannotChangeAfterSave =>
+      'சேமித்த பிறகு புகைப்படத்தை மாற்ற முடியாது.';
 
   @override
   String get medicationsPeriodMorning => 'காலை';

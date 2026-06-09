@@ -1377,6 +1377,8 @@
   "medicationsChangePhoto": "புகைப்படம் மாற்று",
   "medicationsRemovePhoto": "புகைப்படம் நீக்கு",
   "medicationsUploadingPhoto": "புகைப்படம் பதிவேற்றப்படுகிறது…",
+  "medicationsPhotoClose": "மூடு",
+  "medicationsPhotoCannotChangeAfterSave": "சேமித்த பிறகு புகைப்படத்தை மாற்ற முடியாது.",
   "medicationsFormPeriodLabel": "எப்போது எடுத்தீர்கள்",
   "medicationsFormDateLabel": "தேதி",
   "medicationsPeriodMorning": "காலை",

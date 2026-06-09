@@ -717,6 +717,12 @@
       "frequency": { "type": "String" }
     }
   },
+  "doctorMedicationPhotoViewLabel": "View {name} packaging photo",
+  "@doctorMedicationPhotoViewLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "noMealsLast7Days": "No meals logged in the last 7 days",
   "@noMealsLast7Days": {
     "description": "Empty state when no meals found in last 7 days"
@@ -1457,6 +1463,8 @@
   "medicationsChangePhoto": "Change photo",
   "medicationsRemovePhoto": "Remove photo",
   "medicationsUploadingPhoto": "Uploading photo…",
+  "medicationsPhotoClose": "Close",
+  "medicationsPhotoCannotChangeAfterSave": "Photo cannot be changed after saving.",
   "medicationsPeriodMorning": "Morning",
   "medicationsPeriodAfternoon": "Afternoon",
   "medicationsPeriodEvening": "Evening",

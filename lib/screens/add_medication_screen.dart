@@ -356,7 +356,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         Padding(
@@ -398,6 +398,16 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                                 child: Text(l10n.medicationsRemovePhoto),
                               ),
                           ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (_isEditMode) ...[
+                        Text(
+                          l10n.medicationsPhotoCannotChangeAfterSave,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                         const SizedBox(height: 12),
                       ],

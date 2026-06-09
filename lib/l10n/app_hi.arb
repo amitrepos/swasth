@@ -541,6 +541,7 @@
   "sectionMedicationsTaken": "ली गई दवाइयाँ (रोगी दर्ज)",
   "doctorNoMedicationsLogged": "पिछले 30 दिनों में कोई दवा दर्ज नहीं",
   "doctorMedicationLogSubtitle": "{dose} · {frequency}",
+  "doctorMedicationPhotoViewLabel": "{name} की पैकिंग की फोटो देखें",
   "sectionMeals": "हाल के भोजन",
   "@sectionMeals": {
     "description": "डॉक्टर पेजेंट डिटेल स्क्रीन में हाल के भोजन का सेक्शन हेडर"
@@ -971,6 +972,8 @@
   "medicationsChangePhoto": "फोटो बदलें",
   "medicationsRemovePhoto": "फोटो हटाएँ",
   "medicationsUploadingPhoto": "फोटो अपलोड हो रही है…",
+  "medicationsPhotoClose": "बंद करें",
+  "medicationsPhotoCannotChangeAfterSave": "सेव करने के बाद फोटो नहीं बदल सकते।",
   "medicationsPeriodMorning": "सुबह",
   "medicationsPeriodAfternoon": "दोपहर",
   "medicationsPeriodEvening": "शाम",

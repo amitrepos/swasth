@@ -346,6 +346,10 @@ void main() {
 
       expect(find.text('Medicine package photo (optional)'), findsNothing);
       expect(find.text('Add photo'), findsNothing);
+      expect(
+        find.text('Photo cannot be changed after saving.'),
+        findsOneWidget,
+      );
     });
   });
 }
