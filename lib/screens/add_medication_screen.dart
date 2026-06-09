@@ -186,13 +186,13 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            ErrorMapper.userMessage(AppLocalizations.of(context)!, e),
-          ),
-        ),
-      );
+      final l10n = AppLocalizations.of(context)!;
+      final message = _selectedPhoto != null
+          ? ErrorMapper.medicationPhotoSaveMessage(l10n, e)
+          : ErrorMapper.userMessage(l10n, e);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -374,7 +374,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                             MedicationPhotoThumbnail(
                               hasPhoto: _selectedPhoto != null,
                               bytes: _selectedPhoto?.bytes,
-                              size: 56,
+                              size: 64,
                               onTap: _saving ? null : _pickPhoto,
                               semanticsLabel: _selectedPhoto == null
                                   ? l10n.medicationsAddPhoto
@@ -407,6 +407,16 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.textSecondary,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            l10n.medicationsPhotoCannotChangeHint,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),

@@ -53,6 +53,18 @@ class ErrorMapper {
     return l10n.errGeneric;
   }
 
+  /// Localized message when saving a medication with an attached photo fails.
+  /// Always states that the medicine log was not saved (single multipart POST).
+  static String medicationPhotoSaveMessage(
+    AppLocalizations l10n,
+    ApiException error,
+  ) {
+    if (error is NetworkException) {
+      return l10n.medicationsPhotoUploadNetworkFailed;
+    }
+    return l10n.medicationsPhotoUploadFailed;
+  }
+
   /// Show a SnackBar with the mapped message. Announces to the accessibility
   /// layer so TalkBack/VoiceOver speaks the error. On [UnauthorizedException]
   /// shows a dismiss-blocking dialog the user must acknowledge before we

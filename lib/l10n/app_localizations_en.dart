@@ -2504,6 +2504,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get medicationsUploadingPhoto => 'Uploading photo…';
 
   @override
+  String get medicationsPhotoUploadFailed =>
+      'Photo could not be sent. Your medicine was not saved — please try again.';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'No internet — photo not sent. Your medicine was not saved. Check your connection and try again.';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'Next time you log this medicine, you can add a photo then.';
+
+  @override
   String get medicationsPhotoClose => 'Close';
 
   @override

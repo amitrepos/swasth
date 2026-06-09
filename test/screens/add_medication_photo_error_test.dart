@@ -80,6 +80,7 @@ Future<void> _bootstrap(
   WidgetTester tester,
   http.Client client, {
   PlatformFile? initialPhoto,
+  Locale locale = const Locale('en'),
 }) async {
   StorageService.useInMemoryStorage();
   await StorageService().saveToken('test-token');
@@ -87,7 +88,7 @@ Future<void> _bootstrap(
 
   await tester.pumpWidget(
     MaterialApp(
-      locale: const Locale('en'),
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
@@ -135,7 +136,27 @@ void main() {
     );
     expect(saveButton.onPressed, isNotNull);
     expect(find.byType(SnackBar), findsOneWidget);
-    expect(find.textContaining('Photo upload failed'), findsOneWidget);
+    expect(find.textContaining('not saved'), findsOneWidget);
+  });
+
+  testWidgets('photo upload failure shows Hindi message when locale is hi', (
+    tester,
+  ) async {
+    await _bootstrap(
+      tester,
+      _MultipartFailClient(),
+      initialPhoto: _samplePhoto(),
+      locale: const Locale('hi'),
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('medication-name-field')),
+      'Metformin',
+    );
+    await tester.tap(find.byKey(const Key('medication-save-btn')));
+    await pumpN(tester, frames: 15);
+
+    expect(find.textContaining('दवा सेव नहीं हुई'), findsOneWidget);
   });
 
   testWidgets('shows upload progress while photo save is in flight', (
@@ -189,7 +210,7 @@ void main() {
     );
     expect(saveButton.onPressed, isNotNull);
     expect(find.byType(SnackBar), findsOneWidget);
-    expect(find.textContaining('No internet'), findsOneWidget);
+    expect(find.textContaining('not saved'), findsOneWidget);
   });
 
   testWidgets('remove photo clears thumbnail and reverts label', (

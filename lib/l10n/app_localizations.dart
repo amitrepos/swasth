@@ -4669,6 +4669,24 @@ abstract class AppLocalizations {
   /// **'Uploading photo…'**
   String get medicationsUploadingPhoto;
 
+  /// No description provided for @medicationsPhotoUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo could not be sent. Your medicine was not saved — please try again.'**
+  String get medicationsPhotoUploadFailed;
+
+  /// No description provided for @medicationsPhotoUploadNetworkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet — photo not sent. Your medicine was not saved. Check your connection and try again.'**
+  String get medicationsPhotoUploadNetworkFailed;
+
+  /// No description provided for @medicationsPhotoCannotChangeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Next time you log this medicine, you can add a photo then.'**
+  String get medicationsPhotoCannotChangeHint;
+
   /// No description provided for @medicationsPhotoClose.
   ///
   /// In en, this message translates to:

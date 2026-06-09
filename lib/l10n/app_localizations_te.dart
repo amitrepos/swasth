@@ -2519,7 +2519,19 @@ class AppLocalizationsTe extends AppLocalizations {
   String get medicationsRemovePhoto => 'ఫోటో తీసివేయండి';
 
   @override
-  String get medicationsUploadingPhoto => 'ఫోటో అప్‌లోడ్ అవుతోంది…';
+  String get medicationsUploadingPhoto => 'ఫోటో పంపబడుతోంది…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'ఫోటో పంపలేకపోయాం. మీ మందు సేవ్ కాలేదు — దయచేసి మళ్లీ ప్రయత్నించండి.';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'ఇంటర్నెట్ లేదు — ఫోటో పంపలేదు. మీ మందు సేవ్ కాలేదు. కనెక్షన్ చెక్ చేసి మళ్లీ ప్రయత్నించండి.';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'తదుపరి సారి ఈ మందు లాగ్ చేసేటప్పుడు ఫోటో జోడించవచ్చు.';
 
   @override
   String get medicationsPhotoClose => 'మూసివేయి';

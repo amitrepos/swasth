@@ -2537,7 +2537,19 @@ class AppLocalizationsTa extends AppLocalizations {
   String get medicationsRemovePhoto => 'புகைப்படம் நீக்கு';
 
   @override
-  String get medicationsUploadingPhoto => 'புகைப்படம் பதிவேற்றப்படுகிறது…';
+  String get medicationsUploadingPhoto => 'புகைப்படம் அனுப்பப்படுகிறது…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'புகைப்படம் அனுப்ப முடியவில்லை. உங்கள் மருந்து சேமிக்கப்படவில்லை — மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'இணையம் இல்லை — புகைப்படம் அனுப்பப்படவில்லை. உங்கள் மருந்து சேமிக்கப்படவில்லை. இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'அடுத்த முறை இந்த மருந்தை பதிவு செய்யும்போது புகைப்படம் சேர்க்கலாம்.';
 
   @override
   String get medicationsPhotoClose => 'மூடு';

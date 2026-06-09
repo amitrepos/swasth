@@ -2531,7 +2531,19 @@ class AppLocalizationsKn extends AppLocalizations {
   String get medicationsRemovePhoto => 'ಫೋಟೋ ತೆಗೆದುಹಾಕಿ';
 
   @override
-  String get medicationsUploadingPhoto => 'ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ…';
+  String get medicationsUploadingPhoto => 'ಫೋಟೋ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'ಫೋಟೋ ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ. ನಿಮ್ಮ ಔಷಧಿ ಉಳಿಸಲಾಗಿಲ್ಲ — ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'ಇಂಟರ್ನೆಟ್ ಇಲ್ಲ — ಫೋಟೋ ಕಳುಹಿಸಲಾಗಿಲ್ಲ. ನಿಮ್ಮ ಔಷಧಿ ಉಳಿಸಲಾಗಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'ಮುಂದಿನ ಬಾರಿ ಈ ಔಷಧಿ ದಾಖಲಿಸುವಾಗ ಫೋಟೋ ಸೇರಿಸಬಹುದು.';
 
   @override
   String get medicationsPhotoClose => 'ಮುಚ್ಚಿ';

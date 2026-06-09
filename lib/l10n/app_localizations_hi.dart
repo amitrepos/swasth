@@ -2505,7 +2505,19 @@ class AppLocalizationsHi extends AppLocalizations {
   String get medicationsRemovePhoto => 'फोटो हटाएँ';
 
   @override
-  String get medicationsUploadingPhoto => 'फोटो अपलोड हो रही है…';
+  String get medicationsUploadingPhoto => 'फोटो भेजी जा रही है…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'फोटो नहीं भेजी जा सकी। आपकी दवा सेव नहीं हुई — कृपया दोबारा कोशिश करें।';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'इंटरनेट नहीं है — फोटो नहीं भेजी। आपकी दवा सेव नहीं हुई। कनेक्शन जाँचकर फिर कोशिश करें।';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'अगली बार यही दवा लॉग करते समय फोटो जोड़ सकते हैं।';
 
   @override
   String get medicationsPhotoClose => 'बंद करें';

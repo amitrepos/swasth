@@ -350,6 +350,10 @@ void main() {
         find.text('Photo cannot be changed after saving.'),
         findsOneWidget,
       );
+      expect(
+        find.text('Next time you log this medicine, you can add a photo then.'),
+        findsOneWidget,
+      );
     });
   });
 }
