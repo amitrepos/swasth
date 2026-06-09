@@ -70,6 +70,7 @@ backend/*.mmdb
 
 # pytest artifacts
 backend/.coverage
+backend/uploads/
 
 # Backup directories
 ios_backup/
