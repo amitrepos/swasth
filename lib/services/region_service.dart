@@ -15,6 +15,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 
 import '../config/app_config.dart';
 import 'api_client.dart';
+import 'storage_service.dart';
 
 class RegionInfo {
   /// ISO-2 country code, or 'UNKNOWN' if we couldn't determine it.
@@ -85,10 +86,19 @@ class RegionService {
 
   static Future<RegionInfo> _fetchAndCache() async {
     try {
+      // Include the auth token when available so the backend's email
+      // allowlist can bypass the IP-country check for designated accounts
+      // (e.g. staff on VPN). Without the token the allowlist is skipped and
+      // a non-India IP always returns write_allowed: false, hiding the + icon
+      // even for explicitly allowed users.
+      final token = await StorageService().getToken();
+      final authHeaders = token != null && token.isNotEmpty
+          ? {'Authorization': 'Bearer $token'}
+          : <String, String>{};
       final body = await ApiClient.sendJsonObject(
         () => ApiClient.httpClient.get(
           Uri.parse('${AppConfig.serverHost}/api/public/region'),
-          headers: {..._localeHeader()},
+          headers: {..._localeHeader(), ...authHeaders},
         ),
       );
       _cached = RegionInfo.fromJson(body);

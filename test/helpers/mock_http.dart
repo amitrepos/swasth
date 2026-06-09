@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'test_constants.dart';
+
 /// Tracks API calls made during tests for assertions.
 class ApiCallTracker {
   final List<http.BaseRequest> calls = [];
@@ -106,7 +108,7 @@ MockClient createMockClient({
           'id': 1,
           'email': 'test@swasth.app',
           'full_name': 'Test User',
-          'access_token': 'mock_token_123',
+          'access_token': TestConstants.mockToken,
           'email_verified': false,
         }),
         201,
@@ -119,7 +121,7 @@ MockClient createMockClient({
           body['password'] == 'Test1234!') {
         return http.Response(
           jsonEncode({
-            'access_token': 'mock_token_123',
+            'access_token': TestConstants.mockToken,
             'token_type': 'bearer',
           }),
           200,

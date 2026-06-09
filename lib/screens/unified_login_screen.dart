@@ -3,6 +3,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../services/api_exception.dart';
 import '../services/api_service.dart';
 import '../services/error_mapper.dart';
+import '../services/region_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_form_scroll_body.dart';
@@ -200,6 +201,11 @@ class _UnifiedLoginScreenState extends State<UnifiedLoginScreen> {
           // accounts.
           await StorageService().clearUserScopedCacheKeepToken();
           await StorageService().saveToken(token);
+          // Re-check region with the auth token so the email allowlist can
+          // fire. The unauthenticated pre-login check can't see the token,
+          // so a VPN user on the allowlist would stay stuck in read-only mode
+          // without this refresh.
+          await RegionService.refresh();
 
           if (_rememberMe) {
             await StorageService().saveCredentials(
