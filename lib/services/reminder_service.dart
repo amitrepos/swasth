@@ -109,15 +109,22 @@ class ReminderService {
     await StorageService().setString(_reminderEnabledKey, 'true');
     await StorageService().setString(_reminderHourKey, hour.toString());
     await StorageService().setString(_reminderMinuteKey, minute.toString());
-    await _scheduleMorningReminder(hour, minute);
-    await _scheduleEveningReminder();
+    final dailyOverride = scheduleDailyReminderOverride;
+    if (dailyOverride != null) {
+      await dailyOverride(hour, minute);
+    } else {
+      await _scheduleMorningReminder(hour, minute);
+      await _scheduleEveningReminder();
+    }
     return true;
   }
 
   Future<void> disableReminder() async {
     await StorageService().setString(_reminderEnabledKey, 'false');
-    await _notifications.cancel(_morningId);
-    await _notifications.cancel(_eveningId);
+    if (!skipNotificationCancelForTest) {
+      await _notifications.cancel(_morningId);
+      await _notifications.cancel(_eveningId);
+    }
   }
 
   @visibleForTesting
@@ -136,6 +143,10 @@ class ReminderService {
     required String body,
   })?
   scheduleWeightReminderOverride;
+
+  /// When set in tests, skips the real notification plugin schedule call.
+  @visibleForTesting
+  Future<void> Function(int hour, int minute)? scheduleDailyReminderOverride;
 
   Future<bool> enableWeightReminder(
     int day0Sunday,

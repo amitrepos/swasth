@@ -144,6 +144,7 @@ Future<void> showReminderSettingsSheet(
                     ),
                     const SizedBox(height: 8),
                     SwitchListTile(
+                      key: const Key('daily-reminder-switch'),
                       contentPadding: EdgeInsets.zero,
                       title: Text(l10n.dailyReminderEnableLabel),
                       value: dailyEnabled,
@@ -330,45 +331,47 @@ Future<void> showReminderSettingsSheet(
                             context: sheetCtx,
                             builder: (pickerCtx) {
                               return SafeArea(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        20,
-                                        16,
-                                        20,
-                                        8,
-                                      ),
-                                      child: Text(
-                                        l10n.weightReminderPickDayTitle,
-                                        style: Theme.of(pickerCtx)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 16,
-                                            ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                    ...List.generate(
-                                      7,
-                                      (i) => ListTile(
-                                        title: Text(
-                                          reminderWeekdayLabel(pickerCtx, i),
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          20,
+                                          16,
+                                          20,
+                                          8,
                                         ),
-                                        trailing: i == weightDay
-                                            ? const Icon(
-                                                Icons.check,
-                                                color: AppColors.primary,
-                                              )
-                                            : null,
-                                        onTap: () =>
-                                            Navigator.of(pickerCtx).pop(i),
+                                        child: Text(
+                                          l10n.weightReminderPickDayTitle,
+                                          style: Theme.of(pickerCtx)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 16,
+                                              ),
+                                          textAlign: TextAlign.center,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      ...List.generate(
+                                        7,
+                                        (i) => ListTile(
+                                          title: Text(
+                                            reminderWeekdayLabel(pickerCtx, i),
+                                          ),
+                                          trailing: i == weightDay
+                                              ? const Icon(
+                                                  Icons.check,
+                                                  color: AppColors.primary,
+                                                )
+                                              : null,
+                                          onTap: () =>
+                                              Navigator.of(pickerCtx).pop(i),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             },
