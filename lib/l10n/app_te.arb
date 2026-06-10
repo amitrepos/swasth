@@ -1404,8 +1404,8 @@
       "time": { "type": "String" }
     }
   },
-  "regReferralCodeLabel": "Code given by your doctor (optional)",
-  "regReferralCodeHint": "e.g. DRRAJ52",
-  "regReferralCodeHelper": "Enter the code your doctor gave you, if any",
-  "regReferralCodeError": "Doctor code must be 4–8 characters (letters and numbers only)"
+  "regReferralCodeLabel": "మీ వైద్యుడు ఇచ్చిన కోడ్ (ఐచ్ఛికం)",
+  "regReferralCodeHint": "ఉదా. DRRAJ52",
+  "regReferralCodeHelper": "వైద్యుడు కోడ్ ఇచ్చినట్లయితే ఇక్కడ నమోదు చేయండి",
+  "regReferralCodeError": "తప్పుడు కోడ్. సరైన కోడ్ కోసం మీ వైద్యుడిని అడగండి."
 }

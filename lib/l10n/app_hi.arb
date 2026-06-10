@@ -1023,8 +1023,8 @@
   "medicationsFormDoneLogged": "हो गया ({count} दर्ज)",
   "medicationsFormSavedBanner": "\"{name}\" सहेजी गई",
   "medicationsFormSavedBannerMulti": "\"{name}\" सहेजी गई  ·  {count} दर्ज",
-  "regReferralCodeLabel": "Code given by your doctor (optional)",
-  "regReferralCodeHint": "e.g. DRRAJ52",
-  "regReferralCodeHelper": "Enter the code your doctor gave you, if any",
-  "regReferralCodeError": "Doctor code must be 4–8 characters (letters and numbers only)"
+  "regReferralCodeLabel": "आपके डॉक्टर का दिया हुआ कोड (वैकल्पिक)",
+  "regReferralCodeHint": "जैसे DRRAJ52",
+  "regReferralCodeHelper": "अगर आपके डॉक्टर ने कोड दिया है तो यहाँ डालें",
+  "regReferralCodeError": "गलत कोड। सही कोड के लिए अपने डॉक्टर से पूछें।"
 }

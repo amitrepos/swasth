@@ -1536,6 +1536,6 @@
   "@regReferralCodeHint": {},
   "regReferralCodeHelper": "Enter the code your doctor gave you, if any",
   "@regReferralCodeHelper": {},
-  "regReferralCodeError": "Doctor code must be 4–8 characters (letters and numbers only)",
+  "regReferralCodeError": "Invalid code. Please ask your doctor for the correct code.",
   "@regReferralCodeError": {}
 }

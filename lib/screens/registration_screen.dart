@@ -509,8 +509,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 decoration: InputDecoration(
                   labelText: AppLocalizations.of(context)!.regReferralCodeLabel,
                   hintText: AppLocalizations.of(context)!.regReferralCodeHint,
-                  prefixIcon: const Icon(Icons.card_giftcard_outlined),
+                  prefixIcon: const Icon(Icons.badge_outlined),
                   helperText: AppLocalizations.of(context)!.regReferralCodeHelper,
+                  helperMaxLines: 3,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) return null;
