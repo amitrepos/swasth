@@ -61,6 +61,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         consent_language=user.consent_language,
         ai_consent=bool(user.ai_consent) if user.ai_consent else bool(user.consent_app_version),
         ai_consent_timestamp=now_utc if (user.ai_consent or user.consent_app_version) else None,
+        referred_by_doctor_code=user.referred_by_doctor_code.upper() if user.referred_by_doctor_code else None,
     )
     db.add(db_user)
     db.flush()  # Get db_user.id

@@ -38,6 +38,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _weightController = TextEditingController();
   final _medicationsController = TextEditingController();
   final _otherConditionController = TextEditingController();
+  final _referralCodeController = TextEditingController();
 
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'A+';
@@ -84,6 +85,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _weightController.dispose();
     _medicationsController.dispose();
     _otherConditionController.dispose();
+    _referralCodeController.dispose();
     super.dispose();
   }
 
@@ -161,6 +163,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'other_medical_condition': _selectedConditions.contains('Other')
             ? _otherConditionController.text.trim()
             : null,
+        'referred_by_doctor_code': _referralCodeController.text.trim().isEmpty
+            ? null
+            : _referralCodeController.text.trim().toUpperCase(),
       };
 
       // Navigate to consent screen — registration API is called after consent.
@@ -494,6 +499,27 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ),
                 ),
               ],
+              const SizedBox(height: 24),
+
+              // Referral code — optional, from a doctor who recommended the app
+              TextFormField(
+                key: const Key('reg_referral_code'),
+                controller: _referralCodeController,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  labelText: 'Doctor referral code (optional)',
+                  hintText: 'e.g. DRRAJ52',
+                  prefixIcon: const Icon(Icons.card_giftcard_outlined),
+                  helperText: 'Enter the code your doctor gave you, if any',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  if (value.trim().length < 4 || value.trim().length > 8) {
+                    return 'Doctor code must be 4–8 characters';
+                  }
+                  return null;
+                },
+              ),
               const SizedBox(height: 24),
 
               // Register Button
