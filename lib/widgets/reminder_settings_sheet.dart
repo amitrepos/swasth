@@ -67,6 +67,7 @@ Future<void> showReminderSettingsSheet(
 
           Future<void> showPermissionDialog() async {
             if (!isParentMounted()) return;
+            if (!sheetCtx.mounted) return;
             await showDialog<void>(
               context: sheetCtx,
               builder: (dialogCtx) => AlertDialog(
@@ -384,6 +385,7 @@ Future<void> showReminderSettingsSheet(
                           );
                           if (!ok) {
                             await showPermissionDialog();
+                            setSheetState(() {});
                             return;
                           }
                           setSheetState(() => weightDay = day);

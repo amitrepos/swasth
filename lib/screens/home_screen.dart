@@ -4,8 +4,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'unified_login_screen.dart';
 import 'profile_screen.dart';
@@ -1227,10 +1225,7 @@ class HomeScreenState extends State<HomeScreen>
 
   Future<void> _showReminderDialog(BuildContext ctx) async {
     if (!mounted) return;
-    await showReminderSettingsSheet(
-      ctx,
-      isParentMounted: () => mounted,
-    );
+    await showReminderSettingsSheet(ctx, isParentMounted: () => mounted);
   }
 
   Future<void> _shareWeeklySummary() async {

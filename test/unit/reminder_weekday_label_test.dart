@@ -4,6 +4,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import 'package:swasth_app/widgets/reminder_settings_sheet.dart';
 
+Future<void> _pumpEn(
+  WidgetTester tester,
+  Widget Function(BuildContext) builder,
+) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(builder: builder),
+    ),
+  );
+}
+
 void main() {
   testWidgets('weekday labels are non-empty for days 0–6 in all locales', (
     tester,
@@ -42,5 +61,19 @@ void main() {
         );
       }
     }
+  });
+
+  testWidgets('day 0 is Sunday and day 3 is Wednesday in English', (
+    tester,
+  ) async {
+    late String sunday;
+    late String wednesday;
+    await _pumpEn(tester, (context) {
+      sunday = reminderWeekdayLabel(context, 0);
+      wednesday = reminderWeekdayLabel(context, 3);
+      return const SizedBox.shrink();
+    });
+    expect(sunday, contains('Sunday'));
+    expect(wednesday, contains('Wednesday'));
   });
 }
