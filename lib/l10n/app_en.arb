@@ -615,7 +615,7 @@
   "consentDeclineConfirm": "Go Back",
   "consentScrollToAccept": "Scroll down to read the full notice",
   "ppDataCollectionTitle": "Data We Collect",
-  "ppDataCollection": "Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), and photos of medical devices for automated reading capture.",
+  "ppDataCollection": "Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, optional medicine packaging photos attached to intake logs, and optional local reminders for weekly weight logging (stored on your device only).",
   "ppPurposeTitle": "Purpose of Collection",
   "ppPurpose": "Your health data is used to: display trends and health scores, generate personalised health insights, share with your designated family members, and provide information to your doctor for treatment.",
   "ppAiTitle": "AI Processing",
@@ -715,6 +715,12 @@
     "placeholders": {
       "dose": { "type": "String" },
       "frequency": { "type": "String" }
+    }
+  },
+  "doctorMedicationPhotoViewLabel": "View {name} packaging photo",
+  "@doctorMedicationPhotoViewLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
     }
   },
   "noMealsLast7Days": "No meals logged in the last 7 days",
@@ -1374,6 +1380,33 @@
     }
   },
   "reminderDisabled": "Reminder disabled",
+  "reminderSettingsTitle": "Reminder Settings",
+  "dailyReminderSection": "Daily Health Check",
+  "dailyReminderEnableLabel": "Enable daily health reminder",
+  "weeklyWeightReminderSection": "Weekly Weight Reminder",
+  "weightReminderEnableLabel": "Enable weekly weight reminder",
+  "weightReminderDayLabel": "Day",
+  "weightReminderPickDayTitle": "Which day for the reminder?",
+  "weightReminderTimeLabel": "Time",
+  "weightReminderSetTime": "Set weekly weight reminder time",
+  "weightReminderChangeTime": "Change weekly weight reminder time",
+  "weightReminderSetFor": "Weight reminder set for {day} at {time}",
+  "@weightReminderSetFor": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "weightReminderDisabled": "Weekly weight reminder disabled",
+  "weightReminderNotificationTitle": "⚖️ Time to log your weight",
+  "weightReminderNotificationBody": "Weekly check-in — log your weight so your doctor has the latest information.",
+  "reminderOpenSettings": "Open Settings",
+  "reminderSheetDone": "Done",
+  "notificationPermissionRequired": "Notification permission is required for reminders. Open your phone Settings and allow notifications for Swasth.",
   "actionCall": "Call",
   "actionWhatsApp": "WhatsApp",
   "actionEmail": "Send Email",
@@ -1451,6 +1484,17 @@
   "medicationsFormFrequencyHint": "e.g. Twice daily after food",
   "medicationsFormPeriodLabel": "When taken",
   "medicationsFormDateLabel": "Date",
+  "medicationsAddPhotoLabel": "Medicine package photo (optional)",
+  "medicationsPhotoWhy": "Your doctor can see the packaging to check the right medicine.",
+  "medicationsAddPhoto": "Add photo",
+  "medicationsChangePhoto": "Change photo",
+  "medicationsRemovePhoto": "Remove photo",
+  "medicationsUploadingPhoto": "Uploading photo…",
+  "medicationsPhotoUploadFailed": "Photo could not be sent. Your medicine was not saved — please try again.",
+  "medicationsPhotoUploadNetworkFailed": "No internet — photo not sent. Your medicine was not saved. Check your connection and try again.",
+  "medicationsPhotoCannotChangeHint": "Next time you log this medicine, you can add a photo then.",
+  "medicationsPhotoClose": "Close",
+  "medicationsPhotoCannotChangeAfterSave": "Photo cannot be changed after saving.",
   "medicationsPeriodMorning": "Morning",
   "medicationsPeriodAfternoon": "Afternoon",
   "medicationsPeriodEvening": "Evening",

@@ -1287,7 +1287,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), and photos of medical devices for automated reading capture.';
+      'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, optional medicine packaging photos attached to intake logs, and optional local reminders for weekly weight logging (stored on your device only).';
 
   @override
   String get ppPurposeTitle => 'Purpose of Collection';
@@ -1543,6 +1543,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String doctorMedicationLogSubtitle(String dose, String frequency) {
     return '$dose · $frequency';
+  }
+
+  @override
+  String doctorMedicationPhotoViewLabel(String name) {
+    return 'View $name packaging photo';
   }
 
   @override
@@ -2341,6 +2346,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reminderDisabled => 'Reminder disabled';
 
   @override
+  String get reminderSettingsTitle => 'Reminder Settings';
+
+  @override
+  String get dailyReminderSection => 'Daily Health Check';
+
+  @override
+  String get dailyReminderEnableLabel => 'Enable daily health reminder';
+
+  @override
+  String get weeklyWeightReminderSection => 'Weekly Weight Reminder';
+
+  @override
+  String get weightReminderEnableLabel => 'Enable weekly weight reminder';
+
+  @override
+  String get weightReminderDayLabel => 'Day';
+
+  @override
+  String get weightReminderPickDayTitle => 'Which day for the reminder?';
+
+  @override
+  String get weightReminderTimeLabel => 'Time';
+
+  @override
+  String get weightReminderSetTime => 'Set weekly weight reminder time';
+
+  @override
+  String get weightReminderChangeTime => 'Change weekly weight reminder time';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'Weight reminder set for $day at $time';
+  }
+
+  @override
+  String get weightReminderDisabled => 'Weekly weight reminder disabled';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ Time to log your weight';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'Weekly check-in — log your weight so your doctor has the latest information.';
+
+  @override
+  String get reminderOpenSettings => 'Open Settings';
+
+  @override
+  String get reminderSheetDone => 'Done';
+
+  @override
+  String get notificationPermissionRequired =>
+      'Notification permission is required for reminders. Open your phone Settings and allow notifications for Swasth.';
+
+  @override
   String get actionCall => 'Call';
 
   @override
@@ -2478,6 +2538,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get medicationsFormDateLabel => 'Date';
+
+  @override
+  String get medicationsAddPhotoLabel => 'Medicine package photo (optional)';
+
+  @override
+  String get medicationsPhotoWhy =>
+      'Your doctor can see the packaging to check the right medicine.';
+
+  @override
+  String get medicationsAddPhoto => 'Add photo';
+
+  @override
+  String get medicationsChangePhoto => 'Change photo';
+
+  @override
+  String get medicationsRemovePhoto => 'Remove photo';
+
+  @override
+  String get medicationsUploadingPhoto => 'Uploading photo…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'Photo could not be sent. Your medicine was not saved — please try again.';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'No internet — photo not sent. Your medicine was not saved. Check your connection and try again.';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'Next time you log this medicine, you can add a photo then.';
+
+  @override
+  String get medicationsPhotoClose => 'Close';
+
+  @override
+  String get medicationsPhotoCannotChangeAfterSave =>
+      'Photo cannot be changed after saving.';
 
   @override
   String get medicationsPeriodMorning => 'Morning';

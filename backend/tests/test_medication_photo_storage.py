@@ -1,0 +1,128 @@
+"""Unit tests for medication photo encrypted storage helpers."""
+
+from pathlib import Path
+
+import pytest
+
+from medication_photo_storage import (
+    _UPLOAD_ROOT,
+    _encryption_key,
+    _sanitize_mime_type,
+    delete_medication_photo,
+    load_medication_photo,
+    save_medication_photo,
+)
+
+
+def test_save_and_load_round_trip():
+    rel = save_medication_photo(
+        profile_id=99,
+        medication_id=1,
+        image_bytes=b"jpeg-payload",
+        mime_type="image/jpeg",
+    )
+    image_bytes, mime = load_medication_photo(rel)
+    assert image_bytes == b"jpeg-payload"
+    assert mime == "image/jpeg"
+    delete_medication_photo(rel)
+
+
+@pytest.mark.parametrize(
+    "bad_path",
+    [
+        "../../../etc/passwd",
+        "uploads/medication_photos/../../config.py",
+        "uploads/medication_photos_backup/evil.enc",
+        "/etc/passwd",
+    ],
+)
+def test_load_rejects_path_traversal(bad_path):
+    with pytest.raises(ValueError, match="Invalid medication photo path"):
+        load_medication_photo(bad_path)
+
+
+def test_delete_ignores_path_traversal():
+    delete_medication_photo("uploads/medication_photos/../../config.py")
+
+
+def test_load_missing_file_raises():
+    with pytest.raises(FileNotFoundError):
+        load_medication_photo("uploads/medication_photos/99999/missing.enc")
+
+
+def test_save_photo_rejects_at_profile_limit(tmp_path, monkeypatch):
+    monkeypatch.setattr("medication_photo_storage._UPLOAD_ROOT", tmp_path)
+    monkeypatch.setattr("medication_photo_storage._MAX_PHOTOS_PER_PROFILE", 2)
+    save_medication_photo(
+        profile_id=1,
+        medication_id=1,
+        image_bytes=b"a",
+        mime_type="image/jpeg",
+    )
+    save_medication_photo(
+        profile_id=1,
+        medication_id=2,
+        image_bytes=b"b",
+        mime_type="image/jpeg",
+    )
+    with pytest.raises(ValueError, match="exceeds medication photo limit"):
+        save_medication_photo(
+            profile_id=1,
+            medication_id=3,
+            image_bytes=b"c",
+            mime_type="image/jpeg",
+        )
+
+
+def test_saved_file_lives_under_upload_root():
+    rel = save_medication_photo(
+        profile_id=77,
+        medication_id=2,
+        image_bytes=b"x",
+        mime_type="image/png",
+    )
+    absolute = (Path(__file__).resolve().parent.parent / rel).resolve()
+    assert str(absolute).startswith(str(_UPLOAD_ROOT.resolve()))
+    delete_medication_photo(rel)
+
+
+@pytest.mark.parametrize(
+    "bad_key,match",
+    [
+        ("", "required"),
+        ("zzzz", "not valid hex"),
+        ("aa" * 8, "32 bytes"),
+    ],
+)
+def test_encryption_key_validation(monkeypatch, bad_key, match):
+    monkeypatch.setattr("medication_photo_storage.settings.ENCRYPTION_KEY", bad_key)
+    with pytest.raises(ValueError, match=match):
+        _encryption_key()
+
+
+def test_sanitize_mime_type_unknown_falls_back_to_octet_stream():
+    assert _sanitize_mime_type("image/gif") == "application/octet-stream"
+    assert _sanitize_mime_type("image/jpeg") == "image/jpeg"
+
+
+def test_concurrent_save_respects_limit(tmp_path, monkeypatch):
+    monkeypatch.setattr("medication_photo_storage._UPLOAD_ROOT", tmp_path)
+    monkeypatch.setattr("medication_photo_storage._MAX_PHOTOS_PER_PROFILE", 2)
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _save(medication_id: int) -> str | None:
+        try:
+            return save_medication_photo(
+                profile_id=1,
+                medication_id=medication_id,
+                image_bytes=b"x",
+                mime_type="image/jpeg",
+            )
+        except ValueError:
+            return None
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        list(pool.map(_save, range(3), timeout=5))
+
+    saved = list((tmp_path / "1").glob("*.enc"))
+    assert len(saved) <= 2

@@ -41,6 +41,7 @@ import '../widgets/home/device_status_card.dart';
 import '../widgets/home/activity_feed_card.dart';
 import '../widgets/home/care_circle_card.dart';
 import '../widgets/home/contact_support_card.dart';
+import '../widgets/reminder_settings_sheet.dart';
 import '../config/feature_flags.dart';
 import '../utils/health_helpers.dart' as helpers;
 import '../services/reminder_service.dart';
@@ -1223,34 +1224,8 @@ class HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _showReminderDialog(BuildContext ctx) async {
-    final reminder = ReminderService();
-    final enabled = await reminder.isEnabled();
-    final hour = await reminder.getHour();
-    final minute = await reminder.getMinute();
-
     if (!mounted) return;
-    final l10n = AppLocalizations.of(ctx)!;
-    final time = await showTimePicker(
-      context: ctx,
-      initialTime: TimeOfDay(hour: hour, minute: minute),
-      helpText: enabled ? l10n.reminderChangeTime : l10n.reminderSetTime,
-    );
-
-    if (time != null) {
-      await reminder.enableReminder(time.hour, time.minute);
-      if (mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(content: Text(l10n.reminderSetFor(time.format(ctx)))),
-        );
-      }
-    } else if (enabled) {
-      await reminder.disableReminder();
-      if (mounted) {
-        ScaffoldMessenger.of(
-          ctx,
-        ).showSnackBar(SnackBar(content: Text(l10n.reminderDisabled)));
-      }
-    }
+    await showReminderSettingsSheet(ctx, isParentMounted: () => mounted);
   }
 
   Future<void> _shareWeeklySummary() async {

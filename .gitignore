@@ -70,6 +70,7 @@ backend/*.mmdb
 
 # pytest artifacts
 backend/.coverage
+backend/uploads/
 
 # Backup directories
 ios_backup/
@@ -91,3 +92,4 @@ docs/FOUNDER_KIT_CHECKLIST.md
 
 # Flutter/backend build artifacts
 backend/build/
+backend/uploads/

@@ -8,15 +8,19 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, UploadFile, status
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
+from config import settings
 import models
 import schemas
 from database import get_db
 from dependencies import get_current_user, get_profile_access_or_403, get_profile_editor_or_403, require_india_writer
+from medication_photo_storage import delete_medication_photo, load_medication_photo, save_medication_photo
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +30,90 @@ limiter = Limiter(key_func=get_remote_address, enabled=_enabled)
 router = APIRouter()
 
 
+def _doctor_has_profile_access(profile_id: int, doctor_id: int, db: Session) -> bool:
+    link = (
+        db.query(models.DoctorPatientLink)
+        .filter(
+            models.DoctorPatientLink.profile_id == profile_id,
+            models.DoctorPatientLink.doctor_id == doctor_id,
+            models.DoctorPatientLink.status == "active",
+            models.DoctorPatientLink.is_active.is_(True),
+        )
+        .first()
+    )
+    return link is not None
+
+
+def _assert_photo_read_access(med: models.Medication, user: models.User, db: Session) -> None:
+    if user.role == models.UserRole.doctor:
+        if not _doctor_has_profile_access(med.profile_id, user.id, db):
+            raise HTTPException(status_code=403, detail="No access to this profile")
+        return
+    get_profile_access_or_403(med.profile_id, user, db)
+
+
+_IMAGE_MAGIC = {
+    "image/jpeg": (b"\xff\xd8\xff",),
+    "image/png": (b"\x89PNG\r\n\x1a\n",),
+    "image/webp": (b"RIFF",),
+}
+
+
+def _content_matches_mime(content: bytes, mime: str) -> bool:
+    if mime == "image/webp":
+        return (
+            len(content) >= 12
+            and content[:4] == b"RIFF"
+            and content[8:12] == b"WEBP"
+        )
+    prefixes = _IMAGE_MAGIC.get(mime)
+    if not prefixes:
+        return False
+    return any(content.startswith(prefix) for prefix in prefixes)
+
+
+def _storage_value_error_to_http(exc: ValueError) -> HTTPException:
+    msg = str(exc)
+    if "ENCRYPTION_KEY" in msg:
+        logger.exception("medication_photo_encrypt_config_error")
+        return HTTPException(status_code=500, detail="Unable to save medication photo")
+    return HTTPException(status_code=422, detail=msg)
+
+
+async def _read_valid_photo_or_422(photo: UploadFile) -> tuple[bytes, str]:
+    mime = photo.content_type or ""
+    if mime not in settings.ALLOWED_IMAGE_MIME_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported image type. Allowed: {', '.join(settings.ALLOWED_IMAGE_MIME_TYPES)}",
+        )
+    if photo.size is not None and photo.size > settings.MAX_UPLOAD_SIZE_BYTES:
+        max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
+        raise HTTPException(status_code=422, detail=f"Medication photo exceeds {max_mb} MB")
+
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await photo.read(64 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > settings.MAX_UPLOAD_SIZE_BYTES:
+            max_mb = settings.MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)
+            raise HTTPException(status_code=422, detail=f"Medication photo exceeds {max_mb} MB")
+        chunks.append(chunk)
+    content = b"".join(chunks)
+    if not content:
+        raise HTTPException(status_code=422, detail="Medication photo is empty")
+    if not _content_matches_mime(content, mime):
+        raise HTTPException(status_code=422, detail="File contents do not match declared type")
+    return content, mime
+
+
 @router.post("/medications", status_code=status.HTTP_201_CREATED, response_model=schemas.MedicationResponse)
 @limiter.limit("30/minute")
 async def create_medication(
     request: Request,
-    data: schemas.MedicationCreate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
     _region: dict = Depends(require_india_writer),
@@ -39,20 +122,70 @@ async def create_medication(
 
     NUO-135: writes are gated to India IPs (with locale fallback).
     """
-    get_profile_editor_or_403(data.profile_id, user, db)
+    content_type = (request.headers.get("content-type") or "").lower()
+    photo: UploadFile | None = None
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        raw = {
+            "profile_id": form.get("profile_id"),
+            "name": form.get("name"),
+            "dose": form.get("dose"),
+            "frequency": form.get("frequency"),
+            "intake_period": form.get("intake_period"),
+            "taken_at": form.get("taken_at"),
+            "notes": form.get("notes"),
+        }
+        maybe_photo = form.get("photo")
+        if getattr(maybe_photo, "filename", None) is not None and hasattr(maybe_photo, "read"):
+            photo = maybe_photo
+    else:
+        raw = await request.json()
+    try:
+        payload = schemas.MedicationCreate.model_validate(raw)
+    except ValidationError as exc:
+        raise RequestValidationError(exc.errors()) from exc
+    get_profile_editor_or_403(payload.profile_id, user, db)
 
     med = models.Medication(
-        profile_id=data.profile_id,
+        profile_id=payload.profile_id,
         logged_by=user.id,
-        name=data.name.strip(),
-        dose=(data.dose or "").strip() or None,
-        frequency=(data.frequency or "").strip() or None,
-        intake_period=data.intake_period,
-        taken_at=data.taken_at,
-        notes=(data.notes or "").strip() or None,
+        name=payload.name.strip(),
+        dose=(payload.dose or "").strip() or None,
+        frequency=(payload.frequency or "").strip() or None,
+        intake_period=payload.intake_period,
+        taken_at=payload.taken_at,
+        notes=(payload.notes or "").strip() or None,
     )
     db.add(med)
-    db.commit()
+    db.flush()
+
+    photo_path_saved: str | None = None
+    if photo is not None:
+        image_bytes, mime_type = await _read_valid_photo_or_422(photo)
+        try:
+            med.photo_path = save_medication_photo(
+                profile_id=med.profile_id,
+                medication_id=med.id,
+                image_bytes=image_bytes,
+                mime_type=mime_type,
+            )
+        except ValueError as exc:
+            raise _storage_value_error_to_http(exc) from exc
+        photo_path_saved = med.photo_path
+        med.has_photo = True
+        logger.info(
+            "medication_photo_upload user_id=%s profile_id=%s medication_id=%s",
+            user.id,
+            med.profile_id,
+            med.id,
+        )
+
+    try:
+        db.commit()
+    except Exception:
+        if photo_path_saved:
+            delete_medication_photo(photo_path_saved)
+        raise
     db.refresh(med)
     return schemas.MedicationResponse.model_validate(med)
 
@@ -85,6 +218,44 @@ async def list_medications(
         .all()
     )
     return [schemas.MedicationResponse.model_validate(m) for m in meds]
+
+
+@router.get("/medications/{med_id}/photo")
+@limiter.limit("60/minute")
+async def get_medication_photo(
+    request: Request,
+    med_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    med = db.query(models.Medication).filter(models.Medication.id == med_id).first()
+    if not med:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    _assert_photo_read_access(med, user, db)
+    if not med.has_photo or not med.photo_path:
+        raise HTTPException(status_code=404, detail="Medication photo not found")
+    try:
+        image_bytes, mime_type = load_medication_photo(med.photo_path)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Medication photo not found")
+    except Exception:
+        logger.exception(
+            "medication_photo_decrypt_failed user_id=%s medication_id=%s",
+            user.id,
+            med_id,
+        )
+        raise HTTPException(status_code=500, detail="Unable to load medication photo")
+    logger.info(
+        "medication_photo_fetch user_id=%s profile_id=%s medication_id=%s",
+        user.id,
+        med.profile_id,
+        med_id,
+    )
+    return Response(
+        content=image_bytes,
+        media_type=mime_type,
+        headers={"Content-Disposition": "attachment; filename=medication-photo"},
+    )
 
 
 @router.patch("/medications/{med_id}", response_model=schemas.MedicationResponse)
@@ -160,6 +331,15 @@ async def delete_medication(
             raise HTTPException(status_code=404, detail="Medication not found")
         raise
 
+    photo_path = med.photo_path
     db.delete(med)
     db.commit()
+    if photo_path:
+        delete_medication_photo(photo_path)
+        logger.info(
+            "medication_photo_delete user_id=%s profile_id=%s medication_id=%s",
+            user.id,
+            med.profile_id,
+            med_id,
+        )
     return None

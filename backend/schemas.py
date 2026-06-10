@@ -1173,6 +1173,7 @@ class MedicationResponse(BaseModel):
     intake_period: MedicationIntakePeriod
     taken_at: datetime
     notes: Optional[str] = None
+    has_photo: bool = False
     created_at: datetime
 
     class Config:

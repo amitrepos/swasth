@@ -1287,7 +1287,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), और स्वचालित रीडिंग कैप्चर के लिए चिकित्सा उपकरणों की तस्वीरें।';
+      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), स्वचालित रीडिंग कैप्चर के लिए चिकित्सा उपकरणों की तस्वीरें, दवा सेवन लॉग के साथ जोड़ी गई वैकल्पिक दवा पैकेजिंग तस्वीरें, और वैकल्पिक साप्ताहिक वज़न रिमाइंडर (केवल आपके डिवाइस पर संग्रहीत)।';
 
   @override
   String get ppPurposeTitle => 'संग्रह का उद्देश्य';
@@ -1544,6 +1544,11 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String doctorMedicationLogSubtitle(String dose, String frequency) {
     return '$dose · $frequency';
+  }
+
+  @override
+  String doctorMedicationPhotoViewLabel(String name) {
+    return '$name की पैकिंग की फोटो देखें';
   }
 
   @override
@@ -2345,6 +2350,61 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reminderDisabled => 'रिमाइंडर बंद कर दिया गया';
 
   @override
+  String get reminderSettingsTitle => 'रिमाइंडर सेटिंग्स';
+
+  @override
+  String get dailyReminderSection => 'दैनिक स्वास्थ्य जाँच';
+
+  @override
+  String get dailyReminderEnableLabel => 'दैनिक स्वास्थ्य रिमाइंडर चालू करें';
+
+  @override
+  String get weeklyWeightReminderSection => 'साप्ताहिक वजन रिमाइंडर';
+
+  @override
+  String get weightReminderEnableLabel => 'साप्ताहिक वजन रिमाइंडर चालू करें';
+
+  @override
+  String get weightReminderDayLabel => 'दिन';
+
+  @override
+  String get weightReminderPickDayTitle => 'कौन से दिन रिमाइंडर चाहिए?';
+
+  @override
+  String get weightReminderTimeLabel => 'समय';
+
+  @override
+  String get weightReminderSetTime => 'साप्ताहिक वजन रिमाइंडर समय सेट करें';
+
+  @override
+  String get weightReminderChangeTime => 'साप्ताहिक वजन रिमाइंडर समय बदलें';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'वजन रिमाइंडर $day को $time पर सेट किया गया';
+  }
+
+  @override
+  String get weightReminderDisabled => 'साप्ताहिक वजन रिमाइंडर बंद कर दिया गया';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ अपना वजन दर्ज करें';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'साप्ताहिक जाँच — अपना वजन दर्ज करें ताकि डॉक्टर को सही जानकारी मिले।';
+
+  @override
+  String get reminderOpenSettings => 'सेटिंग्स खोलें';
+
+  @override
+  String get reminderSheetDone => 'हो गया';
+
+  @override
+  String get notificationPermissionRequired =>
+      'रिमाइंडर के लिए नोटिफिकेशन अनुमति आवश्यक है। फ़ोन की Settings में जाएँ और Swasth को अनुमति दें।';
+
+  @override
   String get actionCall => 'कॉल करें';
 
   @override
@@ -2482,6 +2542,44 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get medicationsFormDateLabel => 'तारीख';
+
+  @override
+  String get medicationsAddPhotoLabel => 'दवा की पैकिंग की फोटो (ज़रूरी नहीं)';
+
+  @override
+  String get medicationsPhotoWhy =>
+      'आपका डॉक्टर सही दवा जांचने के लिए पैकिंग देख सकते हैं।';
+
+  @override
+  String get medicationsAddPhoto => 'फोटो जोड़ें';
+
+  @override
+  String get medicationsChangePhoto => 'फोटो बदलें';
+
+  @override
+  String get medicationsRemovePhoto => 'फोटो हटाएँ';
+
+  @override
+  String get medicationsUploadingPhoto => 'फोटो भेजी जा रही है…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'फोटो नहीं भेजी जा सकी। आपकी दवा सेव नहीं हुई — कृपया दोबारा कोशिश करें।';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'इंटरनेट नहीं है — फोटो नहीं भेजी। आपकी दवा सेव नहीं हुई। कनेक्शन जाँचकर फिर कोशिश करें।';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'अगली बार यही दवा लॉग करते समय फोटो जोड़ सकते हैं।';
+
+  @override
+  String get medicationsPhotoClose => 'बंद करें';
+
+  @override
+  String get medicationsPhotoCannotChangeAfterSave =>
+      'सेव करने के बाद फोटो नहीं बदल सकते।';
 
   @override
   String get medicationsPeriodMorning => 'सुबह';
