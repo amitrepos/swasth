@@ -36,7 +36,6 @@ String reminderWeekdayLabel(BuildContext ctx, int day0Sunday) {
   return DateFormat.EEEE(locale).format(DateTime(2024, 1, 7 + day0Sunday));
 }
 
-@visibleForTesting
 Future<void> showReminderSettingsSheet(
   BuildContext ctx, {
   required bool Function() isParentMounted,
