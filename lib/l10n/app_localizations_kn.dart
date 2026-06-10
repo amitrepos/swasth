@@ -1302,7 +1302,7 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'ಸ್ವಸ್ಥ ಸಂಗ್ರಹಿಸುವ ಮಾಹಿತಿಗಳು: ರಕ್ತದ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳು, ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳು, ನಾಡಿಮಿಡಿತ, ಊಟದ ಟಿಪ್ಪಣಿಗಳು, ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಲಿಂಗ, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು), ಸ್ವಯಂಚಾಲಿತ ರೀಡಿಂಗ್ ಕ್ಯಾಪ್ಚರ್‌ಗಾಗಿ ವೈದ್ಯಕೀಯ ಸಾಧನಗಳ ಫೋಟೋಗಳು, ಮತ್ತು ಔಷಧಿ ಸೇವನೆ ದಾಖಲೆಗಳಿಗೆ ಲಗತ್ತಿಸಿದ ಐಚ್ಛಿಕ ಔಷಧಿ ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋಗಳು.';
+      'ಸ್ವಸ್ಥ ಸಂಗ್ರಹಿಸುವ ಮಾಹಿತಿಗಳು: ರಕ್ತದ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳು, ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳು, ನಾಡಿಮಿಡಿತ, ಊಟದ ಟಿಪ್ಪಣಿಗಳು, ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಲಿಂಗ, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು), ಸ್ವಯಂಚಾಲಿತ ರೀಡಿಂಗ್ ಕ್ಯಾಪ್ಚರ್‌ಗಾಗಿ ವೈದ್ಯಕೀಯ ಸಾಧನಗಳ ಫೋಟೋಗಳು, ಔಷಧಿ ಸೇವನೆ ದಾಖಲೆಗಳಿಗೆ ಲಗತ್ತಿಸಿದ ಐಚ್ಛಿಕ ಔಷಧಿ ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋಗಳು, ಮತ್ತು ವಾರದ ತೂಕ ಜ್ಞಾಪನೆ ಆಯ್ಕೆಗಳು (ದಿನ/ಸಮಯ) — ಇವು ನಿಮ್ಮ ಸಾಧನದಲ್ಲೇ ಮಾತ್ರ ಉಳಿಯುತ್ತವೆ.';
 
   @override
   String get ppPurposeTitle => 'ಸಂಗ್ರಹಣೆಯ ಉದ್ದೇಶ';
@@ -2374,6 +2374,62 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'ಜ್ಞಾಪನೆಯನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ';
+
+  @override
+  String get reminderSettingsTitle => 'ಜ್ಞಾಪನೆ ಸೆಟ್ಟಿಂಗ್‌ಗಳು';
+
+  @override
+  String get dailyReminderSection => 'ದೈನಂದಿನ ಆರೋಗ್ಯ ಪರಿಶೀಲನೆ';
+
+  @override
+  String get dailyReminderEnableLabel =>
+      'ದೈನಂದಿನ ಆರೋಗ್ಯ ಜ್ಞಾಪನೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ';
+
+  @override
+  String get weeklyWeightReminderSection => 'ವಾರದ ತೂಕ ಜ್ಞಾಪನೆ';
+
+  @override
+  String get weightReminderEnableLabel => 'ವಾರದ ತೂಕ ಜ್ಞಾಪನೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ';
+
+  @override
+  String get weightReminderDayLabel => 'ದಿನ';
+
+  @override
+  String get weightReminderPickDayTitle => 'ಯಾವ ದಿನ ಜ್ಞಾಪನೆ ಬೇಕು?';
+
+  @override
+  String get weightReminderTimeLabel => 'ಸಮಯ';
+
+  @override
+  String get weightReminderSetTime => 'ವಾರದ ತೂಕ ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಹೊಂದಿಸಿ';
+
+  @override
+  String get weightReminderChangeTime => 'ವಾರದ ತೂಕ ಜ್ಞಾಪನೆ ಸಮಯವನ್ನು ಬದಲಿಸಿ';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'ತೂಕ ಜ್ಞಾಪನೆಯನ್ನು $day ರಂದು $time ಗೆ ಹೊಂದಿಸಲಾಗಿದೆ';
+  }
+
+  @override
+  String get weightReminderDisabled => 'ವಾರದ ತೂಕ ಜ್ಞಾಪನೆ ನಿಷ್ಕ್ರಿಯಗೊಂಡಿದೆ';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ ನಿಮ್ಮ ತೂಕವನ್ನು ದಾಖಲಿಸಿ';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'ವಾರದ ಚೆಕ್-ಇನ್ — ಆರೋಗ್ಯ ಪ್ರವೃತ್ತಿಗಳನ್ನು ಖಚಿತವಾಗಿಡಲು ನಿಮ್ಮ ತೂಕವನ್ನು ದಾಖಲಿಸಿ.';
+
+  @override
+  String get reminderOpenSettings => 'ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ತೆರೆಯಿ';
+
+  @override
+  String get reminderSheetDone => 'ಮುಗಿದಿದೆ';
+
+  @override
+  String get notificationPermissionRequired =>
+      'ಜ್ಞಾಪನೆಗಳಿಗೆ ಅಧಿಸೂಚನೆ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ. ಫೋನ್ Settings ನಲ್ಲಿ ಹೋಗಿ Swasth ಗೆ ಅನುಮತಿ ನೀಡಿ.';
 
   @override
   String get actionCall => 'ಕರೆ ಮಾಡಿ';

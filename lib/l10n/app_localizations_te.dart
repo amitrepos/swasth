@@ -1294,7 +1294,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'స్వస్థ సేకరిస్తుంది: రక్తంలో గ్లూకోజ్ రీడింగ్‌లు, రక్తపోటు రీడింగ్‌లు, పల్స్ రేట్, భోజన గమనికలు, ప్రొఫైల్ సమాచారం (పేరు, వయస్సు, లింగం, వైద్య పరిస్థితులు, మందులు), స్వయంచాలక రీడింగ్ క్యాప్చర్ కోసం వైద్య పరికరాల ఫోటోలు, మరియు మందు తీసుకోవడం లాగ్‌లకు జోడించిన ఐచ్ఛిక మందు ప్యాకేజింగ్ ఫోటోలు.';
+      'స్వస్థ సేకరిస్తుంది: రక్తంలో గ్లూకోజ్ రీడింగ్‌లు, రక్తపోటు రీడింగ్‌లు, పల్స్ రేట్, భోజన గమనికలు, ప్రొఫైల్ సమాచారం (పేరు, వయస్సు, లింగం, వైద్య పరిస్థితులు, మందులు), స్వయంచాలక రీడింగ్ క్యాప్చర్ కోసం వైద్య పరికరాల ఫోటోలు, మందు తీసుకోవడం లాగ్‌లకు జోడించిన ఐచ్ఛిక మందు ప్యాకేజింగ్ ఫోటోలు, మరియు వారపు బరువు రిమైండర్ అభిరుచులు (రోజు/సమయం) — ఇవి మీ పరికరంలో మాత్రమే నిల్వ చేయబడతాయి.';
 
   @override
   String get ppPurposeTitle => 'సేకరణ ప్రయోజనం';
@@ -2362,6 +2362,62 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get reminderDisabled => 'రిమైండర్ నిలిపివేయబడింది';
+
+  @override
+  String get reminderSettingsTitle => 'రిమైండర్ సెట్టింగ్‌లు';
+
+  @override
+  String get dailyReminderSection => 'రోజువారీ ఆరోగ్య తనిఖీ';
+
+  @override
+  String get dailyReminderEnableLabel =>
+      'రోజువారీ ఆరోగ్య రిమైండర్ ప్రారంభించండి';
+
+  @override
+  String get weeklyWeightReminderSection => 'వారపు బరువు రిమైండర్';
+
+  @override
+  String get weightReminderEnableLabel => 'వారపు బరువు రిమైండర్ ప్రారంభించండి';
+
+  @override
+  String get weightReminderDayLabel => 'రోజు';
+
+  @override
+  String get weightReminderPickDayTitle => 'ఏ రోజు రిమైండర్ కావాలి?';
+
+  @override
+  String get weightReminderTimeLabel => 'సమయం';
+
+  @override
+  String get weightReminderSetTime => 'వారపు బరువు రిమైండర్ సమయం సెట్ చేయండి';
+
+  @override
+  String get weightReminderChangeTime => 'వారపు బరువు సమయం మార్చండి';
+
+  @override
+  String weightReminderSetFor(String day, String time) {
+    return 'బరువు రిమైండర్ $day న $time కు సెట్ చేయబడింది';
+  }
+
+  @override
+  String get weightReminderDisabled => 'వారపు బరువు రిమైండర్ నిలిపివేయబడింది';
+
+  @override
+  String get weightReminderNotificationTitle => '⚖️ మీ బరువును నమోదు చేయండి';
+
+  @override
+  String get weightReminderNotificationBody =>
+      'వారపు చెక్-ఇన్ — మీ బరువును నమోదు చేసి ఆరోగ్య ట్రెండ్‌లను ఖచ్చితంగా ఉంచండి.';
+
+  @override
+  String get reminderOpenSettings => 'సెట్టింగ్‌లు తెరవండి';
+
+  @override
+  String get reminderSheetDone => 'పూర్తి';
+
+  @override
+  String get notificationPermissionRequired =>
+      'రిమైండర్‌ల కోసం నోటిఫికేషన్ అనుమతి అవసరం. ఫోన్ Settingsలోకి వెళ్లి Swasthకు అనుమతి ఇవ్వండి.';
 
   @override
   String get actionCall => 'కాల్ చేయండి';

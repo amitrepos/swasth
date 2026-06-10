@@ -2483,7 +2483,7 @@ abstract class AppLocalizations {
   /// No description provided for @ppDataCollection.
   ///
   /// In en, this message translates to:
-  /// **'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, and optional medicine packaging photos attached to intake logs.'**
+  /// **'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, optional medicine packaging photos attached to intake logs, and optional local reminders for weekly weight logging (stored on your device only).'**
   String get ppDataCollection;
 
   /// No description provided for @ppPurposeTitle.
@@ -4380,6 +4380,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reminder disabled'**
   String get reminderDisabled;
+
+  /// No description provided for @reminderSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder Settings'**
+  String get reminderSettingsTitle;
+
+  /// No description provided for @dailyReminderSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Health Check'**
+  String get dailyReminderSection;
+
+  /// No description provided for @dailyReminderEnableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable daily health reminder'**
+  String get dailyReminderEnableLabel;
+
+  /// No description provided for @weeklyWeightReminderSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Weight Reminder'**
+  String get weeklyWeightReminderSection;
+
+  /// No description provided for @weightReminderEnableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable weekly weight reminder'**
+  String get weightReminderEnableLabel;
+
+  /// No description provided for @weightReminderDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get weightReminderDayLabel;
+
+  /// No description provided for @weightReminderPickDayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Which day for the reminder?'**
+  String get weightReminderPickDayTitle;
+
+  /// No description provided for @weightReminderTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get weightReminderTimeLabel;
+
+  /// No description provided for @weightReminderSetTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Set weekly weight reminder time'**
+  String get weightReminderSetTime;
+
+  /// No description provided for @weightReminderChangeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Change weekly weight reminder time'**
+  String get weightReminderChangeTime;
+
+  /// No description provided for @weightReminderSetFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight reminder set for {day} at {time}'**
+  String weightReminderSetFor(String day, String time);
+
+  /// No description provided for @weightReminderDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly weight reminder disabled'**
+  String get weightReminderDisabled;
+
+  /// No description provided for @weightReminderNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'⚖️ Time to log your weight'**
+  String get weightReminderNotificationTitle;
+
+  /// No description provided for @weightReminderNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly check-in — log your weight so your doctor has the latest information.'**
+  String get weightReminderNotificationBody;
+
+  /// No description provided for @reminderOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get reminderOpenSettings;
+
+  /// No description provided for @reminderSheetDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get reminderSheetDone;
+
+  /// No description provided for @notificationPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission is required for reminders. Open your phone Settings and allow notifications for Swasth.'**
+  String get notificationPermissionRequired;
 
   /// No description provided for @actionCall.
   ///
