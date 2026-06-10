@@ -1022,5 +1022,9 @@
   "medicationsFormDone": "हो गया",
   "medicationsFormDoneLogged": "हो गया ({count} दर्ज)",
   "medicationsFormSavedBanner": "\"{name}\" सहेजी गई",
-  "medicationsFormSavedBannerMulti": "\"{name}\" सहेजी गई  ·  {count} दर्ज"
+  "medicationsFormSavedBannerMulti": "\"{name}\" सहेजी गई  ·  {count} दर्ज",
+  "regReferralCodeLabel": "Code given by your doctor (optional)",
+  "regReferralCodeHint": "e.g. DRRAJ52",
+  "regReferralCodeHelper": "Enter the code your doctor gave you, if any",
+  "regReferralCodeError": "Doctor code must be 4–8 characters (letters and numbers only)"
 }

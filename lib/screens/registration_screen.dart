@@ -507,15 +507,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 controller: _referralCodeController,
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
-                  labelText: 'Doctor referral code (optional)',
-                  hintText: 'e.g. DRRAJ52',
+                  labelText: AppLocalizations.of(context)!.regReferralCodeLabel,
+                  hintText: AppLocalizations.of(context)!.regReferralCodeHint,
                   prefixIcon: const Icon(Icons.card_giftcard_outlined),
-                  helperText: 'Enter the code your doctor gave you, if any',
+                  helperText: AppLocalizations.of(context)!.regReferralCodeHelper,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) return null;
-                  if (value.trim().length < 4 || value.trim().length > 8) {
-                    return 'Doctor code must be 4–8 characters';
+                  final v = value.trim();
+                  if (v.length < 4 || v.length > 8) {
+                    return AppLocalizations.of(context)!.regReferralCodeError;
+                  }
+                  if (!RegExp(r'^[A-Za-z0-9]+$').hasMatch(v)) {
+                    return AppLocalizations.of(context)!.regReferralCodeError;
                   }
                   return null;
                 },

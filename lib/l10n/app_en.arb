@@ -1529,5 +1529,13 @@
       "name": { "type": "String" },
       "count": { "type": "int" }
     }
-  }
+  },
+  "regReferralCodeLabel": "Code given by your doctor (optional)",
+  "@regReferralCodeLabel": {},
+  "regReferralCodeHint": "e.g. DRRAJ52",
+  "@regReferralCodeHint": {},
+  "regReferralCodeHelper": "Enter the code your doctor gave you, if any",
+  "@regReferralCodeHelper": {},
+  "regReferralCodeError": "Doctor code must be 4–8 characters (letters and numbers only)",
+  "@regReferralCodeError": {}
 }

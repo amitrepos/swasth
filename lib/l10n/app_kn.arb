@@ -1400,5 +1400,9 @@
     "placeholders": {
       "time": { "type": "String" }
     }
-  }
+  },
+  "regReferralCodeLabel": "Code given by your doctor (optional)",
+  "regReferralCodeHint": "e.g. DRRAJ52",
+  "regReferralCodeHelper": "Enter the code your doctor gave you, if any",
+  "regReferralCodeError": "Doctor code must be 4–8 characters (letters and numbers only)"
 }
