@@ -615,7 +615,7 @@
   "consentDeclineConfirm": "Go Back",
   "consentScrollToAccept": "Scroll down to read the full notice",
   "ppDataCollectionTitle": "Data We Collect",
-  "ppDataCollection": "Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, and optional local reminders for weekly weight logging (stored on your device only).",
+  "ppDataCollection": "Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, optional medicine packaging photos attached to intake logs, and optional local reminders for weekly weight logging (stored on your device only).",
   "ppPurposeTitle": "Purpose of Collection",
   "ppPurpose": "Your health data is used to: display trends and health scores, generate personalised health insights, share with your designated family members, and provide information to your doctor for treatment.",
   "ppAiTitle": "AI Processing",
@@ -715,6 +715,12 @@
     "placeholders": {
       "dose": { "type": "String" },
       "frequency": { "type": "String" }
+    }
+  },
+  "doctorMedicationPhotoViewLabel": "View {name} packaging photo",
+  "@doctorMedicationPhotoViewLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
     }
   },
   "noMealsLast7Days": "No meals logged in the last 7 days",
@@ -1478,6 +1484,17 @@
   "medicationsFormFrequencyHint": "e.g. Twice daily after food",
   "medicationsFormPeriodLabel": "When taken",
   "medicationsFormDateLabel": "Date",
+  "medicationsAddPhotoLabel": "Medicine package photo (optional)",
+  "medicationsPhotoWhy": "Your doctor can see the packaging to check the right medicine.",
+  "medicationsAddPhoto": "Add photo",
+  "medicationsChangePhoto": "Change photo",
+  "medicationsRemovePhoto": "Remove photo",
+  "medicationsUploadingPhoto": "Uploading photo…",
+  "medicationsPhotoUploadFailed": "Photo could not be sent. Your medicine was not saved — please try again.",
+  "medicationsPhotoUploadNetworkFailed": "No internet — photo not sent. Your medicine was not saved. Check your connection and try again.",
+  "medicationsPhotoCannotChangeHint": "Next time you log this medicine, you can add a photo then.",
+  "medicationsPhotoClose": "Close",
+  "medicationsPhotoCannotChangeAfterSave": "Photo cannot be changed after saving.",
   "medicationsPeriodMorning": "Morning",
   "medicationsPeriodAfternoon": "Afternoon",
   "medicationsPeriodEvening": "Evening",

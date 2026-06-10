@@ -1294,7 +1294,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'Swasth సేకరిస్తుంది: రక్తంలో గ్లూకోజ్ రీడింగ్‌లు, రక్తపోటు రీడింగ్‌లు, పల్స్ రేట్, భోజన గమనికలు, ప్రొఫైల్ సమాచారం (పేరు, వయస్సు, లింగం, వైద్య పరిస్థితులు, మందులు), స్వయంచాలక రీడింగ్ క్యాప్చర్ కోసం వైద్య పరికరాల ఫోటోలు, మరియు వారపు బరువు రిమైండర్ అభిరుచులు (రోజు/సమయం) — ఇవి మీ పరికరంలో మాత్రమే నిల్వ చేయబడతాయి.';
+      'స్వస్థ సేకరిస్తుంది: రక్తంలో గ్లూకోజ్ రీడింగ్‌లు, రక్తపోటు రీడింగ్‌లు, పల్స్ రేట్, భోజన గమనికలు, ప్రొఫైల్ సమాచారం (పేరు, వయస్సు, లింగం, వైద్య పరిస్థితులు, మందులు), స్వయంచాలక రీడింగ్ క్యాప్చర్ కోసం వైద్య పరికరాల ఫోటోలు, మందు తీసుకోవడం లాగ్‌లకు జోడించిన ఐచ్ఛిక మందు ప్యాకేజింగ్ ఫోటోలు, మరియు వారపు బరువు రిమైండర్ అభిరుచులు (రోజు/సమయం) — ఇవి మీ పరికరంలో మాత్రమే నిల్వ చేయబడతాయి.';
 
   @override
   String get ppPurposeTitle => 'సేకరణ ప్రయోజనం';
@@ -1552,6 +1552,11 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String doctorMedicationLogSubtitle(String dose, String frequency) {
     return '$dose · $frequency';
+  }
+
+  @override
+  String doctorMedicationPhotoViewLabel(String name) {
+    return '$name ప్యాకేజింగ్ ఫోటో చూడండి';
   }
 
   @override
@@ -2552,6 +2557,44 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get medicationsFormDateLabel => 'తేదీ';
+
+  @override
+  String get medicationsAddPhotoLabel => 'మందు ప్యాకేజింగ్ ఫోటో (ఐచ్ఛికం)';
+
+  @override
+  String get medicationsPhotoWhy =>
+      'సరైన మందు తనిఖీ చేయడానికి మీ డాక్టర్ ప్యాకేజింగ్ చూడవచ్చు.';
+
+  @override
+  String get medicationsAddPhoto => 'ఫోటో జోడించండి';
+
+  @override
+  String get medicationsChangePhoto => 'ఫోటో మార్చండి';
+
+  @override
+  String get medicationsRemovePhoto => 'ఫోటో తీసివేయండి';
+
+  @override
+  String get medicationsUploadingPhoto => 'ఫోటో పంపబడుతోంది…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'ఫోటో పంపలేకపోయాం. మీ మందు సేవ్ కాలేదు — దయచేసి మళ్లీ ప్రయత్నించండి.';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'ఇంటర్నెట్ లేదు — ఫోటో పంపలేదు. మీ మందు సేవ్ కాలేదు. కనెక్షన్ చెక్ చేసి మళ్లీ ప్రయత్నించండి.';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'తదుపరి సారి ఈ మందు లాగ్ చేసేటప్పుడు ఫోటో జోడించవచ్చు.';
+
+  @override
+  String get medicationsPhotoClose => 'మూసివేయి';
+
+  @override
+  String get medicationsPhotoCannotChangeAfterSave =>
+      'సేవ్ చేసిన తర్వాత ఫోటో మార్చలేరు.';
 
   @override
   String get medicationsPeriodMorning => 'ఉదయం';

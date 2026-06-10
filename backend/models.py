@@ -610,6 +610,8 @@ class Medication(Base):
     dose_enc = Column(Text, nullable=True)
     frequency_enc = Column(Text, nullable=True)
     notes_enc = Column(Text, nullable=True)
+    photo_path = Column(String, nullable=True)
+    has_photo = Column(Boolean, nullable=False, default=False)
     # MORNING | AFTERNOON | EVENING | NIGHT — low-entropy enum; plaintext for pilot UX.
     intake_period = Column(String, nullable=False)
     taken_at = Column(DateTime(timezone=True), nullable=False)

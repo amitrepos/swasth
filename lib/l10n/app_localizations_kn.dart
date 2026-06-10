@@ -1302,7 +1302,7 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'ಸ್ವಸ್ಥ ಸಂಗ್ರಹಿಸುವ ಮಾಹಿತಿಗಳು: ರಕ್ತದ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳು, ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳು, ನಾಡಿಮಿಡಿತ, ಊಟದ ಟಿಪ್ಪಣಿಗಳು, ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಲಿಂಗ, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು), ಸ್ವಯಂಚಾಲಿತ ರೀಡಿಂಗ್ ಕ್ಯಾಪ್ಚರ್‌ಗಾಗಿ ವೈದ್ಯಕೀಯ ಸಾಧನಗಳ ಫೋಟೋಗಳು, ಮತ್ತು ವಾರದ ತೂಕ ಜ್ಞಾಪನೆ ಆಯ್ಕೆಗಳು (ದಿನ/ಸಮಯ) — ಇವು ನಿಮ್ಮ ಸಾಧನದಲ್ಲೇ ಮಾತ್ರ ಉಳಿಯುತ್ತವೆ.';
+      'ಸ್ವಸ್ಥ ಸಂಗ್ರಹಿಸುವ ಮಾಹಿತಿಗಳು: ರಕ್ತದ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳು, ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳು, ನಾಡಿಮಿಡಿತ, ಊಟದ ಟಿಪ್ಪಣಿಗಳು, ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಲಿಂಗ, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು), ಸ್ವಯಂಚಾಲಿತ ರೀಡಿಂಗ್ ಕ್ಯಾಪ್ಚರ್‌ಗಾಗಿ ವೈದ್ಯಕೀಯ ಸಾಧನಗಳ ಫೋಟೋಗಳು, ಔಷಧಿ ಸೇವನೆ ದಾಖಲೆಗಳಿಗೆ ಲಗತ್ತಿಸಿದ ಐಚ್ಛಿಕ ಔಷಧಿ ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋಗಳು, ಮತ್ತು ವಾರದ ತೂಕ ಜ್ಞಾಪನೆ ಆಯ್ಕೆಗಳು (ದಿನ/ಸಮಯ) — ಇವು ನಿಮ್ಮ ಸಾಧನದಲ್ಲೇ ಮಾತ್ರ ಉಳಿಯುತ್ತವೆ.';
 
   @override
   String get ppPurposeTitle => 'ಸಂಗ್ರಹಣೆಯ ಉದ್ದೇಶ';
@@ -1562,6 +1562,11 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String doctorMedicationLogSubtitle(String dose, String frequency) {
     return '$dose · $frequency';
+  }
+
+  @override
+  String doctorMedicationPhotoViewLabel(String name) {
+    return '$name ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋ ನೋಡಿ';
   }
 
   @override
@@ -2564,6 +2569,44 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get medicationsFormDateLabel => 'ದಿನಾಂಕ';
+
+  @override
+  String get medicationsAddPhotoLabel => 'ಔಷಧಿ ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋ (ಐಚ್ಛಿಕ)';
+
+  @override
+  String get medicationsPhotoWhy =>
+      'ಸರಿಯಾದ ಔಷಧಿ ಪರಿಶೀಲಿಸಲು ನಿಮ್ಮ ವೈದ್ಯರು ಪ್ಯಾಕೇಜಿಂಗ್ ನೋಡಬಹುದು.';
+
+  @override
+  String get medicationsAddPhoto => 'ಫೋಟೋ ಸೇರಿಸಿ';
+
+  @override
+  String get medicationsChangePhoto => 'ಫೋಟೋ ಬದಲಾಯಿಸಿ';
+
+  @override
+  String get medicationsRemovePhoto => 'ಫೋಟೋ ತೆಗೆದುಹಾಕಿ';
+
+  @override
+  String get medicationsUploadingPhoto => 'ಫೋಟೋ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'ಫೋಟೋ ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ. ನಿಮ್ಮ ಔಷಧಿ ಉಳಿಸಲಾಗಿಲ್ಲ — ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'ಇಂಟರ್ನೆಟ್ ಇಲ್ಲ — ಫೋಟೋ ಕಳುಹಿಸಲಾಗಿಲ್ಲ. ನಿಮ್ಮ ಔಷಧಿ ಉಳಿಸಲಾಗಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'ಮುಂದಿನ ಬಾರಿ ಈ ಔಷಧಿ ದಾಖಲಿಸುವಾಗ ಫೋಟೋ ಸೇರಿಸಬಹುದು.';
+
+  @override
+  String get medicationsPhotoClose => 'ಮುಚ್ಚಿ';
+
+  @override
+  String get medicationsPhotoCannotChangeAfterSave =>
+      'ಉಳಿಸಿದ ನಂತರ ಫೋಟೋ ಬದಲಾಯಿಸಲಾಗುವುದಿಲ್ಲ.';
 
   @override
   String get medicationsPeriodMorning => 'ಬೆಳಿಗ್ಗೆ';

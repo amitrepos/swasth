@@ -1,12 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:swasth_app/l10n/app_localizations.dart';
 import '../../services/api_exception.dart';
 import '../../services/doctor_service.dart';
 import '../../services/error_mapper.dart';
+import '../../services/medication_service.dart';
 import '../../services/storage_service.dart';
 import '../../utils/medication_period_detector.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/medication_photo_thumbnail.dart';
 import '../../widgets/glass_card.dart';
 
 /// Doctor's patient detail view — quick stats, readings, notes.
@@ -27,6 +31,7 @@ class DoctorPatientDetailScreen extends StatefulWidget {
 
 class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
   final _doctorService = DoctorService();
+  final _medicationService = MedicationService();
   final _storage = StorageService();
   final _noteController = TextEditingController();
 
@@ -39,6 +44,8 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
   bool _loading = true;
   String? _error;
   bool _addingNote = false;
+  final Map<int, Uint8List> _medicationPhotos = {};
+  final Set<int> _loadingMedicationPhotos = <int>{};
 
   @override
   void initState() {
@@ -81,6 +88,7 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
         _notes = (results[5] as List).cast<Map<String, dynamic>>();
         _loading = false;
       });
+      _loadMedicationThumbnails(token);
     } catch (e) {
       if (!mounted) return;
       if (e is UnauthorizedException) {
@@ -92,6 +100,69 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
         _error = ErrorMapper.userMessage(l10n, e);
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _loadMedicationThumbnails(String token) async {
+    const batchSize = 3; // Cap parallel fetches on slow clinic Wi-Fi / JioFi.
+    final medsWithPhoto = _medications
+        .where((m) => m['has_photo'] == true)
+        .toList();
+    for (var i = 0; i < medsWithPhoto.length; i += batchSize) {
+      if (!mounted) return;
+      final batch = medsWithPhoto.skip(i).take(batchSize);
+      final futures = <Future<void>>[];
+      for (final med in batch) {
+        final medId = med['id'] as int?;
+        if (medId == null || _medicationPhotos.containsKey(medId)) continue;
+        setState(() => _loadingMedicationPhotos.add(medId));
+        futures.add(_fetchMedicationThumbnail(medId, token));
+      }
+      if (futures.isNotEmpty) {
+        await Future.wait(futures);
+      }
+    }
+  }
+
+  void _showFullScreenPhoto(BuildContext context, Uint8List bytes) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => Dialog.fullscreen(
+        backgroundColor: AppColors.bgPageDark,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            InteractiveViewer(child: Image.memory(bytes, fit: BoxFit.contain)),
+            Positioned(
+              top: MediaQuery.of(dialogCtx).padding.top + 8,
+              right: 8,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.close,
+                  color: AppColors.cameraForeground,
+                ),
+                tooltip: l10n.medicationsPhotoClose,
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _fetchMedicationThumbnail(int medId, String token) async {
+    try {
+      final bytes = await _medicationService.fetchMedicationPhoto(medId, token);
+      if (!mounted) return;
+      setState(() => _medicationPhotos[medId] = bytes);
+    } catch (_) {
+      // Keep rendering without image if fetch fails.
+    } finally {
+      if (mounted) {
+        setState(() => _loadingMedicationPhotos.remove(medId));
+      }
     }
   }
 
@@ -591,6 +662,8 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
   }
 
   Widget _buildMedicationRow(Map<String, dynamic> med) {
+    final medId = med['id'] as int?;
+    final hasPhoto = med['has_photo'] == true;
     final name = med['name'] as String? ?? '';
     final dose = (med['dose'] as String?)?.trim() ?? '';
     final frequency = (med['frequency'] as String?)?.trim() ?? '';
@@ -619,10 +692,18 @@ class _DoctorPatientDetailScreenState extends State<DoctorPatientDetailScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.medication_liquid,
-            size: 16,
-            color: AppColors.primary,
+          MedicationPhotoThumbnail(
+            key: Key('doctor-medication-thumb-${med['id']}'),
+            hasPhoto: hasPhoto,
+            bytes: medId == null ? null : _medicationPhotos[medId],
+            loading: medId != null && _loadingMedicationPhotos.contains(medId),
+            size: 60,
+            onTap: hasPhoto && medId != null && _medicationPhotos[medId] != null
+                ? () => _showFullScreenPhoto(context, _medicationPhotos[medId]!)
+                : null,
+            semanticsLabel: hasPhoto
+                ? l10n.doctorMedicationPhotoViewLabel(name)
+                : null,
           ),
           const SizedBox(width: 8),
           Expanded(

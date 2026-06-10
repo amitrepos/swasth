@@ -13,6 +13,7 @@ class Medication {
   final String intakePeriod;
   final DateTime takenAt;
   final String? notes;
+  final bool hasPhoto;
   final DateTime createdAt;
 
   Medication({
@@ -25,6 +26,7 @@ class Medication {
     required this.intakePeriod,
     required this.takenAt,
     this.notes,
+    this.hasPhoto = false,
     required this.createdAt,
   });
 
@@ -39,6 +41,7 @@ class Medication {
       intakePeriod: json['intake_period'] as String? ?? 'MORNING',
       takenAt: DateTimeUtils.parseUtc(json['taken_at']),
       notes: json['notes'] as String?,
+      hasPhoto: json['has_photo'] as bool? ?? false,
       createdAt: DateTimeUtils.parseUtc(json['created_at']),
     );
   }
