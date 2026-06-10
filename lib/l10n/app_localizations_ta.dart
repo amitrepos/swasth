@@ -1303,7 +1303,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'ஸ்வஸ்த் சேகரிக்கிறது: இரத்த குளுக்கோஸ் ரீடிங்குகள், இரத்த அழுத்த ரீடிங்குகள், நாடி வீதம், உணவு குறிப்புகள், சுயவிவர தகவல்கள் மற்றும் மருத்துவ சாதனங்களின் புகைப்படங்கள்.';
+      'ஸ்வஸ்த் சேகரிக்கிறது: இரத்த குளுக்கோஸ் ரீடிங்குகள், இரத்த அழுத்த ரீடிங்குகள், நாடி வீதம், உணவு குறிப்புகள், சுயவிவர தகவல்கள் (பெயர், வயது, பாலினம், மருத்துவ நிலைகள், மருந்துகள்), தானியங்கி ரீடிங் பிடிப்புக்கான மருத்துவ சாதன புகைப்படங்கள், மற்றும் மருந்து உட்கொள்ளல் பதிவுகளுடன் இணைக்கப்பட்ட விருப்ப மருந்து பேக்கேஜிங் புகைப்படங்கள்.';
 
   @override
   String get ppPurposeTitle => 'சேகரிப்பு நோக்கம்';
@@ -1560,6 +1560,11 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String doctorMedicationLogSubtitle(String dose, String frequency) {
     return '$dose · $frequency';
+  }
+
+  @override
+  String doctorMedicationPhotoViewLabel(String name) {
+    return '$name பேக்கேஜிங் புகைப்படத்தைப் பார்க்கவும்';
   }
 
   @override
@@ -2513,6 +2518,45 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get medicationsFormDateLabel => 'தேதி';
+
+  @override
+  String get medicationsAddPhotoLabel =>
+      'மருந்து பேக்கேஜிங் புகைப்படம் (விருப்பம்)';
+
+  @override
+  String get medicationsPhotoWhy =>
+      'சரியான மருந்தை சரிபார்க்க உங்கள் மருத்துவர் பேக்கேஜிங்கைப் பார்க்கலாம்.';
+
+  @override
+  String get medicationsAddPhoto => 'புகைப்படம் சேர்';
+
+  @override
+  String get medicationsChangePhoto => 'புகைப்படம் மாற்று';
+
+  @override
+  String get medicationsRemovePhoto => 'புகைப்படம் நீக்கு';
+
+  @override
+  String get medicationsUploadingPhoto => 'புகைப்படம் அனுப்பப்படுகிறது…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'புகைப்படம் அனுப்ப முடியவில்லை. உங்கள் மருந்து சேமிக்கப்படவில்லை — மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'இணையம் இல்லை — புகைப்படம் அனுப்பப்படவில்லை. உங்கள் மருந்து சேமிக்கப்படவில்லை. இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'அடுத்த முறை இந்த மருந்தை பதிவு செய்யும்போது புகைப்படம் சேர்க்கலாம்.';
+
+  @override
+  String get medicationsPhotoClose => 'மூடு';
+
+  @override
+  String get medicationsPhotoCannotChangeAfterSave =>
+      'சேமித்த பிறகு புகைப்படத்தை மாற்ற முடியாது.';
 
   @override
   String get medicationsPeriodMorning => 'காலை';

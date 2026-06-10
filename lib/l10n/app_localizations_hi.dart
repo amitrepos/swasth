@@ -1287,7 +1287,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), और स्वचालित रीडिंग कैप्चर के लिए चिकित्सा उपकरणों की तस्वीरें।';
+      'स्वस्थ एकत्र करता है: रक्त शर्करा रीडिंग, रक्तचाप रीडिंग, पल्स रेट, भोजन नोट्स, प्रोफ़ाइल जानकारी (नाम, आयु, लिंग, चिकित्सा स्थितियाँ, दवाइयाँ), स्वचालित रीडिंग कैप्चर के लिए चिकित्सा उपकरणों की तस्वीरें, और दवा सेवन लॉग के साथ जोड़ी गई वैकल्पिक दवा पैकेजिंग तस्वीरें।';
 
   @override
   String get ppPurposeTitle => 'संग्रह का उद्देश्य';
@@ -1544,6 +1544,11 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String doctorMedicationLogSubtitle(String dose, String frequency) {
     return '$dose · $frequency';
+  }
+
+  @override
+  String doctorMedicationPhotoViewLabel(String name) {
+    return '$name की पैकिंग की फोटो देखें';
   }
 
   @override
@@ -2482,6 +2487,44 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get medicationsFormDateLabel => 'तारीख';
+
+  @override
+  String get medicationsAddPhotoLabel => 'दवा की पैकिंग की फोटो (ज़रूरी नहीं)';
+
+  @override
+  String get medicationsPhotoWhy =>
+      'आपका डॉक्टर सही दवा जांचने के लिए पैकिंग देख सकते हैं।';
+
+  @override
+  String get medicationsAddPhoto => 'फोटो जोड़ें';
+
+  @override
+  String get medicationsChangePhoto => 'फोटो बदलें';
+
+  @override
+  String get medicationsRemovePhoto => 'फोटो हटाएँ';
+
+  @override
+  String get medicationsUploadingPhoto => 'फोटो भेजी जा रही है…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'फोटो नहीं भेजी जा सकी। आपकी दवा सेव नहीं हुई — कृपया दोबारा कोशिश करें।';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'इंटरनेट नहीं है — फोटो नहीं भेजी। आपकी दवा सेव नहीं हुई। कनेक्शन जाँचकर फिर कोशिश करें।';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'अगली बार यही दवा लॉग करते समय फोटो जोड़ सकते हैं।';
+
+  @override
+  String get medicationsPhotoClose => 'बंद करें';
+
+  @override
+  String get medicationsPhotoCannotChangeAfterSave =>
+      'सेव करने के बाद फोटो नहीं बदल सकते।';
 
   @override
   String get medicationsPeriodMorning => 'सुबह';

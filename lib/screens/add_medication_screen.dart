@@ -7,6 +7,7 @@
 // name. The user keeps logging until they tap "Done", which pops the sheet
 // and the parent list refreshes.
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../models/medication_model.dart';
@@ -17,6 +18,7 @@ import '../services/storage_service.dart';
 import '../utils/medication_period_detector.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../widgets/medication_photo_thumbnail.dart';
 
 /// Show the medication-add sheet. Resolves to `true` if at least one medicine
 /// was successfully logged (so the caller can refresh the list), `false` /
@@ -43,10 +45,12 @@ Future<bool?> showAddMedicationSheet(
 class AddMedicationSheet extends StatefulWidget {
   final int profileId;
   final Medication? initialMedication;
+  final PlatformFile? initialPhoto;
   const AddMedicationSheet({
     super.key,
     required this.profileId,
     this.initialMedication,
+    this.initialPhoto,
   });
 
   @override
@@ -65,12 +69,14 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
   bool _saving = false;
   int _savedCount = 0;
   String? _lastSavedName;
+  PlatformFile? _selectedPhoto;
 
   bool get _isEditMode => widget.initialMedication != null;
 
   @override
   void initState() {
     super.initState();
+    _selectedPhoto = widget.initialPhoto;
     final m = widget.initialMedication;
     if (m != null) {
       _nameCtl.text = m.name;
@@ -123,6 +129,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
       _selectedDate = DateTime.now();
       _intakePeriod = detectMedicationIntakePeriod();
       _saving = false;
+      _selectedPhoto = null;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _nameFocus.requestFocus();
@@ -154,7 +161,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
         Navigator.pop(context, true);
         return;
       } else {
-        await MedicationService().saveMedication(
+        await MedicationService().saveMedicationWithPhoto(
           MedicationCreate(
             profileId: widget.profileId,
             name: savedName,
@@ -167,6 +174,7 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
             notes: _notesCtl.text.trim().isEmpty ? null : _notesCtl.text.trim(),
           ),
           token,
+          photo: _selectedPhoto,
         );
         if (!mounted) return;
         setState(() {
@@ -178,13 +186,13 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            ErrorMapper.userMessage(AppLocalizations.of(context)!, e),
-          ),
-        ),
-      );
+      final l10n = AppLocalizations.of(context)!;
+      final message = _selectedPhoto != null
+          ? ErrorMapper.medicationPhotoSaveMessage(l10n, e)
+          : ErrorMapper.userMessage(l10n, e);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -193,6 +201,16 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.errGeneric)));
     }
+  }
+
+  Future<void> _pickPhoto() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    if (!mounted) return;
+    setState(() => _selectedPhoto = result.files.first);
   }
 
   void _done() {
@@ -332,6 +350,114 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      if (!_isEditMode) ...[
+                        Text(
+                          l10n.medicationsAddPhotoLabel,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, bottom: 8),
+                          child: Text(
+                            l10n.medicationsPhotoWhy,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            MedicationPhotoThumbnail(
+                              hasPhoto: _selectedPhoto != null,
+                              bytes: _selectedPhoto?.bytes,
+                              size: 64,
+                              onTap: _saving ? null : _pickPhoto,
+                              semanticsLabel: _selectedPhoto == null
+                                  ? l10n.medicationsAddPhoto
+                                  : l10n.medicationsChangePhoto,
+                            ),
+                            const SizedBox(width: 10),
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(48, 48),
+                              ),
+                              onPressed: _saving ? null : _pickPhoto,
+                              child: Text(
+                                _selectedPhoto == null
+                                    ? l10n.medicationsAddPhoto
+                                    : l10n.medicationsChangePhoto,
+                              ),
+                            ),
+                            if (_selectedPhoto != null)
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  foregroundColor: AppColors.danger,
+                                ),
+                                onPressed: _saving
+                                    ? null
+                                    : () =>
+                                          setState(() => _selectedPhoto = null),
+                                child: Text(l10n.medicationsRemovePhoto),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (_isEditMode) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.amber.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.amber.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.info_outline,
+                                size: 20,
+                                color: AppColors.warning,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.medicationsPhotoCannotChangeAfterSave,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        l10n.medicationsPhotoCannotChangeHint,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       Text(
                         l10n.medicationsFormPeriodLabel,
                         style: const TextStyle(
@@ -430,6 +556,22 @@ class _AddMedicationSheetState extends State<AddMedicationSheet> {
               ),
               child: Column(
                 children: [
+                  if (_saving && _selectedPhoto != null) ...[
+                    LinearProgressIndicator(
+                      key: const Key('medication-photo-upload-progress'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                      child: Text(
+                        l10n.medicationsUploadingPhoto,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(

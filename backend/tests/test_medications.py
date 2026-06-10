@@ -2,12 +2,35 @@
 
 Covers: create, list, update, delete, access control, doctor view.
 """
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
+from io import BytesIO
+from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 import models
 from auth import create_access_token, get_password_hash
+from models import UserRole
+
+_FAKE_JPEG = b"\xff\xd8\xff" + b"fake-jpeg-bytes"
+
+
+def _abs_photo_path(relative_path: str) -> Path:
+    from medication_photo_storage import _UPLOAD_ROOT
+
+    rel = Path(relative_path)
+    parts = rel.parts
+    suffix = Path(*parts[parts.index("medication_photos") + 1 :])
+    return _UPLOAD_ROOT / suffix
+
+
+@pytest.fixture(autouse=True)
+def isolated_medication_photo_uploads(tmp_path, monkeypatch):
+    """Keep encrypted photo files off the shared backend/uploads tree in CI."""
+    upload_root = tmp_path / "medication_photos"
+    monkeypatch.setattr("medication_photo_storage._UPLOAD_ROOT", upload_root)
+    yield
 
 
 # ---------------------------------------------------------------------------
@@ -35,6 +58,21 @@ def _post_medication(client, headers, profile_id, **overrides):
     }
     payload.update(overrides)
     return client.post("/api/medications", json=payload, headers=headers)
+
+
+def _post_medication_with_photo(client, headers, profile_id, **overrides):
+    fields = {
+        "profile_id": str(profile_id),
+        "name": "Metformin",
+        "dose": "500 mg",
+        "frequency": "Twice daily",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+        "notes": "",
+    }
+    fields.update({k: str(v) for k, v in overrides.items() if v is not None})
+    files = {"photo": ("strip.jpg", BytesIO(_FAKE_JPEG), "image/jpeg")}
+    return client.post("/api/medications", data=fields, files=files, headers=headers)
 
 
 # ---------------------------------------------------------------------------
@@ -206,6 +244,349 @@ def test_create_medication_requires_auth(client, test_user, db):
     pid = _profile_id_for(test_user, db)
     r = _post_medication(client, headers={}, profile_id=pid)
     assert r.status_code == 401
+
+
+def test_create_medication_with_photo_sets_has_photo(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    r = _post_medication_with_photo(client, auth_headers, pid)
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["has_photo"] is True
+
+    row = db.query(models.Medication).filter_by(id=body["id"]).first()
+    assert row is not None
+    assert row.has_photo is True
+    assert row.photo_path is not None
+
+
+def test_get_medication_photo_returns_bytes(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    create = _post_medication_with_photo(client, auth_headers, pid)
+    assert create.status_code == 201, create.text
+    med_id = create.json()["id"]
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
+    assert photo.status_code == 200
+    assert photo.content == _FAKE_JPEG
+    assert photo.headers["content-type"].startswith("image/jpeg")
+
+
+def test_get_medication_photo_404_when_missing(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication(client, auth_headers, pid)
+    assert created.status_code == 201, created.text
+    med_id = created.json()["id"]
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
+    assert photo.status_code == 404
+
+
+def test_get_medication_photo_requires_auth(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication_with_photo(client, auth_headers, pid)
+    med_id = created.json()["id"]
+    photo = client.get(f"/api/medications/{med_id}/photo")
+    assert photo.status_code == 401
+
+
+def test_get_medication_photo_denies_unrelated_patient(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication_with_photo(client, auth_headers, pid)
+    med_id = created.json()["id"]
+
+    other = models.User(
+        email="other-patient@test.com",
+        password_hash=get_password_hash("Other@123"),
+        full_name="Other Patient",
+        phone_number="9876500099",
+    )
+    db.add(other)
+    db.flush()
+    other_profile = models.Profile(name="Other Health", phone_number="9876500098")
+    db.add(other_profile)
+    db.flush()
+    db.add(
+        models.ProfileAccess(
+            user_id=other.id,
+            profile_id=other_profile.id,
+            access_level="owner",
+        )
+    )
+    db.commit()
+    other_headers = {
+        "Authorization": f"Bearer {create_access_token(data={'sub': other.email})}"
+    }
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=other_headers)
+    assert photo.status_code == 403
+
+
+def test_get_medication_photo_denies_unlinked_doctor(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication_with_photo(client, auth_headers, pid)
+    med_id = created.json()["id"]
+
+    doctor = models.User(
+        email="unlinked-dr@test.com",
+        password_hash=get_password_hash("Doctor@123"),
+        full_name="Dr Unlinked",
+        phone_number="9876500088",
+        role=UserRole.doctor,
+    )
+    db.add(doctor)
+    db.flush()
+    db.add(
+        models.DoctorProfile(
+            user_id=doctor.id,
+            nmc_number="BR-88888",
+            specialty="General Physician",
+            clinic_name="Test Clinic",
+            doctor_code="DRUNLK88",
+            is_verified=True,
+            verified_at=datetime.now(timezone.utc),
+        )
+    )
+    db.commit()
+    doctor_headers = {
+        "Authorization": f"Bearer {create_access_token(data={'sub': doctor.email})}"
+    }
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=doctor_headers)
+    assert photo.status_code == 403
+
+
+def test_get_medication_photo_allows_linked_doctor(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication_with_photo(client, auth_headers, pid)
+    med_id = created.json()["id"]
+
+    doctor = models.User(
+        email="linked-dr@test.com",
+        password_hash=get_password_hash("Doctor@123"),
+        full_name="Dr Linked",
+        phone_number="9876500077",
+        role=UserRole.doctor,
+    )
+    db.add(doctor)
+    db.flush()
+    db.add(
+        models.DoctorProfile(
+            user_id=doctor.id,
+            nmc_number="BR-77777",
+            specialty="General Physician",
+            clinic_name="Linked Clinic",
+            doctor_code="DRLNK777",
+            is_verified=True,
+            verified_at=datetime.now(timezone.utc),
+        )
+    )
+    db.flush()
+    now = datetime.now(timezone.utc)
+    db.add(
+        models.DoctorPatientLink(
+            doctor_id=doctor.id,
+            profile_id=pid,
+            consent_granted_at=now,
+            consent_granted_by=test_user.id,
+            consent_type="in_person_exam",
+            doctor_code_used="DRLNK777",
+            status="active",
+            is_active=True,
+            accepted_at=now,
+            accepted_by_doctor_id=doctor.id,
+            examined_on=date.today() - timedelta(days=1),
+            examined_for_condition="Diabetes follow-up",
+            triage_status="stable",
+            compliance_7d=5,
+        )
+    )
+    db.commit()
+    doctor_headers = {
+        "Authorization": f"Bearer {create_access_token(data={'sub': doctor.email})}"
+    }
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=doctor_headers)
+    assert photo.status_code == 200
+    assert photo.content == _FAKE_JPEG
+
+
+def test_create_medication_rejects_invalid_photo_mime(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    fields = {
+        "profile_id": str(pid),
+        "name": "Metformin",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+    }
+    files = {"photo": ("bad.gif", BytesIO(b"x"), "image/gif")}
+    r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
+    assert r.status_code == 422
+
+
+def test_create_medication_rejects_oversized_photo(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    fields = {
+        "profile_id": str(pid),
+        "name": "Metformin",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+    }
+    files = {"photo": ("big.jpg", BytesIO(b"\xff\xd8\xff" + b"x" * 200), "image/jpeg")}
+    with patch("routes_medications.settings.MAX_UPLOAD_SIZE_BYTES", 50):
+        r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
+    assert r.status_code == 422
+
+
+def test_delete_medication_removes_photo_file(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication_with_photo(client, auth_headers, pid)
+    med_id = created.json()["id"]
+    row = db.query(models.Medication).filter_by(id=med_id).first()
+    abs_path = _abs_photo_path(row.photo_path)
+    assert abs_path.is_file()
+
+    deleted = client.delete(f"/api/medications/{med_id}", headers=auth_headers)
+    assert deleted.status_code == 204
+    assert not abs_path.exists()
+
+
+def test_get_medication_photo_500_on_corrupt_file(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication_with_photo(client, auth_headers, pid)
+    med_id = created.json()["id"]
+    row = db.query(models.Medication).filter_by(id=med_id).first()
+    abs_path = _abs_photo_path(row.photo_path)
+    abs_path.write_bytes(b"corrupt")
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
+    assert photo.status_code == 500
+
+
+def test_create_medication_photo_cleaned_up_on_commit_failure(
+    client, db, test_user, auth_headers, monkeypatch
+):
+    pid = _profile_id_for(test_user, db)
+
+    def boom():
+        raise Exception("simulated DB error")
+
+    monkeypatch.setattr(db, "commit", boom)
+
+    with pytest.raises(Exception, match="simulated DB error"):
+        _post_medication_with_photo(client, auth_headers, pid)
+
+    from medication_photo_storage import _UPLOAD_ROOT
+
+    profile_dir = _UPLOAD_ROOT / str(pid)
+    if profile_dir.exists():
+        assert list(profile_dir.glob("*.enc")) == []
+
+
+def test_get_medication_photo_404_when_has_photo_true_but_path_none(
+    client, db, test_user, auth_headers
+):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication(client, auth_headers, pid)
+    med_id = created.json()["id"]
+    row = db.query(models.Medication).filter_by(id=med_id).first()
+    row.has_photo = True
+    row.photo_path = None
+    db.commit()
+
+    photo = client.get(f"/api/medications/{med_id}/photo", headers=auth_headers)
+    assert photo.status_code == 404
+
+
+def test_create_medication_with_photo_denies_unrelated_profile(
+    client, db, test_user, auth_headers
+):
+    other = models.Profile(name="Stranger")
+    db.add(other)
+    db.flush()
+    r = _post_medication_with_photo(client, auth_headers, other.id)
+    assert r.status_code == 403
+
+
+def test_create_medication_rejects_photo_with_spoofed_mime(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    fields = {
+        "profile_id": str(pid),
+        "name": "Metformin",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+    }
+    files = {"photo": ("fake.jpg", BytesIO(b"not-a-jpeg"), "image/jpeg")}
+    r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
+    assert r.status_code == 422
+
+
+def test_create_medication_rejects_photo_unsupported_content_type(
+    client, db, test_user, auth_headers
+):
+    pid = _profile_id_for(test_user, db)
+    fields = {
+        "profile_id": str(pid),
+        "name": "Metformin",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+    }
+    files = {
+        "photo": ("strip.bin", BytesIO(_FAKE_JPEG), "application/octet-stream"),
+    }
+    r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
+    assert r.status_code == 422
+
+
+def test_create_medication_with_photo_rejects_profile_limit(
+    client, db, test_user, auth_headers, monkeypatch
+):
+    monkeypatch.setattr("medication_photo_storage._MAX_PHOTOS_PER_PROFILE", 1)
+    pid = _profile_id_for(test_user, db)
+    first = _post_medication_with_photo(client, auth_headers, pid, name="First")
+    assert first.status_code == 201, first.text
+    second = _post_medication_with_photo(client, auth_headers, pid, name="Second")
+    assert second.status_code == 422
+
+
+def test_create_medication_hides_encryption_config_errors(
+    client, db, test_user, auth_headers, monkeypatch
+):
+    pid = _profile_id_for(test_user, db)
+
+    def _boom(**_kwargs):
+        raise ValueError("ENCRYPTION_KEY is required for medication photo encryption")
+
+    monkeypatch.setattr("routes_medications.save_medication_photo", _boom)
+    r = _post_medication_with_photo(client, auth_headers, pid)
+    assert r.status_code == 500
+    assert "ENCRYPTION_KEY" not in r.text
+
+
+def test_create_medication_rejects_riff_non_webp(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    fields = {
+        "profile_id": str(pid),
+        "name": "Metformin",
+        "intake_period": "MORNING",
+        "taken_at": datetime.now(timezone.utc).isoformat(),
+    }
+    riff_avi = b"RIFF" + b"\x00\x00\x00\x00" + b"AVI " + b"data"
+    files = {"photo": ("clip.webp", BytesIO(riff_avi), "image/webp")}
+    r = client.post("/api/medications", data=fields, files=files, headers=auth_headers)
+    assert r.status_code == 422
+
+
+def test_patch_medication_preserves_has_photo(client, db, test_user, auth_headers):
+    pid = _profile_id_for(test_user, db)
+    created = _post_medication_with_photo(client, auth_headers, pid)
+    med_id = created.json()["id"]
+    patched = client.patch(
+        f"/api/medications/{med_id}",
+        json={"dose": "250 mg"},
+        headers=auth_headers,
+    )
+    assert patched.status_code == 200
+    assert patched.json()["has_photo"] is True
 
 
 def test_create_medication_denies_unrelated_profile(client, db, test_user, auth_headers):

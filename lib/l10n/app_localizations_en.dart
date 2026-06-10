@@ -1287,7 +1287,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ppDataCollection =>
-      'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), and photos of medical devices for automated reading capture.';
+      'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, and optional medicine packaging photos attached to intake logs.';
 
   @override
   String get ppPurposeTitle => 'Purpose of Collection';
@@ -1543,6 +1543,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String doctorMedicationLogSubtitle(String dose, String frequency) {
     return '$dose · $frequency';
+  }
+
+  @override
+  String doctorMedicationPhotoViewLabel(String name) {
+    return 'View $name packaging photo';
   }
 
   @override
@@ -2478,6 +2483,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get medicationsFormDateLabel => 'Date';
+
+  @override
+  String get medicationsAddPhotoLabel => 'Medicine package photo (optional)';
+
+  @override
+  String get medicationsPhotoWhy =>
+      'Your doctor can see the packaging to check the right medicine.';
+
+  @override
+  String get medicationsAddPhoto => 'Add photo';
+
+  @override
+  String get medicationsChangePhoto => 'Change photo';
+
+  @override
+  String get medicationsRemovePhoto => 'Remove photo';
+
+  @override
+  String get medicationsUploadingPhoto => 'Uploading photo…';
+
+  @override
+  String get medicationsPhotoUploadFailed =>
+      'Photo could not be sent. Your medicine was not saved — please try again.';
+
+  @override
+  String get medicationsPhotoUploadNetworkFailed =>
+      'No internet — photo not sent. Your medicine was not saved. Check your connection and try again.';
+
+  @override
+  String get medicationsPhotoCannotChangeHint =>
+      'Next time you log this medicine, you can add a photo then.';
+
+  @override
+  String get medicationsPhotoClose => 'Close';
+
+  @override
+  String get medicationsPhotoCannotChangeAfterSave =>
+      'Photo cannot be changed after saving.';
 
   @override
   String get medicationsPeriodMorning => 'Morning';

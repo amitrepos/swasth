@@ -615,7 +615,7 @@
   "consentDeclineConfirm": "ಹಿಂದಕ್ಕೆ ಹೋಗಿ",
   "consentScrollToAccept": "ಸಂಪೂರ್ಣ ಸೂಚನೆಯನ್ನು ಓದಲು ಕೆಳಕ್ಕೆ ಸ್ಕ್ರಾಲ್ ಮಾಡಿ",
   "ppDataCollectionTitle": "ನಾವು ಸಂಗ್ರಹಿಸುವ ಡೇಟಾ",
-  "ppDataCollection": "ಸ್ವಸ್ಥ ಸಂಗ್ರಹಿಸುವ ಮಾಹಿತಿಗಳು: ರಕ್ತದ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳು, ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳು, ನಾಡಿಮಿಡಿತ, ಊಟದ ಟಿಪ್ಪಣಿಗಳು, ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಲಿಂಗ, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು), ಮತ್ತು ಸ್ವಯಂಚಾಲಿತ ರೀಡಿಂಗ್ ಕ್ಯಾಪ್ಚರ್‌ಗಾಗಿ ವೈದ್ಯಕೀಯ ಸಾಧನಗಳ ಫೋಟೋಗಳು.",
+  "ppDataCollection": "ಸ್ವಸ್ಥ ಸಂಗ್ರಹಿಸುವ ಮಾಹಿತಿಗಳು: ರಕ್ತದ ಗ್ಲೂಕೋಸ್ ರೀಡಿಂಗ್‌ಗಳು, ರಕ್ತದೊತ್ತಡದ ರೀಡಿಂಗ್‌ಗಳು, ನಾಡಿಮಿಡಿತ, ಊಟದ ಟಿಪ್ಪಣಿಗಳು, ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ (ಹೆಸರು, ವಯಸ್ಸು, ಲಿಂಗ, ವೈದ್ಯಕೀಯ ಪರಿಸ್ಥಿತಿಗಳು, ಔಷಧಿಗಳು), ಸ್ವಯಂಚಾಲಿತ ರೀಡಿಂಗ್ ಕ್ಯಾಪ್ಚರ್‌ಗಾಗಿ ವೈದ್ಯಕೀಯ ಸಾಧನಗಳ ಫೋಟೋಗಳು, ಮತ್ತು ಔಷಧಿ ಸೇವನೆ ದಾಖಲೆಗಳಿಗೆ ಲಗತ್ತಿಸಿದ ಐಚ್ಛಿಕ ಔಷಧಿ ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋಗಳು.",
   "ppPurposeTitle": "ಸಂಗ್ರಹಣೆಯ ಉದ್ದೇಶ",
   "ppPurpose": "ನಿಮ್ಮ ಆರೋಗ್ಯ ಡೇಟಾವನ್ನು ಇವುಗಳಿಗಾಗಿ ಬಳಸಲಾಗುತ್ತದೆ: ಪ್ರವೃತ್ತಿಗಳು ಮತ್ತು ಆರೋಗ್ಯ ಸ್ಕೋರ್‌ಗಳನ್ನು ತೋರಿಸಲು, ವೈಯಕ್ತಿಕಗೊಳಿಸಿದ ಆರೋಗ್ಯ ಒಳನೋಟಗಳನ್ನು ರಚಿಸಲು, ನಿಮ್ಮ ಕುಟುಂಬ ಸದಸ್ಯರೊಂದಿಗೆ ಹಂಚಿಕೊಳ್ಳಲು ಮತ್ತು ಚಿಕಿತ್ಸೆಗಾಗಿ ನಿಮ್ಮ ವೈದ್ಯರಿಗೆ ಮಾಹಿತಿ ನೀಡಲು.",
   "ppAiTitle": "ಎಐ ಸಂಸ್ಕರಣೆ",
@@ -1345,6 +1345,23 @@
   "medicationsSaveChanges": "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
   "medicationsEditSemantics": "{name} ಸಂಪಾದಿಸಿ",
   "medicationsCellEmpty": "-",
+  "medicationsAddPhotoLabel": "ಔಷಧಿ ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋ (ಐಚ್ಛಿಕ)",
+  "medicationsPhotoWhy": "ಸರಿಯಾದ ಔಷಧಿ ಪರಿಶೀಲಿಸಲು ನಿಮ್ಮ ವೈದ್ಯರು ಪ್ಯಾಕೇಜಿಂಗ್ ನೋಡಬಹುದು.",
+  "medicationsAddPhoto": "ಫೋಟೋ ಸೇರಿಸಿ",
+  "medicationsChangePhoto": "ಫೋಟೋ ಬದಲಾಯಿಸಿ",
+  "medicationsRemovePhoto": "ಫೋಟೋ ತೆಗೆದುಹಾಕಿ",
+  "medicationsUploadingPhoto": "ಫೋಟೋ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ…",
+  "medicationsPhotoUploadFailed": "ಫೋಟೋ ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ. ನಿಮ್ಮ ಔಷಧಿ ಉಳಿಸಲಾಗಿಲ್ಲ — ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "medicationsPhotoUploadNetworkFailed": "ಇಂಟರ್ನೆಟ್ ಇಲ್ಲ — ಫೋಟೋ ಕಳುಹಿಸಲಾಗಿಲ್ಲ. ನಿಮ್ಮ ಔಷಧಿ ಉಳಿಸಲಾಗಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "medicationsPhotoCannotChangeHint": "ಮುಂದಿನ ಬಾರಿ ಈ ಔಷಧಿ ದಾಖಲಿಸುವಾಗ ಫೋಟೋ ಸೇರಿಸಬಹುದು.",
+  "doctorMedicationPhotoViewLabel": "{name} ಪ್ಯಾಕೇಜಿಂಗ್ ಫೋಟೋ ನೋಡಿ",
+  "@doctorMedicationPhotoViewLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "medicationsPhotoClose": "ಮುಚ್ಚಿ",
+  "medicationsPhotoCannotChangeAfterSave": "ಉಳಿಸಿದ ನಂತರ ಫೋಟೋ ಬದಲಾಯಿಸಲಾಗುವುದಿಲ್ಲ.",
   "medicationsFormPeriodLabel": "ಯಾವಾಗ ತೆಗೆದುಕೊಂಡಿರಿ",
   "medicationsFormDateLabel": "ದಿನಾಂಕ",
   "medicationsPeriodMorning": "ಬೆಳಿಗ್ಗೆ",

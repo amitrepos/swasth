@@ -2483,7 +2483,7 @@ abstract class AppLocalizations {
   /// No description provided for @ppDataCollection.
   ///
   /// In en, this message translates to:
-  /// **'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), and photos of medical devices for automated reading capture.'**
+  /// **'Swasth collects: blood glucose readings, blood pressure readings, pulse rate, meal notes, profile information (name, age, gender, medical conditions, medications), photos of medical devices for automated reading capture, and optional medicine packaging photos attached to intake logs.'**
   String get ppDataCollection;
 
   /// No description provided for @ppPurposeTitle.
@@ -2941,6 +2941,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{dose} · {frequency}'**
   String doctorMedicationLogSubtitle(String dose, String frequency);
+
+  /// No description provided for @doctorMedicationPhotoViewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View {name} packaging photo'**
+  String doctorMedicationPhotoViewLabel(String name);
 
   /// Empty state when no meals found in last 7 days
   ///
@@ -4626,6 +4632,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Date'**
   String get medicationsFormDateLabel;
+
+  /// No description provided for @medicationsAddPhotoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine package photo (optional)'**
+  String get medicationsAddPhotoLabel;
+
+  /// No description provided for @medicationsPhotoWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Your doctor can see the packaging to check the right medicine.'**
+  String get medicationsPhotoWhy;
+
+  /// No description provided for @medicationsAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get medicationsAddPhoto;
+
+  /// No description provided for @medicationsChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get medicationsChangePhoto;
+
+  /// No description provided for @medicationsRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get medicationsRemovePhoto;
+
+  /// No description provided for @medicationsUploadingPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo…'**
+  String get medicationsUploadingPhoto;
+
+  /// No description provided for @medicationsPhotoUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo could not be sent. Your medicine was not saved — please try again.'**
+  String get medicationsPhotoUploadFailed;
+
+  /// No description provided for @medicationsPhotoUploadNetworkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet — photo not sent. Your medicine was not saved. Check your connection and try again.'**
+  String get medicationsPhotoUploadNetworkFailed;
+
+  /// No description provided for @medicationsPhotoCannotChangeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Next time you log this medicine, you can add a photo then.'**
+  String get medicationsPhotoCannotChangeHint;
+
+  /// No description provided for @medicationsPhotoClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get medicationsPhotoClose;
+
+  /// No description provided for @medicationsPhotoCannotChangeAfterSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo cannot be changed after saving.'**
+  String get medicationsPhotoCannotChangeAfterSave;
 
   /// No description provided for @medicationsPeriodMorning.
   ///

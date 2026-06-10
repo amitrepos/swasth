@@ -7,6 +7,7 @@
 // Backend route correctness lives in backend/tests/test_medications.py.
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -102,6 +103,7 @@ Future<void> _bootstrap(
   WidgetTester tester,
   http.Client client, {
   Medication? initialMedication,
+  PlatformFile? initialPhoto,
 }) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 2.625;
@@ -131,6 +133,7 @@ Future<void> _bootstrap(
         body: AddMedicationSheet(
           profileId: 1,
           initialMedication: initialMedication,
+          initialPhoto: initialPhoto,
         ),
       ),
     ),
@@ -327,6 +330,30 @@ void main() {
 
       expect(stub.patchCount, 1);
       expect(stub.patchBodies.last['intake_period'], 'NIGHT');
+    });
+
+    testWidgets('photo section is hidden in edit mode', (tester) async {
+      final stub = _StubClient();
+      final med = Medication(
+        id: 99,
+        profileId: 1,
+        name: 'Metformin',
+        intakePeriod: 'MORNING',
+        takenAt: DateTime(2024, 6, 15, 8),
+        createdAt: DateTime(2024, 6, 15, 8),
+      );
+      await _bootstrap(tester, stub, initialMedication: med);
+
+      expect(find.text('Medicine package photo (optional)'), findsNothing);
+      expect(find.text('Add photo'), findsNothing);
+      expect(
+        find.text('Photo cannot be changed after saving.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Next time you log this medicine, you can add a photo then.'),
+        findsOneWidget,
+      );
     });
   });
 }
