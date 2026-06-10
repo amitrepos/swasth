@@ -4906,7 +4906,7 @@ abstract class AppLocalizations {
   /// No description provided for @regReferralCodeError.
   ///
   /// In en, this message translates to:
-  /// **'Doctor code must be 4–8 characters (letters and numbers only)'**
+  /// **'Invalid code. Please ask your doctor for the correct code.'**
   String get regReferralCodeError;
 }
 

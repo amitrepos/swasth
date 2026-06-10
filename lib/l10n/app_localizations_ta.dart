@@ -2667,7 +2667,8 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get regReferralCodeLabel => 'உங்கள் மருத்துவர் தந்த குறியீடு (விரும்பினால்)';
+  String get regReferralCodeLabel =>
+      'உங்கள் மருத்துவர் தந்த குறியீடு (விரும்பினால்)';
 
   @override
   String get regReferralCodeHint => 'எ.கா. DRRAJ52';
