@@ -284,7 +284,7 @@
       <h1 style="font-size:22px;margin-bottom:20px">Users</h1>
       <div class="section">
         <table id="usersTable">
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Profiles</th><th>Readings</th><th>Last Login</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Profiles</th><th>Readings</th><th>Last Login</th><th>Referred By</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -582,6 +582,9 @@ async function loadUsers() {
     const roleBadge = u.role === 'admin' ? 'badge-admin' : u.role === 'doctor' ? 'badge-doctor' : 'badge-user';
     const roleLabel = u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : 'Patient';
     const statusBadge = u.is_active === false ? '<span class="badge badge-suspended">Suspended</span>' : '<span class="badge badge-verified">Active</span>';
+    const referralCell = u.referred_by_doctor_name
+      ? `<span title="${esc(u.referred_by_doctor_code)}" style="cursor:default">${esc(u.referred_by_doctor_name)}</span>`
+      : '--';
     return `<tr onclick="openUserDetail(${u.id})">
       <td><strong>${esc(u.full_name)}</strong></td>
       <td>${esc(u.email)}</td>
@@ -590,6 +593,7 @@ async function loadUsers() {
       <td>${u.profiles_count}</td>
       <td>${u.total_readings}</td>
       <td>${u.last_login ? new Date(u.last_login).toLocaleDateString() : '--'}</td>
+      <td>${referralCell}</td>
     </tr>`;
   }).join('');
 }

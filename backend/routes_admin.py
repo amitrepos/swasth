@@ -292,6 +292,15 @@ def list_users(
     users = db.query(models.User).order_by(models.User.created_at.desc()).all()
     today = date.today()
 
+    # Build doctor_code → doctor_name lookup (single query, avoids N+1)
+    doctor_name_by_code: dict = {}
+    for dp, du in (
+        db.query(models.DoctorProfile, models.User)
+        .join(models.User, models.User.id == models.DoctorProfile.user_id)
+        .all()
+    ):
+        doctor_name_by_code[dp.doctor_code] = du.full_name
+
     result = []
     for u in users:
         # Count readings across all owned profiles
@@ -322,6 +331,8 @@ def list_users(
             "total_readings": total_readings,
             "last_login": utc_isoformat(u.last_login_at),
             "signed_up": utc_isoformat(u.created_at),
+            "referred_by_doctor_code": u.referred_by_doctor_code,
+            "referred_by_doctor_name": doctor_name_by_code.get(u.referred_by_doctor_code) if u.referred_by_doctor_code else None,
         })
 
     return {"users": result, "total": len(result)}
