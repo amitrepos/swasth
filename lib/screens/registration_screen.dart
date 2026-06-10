@@ -38,6 +38,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _weightController = TextEditingController();
   final _medicationsController = TextEditingController();
   final _otherConditionController = TextEditingController();
+  final _referralCodeController = TextEditingController();
 
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'A+';
@@ -84,6 +85,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _weightController.dispose();
     _medicationsController.dispose();
     _otherConditionController.dispose();
+    _referralCodeController.dispose();
     super.dispose();
   }
 
@@ -161,6 +163,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'other_medical_condition': _selectedConditions.contains('Other')
             ? _otherConditionController.text.trim()
             : null,
+        'referred_by_doctor_code': _referralCodeController.text.trim().isEmpty
+            ? null
+            : _referralCodeController.text.trim().toUpperCase(),
       };
 
       // Navigate to consent screen — registration API is called after consent.
@@ -494,6 +499,32 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ),
                 ),
               ],
+              const SizedBox(height: 24),
+
+              // Referral code — optional, from a doctor who recommended the app
+              TextFormField(
+                key: const Key('reg_referral_code'),
+                controller: _referralCodeController,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.regReferralCodeLabel,
+                  hintText: AppLocalizations.of(context)!.regReferralCodeHint,
+                  prefixIcon: const Icon(Icons.badge_outlined),
+                  helperText: AppLocalizations.of(context)!.regReferralCodeHelper,
+                  helperMaxLines: 3,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  final v = value.trim();
+                  if (v.length < 4 || v.length > 8) {
+                    return AppLocalizations.of(context)!.regReferralCodeError;
+                  }
+                  if (!RegExp(r'^[A-Za-z0-9]+$').hasMatch(v)) {
+                    return AppLocalizations.of(context)!.regReferralCodeError;
+                  }
+                  return null;
+                },
+              ),
               const SizedBox(height: 24),
 
               // Register Button

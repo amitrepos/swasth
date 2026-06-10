@@ -2665,4 +2665,18 @@ class AppLocalizationsTa extends AppLocalizations {
   String medicationsFormSavedBannerMulti(String name, int count) {
     return '\"$name\" saved  ·  $count logged';
   }
+
+  @override
+  String get regReferralCodeLabel => 'உங்கள் மருத்துவர் தந்த குறியீடு (விரும்பினால்)';
+
+  @override
+  String get regReferralCodeHint => 'எ.கா. DRRAJ52';
+
+  @override
+  String get regReferralCodeHelper =>
+      'மருத்துவர் குறியீடு கொடுத்திருந்தால் இங்கே உள்ளிடவும்';
+
+  @override
+  String get regReferralCodeError =>
+      'தவறான குறியீடு. சரியான குறியீட்டிற்கு மருத்துவரிடம் கேளுங்கள்.';
 }

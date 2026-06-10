@@ -2630,4 +2630,18 @@ class AppLocalizationsHi extends AppLocalizations {
   String medicationsFormSavedBannerMulti(String name, int count) {
     return '\"$name\" सहेजी गई  ·  $count दर्ज';
   }
+
+  @override
+  String get regReferralCodeLabel => 'आपके डॉक्टर का दिया हुआ कोड (वैकल्पिक)';
+
+  @override
+  String get regReferralCodeHint => 'जैसे DRRAJ52';
+
+  @override
+  String get regReferralCodeHelper =>
+      'अगर आपके डॉक्टर ने कोड दिया है तो यहाँ डालें';
+
+  @override
+  String get regReferralCodeError =>
+      'गलत कोड। सही कोड के लिए अपने डॉक्टर से पूछें।';
 }

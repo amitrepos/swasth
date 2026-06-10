@@ -46,6 +46,17 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
                     detail="Phone number already registered. Please use a different phone number or login."
                 )
 
+    # Validate referral code exists if provided (schema already normalised to uppercase)
+    if user.referred_by_doctor_code:
+        code_exists = db.query(models.DoctorProfile).filter(
+            models.DoctorProfile.doctor_code == user.referred_by_doctor_code
+        ).first()
+        if not code_exists:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Doctor referral code not found",
+            )
+
     # 1. Create User (auth only)
     # Store UTC time directly — convert to local time at read/display time
     now_utc = datetime.now(timezone.utc)
@@ -61,6 +72,7 @@ def register(request: Request, user: schemas.UserRegister, db: Session = Depends
         consent_language=user.consent_language,
         ai_consent=bool(user.ai_consent) if user.ai_consent else bool(user.consent_app_version),
         ai_consent_timestamp=now_utc if (user.ai_consent or user.consent_app_version) else None,
+        referred_by_doctor_code=user.referred_by_doctor_code,  # already uppercased by schema validator
     )
     db.add(db_user)
     db.flush()  # Get db_user.id

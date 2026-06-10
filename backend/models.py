@@ -139,6 +139,9 @@ class User(Base):
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     email_verified = Column(Boolean, default=False, server_default="false")
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
+    # Referral tracking — stores the doctor_code of the doctor who referred
+    # this user to the app. Nullable (most users self-register).
+    referred_by_doctor_code = Column(String(8), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

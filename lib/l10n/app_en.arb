@@ -1529,5 +1529,13 @@
       "name": { "type": "String" },
       "count": { "type": "int" }
     }
-  }
+  },
+  "regReferralCodeLabel": "Code given by your doctor (optional)",
+  "@regReferralCodeLabel": {},
+  "regReferralCodeHint": "e.g. DRRAJ52",
+  "@regReferralCodeHint": {},
+  "regReferralCodeHelper": "Enter the code your doctor gave you, if any",
+  "@regReferralCodeHelper": {},
+  "regReferralCodeError": "Invalid code. Please ask your doctor for the correct code.",
+  "@regReferralCodeError": {}
 }

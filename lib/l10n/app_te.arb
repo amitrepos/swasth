@@ -1403,5 +1403,9 @@
     "placeholders": {
       "time": { "type": "String" }
     }
-  }
+  },
+  "regReferralCodeLabel": "మీ వైద్యుడు ఇచ్చిన కోడ్ (ఐచ్ఛికం)",
+  "regReferralCodeHint": "ఉదా. DRRAJ52",
+  "regReferralCodeHelper": "వైద్యుడు కోడ్ ఇచ్చినట్లయితే ఇక్కడ నమోదు చేయండి",
+  "regReferralCodeError": "తప్పుడు కోడ్. సరైన కోడ్ కోసం మీ వైద్యుడిని అడగండి."
 }

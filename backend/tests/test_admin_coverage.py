@@ -339,3 +339,60 @@ def test_admin_toggle_audited(client, db):
     r = client.get("/api/admin/audit-log?action_type=TOGGLE_ADMIN", headers=h)
     assert r.status_code == 200
     assert len(r.json()["entries"]) >= 1
+
+
+# ---------------------------------------------------------------------------
+# Referral tracking — admin users list
+# ---------------------------------------------------------------------------
+
+def _referred_user(db, doctor_code, email="refpatient@swasth.app"):
+    """Create a patient referred by a doctor code."""
+    from auth import get_password_hash
+    u = models.User(
+        email=email, password_hash=get_password_hash("Pat@1234"),
+        full_name="Referred Patient", phone_number="9200000011",
+        referred_by_doctor_code=doctor_code,
+    )
+    db.add(u); db.flush()
+    return u
+
+
+def test_admin_users_list_includes_referral_fields(client, db):
+    """GET /admin/users returns referred_by_doctor_code and referred_by_doctor_name."""
+    _, h = _admin(db)
+    doc_user, dp = _doctor_user(db, email="refdoc2@test.com", nmc="MH202500002")
+    _referred_user(db, doctor_code=dp.doctor_code, email="refpt2@test.com")
+
+    r = client.get("/api/admin/users", headers=h)
+    assert r.status_code == 200
+    users = r.json()["users"]
+    referred = next((u for u in users if u.get("referred_by_doctor_code") == dp.doctor_code), None)
+    assert referred is not None, "referred user not found in list"
+    assert referred["referred_by_doctor_name"] == doc_user.full_name
+
+
+def test_admin_users_list_unknown_referral_code_resolves_to_none(client, db):
+    """Orphaned referral code (no matching doctor) resolves to None without error."""
+    _, h = _admin(db)
+    _referred_user(db, doctor_code="ORPHAN1", email="orphanpt@test.com")
+
+    r = client.get("/api/admin/users", headers=h)
+    assert r.status_code == 200
+    users = r.json()["users"]
+    orphan = next((u for u in users if u.get("referred_by_doctor_code") == "ORPHAN1"), None)
+    assert orphan is not None
+    assert orphan["referred_by_doctor_name"] is None
+
+
+def test_admin_users_list_null_referral_for_self_registered(client, db):
+    """Self-registered user has null referred_by_doctor_code and referred_by_doctor_name."""
+    _, h = _admin(db)
+    u, _ = _data_user(db)
+
+    r = client.get("/api/admin/users", headers=h)
+    assert r.status_code == 200
+    users = r.json()["users"]
+    self_reg = next((x for x in users if x["id"] == u.id), None)
+    assert self_reg is not None
+    assert self_reg["referred_by_doctor_code"] is None
+    assert self_reg["referred_by_doctor_name"] is None

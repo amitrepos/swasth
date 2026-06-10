@@ -84,6 +84,17 @@ class UserRegister(BaseModel):
     consent_app_version: Optional[str] = None
     consent_language: Optional[str] = None
     ai_consent: Optional[bool] = None
+    # Referral tracking — doctor code of the doctor who recommended the app
+    referred_by_doctor_code: Optional[str] = Field(None, min_length=4, max_length=8)
+
+    @validator('referred_by_doctor_code', pre=True)
+    def validate_referral_code(cls, v):
+        if v is None or (isinstance(v, str) and v.strip() == ''):
+            return None
+        v = v.strip().upper()
+        if not re.match(r'^[A-Z0-9]{4,8}$', v):
+            raise ValueError('Doctor code must be 4–8 alphanumeric characters (A-Z, 0-9)')
+        return v
 
     @validator('email')
     def normalize_email(cls, v):

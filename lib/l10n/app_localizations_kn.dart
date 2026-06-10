@@ -2657,4 +2657,18 @@ class AppLocalizationsKn extends AppLocalizations {
   String medicationsFormSavedBannerMulti(String name, int count) {
     return '\"$name\" saved  ·  $count logged';
   }
+
+  @override
+  String get regReferralCodeLabel => 'ನಿಮ್ಮ ವೈದ್ಯರು ನೀಡಿದ ಕೋಡ್ (ಐಚ್ಛಿಕ)';
+
+  @override
+  String get regReferralCodeHint => 'ಉದಾ. DRRAJ52';
+
+  @override
+  String get regReferralCodeHelper =>
+      'ನಿಮ್ಮ ವೈದ್ಯರು ಕೋಡ್ ನೀಡಿದ್ದರೆ ಇಲ್ಲಿ ನಮೂದಿಸಿ';
+
+  @override
+  String get regReferralCodeError =>
+      'ತಪ್ಪಾದ ಕೋಡ್. ಸರಿಯಾದ ಕೋಡ್‌ಗಾಗಿ ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಕೇಳಿ.';
 }

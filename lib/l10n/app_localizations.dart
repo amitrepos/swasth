@@ -4884,6 +4884,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'\"{name}\" saved  ·  {count} logged'**
   String medicationsFormSavedBannerMulti(String name, int count);
+
+  /// No description provided for @regReferralCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Code given by your doctor (optional)'**
+  String get regReferralCodeLabel;
+
+  /// No description provided for @regReferralCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. DRRAJ52'**
+  String get regReferralCodeHint;
+
+  /// No description provided for @regReferralCodeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code your doctor gave you, if any'**
+  String get regReferralCodeHelper;
+
+  /// No description provided for @regReferralCodeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor code must be 4–8 characters (letters and numbers only)'**
+  String get regReferralCodeError;
 }
 
 class _AppLocalizationsDelegate

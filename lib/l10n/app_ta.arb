@@ -1403,5 +1403,9 @@
     "placeholders": {
       "time": { "type": "String" }
     }
-  }
+  },
+  "regReferralCodeLabel": "உங்கள் மருத்துவர் தந்த குறியீடு (விரும்பினால்)",
+  "regReferralCodeHint": "எ.கா. DRRAJ52",
+  "regReferralCodeHelper": "மருத்துவர் குறியீடு கொடுத்திருந்தால் இங்கே உள்ளிடவும்",
+  "regReferralCodeError": "தவறான குறியீடு. சரியான குறியீட்டிற்கு மருத்துவரிடம் கேளுங்கள்."
 }

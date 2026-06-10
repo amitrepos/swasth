@@ -232,3 +232,89 @@ class TestCaseInsensitiveEmail:
         )
         assert resp.status_code == 200
         assert "access_token" in resp.json()
+
+
+# ---------------------------------------------------------------------------
+# POST /api/auth/register — referral code validation
+# ---------------------------------------------------------------------------
+
+class TestReferralCodeRegistration:
+    REGISTER_URL = "/api/auth/register"
+
+    def _payload(self, **overrides):
+        data = {
+            "email": "ref@swasth.app",
+            "password": "Referral@123",
+            "confirm_password": "Referral@123",
+            "full_name": "Ref User",
+            "phone_number": "9100000099",
+        }
+        data.update(overrides)
+        return data
+
+    def _make_doctor(self, db):
+        """Create a doctor with a known code."""
+        import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+        import models
+        from auth import get_password_hash
+        user = models.User(
+            email="refdoc@swasth.app", password_hash=get_password_hash("Doc@1234"),
+            full_name="Ref Doctor", phone_number="9100000088", role="doctor",
+        )
+        db.add(user); db.flush()
+        dp = models.DoctorProfile(
+            user_id=user.id, nmc_number="MH202599999", specialty="General",
+            clinic_name="Ref Clinic", doctor_code="REFDR001", is_verified=True,
+        )
+        db.add(dp); db.flush()
+        return user, dp
+
+    # C1 — boundary: 3-char code (too short) rejected at schema level
+    def test_referral_code_too_short_rejected(self, client):
+        resp = client.post(self.REGISTER_URL, json=self._payload(referred_by_doctor_code="ABC"))
+        assert resp.status_code == 422
+
+    # C1 — boundary: 9-char code (too long) rejected
+    def test_referral_code_too_long_rejected(self, client):
+        resp = client.post(self.REGISTER_URL, json=self._payload(referred_by_doctor_code="ABCDEFGHI"))
+        assert resp.status_code == 422
+
+    # Issue 3 — special chars rejected
+    def test_referral_code_special_chars_rejected(self, client):
+        resp = client.post(self.REGISTER_URL, json=self._payload(referred_by_doctor_code="!!!!!!!"))
+        assert resp.status_code == 422
+
+    # Issue 3 — unicode rejected
+    def test_referral_code_unicode_rejected(self, client):
+        resp = client.post(self.REGISTER_URL, json=self._payload(referred_by_doctor_code="DRΑΒΓΔ"))
+        assert resp.status_code == 422
+
+    # Issue 1 — unknown but format-valid code rejected at route level
+    def test_referral_code_unknown_doctor_rejected(self, client):
+        resp = client.post(self.REGISTER_URL, json=self._payload(referred_by_doctor_code="UNKNWN01"))
+        assert resp.status_code == 422
+        assert "not found" in resp.json()["detail"].lower()
+
+    # Issue 5 — uppercase normalisation: lowercase input stored as uppercase
+    def test_referral_code_normalised_to_uppercase(self, client, db):
+        self._make_doctor(db)
+        resp = client.post(self.REGISTER_URL, json=self._payload(referred_by_doctor_code="refdr001"))
+        assert resp.status_code == 201
+
+    # M3 — null referral path: no code → referred_by_doctor_code absent from response
+    def test_no_referral_code_registers_successfully(self, client):
+        resp = client.post(self.REGISTER_URL, json=self._payload(email="noref@swasth.app", phone_number="9100000077"))
+        assert resp.status_code == 201
+
+    # Happy path — valid real code accepted
+    def test_valid_referral_code_accepted(self, client, db):
+        self._make_doctor(db)
+        resp = client.post(
+            self.REGISTER_URL,
+            json=self._payload(
+                email="happyref@swasth.app",
+                phone_number="9100000066",
+                referred_by_doctor_code="REFDR001",
+            ),
+        )
+        assert resp.status_code == 201
