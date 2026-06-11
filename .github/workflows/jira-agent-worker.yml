@@ -142,7 +142,7 @@ jobs:
             echo "Attempt count exhausted (>=5) for $TICKET_KEY." >&2
             bash scripts/jira_comment.sh --as matt "$TICKET_KEY" \
               "Auto-defer/retry exceeded 5 cycles — manual investigation required."
-            bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human"
+            bash scripts/jira_transition.sh "$TICKET_KEY" "On-HOLD"
             bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
               'if [ "$CURRENT" = "/dev/null" ] || [ ! -s "$CURRENT" ]; then echo "{\"entries\":[]}" > "$NEXT"; else jq --arg t "$TICKET_KEY" ".entries |= map(select(.ticket_key != \$t))" "$CURRENT" > "$NEXT"; fi' \
               "queue: dequeue $TICKET_KEY (attempt-count ceiling)"
@@ -399,7 +399,7 @@ jobs:
             bash scripts/jira_comment.sh --as matt "$TICKET_KEY" \
               "Gate C-regress aborted with exit code $REGRESS_EXIT (no report)."
           fi
-          bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human" || true
+          bash scripts/jira_transition.sh "$TICKET_KEY" "On-HOLD" || true
           bash scripts/jira_set_status_label.sh "$TICKET_KEY" needs-human-regression || true
           bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
             'if [ "$CURRENT" = "/dev/null" ] || [ ! -s "$CURRENT" ]; then echo "{\"entries\":[]}" > "$NEXT"; else jq --arg t "$TICKET_KEY" ".entries |= map(select(.ticket_key != \$t))" "$CURRENT" > "$NEXT"; fi' \
@@ -506,11 +506,25 @@ jobs:
       - name: Handle QA NEEDS_HUMAN / MUST_FIX
         if: steps.qa.outputs.qa_verdict == 'NEEDS_HUMAN' || steps.qa.outputs.qa_verdict == 'MUST_FIX'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
+          QA_VERDICT: ${{ steps.qa.outputs.qa_verdict }}
         run: |
           bash scripts/jira_comment.sh --as matt "$TICKET_KEY" "@.agent-tmp/qa-output.md"
-          bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human" || true
+          bash scripts/jira_transition.sh "$TICKET_KEY" "On-HOLD" || true
           bash scripts/jira_set_status_label.sh "$TICKET_KEY" needs-human-qa || true
+          # Preserve the work: push the branch and open a DRAFT PR so a human has
+          # something concrete to QA. Without this the built branch lives only in
+          # the runner's worktree and is lost when the run exits (NUO-175 incident).
+          if git push --set-upstream origin "$BRANCH_NAME"; then
+            gh pr create --draft \
+              --base master --head "$BRANCH_NAME" \
+              --title "[NEEDS HUMAN QA] $TICKET_KEY (agent build, QA=$QA_VERDICT)" \
+              --body "Auto-built by the JIRA agent for **$TICKET_KEY**, but Matt's QA returned **$QA_VERDICT** — a human must review before merge. Draft opened to preserve the work; see the QA comment on the ticket. Do not auto-merge." \
+              || echo "::warning::draft PR creation failed (branch pushed)"
+          else
+            echo "::warning::branch push failed; work not preserved as PR"
+          fi
           bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
             'if [ "$CURRENT" = "/dev/null" ] || [ ! -s "$CURRENT" ]; then echo "{\"entries\":[]}" > "$NEXT"; else jq --arg t "$TICKET_KEY" ".entries |= map(select(.ticket_key != \$t))" "$CURRENT" > "$NEXT"; fi' \
             "queue: dequeue $TICKET_KEY (QA needs human)"
@@ -528,7 +542,7 @@ jobs:
             git rebase --abort || true
             bash scripts/jira_comment.sh --as matt "$TICKET_KEY" \
               "Rebase onto fresh master failed with conflicts. Manual investigation needed."
-            bash scripts/jira_transition.sh "$TICKET_KEY" "Needs Human"
+            bash scripts/jira_transition.sh "$TICKET_KEY" "On-HOLD"
             exit 1
           }
           git push --set-upstream origin "$BRANCH_NAME"
