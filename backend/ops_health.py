@@ -102,13 +102,47 @@ def check_cpu_burst_credits() -> bool:
 # ---------------------------------------------------------------------------
 
 def check_db_health(db: Session) -> dict:
-    """Ping DB and return pool stats."""
+    """Ping DB, run a schema-real probe, and return pool stats.
+
+    Two distinct failure modes are both treated as "DB down for the app":
+
+    1. Connectivity — ``SELECT 1`` fails (Postgres down, network, pool dead).
+    2. Schema drift — the connection is up but the live schema is BEHIND the
+       deployed ORM models (a migration the code expects was never applied).
+
+    ``SELECT 1`` alone only catches (1). It was blind to (2), which is exactly
+    what caused the 2026-06-11 prod outage: every auth query 503'd with
+    ``UndefinedColumn (users.referred_by_doctor_code)`` while ``SELECT 1``
+    happily passed, so ``db_healthy`` stayed True and ``P0_db_down`` never
+    fired. We now also load one full ORM row from a core table; that emits a
+    SELECT of *every* mapped column, so a column the DB lacks raises here and
+    flips ``db_healthy`` False — firing the P0 "Database unreachable" alert.
+    """
+    db_healthy = True
+    db_schema_ok = True
+
+    # (1) Connectivity probe.
     try:
         db.execute(text("SELECT 1"))
-        db_healthy = True
     except SQLAlchemyError:
-        logger.error("db_health_check failed", exc_info=True)
+        logger.error("db_health_check connectivity probe failed", exc_info=True)
         db_healthy = False
+
+    # (2) Schema-drift probe — only meaningful if the connection is alive.
+    # Loads a full User row → SELECTs all mapped columns. A missing column
+    # (migration not applied) raises ProgrammingError → SQLAlchemyError.
+    if db_healthy:
+        try:
+            db.query(User).limit(1).first()
+        except SQLAlchemyError:
+            logger.error(
+                "db_health_check schema probe failed — live schema is behind "
+                "the deployed models (migration not applied?)",
+                exc_info=True,
+            )
+            db.rollback()  # reset the aborted txn so later snapshot queries work
+            db_schema_ok = False
+            db_healthy = False  # effectively down for the app → fire P0_db_down
 
     pool_used, pool_size = 0, 0
     try:
@@ -120,6 +154,7 @@ def check_db_health(db: Session) -> dict:
 
     return {
         "db_healthy": db_healthy,
+        "db_schema_ok": db_schema_ok,
         "db_pool_used": pool_used,
         "db_pool_size": pool_size,
     }

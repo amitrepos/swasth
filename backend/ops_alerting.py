@@ -76,6 +76,24 @@ def evaluate_p0(snapshot: SystemHealthSnapshot) -> list[AlertCandidate]:
             body={"db_healthy": False},
         ))
 
+    # Real-traffic 5xx — the universal "users are seeing errors" signal. Fires
+    # whenever real requests return 500/503 above threshold, regardless of
+    # which endpoint or table is involved. This is what would have paged us
+    # during the 2026-06-11 login outage: every auth call 503'd and these
+    # counts spiked, but only P1 (disabled) watched them. Now P0.
+    errors_5xx = snapshot.error_rate_5xx_5min or 0
+    if errors_5xx >= settings.OPS_ERROR_RATE_P0_THRESHOLD:
+        candidates.append(AlertCandidate(
+            alert_key="P0_api_5xx_spike",
+            tier="P0",
+            title=f"API returning errors to users: {errors_5xx} 5xx in 5 min",
+            body={
+                "errors_5xx_5min": errors_5xx,
+                "threshold": settings.OPS_ERROR_RATE_P0_THRESHOLD,
+                "note": "Real user requests are failing. Check /health/ready and DB/schema.",
+            },
+        ))
+
     if snapshot.all_ai_keys_failed:
         candidates.append(AlertCandidate(
             alert_key="P0_all_ai_failed",

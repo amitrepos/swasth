@@ -101,6 +101,60 @@ class TestOpsHealthRoute:
         assert body["db_healthy"] is True
 
 
+class TestReadinessEndpoint:
+    """/health/ready — DB+schema-aware probe an external uptime monitor hits.
+    Unlike /health (static 200), this MUST 503 when the DB/schema is bad so
+    UptimeRobot pages us during an outage like 2026-06-11."""
+
+    def test_health_is_static_200(self, client):
+        resp = client.get("/health")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "healthy"
+
+    def test_ready_returns_200_when_db_ok(self, client):
+        resp = client.get("/health/ready")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "ready"
+        assert body["db_healthy"] is True
+
+    def test_ready_returns_503_on_schema_drift(self, client):
+        import ops_health
+        with patch.object(
+            ops_health, "check_db_health",
+            return_value={"db_healthy": False, "db_schema_ok": False,
+                          "db_pool_used": 0, "db_pool_size": 0},
+        ):
+            resp = client.get("/health/ready")
+        assert resp.status_code == 503
+        body = resp.json()
+        assert body["db_healthy"] is False
+        assert body["reason"] == "schema_drift"
+
+    def test_ready_returns_503_on_db_unreachable(self, client):
+        import ops_health
+        with patch.object(
+            ops_health, "check_db_health",
+            return_value={"db_healthy": False, "db_schema_ok": True,
+                          "db_pool_used": 0, "db_pool_size": 0},
+        ):
+            resp = client.get("/health/ready")
+        assert resp.status_code == 503
+        assert resp.json()["reason"] == "db_unreachable"
+
+    def test_ready_head_method_pages_on_failure(self, client):
+        """UptimeRobot defaults to HEAD — a HEAD 503 is what actually pages us
+        (Priya MED-2). Healthy HEAD must be 200, degraded HEAD must be 503."""
+        import ops_health
+        assert client.head("/health/ready").status_code == 200
+        with patch.object(
+            ops_health, "check_db_health",
+            return_value={"db_healthy": False, "db_schema_ok": False,
+                          "db_pool_used": 0, "db_pool_size": 0},
+        ):
+            assert client.head("/health/ready").status_code == 503
+
+
 # ---------------------------------------------------------------------------
 # 3. In-memory error rate counter
 # ---------------------------------------------------------------------------
@@ -209,6 +263,36 @@ class TestP0Evaluation:
         candidates = ops_alerting.evaluate_p0(snap)
         keys = [c.alert_key for c in candidates]
         assert "P0_db_down" in keys
+
+    def test_real_traffic_5xx_fires_p0(self):
+        """Universal coverage: ANY endpoint 5xx'ing to real users pages us,
+        regardless of table/route. Models the 2026-06-11 login-503 storm."""
+        from config import settings
+        snap = self._make_snap(error_rate_5xx_5min=settings.OPS_ERROR_RATE_P0_THRESHOLD + 3)
+        candidates = ops_alerting.evaluate_p0(snap)
+        hit = [c for c in candidates if c.alert_key == "P0_api_5xx_spike"]
+        assert hit, "5xx above threshold must fire P0"
+        assert "error" in hit[0].title.lower()
+
+    def test_low_5xx_does_not_fire_p0(self):
+        """A single stray 5xx must not page — only sustained errors."""
+        snap = self._make_snap(error_rate_5xx_5min=1)
+        keys = [c.alert_key for c in ops_alerting.evaluate_p0(snap)]
+        assert "P0_api_5xx_spike" not in keys
+
+    def test_5xx_boundary_exactly_at_threshold_fires(self):
+        """Boundary: code is `>=`, so exactly threshold must fire (Priya MED-1)."""
+        from config import settings
+        snap = self._make_snap(error_rate_5xx_5min=settings.OPS_ERROR_RATE_P0_THRESHOLD)
+        keys = [c.alert_key for c in ops_alerting.evaluate_p0(snap)]
+        assert "P0_api_5xx_spike" in keys
+
+    def test_5xx_boundary_one_below_threshold_quiet(self):
+        """Boundary: threshold-1 must stay quiet (Priya MED-1)."""
+        from config import settings
+        snap = self._make_snap(error_rate_5xx_5min=settings.OPS_ERROR_RATE_P0_THRESHOLD - 1)
+        keys = [c.alert_key for c in ops_alerting.evaluate_p0(snap)]
+        assert "P0_api_5xx_spike" not in keys
 
     def test_all_ai_failed_fires_p0(self):
         snap = self._make_snap(all_ai_keys_failed=True)
@@ -344,6 +428,36 @@ class TestOpsAlertEmail:
 # 8. SystemHealthSnapshot model persists correctly
 # ---------------------------------------------------------------------------
 
+class TestSnapshotPipelineUnderDrift:
+    """Priya CRITICAL: prove the FULL scheduler pipeline survives schema drift.
+    The 2026-06-11 silent outage happened upstream of evaluate_p0 — if
+    take_health_snapshot() raises on a drifted DB, the scheduler swallows it
+    and no alert is ever built. These tests pin that the snapshot completes,
+    flags db_healthy=False, and the alert fires from a REAL snapshot."""
+
+    def test_take_health_snapshot_survives_drift_and_flags_db_down(self, db):
+        import ops_health
+        # Simulate the deep probe detecting drift, exactly as the real
+        # check_db_health would (connectivity ok, schema behind). The rest of
+        # take_health_snapshot runs its real metric queries against the test DB.
+        with patch.object(
+            ops_health, "check_db_health",
+            return_value={"db_healthy": False, "db_schema_ok": False,
+                          "db_pool_used": 0, "db_pool_size": 0},
+        ):
+            snap = ops_health.take_health_snapshot(db)  # must NOT raise
+
+        assert snap is not None
+        assert snap.db_healthy is False
+        # And the real snapshot must drive the P0 alert end-to-end. (The
+        # evaluate_p0 → fire_alert → email link is covered separately by
+        # TestOpsHealthSystemChecks.test_schema_drift_fires_db_down_alert_email;
+        # we stop at evaluate_p0 here to avoid writing a suppressing OpsAlertLog
+        # row that would bleed into that test via fire_alert's commit.)
+        keys = [c.alert_key for c in ops_alerting.evaluate_p0(snap)]
+        assert "P0_db_down" in keys, "drifted snapshot must fire P0_db_down"
+
+
 class TestSystemHealthSnapshotModel:
     def test_snapshot_persists(self, db):
         snap = models.SystemHealthSnapshot(
@@ -474,8 +588,52 @@ class TestOpsHealthSystemChecks:
         import ops_health
         result = ops_health.check_db_health(db)
         assert result["db_healthy"] is True
+        assert result["db_schema_ok"] is True
         assert "db_pool_used" in result
         assert "db_pool_size" in result
+
+    def test_check_db_health_detects_schema_drift(self, db):
+        """Regression for 2026-06-11 outage: SELECT 1 passes but a full-row
+        ORM read fails because the live schema lacks a column the models
+        expect. check_db_health must report db_healthy=False so P0_db_down
+        fires — the alert that was silent during the real incident."""
+        import ops_health
+        from sqlalchemy.exc import ProgrammingError
+
+        real_query = db.query
+
+        def fake_query(arg, *args, **kwargs):
+            # Connectivity (SELECT 1 via db.execute) still works; only the
+            # schema-real ORM probe on User explodes, mimicking UndefinedColumn.
+            if arg is models.User:
+                raise ProgrammingError("SELECT users.*", {}, Exception("column does not exist"))
+            return real_query(arg, *args, **kwargs)
+
+        with patch.object(db, "query", side_effect=fake_query):
+            result = ops_health.check_db_health(db)
+
+        assert result["db_healthy"] is False, "schema drift must read as DB down"
+        assert result["db_schema_ok"] is False
+
+    def test_schema_drift_fires_db_down_alert_email(self, db):
+        """End-to-end: a schema-drift snapshot must produce a P0 'Database
+        unreachable' alert and actually call the email sender."""
+        snap = models.SystemHealthSnapshot(
+            api_healthy=True, db_healthy=False, all_ai_keys_failed=False,
+            memory_pct=0.5, swap_active=False, concurrent_requests=10,
+            critical_alerts_failed_today=0, critical_alerts_unacked_2h=0,
+            ai_fallback_rate_1h=0.0,
+        )
+        candidates = ops_alerting.evaluate_p0(snap)
+        db_alerts = [c for c in candidates if c.alert_key == "P0_db_down"]
+        assert db_alerts, "P0_db_down must fire when db_healthy is False"
+        assert "database" in db_alerts[0].title.lower()
+
+        mock_svc = MagicMock()
+        mock_svc.send_ops_alert_email.return_value = True
+        sent = ops_alerting.fire_alert(db_alerts[0], db, mock_svc)
+        assert sent is True
+        mock_svc.send_ops_alert_email.assert_called_once()
 
     def test_check_ai_health_returns_dict(self):
         import ops_health
