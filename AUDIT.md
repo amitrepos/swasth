@@ -3,6 +3,26 @@
 All significant changes made during Claude Code sessions are recorded here.
 Format: date, summary, file-level details.
 
+## 2026-06-11 — Prod login outage (schema drift): fixed + root-caused + monitoring/deploy hardening
+
+### Incident
+- **Symptom:** every prod login 503'd; `/health` stayed 200 (static), so nothing paged.
+- **Root cause:** prod DB at migration `0015`, deployed code at `0017` → `UndefinedColumn (users.referred_by_doctor_code)` on every auth query. Caused by prod+staging **sharing one on-disk dir + venv**: staging's auto-deploy (scp `overwrite:true`) replaced prod's code while the prod migration sat behind the approval gate.
+- **Fix:** `alembic upgrade head` on `swasth_prod` (0015→0017) → login restored.
+
+### PRs (admin-merged; self-approval blocked by branch protection)
+- **#313** — schema-drift detection in `ops_health.check_db_health` (full-row ORM probe), `/health/ready` readiness endpoint (503 on drift), `P0_api_5xx_spike` real-traffic alert, `OPS_ALERT_EMAIL` → `swasthops@googlegroups.com`. 57 tests. Daniel+Priya.
+- **#316** — `jira_ops.py`: P0 alerts auto-open a Bug in the new `SWAS` JIRA project (deduped, best-effort). 12 tests. Daniel+Priya. Proven live (SWAS-1, since closed).
+- **#317** — `pipeline.yml` + blueprint: **split prod/staging backend dirs** (`/var/www/swasth/prod` vs `/staging`, separate venvs) + **atomic readiness-gated prod deploy**.
+- **#319** — `deploy/ecosystem.config.js`: pm2 ecosystem pinning each app's cwd+venv (reboot-safe).
+
+### Server changes (live, verified)
+- prod → `/var/www/swasth/prod/backend` + `prod/venv` (`swasth_prod`:8007); staging → `/var/www/swasth/staging/backend` + `staging/venv` (`swasth_staging`:8008). venvs rebuilt on **python3.11** (system `python3`=3.9 crashes on `int | None`). Both adopted via ecosystem file + `pm2 save`. Legacy `/var/www/swasth/backend` frozen read-only (decommission ~2026-06-18).
+- Ops persona `/ops-review` (Ravi Iyer) added; AWS doc + memory (`project_prod_staging_split.md`) updated.
+
+### Pending
+- Step 6: delete legacy dir after ~1 clean week. Auto-rollback on readiness-gate failure (Daniel MED-1). scp-before-migrate guard (MED-2).
+
 ## 2026-06-08 — Prod manual-deploy gate + staging CORS/DB incident
 
 ### PRs (admin-merged; self-approval blocked by branch protection)
@@ -2840,3 +2860,48 @@ break. Also swept orphan branches and recovered a real bug from one.
   - 21:17:16 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_prod_manual_deploy_gate.md
   - 21:17:26 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/MEMORY.md
   - 21:17:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
+  - 21:46:10 modified: /Users/amitkumarmishra/.claude/plans/explain-me-the-missing-smooth-kahn.md
+  - 21:47:51 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/ops/OPS_PLAYBOOK.md
+  - 21:48:01 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/ops/OPS_TRACKER_TEMPLATE.csv
+  - 21:48:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/ops/PATIENT_ONBOARDING_TRACKER.csv
+  - 21:48:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/ops/DOCTOR_ONBOARDING_TRACKER.csv
+  - 21:48:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/ops/README.md
+  - 09:54:09 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/groomer/SKILL.md
+  - 10:07:08 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ops_health.py
+  - 10:07:33 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ops_monitoring.py
+  - 10:12:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 10:12:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/main.py
+  - 10:12:58 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ops_monitoring.py
+  - 10:14:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.claude/skills/ops-review/SKILL.md
+  - 10:19:19 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 10:19:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ops_alerting.py
+  - 10:19:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ops_monitoring.py
+  - 10:26:50 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 10:40:32 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ops_monitoring.py
+  - 10:40:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ops_monitoring.py
+  - 10:40:54 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ops_monitoring.py
+  - 10:41:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_ops_monitoring.py
+  - 10:52:40 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/scripts/verify_priya_evidence.sh
+  - 11:28:03 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 11:28:24 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/jira_ops.py
+  - 11:28:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ops_alerting.py
+  - 11:29:10 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_jira_ops.py
+  - 11:39:34 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/config.py
+  - 11:39:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/ops_alerting.py
+  - 11:41:11 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/jira_ops.py
+  - 11:41:15 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/jira_ops.py
+  - 11:41:29 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_jira_ops.py
+  - 11:41:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_jira_ops.py
+  - 11:42:36 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_jira_ops.py
+  - 11:42:42 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/backend/tests/test_jira_ops.py
+  - 11:52:16 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/blueprints/split-prod-staging-backend.md
+  - 12:01:20 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/pipeline.yml
+  - 12:01:45 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/pipeline.yml
+  - 12:05:14 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/docs/aws/AWS_ARTIFACTS.md
+  - 12:11:09 modified: /Users/amitkumarmishra/.claude/projects/-Users-amitkumarmishra-workspace-swasth-swasth-app/memory/project_prod_staging_split.md
+  - 12:21:41 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/.github/workflows/jira-agent-worker.yml
+  - 12:28:38 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/deploy/ecosystem.config.js
+  - 12:30:43 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/deploy/ecosystem.config.js
+  - 12:30:48 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/deploy/ecosystem.config.js
+  - 12:33:13 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/deploy/ecosystem.config.js
+  - 15:19:47 modified: /Users/amitkumarmishra/workspace/swasth/swasth_app/AUDIT.md
