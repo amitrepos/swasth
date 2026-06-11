@@ -72,10 +72,19 @@ print(int(round(100 * hit / len(tokens))))
 }
 
 while IFS= read -r line; do
-  if [[ ! "$line" =~ ^Check[[:space:]]+[0-9]+ ]]; then
+  if [[ ! "$line" =~ ^Check[[:space:]]+([0-9]+) ]]; then
     continue
   fi
+  check_num="${BASH_REMATCH[1]}"
   FOUND=$((FOUND + 1))
+  # Check 7 ("No ambiguous language") is an *absence* assertion — it proves a
+  # negative (no "improve"/"make better"/"etc." in the ticket). There is no
+  # positive quote to ground, so the token-overlap heuristic does not apply.
+  # Naming a banned word as the thing being confirmed-absent would (correctly)
+  # score 0% against the body. Exempt it from the quote requirement.
+  if [[ "$check_num" == "7" ]]; then
+    continue
+  fi
   quote=$(printf '%s' "$line" | sed -E 's/^[^"]*"([^"]*)".*/\1/')
   if [[ -z "$quote" || "$quote" == "$line" ]]; then
     echo "verify_priya_evidence: check missing quoted evidence: $line" >&2
