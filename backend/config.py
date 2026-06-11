@@ -204,6 +204,17 @@ class Settings(BaseSettings):
     OPS_PENDING_DOCTORS_P2_THRESHOLD: int = 5
     OPS_NO_READING_DAYS_THRESHOLD: int = 7            # patients with no reading in N days
 
+    # JIRA ops-ticket integration — auto-open a ticket when a P0 alert fires so
+    # incidents are tracked & triaged, not just emailed. JIRA_URL/EMAIL/API_TOKEN
+    # are read from .env (shared with the JIRA agent automation). Tickets land in
+    # a dedicated ops project (SWAS), separate from the NUO product backlog.
+    JIRA_URL: str = ""
+    JIRA_EMAIL: str = ""
+    JIRA_API_TOKEN: str = ""
+    JIRA_OPS_ENABLED: bool = True                     # master switch for auto-ticketing
+    JIRA_OPS_PROJECT_KEY: str = "SWAS"                # the "Swasth" ops project
+    JIRA_OPS_ISSUE_TYPE: str = "Bug"                  # issue type for ops incidents
+
     # WhatsApp Inbound Webhook
     TWILIO_WEBHOOK_VALIDATE: bool = False    # Set True in production to verify Twilio HMAC signatures
     WHATSAPP_SESSION_TTL_MINUTES: int = 10   # How long to wait for profile selection reply

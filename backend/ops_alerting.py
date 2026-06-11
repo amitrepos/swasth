@@ -295,6 +295,18 @@ def fire_alert(candidate: AlertCandidate, db: Session, email_service) -> bool:
                 email_sent = True
         except Exception:
             logger.error("Failed to send ops alert email key=%s", candidate.alert_key, exc_info=True)
+
+        # Auto-open a JIRA ticket so the incident is tracked, not just emailed.
+        # P0 only (avoid backlog noise); best-effort — jira_ops never raises and
+        # dedups by alert_key so repeated fires comment rather than duplicate.
+        if candidate.tier == "P0":
+            try:
+                import jira_ops
+                jira_ops.create_or_update_ticket(
+                    candidate.alert_key, candidate.tier, candidate.title, candidate.body
+                )
+            except Exception:
+                logger.error("jira_ops ticket failed key=%s", candidate.alert_key, exc_info=True)
     else:
         logger.debug("ops_alert suppressed key=%s tier=%s", candidate.alert_key, candidate.tier)
 
