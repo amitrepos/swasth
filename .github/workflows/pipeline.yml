@@ -201,8 +201,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Snapshot the currently-serving prod code BEFORE the scp overwrites it,
+      # so the readiness gate below can auto-roll-back to last-good. (Code only —
+      # venv lives at prod/venv, outside backend/.) NOTE: rollback restores CODE,
+      # not the DB migration; our migrations are additive (forward-compatible), so
+      # last-good code runs fine on the newer schema. A destructive migration would
+      # need a manual alembic downgrade — flagged by the deploy going RED.
+      - name: Snapshot current prod backend (rollback point)
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            rm -rf /var/www/swasth/prod/backend.prev
+            cp -a /var/www/swasth/prod/backend /var/www/swasth/prod/backend.prev
+            echo "📸 snapshot saved → /var/www/swasth/prod/backend.prev"
+
       # Prod has its OWN isolated dir + venv (/var/www/swasth/prod). Staging
       # deploys write to /var/www/swasth/staging and can no longer reach here.
+      # scp lands the new code + migration files together; the migration is then
+      # applied in the next step, so code+migration go live as one unit.
       - name: Copy backend to prod dir
         uses: appleboy/scp-action@v1.0.0
         with:
@@ -236,21 +256,39 @@ jobs:
             pm2 save
             echo "✅ Backend PROD deployed (api.swasth.health)"
 
-      - name: Readiness gate — block bad deploy
-        run: |
-          ok=0
-          for i in $(seq 1 10); do
-            if curl -fsS --max-time 10 https://api.swasth.health/health/ready | grep -q '"status":"ready"'; then
-              ok=1; break
+      # Readiness gate WITH auto-rollback. Runs on the server (localhost:8007 —
+      # no DNS/CDN in the loop). If /health/ready never reports ready, restore
+      # the pre-deploy snapshot, restart, and re-verify — so prod is serving
+      # last-good code again within seconds instead of waiting on a human. The
+      # step still exits 1 (deploy RED + P0 page) so the failure is never silent.
+      - name: Readiness gate + auto-rollback
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            ok=0
+            for i in $(seq 1 10); do
+              if curl -fsS --max-time 8 http://127.0.0.1:8007/health/ready | grep -q '"status":"ready"'; then ok=1; break; fi
+              echo "waiting for readiness ($i/10)…"; sleep 3
+            done
+            if [ "$ok" -eq 1 ]; then echo "✅ api.swasth.health ready (DB + schema in sync)"; exit 0; fi
+
+            echo "❌ /health/ready not ready after deploy — AUTO-ROLLBACK to last-good code"
+            if [ -d /var/www/swasth/prod/backend.prev ]; then
+              rsync -a --delete /var/www/swasth/prod/backend.prev/ /var/www/swasth/prod/backend/ \
+                || cp -a /var/www/swasth/prod/backend.prev/. /var/www/swasth/prod/backend/
+              pm2 restart swasth-backend; pm2 save; sleep 5
+              if curl -fsS --max-time 8 http://127.0.0.1:8007/health/ready | grep -q '"status":"ready"'; then
+                echo "↩️  rolled back to last-good — prod serving again (deploy still RED; investigate the bad release)"
+              else
+                echo "🚨 ROLLBACK ALSO FAILED — manual intervention required NOW (api.swasth.health is down)"
+              fi
+            else
+              echo "🚨 no snapshot found — cannot auto-roll-back; manual intervention required"
             fi
-            echo "waiting for readiness ($i/10)…"; sleep 3
-          done
-          if [ "$ok" -ne 1 ]; then
-            echo "❌ /health/ready not ready after deploy — DB/schema drift or boot failure."
-            echo "   Prod backend code+migration are out of sync. Investigate + roll back."
             exit 1
-          fi
-          echo "✅ api.swasth.health ready (DB + schema in sync)"
 
   # ── Stage 4b: Build & deploy Flutter web → production ───────────────────────
   deploy-prod-web:
