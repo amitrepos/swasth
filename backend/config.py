@@ -173,7 +173,7 @@ class Settings(BaseSettings):
     CRITICAL_ALERTS_ENABLED: bool = True     # Kill switch for the whole feature
 
     # Operational Monitoring & Alerting
-    OPS_ALERT_EMAIL: str = "support@swasth.health"   # destination for all tiered ops alerts
+    OPS_ALERT_EMAIL: str = "swasthops@googlegroups.com"   # ops alert distribution list (manage members in Google Groups, not here)
     OPS_ALERTS_ENABLED: bool = True                   # master kill switch
     OPS_P0_ALERTS_ENABLED: bool = True                # P0: immediate (API down, DB down, all AI failed)
     OPS_P1_ALERTS_ENABLED: bool = False               # P1: disabled at launch — enable one-by-one as team matures
@@ -185,6 +185,14 @@ class Settings(BaseSettings):
     OPS_CONCURRENT_P0_THRESHOLD: int = 40
     OPS_MEMORY_P0_THRESHOLD: float = 0.90             # 90% RAM usage
     OPS_CRITICAL_ALERT_FAIL_P0_THRESHOLD: float = 0.50  # >50% critical alerts failing
+    # Real-traffic 5xx: any endpoint returning server errors to real users.
+    # This is the universal coverage signal — it catches DB-down, schema drift
+    # on ANY table, and code bugs on ANY of the 100+ endpoints, because it
+    # watches what users actually receive rather than probing one table.
+    # Low threshold: pre-100-users, a handful of 5xx in 5 min IS an incident.
+    # 15-min P0 cooldown prevents spam. (2026-06-11: every login 503'd and
+    # nothing paged — this closes that gap.)
+    OPS_ERROR_RATE_P0_THRESHOLD: int = 5              # 5xx per 5-min window
     # P1 thresholds (off by default)
     OPS_ERROR_RATE_P1_THRESHOLD: int = 10             # 500s per 5-min window
     OPS_AI_FALLBACK_P1_THRESHOLD: float = 0.30        # 30% fallback rate

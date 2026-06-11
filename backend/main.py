@@ -8,7 +8,8 @@ from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from database import engine, Base
+from sqlalchemy.orm import Session
+from database import engine, Base, get_db
 from config import settings
 from limiter import limiter
 import ops_metrics  # must import before Base.metadata.create_all so middleware attaches first
@@ -202,9 +203,43 @@ def read_root():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
-    # HEAD support so external uptime monitors (UptimeRobot free tier defaults
-    # to HEAD; GET requires a paid plan) get a 200 instead of 405.
+    # LIVENESS only. HEAD support so external uptime monitors (UptimeRobot free
+    # tier defaults to HEAD; GET requires a paid plan) get a 200 instead of 405.
+    # WARNING: this is a static 200 — it does NOT touch the DB. It tells you the
+    # web process is up, nothing more. For "can the app actually serve users?"
+    # point your uptime monitor at /health/ready below. The 2026-06-11 outage
+    # was invisible here because the process was up while every DB query 503'd.
     return {"status": "healthy"}
+
+
+@app.api_route("/health/ready", methods=["GET", "HEAD"])
+def readiness_check(db: "Session" = Depends(get_db)):
+    """READINESS — can the app actually serve a request end-to-end?
+
+    Runs the same deep DB probe as the ops scheduler: connectivity (SELECT 1)
+    PLUS a schema-real ORM read that catches migration drift (the live schema
+    being behind the deployed models). Returns 503 when the DB is unreachable
+    OR the schema is behind — so an external uptime monitor (UptimeRobot, etc.)
+    pointed here gets paged the moment users would start seeing 503s, instead
+    of being lulled by the static /health 200.
+
+    Point the external monitor at THIS path, not /health.
+    """
+    from ops_health import check_db_health
+
+    info = check_db_health(db)
+    if not info["db_healthy"]:
+        reason = "schema_drift" if not info.get("db_schema_ok", True) else "db_unreachable"
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "db_healthy": False,
+                "reason": reason,
+                "detail": "Database not ready — app cannot serve requests.",
+            },
+        )
+    return {"status": "ready", "db_healthy": True}
 
 
 # Include authentication routes
