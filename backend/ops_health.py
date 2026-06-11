@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 import ops_metrics
+from config import settings
 from models import (
     User, Profile, HealthReading, CriticalAlertLog, AiInsightLog,
     ChatMessage, DoctorProfile, DoctorAccessLog, DoctorPatientLink,
@@ -45,14 +46,21 @@ def check_memory() -> dict:
         swap_free_kb = meminfo.get("SwapFree", 0)
         used_kb = total_kb - available_kb
         memory_pct = used_kb / total_kb if total_kb > 0 else 0.0
-        swap_active = (swap_total_kb - swap_free_kb) > 0
+        swap_used_mb = (swap_total_kb - swap_free_kb) / 1024
+        # `swap_active` drives the P0_swap_active alert. Linux ALWAYS swaps a
+        # little idle memory, so the old `>0` test paged constantly (false alarm
+        # — 2026-06-11: 81 MB swapped while 258 MB RAM was free). Treat swap as a
+        # real signal only past a meaningful threshold (default 512 MB), which on
+        # a 916 MB t3.micro genuinely indicates memory pressure.
+        swap_active = swap_used_mb >= settings.OPS_SWAP_USED_P0_MB
         return {
             "memory_pct": round(memory_pct, 3),
             "memory_rss_mb": round(used_kb / 1024, 1),
+            "swap_used_mb": round(swap_used_mb, 1),
             "swap_active": swap_active,
         }
     except Exception:
-        return {"memory_pct": 0.0, "memory_rss_mb": 0.0, "swap_active": False}
+        return {"memory_pct": 0.0, "memory_rss_mb": 0.0, "swap_used_mb": 0.0, "swap_active": False}
 
 
 def check_disk() -> dict:
