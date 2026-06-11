@@ -379,6 +379,41 @@ jobs:
           git add -A
           bash .claude/scripts/write-review-marker.sh coverage-pass || true
 
+      - name: Commit Matt's work + guard empty branch
+        if: steps.budget.outputs.decision == 'proceed'
+        env:
+          TICKET_KEY: ${{ steps.pop.outputs.ticket_key }}
+        run: |
+          # Matt is told to commit his own work (his prompt, step 6), but the
+          # pre-commit hook requires the review-marker chain — and those markers
+          # are only emitted by the two steps ABOVE this one. So Matt's in-action
+          # commit is rejected by the hook, leaving his edits uncommitted; the
+          # branch is then pushed empty (== master) and gh pr create fails with
+          # "no commits between" — the run is silently lost (NUO-175 incident).
+          #
+          # Now that the markers exist, commit everything here (hooks run, the
+          # marker chain is satisfied). Idempotent: if Matt already committed and
+          # nothing is staged, the commit is skipped.
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "feat($TICKET_KEY): agent implementation + review markers"
+          fi
+          # Hard guard: never proceed with an empty branch. If there are still no
+          # commits beyond master, the implementation produced nothing usable —
+          # fail LOUDLY (On-HOLD + needs-human-qa) instead of pushing an empty
+          # branch and losing the run.
+          if [ -z "$(git log --oneline origin/master..HEAD)" ]; then
+            echo "::error::$TICKET_KEY produced no committed changes on $BRANCH_NAME (empty branch)."
+            bash scripts/jira_comment.sh --as matt "$TICKET_KEY" \
+              "⚠️ Agent run produced no committed changes (empty branch). The implementation was a no-op or a pre-commit hook blocked the commit even after the marker chain was emitted. Human investigation needed."
+            bash scripts/jira_transition.sh "$TICKET_KEY" "On-HOLD" || true
+            bash scripts/jira_set_status_label.sh "$TICKET_KEY" needs-human-qa || true
+            bash scripts/write_to_automation_state.sh jira-work-queue.json --mutator \
+              'if [ "$CURRENT" = "/dev/null" ] || [ ! -s "$CURRENT" ]; then echo "{\"entries\":[]}" > "$NEXT"; else jq --arg t "$TICKET_KEY" ".entries |= map(select(.ticket_key != \$t))" "$CURRENT" > "$NEXT"; fi' \
+              "queue: dequeue $TICKET_KEY (empty-branch guard)"
+            exit 1
+          fi
+
       - name: Gate C-regress — no regression, no churn
         if: steps.budget.outputs.decision == 'proceed'
         id: regress
