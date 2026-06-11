@@ -34,10 +34,19 @@ A ticket is AI-ready only if ALL hold:
 
 ## Right-sizing (INVEST "Small") — one ticket = one PR
 A ticket is the right size only if it is a single **vertical slice** deliverable in **one PR**:
-- one user story, AC verifiable together, a **single cohesive area** (≈ ≤5 related files / one
-  coherent `Affected Surfaces` scope).
-- **Too-big signals:** it's an Epic; the goal is "X **and** Y"; AC span unrelated subsystems (e.g.
-  backend + Flutter + infra); many unrelated surfaces; vague mega-scope ("redesign the dashboard").
+- one user story, AC verifiable together, around **one coherent feature/contract**, even when that
+  slice crosses layers (backend API + Flutter screen + admin view for the *same* field/flow). A
+  single agent builds and **E2E-tests the whole slice in one PR** — that is the standard vertical
+  slice, and it is preferred over horizontal layer-splits.
+- **Crossing backend↔Flutter is NOT a too-big signal by itself.** Splitting one feature by layer is
+  the horizontal-split anti-pattern: it manufactures cross-ticket "depends-on-X-deployed" chains for
+  no review benefit when an agent executes the whole flow. Keep a one-contract full-stack slice as
+  ONE ticket.
+- **Too-big signals (genuine):** it's an Epic; the goal is "**X and Y**" where X and Y are
+  *unrelated* outcomes/contracts (not the same feature's layers); AC span unrelated subsystems/
+  features; many unrelated surfaces; vague mega-scope ("redesign the dashboard"); or the slice is so
+  large one PR could not be coherently reviewed or E2E-tested. Size on **coherence &
+  reviewability**, not on layer-count.
 
 If too big, **split via SPIDR** into independent vertical slices: by **S**pike (unknowns first),
 **P**ath (happy path vs variations), **I**nterface (one screen/endpoint at a time), **D**ata (one
