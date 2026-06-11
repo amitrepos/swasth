@@ -1116,7 +1116,10 @@ Use suggestive language only ("may help", "consider").
     _raw_summary = f"{glucose_summary} {bp_summary} {weight_summary} {food_summary}{trend_note}".strip() or None
     # Tag non-English summaries so each language has its own cache slot in AiInsightLog
     prompt_summary = f"{_lang_tag} {_raw_summary}" if _lang_tag else _raw_summary
-    insight = ai_service.generate_health_insight(prompt, profile_id, db, prompt_summary)
+    # System-generated dashboard insight built from health data — no patient
+    # free-text question, so the red-flag classifier must not run (disclaimer-only).
+    insight = ai_service.generate_health_insight(
+        prompt, profile_id, db, prompt_summary, user_message=None)
 
     if insight:
         # Append top meal insight if available (max 1 to keep it concise)
@@ -1881,10 +1884,12 @@ async def parse_image_with_gemini(
 
         # Use ai_service fallback chain: Gemini Vision → DeepSeek text → None
         import ai_service
+        # OCR-style device-display read — no patient free-text caption.
         all_text = ai_service.generate_vision_insight(
             prompt, image_bytes, 0, db,
             prompt_summary=f"parse-image-{device_type}",
             mime_type=mime_type,
+            user_message=None,
         )
 
         if not all_text:

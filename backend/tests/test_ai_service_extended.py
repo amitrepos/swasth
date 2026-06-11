@@ -31,7 +31,7 @@ class TestFallbackChain:
 
         from ai_service import generate_health_insight
         result = generate_health_insight("test", test_user.id, db)
-        assert result == "Fallback advice."
+        assert "Fallback advice." in result  # + NMC disclaimer (SWASTH-14)
 
     @patch("ai_service._try_gemini")
     @patch("ai_service.settings")
@@ -42,7 +42,7 @@ class TestFallbackChain:
 
         from ai_service import generate_health_insight
         result = generate_health_insight("test", test_user.id, db)
-        assert result == "Gemini says drink water."
+        assert "Gemini says drink water." in result  # + NMC disclaimer
 
     @patch("ai_service._try_deepseek")
     @patch("ai_service._try_gemini")
@@ -86,7 +86,7 @@ class TestVisionFallbackChain:
 
         from ai_service import generate_vision_insight
         result = generate_vision_insight("test", b"img", test_user.id, db)
-        assert result == "BP looks normal."
+        assert "BP looks normal." in result  # + NMC disclaimer (SWASTH-14)
 
     @patch("ai_service.settings")
     def test_both_keys_missing(self, mock_settings, db, test_user):

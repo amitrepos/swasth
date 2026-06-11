@@ -7,6 +7,7 @@ Every call is logged to the ai_insight_logs table for compliance.
 """
 import json
 import logging
+import re
 import time
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -14,6 +15,229 @@ from config import settings
 import models
 
 logger = logging.getLogger(__name__)
+
+
+# ===========================================================================
+# Deterministic AI safety + disclaimer guard (SWASTH-13 / SWASTH-14)
+# ---------------------------------------------------------------------------
+# This is patient-facing CLINICAL-SAFETY logic. It is intentionally pure,
+# deterministic and offline (regex/keyword only) — NO extra LLM call, no API
+# key. Every patient-facing return path routes through ``_apply_safety_guard``:
+#   1. Disclaimer: append the NMC "salah, nuskha nahi" disclaimer if absent.
+#   2. Red-flag guard: if the user's own message hits one of five high-risk
+#      categories, the model output is REPLACED with a safe refuse/escalate
+#      message (no diagnosis, no "stop meds"; crisis -> helpline; cardiac ->
+#      emergency / 108).
+#
+# REQUIRES human sign-off (Dr. Rajesh + Legal/PHI) before merge.
+# ===========================================================================
+
+# Canonical NMC disclaimer — source: docs/LEGAL_COMPLIANCE_DOCTOR_PORTAL.md §6.3.
+# The recognisable signature is the Hindi "salah ... nahi" pairing.
+NMC_DISCLAIMER = (
+    "Yeh salah hai, prescription nahi. Dawai mein koi badlav karne se "
+    "pehle doctor se milein. (This is advice, not a prescription. Consult "
+    "your doctor before changing any medication.)"
+)
+
+# Matches the "salah ... nahi" disclaimer signature (romanised or Devanagari)
+# so we don't double-append when a model already produced it.
+_DISCLAIMER_PRESENT_RE = re.compile(
+    r"salah\b.{0,60}?\bnahi|सलाह.{0,60}?नह[ीi]",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# ---------------------------------------------------------------------------
+# Red-flag categories. Each maps a deterministic keyword/regex classifier over
+# the patient's OWN message to a safe, bilingual-friendly refuse/escalate
+# reply. Order matters: life-threatening categories (suicide, cardiac) are
+# checked first so they win over a co-occurring lower-risk keyword.
+# ---------------------------------------------------------------------------
+
+# Crisis helplines (India). Tele-MANAS 14416 is the Govt of India mental-health
+# line; KIRAN 1800-599-0019 is the MoSJE 24x7 line.
+_REFUSAL_SUICIDE = (
+    "अभी 14416 पर कॉल करें (Tele-MANAS)\n"
+    "आप अकेले नहीं हैं। किसी अपने से अभी बात करें।\n"
+    "(You are not alone. Call the helpline 14416 now.)\n"
+    "और मदद: KIRAN 1800-599-0019"
+)
+
+_REFUSAL_CARDIAC = (
+    "🚨 अभी 108 पर कॉल करें\n"
+    "सीने में दर्द — देर न करें।\n"
+    "(Chest pain can be an emergency. Call the ambulance on 108 now.)\n"
+    "दूसरा नंबर: 112"
+)
+
+_REFUSAL_STOP_MEDS = (
+    "अपनी दवाई खुद बंद न करें।\n"
+    "पहले डॉक्टर को दिखाएं।\n"
+    "(Please do not change your medicine on your own. See your doctor first.)\n"
+    + NMC_DISCLAIMER
+)
+
+_REFUSAL_DIAGNOSIS = (
+    "मैं बीमारी नहीं बता सकता।\n"
+    "डॉक्टर को दिखाएं और जांच कराएं।\n"
+    "(I am an AI and cannot diagnose. Please see a doctor for proper tests.)\n"
+    + NMC_DISCLAIMER
+)
+
+_REFUSAL_CHILD_DOSE = (
+    "बच्चे की दवाई की मात्रा मैं नहीं बता सकता।\n"
+    "डॉक्टर से पूछें।\n"
+    "(I cannot give a child's dose. Please ask a doctor.)\n"
+    + NMC_DISCLAIMER
+)
+
+# Keyword/regex sets per category, evaluated against the lower-cased message.
+_RF_SUICIDE = [
+    r"\b(?:kill|hurt|harm)(?:ing)?\s+myself\b",
+    r"\bsuicid(?:e|al)\b",
+    r"\bend(?:ing)?\s+(?:my|it)\s+(?:life|all)\b",
+    r"\b(?:don'?t|do not|dont)\s+want\s+to\s+(?:live|be alive|go on)\b",
+    r"\bno\s+(?:reason|point)\s+to\s+live\b",
+    r"\btake\s+my\s+(?:own\s+)?life\b",
+    r"\bmar\s*(?:jaun|jaana|jana)\b",            # "mar jaun/jaana" (to die)
+    r"\bjeena\s+nahi\s+chahta\b",                # "jeena nahi chahta"
+    r"\bkhudkushi\b|\baatmahatya\b",            # khudkushi / aatmahatya
+]
+_RF_CARDIAC = [
+    r"\bchest\s+pain\b",
+    r"\bseene\s+(?:me|mein)\s+dard\b",
+    r"\bheart\s+attack\b",
+    r"\bleft\s+arm\b.{0,30}\b(?:numb|pain|tingl)",
+    # Require the arm to be the thing that is numb/tingling — a symptom, not
+    # any sentence mentioning an arm near the word "numb" (which over-matched,
+    # e.g. "the number on my arm band"). Anchor to a body-symptom phrasing.
+    r"\b(?:left|right)?\s*arm\s+(?:is\s+|feels\s+|going\s+)?(?:numb|tingl)",
+    r"\bpressure\s+in\s+(?:my\s+)?chest\b",
+    r"\b(?:can'?t|cannot|cant|trouble)\s+breath",
+]
+_RF_STOP_MEDS = [
+    r"\bstop\b.{0,30}\b(?:meds|medication|medicine|medicines|pills|tablets|dawai|dawa)\b",
+    r"\bquit\b.{0,20}\b(?:meds|medication|medicine|dawai)\b",
+    r"\bdiscontinue\b.{0,20}\b(?:meds|medication|medicine)\b",
+    r"\b(?:dawai|dawa)\b.{0,20}\b(?:band|chhod|chhodna|bandh)\b",
+    r"\bskip\b.{0,20}\b(?:my\s+)?(?:meds|medication|medicine|dose|doses)\b",
+]
+# Disease / condition vocabulary that turns a "do I have ..." question into a
+# diagnosis request rather than a benign logistics question ("do I have to ...").
+_DISEASE_TERMS = (
+    r"(?:diabet(?:es|ic)|sugar|hypertensi(?:on|ve)|high\s+bp|blood\s+pressure|"
+    r"cancer|tumou?r|anaemi[ac]|anemi[ac]|thyroid|asthma|covid|infection|"
+    r"disease|condition|cholesterol|stroke|kidney|liver|heart\s+(?:disease|"
+    r"condition|problem)|a\s+heart\s+attack)"
+)
+_RF_DIAGNOSIS = [
+    r"\bam\s+i\s+(?:diabetic|pre[- ]?diabetic|hypertensive|anaemic|anemic)\b",
+    # Require a disease term after "do I have" so "do I have to take this twice?"
+    # (a logistics question) does NOT trigger a refusal.
+    r"\bdo\s+i\s+have\b.{0,30}\b" + _DISEASE_TERMS,
+    r"\bam\s+i\s+having\s+a\b.{0,20}\b(?:heart\s+attack|stroke|seizure)\b",
+    r"\bwhat'?s?\s+(?:wrong|the\s+disease)\s+with\s+me\b",
+    r"\bkya\s+mujhe\b.{0,30}\b(?:hai|diabetes|sugar|bp)\b",   # "kya mujhe ... hai"
+    r"\bis\s+this\s+(?:cancer|diabetes|a\s+tumou?r)\b",
+    r"\bdiagnos(?:e|is)\b",
+]
+_RF_CHILD_DOSE = [
+    r"\b(?:how\s+much|kitni|kitna)\b.{0,40}\b(?:child|baby|toddler|infant|bachch?e?|bacche)\b",
+    r"\b(?:dose|dosage|maatra|matra)\b.{0,40}\b(?:child|baby|toddler|infant|bachch?e?|year[- ]?old|saal)\b",
+    r"\b(?:give|de(?:na|do)?)\b.{0,40}\b(?:my\s+)?(?:child|baby|toddler|\d+[- ]?(?:year|month|saal|mahine)[- ]?old)\b",
+    r"\b(?:paracetamol|ibuprofen|antibiotic|crocin|calpol|dawai)\b.{0,40}\b(?:child|baby|toddler|bachch?e?|\d+[- ]?(?:year|month|saal))\b",
+]
+
+# Evaluated in priority order (most life-threatening first).
+_RED_FLAG_RULES = [
+    ("suicide", _RF_SUICIDE, _REFUSAL_SUICIDE),
+    ("cardiac", _RF_CARDIAC, _REFUSAL_CARDIAC),
+    ("stop_meds", _RF_STOP_MEDS, _REFUSAL_STOP_MEDS),
+    ("child_dose", _RF_CHILD_DOSE, _REFUSAL_CHILD_DOSE),
+    ("self_diagnosis", _RF_DIAGNOSIS, _REFUSAL_DIAGNOSIS),
+]
+
+
+def _classify_red_flag(message: Optional[str]) -> Optional[tuple]:
+    """Return ``(category, refusal_text)`` if the patient's message hits a
+    red-flag category, else ``None``. Pure/deterministic — no LLM."""
+    if not message:
+        return None
+    low = message.lower()
+    for category, patterns, refusal in _RED_FLAG_RULES:
+        if any(re.search(p, low) for p in patterns):
+            return category, refusal
+    return None
+
+
+def _looks_like_structured_json(text: str) -> bool:
+    """True if ``text`` is a raw JSON object/array (e.g. nutrition analysis the
+    caller parses downstream). We must NOT append free text to it — doing so
+    would break JSON parsing in routes_meals. Such structured payloads are not
+    patient-facing prose, so the disclaimer is added by the formatting layer."""
+    s = text.strip()
+    if not (s.startswith("{") or s.startswith("[") or s.startswith("```")):
+        return False
+    # Strip a ``` / ```json code-fence: remove leading/trailing backticks, then
+    # the literal ``json`` language hint and the newline that follows it. Using
+    # removeprefix here (not str.strip, which removes a CHARACTER SET — e.g.
+    # "json" would also eat a leading 'j'/'s'/'o'/'n' of real content).
+    candidate = s.strip("`")
+    candidate = candidate.removeprefix("json").lstrip("\r\n").strip()
+    try:
+        json.loads(candidate)
+        return True
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return False
+
+
+def _ensure_disclaimer(text: str) -> str:
+    """Append the NMC disclaimer if the text doesn't already carry it."""
+    if not text:
+        return text
+    if _DISCLAIMER_PRESENT_RE.search(text):
+        return text
+    if _looks_like_structured_json(text):
+        return text
+    return f"{text.rstrip()}\n\n{NMC_DISCLAIMER}"
+
+
+def _apply_safety_guard(text: Optional[str], *, user_message: Optional[str]) -> Optional[str]:
+    """Single post-processing guard every patient-facing AI path routes through.
+
+    1. If the patient's own ``user_message`` hits a red-flag category, REPLACE
+       the model output with a safe refuse/escalate message (which already
+       carries the disclaimer).
+    2. Otherwise, ensure the NMC disclaimer is appended to the model output.
+
+    CONTRACT: ``user_message`` is REQUIRED and explicit. It is the patient's
+    OWN free-text message — never the system prompt. The red-flag classifier
+    only ever runs over a real patient message; system-generated paths (weekly
+    reports, auto-insights, meal-photo scans with no caption) MUST pass
+    ``user_message=None``. There is NO silent fallback to scanning the prompt —
+    scanning the system prompt for red flags is both useless (the patient's
+    message often isn't in it) and unsafe (false positives on instructional
+    text). When ``user_message`` is None the guard runs in disclaimer-only mode
+    and logs that the red-flag classifier was skipped, so the degraded behaviour
+    is explicit rather than silent.
+
+    Deterministic and offline — no extra model call, no API key.
+    """
+    if text is None:
+        return None
+    if user_message is None:
+        # System-generated path: no patient free-text to classify. Append the
+        # disclaimer only; the red-flag classifier is deliberately NOT run.
+        logger.info(
+            "AI safety guard: no user_message — red-flag classifier skipped "
+            "(disclaimer-only mode)")
+        return _ensure_disclaimer(text)
+    flag = _classify_red_flag(user_message)
+    if flag is not None:
+        category, refusal = flag
+        logger.warning("AI safety guard triggered: red-flag category=%s", category)
+        return refusal
+    return _ensure_disclaimer(text)
 
 
 def _clean_ai_response(response_text: str) -> str:
@@ -163,18 +387,26 @@ def generate_health_insight(
     db: Session,
     prompt_summary: Optional[str] = None,
     max_tokens: int = 300,
+    user_message: Optional[str] = None,
 ) -> Optional[str]:
     """Try DeepSeek first (cheap, no rate limit), then Gemini, then return None.
 
     DeepSeek-first saves Gemini's free quota for image scanning where it's needed.
-    """
 
+    ``user_message`` is the patient's OWN raw question, fed to the safety guard's
+    red-flag classifier. Callers MUST pass it explicitly when a real patient
+    message exists, or pass ``None`` for system-generated insights (weekly
+    reports, auto-generated dashboards). The guard NEVER scans ``prompt`` for
+    red flags — see ``_apply_safety_guard``'s contract. There is no silent
+    fallback to the system prompt.
+    """
     # 1. Try DeepSeek first (cheap, reliable, no rate limit)
     if settings.DEEPSEEK_API_KEY:
         result = _try_deepseek(prompt, max_tokens=max_tokens)
         if result["text"]:
-            # Clean up JSON responses to make them human-readable
-            cleaned_text = _clean_ai_response(result["text"])
+            # Clean up JSON responses, then apply the safety + disclaimer guard.
+            cleaned_text = _apply_safety_guard(
+                _clean_ai_response(result["text"]), user_message=user_message)
             _log(db, profile_id, "deepseek-chat", prompt_summary,
                  cleaned_text, None, result["tokens"], result["ms"])
             return cleaned_text
@@ -186,8 +418,9 @@ def generate_health_insight(
     if settings.GEMINI_API_KEY:
         result = _try_gemini(prompt, max_tokens=max_tokens)
         if result["text"]:
-            # Clean up JSON responses to make them human-readable
-            cleaned_text = _clean_ai_response(result["text"])
+            # Clean up JSON responses, then apply the safety + disclaimer guard.
+            cleaned_text = _apply_safety_guard(
+                _clean_ai_response(result["text"]), user_message=user_message)
             _log(db, profile_id, "gemini-2.5-flash", prompt_summary,
                  cleaned_text, f"deepseek failed: {deepseek_error}",
                  result["tokens"], result["ms"])
@@ -211,6 +444,7 @@ def generate_vision_insight(
     db: Session,
     prompt_summary: Optional[str] = None,
     mime_type: str = "image/jpeg",
+    user_message: Optional[str] = None,
 ) -> Optional[str]:
     """Analyze image or PDF with Gemini Vision first, fallback to Groq Vision (images only).
 
@@ -218,8 +452,10 @@ def generate_vision_insight(
     Gemini 2.5 Flash natively handles multi-page PDFs via mime_type="application/pdf".
     Groq Vision is image-only, so PDFs skip the Groq fallback.
 
-    NOTE: Returns RAW response (not cleaned) for nutrition analysis.
-    The caller (routes_meals.py) handles JSON parsing and formatting.
+    Every non-None patient-facing return routes through ``_apply_safety_guard``
+    (disclaimer + red-flag). Structured nutrition JSON is left intact by the
+    guard so routes_meals.py can still parse it; the disclaimer is then added by
+    the formatting layer.
     """
     is_pdf = mime_type == "application/pdf"
 
@@ -228,9 +464,10 @@ def generate_vision_insight(
     if keys:
         result = _try_gemini_vision(prompt, image_bytes, mime_type)
         if result["text"]:
+            guarded = _apply_safety_guard(result["text"], user_message=user_message)
             _log(db, profile_id, "gemini-2.5-flash-vision", prompt_summary,
-                 result["text"], None, result["tokens"], result["ms"])
-            return result["text"]
+                 guarded, None, result["tokens"], result["ms"])
+            return guarded
         gemini_error = result["error"]
     else:
         gemini_error = "No Gemini API keys configured"
@@ -241,10 +478,11 @@ def generate_vision_insight(
     elif settings.GROQ_API_KEY:
         result = _try_groq_vision(prompt, image_bytes, mime_type)
         if result["text"]:
+            guarded = _apply_safety_guard(result["text"], user_message=user_message)
             _log(db, profile_id, "groq-llama-vision", prompt_summary,
-                 result["text"], f"gemini failed: {gemini_error}",
+                 guarded, f"gemini failed: {gemini_error}",
                  result["tokens"], result["ms"])
-            return result["text"]
+            return guarded
         groq_error = result["error"]
     else:
         groq_error = "GROQ_API_KEY not set"

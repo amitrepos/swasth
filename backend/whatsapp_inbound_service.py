@@ -167,6 +167,9 @@ def scan_device_image(image_bytes: bytes, db: Session) -> Optional[dict]:
     The reading hasn't been attributed to a profile yet.
     """
     try:
+        # Inbound WhatsApp DEVICE-METER scan — this path carries only the meter
+        # photo, no patient free-text. (Inbound text messages are handled by a
+        # separate path, not this OCR scan.) No message to classify → None.
         raw = ai_service.generate_vision_insight(
             prompt=DEVICE_SCAN_PROMPT,
             image_bytes=image_bytes,
@@ -174,6 +177,7 @@ def scan_device_image(image_bytes: bytes, db: Session) -> Optional[dict]:
             db=db,
             prompt_summary="whatsapp-device-scan",
             mime_type="image/jpeg",
+            user_message=None,
         )
         if not raw:
             return None

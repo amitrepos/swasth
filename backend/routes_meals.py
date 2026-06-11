@@ -326,10 +326,12 @@ async def parse_food_image(
         if len(image_bytes) > settings.MAX_UPLOAD_SIZE_BYTES:
             return {"error": f"File too large. Max size: {settings.MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"}
 
+        # Meal-photo classification — no patient free-text caption to classify.
         result_text = ai_service.generate_vision_insight(
             FOOD_CLASSIFICATION_PROMPT, image_bytes, profile_id, db,
             prompt_summary="food-classification",
             mime_type=mime_type,
+            user_message=None,
         )
 
         if not result_text:
@@ -439,10 +441,12 @@ async def analyze_nutrition(
                 detail=f"File too large. Max size: {settings.MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB",
             )
 
+        # Meal-photo nutrition analysis — no patient free-text caption to classify.
         result_text = ai_service.generate_vision_insight(
             NUTRITION_ANALYSIS_PROMPT, image_bytes, profile_id, db,
             prompt_summary="nutrition-analysis",
             mime_type=mime_type,
+            user_message=None,
         )
 
         if not result_text:
