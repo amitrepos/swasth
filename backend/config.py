@@ -185,6 +185,10 @@ class Settings(BaseSettings):
     OPS_CONCURRENT_P0_THRESHOLD: int = 40
     OPS_MEMORY_P0_THRESHOLD: float = 0.90             # 90% RAM usage
     OPS_CRITICAL_ALERT_FAIL_P0_THRESHOLD: float = 0.50  # >50% critical alerts failing
+    # Swap: page only on MEANINGFUL swap usage, not any (Linux always swaps idle
+    # pages, so >0 paged constantly — false alarm). 512 MB on a 916 MB t3.micro
+    # is real memory pressure.
+    OPS_SWAP_USED_P0_MB: int = 512                    # MB of swap in use before P0_swap_active fires
     # Real-traffic 5xx: any endpoint returning server errors to real users.
     # This is the universal coverage signal — it catches DB-down, schema drift
     # on ANY table, and code bugs on ANY of the 100+ endpoints, because it

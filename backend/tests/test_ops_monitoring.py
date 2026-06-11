@@ -567,6 +567,49 @@ class TestOpsHealthSystemChecks:
         assert "swap_active" in result
         assert isinstance(result["memory_pct"], float)
 
+    def _meminfo(self, swap_total_kb, swap_free_kb):
+        return (
+            "MemTotal:         938808 kB\n"
+            "MemAvailable:     264504 kB\n"
+            f"SwapTotal:       {swap_total_kb} kB\n"
+            f"SwapFree:        {swap_free_kb} kB\n"
+        )
+
+    def test_swap_below_threshold_not_active(self):
+        """Regression: 81 MB swapped with RAM free must NOT page (was the false
+        alarm). swap_active stays False below OPS_SWAP_USED_P0_MB."""
+        import ops_health
+        from unittest.mock import mock_open
+        # 2 GB swap, ~81 MB used (2097148 - 2014204 kB)
+        m = mock_open(read_data=self._meminfo(2097148, 2014204))
+        with patch("builtins.open", m):
+            r = ops_health.check_memory()
+        assert r["swap_active"] is False
+        assert 70 <= r["swap_used_mb"] <= 90
+
+    def test_swap_above_threshold_active(self):
+        """Real memory pressure: swap used past the threshold DOES page."""
+        import ops_health
+        from unittest.mock import mock_open
+        # ~700 MB used (2097148 - 1380348 kB) > 512 MB default
+        m = mock_open(read_data=self._meminfo(2097148, 1380348))
+        with patch("builtins.open", m):
+            r = ops_health.check_memory()
+        assert r["swap_active"] is True
+        assert r["swap_used_mb"] > 512
+
+    def test_swap_exactly_at_threshold_active(self):
+        """Boundary: condition is `>=`, so exactly the threshold pages."""
+        import ops_health
+        from unittest.mock import mock_open
+        from config import settings
+        used_kb = settings.OPS_SWAP_USED_P0_MB * 1024  # exactly threshold in KB
+        total = 2097148
+        m = mock_open(read_data=self._meminfo(total, total - used_kb))
+        with patch("builtins.open", m):
+            r = ops_health.check_memory()
+        assert r["swap_active"] is True
+
     def test_check_disk_returns_dict(self):
         import ops_health
         result = ops_health.check_disk()
