@@ -2640,4 +2640,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get regReferralCodeError =>
       'Invalid code. Please ask your doctor for the correct code.';
+
+  @override
+  String get referredByLabel => 'Referred by (optional)';
+
+  @override
+  String get referredByHint => 'e.g. Dr. Sharma, Poster at clinic';
+
+  @override
+  String get referredByHelper => 'Who referred you to this clinic? (optional)';
+
+  @override
+  String get referredByError =>
+      'Referral source must be 255 characters or fewer';
 }

@@ -27,6 +27,7 @@ class AdminService {
     String? nmcNumber,
     String? specialty,
     String? clinicName,
+    String? referredBy,
   }) {
     final body = <String, dynamic>{
       'email': email,
@@ -38,6 +39,8 @@ class AdminService {
       if (specialty != null && specialty.isNotEmpty) 'specialty': specialty,
       if (clinicName != null && clinicName.isNotEmpty)
         'clinic_name': clinicName,
+      if (referredBy != null && referredBy.isNotEmpty)
+        'referred_by': referredBy,
     };
     return ApiClient.sendJsonObject(
       () => ApiClient.httpClient.post(

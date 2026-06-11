@@ -31,6 +31,7 @@ class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
   final _passwordController = TextEditingController();
   final _nmcController = TextEditingController();
   final _clinicController = TextEditingController();
+  final _referredByController = TextEditingController();
 
   String _role = 'patient';
   String _selectedSpecialty = 'General Physician';
@@ -44,6 +45,7 @@ class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
     _passwordController.dispose();
     _nmcController.dispose();
     _clinicController.dispose();
+    _referredByController.dispose();
     super.dispose();
   }
 
@@ -74,6 +76,10 @@ class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
         nmcNumber: _role == 'doctor' ? _nmcController.text.trim() : null,
         specialty: _role == 'doctor' ? _selectedSpecialty : null,
         clinicName: _role == 'doctor' ? _clinicController.text.trim() : null,
+        referredBy:
+            _role == 'patient' && _referredByController.text.trim().isNotEmpty
+            ? _referredByController.text.trim()
+            : null,
       );
 
       if (!mounted) return;
@@ -294,6 +300,23 @@ class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+              if (_role == 'patient')
+                TextFormField(
+                  key: const Key('acu_referred_by'),
+                  controller: _referredByController,
+                  decoration: InputDecoration(
+                    labelText: l10n.referredByLabel,
+                    hintText: l10n.referredByHint,
+                    prefixIcon: const Icon(Icons.badge_outlined),
+                  ),
+                  validator: (value) {
+                    if (value != null && value.trim().length > 255) {
+                      return l10n.referredByError;
+                    }
+                    return null;
+                  },
+                ),
               const SizedBox(height: 24),
               ElevatedButton(
                 key: const Key('acu_submit'),

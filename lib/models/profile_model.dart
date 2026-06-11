@@ -17,6 +17,8 @@ class ProfileModel {
   final String phoneNumber;
   final String accessLevel; // "owner" or "viewer"
   final String? relationship;
+  // Free-form referral source — owner-only, null for viewers
+  final String? referredBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -37,6 +39,7 @@ class ProfileModel {
     required this.phoneNumber,
     required this.accessLevel,
     this.relationship,
+    this.referredBy,
     required this.createdAt,
     this.updatedAt,
   });
@@ -61,6 +64,7 @@ class ProfileModel {
       phoneNumber: json['phone_number'] as String,
       accessLevel: json['access_level'],
       relationship: json['relationship'] as String?,
+      referredBy: json['referred_by'] as String?,
       createdAt: DateTimeUtils.parseUtc(json['created_at']),
       updatedAt: json['updated_at'] != null
           ? DateTimeUtils.parseUtc(json['updated_at'])
@@ -86,6 +90,7 @@ class ProfileModel {
       'phone_number': phoneNumber,
       'access_level': accessLevel,
       'relationship': relationship,
+      'referred_by': referredBy,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };

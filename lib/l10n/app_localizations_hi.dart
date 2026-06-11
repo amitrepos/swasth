@@ -2644,4 +2644,17 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get regReferralCodeError =>
       'गलत कोड। सही कोड के लिए अपने डॉक्टर से पूछें।';
+
+  @override
+  String get referredByLabel => 'किसने भेजा (वैकल्पिक)';
+
+  @override
+  String get referredByHint => 'जैसे डॉ. शर्मा, क्लिनिक का पोस्टर';
+
+  @override
+  String get referredByHelper => 'आपको इस क्लिनिक में किसने भेजा? (वैकल्पिक)';
+
+  @override
+  String get referredByError =>
+      'रेफरल स्रोत 255 अक्षरों से अधिक नहीं होना चाहिए';
 }

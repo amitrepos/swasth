@@ -2671,4 +2671,17 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get regReferralCodeError =>
       'ತಪ್ಪಾದ ಕೋಡ್. ಸರಿಯಾದ ಕೋಡ್‌ಗಾಗಿ ನಿಮ್ಮ ವೈದ್ಯರನ್ನು ಕೇಳಿ.';
+
+  @override
+  String get referredByLabel => 'ರೆಫರ್ ಮಾಡಿದವರು (ಐಚ್ಛಿಕ)';
+
+  @override
+  String get referredByHint => 'ಉದಾ. ಡಾ. ಶರ್ಮಾ, ಕ್ಲಿನಿಕ್ ಪೋಸ್ಟರ್';
+
+  @override
+  String get referredByHelper =>
+      'ಈ ಕ್ಲಿನಿಕ್‌ಗೆ ನಿಮ್ಮನ್ನು ಯಾರು ಕಳುಹಿಸಿದರು? (ಐಚ್ಛಿಕ)';
+
+  @override
+  String get referredByError => 'ರೆಫರಲ್ ಮೂಲ 255 ಅಕ್ಷರಗಳಿಗಿಂತ ಹೆಚ್ಚಿರಬಾರದು';
 }

@@ -84,8 +84,9 @@ class UserRegister(BaseModel):
     consent_app_version: Optional[str] = None
     consent_language: Optional[str] = None
     ai_consent: Optional[bool] = None
-    # Referral tracking — doctor code of the doctor who recommended the app
+    # Referral tracking — doctor code (backward compat) + new free-form text
     referred_by_doctor_code: Optional[str] = Field(None, min_length=4, max_length=8)
+    referred_by: Optional[str] = Field(None, max_length=255)
 
     @validator('referred_by_doctor_code', pre=True)
     def validate_referral_code(cls, v):
@@ -348,6 +349,8 @@ class ProfileUpdate(BaseModel):
     doctor_specialty: Optional[str] = None
     doctor_whatsapp: Optional[str] = None
     phone_number: Optional[str] = None
+    # Free-form referral source — stored on users.referred_by, not the profile
+    referred_by: Optional[str] = Field(None, max_length=255)
 
     @validator('phone_number')
     def validate_phone_number(cls, v):
@@ -391,6 +394,8 @@ class ProfileResponse(BaseModel):
     phone_number: Optional[str] = None
     access_level: str           # "owner" or "viewer" — injected per-user at query time
     relationship: Optional[str] = None  # "father", "mother", etc. — only for viewers
+    # Free-form referral source (owner-only; null for viewer access)
+    referred_by: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime]
 
@@ -874,6 +879,7 @@ class AdminCreateUser(BaseModel):
     nmc_number: Optional[str] = Field(None, min_length=5, max_length=20)
     specialty: Optional[str] = None
     clinic_name: Optional[str] = None
+    referred_by: Optional[str] = Field(None, max_length=255)
 
     class Config:
         extra = 'forbid'

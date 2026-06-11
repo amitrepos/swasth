@@ -4908,6 +4908,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid code. Please ask your doctor for the correct code.'**
   String get regReferralCodeError;
+
+  /// No description provided for @referredByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Referred by (optional)'**
+  String get referredByLabel;
+
+  /// No description provided for @referredByHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Dr. Sharma, Poster at clinic'**
+  String get referredByHint;
+
+  /// No description provided for @referredByHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Who referred you to this clinic? (optional)'**
+  String get referredByHelper;
+
+  /// No description provided for @referredByError.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral source must be 255 characters or fewer'**
+  String get referredByError;
 }
 
 class _AppLocalizationsDelegate

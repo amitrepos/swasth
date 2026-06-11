@@ -333,6 +333,7 @@ def list_users(
             "signed_up": utc_isoformat(u.created_at),
             "referred_by_doctor_code": u.referred_by_doctor_code,
             "referred_by_doctor_name": doctor_name_by_code.get(u.referred_by_doctor_code) if u.referred_by_doctor_code else None,
+            "referred_by": u.referred_by,
         })
 
     return {"users": result, "total": len(result)}
@@ -655,6 +656,7 @@ def admin_create_user(
         role=models.UserRole.patient,
         is_active=True,
         timezone="Asia/Kolkata",
+        referred_by=body.referred_by,
         created_at=now_utc,
         updated_at=now_utc,
     )

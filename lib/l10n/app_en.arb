@@ -1537,5 +1537,13 @@
   "regReferralCodeHelper": "Enter the code your doctor gave you, if any",
   "@regReferralCodeHelper": {},
   "regReferralCodeError": "Invalid code. Please ask your doctor for the correct code.",
-  "@regReferralCodeError": {}
+  "@regReferralCodeError": {},
+  "referredByLabel": "Referred by (optional)",
+  "@referredByLabel": {},
+  "referredByHint": "e.g. Dr. Sharma, Poster at clinic",
+  "@referredByHint": {},
+  "referredByHelper": "Who referred you to this clinic? (optional)",
+  "@referredByHelper": {},
+  "referredByError": "Referral source must be 255 characters or fewer",
+  "@referredByError": {}
 }

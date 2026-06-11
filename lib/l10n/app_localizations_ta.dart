@@ -2680,4 +2680,18 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get regReferralCodeError =>
       'தவறான குறியீடு. சரியான குறியீட்டிற்கு மருத்துவரிடம் கேளுங்கள்.';
+
+  @override
+  String get referredByLabel => 'யார் அனுப்பினார்கள் (விரும்பினால்)';
+
+  @override
+  String get referredByHint => 'எ.கா. டாக்டர் ஷர்மா, கிளினிக் போஸ்டர்';
+
+  @override
+  String get referredByHelper =>
+      'இந்த கிளினிக்கிற்கு உங்களை யார் அனுப்பினார்கள்? (விரும்பினால்)';
+
+  @override
+  String get referredByError =>
+      'பரிந்துரை மூலம் 255 எழுத்துகளுக்கு மிகாமல் இருக்க வேண்டும்';
 }

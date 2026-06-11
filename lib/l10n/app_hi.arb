@@ -1026,5 +1026,9 @@
   "regReferralCodeLabel": "आपके डॉक्टर का दिया हुआ कोड (वैकल्पिक)",
   "regReferralCodeHint": "जैसे DRRAJ52",
   "regReferralCodeHelper": "अगर आपके डॉक्टर ने कोड दिया है तो यहाँ डालें",
-  "regReferralCodeError": "गलत कोड। सही कोड के लिए अपने डॉक्टर से पूछें।"
+  "regReferralCodeError": "गलत कोड। सही कोड के लिए अपने डॉक्टर से पूछें।",
+  "referredByLabel": "किसने भेजा (वैकल्पिक)",
+  "referredByHint": "जैसे डॉ. शर्मा, क्लिनिक का पोस्टर",
+  "referredByHelper": "आपको इस क्लिनिक में किसने भेजा? (वैकल्पिक)",
+  "referredByError": "रेफरल स्रोत 255 अक्षरों से अधिक नहीं होना चाहिए"
 }

@@ -46,6 +46,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _phoneEditController = TextEditingController();
   final _heightEditController = TextEditingController();
   final _weightEditController = TextEditingController();
+  final _referredByController = TextEditingController();
 
   // Doctor detail controllers
   final _doctorNameController = TextEditingController();
@@ -67,6 +68,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _phoneEditController.dispose();
     _heightEditController.dispose();
     _weightEditController.dispose();
+    _referredByController.dispose();
     _doctorNameController.dispose();
     _doctorSpecialtyController.dispose();
     _doctorWhatsappController.dispose();
@@ -428,6 +430,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _phoneEditController.text = _profile?.phoneNumber ?? '';
     _heightEditController.text = _profile?.height?.toString() ?? '';
     _weightEditController.text = _profile?.weight?.toString() ?? '';
+    _referredByController.text = _profile?.referredBy ?? '';
     _doctorNameController.text = _profile?.doctorName ?? '';
     _doctorSpecialtyController.text = _profile?.doctorSpecialty ?? '';
     _doctorWhatsappController.text = _profile?.doctorWhatsapp ?? '';
@@ -450,6 +453,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         'doctor_whatsapp': _doctorWhatsappController.text.trim().isEmpty
             ? null
             : _doctorWhatsappController.text.trim(),
+        'referred_by': _referredByController.text.trim().isEmpty
+            ? null
+            : _referredByController.text.trim(),
       };
       final age = int.tryParse(_ageController.text);
       if (age != null) data['age'] = age;
@@ -495,7 +501,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             // Label row — no longer competing with chips for width
             Row(
               children: [
-                Icon(Icons.language, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.language,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 12),
                 Text(
                   l10n.appLanguageSection,
@@ -778,6 +787,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
               ]),
+              if (_profile?.accessLevel == 'owner')
+                _buildSection(l10n.referredByLabel, [
+                  TextFormField(
+                    key: const Key('profile_referred_by'),
+                    controller: _referredByController,
+                    decoration: InputDecoration(
+                      labelText: l10n.referredByLabel,
+                      hintText: l10n.referredByHint,
+                      prefixIcon: const Icon(Icons.badge_outlined),
+                    ),
+                    validator: (value) {
+                      if (value != null && value.trim().length > 255) {
+                        return l10n.referredByError;
+                      }
+                      return null;
+                    },
+                  ),
+                ]),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -910,8 +937,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     subtitle: Text(
                       l10n.inviteFriendsTileSubtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () => ShareService.shareInvite(context),
@@ -1068,7 +1095,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     Color avatarBg;
     Color avatarFg;
-    
+
     if (isRevoked) {
       avatarBg = AppColors.statusCritical.withOpacity(0.15);
       avatarFg = AppColors.statusCritical;
@@ -1140,7 +1167,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ],
                         ),
                       ),
-                    if (isRevoked && revokeReason != null && revokeReason.isNotEmpty)
+                    if (isRevoked &&
+                        revokeReason != null &&
+                        revokeReason.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(

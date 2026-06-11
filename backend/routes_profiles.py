@@ -1,6 +1,6 @@
 """Profile CRUD and invite management endpoints."""
 from datetime import datetime, timedelta, timezone
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -22,7 +22,12 @@ INVITE_TTL_DAYS = 7
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _build_profile_response(profile: models.Profile, access_level: str, relationship: str = None) -> schemas.ProfileResponse:
+def _build_profile_response(
+    profile: models.Profile,
+    access_level: str,
+    relationship: str = None,
+    referred_by: Optional[str] = None,
+) -> schemas.ProfileResponse:
     # Profile-level relationship (set at creation) takes precedence;
     # fall back to access-level relationship (set when sharing/linking).
     rel = profile.relationship or relationship
@@ -43,6 +48,8 @@ def _build_profile_response(profile: models.Profile, access_level: str, relation
         phone_number=profile.phone_number,
         access_level=access_level,
         relationship=rel,
+        # referred_by is owner-only — callers pass None for viewer access
+        referred_by=referred_by if access_level == "owner" else None,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
     )
@@ -67,7 +74,8 @@ def list_profiles(
     for access in accesses:
         profile = db.query(models.Profile).filter(models.Profile.id == access.profile_id).first()
         if profile:
-            result.append(_build_profile_response(profile, access.access_level, access.relationship))
+            rb = user.referred_by if access.access_level == "owner" else None
+            result.append(_build_profile_response(profile, access.access_level, access.relationship, referred_by=rb))
     return result
 
 
@@ -119,7 +127,7 @@ def create_profile(
 
     db.commit()
     db.refresh(profile)
-    return _build_profile_response(profile, "owner")
+    return _build_profile_response(profile, "owner", referred_by=user.referred_by)
 
 
 @router.get("/profiles/{profile_id}", response_model=schemas.ProfileResponse)
@@ -133,7 +141,8 @@ def get_profile(
     profile = db.query(models.Profile).filter(models.Profile.id == profile_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    return _build_profile_response(profile, access.access_level)
+    rb = user.referred_by if access.access_level == "owner" else None
+    return _build_profile_response(profile, access.access_level, referred_by=rb)
 
 
 @router.put("/profiles/{profile_id}", response_model=schemas.ProfileResponse)
@@ -150,6 +159,13 @@ def update_profile(
         raise HTTPException(status_code=404, detail="Profile not found")
 
     update_data = data.dict(exclude_unset=True)
+
+    # referred_by lives on User, not Profile — handle it separately
+    _SENTINEL = object()
+    new_referred_by = update_data.pop("referred_by", _SENTINEL)
+    if new_referred_by is not _SENTINEL:
+        user.referred_by = new_referred_by
+
     old_weight = profile.weight
 
     for field, value in update_data.items():
@@ -175,7 +191,7 @@ def update_profile(
 
     db.commit()
     db.refresh(profile)
-    return _build_profile_response(profile, "owner")
+    return _build_profile_response(profile, "owner", referred_by=user.referred_by)
 
 
 @router.delete("/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)

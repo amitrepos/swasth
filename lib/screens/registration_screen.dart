@@ -38,7 +38,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _weightController = TextEditingController();
   final _medicationsController = TextEditingController();
   final _otherConditionController = TextEditingController();
-  final _referralCodeController = TextEditingController();
+  final _referredByController = TextEditingController();
 
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'A+';
@@ -65,7 +65,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     super.initState();
     _passwordController.addListener(_onPasswordChanged);
     _confirmPasswordController.addListener(_onPasswordChanged);
-    
+
     // Prefill phone number if provided (from phone OTP flow)
     if (widget.prefillPhone != null) {
       _phoneController.text = widget.prefillPhone!;
@@ -85,7 +85,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _weightController.dispose();
     _medicationsController.dispose();
     _otherConditionController.dispose();
-    _referralCodeController.dispose();
+    _referredByController.dispose();
     super.dispose();
   }
 
@@ -127,8 +127,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       // For phone-verified users, email is optional
       final email = widget.isPhoneVerified
           ? (_emailController.text.trim().isEmpty
-              ? 'phone_${_phoneController.text.trim()}@swasth.local'
-              : _emailController.text.trim())
+                ? 'phone_${_phoneController.text.trim()}@swasth.local'
+                : _emailController.text.trim())
           : _emailController.text.trim();
 
       // Pre-flight email uniqueness check — show error on this page, not consent.
@@ -163,9 +163,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'other_medical_condition': _selectedConditions.contains('Other')
             ? _otherConditionController.text.trim()
             : null,
-        'referred_by_doctor_code': _referralCodeController.text.trim().isEmpty
+        'referred_by': _referredByController.text.trim().isEmpty
             ? null
-            : _referralCodeController.text.trim().toUpperCase(),
+            : _referredByController.text.trim(),
       };
 
       // Navigate to consent screen — registration API is called after consent.
@@ -240,10 +240,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 onChanged: (_) {
-                  if (_emailErrorText != null) setState(() => _emailErrorText = null);
+                  if (_emailErrorText != null)
+                    setState(() => _emailErrorText = null);
                 },
                 decoration: InputDecoration(
-                  labelText: l10n.emailLabel + (widget.isPhoneVerified ? ' (Optional)' : ''),
+                  labelText:
+                      l10n.emailLabel +
+                      (widget.isPhoneVerified ? ' (Optional)' : ''),
                   prefixIcon: const Icon(Icons.email),
                   errorText: _emailErrorText,
                 ),
@@ -253,12 +256,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return l10n.emailValidationEmpty;
                     }
-                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                    ).hasMatch(value)) {
                       return l10n.emailValidationInvalid;
                     }
                   } else if (value != null && value.trim().isNotEmpty) {
                     // If provided, validate format
-                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                    ).hasMatch(value)) {
                       return l10n.emailValidationInvalid;
                     }
                   }
@@ -351,7 +358,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             : Icons.visibility,
                       ),
                       onPressed: () {
-                        setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                        setState(
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
+                        );
                       },
                     ),
                     errorText:
@@ -501,26 +511,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ],
               const SizedBox(height: 24),
 
-              // Referral code — optional, from a doctor who recommended the app
+              // Referred by — optional free-form text (max 255 chars)
               TextFormField(
-                key: const Key('reg_referral_code'),
-                controller: _referralCodeController,
-                textCapitalization: TextCapitalization.characters,
+                key: const Key('reg_referred_by'),
+                controller: _referredByController,
                 decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context)!.regReferralCodeLabel,
-                  hintText: AppLocalizations.of(context)!.regReferralCodeHint,
+                  labelText: AppLocalizations.of(context)!.referredByLabel,
+                  hintText: AppLocalizations.of(context)!.referredByHint,
                   prefixIcon: const Icon(Icons.badge_outlined),
-                  helperText: AppLocalizations.of(context)!.regReferralCodeHelper,
+                  helperText: AppLocalizations.of(context)!.referredByHelper,
                   helperMaxLines: 3,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) return null;
-                  final v = value.trim();
-                  if (v.length < 4 || v.length > 8) {
-                    return AppLocalizations.of(context)!.regReferralCodeError;
-                  }
-                  if (!RegExp(r'^[A-Za-z0-9]+$').hasMatch(v)) {
-                    return AppLocalizations.of(context)!.regReferralCodeError;
+                  if (value.trim().length > 255) {
+                    return AppLocalizations.of(context)!.referredByError;
                   }
                   return null;
                 },

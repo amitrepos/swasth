@@ -1407,5 +1407,9 @@
   "regReferralCodeLabel": "మీ వైద్యుడు ఇచ్చిన కోడ్ (ఐచ్ఛికం)",
   "regReferralCodeHint": "ఉదా. DRRAJ52",
   "regReferralCodeHelper": "వైద్యుడు కోడ్ ఇచ్చినట్లయితే ఇక్కడ నమోదు చేయండి",
-  "regReferralCodeError": "తప్పుడు కోడ్. సరైన కోడ్ కోసం మీ వైద్యుడిని అడగండి."
+  "regReferralCodeError": "తప్పుడు కోడ్. సరైన కోడ్ కోసం మీ వైద్యుడిని అడగండి.",
+  "referredByLabel": "ఎవరు పంపించారు (ఐచ్ఛికం)",
+  "referredByHint": "ఉదా. డాక్టర్ శర్మ, క్లినిక్ పోస్టర్",
+  "referredByHelper": "ఈ క్లినిక్‌కు మిమ్మల్ని ఎవరు పంపించారు? (ఐచ్ఛికం)",
+  "referredByError": "రెఫరల్ మూలం 255 అక్షరాలు మించకూడదు"
 }
