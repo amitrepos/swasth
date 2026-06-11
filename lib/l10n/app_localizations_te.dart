@@ -2654,7 +2654,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get regReferralCodeHelper =>
-      'వైద్యుడు కోడ్ ఇచ్చినట్లాయితే ఇక్కడ నమోదు చేయండి';
+      'వైద్యుడు కోడ్ ఇచ్చినట్లయితే ఇక్కడ నమోదు చేయండి';
 
   @override
   String get regReferralCodeError =>
