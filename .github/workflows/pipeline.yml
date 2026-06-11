@@ -67,14 +67,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy backend to server
+      # Staging has its OWN isolated dir + venv (/var/www/swasth/staging) so a
+      # staging deploy can never touch prod's running code. (Root-cause fix for
+      # the 2026-06-11 shared-dir outage — see docs/blueprints/split-prod-staging-backend.md)
+      - name: Copy backend to staging dir
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "backend/"
-          target: "/var/www/swasth/"
+          target: "/var/www/swasth/staging/"
           overwrite: true
 
       - name: Install deps + migrate + restart staging
@@ -86,20 +89,22 @@ jobs:
           script: |
             set -e
             export DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}"
-            source /var/www/swasth/venv/bin/activate
-            cd /var/www/swasth/backend
+            source /var/www/swasth/staging/venv/bin/activate
+            cd /var/www/swasth/staging/backend
             pip install -r requirements.txt -q
             alembic upgrade head || { echo "❌ alembic upgrade head failed"; exit 1; }
             pm2 restart swasth-staging || \
-              DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}" SERVER_PORT=8008 \
-              pm2 start "python3 -B main.py" --name "swasth-staging" --cwd /var/www/swasth/backend
+              pm2 start "/var/www/swasth/staging/venv/bin/python3 -B main.py" \
+                --name "swasth-staging" --cwd /var/www/swasth/staging/backend
+            pm2 save
             echo "✅ Staging backend deployed (staging-api.swasth.health)"
 
-      - name: Verify staging backend health
+      - name: Verify staging backend readiness
         run: |
           sleep 5
-          curl -s --max-time 10 https://staging-api.swasth.health/health | grep -q '"status":"healthy"'
-          echo "✅ staging-api.swasth.health healthy"
+          # /health/ready runs the deep DB+schema probe — 503 on migration drift.
+          curl -fsS --max-time 10 https://staging-api.swasth.health/health/ready | grep -q '"status":"ready"'
+          echo "✅ staging-api.swasth.health ready (DB + schema in sync)"
 
   # ── Stage 2b: Build & deploy Flutter web → staging ──────────────────────────
   deploy-staging-web:
@@ -196,17 +201,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy backend to server
+      # Prod has its OWN isolated dir + venv (/var/www/swasth/prod). Staging
+      # deploys write to /var/www/swasth/staging and can no longer reach here.
+      - name: Copy backend to prod dir
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "backend/"
-          target: "/var/www/swasth/"
+          target: "/var/www/swasth/prod/"
           overwrite: true
 
-      - name: Install deps + migrate + restart prod
+      # ATOMIC + readiness-gated: code and its migration ship as ONE unit, and
+      # the deploy fails RED unless /health/ready (deep DB+schema probe) confirms
+      # the app can actually serve. This is what prevents a repeat of 2026-06-11:
+      # code landing without its migration now turns the deploy red + pages,
+      # instead of silently serving 503s.
+      - name: Install deps + migrate + restart prod (atomic, readiness-gated)
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -214,13 +226,31 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            source /var/www/swasth/venv/bin/activate
-            cd /var/www/swasth/backend
+            source /var/www/swasth/prod/venv/bin/activate
+            cd /var/www/swasth/prod/backend
             pip install -r requirements.txt -q
             alembic upgrade head || { echo "❌ alembic upgrade head failed"; exit 1; }
             pm2 restart swasth-backend || \
-              pm2 start "python3 -B main.py" --name "swasth-backend" --cwd /var/www/swasth/backend
+              pm2 start "/var/www/swasth/prod/venv/bin/python3 -B main.py" \
+                --name "swasth-backend" --cwd /var/www/swasth/prod/backend
+            pm2 save
             echo "✅ Backend PROD deployed (api.swasth.health)"
+
+      - name: Readiness gate — block bad deploy
+        run: |
+          ok=0
+          for i in $(seq 1 10); do
+            if curl -fsS --max-time 10 https://api.swasth.health/health/ready | grep -q '"status":"ready"'; then
+              ok=1; break
+            fi
+            echo "waiting for readiness ($i/10)…"; sleep 3
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "❌ /health/ready not ready after deploy — DB/schema drift or boot failure."
+            echo "   Prod backend code+migration are out of sync. Investigate + roll back."
+            exit 1
+          fi
+          echo "✅ api.swasth.health ready (DB + schema in sync)"
 
   # ── Stage 4b: Build & deploy Flutter web → production ───────────────────────
   deploy-prod-web:

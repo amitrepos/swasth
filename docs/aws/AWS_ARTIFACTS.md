@@ -25,6 +25,28 @@ ssh -i ~/.ssh/swasth-prod-key.pem ec2-user@13.127.215.113
 
 **Storage:** 20 GB gp3 (`/dev/nvme0n1p1`)
 
+### On-host process & directory layout (as of 2026-06-11)
+
+Prod and staging are **fully isolated** — separate dirs **and** separate venvs.
+A staging deploy can no longer touch prod's running code (root-cause fix for the
+2026-06-11 shared-dir outage; see `docs/blueprints/split-prod-staging-backend.md`).
+
+| pm2 process | Directory | venv | DB | Port | Public host |
+|---|---|---|---|---|---|
+| `swasth-backend` (prod) | `/var/www/swasth/prod/backend` | `/var/www/swasth/prod/venv` | `swasth_prod` | 8007 | `api.swasth.health` |
+| `swasth-staging` | `/var/www/swasth/staging/backend` | `/var/www/swasth/staging/venv` | `swasth_staging` | 8008 | `staging-api.swasth.health` |
+| `swasth-health-form` | `/var/www/swasth_interest_form` | (node) | — | — | `swasth.health` |
+
+- **Python:** venvs MUST be built with `/usr/bin/python3.11` (system `python3` is
+  3.9 and crashes on `int | None` syntax). `python3.11 -m venv …`.
+- **Per-env `.env`:** each `backend/.env` sets its own `DATABASE_URL` + `SERVER_PORT`.
+  Prod `.env` → `swasth_prod`/8007; staging `.env` → `swasth_staging`/8008.
+- **Legacy:** the old shared `/var/www/swasth/backend` is orphaned (no process uses
+  it) — kept as instant rollback, decommission after 1 clean week.
+- **Health probes:** `/health` = static liveness (200); **`/health/ready`** = deep
+  DB+schema readiness (503 on migration drift) — point uptime monitors here.
+- **Restart:** `pm2 restart swasth-backend` (prod) / `swasth-staging`; `pm2 save` after.
+
 ---
 
 ## Elastic IPs
