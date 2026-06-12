@@ -37,8 +37,10 @@ class TestResponseCleanup:
             mock_settings.DEEPSEEK_API_KEY = 'fake-key'
             mock_settings.GEMINI_API_KEY = None
             result = ai_service.generate_health_insight('prompt', 1, db, 'test')
-            
-            assert result == 'Your health is improving.'
+
+            # Guard appends the NMC disclaimer (SWASTH-14); core text preserved.
+            assert 'Your health is improving.' in result
+            assert 'salah' in result and 'nahi' in result
 
     def test_regular_text_unchanged(self, db, test_user):
         """Regular text responses should remain unchanged."""
@@ -50,8 +52,10 @@ class TestResponseCleanup:
             mock_settings.DEEPSEEK_API_KEY = 'fake-key'
             mock_settings.GEMINI_API_KEY = None
             result = ai_service.generate_health_insight('prompt', 1, db, 'test')
-            
-            assert result == regular_text
+
+            # Guard appends the NMC disclaimer (SWASTH-14); core text preserved.
+            assert regular_text in result
+            assert 'salah' in result and 'nahi' in result
 
     def test_generic_json_formatted(self, db, test_user):
         """Generic JSON should be formatted as key-value pairs."""
@@ -100,7 +104,7 @@ class TestFallbackChain:
             mock_settings.DEEPSEEK_API_KEY = 'fake-key'
             mock_settings.GEMINI_API_KEY = 'fake-key'
             result = ai_service.generate_health_insight('test prompt', 1, db, 'summary')
-            assert result == 'DeepSeek insight'
+            assert 'DeepSeek insight' in result  # disclaimer appended by guard
             mock_d.assert_called_once()
             mock_g.assert_not_called()
 
@@ -114,7 +118,7 @@ class TestFallbackChain:
             mock_settings.DEEPSEEK_API_KEY = 'fake-key'
             mock_settings.GEMINI_API_KEY = 'fake-key'
             result = ai_service.generate_health_insight('test prompt', 1, db, 'summary')
-            assert result == 'Gemini insight'
+            assert 'Gemini insight' in result  # disclaimer appended by guard
             mock_d.assert_called_once()
             mock_g.assert_called_once()
 
@@ -139,7 +143,7 @@ class TestFallbackChain:
             mock_settings.DEEPSEEK_API_KEY = None
             mock_settings.GEMINI_API_KEY = 'fake-key'
             result = ai_service.generate_health_insight('test prompt', 1, db, 'summary')
-            assert result == 'Gemini only'
+            assert 'Gemini only' in result  # disclaimer appended by guard
             mock_d.assert_not_called()
             mock_g.assert_called_once()
 
@@ -159,7 +163,8 @@ class TestAuditLogging:
         log = db.query(models.AiInsightLog).order_by(models.AiInsightLog.id.desc()).first()
         assert log is not None
         assert log.model_used == 'deepseek-chat'
-        assert log.response_text == 'Good insight'
+        # Logged text is the guarded text (core preserved + NMC disclaimer).
+        assert 'Good insight' in log.response_text
         assert log.fallback_reason is None
         assert log.tokens_used == 40
         assert log.prompt_summary == 'glucose avg 120'
@@ -178,7 +183,7 @@ class TestAuditLogging:
         log = db.query(models.AiInsightLog).order_by(models.AiInsightLog.id.desc()).first()
         assert log is not None
         assert log.model_used == 'gemini-2.5-flash'
-        assert log.response_text == 'Fallback insight'
+        assert 'Fallback insight' in log.response_text  # + NMC disclaimer
         assert 'deepseek failed: timeout' in log.fallback_reason
 
     def test_both_fail_logged(self, db, test_user):

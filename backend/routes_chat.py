@@ -189,6 +189,9 @@ Write a single cohesive summary. Keep only the most important and actionable inf
     new_summary = ai_service.generate_health_insight(
         summary_prompt, profile_id, db,
         prompt_summary="chat context summary generation",
+        # System-generated rolling summary over many past messages — there is no
+        # single patient message to classify, so the red-flag guard must not run.
+        user_message=None,
     )
 
     if not new_summary:
@@ -353,18 +356,29 @@ The patient has uploaded a {artifact}. Please analyze what you see and provide h
             vision_prompt, image_bytes, profile_id, db,
             prompt_summary=f"chat-{('pdf' if is_pdf else 'image')}: {display_message[:80]}",
             mime_type=image_mime,
+            # The patient's caption is real free-text — route it through the
+            # red-flag classifier (e.g. "is this chest pain?" + a photo).
+            user_message=message or None,
         )
 
     if not ai_response:
         ai_response = ai_service.generate_health_insight(
             prompt, profile_id, db,
             prompt_summary=f"chat: {display_message[:100]}",
+            # The patient's own chat message — the primary red-flag input.
+            user_message=message,
         )
     latency = int((time.time() - start) * 1000)
     message = display_message  # Store clean message, not base64 blob
 
     if not ai_response:
-        ai_response = "I'm sorry, I'm having trouble connecting right now. Please try again in a moment, or consult your doctor for urgent concerns."
+        # Patient-facing AI-channel fallback: must also carry the NMC disclaimer
+        # (single source of truth: ai_service.NMC_DISCLAIMER). See SWASTH-14.
+        ai_response = (
+            "I'm sorry, I'm having trouble connecting right now. Please try "
+            "again in a moment, or consult your doctor for urgent concerns. "
+            + ai_service.NMC_DISCLAIMER
+        )
 
     # --- Save message ---
     # Get the model used from the latest AI log

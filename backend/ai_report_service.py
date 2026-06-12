@@ -100,7 +100,9 @@ def get_weekly_ai_insight(db: Session, profile_id: int, user: models.User) -> st
         f"Constraints: Exactly 2 sentences. No greetings. Max 45 words total. Be specific, not generic."
     )
 
-    insight = ai_service.generate_health_insight(prompt, profile_id, db, f"WEEKLY_REPORT: {prompt_summary}")
+    # Automated weekly report — no patient free-text question, disclaimer-only guard.
+    insight = ai_service.generate_health_insight(
+        prompt, profile_id, db, f"WEEKLY_REPORT: {prompt_summary}", user_message=None)
     return insight if insight else _get_weekly_rule_based_fallback(db, profile_id)
 
 
