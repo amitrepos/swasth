@@ -101,6 +101,7 @@ class StorageService {
   static const String _stepsGoalKey = 'steps_goal';
   static const String _baselineStepsKey = 'baseline_steps';
   static const String _lastSyncedStepsKey = 'last_synced_steps';
+  static const String _insightsStatScaleKey = 'insights_stat_scale';
 
   Future<void> saveToken(String token) async {
     await _store.write(_tokenKey, token);
@@ -390,5 +391,16 @@ class StorageService {
   Future<int?> getLastSyncedSteps() async {
     final value = await _store.read(_lastSyncedStepsKey);
     return value != null ? int.tryParse(value) : null;
+  }
+
+  /// Persisted Insights stat-number zoom level (1.0, 1.35, or 1.7).
+  Future<double> getInsightsStatScale() async {
+    final value = await _store.read(_insightsStatScaleKey);
+    if (value == null) return 1.0;
+    return double.tryParse(value) ?? 1.0;
+  }
+
+  Future<void> saveInsightsStatScale(double scale) async {
+    await _store.write(_insightsStatScaleKey, scale.toString());
   }
 }

@@ -60,12 +60,6 @@ class HistoryScreenState extends State<HistoryScreen> {
   /// or `'meals'`.
   String? _filterType;
 
-  static const _filterCycle = <String?>[
-    null,
-    'glucose',
-    'blood_pressure',
-    'meals',
-  ];
   bool _canEdit = true;
 
   /// Called by ShellScreen when this tab becomes active.
@@ -443,14 +437,6 @@ class HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  void _cycleFilter() {
-    final idx = _filterCycle.indexOf(_filterType);
-    setState(() {
-      _filterType = _filterCycle[(idx + 1) % _filterCycle.length];
-    });
-    _loadReadings();
-  }
-
   String _filterLabel(AppLocalizations l10n) {
     switch (_filterType) {
       case 'glucose':
@@ -473,16 +459,46 @@ class HistoryScreenState extends State<HistoryScreen> {
       appBar: AppBar(
         title: Text(l10n.historyTitle),
         actions: [
-          Tooltip(
-            message: l10n.filterByType,
-            child: TextButton.icon(
-              key: const Key('history_filter_cycle'),
-              onPressed: _cycleFilter,
-              icon: const Icon(Icons.filter_list, size: 18),
-              label: Text(
-                _filterLabel(l10n),
-                style: const TextStyle(fontSize: 13),
-                overflow: TextOverflow.ellipsis,
+          PopupMenuButton<String>(
+            key: const Key('history_filter_menu'),
+            tooltip: l10n.filterByType,
+            onSelected: (value) {
+              setState(() {
+                _filterType = value == 'all' ? null : value;
+              });
+              _loadReadings();
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'all', child: Text(l10n.allReadings)),
+              PopupMenuItem(value: 'glucose', child: Text(l10n.glucoseOnly)),
+              PopupMenuItem(value: 'blood_pressure', child: Text(l10n.bpOnly)),
+              PopupMenuItem(value: 'meals', child: Text(l10n.mealsOnly)),
+            ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.filter_list,
+                    size: 18,
+                    color: _filterType != null ? AppColors.primary : null,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _filterLabel(l10n),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _filterType != null ? AppColors.primary : null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    size: 18,
+                    color: _filterType != null ? AppColors.primary : null,
+                  ),
+                ],
               ),
             ),
           ),

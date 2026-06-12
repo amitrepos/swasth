@@ -130,18 +130,16 @@ void main() {
       );
     });
 
-    testWidgets('Filter cycle button advances through filter labels', (
+    testWidgets('Filter menu shows active label and all options', (
       tester,
     ) async {
       env = await TestEnv.createAtHistory(tester);
 
       expect(find.text('All Readings'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('history_filter_cycle')));
-      await pumpN(tester, frames: 10);
+      await tester.tap(find.byKey(const Key('history_filter_menu')));
+      await pumpN(tester, frames: 5);
       expect(find.text('Glucose Only'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('history_filter_cycle')));
-      await pumpN(tester, frames: 10);
-      expect(find.text('BP Only'), findsOneWidget);
+      expect(find.text('Meals Only'), findsOneWidget);
     });
 
     testWidgets('Filter "Meals Only" hides readings, shows only meals', (
@@ -149,11 +147,10 @@ void main() {
     ) async {
       env = await TestEnv.createAtHistory(tester);
 
-      // Cycle filter: All → Glucose → BP → Meals (3 taps).
-      for (var i = 0; i < 3; i++) {
-        await tester.tap(find.byKey(const Key('history_filter_cycle')));
-        await pumpN(tester, frames: 10);
-      }
+      await tester.tap(find.byKey(const Key('history_filter_menu')));
+      await pumpN(tester, frames: 5);
+      await tester.tap(find.text('Meals Only'));
+      await pumpN(tester, frames: 10);
 
       // Meal tiles still present.
       expect(find.byKey(const Key('history_meal_tile_101')), findsOneWidget);

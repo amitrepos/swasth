@@ -749,7 +749,7 @@ abstract class AppLocalizations {
   /// No description provided for @insightsZoomStats.
   ///
   /// In en, this message translates to:
-  /// **'Zoom stat numbers'**
+  /// **'Make numbers bigger'**
   String get insightsZoomStats;
 
   /// No description provided for @sevenDays.

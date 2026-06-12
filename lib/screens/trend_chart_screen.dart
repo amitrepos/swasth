@@ -49,7 +49,15 @@ class TrendChartScreenState extends State<TrendChartScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
+    _loadStatScale();
     _loadReadings();
+  }
+
+  Future<void> _loadStatScale() async {
+    final scale = await _storageService.getInsightsStatScale();
+    if (mounted && _statScales.contains(scale)) {
+      setState(() => _statScale = scale);
+    }
   }
 
   @override
@@ -100,9 +108,9 @@ class TrendChartScreenState extends State<TrendChartScreen>
 
   void _cycleStatScale() {
     final idx = _statScales.indexOf(_statScale);
-    setState(() {
-      _statScale = _statScales[(idx + 1) % _statScales.length];
-    });
+    final next = _statScales[(idx + 1) % _statScales.length];
+    setState(() => _statScale = next);
+    _storageService.saveInsightsStatScale(next);
   }
 
   Future<void> _loadSummary(int period) async {
@@ -167,7 +175,7 @@ class TrendChartScreenState extends State<TrendChartScreen>
         actions: [
           IconButton(
             key: const Key('insights_stat_zoom'),
-            icon: Icon(_statScale > 1.0 ? Icons.zoom_in : Icons.zoom_out),
+            icon: Icon(_statScale > 1.0 ? Icons.zoom_out : Icons.zoom_in),
             tooltip: l10n.insightsZoomStats,
             onPressed: _cycleStatScale,
           ),

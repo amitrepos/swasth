@@ -18,8 +18,9 @@ class InsightStatCell extends StatelessWidget {
   });
 
   static const double _baseValueSize = 18;
-  static const double _baseLabelSize = 11;
+  static const double _baseLabelSize = 13;
   static const double _maxValueSize = 32;
+  static const double _maxLabelSize = 16;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +30,7 @@ class InsightStatCell extends StatelessWidget {
     );
     final labelSize = (_baseLabelSize * scale).clamp(
       _baseLabelSize,
-      _maxValueSize,
+      _maxLabelSize,
     );
 
     return Column(
