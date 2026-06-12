@@ -345,6 +345,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get healthTrends => 'Health Trends';
 
   @override
+  String get insightsZoomStats => 'Zoom stat numbers';
+
+  @override
   String get sevenDays => '7 Days';
 
   @override

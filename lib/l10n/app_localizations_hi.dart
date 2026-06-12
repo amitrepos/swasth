@@ -345,6 +345,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get healthTrends => 'स्वास्थ्य ट्रेंड';
 
   @override
+  String get insightsZoomStats => 'आँकड़े बड़े करें';
+
+  @override
   String get sevenDays => '7 दिन';
 
   @override

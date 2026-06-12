@@ -346,6 +346,9 @@ class AppLocalizationsTe extends AppLocalizations {
   String get healthTrends => 'ఆరోగ్య ధోరణులు';
 
   @override
+  String get insightsZoomStats => 'సంఖ్యలను పెద్దదిగా చూపించు';
+
+  @override
   String get sevenDays => '7 రోజులు';
 
   @override

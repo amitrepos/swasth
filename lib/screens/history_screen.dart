@@ -59,6 +59,13 @@ class HistoryScreenState extends State<HistoryScreen> {
   /// `null` = all (readings + meals), `'glucose'`, `'blood_pressure'`,
   /// or `'meals'`.
   String? _filterType;
+
+  static const _filterCycle = <String?>[
+    null,
+    'glucose',
+    'blood_pressure',
+    'meals',
+  ];
   bool _canEdit = true;
 
   /// Called by ShellScreen when this tab becomes active.
@@ -436,6 +443,27 @@ class HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  void _cycleFilter() {
+    final idx = _filterCycle.indexOf(_filterType);
+    setState(() {
+      _filterType = _filterCycle[(idx + 1) % _filterCycle.length];
+    });
+    _loadReadings();
+  }
+
+  String _filterLabel(AppLocalizations l10n) {
+    switch (_filterType) {
+      case 'glucose':
+        return l10n.glucoseOnly;
+      case 'blood_pressure':
+        return l10n.bpOnly;
+      case 'meals':
+        return l10n.mealsOnly;
+      default:
+        return l10n.allReadings;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -445,22 +473,18 @@ class HistoryScreenState extends State<HistoryScreen> {
       appBar: AppBar(
         title: Text(l10n.historyTitle),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
-            tooltip: l10n.filterByType,
-            onSelected: (value) {
-              setState(() {
-                _filterType = value == 'all' ? null : value;
-              });
-              // Reload data with the new filter
-              _loadReadings();
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'all', child: Text(l10n.allReadings)),
-              PopupMenuItem(value: 'glucose', child: Text(l10n.glucoseOnly)),
-              PopupMenuItem(value: 'blood_pressure', child: Text(l10n.bpOnly)),
-              PopupMenuItem(value: 'meals', child: Text(l10n.mealsOnly)),
-            ],
+          Tooltip(
+            message: l10n.filterByType,
+            child: TextButton.icon(
+              key: const Key('history_filter_cycle'),
+              onPressed: _cycleFilter,
+              icon: const Icon(Icons.filter_list, size: 18),
+              label: Text(
+                _filterLabel(l10n),
+                style: const TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -585,8 +609,11 @@ class HistoryScreenState extends State<HistoryScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(Icons.calendar_today_outlined,
-                    size: 14, color: AppColors.textSecondary),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(height: 4),
                 Text(
                   DateFormat('MMM dd,\nyyyy').format(ts),
@@ -600,12 +627,18 @@ class HistoryScreenState extends State<HistoryScreen> {
                 const SizedBox(height: 2),
                 Text(
                   '•',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                  ),
                 ),
                 Text(
                   DateFormat('hh:mm a').format(ts),
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -625,8 +658,11 @@ class HistoryScreenState extends State<HistoryScreen> {
                   CircleAvatar(
                     radius: 22,
                     backgroundColor: statusColor.withValues(alpha: 0.12),
-                    child: Icon(_getTypeIcon(reading.readingType),
-                        color: statusColor, size: 22),
+                    child: Icon(
+                      _getTypeIcon(reading.readingType),
+                      color: statusColor,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -643,7 +679,9 @@ class HistoryScreenState extends State<HistoryScreen> {
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 3),
+                            horizontal: 10,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(20),
@@ -804,10 +842,10 @@ class HistoryScreenState extends State<HistoryScreen> {
     final ts = meal.timestamp.toLocal();
     final mealEmoji = switch (meal.mealType) {
       'BREAKFAST' => '🌅',
-      'LUNCH'     => '🥗',
-      'DINNER'    => '🍽️',
-      'SNACK'     => '🍎',
-      _           => '🍴',
+      'LUNCH' => '🥗',
+      'DINNER' => '🍽️',
+      'SNACK' => '🍎',
+      _ => '🍴',
     };
     return GlassCard(
       key: Key('history_meal_tile_${meal.id}'),
@@ -824,8 +862,11 @@ class HistoryScreenState extends State<HistoryScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(Icons.calendar_today_outlined,
-                      size: 14, color: AppColors.textSecondary),
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     DateFormat('MMM dd,\nyyyy').format(ts),
@@ -837,14 +878,20 @@ class HistoryScreenState extends State<HistoryScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text('•',
-                      style: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 10)),
+                  Text(
+                    '•',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
                   Text(
                     DateFormat('hh:mm a').format(ts),
                     textAlign: TextAlign.center,
-                    style:
-                        TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -864,7 +911,10 @@ class HistoryScreenState extends State<HistoryScreen> {
                     CircleAvatar(
                       radius: 22,
                       backgroundColor: carbColor.withValues(alpha: 0.12),
-                      child: Text(mealEmoji, style: const TextStyle(fontSize: 20)),
+                      child: Text(
+                        mealEmoji,
+                        style: const TextStyle(fontSize: 20),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -889,7 +939,9 @@ class HistoryScreenState extends State<HistoryScreen> {
                           const SizedBox(height: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 3),
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: carbColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(20),
@@ -1198,7 +1250,8 @@ class _ReadingDetailsSheet extends StatelessWidget {
           if (reading.systolic != null)
             _detailRow(
               label: l10n.systolicLabel,
-              value: '${reading.systolic!.round()} ${reading.bpUnit ?? l10n.mmHgUnit}',
+              value:
+                  '${reading.systolic!.round()} ${reading.bpUnit ?? l10n.mmHgUnit}',
               icon: Icons.arrow_upward,
             ),
           if (reading.diastolic != null)

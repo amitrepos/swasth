@@ -130,16 +130,30 @@ void main() {
       );
     });
 
+    testWidgets('Filter cycle button advances through filter labels', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtHistory(tester);
+
+      expect(find.text('All Readings'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('history_filter_cycle')));
+      await pumpN(tester, frames: 10);
+      expect(find.text('Glucose Only'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('history_filter_cycle')));
+      await pumpN(tester, frames: 10);
+      expect(find.text('BP Only'), findsOneWidget);
+    });
+
     testWidgets('Filter "Meals Only" hides readings, shows only meals', (
       tester,
     ) async {
       env = await TestEnv.createAtHistory(tester);
 
-      // Open the filter popup and tap "Meals Only".
-      await tester.tap(find.byIcon(Icons.filter_list));
-      await pumpN(tester, frames: 5);
-      await tester.tap(find.text('Meals Only'));
-      await pumpN(tester, frames: 10);
+      // Cycle filter: All → Glucose → BP → Meals (3 taps).
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byKey(const Key('history_filter_cycle')));
+        await pumpN(tester, frames: 10);
+      }
 
       // Meal tiles still present.
       expect(find.byKey(const Key('history_meal_tile_101')), findsOneWidget);
@@ -196,8 +210,11 @@ void main() {
 
       // Reading id=2 from mock is glucose. Edit icon is keyed.
       final editBtn = find.byKey(const Key('history_edit_reading_2'));
-      expect(editBtn, findsOneWidget,
-          reason: 'Edit pencil must render on glucose reading tile');
+      expect(
+        editBtn,
+        findsOneWidget,
+        reason: 'Edit pencil must render on glucose reading tile',
+      );
       await tester.tap(editBtn);
       await pumpN(tester, frames: 10);
 
@@ -205,36 +222,40 @@ void main() {
       expect(find.byKey(const Key('edit_glucose_value')), findsOneWidget);
     });
 
-    testWidgets('Edit glucose → save → PUT /readings/{id} fires + list reloads', (
-      tester,
-    ) async {
-      env = await TestEnv.createAtHistory(tester);
+    testWidgets(
+      'Edit glucose → save → PUT /readings/{id} fires + list reloads',
+      (tester) async {
+        env = await TestEnv.createAtHistory(tester);
 
-      await tester.tap(find.byKey(const Key('history_edit_reading_2')));
-      await pumpN(tester, frames: 10);
+        await tester.tap(find.byKey(const Key('history_edit_reading_2')));
+        await pumpN(tester, frames: 10);
 
-      // Replace the value
-      await tester.enterText(
-        find.byKey(const Key('edit_glucose_value')),
-        '95',
-      );
-      await pumpN(tester, frames: 5);
+        // Replace the value
+        await tester.enterText(
+          find.byKey(const Key('edit_glucose_value')),
+          '95',
+        );
+        await pumpN(tester, frames: 5);
 
-      env.tracker.clear();
-      await tester.tap(find.byKey(const Key('edit_reading_save')));
-      await pumpN(tester, frames: 20);
+        env.tracker.clear();
+        await tester.tap(find.byKey(const Key('edit_reading_save')));
+        await pumpN(tester, frames: 20);
 
-      expect(
-        env.tracker.hasCalled('PUT', '/readings/2'),
-        isTrue,
-        reason: 'Save must call PUT /readings/{id}',
-      );
-      final body = env.tracker.lastRequestBody('PUT', '/readings/2');
-      expect(body?['glucose_value'], 95.0,
-          reason: 'PUT body must carry the new glucose value');
-      // After save we pop back; history must refetch readings.
-      expect(env.tracker.hasCalled('GET', '/readings'), isTrue);
-    });
+        expect(
+          env.tracker.hasCalled('PUT', '/readings/2'),
+          isTrue,
+          reason: 'Save must call PUT /readings/{id}',
+        );
+        final body = env.tracker.lastRequestBody('PUT', '/readings/2');
+        expect(
+          body?['glucose_value'],
+          95.0,
+          reason: 'PUT body must carry the new glucose value',
+        );
+        // After save we pop back; history must refetch readings.
+        expect(env.tracker.hasCalled('GET', '/readings'), isTrue);
+      },
+    );
 
     testWidgets('Delete meal → DELETE /meals/{id} fires + list reloads', (
       tester,
@@ -248,8 +269,11 @@ void main() {
         of: tile,
         matching: find.byIcon(Icons.delete_outline),
       );
-      expect(deleteBtn, findsOneWidget,
-          reason: 'Delete icon must render on meal tile for editor profiles');
+      expect(
+        deleteBtn,
+        findsOneWidget,
+        reason: 'Delete icon must render on meal tile for editor profiles',
+      );
 
       await tester.tap(deleteBtn);
       await pumpN(tester, frames: 10);
@@ -283,26 +307,27 @@ void main() {
     // View Details Sheets (PR: glucometer + view-details sheets)
     // ──────────────────────────────────────────────────────────────────
 
-    testWidgets('Tap view on BP tile → opens ReadingDetailsSheet with BP info', (
-      tester,
-    ) async {
-      env = await TestEnv.createAtHistory(tester);
-      await pumpN(tester, frames: 20); // extra wait for readings
+    testWidgets(
+      'Tap view on BP tile → opens ReadingDetailsSheet with BP info',
+      (tester) async {
+        env = await TestEnv.createAtHistory(tester);
+        await pumpN(tester, frames: 20); // extra wait for readings
 
-      // Reading id=1 from mock is blood_pressure (136/85)
-      final viewBtn = find.byKey(const Key('history_view_reading_1'));
-      expect(viewBtn, findsOneWidget);
-      await tester.tap(viewBtn);
-      await pumpN(tester, frames: 10);
+        // Reading id=1 from mock is blood_pressure (136/85)
+        final viewBtn = find.byKey(const Key('history_view_reading_1'));
+        expect(viewBtn, findsOneWidget);
+        await tester.tap(viewBtn);
+        await pumpN(tester, frames: 10);
 
-      // Sheet should be open
-      expect(find.text('Reading details'), findsOneWidget);
-      expect(find.text('BP Reading'), findsOneWidget);
-      expect(find.text('Systolic'), findsOneWidget);
-      expect(find.text('136 mmHg'), findsOneWidget);
-      expect(find.text('Diastolic'), findsOneWidget);
-      expect(find.text('85 mmHg'), findsOneWidget);
-    });
+        // Sheet should be open
+        expect(find.text('Reading details'), findsOneWidget);
+        expect(find.text('BP Reading'), findsOneWidget);
+        expect(find.text('Systolic'), findsOneWidget);
+        expect(find.text('136 mmHg'), findsOneWidget);
+        expect(find.text('Diastolic'), findsOneWidget);
+        expect(find.text('85 mmHg'), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'Tap view on meal tile with nutrition → MealDetailsSheet shows macros',
@@ -330,10 +355,12 @@ void main() {
                   'total_fat_g': 12,
                   'total_fiber_g': 8,
                   'meal_score': 78,
-                  'timestamp':
-                      today.copyWith(hour: 8, minute: 30).toIso8601String(),
-                  'created_at':
-                      today.copyWith(hour: 8, minute: 30).toIso8601String(),
+                  'timestamp': today
+                      .copyWith(hour: 8, minute: 30)
+                      .toIso8601String(),
+                  'created_at': today
+                      .copyWith(hour: 8, minute: 30)
+                      .toIso8601String(),
                 },
               ]),
               200,

@@ -349,6 +349,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get healthTrends => 'ஆரோக்கிய போக்குகள்';
 
   @override
+  String get insightsZoomStats => 'எண்களை பெரிதாக்கு';
+
+  @override
   String get sevenDays => '7 நாட்கள்';
 
   @override

@@ -348,6 +348,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get healthTrends => 'ಆರೋಗ್ಯದ ಪ್ರವೃತ್ತಿಗಳು';
 
   @override
+  String get insightsZoomStats => 'ಅಂಕಿಅಂಶಗಳನ್ನು ಹಿಗ್ಗಿಸಿ';
+
+  @override
   String get sevenDays => '7 ದಿನಗಳು';
 
   @override

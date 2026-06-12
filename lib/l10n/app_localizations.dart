@@ -746,6 +746,12 @@ abstract class AppLocalizations {
   /// **'Health Trends'**
   String get healthTrends;
 
+  /// No description provided for @insightsZoomStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom stat numbers'**
+  String get insightsZoomStats;
+
   /// No description provided for @sevenDays.
   ///
   /// In en, this message translates to:

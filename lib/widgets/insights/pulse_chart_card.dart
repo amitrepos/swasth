@@ -13,6 +13,7 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../../services/health_reading_service.dart';
 import '../../theme/app_theme.dart';
 import '../glass_card.dart';
+import 'insight_stat_cell.dart';
 
 // Heart-rate / pulse accent — matches _kPulseColor in TrendChartScreen.
 const _kPulseColor = Color(0xFFDC2626); // red-600
@@ -20,11 +21,13 @@ const _kPulseColor = Color(0xFFDC2626); // red-600
 class PulseChartCard extends StatelessWidget {
   final List<HealthReading> readings;
   final int days;
+  final double statScale;
 
   const PulseChartCard({
     super.key,
     required this.readings,
     this.days = 7,
+    this.statScale = 1.0,
   });
 
   @override
@@ -69,7 +72,7 @@ class PulseChartCard extends StatelessWidget {
           ),
           if (hasData) ...[
             const SizedBox(height: 8),
-            _StatsRow(l10n: l10n, aggregate: aggregate),
+            _StatsRow(l10n: l10n, aggregate: aggregate, statScale: statScale),
           ],
         ],
       ),
@@ -136,11 +139,13 @@ _PulseAggregate _aggregateDailyPulse(List<HealthReading> readings, int days) {
     final vals = byDay[i];
     if (vals == null || vals.isEmpty) continue;
     final dayAvg = vals.reduce((a, b) => a + b) / vals.length;
-    points.add(_PulsePoint(
-      dayIndex: i,
-      date: startDate.add(Duration(days: i)),
-      avg: dayAvg,
-    ));
+    points.add(
+      _PulsePoint(
+        dayIndex: i,
+        date: startDate.add(Duration(days: i)),
+        avg: dayAvg,
+      ),
+    );
   }
 
   return _PulseAggregate(
@@ -174,15 +179,12 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Text(
-          message,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      );
+    child: Text(
+      message,
+      style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+      textAlign: TextAlign.center,
+    ),
+  );
 }
 
 class _Chart extends StatelessWidget {
@@ -225,19 +227,20 @@ class _Chart extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: (maxY - minY) / 3,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: AppColors.separator,
-            strokeWidth: 1,
-          ),
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: AppColors.separator, strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          leftTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -245,9 +248,7 @@ class _Chart extends StatelessWidget {
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final i = value.round();
-                if (i < 0 ||
-                    i >= aggregate.days ||
-                    (value - i).abs() > 0.01) {
+                if (i < 0 || i >= aggregate.days || (value - i).abs() > 0.01) {
                   return const SizedBox.shrink();
                 }
                 final d = aggregate.startDate.add(Duration(days: i));
@@ -291,7 +292,8 @@ class _Chart extends StatelessWidget {
             barWidth: 2.5,
             dotData: FlDotData(
               show: true,
-              getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
+              getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                // ignore: unnecessary_underscores
                 radius: 3.5,
                 color: _kPulseColor,
                 strokeWidth: 1.5,
@@ -332,51 +334,34 @@ class _Chart extends StatelessWidget {
 class _StatsRow extends StatelessWidget {
   final AppLocalizations l10n;
   final _PulseAggregate aggregate;
+  final double statScale;
 
-  const _StatsRow({required this.l10n, required this.aggregate});
+  const _StatsRow({
+    required this.l10n,
+    required this.aggregate,
+    required this.statScale,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _StatCell(
+        InsightStatCell(
           label: l10n.avgLabel,
           value: aggregate.avg.toStringAsFixed(0),
           color: _kPulseColor,
+          scale: statScale,
         ),
-        _StatCell(label: l10n.minLabel, value: aggregate.min.toStringAsFixed(0)),
-        _StatCell(label: l10n.maxLabel, value: aggregate.max.toStringAsFixed(0)),
-      ],
-    );
-  }
-}
-
-class _StatCell extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? color;
-
-  const _StatCell({required this.label, required this.value, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: color ?? AppColors.textPrimary,
-          ),
+        InsightStatCell(
+          label: l10n.minLabel,
+          value: aggregate.min.toStringAsFixed(0),
+          scale: statScale,
         ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
+        InsightStatCell(
+          label: l10n.maxLabel,
+          value: aggregate.max.toStringAsFixed(0),
+          scale: statScale,
         ),
       ],
     );
