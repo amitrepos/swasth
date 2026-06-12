@@ -32,7 +32,10 @@
     <div class="meta">
       <strong>App:</strong> Swasth (<code>health.swasth.app</code>)<br />
       <strong>Effective date:</strong> 17 April 2026<br />
-      <strong>Last updated:</strong> 17 April 2026
+      <strong>Last updated:</strong> 11 June 2026
+      <!-- TODO(legal): DRAFT — Sections 5 (Doctor Data Sharing), 6 (Clinical Notes)
+           and 7 (WhatsApp Messaging) added 2026-06-11 pending licensed-lawyer review
+           before the Bihar doctor-portal pilot. Do not publish until reviewed. -->
     </div>
 
     <p>
@@ -73,23 +76,137 @@
       data with advertisers or any other third parties.</strong>
     </p>
 
-    <h2>5. Security Measures</h2>
+    <h2>5. Doctor Data Sharing</h2>
     <p>
-      We protect your data with: AES-256 encryption for health readings stored in
-      our database, bcrypt password hashing, JWT-based authentication with token
-      expiration, TLS/HTTPS for all data in transit, and encrypted local storage
-      on your device.
+      If you choose to link a doctor to your profile, Swasth shares your health
+      data with that specific doctor so they can monitor your condition and provide
+      clinical guidance. Linking happens only when <strong>you (or a family member
+      authorised to act on your behalf) explicitly enter the doctor's code and
+      complete the in-app consent screen.</strong>
+    </p>
+    <p>
+      <strong>What is shared with a linked doctor:</strong> your health readings
+      (blood glucose, blood pressure, pulse, SpO2), health trends and scores, and
+      profile information (name, age, gender, medical conditions, medications).
+      <strong>What is NOT shared:</strong> your AI Doctor chat history and the data
+      of any other family members on your account.
+    </p>
+    <p>
+      <strong>Legal basis (DPDPA 2023, Section 6):</strong> we share this data only
+      on your explicit, informed consent, for the specific purpose of health
+      monitoring and clinical guidance. This is a sensitive-personal-data sharing
+      governed by the purpose-limitation and data-minimisation principles — your
+      data is shared only with the doctor you linked and only for that purpose.
+    </p>
+    <p>
+      <strong>Your control and revocation:</strong> you can see every doctor
+      currently linked to your profile, and you can revoke a doctor's access at any
+      time from Settings → Connected Doctors → Stop Sharing. Revocation takes effect
+      immediately; the doctor can no longer view your data. Doctors can never modify
+      or delete your readings. Every time a doctor views your data or adds a note, it
+      is recorded in an audit log.
+      <!-- TODO(legal): Family-member proxy consent on behalf of an adult patient
+           (e.g. a daughter consenting for an elderly parent) is a known grey area
+           with no DPDPA precedent. We record who consented and their authorisation
+           assertion. Confirm this is defensible and that the wording above is
+           sufficient. (Ref: LEGAL_COMPLIANCE_DOCTOR_PORTAL.md §5.2) -->
     </p>
 
-    <h2>6. Data Retention</h2>
+    <h2>6. Clinical Notes</h2>
+    <p>
+      A doctor linked to your profile may record <strong>clinical notes</strong>
+      about you — for example, observations on a reading or guidance on your
+      condition. These notes are written by the doctor, encrypted at rest, and are
+      part of the medical record the doctor is professionally required to keep.
+    </p>
+    <p>
+      <strong>Your access to clinical notes:</strong> a clinical note is visible to
+      you in the app only when the doctor explicitly chooses to share that note with
+      you. Notes the doctor keeps private are not displayed in your app. Under Indian
+      law you nonetheless have the right to request a copy of medical records
+      pertaining to you; to do so, contact the doctor or our Grievance Officer (see
+      Contact below).
+      <!-- TODO(legal): Confirm the patient's statutory right of access to a doctor's
+           *private* (un-shared) clinical notes under IMC Regulations 2002 / Martin
+           D'Souza v. Mohammed Ishfaq. Our app currently hides un-shared notes from
+           the patient view; verify this is compatible with the patient's record-
+           access right and adjust this wording if access must always be granted. -->
+    </p>
+    <p>
+      <strong>Retention:</strong> clinical notes are medical records. When you delete
+      your Swasth account, your personal health data is permanently removed; however,
+      a doctor's clinical notes may be retained as anonymised medical records (with
+      your name, contact details and profile identifier removed) for the period
+      required by medical-record-retention rules, to comply with the doctor's
+      professional obligations. This is an exception to general deletion driven by
+      sectoral medical regulation.
+      <!-- TODO(legal): The DPDPA right-to-erasure vs. NMC/IMC medical-record-
+           retention conflict is unresolved. We currently state "anonymised and
+           retained." Confirm (a) whether anonymisation is sufficient or identifiable
+           records must be kept, and (b) the exact retention period (3 vs 5 years).
+           (Ref: LEGAL_COMPLIANCE_DOCTOR_PORTAL.md §5.4) -->
+    </p>
+    <p>
+      Clinical notes are clinical observations, not prescriptions, and do not by
+      themselves constitute a diagnosis or a directive to change any medication.
+      Always consult your doctor before acting on them.
+    </p>
+
+    <h2>7. WhatsApp Messaging</h2>
+    <p>
+      With your consent, Swasth sends certain health notifications to you (and to
+      family members you have authorised as emergency contacts) over
+      <strong>WhatsApp</strong>, using the Twilio WhatsApp Business API (a
+      third-party messaging provider). These messages may include: immediate alerts
+      when a critical reading is recorded, and optional weekly health summaries.
+    </p>
+    <p>
+      <strong>What data leaves the platform:</strong> a WhatsApp message may contain
+      the patient's name, the reading type and value, a severity indication, and a
+      call to action. This information is transmitted through Twilio and Meta
+      (WhatsApp) infrastructure to reach your phone. We send the minimum information
+      needed for the recipient to understand and act on the alert.
+      <!-- TODO(legal): (1) Twilio/Meta WhatsApp delivery may route through servers
+           outside India — confirm whether this is a cross-border transfer requiring
+           DPDPA Section 16 / Rule-6 compliance, or whether an India-regional
+           endpoint avoids it. (2) Confirm the alert body (patient name + exact
+           reading value) satisfies DPDPA data-minimisation, or whether we must fall
+           back to a generic "open the Swasth app for details" message.
+           (Ref: LEGAL_COMPLIANCE_DOCTOR_PORTAL.md §11.2, §11.3) -->
+    </p>
+    <p>
+      <strong>Legal basis (DPDPA 2023, Section 6):</strong> WhatsApp notifications are
+      sent on your consent for the specific purpose of timely health monitoring and
+      safety alerts. We do not use WhatsApp for marketing and we do not share your
+      number with advertisers.
+    </p>
+    <p>
+      <strong>Opt-out:</strong> you can turn off WhatsApp messages at any time via
+      Settings → Notifications in the app, or by contacting us at
+      <a href="mailto:swasth.admin@gmail.com">swasth.admin@gmail.com</a>. Message
+      delivery is also subject to WhatsApp's and Twilio's own terms and privacy
+      practices.
+    </p>
+
+    <h2>8. Security Measures</h2>
+    <p>
+      We protect your data with: AES-256 encryption for health readings and doctor
+      clinical notes stored in our database, bcrypt password hashing, JWT-based
+      authentication with token expiration, TLS/HTTPS for all data in transit, and
+      encrypted local storage on your device.
+    </p>
+
+    <h2>9. Data Retention</h2>
     <p>
       Your data is stored as long as your account is active. You may request
       deletion of all your data at any time through the app settings. Upon account
       deletion, all readings, profiles, AI logs, and personal information are
-      permanently removed.
+      permanently removed. Note the exception in Section 6 (Clinical Notes): a
+      doctor's clinical notes may be retained in anonymised form as medical records
+      where required by medical-record-retention rules.
     </p>
 
-    <h2>7. Your Rights</h2>
+    <h2>10. Your Rights</h2>
     <p>
       Under Indian data protection law (SPDI Rules 2011 and DPDP Act 2023), you
       have the right to: access your data, correct inaccuracies, withdraw
@@ -97,26 +214,26 @@
       these rights, use the in-app settings or contact us at the address below.
     </p>
 
-    <h2>8. Children's Privacy</h2>
+    <h2>11. Children's Privacy</h2>
     <p>
       Swasth is intended for adult users (18+). We do not knowingly collect data
       from children under 18. If we learn we have collected data from a minor
       without parental consent, we will delete it.
     </p>
 
-    <h2>9. Changes to This Policy</h2>
+    <h2>12. Changes to This Policy</h2>
     <p>
       We may update this policy. Material changes will be communicated in-app. The
       "Last updated" date above reflects the current version.
     </p>
 
-    <h2>10. Contact</h2>
+    <h2>13. Contact</h2>
     <p>
       For privacy questions, data access requests, or grievances, contact:<br />
       <strong>Email:</strong> <a href="mailto:swasth.admin@gmail.com">swasth.admin@gmail.com</a>
     </p>
   </div>
 
-  <footer>© 2026 Swasth. Policy version 1.0.</footer>
+  <footer>© 2026 Swasth. Policy version 1.1 (draft — pending legal review).</footer>
 </body>
 </html>
