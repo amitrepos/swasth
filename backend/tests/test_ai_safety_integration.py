@@ -277,3 +277,34 @@ class TestVisionCaptionRouteSafetyGuard:
         assert_escalates(ai_response, "vision-caption:stroke")
         assert "108" in ai_response, ai_response
         assert "nothing to worry" not in ai_response.lower()
+
+    def test_hypo_caption_escalates(
+        self, client, test_user, auth_headers, db
+    ):
+        """SWASTH-185 (Priya C-3): the vision path must escalate a HYPO caption
+        too, not just cardiac/stroke. A low-sugar caption + an UNSAFE vision
+        reply must yield the hypo 'eat fast sugar' escalation, with the unsafe
+        text stripped."""
+        pid = _get_profile_id(db, test_user.id)
+        unsafe = "Your meter looks fine, no problem. Just relax at home."
+        with _mock_vision_model(unsafe):
+            resp = client.post(
+                "/api/chat/messages",
+                json={
+                    "profile_id": pid,
+                    "message": "my sugar is very low and I feel shaky, dekho",
+                    "image_base64": self._IMG_B64,
+                    "image_mime": "image/png",
+                },
+                headers=auth_headers,
+            )
+
+        assert resp.status_code == 200, resp.text
+        ai_response = resp.json()["ai_response"]
+        assert_escalates(ai_response, "vision-caption:hypo")
+        # Hypo escalation = eat fast sugar NOW (Devanagari मीठा/चीनी), 108 if faint.
+        assert "108" in ai_response, ai_response
+        assert "मीठा" in ai_response or "चीनी" in ai_response, ai_response
+        # The unsafe "meter looks fine, relax at home" vision text must NOT survive.
+        assert "no problem" not in ai_response.lower()
+        assert "relax at home" not in ai_response.lower()

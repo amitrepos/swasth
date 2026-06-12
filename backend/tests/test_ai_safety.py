@@ -429,12 +429,16 @@ class TestFalseNegativeParaphraseCorpus:
         )
 
     def test_corpus_has_expected_breadth(self):
-        """Cheap structural guard: keep the corpus broad (10-15 per category)
-        so a future edit can't quietly shrink the safety net."""
+        """Cheap structural guard: keep each category's corpus in a SANE band
+        (10-20 paraphrases). The lower bound stops a future edit quietly
+        shrinking the safety net; the upper bound stops it growing unbounded
+        (an ever-larger corpus slows the suite and tends to accumulate
+        near-duplicate, low-signal rows that mask a real coverage gap)."""
         from collections import Counter
         counts = Counter(cat for _, cat in ALL_FALSE_NEGATIVE_CORPUS)
         for cat in ("suicide", "cardiac", "stroke", "hypoglycemia"):
-            assert counts[cat] >= 10, f"{cat} corpus too small: {counts[cat]}"
+            assert 10 <= counts[cat] <= 20, (
+                f"{cat} corpus out of band (want 10-20): {counts[cat]}")
 
 
 class TestStrokeAndHypoRefusalShape:
@@ -475,11 +479,16 @@ class TestPriorityOrderingNoMisroute:
 
     def test_low_sugar_plus_diagnosis_routes_hypo(self):
         # Mentions "am I diabetic" (self_diagnosis) AND very low sugar (hypo).
+        # This message carries an EXPLICIT low-glucose signal, so skip_cardiac
+        # MUST fire and it must route to hypoglycemia EXACTLY — accepting
+        # "cardiac" here would mask a regression in skip_cardiac (the very logic
+        # that keeps a low-sugar patient from getting the cardiac message and
+        # missing the eat-fast-sugar instruction).
         r = ai_service._classify_red_flag(
             "am I diabetic? my sugar is very low and I'm shaking and sweating")
-        assert r is not None and r[0] in ("hypoglycemia", "cardiac"), r
-        # Must NOT down-rank to self_diagnosis.
-        assert r[0] != "self_diagnosis", r
+        assert r is not None and r[0] == "hypoglycemia", (
+            f"explicit low-glucose must route to hypoglycemia (skip_cardiac); "
+            f"got {r!r}")
 
     def test_stroke_plus_diagnosis_routes_stroke(self):
         r = ai_service._classify_red_flag(
@@ -627,6 +636,113 @@ class TestClassifierBoundaries:
             " by the way my face is drooping on one side."
         r = ai_service._classify_red_flag(msg)
         assert r is not None and r[0] == "stroke", r
+
+
+class TestHypoGlucoseBoundary:
+    """SWASTH-185 (Priya C-2). The hypo lexicon has NUMERIC glucose thresholds.
+    Per ADA, level-2 (clinically significant / severe) hypoglycemia is a glucose
+    < 54 mg/dL (3.0 mmol/L) — an emergency on its own in a diabetic-on-meds
+    population. These boundary-value tests PIN the clinically-correct threshold:
+    53 fires, 54 does NOT (54 is not < 54). A bare reading "glucose 53 mg/dl"
+    (no "low" qualifier) must STILL fire — the number alone is the emergency.
+
+    NOTE: a clinical gap was found and FIXED here — a bare sub-54 mg/dL reading
+    with NO "low/kam" word previously did NOT classify as hypo. A new pattern
+    (anchored to an explicit mg/dl unit) was added to ai_service so the number
+    alone triggers, matching ADA's <54 severe threshold.
+    """
+
+    def _cat(self, msg):
+        r = ai_service._classify_red_flag(msg)
+        return None if r is None else r[0]
+
+    def test_bare_glucose_53_routes_hypo(self):
+        # ADA: <54 mg/dL is severe hypo. A bare 53 reading is an emergency.
+        assert self._cat("glucose 53 mg/dl") == "hypoglycemia"
+
+    def test_bare_glucose_54_does_not_fire_numeric(self):
+        # 54 is NOT < 54 — the clinically-correct boundary. With no other hypo
+        # signal (no "low"/"kam"/adrenergic triad), a bare 54 must NOT fire.
+        assert self._cat("glucose 54 mg/dl") is None
+
+    def test_bare_glucose_55_does_not_fire_numeric(self):
+        assert self._cat("glucose 55 mg/dl") is None
+
+    def test_glucose_below_54_routes_hypo(self):
+        # "below 54" describes values strictly under 54 -> severe range -> fires.
+        assert self._cat("glucose below 54") == "hypoglycemia"
+
+    def test_glucose_below_53_routes_hypo(self):
+        assert self._cat("glucose below 53") == "hypoglycemia"
+
+    def test_glucose_below_55_intent(self):
+        # "below 55" is ambiguous (could be 54, which is NOT severe per ADA <54),
+        # so the numeric "below" pattern is deliberately bounded to <=54 and does
+        # NOT fire on "below 55". Pinned so a future widening is a reviewed
+        # choice, not an accident. (A genuine emergency would add a "low"/adrenergic
+        # signal, which is covered by the other patterns.)
+        assert self._cat("glucose below 55") is None
+
+    def test_low_qualified_53_still_fires(self):
+        # The pre-existing "<=53 + low/kam" pattern is unchanged and still fires.
+        assert self._cat("sugar reading 53 is low") == "hypoglycemia"
+
+
+class TestLakwaCompoundNotFalsePositive:
+    """SWASTH-185 (Priya M-1). The stroke pattern matched "lakwa" as a bare
+    prefix and as Devanagari "लकवा" — but mis-fired on the benign compound
+    "lakwapan" ("lakwapan se jude questions" = a topical question about
+    paralysis) AND, separately, FAILED to match the real Devanagari "लकवा मार
+    गया" (the trailing vowel-sign matra broke the \\b anchor). Both fixed:
+    the compound no longer fires; the real stroke message still does."""
+
+    def test_lakwa_compound_not_flagged(self):
+        assert ai_service._classify_red_flag(
+            "lakwapan se jude questions") is None, (
+            "benign 'lakwapan' compound must NOT fire stroke")
+
+    def test_lakwa_compound_devanagari_not_flagged(self):
+        assert ai_service._classify_red_flag(
+            "लकवापन के बारे में सवाल") is None, (
+            "benign Devanagari 'लकवापन' compound must NOT fire stroke")
+
+    def test_real_lakwa_romanised_still_triggers(self):
+        r = ai_service._classify_red_flag("lagta hai lakwa maar gaya")
+        assert r is not None and r[0] == "stroke", (
+            f"real romanised lakwa stroke must still trigger; got {r!r}")
+
+    def test_real_lakwa_devanagari_still_triggers(self):
+        # Regression: the Devanagari matra previously broke \\b and this was a
+        # silent false-NEGATIVE. Must now fire.
+        r = ai_service._classify_red_flag("लकवा मार गया")
+        assert r is not None and r[0] == "stroke", (
+            f"real Devanagari lakwa stroke must trigger; got {r!r}")
+
+
+class TestDevanagariWordBoundaryHypo:
+    """SWASTH-185 (Priya M-2). The romanised adrenergic sweating+shaking pattern
+    fired regardless of symptom order, but its Devanagari sibling only matched
+    "पसीना और काँपना" (sweating-first). A Devanagari patient writing the symptoms
+    the other way ("काँपना और पसीना") was silently MISSED — ASCII \\b cannot
+    anchor at a Devanagari vowel-sign matra, and the pattern was order-locked.
+    Now order-independent. These assert a Devanagari-only hypo message with a
+    realistic adrenergic picture classifies to hypoglycemia."""
+
+    def test_devanagari_shaking_sweating_routes_hypo(self):
+        # Shaking + sweating, Devanagari, shaking-FIRST (the order that was missed).
+        r = ai_service._classify_red_flag("काँपना और पसीना")
+        assert r is not None and r[0] == "hypoglycemia", (
+            f"Devanagari shaking+sweating (any order) must route to hypo; got {r!r}")
+
+    def test_devanagari_sweating_shaking_still_routes_hypo(self):
+        # Original sweating-first order must keep working (regression guard).
+        r = ai_service._classify_red_flag("पसीना और काँपना हो रहा है")
+        assert r is not None and r[0] == "hypoglycemia", r
+
+    def test_devanagari_sugar_low_with_adrenergic_routes_hypo(self):
+        # Realistic full Devanagari hypo message: explicit शुगर-low + adrenergic.
+        r = ai_service._classify_red_flag("शुगर कम है, काँपना और पसीना")
+        assert r is not None and r[0] == "hypoglycemia", r
 
 
 # ---------------------------------------------------------------------------

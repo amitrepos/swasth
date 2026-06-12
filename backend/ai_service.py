@@ -178,7 +178,14 @@ _RF_STROKE = [
     r"एक\s+तरफ\b.{0,20}(?:कमज़ोरी|कमजोरी|सुन्न|लकवा)",
     r"\bachanak\b.{0,20}\bchakkar\b",
     r"अचानक\b.{0,20}चक्कर",
-    r"\blakwa|लकवा\b",
+    # "lakwa"/"लकवा" = paralysis (a stroke sign). Must NOT fire on the compound
+    # "lakwapan" ("lakwapan se jude questions" is a benign topical question), so
+    # we forbid an immediately-following letter. Romanised: \blakwa\b (the \b
+    # blocks "lakwapan"). Devanagari "लकवा" ends in the vowel-sign matra "ा",
+    # which has NO \w boundary after it, so \b can't anchor here — we instead use
+    # a negative lookahead for any following Devanagari letter to block "लकवापन"
+    # while still matching "लकवा मार गया" (real stroke).
+    r"\blakwa\b|लकवा(?![ऀ-ॿ])",
 ]
 # SEVERE HYPOGLYCEMIA: low sugar in a diabetic-on-meds population is an
 # emergency. Require an explicit "low/kam" + sugar context, OR the classic
@@ -193,10 +200,21 @@ _RF_HYPO = [
     r"\bglucose\b.{0,15}\b(?:drop(?:ped|ping)?|gir\s+gay|crash)",
     r"\bhypoglycemi[ac]|hypoglycaemi[ac]\b",
     r"\b(?:sugar|glucose)\b.{0,20}\b(?:[1-9]|[1-4][0-9]|5[0-3])\s*(?:mg)?\b\s*(?:/?\s*dl)?\b.{0,15}\b(?:low|kam)\b",
+    # A BARE glucose reading <54 mg/dL is, per ADA, level-2 (clinically
+    # significant / severe) hypoglycemia in a diabetic-on-meds population — an
+    # emergency on its own, no "low/kam" qualifier required. We anchor to an
+    # explicit mg/dl unit so a stray number ("sugar at 7am", "53 steps") cannot
+    # fire. 53 and below trigger; 54 does NOT (54 is not < 54).
+    r"\b(?:sugar|glucose)\b.{0,20}\b(?:[1-9]|[1-4][0-9]|5[0-3])\s*mg\s*/?\s*dl\b",
     r"\bglucose\b.{0,10}\b(?:below|under|less\s+than|<)\s*5[0-4]\b",
     r"\b(?:shaking|shaky|kaanp|kaap|kamp)\w*\b.{0,30}\b(?:sweat|paseena|pasina|pasine)\w*\b.{0,30}\b(?:confus|chakkar|behosh|ghabra)",
     r"\b(?:paseena|pasina|pasine)\s+aur\s+(?:kaanpna|kaapna|kaanp|kaap|kampkampi)\b",
-    r"पसीना\s+और\s+(?:काँपना|कांपना|कंपकंपी)",
+    # Devanagari sweating+shaking, ORDER-INDEPENDENT. The romanised sibling above
+    # only matched "sweating then shaking"; a Devanagari patient who writes the
+    # symptoms in the other order ("काँपना और पसीना") was silently missed. We do
+    # NOT use ASCII \b here: Devanagari words ending in a vowel-sign matra (e.g.
+    # "काँपना") have no \w/\W boundary after the matra, so \b fails to anchor.
+    r"(?:पसीना|काँपना|कांपना|कंपकंपी)\s+और\s+(?:पसीना|काँपना|कांपना|कंपकंपी)",
     r"\b(?:sugar|shugar)\s+(?:bahut\s+)?kam\b",
     r"शुगर\s+(?:बहुत\s+)?कम",
     r"\bbehosh\s+jaisa|behosh\s+(?:ho|hone)\b",
