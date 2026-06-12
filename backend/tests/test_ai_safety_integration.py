@@ -201,3 +201,79 @@ class TestChatRouteBenignNotReplaced:
         assert ai_service._DISCLAIMER_PRESENT_RE.search(ai_response), (
             f"benign route response missing NMC disclaimer:\n{ai_response!r}"
         )
+
+
+@contextmanager
+def _mock_vision_model(model_text: str):
+    """Patch ONLY the Gemini Vision client so the real ai_service guard path runs
+    on the IMAGE-CAPTION route. Gemini keys are forced present so the vision
+    branch is taken; the (deliberately unsafe) ``model_text`` is returned."""
+    with patch.object(
+        ai_service,
+        "_try_gemini_vision",
+        return_value={"text": model_text, "error": None, "tokens": 80, "ms": 150},
+    ), patch.object(ai_service, "settings") as mock_settings:
+        mock_settings.GEMINI_API_KEY = "fake-gemini"
+        mock_settings.GEMINI_API_KEYS = "fake-gemini"
+        mock_settings.GROQ_API_KEY = None
+        yield
+
+
+class TestVisionCaptionRouteSafetyGuard:
+    """SWASTH-185: the image-caption path forwards the patient's CAPTION as
+    ``user_message``. A red-flag caption (e.g. a photo + "seene pe bhaari pan")
+    must escalate, with the unsafe vision model text stripped out."""
+
+    # A minimal valid base64 payload — content is irrelevant, the vision client
+    # is mocked, but the route base64-decodes and size-checks it.
+    _IMG_B64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
+    def test_cardiac_colloquial_caption_escalates(
+        self, client, test_user, auth_headers, db
+    ):
+        pid = _get_profile_id(db, test_user.id)
+        unsafe = "This looks like a normal ECG, probably just acidity. Rest at home."
+        with _mock_vision_model(unsafe):
+            resp = client.post(
+                "/api/chat/messages",
+                json={
+                    "profile_id": pid,
+                    "message": "seene pe bhaari pan aur paseena, dekho",
+                    "image_base64": self._IMG_B64,
+                    "image_mime": "image/png",
+                },
+                headers=auth_headers,
+            )
+
+        assert resp.status_code == 200, resp.text
+        ai_response = resp.json()["ai_response"]
+        # The colloquial-Hindi cardiac caption must trigger the 108 escalation.
+        assert_escalates(ai_response, "vision-caption:cardiac")
+        assert "108" in ai_response, ai_response
+        assert ai_response.lstrip().startswith("🚨"), ai_response
+        # The unsafe "just acidity, rest at home" vision text must NOT survive.
+        assert "acidity" not in ai_response.lower()
+        assert "rest at home" not in ai_response.lower()
+
+    def test_stroke_caption_escalates(
+        self, client, test_user, auth_headers, db
+    ):
+        pid = _get_profile_id(db, test_user.id)
+        unsafe = "Face looks fine to me, nothing to worry about."
+        with _mock_vision_model(unsafe):
+            resp = client.post(
+                "/api/chat/messages",
+                json={
+                    "profile_id": pid,
+                    "message": "muh tedha ho gaya hai, photo dekho",
+                    "image_base64": self._IMG_B64,
+                    "image_mime": "image/png",
+                },
+                headers=auth_headers,
+            )
+
+        assert resp.status_code == 200, resp.text
+        ai_response = resp.json()["ai_response"]
+        assert_escalates(ai_response, "vision-caption:stroke")
+        assert "108" in ai_response, ai_response
+        assert "nothing to worry" not in ai_response.lower()
