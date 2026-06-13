@@ -70,6 +70,28 @@ _REFUSAL_CARDIAC = (
     "दूसरा नंबर: 112"
 )
 
+# STROKE (FAST). Time-critical: a stroke is a life-threatening emergency, so —
+# like cardiac — it leads Devanagari-first with 108 and carries NO NMC tail.
+_REFUSAL_STROKE = (
+    "🚨 अभी 108 पर कॉल करें\n"
+    "लकवे के लक्षण — एक पल भी न गंवाएं।\n"
+    "(Stroke signs are a medical emergency — call the ambulance on 108 right "
+    "now. Every minute counts.)\n"
+    "दूसरा नंबर: 112"
+)
+
+# SEVERE HYPOGLYCEMIA. This population is diabetic on meds; severe low sugar is
+# an emergency. Devanagari-first, simple action (eat fast sugar NOW) + escalate
+# to 108 if the person is becoming unconscious. Emergency -> NO NMC tail.
+_REFUSAL_HYPO = (
+    "⚠️ अभी मीठा खाएं — चीनी, ग्लूकोज़, जूस या शहद।\n"
+    "शुगर बहुत कम हो सकती है — देर न करें।\n"
+    "(Your sugar may be dangerously low. Eat or drink fast sugar — glucose, "
+    "juice, sugar or honey — right now.)\n"
+    "अगर बेहोशी जैसा लगे तो 108 पर कॉल करें।\n"
+    "(If the person feels faint or cannot swallow, call 108.)"
+)
+
 _REFUSAL_STOP_MEDS = (
     "अपनी दवाई खुद बंद न करें।\n"
     "पहले डॉक्टर को दिखाएं।\n"
@@ -114,7 +136,159 @@ _RF_CARDIAC = [
     r"\b(?:left|right)?\s*arm\s+(?:is\s+|feels\s+|going\s+)?(?:numb|tingl)",
     r"\bpressure\s+in\s+(?:my\s+)?chest\b",
     r"\b(?:can'?t|cannot|cant|trouble)\s+breath",
+    # --- Devanagari HARD-cardiac forms. These MUST be in the cardiac MATCHING
+    # list (not only in _RF_CARDIAC_HARD): _has_hard_cardiac_signal correctly
+    # stops a Devanagari chest-pain message from being downgraded to hypo
+    # (skip_cardiac=False), but if cardiac's own patterns don't match the
+    # Devanagari form, the message falls through to hypoglycemia anyway. So a
+    # message like "सीने में दर्द और शुगर बहुत कम" needs cardiac to actually fire
+    # here. These mirror the romanised hard signals above, in Devanagari.
+    r"सीने?\s+(?:में|मे)\s+दर्द",                 # chest pain
+    r"छाती\s+(?:में|मे)\s+(?:दर्द|दबाव)",         # chest pain / pressure
+    r"दिल\s+का\s+दौरा",                           # heart attack
+    r"(?:बाँह|बांह|हाथ)\s+सुन्न",                 # arm numb
+    r"साँस\s+(?:नहीं\s+आ\s+रही|फूल\s+रही|नहीं)",  # can't breathe / breathless
+    # --- Colloquial Hindi / Bhojpuri symptom lexicon (how a real MI is
+    # described in Bihar). Romanised + Devanagari forms. Tightened so benign
+    # sentences don't fire: "ghabrahat" alone is anxiety, so we require a
+    # chest/heart context OR a co-occurring sweating/breathlessness symptom.
+    r"\bseene?\s+(?:pe|par|me|mein)\s+(?:bhaari?\s*pan|bhaaripan|bhaari|dabaav|dabav|jakdan)\b",
+    r"सीने?\s+(?:पे|पर|में)\s+(?:भारीपन|भारी|दबाव|जकड़न)",
+    # Sweating ("paseena"/"pasina") is cardiac ONLY when it co-occurs with a
+    # chest/heart/breath context. Standalone sweating (heat, exertion) or
+    # sweating tied to LOW SUGAR is NOT cardiac (the latter is hypoglycemia and
+    # is handled with higher priority below). Cold-sweat-on-chest stays cardiac.
+    r"\b(?:thand[ai]?\s+)?(?:paseena|pasina)\b.{0,30}\b(?:seene?|chest|dil|heart|saans|breath)\b",
+    r"\b(?:seene?|chest|dil|heart|saans|breath)\b.{0,30}\b(?:thand[ai]?\s+)?(?:paseena|pasina)\b",
+    r"(?:ठंडा\s+)?पसीना\b.{0,30}\b(?:सीने?|दिल|छाती|साँस)",
+    r"\b(?:सीने?|दिल|छाती|साँस)\b.{0,30}(?:ठंडा\s+)?पसीना",
+    r"\bsaans\b.{0,15}\b(?:phool|fool|phul|chadh|ukhad|nahi)\b",
+    r"साँस\s+(?:फूल|चढ़|उखड़)",
+    r"\bdum\s+ghut\b",
+    r"दम\s+घुट",
+    # "ghabrahat" only as cardiac when paired with chest/heart/sweat/breath.
+    r"\bghabrahat\b.{0,30}\b(?:seene?|chest|dil|heart|paseena|pasina|saans)\b",
+    r"\b(?:seene?|chest|dil|heart|paseena|pasina|saans)\b.{0,30}\bghabrahat\b",
+    r"\bdil\s+(?:baith|doob|ghabra)",
+    r"दिल\s+(?:बैठ|डूब|घबरा)",
 ]
+# STROKE (FAST): face droop, arm weakness, slurred/lost speech, sudden
+# one-sided weakness/numbness, sudden severe dizziness. Checked right after
+# cardiac (both life-threatening). Romanised + Devanagari.
+_RF_STROKE = [
+    r"\bface\s+(?:droop|drooping|is\s+drooping|has\s+dropped)\b",
+    r"\b(?:one\s+side|half)\s+of\s+(?:my\s+|the\s+)?face\b.{0,20}\b(?:droop|numb|weak|paralys)",
+    r"\b(?:muh|munh|chehra)\s+(?:tedha|terha|tirchha|tircha|latak)\b",
+    r"(?:मुँह|मुंह|चेहरा)\s+(?:टेढ़ा|तिरछा|लटक)",
+    r"\barm\s+(?:weakness|is\s+weak|won'?t\s+lift|can'?t\s+(?:lift|raise|move))\b",
+    r"\b(?:slurred|slurring)\s+speech\b",
+    r"\b(?:can'?t|cannot|cant|trouble|difficulty|unable\s+to)\s+(?:speak|talk)",
+    r"\b(?:lost|losing)\s+(?:my\s+)?speech\b",
+    r"\bbol(?:ne)?\s+(?:me|mein)\s+(?:dikkat|dikat|takleef|pareshani)\b",
+    r"बोल(?:ने)?\s+(?:में|मे)\s+(?:दिक्कत|तकलीफ)",
+    r"\b(?:ek|एक)\s+(?:taraf|side)\b.{0,20}\b(?:kamzori|kamjori|sunn|sun|jhunjhuni|lakwa|paralys)\b",
+    r"एक\s+तरफ\b.{0,20}(?:कमज़ोरी|कमजोरी|सुन्न|लकवा)",
+    r"\bachanak\b.{0,20}\bchakkar\b",
+    r"अचानक\b.{0,20}चक्कर",
+    # "lakwa"/"लकवा" = paralysis (a stroke sign). Must NOT fire on the compound
+    # "lakwapan" ("lakwapan se jude questions" is a benign topical question), so
+    # we forbid an immediately-following letter. Romanised: \blakwa\b (the \b
+    # blocks "lakwapan"). Devanagari "लकवा" ends in the vowel-sign matra "ा",
+    # which has NO \w boundary after it, so \b can't anchor here — we instead use
+    # a negative lookahead for any following Devanagari letter to block "लकवापन"
+    # while still matching "लकवा मार गया" (real stroke).
+    r"\blakwa\b|लकवा(?![ऀ-ॿ])",
+]
+# SEVERE HYPOGLYCEMIA: low sugar in a diabetic-on-meds population is an
+# emergency. Require an explicit "low/kam" + sugar context, OR the classic
+# adrenergic triad (shaking + sweating + confusion), OR a near-faint phrasing,
+# so a plain "I feel a bit shaky" does not fire.
+_RF_HYPO = [
+    r"\b(?:sugar|glucose|bp\s+sugar)\b.{0,15}\b(?:too\s+low|very\s+low|is\s+low|bahut\s+kam|kam\s+ho|gir\s+gay|gir\s+gai|drop(?:ped|ping)?|gir\s+rah)\b",
+    # "low/very-low SUGAR" but NOT a benign "low sugar diet/food/recipe" — a
+    # diet question is logistics, not an emergency. Negative lookahead on the
+    # diet/food vocabulary that follows.
+    r"\b(?:too\s+low|very\s+low|bahut\s+kam)\b.{0,10}\b(?:sugar|glucose)\b(?!\s+(?:diet|food|meal|recipe|khana|khaana))",
+    r"\bglucose\b.{0,15}\b(?:drop(?:ped|ping)?|gir\s+gay|crash)",
+    r"\bhypoglycemi[ac]|hypoglycaemi[ac]\b",
+    r"\b(?:sugar|glucose)\b.{0,20}\b(?:[1-9]|[1-4][0-9]|5[0-3])\s*(?:mg)?\b\s*(?:/?\s*dl)?\b.{0,15}\b(?:low|kam)\b",
+    # A BARE glucose reading <54 mg/dL is, per ADA, level-2 (clinically
+    # significant / severe) hypoglycemia in a diabetic-on-meds population — an
+    # emergency on its own, no "low/kam" qualifier required. We anchor to an
+    # explicit mg/dl unit so a stray number ("sugar at 7am", "53 steps") cannot
+    # fire. 53 and below trigger; 54 does NOT (54 is not < 54).
+    r"\b(?:sugar|glucose)\b.{0,20}\b(?:[1-9]|[1-4][0-9]|5[0-3])\s*mg\s*/?\s*dl\b",
+    r"\bglucose\b.{0,10}\b(?:below|under|less\s+than|<)\s*5[0-4]\b",
+    r"\b(?:shaking|shaky|kaanp|kaap|kamp)\w*\b.{0,30}\b(?:sweat|paseena|pasina|pasine)\w*\b.{0,30}\b(?:confus|chakkar|behosh|ghabra)",
+    r"\b(?:paseena|pasina|pasine)\s+aur\s+(?:kaanpna|kaapna|kaanp|kaap|kampkampi)\b",
+    # Devanagari sweating+shaking, ORDER-INDEPENDENT. The romanised sibling above
+    # only matched "sweating then shaking"; a Devanagari patient who writes the
+    # symptoms in the other order ("काँपना और पसीना") was silently missed. We do
+    # NOT use ASCII \b here: Devanagari words ending in a vowel-sign matra (e.g.
+    # "काँपना") have no \w/\W boundary after the matra, so \b fails to anchor.
+    r"(?:पसीना|काँपना|कांपना|कंपकंपी)\s+और\s+(?:पसीना|काँपना|कांपना|कंपकंपी)",
+    r"\b(?:sugar|shugar)\s+(?:bahut\s+)?kam\b",
+    r"शुगर\s+(?:बहुत\s+)?कम",
+    r"\bbehosh\s+jaisa|behosh\s+(?:ho|hone)\b",
+    r"बेहोश\s+(?:जैसा|हो)",
+]
+# An EXPLICIT low-glucose signal: a sugar/glucose token paired with a
+# low/falling token. When present, the message is hypoglycemia and must NOT be
+# stolen by the cardiac category just because sweating/shaking co-occur — a
+# severe-hypo patient routed to the cardiac message would miss the life-saving
+# "eat fast sugar NOW" instruction. Suicide and true cardiac (chest pain / MI)
+# still take precedence; this only de-prioritises cardiac relative to hypo.
+_RF_HYPO_EXPLICIT_GLUCOSE = [
+    r"\b(?:sugar|glucose|shugar)\b.{0,15}\b(?:too\s+low|very\s+low|is\s+low|low|bahut\s+kam|kam\s+ho|kam\s+lag|kam\b|gir\s+gay|gir\s+gai|gir\s+rah|drop(?:ped|ping)?|below|crash)",
+    r"\b(?:too\s+low|very\s+low|bahut\s+kam|kam)\b.{0,15}\b(?:sugar|glucose|shugar)\b(?!\s+(?:diet|food|meal|recipe|khana|khaana))",
+    r"\bhypoglycemi[ac]|hypoglycaemi[ac]\b",
+    r"\b(?:sugar|shugar)\s+(?:bahut\s+)?kam\b",
+    r"शुगर\s+(?:बहुत\s+)?कम",
+    r"(?:सुगर|शुगर|ग्लूकोज़?)\b.{0,15}(?:कम|गिर|लो)",
+]
+
+
+def _has_explicit_low_glucose(low: str) -> bool:
+    """True if ``low`` (already lower-cased) carries an explicit low-glucose
+    signal. Used to give hypoglycemia priority over cardiac so a low-sugar
+    message with sweating/shaking is not misrouted."""
+    return any(re.search(p, low) for p in _RF_HYPO_EXPLICIT_GLUCOSE)
+
+
+# A HARD cardiac signal is a symptom that — on its own — is a possible
+# myocardial infarction (MI) and must NEVER be downgraded to hypoglycemia, even
+# when an explicit low-glucose token also appears. The hypo-wins rule
+# (skip_cardiac) was only ever meant to fix the SOFT case: the adrenergic
+# picture (sweating/shaking) co-occurring with low sugar, WITHOUT any genuine
+# chest/MI symptom. A real MI ("chest pain", "seene me dard", "heart attack",
+# "left arm numb/tingling", "pressure in chest", "can't breathe") must win.
+# This is a curated SUBSET of _RF_CARDIAC — only the unambiguous MI signals,
+# NOT the soft sweating/ghabrahat patterns (those are the ones that legitimately
+# defer to hypoglycemia).
+_RF_CARDIAC_HARD = [
+    r"\bchest\s+pain\b",
+    r"\bseene\s+(?:me|mein)\s+dard\b",
+    r"सीने?\s+(?:में|मे)\s+दर्द",                 # chest pain (Devanagari)
+    r"छाती\s+(?:में|मे)\s+(?:दर्द|दबाव)",         # chest pain / pressure (Devanagari)
+    r"\bheart\s+attack\b",
+    r"\bdil\s+ka\s+daura\b",
+    r"दिल\s+का\s+दौरा",                           # heart attack (Devanagari)
+    r"\bleft\s+arm\b.{0,30}\b(?:numb|tingl)",
+    r"\b(?:left|right)?\s*arm\s+(?:is\s+|feels\s+|going\s+)?(?:numb|tingl)",
+    r"(?:बाँह|बांह|हाथ)\s+सुन्न",                 # arm numb (Devanagari)
+    r"\bpressure\s+in\s+(?:my\s+)?chest\b",
+    r"\b(?:can'?t|cannot|cant|trouble)\s+breath",
+    r"साँस\s+(?:नहीं\s+आ\s+रही|फूल\s+रही|नहीं)",  # can't breathe / breathless (Devanagari)
+]
+
+
+def _has_hard_cardiac_signal(low: str) -> bool:
+    """True if ``low`` (already lower-cased) carries a HARD cardiac (possible
+    MI) signal that must never be downgraded to hypoglycemia. See
+    ``_RF_CARDIAC_HARD``."""
+    return any(re.search(p, low) for p in _RF_CARDIAC_HARD)
+
+
 _RF_STOP_MEDS = [
     r"\bstop\b.{0,30}\b(?:meds|medication|medicine|medicines|pills|tablets|dawai|dawa)\b",
     r"\bquit\b.{0,20}\b(?:meds|medication|medicine|dawai)\b",
@@ -148,10 +322,25 @@ _RF_CHILD_DOSE = [
     r"\b(?:paracetamol|ibuprofen|antibiotic|crocin|calpol|dawai)\b.{0,40}\b(?:child|baby|toddler|bachch?e?|\d+[- ]?(?:year|month|saal))\b",
 ]
 
-# Evaluated in priority order (most life-threatening first).
+# Evaluated in priority order (most life-threatening first). The list order IS
+# the priority: the FIRST category whose patterns match wins, so a co-occurring
+# lower-risk keyword can never down-rank an emergency.
+#   1. suicide   — highest; a crisis call-to-action must never be diluted.
+#   2. cardiac   — possible MI; checked before stroke, so a message that hits
+#                  BOTH cardiac and stroke (e.g. "my face is drooping and I have
+#                  severe chest pain") resolves to CARDIAC (the chest/MI signal
+#                  leads). cardiac is conditionally SKIPPED only for the soft
+#                  hypo case — see skip_cardiac in _classify_red_flag.
+#   3. stroke    — FAST signs; life-threatening, just below cardiac.
+#   4. hypoglycemia — severe low sugar in a diabetic-on-meds population.
+#   5+. stop_meds / child_dose / self_diagnosis — non-emergency refusals.
 _RED_FLAG_RULES = [
+    # Life-threatening first (suicide, cardiac, stroke, hypo) so a co-occurring
+    # lower-risk keyword can't mis-route an emergency.
     ("suicide", _RF_SUICIDE, _REFUSAL_SUICIDE),
     ("cardiac", _RF_CARDIAC, _REFUSAL_CARDIAC),
+    ("stroke", _RF_STROKE, _REFUSAL_STROKE),
+    ("hypoglycemia", _RF_HYPO, _REFUSAL_HYPO),
     ("stop_meds", _RF_STOP_MEDS, _REFUSAL_STOP_MEDS),
     ("child_dose", _RF_CHILD_DOSE, _REFUSAL_CHILD_DOSE),
     ("self_diagnosis", _RF_DIAGNOSIS, _REFUSAL_DIAGNOSIS),
@@ -164,7 +353,21 @@ def _classify_red_flag(message: Optional[str]) -> Optional[tuple]:
     if not message:
         return None
     low = message.lower()
+    # Hypo-vs-cardiac disambiguation. If the message carries an EXPLICIT
+    # low-glucose signal, hypoglycemia SHOULD win over cardiac — BUT only for the
+    # SOFT case (sweating/shaking + low sugar, no genuine MI symptom). A message
+    # with a HARD cardiac signal (chest pain / seene me dard / heart attack /
+    # left|right arm numb-or-tingling / pressure in chest / can't breathe) is a
+    # possible MI and must NEVER be downgraded, even if a low-glucose token also
+    # appears ("chest pain and my sugar is low" -> CARDIAC, MI not missed).
+    # Suicide stays highest. skip_cardiac fires ONLY when low-glucose is explicit
+    # AND there is NO hard cardiac signal.
+    skip_cardiac = (
+        _has_explicit_low_glucose(low) and not _has_hard_cardiac_signal(low)
+    )
     for category, patterns, refusal in _RED_FLAG_RULES:
+        if category == "cardiac" and skip_cardiac:
+            continue
         if any(re.search(p, low) for p in patterns):
             return category, refusal
     return None
