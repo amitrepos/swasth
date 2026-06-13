@@ -375,6 +375,12 @@ class AppLocalizationsKn extends AppLocalizations {
   String get avgLabel => 'ಸರಾಸರಿ';
 
   @override
+  String get avgSys => 'ಸರಾಸರಿ ಸಿಸ್';
+
+  @override
+  String get avgDia => 'ಸರಾಸರಿ ಡಯ';
+
+  @override
   String avgDaysFormat(int count) {
     return '$count ದಿನ ಸರಾಸರಿ';
   }

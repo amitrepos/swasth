@@ -372,6 +372,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get avgLabel => 'औसत';
 
   @override
+  String get avgSys => 'औसत सिस';
+
+  @override
+  String get avgDia => 'औसत डाय';
+
+  @override
   String avgDaysFormat(int count) {
     return '$count दिन औसत';
   }

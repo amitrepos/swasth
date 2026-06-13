@@ -376,6 +376,12 @@ class AppLocalizationsTa extends AppLocalizations {
   String get avgLabel => 'சராசரி';
 
   @override
+  String get avgSys => 'சராசரி சிஸ்';
+
+  @override
+  String get avgDia => 'சராசரி டய';
+
+  @override
   String avgDaysFormat(int count) {
     return '$count நாள் சராசரி';
   }

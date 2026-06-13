@@ -37,4 +37,47 @@ void main() {
     final label = tester.widget<Text>(find.text('Min'));
     expect(label.style!.fontSize! >= 13, isTrue);
   });
+
+  testWidgets(
+    'InsightStatCell at mid scale 1.35 renders between base and max',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: InsightStatCell(label: 'Avg', value: '120', scale: 1.35),
+          ),
+        ),
+      );
+
+      final value = tester.widget<Text>(find.text('120'));
+      expect(value.style!.fontSize!, closeTo(24.3, 0.1));
+      expect(value.style!.fontSize!, lessThan(30.6));
+    },
+  );
+
+  testWidgets('InsightStatCell clamps value font at max scale', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: InsightStatCell(label: 'Avg', value: '120', scale: 2.0),
+        ),
+      ),
+    );
+
+    final value = tester.widget<Text>(find.text('120'));
+    expect(value.style!.fontSize!, 32);
+  });
+
+  testWidgets('InsightStatCell clamps label font at max scale', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: InsightStatCell(label: 'Avg', value: '120', scale: 2.0),
+        ),
+      ),
+    );
+
+    final label = tester.widget<Text>(find.text('Avg'));
+    expect(label.style!.fontSize!, 16);
+  });
 }

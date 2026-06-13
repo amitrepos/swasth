@@ -373,6 +373,12 @@ class AppLocalizationsTe extends AppLocalizations {
   String get avgLabel => 'సగటు';
 
   @override
+  String get avgSys => 'సగటు సిస్';
+
+  @override
+  String get avgDia => 'సగటు డయ';
+
+  @override
   String avgDaysFormat(int count) {
     return '$count రోజుల సగటు';
   }

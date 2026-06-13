@@ -142,6 +142,33 @@ void main() {
       expect(find.text('Meals Only'), findsOneWidget);
     });
 
+    testWidgets('Filter button label updates after selecting Glucose Only', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtHistory(tester);
+
+      await tester.tap(find.byKey(const Key('history_filter_menu')));
+      await pumpN(tester, frames: 5);
+      await tester.tap(find.text('Glucose Only'));
+      await pumpN(tester, frames: 10);
+
+      expect(find.text('Glucose Only'), findsOneWidget);
+      expect(find.text('All Readings'), findsNothing);
+    });
+
+    testWidgets('Filter button label updates after selecting BP Only', (
+      tester,
+    ) async {
+      env = await TestEnv.createAtHistory(tester);
+
+      await tester.tap(find.byKey(const Key('history_filter_menu')));
+      await pumpN(tester, frames: 5);
+      await tester.tap(find.text('BP Only'));
+      await pumpN(tester, frames: 10);
+
+      expect(find.text('BP Only'), findsOneWidget);
+    });
+
     testWidgets('Filter "Meals Only" hides readings, shows only meals', (
       tester,
     ) async {

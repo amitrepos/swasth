@@ -212,6 +212,8 @@
   "bpTrend": "రక్తపోటు ధోరణి",
   "pulseTrend": "నాడి ధోరణి",
   "avgLabel": "సగటు",
+  "avgSys": "సగటు సిస్",
+  "avgDia": "సగటు డయ",
   "avgDaysFormat": "{count} రోజుల సగటు",
   "@avgDaysFormat": {
     "placeholders": {

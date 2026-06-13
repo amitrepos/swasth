@@ -212,6 +212,8 @@
   "bpTrend": "இரத்த அழுத்த போக்கு",
   "pulseTrend": "துடிப்பு போக்கு",
   "avgLabel": "சராசரி",
+  "avgSys": "சராசரி சிஸ்",
+  "avgDia": "சராசரி டய",
   "avgDaysFormat": "{count} நாள் சராசரி",
   "@avgDaysFormat": {
     "placeholders": {

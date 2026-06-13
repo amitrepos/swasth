@@ -54,9 +54,13 @@ class TrendChartScreenState extends State<TrendChartScreen>
   }
 
   Future<void> _loadStatScale() async {
-    final scale = await _storageService.getInsightsStatScale();
-    if (mounted && _statScales.contains(scale)) {
-      setState(() => _statScale = scale);
+    try {
+      final scale = await _storageService.getInsightsStatScale();
+      if (mounted && _statScales.contains(scale)) {
+        setState(() => _statScale = scale);
+      }
+    } catch (_) {
+      // Keep default 1.0 on storage read failure.
     }
   }
 
@@ -175,7 +179,9 @@ class TrendChartScreenState extends State<TrendChartScreen>
         actions: [
           IconButton(
             key: const Key('insights_stat_zoom'),
-            icon: Icon(_statScale > 1.0 ? Icons.zoom_out : Icons.zoom_in),
+            icon: Icon(
+              _statScale < _statScales.last ? Icons.zoom_in : Icons.zoom_out,
+            ),
             tooltip: l10n.insightsZoomStats,
             onPressed: _cycleStatScale,
           ),
@@ -1662,13 +1668,13 @@ class _BpStatsRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         InsightStatCell(
-          label: 'Avg Sys',
+          label: l10n.avgSys,
           value: avgSys.toStringAsFixed(0),
           color: _kSysColor,
           scale: statScale,
         ),
         InsightStatCell(
-          label: 'Avg Dia',
+          label: l10n.avgDia,
           value: avgDia.toStringAsFixed(0),
           color: _kDiaColor,
           scale: statScale,

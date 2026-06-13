@@ -123,6 +123,8 @@
   "bpTrend": "रक्तचाप ट्रेंड",
   "pulseTrend": "नाड़ी ट्रेंड",
   "avgLabel": "औसत",
+  "avgSys": "औसत सिस",
+  "avgDia": "औसत डाय",
   "avgDaysFormat": "{count} दिन औसत",
   "@avgDaysFormat": {
     "placeholders": {

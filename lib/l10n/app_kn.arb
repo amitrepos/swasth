@@ -155,6 +155,8 @@
   "bpTrend": "ರಕ್ತದೊತ್ತಡದ ಪ್ರವೃತ್ತಿ",
   "pulseTrend": "ನಾಡಿಮಿಡಿತದ ಪ್ರವೃತ್ತಿ",
   "avgLabel": "ಸರಾಸರಿ",
+  "avgSys": "ಸರಾಸರಿ ಸಿಸ್",
+  "avgDia": "ಸರಾಸರಿ ಡಯ",
   "avgDaysFormat": "{count} ದಿನ ಸರಾಸರಿ",
   "@avgDaysFormat": {
     "placeholders": {

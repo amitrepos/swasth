@@ -174,6 +174,8 @@
   "bpTrend": "Blood Pressure Trend",
   "pulseTrend": "Pulse Trend",
   "avgLabel": "Avg",
+  "avgSys": "Avg Sys",
+  "avgDia": "Avg Dia",
   "avgDaysFormat": "{count} day avg",
   "@avgDaysFormat": {
     "placeholders": {

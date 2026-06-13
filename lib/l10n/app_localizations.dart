@@ -800,6 +800,18 @@ abstract class AppLocalizations {
   /// **'Avg'**
   String get avgLabel;
 
+  /// No description provided for @avgSys.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Sys'**
+  String get avgSys;
+
+  /// No description provided for @avgDia.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Dia'**
+  String get avgDia;
+
   /// No description provided for @avgDaysFormat.
   ///
   /// In en, this message translates to:
