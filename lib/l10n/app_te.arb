@@ -203,6 +203,8 @@
   },
   "howToLog": "ఈ రీడింగ్‌ను ఎలా నమోదు చేయాలనుకుంటున్నారు?",
   "healthTrends": "ఆరోగ్య ధోరణులు",
+  "insightsZoomStats": "సంఖ్యలను పెద్దదిగా చూపించు",
+  "insightsZoomReset": "సాధారణ పరిమాణానికి తిరిగి వెళ్ళు",
   "sevenDays": "7 రోజులు",
   "thirtyDays": "30 రోజులు",
   "ninetyDays": "90 రోజులు",
@@ -211,6 +213,8 @@
   "bpTrend": "రక్తపోటు ధోరణి",
   "pulseTrend": "నాడి ధోరణి",
   "avgLabel": "సగటు",
+  "avgSys": "ఎగువ సగటు",
+  "avgDia": "దిగువ సగటు",
   "avgDaysFormat": "{count} రోజుల సగటు",
   "@avgDaysFormat": {
     "placeholders": {

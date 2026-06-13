@@ -146,6 +146,8 @@
   },
   "howToLog": "ಈ ರೀಡಿಂಗ್ ಅನ್ನು ನೀವು ಹೇಗೆ ದಾಖಲಿಸಲು ಬಯಸುತ್ತೀರಿ?",
   "healthTrends": "ಆರೋಗ್ಯದ ಪ್ರವೃತ್ತಿಗಳು",
+  "insightsZoomStats": "ಅಂಕಿಅಂಶಗಳನ್ನು ಹಿಗ್ಗಿಸಿ",
+  "insightsZoomReset": "ಸಾಮಾನ್ಯ ಗಾತ್ರಕ್ಕೆ ಹಿಂತಿರುಗಿ",
   "sevenDays": "7 ದಿನಗಳು",
   "thirtyDays": "30 ದಿನಗಳು",
   "ninetyDays": "90 ದಿನಗಳು",
@@ -154,6 +156,8 @@
   "bpTrend": "ರಕ್ತದೊತ್ತಡದ ಪ್ರವೃತ್ತಿ",
   "pulseTrend": "ನಾಡಿಮಿಡಿತದ ಪ್ರವೃತ್ತಿ",
   "avgLabel": "ಸರಾಸರಿ",
+  "avgSys": "ಮೇಲಿನ ಸರಾಸರಿ",
+  "avgDia": "ಕೆಳಗಿನ ಸರಾಸರಿ",
   "avgDaysFormat": "{count} ದಿನ ಸರಾಸರಿ",
   "@avgDaysFormat": {
     "placeholders": {

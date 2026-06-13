@@ -345,6 +345,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get healthTrends => 'Health Trends';
 
   @override
+  String get insightsZoomStats => 'Make numbers bigger';
+
+  @override
+  String get insightsZoomReset => 'Return to normal size';
+
+  @override
   String get sevenDays => '7 Days';
 
   @override
@@ -367,6 +373,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get avgLabel => 'Avg';
+
+  @override
+  String get avgSys => 'Upper avg';
+
+  @override
+  String get avgDia => 'Lower avg';
 
   @override
   String avgDaysFormat(int count) {

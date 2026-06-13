@@ -13,15 +13,18 @@ import 'package:swasth_app/l10n/app_localizations.dart';
 import '../../services/health_reading_service.dart';
 import '../../theme/app_theme.dart';
 import '../glass_card.dart';
+import 'insight_stat_cell.dart';
 
 class StepsChartCard extends StatelessWidget {
   final List<HealthReading> readings;
   final int days;
+  final double statScale;
 
   const StepsChartCard({
     super.key,
     required this.readings,
     this.days = 7,
+    this.statScale = 1.0,
   });
 
   @override
@@ -68,7 +71,7 @@ class StepsChartCard extends StatelessWidget {
           ),
           if (hasData) ...[
             const SizedBox(height: 8),
-            _StatsRow(l10n: l10n, aggregate: aggregate),
+            _StatsRow(l10n: l10n, aggregate: aggregate, statScale: statScale),
           ],
         ],
       ),
@@ -93,7 +96,10 @@ class _DailyStepsAggregate {
 }
 
 /// MAX-per-UTC-day aggregation — mirrors backend/routes_health.py#get_daily_steps.
-_DailyStepsAggregate _aggregateDailySteps(List<HealthReading> readings, int days) {
+_DailyStepsAggregate _aggregateDailySteps(
+  List<HealthReading> readings,
+  int days,
+) {
   final now = DateTime.now().toUtc();
   final today = DateTime.utc(now.year, now.month, now.day);
   final startDate = today.subtract(Duration(days: days - 1));
@@ -158,8 +164,13 @@ class _DayBar {
 class _StatsRow extends StatelessWidget {
   final AppLocalizations l10n;
   final _DailyStepsAggregate aggregate;
+  final double statScale;
 
-  const _StatsRow({required this.l10n, required this.aggregate});
+  const _StatsRow({
+    required this.l10n,
+    required this.aggregate,
+    required this.statScale,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -167,52 +178,24 @@ class _StatsRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _StatCell(
+        InsightStatCell(
           label: l10n.stepsTotalLabel,
           value: fmt.format(aggregate.total),
           color: AppColors.primary,
+          scale: statScale,
         ),
-        _StatCell(
+        InsightStatCell(
           label: l10n.avgLabel,
           value: fmt.format(aggregate.avg),
+          scale: statScale,
         ),
         if (aggregate.goal != null)
-          _StatCell(
+          InsightStatCell(
             label: l10n.stepsGoalLabel,
             value: '${aggregate.goalHitDays}/${aggregate.bars.length}',
             color: AppColors.scoreHealthy,
+            scale: statScale,
           ),
-      ],
-    );
-  }
-}
-
-class _StatCell extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? color;
-
-  const _StatCell({required this.label, required this.value, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: color ?? AppColors.textPrimary,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
-        ),
       ],
     );
   }
@@ -224,15 +207,12 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Text(
-          message,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      );
+    child: Text(
+      message,
+      style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+      textAlign: TextAlign.center,
+    ),
+  );
 }
 
 class _Chart extends StatelessWidget {
@@ -272,16 +252,20 @@ class _Chart extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: yMax / 3,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: AppColors.separator,
-            strokeWidth: 1,
-          ),
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: AppColors.separator, strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -344,10 +328,10 @@ class _Chart extends StatelessWidget {
             barWidth: 2.5,
             dotData: FlDotData(
               show: true,
-              getDotPainter: (spot, _, __, ___) { // ignore: unnecessary_underscores
+              getDotPainter: (spot, _, __, ___) {
+                // ignore: unnecessary_underscores
                 final i = spot.x.round();
-                final steps =
-                    (i >= 0 && i < bars.length) ? bars[i].steps : 0;
+                final steps = (i >= 0 && i < bars.length) ? bars[i].steps : 0;
                 return FlDotCirclePainter(
                   radius: 3.5,
                   color: dotColorFor(steps),

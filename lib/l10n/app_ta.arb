@@ -203,6 +203,8 @@
   },
   "howToLog": "இந்த ரீடிங்கை எப்படி பதிவு செய்ய விரும்புகிறீர்கள்?",
   "healthTrends": "ஆரோக்கிய போக்குகள்",
+  "insightsZoomStats": "எண்களை பெரிதாக்கு",
+  "insightsZoomReset": "இயல்பு அளவுக்கு திரும்பு",
   "sevenDays": "7 நாட்கள்",
   "thirtyDays": "30 நாட்கள்",
   "ninetyDays": "90 நாட்கள்",
@@ -211,6 +213,8 @@
   "bpTrend": "இரத்த அழுத்த போக்கு",
   "pulseTrend": "துடிப்பு போக்கு",
   "avgLabel": "சராசரி",
+  "avgSys": "மேல் சராசரி",
+  "avgDia": "கீழ் சராசரி",
   "avgDaysFormat": "{count} நாள் சராசரி",
   "@avgDaysFormat": {
     "placeholders": {

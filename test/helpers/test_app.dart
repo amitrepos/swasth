@@ -15,6 +15,7 @@ import 'package:swasth_app/screens/reading_confirmation_screen.dart';
 import 'package:swasth_app/screens/quick_select_screen.dart';
 import 'package:swasth_app/screens/chat_screen.dart';
 import 'package:swasth_app/screens/history_screen.dart';
+import 'package:swasth_app/screens/trend_chart_screen.dart';
 import 'package:swasth_app/screens/home_screen.dart';
 import 'package:swasth_app/theme/app_theme.dart';
 import 'package:swasth_app/services/api_client.dart';
@@ -232,6 +233,22 @@ class TestEnv {
       overrides: overrides,
     );
     await pumpN(tester, frames: 10); // load readings
+    return env;
+  }
+
+  /// Start at TrendChartScreen (Insights tab).
+  static Future<TestEnv> createAtInsights(
+    WidgetTester tester, {
+    Map<String, http.Response> overrides = const {},
+  }) async {
+    StorageService.useInMemoryStorage();
+    await StorageService().saveToken('mock_token_123');
+    final env = await create(
+      tester,
+      startScreen: const TrendChartScreen(profileId: 1),
+      overrides: overrides,
+    );
+    await pumpN(tester, frames: 20); // load readings + stat scale
     return env;
   }
 

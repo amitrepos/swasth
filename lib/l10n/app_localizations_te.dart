@@ -346,6 +346,12 @@ class AppLocalizationsTe extends AppLocalizations {
   String get healthTrends => 'ఆరోగ్య ధోరణులు';
 
   @override
+  String get insightsZoomStats => 'సంఖ్యలను పెద్దదిగా చూపించు';
+
+  @override
+  String get insightsZoomReset => 'సాధారణ పరిమాణానికి తిరిగి వెళ్ళు';
+
+  @override
   String get sevenDays => '7 రోజులు';
 
   @override
@@ -368,6 +374,12 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get avgLabel => 'సగటు';
+
+  @override
+  String get avgSys => 'ఎగువ సగటు';
+
+  @override
+  String get avgDia => 'దిగువ సగటు';
 
   @override
   String avgDaysFormat(int count) {

@@ -6,6 +6,7 @@ import '../services/health_reading_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/insights/insight_stat_cell.dart';
 import '../widgets/insights/steps_chart_card.dart';
 import '../widgets/insights/pulse_chart_card.dart';
 import 'shell_screen.dart';
@@ -35,6 +36,9 @@ class TrendChartScreenState extends State<TrendChartScreen>
   bool _isLoading = true;
   List<HealthReading> _allReadings = [];
   String? _error;
+  double _statScale = 1.0;
+
+  static const _statScales = [1.0, 1.35, 1.7];
 
   // Trend summary keyed by "$period-$lang" so language changes force re-fetch
   final Map<String, String> _summaries = {};
@@ -45,7 +49,19 @@ class TrendChartScreenState extends State<TrendChartScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
+    _loadStatScale();
     _loadReadings();
+  }
+
+  Future<void> _loadStatScale() async {
+    try {
+      final scale = await _storageService.getInsightsStatScale();
+      if (mounted && _statScales.contains(scale)) {
+        setState(() => _statScale = scale);
+      }
+    } catch (_) {
+      // Keep default 1.0 on storage read failure.
+    }
   }
 
   @override
@@ -92,6 +108,18 @@ class TrendChartScreenState extends State<TrendChartScreen>
       final period = [7, 30, 90][_tabController.index];
       _loadSummary(period);
     }
+  }
+
+  void _cycleStatScale() {
+    final idx = _statScales.indexOf(_statScale);
+    final next = _statScales[(idx + 1) % _statScales.length];
+    setState(() => _statScale = next);
+    _storageService.saveInsightsStatScale(next);
+  }
+
+  String _statScaleBadgeLabel() {
+    if (_statScale <= _statScales.first) return '';
+    return '${_statScale.toStringAsFixed(_statScale == 1.35 ? 2 : 1)}×';
   }
 
   Future<void> _loadSummary(int period) async {
@@ -153,6 +181,21 @@ class TrendChartScreenState extends State<TrendChartScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.healthTrends),
+        actions: [
+          IconButton(
+            key: const Key('insights_stat_zoom'),
+            tooltip: _statScale >= _statScales.last
+                ? l10n.insightsZoomReset
+                : l10n.insightsZoomStats,
+            color: _statScale > _statScales.first ? AppColors.primary : null,
+            onPressed: _cycleStatScale,
+            icon: Badge(
+              isLabelVisible: _statScale > _statScales.first,
+              label: Text(_statScaleBadgeLabel()),
+              child: const Icon(Icons.format_size),
+            ),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary,
@@ -184,6 +227,7 @@ class TrendChartScreenState extends State<TrendChartScreen>
                   summary: _summaries['7-$_lastLangCode'],
                   summaryLoading: _summaryLoading['7-$_lastLangCode'] ?? false,
                   profileId: widget.profileId,
+                  statScale: _statScale,
                 ),
                 _TrendView(
                   readings: _allReadings,
@@ -192,6 +236,7 @@ class TrendChartScreenState extends State<TrendChartScreen>
                   summary: _summaries['30-$_lastLangCode'],
                   summaryLoading: _summaryLoading['30-$_lastLangCode'] ?? false,
                   profileId: widget.profileId,
+                  statScale: _statScale,
                 ),
                 _TrendView(
                   readings: _allReadings,
@@ -200,6 +245,7 @@ class TrendChartScreenState extends State<TrendChartScreen>
                   summary: _summaries['90-$_lastLangCode'],
                   summaryLoading: _summaryLoading['90-$_lastLangCode'] ?? false,
                   profileId: widget.profileId,
+                  statScale: _statScale,
                 ),
               ],
             ),
@@ -218,6 +264,7 @@ class _TrendView extends StatelessWidget {
   final bool summaryLoading;
   final int profileId;
   final Future<void> Function() onRefresh;
+  final double statScale;
 
   const _TrendView({
     required this.readings,
@@ -226,6 +273,7 @@ class _TrendView extends StatelessWidget {
     this.summary,
     this.summaryLoading = false,
     required this.profileId,
+    required this.statScale,
   });
 
   List<HealthReading> get _filtered {
@@ -404,6 +452,7 @@ class _TrendView extends StatelessWidget {
                 key: ValueKey('insights_steps_$profileId'),
                 readings: readings,
                 days: 7,
+                statScale: statScale,
               ),
               const SizedBox(height: 16),
               // 7-day heart rate — same daily-aggregated line-chart style.
@@ -411,6 +460,7 @@ class _TrendView extends StatelessWidget {
                 key: ValueKey('insights_pulse_$profileId'),
                 readings: readings,
                 days: 7,
+                statScale: statScale,
               ),
               const SizedBox(height: 16),
             ],
@@ -454,6 +504,7 @@ class _TrendView extends StatelessWidget {
                               .map((r) => r.statusFlag ?? '')
                               .toList(),
                           l10n: l10n,
+                          statScale: statScale,
                         ),
                       ],
                     )
@@ -481,7 +532,11 @@ class _TrendView extends StatelessWidget {
                           dotRadius: dotRadius,
                         ),
                         const SizedBox(height: 8),
-                        _BpStatsRow(readings: bp, l10n: l10n),
+                        _BpStatsRow(
+                          readings: bp,
+                          l10n: l10n,
+                          statScale: statScale,
+                        ),
                         const SizedBox(height: 10),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -531,6 +586,7 @@ class _TrendView extends StatelessWidget {
                           _PulseStatsRow(
                             values: pulse.map((r) => r.pulseRate!).toList(),
                             l10n: l10n,
+                            statScale: statScale,
                           ),
                         ],
                       )
@@ -562,6 +618,7 @@ class _TrendView extends StatelessWidget {
                         _WeightStatsRow(
                           values: weight.map((r) => r.weightValue!).toList(),
                           l10n: l10n,
+                          statScale: statScale,
                         ),
                       ],
                     )
@@ -799,7 +856,8 @@ class _MiniLineChart extends StatelessWidget {
               barWidth: 2,
               dotData: FlDotData(
                 show: dotRadius >= 2,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: color,
                   strokeWidth: 1,
@@ -944,7 +1002,8 @@ class _MiniBpChart extends StatelessWidget {
               barWidth: 2,
               dotData: FlDotData(
                 show: dotRadius >= 2,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: _kSysColor,
                   strokeWidth: 1,
@@ -972,7 +1031,8 @@ class _MiniBpChart extends StatelessWidget {
                 barWidth: 1.5,
                 dotData: FlDotData(
                   show: dotRadius >= 2,
-                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
+                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                    // ignore: unnecessary_underscores
                     radius: dotRadius - 0.5,
                     color: _kDiaColor,
                     strokeWidth: 1,
@@ -1376,7 +1436,8 @@ class _BpChart extends StatelessWidget {
               barWidth: 2.5,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: _kSysColor,
                   strokeWidth: 1.5,
@@ -1404,7 +1465,8 @@ class _BpChart extends StatelessWidget {
                 barWidth: 2,
                 dotData: FlDotData(
                   show: true,
-                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
+                  getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                    // ignore: unnecessary_underscores
                     radius: dotRadius - 0.5,
                     color: _kDiaColor,
                     strokeWidth: 1.5,
@@ -1534,11 +1596,13 @@ class _StatsRow extends StatelessWidget {
   final List<double> values;
   final List<String> statuses;
   final AppLocalizations l10n;
+  final double statScale;
 
   const _StatsRow({
     required this.values,
     required this.statuses,
     required this.l10n,
+    required this.statScale,
   });
 
   @override
@@ -1555,13 +1619,26 @@ class _StatsRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _StatCell(label: l10n.avgLabel, value: avg.toStringAsFixed(0)),
-        _StatCell(label: l10n.minLabel, value: min.toStringAsFixed(0)),
-        _StatCell(label: l10n.maxLabel, value: max.toStringAsFixed(0)),
-        _StatCell(
+        InsightStatCell(
+          label: l10n.avgLabel,
+          value: avg.toStringAsFixed(0),
+          scale: statScale,
+        ),
+        InsightStatCell(
+          label: l10n.minLabel,
+          value: min.toStringAsFixed(0),
+          scale: statScale,
+        ),
+        InsightStatCell(
+          label: l10n.maxLabel,
+          value: max.toStringAsFixed(0),
+          scale: statScale,
+        ),
+        InsightStatCell(
           label: l10n.normalPct,
           value: '$normalPct%',
           color: _kGlucoseColor,
+          scale: statScale,
         ),
       ],
     );
@@ -1571,8 +1648,13 @@ class _StatsRow extends StatelessWidget {
 class _BpStatsRow extends StatelessWidget {
   final List<HealthReading> readings;
   final AppLocalizations l10n;
+  final double statScale;
 
-  const _BpStatsRow({required this.readings, required this.l10n});
+  const _BpStatsRow({
+    required this.readings,
+    required this.l10n,
+    required this.statScale,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1595,48 +1677,23 @@ class _BpStatsRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _StatCell(
-          label: 'Avg Sys',
+        InsightStatCell(
+          label: l10n.avgSys,
           value: avgSys.toStringAsFixed(0),
           color: _kSysColor,
+          scale: statScale,
         ),
-        _StatCell(
-          label: 'Avg Dia',
+        InsightStatCell(
+          label: l10n.avgDia,
           value: avgDia.toStringAsFixed(0),
           color: _kDiaColor,
+          scale: statScale,
         ),
-        _StatCell(
+        InsightStatCell(
           label: l10n.normalPct,
           value: '$normalPct%',
           color: AppColors.statusNormal,
-        ),
-      ],
-    );
-  }
-}
-
-class _StatCell extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? color;
-
-  const _StatCell({required this.label, required this.value, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: color ?? AppColors.textPrimary,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          scale: statScale,
         ),
       ],
     );
@@ -1727,7 +1784,8 @@ class _WeightChart extends StatelessWidget {
               barWidth: 3,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  // ignore: unnecessary_underscores
                   radius: dotRadius + 1,
                   color: _kWeightColor,
                   strokeWidth: 2,
@@ -1784,8 +1842,13 @@ class _WeightChart extends StatelessWidget {
 class _WeightStatsRow extends StatelessWidget {
   final List<double> values;
   final AppLocalizations l10n;
+  final double statScale;
 
-  const _WeightStatsRow({required this.values, required this.l10n});
+  const _WeightStatsRow({
+    required this.values,
+    required this.l10n,
+    required this.statScale,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1797,13 +1860,22 @@ class _WeightStatsRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _StatCell(
+        InsightStatCell(
           label: l10n.avgLabel,
           value: avg.toStringAsFixed(1),
           color: _kWeightColor,
+          scale: statScale,
         ),
-        _StatCell(label: l10n.minLabel, value: min.toStringAsFixed(1)),
-        _StatCell(label: l10n.maxLabel, value: max.toStringAsFixed(1)),
+        InsightStatCell(
+          label: l10n.minLabel,
+          value: min.toStringAsFixed(1),
+          scale: statScale,
+        ),
+        InsightStatCell(
+          label: l10n.maxLabel,
+          value: max.toStringAsFixed(1),
+          scale: statScale,
+        ),
       ],
     );
   }
@@ -1863,7 +1935,8 @@ class _PulseChart extends StatelessWidget {
               barWidth: 2.5,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter( // ignore: unnecessary_underscores
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  // ignore: unnecessary_underscores
                   radius: dotRadius,
                   color: _kPulseColor,
                   strokeWidth: 1.5,
@@ -1920,8 +1993,13 @@ class _PulseChart extends StatelessWidget {
 class _PulseStatsRow extends StatelessWidget {
   final List<double> values;
   final AppLocalizations l10n;
+  final double statScale;
 
-  const _PulseStatsRow({required this.values, required this.l10n});
+  const _PulseStatsRow({
+    required this.values,
+    required this.l10n,
+    required this.statScale,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1933,13 +2011,22 @@ class _PulseStatsRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _StatCell(
+        InsightStatCell(
           label: l10n.avgLabel,
           value: avg.toStringAsFixed(0),
           color: _kPulseColor,
+          scale: statScale,
         ),
-        _StatCell(label: l10n.minLabel, value: min.toStringAsFixed(0)),
-        _StatCell(label: l10n.maxLabel, value: max.toStringAsFixed(0)),
+        InsightStatCell(
+          label: l10n.minLabel,
+          value: min.toStringAsFixed(0),
+          scale: statScale,
+        ),
+        InsightStatCell(
+          label: l10n.maxLabel,
+          value: max.toStringAsFixed(0),
+          scale: statScale,
+        ),
       ],
     );
   }

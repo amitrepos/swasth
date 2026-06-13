@@ -746,6 +746,18 @@ abstract class AppLocalizations {
   /// **'Health Trends'**
   String get healthTrends;
 
+  /// No description provided for @insightsZoomStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Make numbers bigger'**
+  String get insightsZoomStats;
+
+  /// No description provided for @insightsZoomReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to normal size'**
+  String get insightsZoomReset;
+
   /// No description provided for @sevenDays.
   ///
   /// In en, this message translates to:
@@ -793,6 +805,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Avg'**
   String get avgLabel;
+
+  /// No description provided for @avgSys.
+  ///
+  /// In en, this message translates to:
+  /// **'Upper avg'**
+  String get avgSys;
+
+  /// No description provided for @avgDia.
+  ///
+  /// In en, this message translates to:
+  /// **'Lower avg'**
+  String get avgDia;
 
   /// No description provided for @avgDaysFormat.
   ///
