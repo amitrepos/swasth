@@ -18,19 +18,21 @@ void main() {
 
       final zoomBtn = find.byKey(const Key('insights_stat_zoom'));
       expect(zoomBtn, findsOneWidget);
-      expect(find.byIcon(Icons.zoom_in), findsOneWidget);
+      expect(find.byIcon(Icons.format_size), findsOneWidget);
+      expect(find.text('1.35×'), findsNothing);
 
       await tester.tap(zoomBtn);
       await pumpN(tester, frames: 5);
-      expect(find.byIcon(Icons.zoom_in), findsOneWidget);
+      expect(find.text('1.35×'), findsOneWidget);
 
       await tester.tap(zoomBtn);
       await pumpN(tester, frames: 5);
-      expect(find.byIcon(Icons.zoom_out), findsOneWidget);
+      expect(find.text('1.7×'), findsOneWidget);
 
       await tester.tap(zoomBtn);
       await pumpN(tester, frames: 5);
-      expect(find.byIcon(Icons.zoom_in), findsOneWidget);
+      expect(find.text('1.35×'), findsNothing);
+      expect(find.text('1.7×'), findsNothing);
     });
 
     testWidgets('Zoom tap enlarges stat value font then resets', (

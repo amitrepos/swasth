@@ -117,6 +117,11 @@ class TrendChartScreenState extends State<TrendChartScreen>
     _storageService.saveInsightsStatScale(next);
   }
 
+  String _statScaleBadgeLabel() {
+    if (_statScale <= _statScales.first) return '';
+    return '${_statScale.toStringAsFixed(_statScale == 1.35 ? 2 : 1)}×';
+  }
+
   Future<void> _loadSummary(int period) async {
     final langCode = Localizations.localeOf(context).languageCode;
     final key = '$period-$langCode';
@@ -179,11 +184,16 @@ class TrendChartScreenState extends State<TrendChartScreen>
         actions: [
           IconButton(
             key: const Key('insights_stat_zoom'),
-            icon: Icon(
-              _statScale < _statScales.last ? Icons.zoom_in : Icons.zoom_out,
-            ),
-            tooltip: l10n.insightsZoomStats,
+            tooltip: _statScale >= _statScales.last
+                ? l10n.insightsZoomReset
+                : l10n.insightsZoomStats,
+            color: _statScale > _statScales.first ? AppColors.primary : null,
             onPressed: _cycleStatScale,
+            icon: Badge(
+              isLabelVisible: _statScale > _statScales.first,
+              label: Text(_statScaleBadgeLabel()),
+              child: const Icon(Icons.format_size),
+            ),
           ),
         ],
         bottom: TabBar(

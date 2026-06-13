@@ -348,6 +348,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsZoomStats => 'Make numbers bigger';
 
   @override
+  String get insightsZoomReset => 'Return to normal size';
+
+  @override
   String get sevenDays => '7 Days';
 
   @override
@@ -372,10 +375,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get avgLabel => 'Avg';
 
   @override
-  String get avgSys => 'Avg Sys';
+  String get avgSys => 'Upper avg';
 
   @override
-  String get avgDia => 'Avg Dia';
+  String get avgDia => 'Lower avg';
 
   @override
   String avgDaysFormat(int count) {

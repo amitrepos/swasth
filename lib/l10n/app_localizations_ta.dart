@@ -352,6 +352,9 @@ class AppLocalizationsTa extends AppLocalizations {
   String get insightsZoomStats => 'எண்களை பெரிதாக்கு';
 
   @override
+  String get insightsZoomReset => 'இயல்பு அளவுக்கு திரும்பு';
+
+  @override
   String get sevenDays => '7 நாட்கள்';
 
   @override
@@ -376,10 +379,10 @@ class AppLocalizationsTa extends AppLocalizations {
   String get avgLabel => 'சராசரி';
 
   @override
-  String get avgSys => 'சராசரி சிஸ்';
+  String get avgSys => 'மேல் சராசரி';
 
   @override
-  String get avgDia => 'சராசரி டய';
+  String get avgDia => 'கீழ் சராசரி';
 
   @override
   String avgDaysFormat(int count) {

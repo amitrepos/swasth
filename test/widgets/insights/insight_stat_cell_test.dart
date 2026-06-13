@@ -25,7 +25,7 @@ void main() {
     expect(scaledValue, closeTo(30.6, 0.1));
   });
 
-  testWidgets('InsightStatCell label stays at least 13sp', (tester) async {
+  testWidgets('InsightStatCell label stays at least 14sp', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -35,7 +35,7 @@ void main() {
     );
 
     final label = tester.widget<Text>(find.text('Min'));
-    expect(label.style!.fontSize! >= 13, isTrue);
+    expect(label.style!.fontSize! >= 14, isTrue);
   });
 
   testWidgets(
@@ -78,6 +78,6 @@ void main() {
     );
 
     final label = tester.widget<Text>(find.text('Avg'));
-    expect(label.style!.fontSize!, 16);
+    expect(label.style!.fontSize!, 18);
   });
 }

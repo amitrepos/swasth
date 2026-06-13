@@ -115,6 +115,7 @@
   "howToLog": "रीडिंग कैसे दर्ज करना चाहते हैं?",
   "healthTrends": "स्वास्थ्य ट्रेंड",
   "insightsZoomStats": "आँकड़े बड़े करें",
+  "insightsZoomReset": "वापस सामान्य करें",
   "sevenDays": "7 दिन",
   "thirtyDays": "30 दिन",
   "ninetyDays": "90 दिन",
@@ -123,8 +124,8 @@
   "bpTrend": "रक्तचाप ट्रेंड",
   "pulseTrend": "नाड़ी ट्रेंड",
   "avgLabel": "औसत",
-  "avgSys": "औसत सिस",
-  "avgDia": "औसत डाय",
+  "avgSys": "ऊपरी औसत",
+  "avgDia": "निचला औसत",
   "avgDaysFormat": "{count} दिन औसत",
   "@avgDaysFormat": {
     "placeholders": {

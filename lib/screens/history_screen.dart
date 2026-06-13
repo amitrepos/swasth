@@ -488,7 +488,7 @@ class HistoryScreenState extends State<HistoryScreen> {
                   Text(
                     _filterLabel(l10n),
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 14,
                       color: _filterType != null ? AppColors.primary : null,
                     ),
                     overflow: TextOverflow.ellipsis,

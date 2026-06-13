@@ -752,6 +752,12 @@ abstract class AppLocalizations {
   /// **'Make numbers bigger'**
   String get insightsZoomStats;
 
+  /// No description provided for @insightsZoomReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to normal size'**
+  String get insightsZoomReset;
+
   /// No description provided for @sevenDays.
   ///
   /// In en, this message translates to:
@@ -803,13 +809,13 @@ abstract class AppLocalizations {
   /// No description provided for @avgSys.
   ///
   /// In en, this message translates to:
-  /// **'Avg Sys'**
+  /// **'Upper avg'**
   String get avgSys;
 
   /// No description provided for @avgDia.
   ///
   /// In en, this message translates to:
-  /// **'Avg Dia'**
+  /// **'Lower avg'**
   String get avgDia;
 
   /// No description provided for @avgDaysFormat.

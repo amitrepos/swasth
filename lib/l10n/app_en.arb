@@ -166,6 +166,7 @@
   "howToLog": "How would you like to log this reading?",
   "healthTrends": "Health Trends",
   "insightsZoomStats": "Make numbers bigger",
+  "insightsZoomReset": "Return to normal size",
   "sevenDays": "7 Days",
   "thirtyDays": "30 Days",
   "ninetyDays": "90 Days",
@@ -174,8 +175,8 @@
   "bpTrend": "Blood Pressure Trend",
   "pulseTrend": "Pulse Trend",
   "avgLabel": "Avg",
-  "avgSys": "Avg Sys",
-  "avgDia": "Avg Dia",
+  "avgSys": "Upper avg",
+  "avgDia": "Lower avg",
   "avgDaysFormat": "{count} day avg",
   "@avgDaysFormat": {
     "placeholders": {

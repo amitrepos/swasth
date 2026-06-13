@@ -18,9 +18,9 @@ class InsightStatCell extends StatelessWidget {
   });
 
   static const double _baseValueSize = 18;
-  static const double _baseLabelSize = 13;
+  static const double _baseLabelSize = 14;
   static const double _maxValueSize = 32;
-  static const double _maxLabelSize = 16;
+  static const double _maxLabelSize = 18;
 
   @override
   Widget build(BuildContext context) {

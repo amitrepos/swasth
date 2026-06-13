@@ -351,6 +351,9 @@ class AppLocalizationsKn extends AppLocalizations {
   String get insightsZoomStats => 'ಅಂಕಿಅಂಶಗಳನ್ನು ಹಿಗ್ಗಿಸಿ';
 
   @override
+  String get insightsZoomReset => 'ಸಾಮಾನ್ಯ ಗಾತ್ರಕ್ಕೆ ಹಿಂತಿರುಗಿ';
+
+  @override
   String get sevenDays => '7 ದಿನಗಳು';
 
   @override
@@ -375,10 +378,10 @@ class AppLocalizationsKn extends AppLocalizations {
   String get avgLabel => 'ಸರಾಸರಿ';
 
   @override
-  String get avgSys => 'ಸರಾಸರಿ ಸಿಸ್';
+  String get avgSys => 'ಮೇಲಿನ ಸರಾಸರಿ';
 
   @override
-  String get avgDia => 'ಸರಾಸರಿ ಡಯ';
+  String get avgDia => 'ಕೆಳಗಿನ ಸರಾಸರಿ';
 
   @override
   String avgDaysFormat(int count) {
