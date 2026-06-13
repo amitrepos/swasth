@@ -136,6 +136,18 @@ _RF_CARDIAC = [
     r"\b(?:left|right)?\s*arm\s+(?:is\s+|feels\s+|going\s+)?(?:numb|tingl)",
     r"\bpressure\s+in\s+(?:my\s+)?chest\b",
     r"\b(?:can'?t|cannot|cant|trouble)\s+breath",
+    # --- Devanagari HARD-cardiac forms. These MUST be in the cardiac MATCHING
+    # list (not only in _RF_CARDIAC_HARD): _has_hard_cardiac_signal correctly
+    # stops a Devanagari chest-pain message from being downgraded to hypo
+    # (skip_cardiac=False), but if cardiac's own patterns don't match the
+    # Devanagari form, the message falls through to hypoglycemia anyway. So a
+    # message like "सीने में दर्द और शुगर बहुत कम" needs cardiac to actually fire
+    # here. These mirror the romanised hard signals above, in Devanagari.
+    r"सीने?\s+(?:में|मे)\s+दर्द",                 # chest pain
+    r"छाती\s+(?:में|मे)\s+(?:दर्द|दबाव)",         # chest pain / pressure
+    r"दिल\s+का\s+दौरा",                           # heart attack
+    r"(?:बाँह|बांह|हाथ)\s+सुन्न",                 # arm numb
+    r"साँस\s+(?:नहीं\s+आ\s+रही|फूल\s+रही|नहीं)",  # can't breathe / breathless
     # --- Colloquial Hindi / Bhojpuri symptom lexicon (how a real MI is
     # described in Bihar). Romanised + Devanagari forms. Tightened so benign
     # sentences don't fire: "ghabrahat" alone is anxiety, so we require a
@@ -243,6 +255,40 @@ def _has_explicit_low_glucose(low: str) -> bool:
     return any(re.search(p, low) for p in _RF_HYPO_EXPLICIT_GLUCOSE)
 
 
+# A HARD cardiac signal is a symptom that — on its own — is a possible
+# myocardial infarction (MI) and must NEVER be downgraded to hypoglycemia, even
+# when an explicit low-glucose token also appears. The hypo-wins rule
+# (skip_cardiac) was only ever meant to fix the SOFT case: the adrenergic
+# picture (sweating/shaking) co-occurring with low sugar, WITHOUT any genuine
+# chest/MI symptom. A real MI ("chest pain", "seene me dard", "heart attack",
+# "left arm numb/tingling", "pressure in chest", "can't breathe") must win.
+# This is a curated SUBSET of _RF_CARDIAC — only the unambiguous MI signals,
+# NOT the soft sweating/ghabrahat patterns (those are the ones that legitimately
+# defer to hypoglycemia).
+_RF_CARDIAC_HARD = [
+    r"\bchest\s+pain\b",
+    r"\bseene\s+(?:me|mein)\s+dard\b",
+    r"सीने?\s+(?:में|मे)\s+दर्द",                 # chest pain (Devanagari)
+    r"छाती\s+(?:में|मे)\s+(?:दर्द|दबाव)",         # chest pain / pressure (Devanagari)
+    r"\bheart\s+attack\b",
+    r"\bdil\s+ka\s+daura\b",
+    r"दिल\s+का\s+दौरा",                           # heart attack (Devanagari)
+    r"\bleft\s+arm\b.{0,30}\b(?:numb|tingl)",
+    r"\b(?:left|right)?\s*arm\s+(?:is\s+|feels\s+|going\s+)?(?:numb|tingl)",
+    r"(?:बाँह|बांह|हाथ)\s+सुन्न",                 # arm numb (Devanagari)
+    r"\bpressure\s+in\s+(?:my\s+)?chest\b",
+    r"\b(?:can'?t|cannot|cant|trouble)\s+breath",
+    r"साँस\s+(?:नहीं\s+आ\s+रही|फूल\s+रही|नहीं)",  # can't breathe / breathless (Devanagari)
+]
+
+
+def _has_hard_cardiac_signal(low: str) -> bool:
+    """True if ``low`` (already lower-cased) carries a HARD cardiac (possible
+    MI) signal that must never be downgraded to hypoglycemia. See
+    ``_RF_CARDIAC_HARD``."""
+    return any(re.search(p, low) for p in _RF_CARDIAC_HARD)
+
+
 _RF_STOP_MEDS = [
     r"\bstop\b.{0,30}\b(?:meds|medication|medicine|medicines|pills|tablets|dawai|dawa)\b",
     r"\bquit\b.{0,20}\b(?:meds|medication|medicine|dawai)\b",
@@ -276,7 +322,18 @@ _RF_CHILD_DOSE = [
     r"\b(?:paracetamol|ibuprofen|antibiotic|crocin|calpol|dawai)\b.{0,40}\b(?:child|baby|toddler|bachch?e?|\d+[- ]?(?:year|month|saal))\b",
 ]
 
-# Evaluated in priority order (most life-threatening first).
+# Evaluated in priority order (most life-threatening first). The list order IS
+# the priority: the FIRST category whose patterns match wins, so a co-occurring
+# lower-risk keyword can never down-rank an emergency.
+#   1. suicide   — highest; a crisis call-to-action must never be diluted.
+#   2. cardiac   — possible MI; checked before stroke, so a message that hits
+#                  BOTH cardiac and stroke (e.g. "my face is drooping and I have
+#                  severe chest pain") resolves to CARDIAC (the chest/MI signal
+#                  leads). cardiac is conditionally SKIPPED only for the soft
+#                  hypo case — see skip_cardiac in _classify_red_flag.
+#   3. stroke    — FAST signs; life-threatening, just below cardiac.
+#   4. hypoglycemia — severe low sugar in a diabetic-on-meds population.
+#   5+. stop_meds / child_dose / self_diagnosis — non-emergency refusals.
 _RED_FLAG_RULES = [
     # Life-threatening first (suicide, cardiac, stroke, hypo) so a co-occurring
     # lower-risk keyword can't mis-route an emergency.
@@ -296,12 +353,18 @@ def _classify_red_flag(message: Optional[str]) -> Optional[tuple]:
     if not message:
         return None
     low = message.lower()
-    # If the message carries an EXPLICIT low-glucose signal, hypoglycemia must
-    # win over cardiac (a low-sugar patient with sweating/shaking otherwise gets
-    # the cardiac message and misses the "eat fast sugar NOW" instruction).
-    # Suicide stays highest; true cardiac (chest pain / MI) is unaffected unless
-    # the message ALSO contains an explicit low-glucose token.
-    skip_cardiac = _has_explicit_low_glucose(low)
+    # Hypo-vs-cardiac disambiguation. If the message carries an EXPLICIT
+    # low-glucose signal, hypoglycemia SHOULD win over cardiac — BUT only for the
+    # SOFT case (sweating/shaking + low sugar, no genuine MI symptom). A message
+    # with a HARD cardiac signal (chest pain / seene me dard / heart attack /
+    # left|right arm numb-or-tingling / pressure in chest / can't breathe) is a
+    # possible MI and must NEVER be downgraded, even if a low-glucose token also
+    # appears ("chest pain and my sugar is low" -> CARDIAC, MI not missed).
+    # Suicide stays highest. skip_cardiac fires ONLY when low-glucose is explicit
+    # AND there is NO hard cardiac signal.
+    skip_cardiac = (
+        _has_explicit_low_glucose(low) and not _has_hard_cardiac_signal(low)
+    )
     for category, patterns, refusal in _RED_FLAG_RULES:
         if category == "cardiac" and skip_cardiac:
             continue

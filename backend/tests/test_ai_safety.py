@@ -24,6 +24,7 @@ former canary, now flipped: it proves the guard rewrites unsafe output.
 import os
 import re
 import sys
+import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -463,6 +464,9 @@ class TestStrokeAndHypoRefusalShape:
         # Simple, actionable: eat fast sugar NOW + escalate to 108 if faint.
         assert "108" in refusal
         assert "मीठा" in refusal or "चीनी" in refusal, refusal
+        # SWASTH-185 (L-1): must LEAD with the ⚠️ marker, matching the stroke
+        # sibling's leading-CTA contract.
+        assert refusal.lstrip().startswith("⚠️"), refusal
         # Emergency -> no NMC tail.
         assert not ai_service._DISCLAIMER_PRESENT_RE.search(refusal), refusal
 
@@ -605,6 +609,13 @@ class TestExpandedBenignNoFalsePositive:
         "I felt dizzy once last month after standing up",
         "is paneer good for low sugar diet",
         "my father is a stroke survivor, any diet tips",
+        # SWASTH-185 (Priya M-2): Devanagari benign sentences that brush up
+        # against the colloquial-Hindi lexicon (चीनी/sugar, लकवा/paralysis,
+        # बेहोश/faint, काँपना/shaking) but are clearly NOT emergencies.
+        "चीनी वाली चाय पीना ठीक है",        # "is sugary tea ok to drink"
+        "लकवे के बारे में पूछना है",          # "I want to ask about paralysis" (topical)
+        "बेहोश वाली फिल्म देखी",             # "I watched a film about fainting"
+        "काँपना ठीक है व्यायाम के बाद",      # "shaking is fine after exercise"
     ]
 
     @pytest.mark.parametrize("msg", BENIGN)
@@ -743,6 +754,144 @@ class TestDevanagariWordBoundaryHypo:
         # Realistic full Devanagari hypo message: explicit शुगर-low + adrenergic.
         r = ai_service._classify_red_flag("शुगर कम है, काँपना और पसीना")
         assert r is not None and r[0] == "hypoglycemia", r
+
+
+class TestChestPainWithExplicitLowGlucose:
+    """SWASTH-185 (Priya C-1) — CRITICAL clinical-logic fix. The hypo-wins rule
+    (skip_cardiac) must NOT downgrade a possible MI. A HARD cardiac signal
+    (chest pain / seene me dard / heart attack / arm numb-or-tingling / pressure
+    in chest / can't breathe) co-occurring with a low-glucose token must STILL
+    route to CARDIAC — a missed MI is the worst failure mode. skip_cardiac only
+    applies to the SOFT case (sweating/shaking + low sugar, no MI symptom).
+
+    Rationale per row: a possible MI must never be downgraded to hypoglycemia;
+    but a pure adrenergic-hypo picture (no chest/MI symptom) must reach the
+    'eat fast sugar NOW' instruction, so it stays hypo.
+    """
+
+    def test_chest_pain_plus_low_sugar_routes_cardiac(self):
+        # Hard cardiac (chest pain) + explicit low glucose -> cardiac. A possible
+        # MI must NOT be downgraded just because sugar is also low.
+        r = ai_service._classify_red_flag("chest pain and my sugar is low")
+        assert r is not None and r[0] == "cardiac", (
+            f"chest pain + low sugar must stay CARDIAC (MI not missed); got {r!r}")
+
+    def test_seene_me_dard_plus_shugar_kam_routes_cardiac(self):
+        # Romanised Hindi hard-cardiac (seene me dard) + low sugar -> cardiac.
+        r = ai_service._classify_red_flag("seene me dard, shugar kam ho gaya")
+        assert r is not None and r[0] == "cardiac", (
+            f"seene me dard + shugar kam must stay CARDIAC; got {r!r}")
+
+    def test_left_arm_numb_plus_glucose_50_routes_cardiac(self):
+        # Hard cardiac (left arm numb) + a glucose reading -> cardiac. Arm
+        # numbness is a classic MI radiation sign and must not be downgraded.
+        r = ai_service._classify_red_flag("my left arm is numb, glucose 50")
+        assert r is not None and r[0] == "cardiac", (
+            f"left arm numb + glucose 50 must stay CARDIAC; got {r!r}")
+
+    def test_shaking_sweating_low_sugar_no_chest_routes_hypo(self):
+        # SOFT case: adrenergic picture (shaking + sweating) + low sugar, NO hard
+        # cardiac symptom -> hypoglycemia (gets the eat-fast-sugar instruction).
+        r = ai_service._classify_red_flag(
+            "I'm shaking and sweating and my sugar is very low")
+        assert r is not None and r[0] == "hypoglycemia", (
+            f"shaking+sweating+low sugar, NO chest pain, must route HYPO; got {r!r}")
+
+    def test_diagnosis_plus_low_sugar_no_chest_routes_hypo(self):
+        # Existing disambiguation case: self-diagnosis phrasing + low sugar +
+        # adrenergic, still NO hard cardiac token -> hypoglycemia.
+        r = ai_service._classify_red_flag(
+            "am I diabetic? my sugar is very low and I'm shaking and sweating")
+        assert r is not None and r[0] == "hypoglycemia", (
+            f"diagnosis + low sugar + adrenergic, no chest pain, must route HYPO; "
+            f"got {r!r}")
+
+    def test_devanagari_seene_me_dard_plus_shugar_kam_routes_cardiac(self):
+        # Devanagari hard-cardiac (सीने में दर्द = chest pain) + explicit low
+        # glucose -> cardiac. The earlier C-1 fix covered romanised/English hard
+        # signals only; a Devanagari MI must NOT be downgraded to hypo either.
+        r = ai_service._classify_red_flag("सीने में दर्द और शुगर बहुत कम")
+        assert r is not None and r[0] == "cardiac", (
+            f"सीने में दर्द + शुगर बहुत कम must stay CARDIAC (MI not missed); "
+            f"got {r!r}")
+
+    def test_devanagari_dil_ka_daura_plus_shugar_kam_routes_cardiac(self):
+        # Devanagari hard-cardiac (दिल का दौरा = heart attack) + low glucose ->
+        # cardiac.
+        r = ai_service._classify_red_flag("दिल का दौरा, शुगर कम")
+        assert r is not None and r[0] == "cardiac", (
+            f"दिल का दौरा + शुगर कम must stay CARDIAC; got {r!r}")
+
+    def test_devanagari_low_sugar_sweating_no_chest_routes_hypo(self):
+        # Regression: Devanagari SOFT case — low sugar + sweating, NO hard
+        # cardiac symptom -> hypoglycemia (must still reach the eat-fast-sugar
+        # instruction). Guards against the Devanagari hard-cardiac additions
+        # over-firing on a pure-hypo Devanagari message.
+        r = ai_service._classify_red_flag("शुगर बहुत कम और पसीना")
+        assert r is not None and r[0] == "hypoglycemia", (
+            f"शुगर बहुत कम + पसीना, NO chest pain, must route HYPO; got {r!r}")
+
+
+class TestHasExplicitLowGlucose:
+    """SWASTH-185 (Priya M-1). Unit-test the _has_explicit_low_glucose helper
+    that drives skip_cardiac. TRUE: a real low-glucose signal. FALSE: a benign
+    diet/recipe mention or a plain adrenergic feeling with NO glucose context."""
+
+    @pytest.mark.parametrize("msg", [
+        "my sugar is very low",
+        "shugar bahut kam",
+    ])
+    def test_true_for_explicit_low_glucose(self, msg):
+        assert ai_service._has_explicit_low_glucose(msg.lower()) is True, msg
+
+    @pytest.mark.parametrize("msg", [
+        "is low sugar diet good",       # diet question, not an emergency
+        "low sugar recipe",             # cooking, not an emergency
+        "I feel shaky and sweaty",      # adrenergic feeling, NO glucose context
+    ])
+    def test_false_for_benign_or_no_glucose(self, msg):
+        assert ai_service._has_explicit_low_glucose(msg.lower()) is False, msg
+
+
+class TestStrokeCardiacCoOccurrence:
+    """SWASTH-185 (Priya M-3). When a message hits BOTH stroke and cardiac
+    signals, cardiac is checked first (see the priority comment on
+    _RED_FLAG_RULES), so it must resolve to CARDIAC. Pinned so a future reorder
+    that lets stroke steal a possible-MI message fails loudly."""
+
+    def test_face_droop_plus_chest_pain_routes_cardiac(self):
+        r = ai_service._classify_red_flag(
+            "my face is drooping and I have severe chest pain")
+        assert r is not None and r[0] == "cardiac", (
+            f"stroke+cardiac co-occurrence must resolve to CARDIAC (checked "
+            f"first); got {r!r}")
+
+
+class TestClassifierPerformanceGuard:
+    """SWASTH-185 (Priya M-4). ReDoS guard. The lexicon uses bounded
+    alternations with `{0,30}` windows; an adversarial input crafted to maximise
+    near-matches must NOT blow up the matcher. Assert _classify_red_flag returns
+    well under a sane wall-clock bound. Uses time.monotonic (steady clock) — no
+    Date.now/random."""
+
+    def test_adversarial_long_input_completes_fast(self):
+        # Pack many partial near-matches: repeated chest/heart/sweat/sugar/arm
+        # tokens with separators, so every `{0,30}`-with-alternation pattern has
+        # maximal backtracking opportunity, but no full match completes early.
+        chunk = ("seene paseena dil heart saans chest arm numb sugar glucose "
+                 "kam gir low ghabrahat kaanp pasina ")
+        adversarial = chunk * 2000  # ~ hundreds of KB of near-misses
+        start = time.monotonic()
+        result = ai_service._classify_red_flag(adversarial)
+        elapsed = time.monotonic() - start
+        # Generous bound: catastrophic backtracking would take many seconds /
+        # hang. A linear/near-linear matcher finishes in well under 1s.
+        assert elapsed < 1.0, (
+            f"classifier took {elapsed:.3f}s on adversarial input — possible "
+            f"ReDoS in a bounded-alternation pattern")
+        # It may or may not classify; the point is it must not hang. (`result`
+        # referenced so the call isn't optimised away.)
+        assert result is None or isinstance(result, tuple)
 
 
 # ---------------------------------------------------------------------------
